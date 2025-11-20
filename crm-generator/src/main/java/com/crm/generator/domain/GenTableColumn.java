@@ -13,14 +13,14 @@ import org.apache.ibatis.type.JdbcType;
 import javax.validation.constraints.NotBlank;
 
 /**
- * 代码生成业务字段表 gen_table_column
+ * 代码生成业务字段表 zqzt_gen_table_column
  *
  * @author Lion Li
  */
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("gen_table_column")
+@TableName("zqzt_gen_table_column")
 public class GenTableColumn extends BaseEntity {
 
     /**

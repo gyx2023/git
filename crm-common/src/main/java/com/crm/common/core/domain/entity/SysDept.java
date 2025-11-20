@@ -13,14 +13,14 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
- * 部门表 sys_dept
+ * 部门表 zqzt_sys_dept
  *
  * @author Lion Li
  */
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_dept")
+@TableName("zqzt_sys_dept")
 public class SysDept extends TreeEntity<SysDept> {
     private static final long serialVersionUID = 1L;
 

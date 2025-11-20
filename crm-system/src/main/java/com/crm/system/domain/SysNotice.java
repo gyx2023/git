@@ -12,13 +12,13 @@ import javax.validation.constraints.Size;
 
 
 /**
- * 通知公告表 sys_notice
+ * 通知公告表 zqzt_sys_notice
  *
  * @author Lion Li
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_notice")
+@TableName("zqzt_sys_notice")
 public class SysNotice extends BaseEntity {
 
     /**

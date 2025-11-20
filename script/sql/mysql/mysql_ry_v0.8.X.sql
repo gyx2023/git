@@ -1,8 +1,8 @@
 -- ----------------------------
 -- 1、部门表
 -- ----------------------------
-drop table if exists sys_dept;
-create table sys_dept (
+drop table if exists zqzt_sys_dept;
+create table zqzt_sys_dept (
   dept_id           bigint(20)      not null                   comment '部门id',
   parent_id         bigint(20)      default 0                  comment '父部门id',
   ancestors         varchar(500)    default ''                 comment '祖级列表',
@@ -23,28 +23,28 @@ create table sys_dept (
 -- ----------------------------
 -- 初始化-部门表数据
 -- ----------------------------
-insert into sys_dept values(100,  0,   '0',          '若依科技',   0, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(101,  100, '0,100',      '深圳总公司', 1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(102,  100, '0,100',      '长沙分公司', 2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(103,  101, '0,100,101',  '研发部门',   1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(104,  101, '0,100,101',  '市场部门',   2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(105,  101, '0,100,101',  '测试部门',   3, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(106,  101, '0,100,101',  '财务部门',   4, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(107,  101, '0,100,101',  '运维部门',   5, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(108,  102, '0,100,102',  '市场部门',   1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
-insert into sys_dept values(109,  102, '0,100,102',  '财务部门',   2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(100,  0,   '0',          '若依科技',   0, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(101,  100, '0,100',      '深圳总公司', 1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(102,  100, '0,100',      '长沙分公司', 2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(103,  101, '0,100,101',  '研发部门',   1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(104,  101, '0,100,101',  '市场部门',   2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(105,  101, '0,100,101',  '测试部门',   3, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(106,  101, '0,100,101',  '财务部门',   4, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(107,  101, '0,100,101',  '运维部门',   5, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(108,  102, '0,100,102',  '市场部门',   1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
+insert into zqzt_sys_dept values(109,  102, '0,100,102',  '财务部门',   2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', sysdate(), '', null);
 
 
 -- ----------------------------
 -- 2、用户信息表
 -- ----------------------------
-drop table if exists sys_user;
-create table sys_user (
+drop table if exists zqzt_sys_user;
+create table zqzt_sys_user (
   user_id           bigint(20)      not null                   comment '用户ID',
   dept_id           bigint(20)      default null               comment '部门ID',
   user_name         varchar(30)     not null                   comment '用户账号',
   nick_name         varchar(30)     not null                   comment '用户昵称',
-  user_type         varchar(10)     default 'sys_user'         comment '用户类型（sys_user系统用户）',
+  user_type         varchar(30)     default 'zqzt_sys_user'         comment '用户类型（sys_user系统用户）',
   email             varchar(50)     default ''                 comment '用户邮箱',
   phonenumber       varchar(11)     default ''                 comment '手机号码',
   sex               char(1)         default '0'                comment '用户性别（0男 1女 2未知）',
@@ -65,15 +65,15 @@ create table sys_user (
 -- ----------------------------
 -- 初始化-用户信息表数据
 -- ----------------------------
-insert into sys_user values(1,  103, 'admin', '若依管理员', 'sys_user', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', sysdate(), 'admin', sysdate(), '', null, '管理员');
-insert into sys_user values(2,  105, 'ry',    '若依'     , 'sys_user', 'ry@qq.com',  '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', sysdate(), 'admin', sysdate(), '', null, '测试员');
+insert into zqzt_sys_user values(1,  103, 'admin', '若依管理员', 'zqzt_sys_user', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', sysdate(), 'admin', sysdate(), '', null, '管理员');
+insert into zqzt_sys_user values(2,  105, 'ry',    '若依'     , 'zqzt_sys_user', 'ry@qq.com',  '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', sysdate(), 'admin', sysdate(), '', null, '测试员');
 
 
 -- ----------------------------
 -- 3、岗位信息表
 -- ----------------------------
-drop table if exists sys_post;
-create table sys_post
+drop table if exists zqzt_sys_post;
+create table zqzt_sys_post
 (
   post_id       bigint(20)      not null                   comment '岗位ID',
   post_code     varchar(64)     not null                   comment '岗位编码',
@@ -91,17 +91,17 @@ create table sys_post
 -- ----------------------------
 -- 初始化-岗位信息表数据
 -- ----------------------------
-insert into sys_post values(1, 'ceo',  '董事长',    1, '0', 'admin', sysdate(), '', null, '');
-insert into sys_post values(2, 'se',   '项目经理',  2, '0', 'admin', sysdate(), '', null, '');
-insert into sys_post values(3, 'hr',   '人力资源',  3, '0', 'admin', sysdate(), '', null, '');
-insert into sys_post values(4, 'user', '普通员工',  4, '0', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_post values(1, 'ceo',  '董事长',    1, '0', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_post values(2, 'se',   '项目经理',  2, '0', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_post values(3, 'hr',   '人力资源',  3, '0', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_post values(4, 'user', '普通员工',  4, '0', 'admin', sysdate(), '', null, '');
 
 
 -- ----------------------------
 -- 4、角色信息表
 -- ----------------------------
-drop table if exists sys_role;
-create table sys_role (
+drop table if exists zqzt_sys_role;
+create table zqzt_sys_role (
   role_id              bigint(20)      not null                   comment '角色ID',
   role_name            varchar(30)     not null                   comment '角色名称',
   role_key             varchar(100)    not null                   comment '角色权限字符串',
@@ -122,15 +122,15 @@ create table sys_role (
 -- ----------------------------
 -- 初始化-角色信息表数据
 -- ----------------------------
-insert into sys_role values('1', '超级管理员',  'admin',  1, 1, 1, 1, '0', '0', 'admin', sysdate(), '', null, '超级管理员');
-insert into sys_role values('2', '普通角色',    'common', 2, 2, 1, 1, '0', '0', 'admin', sysdate(), '', null, '普通角色');
+insert into zqzt_sys_role values('1', '超级管理员',  'admin',  1, 1, 1, 1, '0', '0', 'admin', sysdate(), '', null, '超级管理员');
+insert into zqzt_sys_role values('2', '普通角色',    'common', 2, 2, 1, 1, '0', '0', 'admin', sysdate(), '', null, '普通角色');
 
 
 -- ----------------------------
 -- 5、菜单权限表
 -- ----------------------------
-drop table if exists sys_menu;
-create table sys_menu (
+drop table if exists zqzt_sys_menu;
+create table zqzt_sys_menu (
   menu_id           bigint(20)      not null                   comment '菜单ID',
   menu_name         varchar(50)     not null                   comment '菜单名称',
   parent_id         bigint(20)      default 0                  comment '父菜单ID',
@@ -157,174 +157,174 @@ create table sys_menu (
 -- 初始化-菜单信息表数据
 -- ----------------------------
 -- 一级菜单
-insert into sys_menu values('1', '系统管理', '0', '1', 'system',   null, '', 1, 0, 'M', '0', '0', '', 'system',   'admin', sysdate(), '', null, '系统管理目录');
-insert into sys_menu values('2', '系统监控', '0', '2', 'monitor',  null, '', 1, 0, 'M', '0', '0', '', 'monitor',  'admin', sysdate(), '', null, '系统监控目录');
-insert into sys_menu values('3', '系统工具', '0', '3', 'tool',     null, '', 1, 0, 'M', '0', '0', '', 'tool',     'admin', sysdate(), '', null, '系统工具目录');
-insert into sys_menu values('4', '流程管理', '0', '4', 'process',  null, '', 1, 0, 'M', '0', '0', '', 'skill',    'admin', sysdate(), '', null, '流程管理目录');
-insert into sys_menu values('5', '办公管理', '0', '5', 'work',     null, '', 1, 0, 'M', '0', '0', '', 'job',      'admin', sysdate(), '', null, '办公管理目录');
+insert into zqzt_sys_menu values('1', '系统管理', '0', '1', 'system',   null, '', 1, 0, 'M', '0', '0', '', 'system',   'admin', sysdate(), '', null, '系统管理目录');
+insert into zqzt_sys_menu values('2', '系统监控', '0', '2', 'monitor',  null, '', 1, 0, 'M', '0', '0', '', 'monitor',  'admin', sysdate(), '', null, '系统监控目录');
+insert into zqzt_sys_menu values('3', '系统工具', '0', '3', 'tool',     null, '', 1, 0, 'M', '0', '0', '', 'tool',     'admin', sysdate(), '', null, '系统工具目录');
+insert into zqzt_sys_menu values('4', '流程管理', '0', '4', 'process',  null, '', 1, 0, 'M', '0', '0', '', 'skill',    'admin', sysdate(), '', null, '流程管理目录');
+insert into zqzt_sys_menu values('5', '办公管理', '0', '5', 'work',     null, '', 1, 0, 'M', '0', '0', '', 'job',      'admin', sysdate(), '', null, '办公管理目录');
 
 -- 二级菜单
-insert into sys_menu values('100',  '用户管理', '1',   '1', 'user',       'system/user/index',        '', 1, 0, 'C', '0', '0', 'system:user:list',        'user',          'admin', sysdate(), '', null, '用户管理菜单');
-insert into sys_menu values('101',  '角色管理', '1',   '2', 'role',       'system/role/index',        '', 1, 0, 'C', '0', '0', 'system:role:list',        'peoples',       'admin', sysdate(), '', null, '角色管理菜单');
-insert into sys_menu values('102',  '菜单管理', '1',   '3', 'menu',       'system/menu/index',        '', 1, 0, 'C', '0', '0', 'system:menu:list',        'tree-table',    'admin', sysdate(), '', null, '菜单管理菜单');
-insert into sys_menu values('103',  '部门管理', '1',   '4', 'dept',       'system/dept/index',        '', 1, 0, 'C', '0', '0', 'system:dept:list',        'tree',          'admin', sysdate(), '', null, '部门管理菜单');
-insert into sys_menu values('104',  '岗位管理', '1',   '5', 'post',       'system/post/index',        '', 1, 0, 'C', '0', '0', 'system:post:list',        'post',          'admin', sysdate(), '', null, '岗位管理菜单');
-insert into sys_menu values('105',  '字典管理', '1',   '6', 'dict',       'system/dict/index',        '', 1, 0, 'C', '0', '0', 'system:dict:list',        'dict',          'admin', sysdate(), '', null, '字典管理菜单');
-insert into sys_menu values('106',  '参数设置', '1',   '7', 'config',     'system/config/index',      '', 1, 0, 'C', '0', '0', 'system:config:list',      'edit',          'admin', sysdate(), '', null, '参数设置菜单');
-insert into sys_menu values('107',  '通知公告', '1',   '8', 'notice',     'system/notice/index',      '', 1, 0, 'C', '0', '0', 'system:notice:list',      'message',       'admin', sysdate(), '', null, '通知公告菜单');
-insert into sys_menu values('108',  '日志管理', '1',   '9', 'log',        '',                         '', 1, 0, 'M', '0', '0', '',                        'log',           'admin', sysdate(), '', null, '日志管理菜单');
-insert into sys_menu values('109',  '在线用户', '2',   '1', 'online',     'monitor/online/index',     '', 1, 0, 'C', '0', '0', 'monitor:online:list',     'online',        'admin', sysdate(), '', null, '在线用户菜单');
-insert into sys_menu values('111',  '数据监控', '2',   '3', 'druid',      'monitor/druid/index',      '', 1, 0, 'C', '0', '0', 'monitor:druid:list',      'druid',         'admin', sysdate(), '', null, '数据监控菜单');
-insert into sys_menu values('112',  '缓存列表', '2',   '6', 'cacheList',  'monitor/cache/list',       '', 1, 0, 'C', '0', '0', 'monitor:cache:list',      'redis-list',    'admin', sysdate(), '', null, '缓存列表菜单');
-insert into sys_menu values('113',  '缓存监控', '2',   '5', 'cache',      'monitor/cache/index',      '', 1, 0, 'C', '0', '0', 'monitor:cache:list',      'redis',         'admin', sysdate(), '', null, '缓存监控菜单');
-insert into sys_menu values('114',  '表单构建', '3',   '1', 'build',      'tool/build/index',         '', 1, 0, 'C', '0', '0', 'tool:build:list',         'build',         'admin', sysdate(), '', null, '表单构建菜单');
-insert into sys_menu values('115',  '代码生成', '3',   '2', 'gen',        'tool/gen/index',           '', 1, 0, 'C', '0', '0', 'tool:gen:list',           'code',          'admin', sysdate(), '', null, '代码生成菜单');
+insert into zqzt_sys_menu values('100',  '用户管理', '1',   '1', 'user',       'system/user/index',        '', 1, 0, 'C', '0', '0', 'system:user:list',        'user',          'admin', sysdate(), '', null, '用户管理菜单');
+insert into zqzt_sys_menu values('101',  '角色管理', '1',   '2', 'role',       'system/role/index',        '', 1, 0, 'C', '0', '0', 'system:role:list',        'peoples',       'admin', sysdate(), '', null, '角色管理菜单');
+insert into zqzt_sys_menu values('102',  '菜单管理', '1',   '3', 'menu',       'system/menu/index',        '', 1, 0, 'C', '0', '0', 'system:menu:list',        'tree-table',    'admin', sysdate(), '', null, '菜单管理菜单');
+insert into zqzt_sys_menu values('103',  '部门管理', '1',   '4', 'dept',       'system/dept/index',        '', 1, 0, 'C', '0', '0', 'system:dept:list',        'tree',          'admin', sysdate(), '', null, '部门管理菜单');
+insert into zqzt_sys_menu values('104',  '岗位管理', '1',   '5', 'post',       'system/post/index',        '', 1, 0, 'C', '0', '0', 'system:post:list',        'post',          'admin', sysdate(), '', null, '岗位管理菜单');
+insert into zqzt_sys_menu values('105',  '字典管理', '1',   '6', 'dict',       'system/dict/index',        '', 1, 0, 'C', '0', '0', 'system:dict:list',        'dict',          'admin', sysdate(), '', null, '字典管理菜单');
+insert into zqzt_sys_menu values('106',  '参数设置', '1',   '7', 'config',     'system/config/index',      '', 1, 0, 'C', '0', '0', 'system:config:list',      'edit',          'admin', sysdate(), '', null, '参数设置菜单');
+insert into zqzt_sys_menu values('107',  '通知公告', '1',   '8', 'notice',     'system/notice/index',      '', 1, 0, 'C', '0', '0', 'system:notice:list',      'message',       'admin', sysdate(), '', null, '通知公告菜单');
+insert into zqzt_sys_menu values('108',  '日志管理', '1',   '9', 'log',        '',                         '', 1, 0, 'M', '0', '0', '',                        'log',           'admin', sysdate(), '', null, '日志管理菜单');
+insert into zqzt_sys_menu values('109',  '在线用户', '2',   '1', 'online',     'monitor/online/index',     '', 1, 0, 'C', '0', '0', 'monitor:online:list',     'online',        'admin', sysdate(), '', null, '在线用户菜单');
+insert into zqzt_sys_menu values('111',  '数据监控', '2',   '3', 'druid',      'monitor/druid/index',      '', 1, 0, 'C', '0', '0', 'monitor:druid:list',      'druid',         'admin', sysdate(), '', null, '数据监控菜单');
+insert into zqzt_sys_menu values('112',  '缓存列表', '2',   '6', 'cacheList',  'monitor/cache/list',       '', 1, 0, 'C', '0', '0', 'monitor:cache:list',      'redis-list',    'admin', sysdate(), '', null, '缓存列表菜单');
+insert into zqzt_sys_menu values('113',  '缓存监控', '2',   '5', 'cache',      'monitor/cache/index',      '', 1, 0, 'C', '0', '0', 'monitor:cache:list',      'redis',         'admin', sysdate(), '', null, '缓存监控菜单');
+insert into zqzt_sys_menu values('114',  '表单构建', '3',   '1', 'build',      'tool/build/index',         '', 1, 0, 'C', '0', '0', 'tool:build:list',         'build',         'admin', sysdate(), '', null, '表单构建菜单');
+insert into zqzt_sys_menu values('115',  '代码生成', '3',   '2', 'gen',        'tool/gen/index',           '', 1, 0, 'C', '0', '0', 'tool:gen:list',           'code',          'admin', sysdate(), '', null, '代码生成菜单');
 -- springboot-admin监控
-insert into sys_menu values('117',  'Admin监控', '2',  '5', 'Admin',      'monitor/admin/index',      '', 1, 0, 'C', '0', '0', 'monitor:admin:list',      'dashboard',     'admin', sysdate(), '', null, 'Admin监控菜单');
+insert into zqzt_sys_menu values('117',  'Admin监控', '2',  '5', 'Admin',      'monitor/admin/index',      '', 1, 0, 'C', '0', '0', 'monitor:admin:list',      'dashboard',     'admin', sysdate(), '', null, 'Admin监控菜单');
 -- oss菜单
-insert into sys_menu values('118',  '文件管理', '1', '10', 'oss', 'system/oss/index', '', 1, 0, 'C', '0', '0', 'system:oss:list', 'upload', 'admin', sysdate(), '', null, '文件管理菜单');
+insert into zqzt_sys_menu values('118',  '文件管理', '1', '10', 'oss', 'system/oss/index', '', 1, 0, 'C', '0', '0', 'system:oss:list', 'upload', 'admin', sysdate(), '', null, '文件管理菜单');
 -- xxl-job-admin控制台
-insert into sys_menu values('120',  '任务调度中心', '2',  '5', 'XxlJob',      'monitor/xxljob/index',      '', 1, 0, 'C', '0', '0', 'monitor:xxljob:list',      'job',     'admin', sysdate(), '', null, 'Xxl-Job控制台菜单');
+insert into zqzt_sys_menu values('120',  '任务调度中心', '2',  '5', 'XxlJob',      'monitor/xxljob/index',      '', 1, 0, 'C', '0', '0', 'monitor:xxljob:list',      'job',     'admin', sysdate(), '', null, 'Xxl-Job控制台菜单');
 -- 流程管理
-insert into sys_menu values('121',  '流程分类', '4',   '1', 'category',   'workflow/category/index',      '', 1, 0, 'C', '0', '0', 'workflow:category:list',   'nested',    'admin', sysdate(), '', null, '流程分类菜单');
-insert into sys_menu values('122',  '表单配置', '4',   '2', 'form',       'workflow/form/index',          '', 1, 0, 'C', '0', '0', 'workflow:form:list',       'form',      'admin', sysdate(), '', null, '表单配置菜单');
-insert into sys_menu values('123',  '流程模型', '4',   '3', 'model',      'workflow/model/index',         '', 1, 0, 'C', '0', '0', 'workflow:model:list',      'component', 'admin', sysdate(), '', null, '流程模型菜单');
-insert into sys_menu values('124',  '部署管理', '4',   '4', 'deploy',     'workflow/deploy/index',        '', 1, 0, 'C', '0', '0', 'workflow:deploy:list',     'example',   'admin', sysdate(), '', null, '部署管理菜单');
+insert into zqzt_sys_menu values('121',  '流程分类', '4',   '1', 'category',   'workflow/category/index',      '', 1, 0, 'C', '0', '0', 'workflow:category:list',   'nested',    'admin', sysdate(), '', null, '流程分类菜单');
+insert into zqzt_sys_menu values('122',  '表单配置', '4',   '2', 'form',       'workflow/form/index',          '', 1, 0, 'C', '0', '0', 'workflow:form:list',       'form',      'admin', sysdate(), '', null, '表单配置菜单');
+insert into zqzt_sys_menu values('123',  '流程模型', '4',   '3', 'model',      'workflow/model/index',         '', 1, 0, 'C', '0', '0', 'workflow:model:list',      'component', 'admin', sysdate(), '', null, '流程模型菜单');
+insert into zqzt_sys_menu values('124',  '部署管理', '4',   '4', 'deploy',     'workflow/deploy/index',        '', 1, 0, 'C', '0', '0', 'workflow:deploy:list',     'example',   'admin', sysdate(), '', null, '部署管理菜单');
 -- 办公管理
-insert into sys_menu values('125',  '新建流程', '5',   '1', 'create',     'workflow/work/index',       '', 1, 0, 'C', '0', '0', 'workflow:process:startList',    'guide',      'admin', sysdate(), '', null, '新建流程菜单');
-insert into sys_menu values('126',  '我的流程', '5',   '2', 'own',        'workflow/work/own',         '', 1, 0, 'C', '0', '0', 'workflow:process:ownList',      'cascader',   'admin', sysdate(), '', null, '我的流程菜单');
-insert into sys_menu values('127',  '待办任务', '5',   '3', 'todo',       'workflow/work/todo',        '', 1, 0, 'C', '0', '0', 'workflow:process:todoList',     'time-range', 'admin', sysdate(), '', null, '待办任务菜单');
-insert into sys_menu values('128',  '待签任务', '5',   '4', 'claim',      'workflow/work/claim',       '', 1, 0, 'C', '0', '0', 'workflow:process:claimList',    'checkbox',   'admin', sysdate(), '', null, '待签任务菜单');
-insert into sys_menu values('129',  '已办任务', '5',   '5', 'finished',   'workflow/work/finished',    '', 1, 0, 'C', '0', '0', 'workflow:process:finishedList', 'checkbox',   'admin', sysdate(), '', null, '已办任务菜单');
-insert into sys_menu values('130',  '抄送我的', '5',   '6', 'copy',       'workflow/work/copy',        '', 1, 0, 'C', '0', '0', 'workflow:process:copyList',     'checkbox',   'admin', sysdate(), '', null, '抄送我的菜单');
+insert into zqzt_sys_menu values('125',  '新建流程', '5',   '1', 'create',     'workflow/work/index',       '', 1, 0, 'C', '0', '0', 'workflow:process:startList',    'guide',      'admin', sysdate(), '', null, '新建流程菜单');
+insert into zqzt_sys_menu values('126',  '我的流程', '5',   '2', 'own',        'workflow/work/own',         '', 1, 0, 'C', '0', '0', 'workflow:process:ownList',      'cascader',   'admin', sysdate(), '', null, '我的流程菜单');
+insert into zqzt_sys_menu values('127',  '待办任务', '5',   '3', 'todo',       'workflow/work/todo',        '', 1, 0, 'C', '0', '0', 'workflow:process:todoList',     'time-range', 'admin', sysdate(), '', null, '待办任务菜单');
+insert into zqzt_sys_menu values('128',  '待签任务', '5',   '4', 'claim',      'workflow/work/claim',       '', 1, 0, 'C', '0', '0', 'workflow:process:claimList',    'checkbox',   'admin', sysdate(), '', null, '待签任务菜单');
+insert into zqzt_sys_menu values('129',  '已办任务', '5',   '5', 'finished',   'workflow/work/finished',    '', 1, 0, 'C', '0', '0', 'workflow:process:finishedList', 'checkbox',   'admin', sysdate(), '', null, '已办任务菜单');
+insert into zqzt_sys_menu values('130',  '抄送我的', '5',   '6', 'copy',       'workflow/work/copy',        '', 1, 0, 'C', '0', '0', 'workflow:process:copyList',     'checkbox',   'admin', sysdate(), '', null, '抄送我的菜单');
 
 -- 三级菜单
-insert into sys_menu values('500',  '操作日志', '108', '1', 'operlog',    'monitor/operlog/index',    '', 1, 0, 'C', '0', '0', 'monitor:operlog:list',    'form',          'admin', sysdate(), '', null, '操作日志菜单');
-insert into sys_menu values('501',  '登录日志', '108', '2', 'logininfor', 'monitor/logininfor/index', '', 1, 0, 'C', '0', '0', 'monitor:logininfor:list', 'logininfor',    'admin', sysdate(), '', null, '登录日志菜单');
+insert into zqzt_sys_menu values('500',  '操作日志', '108', '1', 'operlog',    'monitor/operlog/index',    '', 1, 0, 'C', '0', '0', 'monitor:operlog:list',    'form',          'admin', sysdate(), '', null, '操作日志菜单');
+insert into zqzt_sys_menu values('501',  '登录日志', '108', '2', 'logininfor', 'monitor/logininfor/index', '', 1, 0, 'C', '0', '0', 'monitor:logininfor:list', 'logininfor',    'admin', sysdate(), '', null, '登录日志菜单');
 -- 用户管理按钮
-insert into sys_menu values('1001', '用户查询', '100', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:query',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1002', '用户新增', '100', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:add',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1003', '用户修改', '100', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1004', '用户删除', '100', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1005', '用户导出', '100', '5',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:export',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1006', '用户导入', '100', '6',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:import',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1007', '重置密码', '100', '7',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1001', '用户查询', '100', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:query',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1002', '用户新增', '100', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:add',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1003', '用户修改', '100', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1004', '用户删除', '100', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1005', '用户导出', '100', '5',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:export',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1006', '用户导入', '100', '6',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:import',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1007', '重置密码', '100', '7',  '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd',       '#', 'admin', sysdate(), '', null, '');
 -- 角色管理按钮
-insert into sys_menu values('1010', '角色查询', '101', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:query',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1011', '角色新增', '101', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:add',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1012', '角色修改', '101', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:edit',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1013', '角色删除', '101', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:remove',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1014', '角色导出', '101', '5',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:export',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1010', '角色查询', '101', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:query',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1011', '角色新增', '101', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:add',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1012', '角色修改', '101', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:edit',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1013', '角色删除', '101', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:remove',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1014', '角色导出', '101', '5',  '', '', '', 1, 0, 'F', '0', '0', 'system:role:export',         '#', 'admin', sysdate(), '', null, '');
 -- 菜单管理按钮
-insert into sys_menu values('1020', '菜单查询', '102', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:query',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1021', '菜单新增', '102', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:add',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1022', '菜单修改', '102', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:edit',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1023', '菜单删除', '102', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:remove',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1020', '菜单查询', '102', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:query',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1021', '菜单新增', '102', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:add',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1022', '菜单修改', '102', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:edit',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1023', '菜单删除', '102', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:menu:remove',         '#', 'admin', sysdate(), '', null, '');
 -- 部门管理按钮
-insert into sys_menu values('1030', '部门查询', '103', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:query',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1031', '部门新增', '103', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:add',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1032', '部门修改', '103', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:edit',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1033', '部门删除', '103', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:remove',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1030', '部门查询', '103', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:query',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1031', '部门新增', '103', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:add',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1032', '部门修改', '103', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:edit',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1033', '部门删除', '103', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:dept:remove',         '#', 'admin', sysdate(), '', null, '');
 -- 岗位管理按钮
-insert into sys_menu values('1040', '岗位查询', '104', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:query',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1041', '岗位新增', '104', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:add',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1042', '岗位修改', '104', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:edit',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1043', '岗位删除', '104', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:remove',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1044', '岗位导出', '104', '5',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:export',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1040', '岗位查询', '104', '1',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:query',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1041', '岗位新增', '104', '2',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:add',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1042', '岗位修改', '104', '3',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:edit',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1043', '岗位删除', '104', '4',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:remove',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1044', '岗位导出', '104', '5',  '', '', '', 1, 0, 'F', '0', '0', 'system:post:export',         '#', 'admin', sysdate(), '', null, '');
 -- 字典管理按钮
-insert into sys_menu values('1050', '字典查询', '105', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:query',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1051', '字典新增', '105', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:add',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1052', '字典修改', '105', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:edit',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1053', '字典删除', '105', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:remove',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1054', '字典导出', '105', '5', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:export',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1050', '字典查询', '105', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:query',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1051', '字典新增', '105', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:add',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1052', '字典修改', '105', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:edit',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1053', '字典删除', '105', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:remove',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1054', '字典导出', '105', '5', '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:export',         '#', 'admin', sysdate(), '', null, '');
 -- 参数设置按钮
-insert into sys_menu values('1060', '参数查询', '106', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:query',        '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1061', '参数新增', '106', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:add',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1062', '参数修改', '106', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:edit',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1063', '参数删除', '106', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:remove',       '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1064', '参数导出', '106', '5', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:export',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1060', '参数查询', '106', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:query',        '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1061', '参数新增', '106', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:add',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1062', '参数修改', '106', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:edit',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1063', '参数删除', '106', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:remove',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1064', '参数导出', '106', '5', '#', '', '', 1, 0, 'F', '0', '0', 'system:config:export',       '#', 'admin', sysdate(), '', null, '');
 -- 通知公告按钮
-insert into sys_menu values('1070', '公告查询', '107', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:query',        '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1071', '公告新增', '107', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:add',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1072', '公告修改', '107', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:edit',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1073', '公告删除', '107', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:remove',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1070', '公告查询', '107', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:query',        '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1071', '公告新增', '107', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:add',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1072', '公告修改', '107', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:edit',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1073', '公告删除', '107', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:remove',       '#', 'admin', sysdate(), '', null, '');
 -- 操作日志按钮
-insert into sys_menu values('1080', '操作查询', '500', '1', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:query',      '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1081', '操作删除', '500', '2', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:remove',     '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1082', '日志导出', '500', '4', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:export',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1080', '操作查询', '500', '1', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:query',      '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1081', '操作删除', '500', '2', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:remove',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1082', '日志导出', '500', '4', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:export',     '#', 'admin', sysdate(), '', null, '');
 -- 登录日志按钮
-insert into sys_menu values('1090', '登录查询', '501', '1', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:query',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1091', '登录删除', '501', '2', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:remove',  '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1092', '日志导出', '501', '3', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:export',  '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1093', '账户解锁', '501', '4', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:unlock',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1090', '登录查询', '501', '1', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:query',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1091', '登录删除', '501', '2', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:remove',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1092', '日志导出', '501', '3', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:export',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1093', '账户解锁', '501', '4', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:unlock',  '#', 'admin', sysdate(), '', null, '');
 -- 在线用户按钮
-insert into sys_menu values('1100', '在线查询', '109', '1', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:query',       '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1101', '批量强退', '109', '2', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:batchLogout', '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1102', '单条强退', '109', '3', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:forceLogout', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1100', '在线查询', '109', '1', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:query',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1101', '批量强退', '109', '2', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:batchLogout', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1102', '单条强退', '109', '3', '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:forceLogout', '#', 'admin', sysdate(), '', null, '');
 -- 代码生成按钮
-insert into sys_menu values('1120', '生成查询', '115', '1', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:query',             '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1121', '生成修改', '115', '2', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:edit',              '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1122', '生成删除', '115', '3', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:remove',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1123', '导入代码', '115', '4', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:import',            '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1124', '预览代码', '115', '5', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:preview',           '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1125', '生成代码', '115', '6', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:code',              '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1120', '生成查询', '115', '1', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:query',             '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1121', '生成修改', '115', '2', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:edit',              '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1122', '生成删除', '115', '3', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:remove',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1123', '导入代码', '115', '4', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:import',            '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1124', '预览代码', '115', '5', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:preview',           '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1125', '生成代码', '115', '6', '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:code',              '#', 'admin', sysdate(), '', null, '');
 -- oss相关按钮
-insert into sys_menu values('1130', '文件查询', '118', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:query',        '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1131', '文件上传', '118', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:upload',       '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1132', '文件下载', '118', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:download',     '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1133', '文件删除', '118', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:remove',       '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1134', '配置添加', '118', '5', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:add',          '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1135', '配置编辑', '118', '6', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:edit',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1130', '文件查询', '118', '1', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:query',        '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1131', '文件上传', '118', '2', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:upload',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1132', '文件下载', '118', '3', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:download',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1133', '文件删除', '118', '4', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:remove',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1134', '配置添加', '118', '5', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:add',          '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1135', '配置编辑', '118', '6', '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:edit',         '#', 'admin', sysdate(), '', null, '');
 -- 流程分类管理
-insert into sys_menu values('1140', '分类查询', '121', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:query',  '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1141', '分类新增', '121', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:add',    '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1142', '分类编辑', '121', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:edit',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1143', '分类删除', '121', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:remove', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1140', '分类查询', '121', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:query',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1141', '分类新增', '121', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:add',    '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1142', '分类编辑', '121', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:edit',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1143', '分类删除', '121', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:category:remove', '#', 'admin', sysdate(), '', null, '');
 -- 表单配置
-insert into sys_menu values('1150', '表单查询', '122', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:query',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1151', '表单新增', '122', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:add',     '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1152', '表单修改', '122', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:edit',    '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1153', '表单删除', '122', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:remove',  '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1154', '表单导出', '122', '5', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:export',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1150', '表单查询', '122', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:query',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1151', '表单新增', '122', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:add',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1152', '表单修改', '122', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:edit',    '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1153', '表单删除', '122', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:remove',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1154', '表单导出', '122', '5', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:form:export',  '#', 'admin', sysdate(), '', null, '');
 -- 流程模型
-insert into sys_menu values('1160', '模型查询', '123', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:query',    '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1161', '模型新增', '123', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:add',      '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1162', '模型修改', '123', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:edit',     '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1163', '模型删除', '123', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:remove',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1164', '模型导出', '123', '5', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:export',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1165', '模型导入', '123', '6', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:import',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1166', '模型设计', '123', '7', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:designer', '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1167', '模型保存', '123', '8', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:save',     '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1168', '流程部署', '123', '9', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:deploy',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1160', '模型查询', '123', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:query',    '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1161', '模型新增', '123', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:add',      '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1162', '模型修改', '123', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:edit',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1163', '模型删除', '123', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:remove',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1164', '模型导出', '123', '5', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:export',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1165', '模型导入', '123', '6', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:import',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1166', '模型设计', '123', '7', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:designer', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1167', '模型保存', '123', '8', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:save',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1168', '流程部署', '123', '9', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:deploy',   '#', 'admin', sysdate(), '', null, '');
 -- 部署管理
-insert into sys_menu values('1170', '部署查询', '124', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:deploy:query',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1171', '部署删除', '124', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:deploy:remove',  '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1172', '更新状态', '124', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:deploy:status',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1170', '部署查询', '124', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:deploy:query',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1171', '部署删除', '124', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:deploy:remove',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1172', '更新状态', '124', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:deploy:status',  '#', 'admin', sysdate(), '', null, '');
 -- 新建流程
-insert into sys_menu values('1180', '发起流程',    '125', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:start',       '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1181', '新建流程导出', '125', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:startExport', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1180', '发起流程',    '125', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:start',       '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1181', '新建流程导出', '125', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:startExport', '#', 'admin', sysdate(), '', null, '');
 -- 我的流程
-insert into sys_menu values('1190', '流程详情',    '126', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:query',     '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1191', '流程删除',    '126', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:remove',    '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1192', '流程取消',    '126', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:cancel',    '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1193', '我的流程导出', '126', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:ownExport', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1190', '流程详情',    '126', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:query',     '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1191', '流程删除',    '126', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:remove',    '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1192', '流程取消',    '126', '3', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:cancel',    '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1193', '我的流程导出', '126', '4', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:ownExport', '#', 'admin', sysdate(), '', null, '');
 -- 待办任务
-insert into sys_menu values('1200', '流程办理',    '127', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:approval',   '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1201', '待办流程导出', '127', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:todoExport', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1200', '流程办理',    '127', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:approval',   '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1201', '待办流程导出', '127', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:todoExport', '#', 'admin', sysdate(), '', null, '');
 -- 待签任务
-insert into sys_menu values('1210', '流程签收',    '128', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:claim',        '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1211', '待签流程导出', '128', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:claimExport',  '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1210', '流程签收',    '128', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:claim',        '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1211', '待签流程导出', '128', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:claimExport',  '#', 'admin', sysdate(), '', null, '');
 -- 已办任务
-insert into sys_menu values('1220', '流程撤回',    '129', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:revoke',         '#', 'admin', sysdate(), '', null, '');
-insert into sys_menu values('1221', '已办流程导出', '129', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:finishedExport', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1220', '流程撤回',    '129', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:revoke',         '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1221', '已办流程导出', '129', '2', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:finishedExport', '#', 'admin', sysdate(), '', null, '');
 -- 抄送我的
-insert into sys_menu values('1230', '抄送流程导出', '130', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:copyExport', '#', 'admin', sysdate(), '', null, '');
+insert into zqzt_sys_menu values('1230', '抄送流程导出', '130', '1', '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:copyExport', '#', 'admin', sysdate(), '', null, '');
 
 -- ----------------------------
 -- 6、用户和角色关联表  用户N-1角色
 -- ----------------------------
-drop table if exists sys_user_role;
-create table sys_user_role (
+drop table if exists zqzt_sys_user_role;
+create table zqzt_sys_user_role (
   user_id   bigint(20) not null comment '用户ID',
   role_id   bigint(20) not null comment '角色ID',
   primary key(user_id, role_id)
@@ -333,15 +333,15 @@ create table sys_user_role (
 -- ----------------------------
 -- 初始化-用户和角色关联表数据
 -- ----------------------------
-insert into sys_user_role values ('1', '1');
-insert into sys_user_role values ('2', '2');
+insert into zqzt_sys_user_role values ('1', '1');
+insert into zqzt_sys_user_role values ('2', '2');
 
 
 -- ----------------------------
 -- 7、角色和菜单关联表  角色1-N菜单
 -- ----------------------------
-drop table if exists sys_role_menu;
-create table sys_role_menu (
+drop table if exists zqzt_sys_role_menu;
+create table zqzt_sys_role_menu (
   role_id   bigint(20) not null comment '角色ID',
   menu_id   bigint(20) not null comment '菜单ID',
   primary key(role_id, menu_id)
@@ -350,142 +350,142 @@ create table sys_role_menu (
 -- ----------------------------
 -- 初始化-角色和菜单关联表数据
 -- ----------------------------
-insert into sys_role_menu values ('2', '1');
-insert into sys_role_menu values ('2', '2');
-insert into sys_role_menu values ('2', '3');
-insert into sys_role_menu values ('2', '4');
-insert into sys_role_menu values ('2', '5');
-insert into sys_role_menu values ('2', '100');
-insert into sys_role_menu values ('2', '101');
-insert into sys_role_menu values ('2', '102');
-insert into sys_role_menu values ('2', '103');
-insert into sys_role_menu values ('2', '104');
-insert into sys_role_menu values ('2', '105');
-insert into sys_role_menu values ('2', '106');
-insert into sys_role_menu values ('2', '107');
-insert into sys_role_menu values ('2', '108');
-insert into sys_role_menu values ('2', '109');
-insert into sys_role_menu values ('2', '111');
-insert into sys_role_menu values ('2', '112');
-insert into sys_role_menu values ('2', '113');
-insert into sys_role_menu values ('2', '114');
-insert into sys_role_menu values ('2', '115');
-insert into sys_role_menu values ('2', '117');
-insert into sys_role_menu values ('2', '118');
-insert into sys_role_menu values ('2', '120');
-insert into sys_role_menu values ('2', '121');
-insert into sys_role_menu values ('2', '122');
-insert into sys_role_menu values ('2', '123');
-insert into sys_role_menu values ('2', '124');
-insert into sys_role_menu values ('2', '125');
-insert into sys_role_menu values ('2', '126');
-insert into sys_role_menu values ('2', '127');
-insert into sys_role_menu values ('2', '128');
-insert into sys_role_menu values ('2', '129');
-insert into sys_role_menu values ('2', '130');
-insert into sys_role_menu values ('2', '500');
-insert into sys_role_menu values ('2', '501');
-insert into sys_role_menu values ('2', '1001');
-insert into sys_role_menu values ('2', '1002');
-insert into sys_role_menu values ('2', '1003');
-insert into sys_role_menu values ('2', '1004');
-insert into sys_role_menu values ('2', '1005');
-insert into sys_role_menu values ('2', '1006');
-insert into sys_role_menu values ('2', '1007');
-insert into sys_role_menu values ('2', '1010');
-insert into sys_role_menu values ('2', '1011');
-insert into sys_role_menu values ('2', '1012');
-insert into sys_role_menu values ('2', '1013');
-insert into sys_role_menu values ('2', '1014');
-insert into sys_role_menu values ('2', '1020');
-insert into sys_role_menu values ('2', '1021');
-insert into sys_role_menu values ('2', '1022');
-insert into sys_role_menu values ('2', '1023');
-insert into sys_role_menu values ('2', '1030');
-insert into sys_role_menu values ('2', '1031');
-insert into sys_role_menu values ('2', '1032');
-insert into sys_role_menu values ('2', '1033');
-insert into sys_role_menu values ('2', '1040');
-insert into sys_role_menu values ('2', '1041');
-insert into sys_role_menu values ('2', '1042');
-insert into sys_role_menu values ('2', '1043');
-insert into sys_role_menu values ('2', '1044');
-insert into sys_role_menu values ('2', '1050');
-insert into sys_role_menu values ('2', '1051');
-insert into sys_role_menu values ('2', '1052');
-insert into sys_role_menu values ('2', '1053');
-insert into sys_role_menu values ('2', '1054');
-insert into sys_role_menu values ('2', '1060');
-insert into sys_role_menu values ('2', '1061');
-insert into sys_role_menu values ('2', '1062');
-insert into sys_role_menu values ('2', '1063');
-insert into sys_role_menu values ('2', '1064');
-insert into sys_role_menu values ('2', '1070');
-insert into sys_role_menu values ('2', '1071');
-insert into sys_role_menu values ('2', '1072');
-insert into sys_role_menu values ('2', '1073');
-insert into sys_role_menu values ('2', '1080');
-insert into sys_role_menu values ('2', '1081');
-insert into sys_role_menu values ('2', '1082');
-insert into sys_role_menu values ('2', '1090');
-insert into sys_role_menu values ('2', '1091');
-insert into sys_role_menu values ('2', '1092');
-insert into sys_role_menu values ('2', '1093');
-insert into sys_role_menu values ('2', '1100');
-insert into sys_role_menu values ('2', '1101');
-insert into sys_role_menu values ('2', '1102');
-insert into sys_role_menu values ('2', '1120');
-insert into sys_role_menu values ('2', '1121');
-insert into sys_role_menu values ('2', '1122');
-insert into sys_role_menu values ('2', '1123');
-insert into sys_role_menu values ('2', '1124');
-insert into sys_role_menu values ('2', '1125');
-insert into sys_role_menu values ('2', '1130');
-insert into sys_role_menu values ('2', '1131');
-insert into sys_role_menu values ('2', '1132');
-insert into sys_role_menu values ('2', '1133');
-insert into sys_role_menu values ('2', '1134');
-insert into sys_role_menu values ('2', '1135');
-insert into sys_role_menu values ('2', '1140');
-insert into sys_role_menu values ('2', '1141');
-insert into sys_role_menu values ('2', '1142');
-insert into sys_role_menu values ('2', '1143');
-insert into sys_role_menu values ('2', '1150');
-insert into sys_role_menu values ('2', '1151');
-insert into sys_role_menu values ('2', '1152');
-insert into sys_role_menu values ('2', '1153');
-insert into sys_role_menu values ('2', '1154');
-insert into sys_role_menu values ('2', '1160');
-insert into sys_role_menu values ('2', '1161');
-insert into sys_role_menu values ('2', '1162');
-insert into sys_role_menu values ('2', '1163');
-insert into sys_role_menu values ('2', '1164');
-insert into sys_role_menu values ('2', '1165');
-insert into sys_role_menu values ('2', '1166');
-insert into sys_role_menu values ('2', '1167');
-insert into sys_role_menu values ('2', '1168');
-insert into sys_role_menu values ('2', '1170');
-insert into sys_role_menu values ('2', '1171');
-insert into sys_role_menu values ('2', '1172');
-insert into sys_role_menu values ('2', '1180');
-insert into sys_role_menu values ('2', '1181');
-insert into sys_role_menu values ('2', '1190');
-insert into sys_role_menu values ('2', '1191');
-insert into sys_role_menu values ('2', '1192');
-insert into sys_role_menu values ('2', '1193');
-insert into sys_role_menu values ('2', '1200');
-insert into sys_role_menu values ('2', '1201');
-insert into sys_role_menu values ('2', '1210');
-insert into sys_role_menu values ('2', '1211');
-insert into sys_role_menu values ('2', '1220');
-insert into sys_role_menu values ('2', '1221');
-insert into sys_role_menu values ('2', '1230');
+insert into zqzt_sys_role_menu values ('2', '1');
+insert into zqzt_sys_role_menu values ('2', '2');
+insert into zqzt_sys_role_menu values ('2', '3');
+insert into zqzt_sys_role_menu values ('2', '4');
+insert into zqzt_sys_role_menu values ('2', '5');
+insert into zqzt_sys_role_menu values ('2', '100');
+insert into zqzt_sys_role_menu values ('2', '101');
+insert into zqzt_sys_role_menu values ('2', '102');
+insert into zqzt_sys_role_menu values ('2', '103');
+insert into zqzt_sys_role_menu values ('2', '104');
+insert into zqzt_sys_role_menu values ('2', '105');
+insert into zqzt_sys_role_menu values ('2', '106');
+insert into zqzt_sys_role_menu values ('2', '107');
+insert into zqzt_sys_role_menu values ('2', '108');
+insert into zqzt_sys_role_menu values ('2', '109');
+insert into zqzt_sys_role_menu values ('2', '111');
+insert into zqzt_sys_role_menu values ('2', '112');
+insert into zqzt_sys_role_menu values ('2', '113');
+insert into zqzt_sys_role_menu values ('2', '114');
+insert into zqzt_sys_role_menu values ('2', '115');
+insert into zqzt_sys_role_menu values ('2', '117');
+insert into zqzt_sys_role_menu values ('2', '118');
+insert into zqzt_sys_role_menu values ('2', '120');
+insert into zqzt_sys_role_menu values ('2', '121');
+insert into zqzt_sys_role_menu values ('2', '122');
+insert into zqzt_sys_role_menu values ('2', '123');
+insert into zqzt_sys_role_menu values ('2', '124');
+insert into zqzt_sys_role_menu values ('2', '125');
+insert into zqzt_sys_role_menu values ('2', '126');
+insert into zqzt_sys_role_menu values ('2', '127');
+insert into zqzt_sys_role_menu values ('2', '128');
+insert into zqzt_sys_role_menu values ('2', '129');
+insert into zqzt_sys_role_menu values ('2', '130');
+insert into zqzt_sys_role_menu values ('2', '500');
+insert into zqzt_sys_role_menu values ('2', '501');
+insert into zqzt_sys_role_menu values ('2', '1001');
+insert into zqzt_sys_role_menu values ('2', '1002');
+insert into zqzt_sys_role_menu values ('2', '1003');
+insert into zqzt_sys_role_menu values ('2', '1004');
+insert into zqzt_sys_role_menu values ('2', '1005');
+insert into zqzt_sys_role_menu values ('2', '1006');
+insert into zqzt_sys_role_menu values ('2', '1007');
+insert into zqzt_sys_role_menu values ('2', '1010');
+insert into zqzt_sys_role_menu values ('2', '1011');
+insert into zqzt_sys_role_menu values ('2', '1012');
+insert into zqzt_sys_role_menu values ('2', '1013');
+insert into zqzt_sys_role_menu values ('2', '1014');
+insert into zqzt_sys_role_menu values ('2', '1020');
+insert into zqzt_sys_role_menu values ('2', '1021');
+insert into zqzt_sys_role_menu values ('2', '1022');
+insert into zqzt_sys_role_menu values ('2', '1023');
+insert into zqzt_sys_role_menu values ('2', '1030');
+insert into zqzt_sys_role_menu values ('2', '1031');
+insert into zqzt_sys_role_menu values ('2', '1032');
+insert into zqzt_sys_role_menu values ('2', '1033');
+insert into zqzt_sys_role_menu values ('2', '1040');
+insert into zqzt_sys_role_menu values ('2', '1041');
+insert into zqzt_sys_role_menu values ('2', '1042');
+insert into zqzt_sys_role_menu values ('2', '1043');
+insert into zqzt_sys_role_menu values ('2', '1044');
+insert into zqzt_sys_role_menu values ('2', '1050');
+insert into zqzt_sys_role_menu values ('2', '1051');
+insert into zqzt_sys_role_menu values ('2', '1052');
+insert into zqzt_sys_role_menu values ('2', '1053');
+insert into zqzt_sys_role_menu values ('2', '1054');
+insert into zqzt_sys_role_menu values ('2', '1060');
+insert into zqzt_sys_role_menu values ('2', '1061');
+insert into zqzt_sys_role_menu values ('2', '1062');
+insert into zqzt_sys_role_menu values ('2', '1063');
+insert into zqzt_sys_role_menu values ('2', '1064');
+insert into zqzt_sys_role_menu values ('2', '1070');
+insert into zqzt_sys_role_menu values ('2', '1071');
+insert into zqzt_sys_role_menu values ('2', '1072');
+insert into zqzt_sys_role_menu values ('2', '1073');
+insert into zqzt_sys_role_menu values ('2', '1080');
+insert into zqzt_sys_role_menu values ('2', '1081');
+insert into zqzt_sys_role_menu values ('2', '1082');
+insert into zqzt_sys_role_menu values ('2', '1090');
+insert into zqzt_sys_role_menu values ('2', '1091');
+insert into zqzt_sys_role_menu values ('2', '1092');
+insert into zqzt_sys_role_menu values ('2', '1093');
+insert into zqzt_sys_role_menu values ('2', '1100');
+insert into zqzt_sys_role_menu values ('2', '1101');
+insert into zqzt_sys_role_menu values ('2', '1102');
+insert into zqzt_sys_role_menu values ('2', '1120');
+insert into zqzt_sys_role_menu values ('2', '1121');
+insert into zqzt_sys_role_menu values ('2', '1122');
+insert into zqzt_sys_role_menu values ('2', '1123');
+insert into zqzt_sys_role_menu values ('2', '1124');
+insert into zqzt_sys_role_menu values ('2', '1125');
+insert into zqzt_sys_role_menu values ('2', '1130');
+insert into zqzt_sys_role_menu values ('2', '1131');
+insert into zqzt_sys_role_menu values ('2', '1132');
+insert into zqzt_sys_role_menu values ('2', '1133');
+insert into zqzt_sys_role_menu values ('2', '1134');
+insert into zqzt_sys_role_menu values ('2', '1135');
+insert into zqzt_sys_role_menu values ('2', '1140');
+insert into zqzt_sys_role_menu values ('2', '1141');
+insert into zqzt_sys_role_menu values ('2', '1142');
+insert into zqzt_sys_role_menu values ('2', '1143');
+insert into zqzt_sys_role_menu values ('2', '1150');
+insert into zqzt_sys_role_menu values ('2', '1151');
+insert into zqzt_sys_role_menu values ('2', '1152');
+insert into zqzt_sys_role_menu values ('2', '1153');
+insert into zqzt_sys_role_menu values ('2', '1154');
+insert into zqzt_sys_role_menu values ('2', '1160');
+insert into zqzt_sys_role_menu values ('2', '1161');
+insert into zqzt_sys_role_menu values ('2', '1162');
+insert into zqzt_sys_role_menu values ('2', '1163');
+insert into zqzt_sys_role_menu values ('2', '1164');
+insert into zqzt_sys_role_menu values ('2', '1165');
+insert into zqzt_sys_role_menu values ('2', '1166');
+insert into zqzt_sys_role_menu values ('2', '1167');
+insert into zqzt_sys_role_menu values ('2', '1168');
+insert into zqzt_sys_role_menu values ('2', '1170');
+insert into zqzt_sys_role_menu values ('2', '1171');
+insert into zqzt_sys_role_menu values ('2', '1172');
+insert into zqzt_sys_role_menu values ('2', '1180');
+insert into zqzt_sys_role_menu values ('2', '1181');
+insert into zqzt_sys_role_menu values ('2', '1190');
+insert into zqzt_sys_role_menu values ('2', '1191');
+insert into zqzt_sys_role_menu values ('2', '1192');
+insert into zqzt_sys_role_menu values ('2', '1193');
+insert into zqzt_sys_role_menu values ('2', '1200');
+insert into zqzt_sys_role_menu values ('2', '1201');
+insert into zqzt_sys_role_menu values ('2', '1210');
+insert into zqzt_sys_role_menu values ('2', '1211');
+insert into zqzt_sys_role_menu values ('2', '1220');
+insert into zqzt_sys_role_menu values ('2', '1221');
+insert into zqzt_sys_role_menu values ('2', '1230');
 
 -- ----------------------------
 -- 8、角色和部门关联表  角色1-N部门
 -- ----------------------------
-drop table if exists sys_role_dept;
-create table sys_role_dept (
+drop table if exists zqzt_sys_role_dept;
+create table zqzt_sys_role_dept (
   role_id   bigint(20) not null comment '角色ID',
   dept_id   bigint(20) not null comment '部门ID',
   primary key(role_id, dept_id)
@@ -494,16 +494,16 @@ create table sys_role_dept (
 -- ----------------------------
 -- 初始化-角色和部门关联表数据
 -- ----------------------------
-insert into sys_role_dept values ('2', '100');
-insert into sys_role_dept values ('2', '101');
-insert into sys_role_dept values ('2', '105');
+insert into zqzt_sys_role_dept values ('2', '100');
+insert into zqzt_sys_role_dept values ('2', '101');
+insert into zqzt_sys_role_dept values ('2', '105');
 
 
 -- ----------------------------
 -- 9、用户与岗位关联表  用户1-N岗位
 -- ----------------------------
-drop table if exists sys_user_post;
-create table sys_user_post
+drop table if exists zqzt_sys_user_post;
+create table zqzt_sys_user_post
 (
   user_id   bigint(20) not null comment '用户ID',
   post_id   bigint(20) not null comment '岗位ID',
@@ -513,15 +513,15 @@ create table sys_user_post
 -- ----------------------------
 -- 初始化-用户与岗位关联表数据
 -- ----------------------------
-insert into sys_user_post values ('1', '1');
-insert into sys_user_post values ('2', '2');
+insert into zqzt_sys_user_post values ('1', '1');
+insert into zqzt_sys_user_post values ('2', '2');
 
 
 -- ----------------------------
 -- 10、操作日志记录
 -- ----------------------------
-drop table if exists sys_oper_log;
-create table sys_oper_log (
+drop table if exists zqzt_sys_oper_log;
+create table zqzt_sys_oper_log (
   oper_id           bigint(20)      not null                   comment '日志主键',
   title             varchar(50)     default ''                 comment '模块标题',
   business_type     int(2)          default 0                  comment '业务类型（0其它 1新增 2修改 3删除）',
@@ -545,8 +545,8 @@ create table sys_oper_log (
 -- ----------------------------
 -- 11、字典类型表
 -- ----------------------------
-drop table if exists sys_dict_type;
-create table sys_dict_type
+drop table if exists zqzt_sys_dict_type;
+create table zqzt_sys_dict_type
 (
   dict_id          bigint(20)      not null                   comment '字典主键',
   dict_name        varchar(100)    default ''                 comment '字典名称',
@@ -561,22 +561,22 @@ create table sys_dict_type
   unique (dict_type)
 ) engine=innodb comment = '字典类型表';
 
-insert into sys_dict_type values(1,  '用户性别', 'sys_user_sex',        '0', 'admin', sysdate(), '', null, '用户性别列表');
-insert into sys_dict_type values(2,  '菜单状态', 'sys_show_hide',       '0', 'admin', sysdate(), '', null, '菜单状态列表');
-insert into sys_dict_type values(3,  '系统开关', 'sys_normal_disable',  '0', 'admin', sysdate(), '', null, '系统开关列表');
-insert into sys_dict_type values(6,  '系统是否', 'sys_yes_no',          '0', 'admin', sysdate(), '', null, '系统是否列表');
-insert into sys_dict_type values(7,  '通知类型', 'sys_notice_type',     '0', 'admin', sysdate(), '', null, '通知类型列表');
-insert into sys_dict_type values(8,  '通知状态', 'sys_notice_status',   '0', 'admin', sysdate(), '', null, '通知状态列表');
-insert into sys_dict_type values(9,  '操作类型', 'sys_oper_type',       '0', 'admin', sysdate(), '', null, '操作类型列表');
-insert into sys_dict_type values(10, '系统状态', 'sys_common_status',   '0', 'admin', sysdate(), '', null, '登录状态列表');
-insert into sys_dict_type values(11, '流程状态', 'wf_process_status',   '0', 'admin', sysdate(), '', null, '工作流程状态');
+insert into zqzt_sys_dict_type values(1,  '用户性别', 'sys_user_sex',        '0', 'admin', sysdate(), '', null, '用户性别列表');
+insert into zqzt_sys_dict_type values(2,  '菜单状态', 'sys_show_hide',       '0', 'admin', sysdate(), '', null, '菜单状态列表');
+insert into zqzt_sys_dict_type values(3,  '系统开关', 'sys_normal_disable',  '0', 'admin', sysdate(), '', null, '系统开关列表');
+insert into zqzt_sys_dict_type values(6,  '系统是否', 'sys_yes_no',          '0', 'admin', sysdate(), '', null, '系统是否列表');
+insert into zqzt_sys_dict_type values(7,  '通知类型', 'sys_notice_type',     '0', 'admin', sysdate(), '', null, '通知类型列表');
+insert into zqzt_sys_dict_type values(8,  '通知状态', 'sys_notice_status',   '0', 'admin', sysdate(), '', null, '通知状态列表');
+insert into zqzt_sys_dict_type values(9,  '操作类型', 'sys_oper_type',       '0', 'admin', sysdate(), '', null, '操作类型列表');
+insert into zqzt_sys_dict_type values(10, '系统状态', 'sys_common_status',   '0', 'admin', sysdate(), '', null, '登录状态列表');
+insert into zqzt_sys_dict_type values(11, '流程状态', 'wf_process_status',   '0', 'admin', sysdate(), '', null, '工作流程状态');
 
 
 -- ----------------------------
 -- 12、字典数据表
 -- ----------------------------
-drop table if exists sys_dict_data;
-create table sys_dict_data
+drop table if exists zqzt_sys_dict_data;
+create table zqzt_sys_dict_data
 (
   dict_code        bigint(20)      not null                   comment '字典编码',
   dict_sort        int(4)          default 0                  comment '字典排序',
@@ -595,42 +595,42 @@ create table sys_dict_data
   primary key (dict_code)
 ) engine=innodb comment = '字典数据表';
 
-insert into sys_dict_data values(1,  1,  '男',       '0',          'sys_user_sex',        '',   '',        'Y', '0', 'admin', sysdate(), '', null, '性别男');
-insert into sys_dict_data values(2,  2,  '女',       '1',          'sys_user_sex',        '',   '',        'N', '0', 'admin', sysdate(), '', null, '性别女');
-insert into sys_dict_data values(3,  3,  '未知',     '2',          'sys_user_sex',        '',   '',        'N', '0', 'admin', sysdate(), '', null, '性别未知');
-insert into sys_dict_data values(4,  1,  '显示',     '0',          'sys_show_hide',       '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '显示菜单');
-insert into sys_dict_data values(5,  2,  '隐藏',     '1',          'sys_show_hide',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '隐藏菜单');
-insert into sys_dict_data values(6,  1,  '正常',     '0',          'sys_normal_disable',  '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '正常状态');
-insert into sys_dict_data values(7,  2,  '停用',     '1',          'sys_normal_disable',  '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '停用状态');
-insert into sys_dict_data values(12, 1,  '是',       'Y',          'sys_yes_no',          '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '系统默认是');
-insert into sys_dict_data values(13, 2,  '否',       'N',          'sys_yes_no',          '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '系统默认否');
-insert into sys_dict_data values(14, 1,  '通知',     '1',          'sys_notice_type',     '',   'warning', 'Y', '0', 'admin', sysdate(), '', null, '通知');
-insert into sys_dict_data values(15, 2,  '公告',     '2',          'sys_notice_type',     '',   'success', 'N', '0', 'admin', sysdate(), '', null, '公告');
-insert into sys_dict_data values(16, 1,  '正常',     '0',          'sys_notice_status',   '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '正常状态');
-insert into sys_dict_data values(17, 2,  '关闭',     '1',          'sys_notice_status',   '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '关闭状态');
-insert into sys_dict_data values(29, 99, '其他',     '0',          'sys_oper_type',       '',   'info',    'N', '0', 'admin', sysdate(), '', null, '其他操作');
-insert into sys_dict_data values(18, 1,  '新增',     '1',          'sys_oper_type',       '',   'info',    'N', '0', 'admin', sysdate(), '', null, '新增操作');
-insert into sys_dict_data values(19, 2,  '修改',     '2',          'sys_oper_type',       '',   'info',    'N', '0', 'admin', sysdate(), '', null, '修改操作');
-insert into sys_dict_data values(20, 3,  '删除',     '3',          'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '删除操作');
-insert into sys_dict_data values(21, 4,  '授权',     '4',          'sys_oper_type',       '',   'primary', 'N', '0', 'admin', sysdate(), '', null, '授权操作');
-insert into sys_dict_data values(22, 5,  '导出',     '5',          'sys_oper_type',       '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '导出操作');
-insert into sys_dict_data values(23, 6,  '导入',     '6',          'sys_oper_type',       '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '导入操作');
-insert into sys_dict_data values(24, 7,  '强退',     '7',          'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '强退操作');
-insert into sys_dict_data values(25, 8,  '生成代码', '8',          'sys_oper_type',       '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '生成操作');
-insert into sys_dict_data values(26, 9,  '清空数据', '9',          'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '清空操作');
-insert into sys_dict_data values(27, 1,  '成功',     '0',          'sys_common_status',   '',   'primary', 'N', '0', 'admin', sysdate(), '', null, '正常状态');
-insert into sys_dict_data values(28, 2,  '失败',     '1',          'sys_common_status',   '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '停用状态');
-insert into sys_dict_data values(30, 1,  '进行中',   'running',    'wf_process_status',   '',   'primary',  'N', '0', 'admin', sysdate(), '', null, '进行中状态');
-insert into sys_dict_data values(31, 2,  '已终止',   'terminated', 'wf_process_status',   '',   'danger',   'N', '0', 'admin', sysdate(), '', null, '已终止状态');
-insert into sys_dict_data values(32, 3,  '已完成',   'completed',  'wf_process_status',   '',   'success',  'N', '0', 'admin', sysdate(), '', null, '已完成状态');
-insert into sys_dict_data values(33, 4,  '已取消',   'canceled',   'wf_process_status',   '',   'warning',  'N', '0', 'admin', sysdate(), '', null, '已取消状态');
+insert into zqzt_sys_dict_data values(1,  1,  '男',       '0',          'sys_user_sex',        '',   '',        'Y', '0', 'admin', sysdate(), '', null, '性别男');
+insert into zqzt_sys_dict_data values(2,  2,  '女',       '1',          'sys_user_sex',        '',   '',        'N', '0', 'admin', sysdate(), '', null, '性别女');
+insert into zqzt_sys_dict_data values(3,  3,  '未知',     '2',          'sys_user_sex',        '',   '',        'N', '0', 'admin', sysdate(), '', null, '性别未知');
+insert into zqzt_sys_dict_data values(4,  1,  '显示',     '0',          'sys_show_hide',       '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '显示菜单');
+insert into zqzt_sys_dict_data values(5,  2,  '隐藏',     '1',          'sys_show_hide',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '隐藏菜单');
+insert into zqzt_sys_dict_data values(6,  1,  '正常',     '0',          'sys_normal_disable',  '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '正常状态');
+insert into zqzt_sys_dict_data values(7,  2,  '停用',     '1',          'sys_normal_disable',  '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '停用状态');
+insert into zqzt_sys_dict_data values(12, 1,  '是',       'Y',          'sys_yes_no',          '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '系统默认是');
+insert into zqzt_sys_dict_data values(13, 2,  '否',       'N',          'sys_yes_no',          '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '系统默认否');
+insert into zqzt_sys_dict_data values(14, 1,  '通知',     '1',          'sys_notice_type',     '',   'warning', 'Y', '0', 'admin', sysdate(), '', null, '通知');
+insert into zqzt_sys_dict_data values(15, 2,  '公告',     '2',          'sys_notice_type',     '',   'success', 'N', '0', 'admin', sysdate(), '', null, '公告');
+insert into zqzt_sys_dict_data values(16, 1,  '正常',     '0',          'sys_notice_status',   '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '正常状态');
+insert into zqzt_sys_dict_data values(17, 2,  '关闭',     '1',          'sys_notice_status',   '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '关闭状态');
+insert into zqzt_sys_dict_data values(29, 99, '其他',     '0',          'sys_oper_type',       '',   'info',    'N', '0', 'admin', sysdate(), '', null, '其他操作');
+insert into zqzt_sys_dict_data values(18, 1,  '新增',     '1',          'sys_oper_type',       '',   'info',    'N', '0', 'admin', sysdate(), '', null, '新增操作');
+insert into zqzt_sys_dict_data values(19, 2,  '修改',     '2',          'sys_oper_type',       '',   'info',    'N', '0', 'admin', sysdate(), '', null, '修改操作');
+insert into zqzt_sys_dict_data values(20, 3,  '删除',     '3',          'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '删除操作');
+insert into zqzt_sys_dict_data values(21, 4,  '授权',     '4',          'sys_oper_type',       '',   'primary', 'N', '0', 'admin', sysdate(), '', null, '授权操作');
+insert into zqzt_sys_dict_data values(22, 5,  '导出',     '5',          'sys_oper_type',       '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '导出操作');
+insert into zqzt_sys_dict_data values(23, 6,  '导入',     '6',          'sys_oper_type',       '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '导入操作');
+insert into zqzt_sys_dict_data values(24, 7,  '强退',     '7',          'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '强退操作');
+insert into zqzt_sys_dict_data values(25, 8,  '生成代码', '8',          'sys_oper_type',       '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '生成操作');
+insert into zqzt_sys_dict_data values(26, 9,  '清空数据', '9',          'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '清空操作');
+insert into zqzt_sys_dict_data values(27, 1,  '成功',     '0',          'sys_common_status',   '',   'primary', 'N', '0', 'admin', sysdate(), '', null, '正常状态');
+insert into zqzt_sys_dict_data values(28, 2,  '失败',     '1',          'sys_common_status',   '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '停用状态');
+insert into zqzt_sys_dict_data values(30, 1,  '进行中',   'running',    'wf_process_status',   '',   'primary',  'N', '0', 'admin', sysdate(), '', null, '进行中状态');
+insert into zqzt_sys_dict_data values(31, 2,  '已终止',   'terminated', 'wf_process_status',   '',   'danger',   'N', '0', 'admin', sysdate(), '', null, '已终止状态');
+insert into zqzt_sys_dict_data values(32, 3,  '已完成',   'completed',  'wf_process_status',   '',   'success',  'N', '0', 'admin', sysdate(), '', null, '已完成状态');
+insert into zqzt_sys_dict_data values(33, 4,  '已取消',   'canceled',   'wf_process_status',   '',   'warning',  'N', '0', 'admin', sysdate(), '', null, '已取消状态');
 
 
 -- ----------------------------
 -- 13、参数配置表
 -- ----------------------------
-drop table if exists sys_config;
-create table sys_config (
+drop table if exists zqzt_sys_config;
+create table zqzt_sys_config (
   config_id         bigint(20)      not null                   comment '参数主键',
   config_name       varchar(100)    default ''                 comment '参数名称',
   config_key        varchar(100)    default ''                 comment '参数键名',
@@ -644,19 +644,19 @@ create table sys_config (
   primary key (config_id)
 ) engine=innodb comment = '参数配置表';
 
-insert into sys_config values(1, '主框架页-默认皮肤样式名称',     'sys.index.skinName',            'skin-blue',     'Y', 'admin', sysdate(), '', null, '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow' );
-insert into sys_config values(2, '用户管理-账号初始密码',        'sys.user.initPassword',         '123456',        'Y', 'admin', sysdate(), '', null, '初始化密码 123456' );
-insert into sys_config values(3, '主框架页-侧边栏主题',          'sys.index.sideTheme',           'theme-dark',    'Y', 'admin', sysdate(), '', null, '深色主题theme-dark，浅色主题theme-light' );
-insert into sys_config values(4, '账号自助-验证码开关',          'sys.account.captchaEnabled',    'true',          'Y', 'admin', sysdate(), '', null, '是否开启验证码功能（true开启，false关闭）');
-insert into sys_config values(5, '账号自助-是否开启用户注册功能',  'sys.account.registerUser',      'false',         'Y', 'admin', sysdate(), '', null, '是否开启注册用户功能（true开启，false关闭）');
-insert into sys_config values(11, 'OSS预览列表资源开关',         'sys.oss.previewListResource',   'true',          'Y', 'admin', sysdate(), '', null, 'true:开启, false:关闭');
+insert into zqzt_sys_config values(1, '主框架页-默认皮肤样式名称',     'sys.index.skinName',            'skin-blue',     'Y', 'admin', sysdate(), '', null, '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow' );
+insert into zqzt_sys_config values(2, '用户管理-账号初始密码',        'sys.user.initPassword',         '123456',        'Y', 'admin', sysdate(), '', null, '初始化密码 123456' );
+insert into zqzt_sys_config values(3, '主框架页-侧边栏主题',          'sys.index.sideTheme',           'theme-dark',    'Y', 'admin', sysdate(), '', null, '深色主题theme-dark，浅色主题theme-light' );
+insert into zqzt_sys_config values(4, '账号自助-验证码开关',          'sys.account.captchaEnabled',    'true',          'Y', 'admin', sysdate(), '', null, '是否开启验证码功能（true开启，false关闭）');
+insert into zqzt_sys_config values(5, '账号自助-是否开启用户注册功能',  'sys.account.registerUser',      'false',         'Y', 'admin', sysdate(), '', null, '是否开启注册用户功能（true开启，false关闭）');
+insert into zqzt_sys_config values(11, 'OSS预览列表资源开关',         'sys.oss.previewListResource',   'true',          'Y', 'admin', sysdate(), '', null, 'true:开启, false:关闭');
 
 
 -- ----------------------------
 -- 14、系统访问记录
 -- ----------------------------
-drop table if exists sys_logininfor;
-create table sys_logininfor (
+drop table if exists zqzt_sys_logininfor;
+create table zqzt_sys_logininfor (
   info_id        bigint(20)     not null                  comment '访问ID',
   user_name      varchar(50)    default ''                comment '用户账号',
   ipaddr         varchar(128)   default ''                comment '登录IP地址',
@@ -673,8 +673,8 @@ create table sys_logininfor (
 -- ----------------------------
 -- 17、通知公告表
 -- ----------------------------
-drop table if exists sys_notice;
-create table sys_notice (
+drop table if exists zqzt_sys_notice;
+create table zqzt_sys_notice (
   notice_id         bigint(20)      not null                   comment '公告ID',
   notice_title      varchar(50)     not null                   comment '公告标题',
   notice_type       char(1)         not null                   comment '公告类型（1通知 2公告）',
@@ -691,15 +691,15 @@ create table sys_notice (
 -- ----------------------------
 -- 初始化-公告信息表数据
 -- ----------------------------
-insert into sys_notice values('1', '温馨提醒：2018-07-01 新版本发布啦', '2', '新版本内容', '0', 'admin', sysdate(), '', null, '管理员');
-insert into sys_notice values('2', '维护通知：2018-07-01 系统凌晨维护', '1', '维护内容',   '0', 'admin', sysdate(), '', null, '管理员');
+insert into zqzt_sys_notice values('1', '温馨提醒：2018-07-01 新版本发布啦', '2', '新版本内容', '0', 'admin', sysdate(), '', null, '管理员');
+insert into zqzt_sys_notice values('2', '维护通知：2018-07-01 系统凌晨维护', '1', '维护内容',   '0', 'admin', sysdate(), '', null, '管理员');
 
 
 -- ----------------------------
 -- 18、代码生成业务表
 -- ----------------------------
-drop table if exists gen_table;
-create table gen_table (
+drop table if exists zqzt_gen_table;
+create table zqzt_gen_table (
   table_id          bigint(20)      not null                   comment '编号',
   table_name        varchar(200)    default ''                 comment '表名称',
   table_comment     varchar(500)    default ''                 comment '表描述',
@@ -727,8 +727,8 @@ create table gen_table (
 -- ----------------------------
 -- 19、代码生成业务表字段
 -- ----------------------------
-drop table if exists gen_table_column;
-create table gen_table_column (
+drop table if exists zqzt_gen_table_column;
+create table zqzt_gen_table_column (
   column_id         bigint(20)      not null                   comment '编号',
   table_id          bigint(20)                                 comment '归属表编号',
   column_name       varchar(200)                               comment '列名称',
@@ -757,8 +757,8 @@ create table gen_table_column (
 -- ----------------------------
 -- OSS对象存储表
 -- ----------------------------
-drop table if exists sys_oss;
-create table sys_oss (
+drop table if exists zqzt_sys_oss;
+create table zqzt_sys_oss (
   oss_id          bigint(20)   not null                   comment '对象存储主键',
   file_name       varchar(255) not null default ''        comment '文件名',
   original_name   varchar(255) not null default ''        comment '原名',
@@ -775,8 +775,8 @@ create table sys_oss (
 -- ----------------------------
 -- OSS对象存储动态配置表
 -- ----------------------------
-drop table if exists sys_oss_config;
-create table sys_oss_config (
+drop table if exists zqzt_sys_oss_config;
+create table zqzt_sys_oss_config (
   oss_config_id   bigint(20)   not null                   comment '主建',
   config_key      varchar(20)  not null default ''        comment '配置key',
   access_key      varchar(255)            default ''      comment 'accessKey',
@@ -798,17 +798,17 @@ create table sys_oss_config (
   primary key (oss_config_id)
 ) engine=innodb comment='对象存储配置表';
 
-insert into sys_oss_config values (1, 'minio',  'crm',            'crm123',        'crm',             '', '127.0.0.1:9000',                '','N', '',             '1' ,'0', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
-insert into sys_oss_config values (2, 'qiniu',  'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'crm',             '', 's3-cn-north-1.qiniucs.com',     '','N', '',             '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
-insert into sys_oss_config values (3, 'aliyun', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'crm',             '', 'oss-cn-beijing.aliyuncs.com',   '','N', '',             '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
-insert into sys_oss_config values (4, 'qcloud', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'crm-1250000000',  '', 'cos.ap-beijing.myqcloud.com',   '','N', 'ap-beijing',   '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
-insert into sys_oss_config values (5, 'image',  'crm',            'crm123',        'crm',             'image', '127.0.0.1:9000',           '','N', '',             '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
+insert into zqzt_sys_oss_config values (1, 'minio',  'crm',            'crm123',        'crm',             '', '127.0.0.1:9000',                '','N', '',             '1' ,'0', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
+insert into zqzt_sys_oss_config values (2, 'qiniu',  'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'crm',             '', 's3-cn-north-1.qiniucs.com',     '','N', '',             '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
+insert into zqzt_sys_oss_config values (3, 'aliyun', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'crm',             '', 'oss-cn-beijing.aliyuncs.com',   '','N', '',             '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
+insert into zqzt_sys_oss_config values (4, 'qcloud', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'crm-1250000000',  '', 'cos.ap-beijing.myqcloud.com',   '','N', 'ap-beijing',   '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
+insert into zqzt_sys_oss_config values (5, 'image',  'crm',            'crm123',        'crm',             'image', '127.0.0.1:9000',           '','N', '',             '1' ,'1', '', 'admin', sysdate(), 'admin', sysdate(), NULL);
 
 -- ----------------------------
 -- wf_form流程表单信息表
 -- ----------------------------
-drop table if exists `wf_form`;
-create table `wf_form` (
+drop table if exists `zqzt_wf_form`;
+create table `zqzt_wf_form` (
    form_id      bigint(20)   not null auto_increment comment '表单主键',
    form_name    varchar(64)           default ''     comment '表单名称',
    content      longtext              default null   comment '表单内容',
@@ -825,8 +825,8 @@ create table `wf_form` (
 -- ----------------------------
 -- wf_deploy_form流程实例关联表
 -- ----------------------------
-drop table if exists `wf_deploy_form`;
-create table `wf_deploy_form` (
+drop table if exists `zqzt_wf_deploy_form`;
+create table `zqzt_wf_deploy_form` (
     deploy_id  varchar(64)     not null     comment '流程实例主键',
     form_key   varchar(64)     not null     comment '表单Key',
     node_key   varchar(64)     not null     comment '节点Key',
@@ -839,8 +839,8 @@ create table `wf_deploy_form` (
 -- ----------------------------
 -- wf_category流程分类表
 -- ----------------------------
-drop table if exists `wf_category`;
-create table `wf_category` (
+drop table if exists `zqzt_wf_category`;
+create table `zqzt_wf_category` (
     category_id   bigint       not null  auto_increment comment '流程分类id',
     category_name varchar(64)            default ''     comment '流程分类名称',
     code          varchar(64)            default ''     comment '分类编码',
@@ -856,8 +856,8 @@ create table `wf_category` (
 -- ----------------------------
 -- wf_copy流程抄送表
 -- ----------------------------
-drop table if exists `wf_copy`;
-create table `wf_copy` (
+drop table if exists `zqzt_wf_copy`;
+create table `zqzt_wf_copy` (
    copy_id         bigint        not null  auto_increment   comment '抄送主键',
    title           varchar(255)            default ''       comment '抄送标题',
    process_id      varchar(64)             default ''       comment '流程主键',

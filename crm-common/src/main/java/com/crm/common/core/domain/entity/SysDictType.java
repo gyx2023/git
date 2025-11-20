@@ -15,14 +15,14 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 /**
- * 字典类型表 sys_dict_type
+ * 字典类型表 zqzt_sys_dict_type
  *
  * @author Lion Li
  */
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_dict_type")
+@TableName("zqzt_sys_dict_type")
 @ExcelIgnoreUnannotated
 public class SysDictType extends BaseEntity {
 

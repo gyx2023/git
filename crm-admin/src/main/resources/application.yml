@@ -137,6 +137,8 @@ security:
     # actuator 监控配置
     - /actuator
     - /actuator/**
+    # SSO自动登录接口
+    - /sso/autoLogin
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -276,7 +278,7 @@ flowable:
   # 关闭定时任务 job
   async-executor-activate: false
   # 库与数据库表结构不一致时，会自动将数据库表结构升级至新版本。
-  database-schema-update: true
+  database-schema-update: false
   idm:
     # 关闭idm引擎 数据库不会创建act_id_*表，流程流转不会使用act_id_*相关的表
     enabled: false

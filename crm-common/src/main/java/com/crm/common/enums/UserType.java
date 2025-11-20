@@ -17,7 +17,7 @@ public enum UserType {
     /**
      * pc端
      */
-    SYS_USER("sys_user"),
+    SYS_USER("zqzt_sys_user"),
 
     /**
      * app端

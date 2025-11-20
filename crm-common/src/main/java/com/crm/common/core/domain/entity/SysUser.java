@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 用户对象 sys_user
+ * 用户对象 zqzt_sys_user
  *
  * @author Lion Li
  */
@@ -27,7 +27,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_user")
+@TableName("zqzt_sys_user")
 public class SysUser extends BaseEntity {
 
     /**

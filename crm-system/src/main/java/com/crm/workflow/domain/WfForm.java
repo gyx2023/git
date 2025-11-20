@@ -7,14 +7,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 流程表单对象 wf_form
+ * 流程表单对象 zqzt_wf_form
  *
  * @author KonBAI
  * @createTime 2022/3/7 22:07
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("wf_form")
+@TableName("zqzt_wf_form")
 public class WfForm extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
