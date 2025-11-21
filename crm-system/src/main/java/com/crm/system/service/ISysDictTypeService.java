@@ -4,6 +4,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.entity.SysDictType;
 import com.crm.common.core.page.TableDataInfo;
+import java.util.Map;
 
 import java.util.List;
 
@@ -39,6 +40,14 @@ public interface ISysDictTypeService {
      * @return 字典数据集合信息
      */
     List<SysDictData> selectDictDataByType(String dictType);
+
+    /**
+     * 批量根据字典类型查询字典数据
+     *
+     * @param dictTypes 字典类型列表
+     * @return 字典数据映射，key为字典类型，value为字典数据集合
+     */
+    Map<String, List<SysDictData>> selectDictDataByTypes(List<String> dictTypes);
 
     /**
      * 根据字典类型ID查询信息
