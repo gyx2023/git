@@ -1,5 +1,6 @@
 package com.crm;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
@@ -10,6 +11,7 @@ import org.springframework.boot.context.metrics.buffering.BufferingApplicationSt
  * @author crm
  */
 @SpringBootApplication
+@MapperScan("com.crm.customer.mapper")  // 添加这行
 public class CrmApplication {
 
     public static void main(String[] args) {

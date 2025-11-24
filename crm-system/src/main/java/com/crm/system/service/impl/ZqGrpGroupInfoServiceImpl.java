@@ -1,0 +1,141 @@
+package com.crm.system.service.impl;
+
+import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.utils.StringUtils;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.core.domain.PageQuery;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.service.IZqGrpGroupInfoService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
+import com.crm.system.mapper.ZqGrpGroupInfoMapper;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Collection;
+
+/**
+ * 政企集团客户信息Service业务层处理
+ *
+ * @author crm
+ * @date 2025-11-20
+ */
+@RequiredArgsConstructor
+@Service
+public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
+
+    private final ZqGrpGroupInfoMapper baseMapper;
+
+    /**
+     * 查询政企集团客户信息
+     */
+    @Override
+    public ZqGrpGroupInfoVo queryById(Long grpId){
+        return baseMapper.selectVoById(grpId);
+    }
+
+    /**
+     * 查询政企集团客户信息列表
+     */
+    @Override
+    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
+
+    /**
+     * 查询政企集团客户信息列表
+     */
+    @Override
+    public List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
+        Map<String, Object> params = bo.getParams();
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getGrpId() != null, ZqGrpGroupInfo::getGrpId, bo.getGrpId());
+        lqw.like(StringUtils.isNotBlank(bo.getGrpName()), ZqGrpGroupInfo::getGrpName, bo.getGrpName());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
+        lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId2()), ZqGrpGroupInfo::getCountyId2, bo.getCountyId2());
+        lqw.eq(StringUtils.isNotBlank(bo.getGridId()), ZqGrpGroupInfo::getGridId, bo.getGridId());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustryMajorKind()), ZqGrpGroupInfo::getIndustryMajorKind, bo.getIndustryMajorKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustrySubKind()), ZqGrpGroupInfo::getIndustrySubKind, bo.getIndustrySubKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustryDetailKind()), ZqGrpGroupInfo::getIndustryDetailKind, bo.getIndustryDetailKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ZqGrpGroupInfo::getBusiType, bo.getBusiType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCustType()), ZqGrpGroupInfo::getGrpCustType, bo.getGrpCustType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpExpandType()), ZqGrpGroupInfo::getGrpExpandType, bo.getGrpExpandType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpBusiDeptType()), ZqGrpGroupInfo::getGrpBusiDeptType, bo.getGrpBusiDeptType());
+        lqw.eq(StringUtils.isNotBlank(bo.getProvinceNewoldType()), ZqGrpGroupInfo::getProvinceNewoldType, bo.getProvinceNewoldType());
+        lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
+        lqw.eq(bo.getGrpCreateTime() != null, ZqGrpGroupInfo::getGrpCreateTime, bo.getGrpCreateTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
+        lqw.eq(StringUtils.isNotBlank(bo.getProvManagerOauser()), ZqGrpGroupInfo::getProvManagerOauser, bo.getProvManagerOauser());
+        lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCityManagerOauser()), ZqGrpGroupInfo::getCityManagerOauser, bo.getCityManagerOauser());
+        lqw.like(StringUtils.isNotBlank(bo.getCityManagerName()), ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupInfo::getCountyManagerEmpId, bo.getCountyManagerEmpId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerOauser()), ZqGrpGroupInfo::getCountyManagerOauser, bo.getCountyManagerOauser());
+        lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
+        lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
+        lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());
+        return lqw;
+    }
+
+    /**
+     * 新增政企集团客户信息
+     */
+    @Override
+    public Boolean insertByBo(ZqGrpGroupInfoBo bo) {
+        ZqGrpGroupInfo add = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
+        validEntityBeforeSave(add);
+        boolean flag = baseMapper.insert(add) > 0;
+        if (flag) {
+            bo.setGrpId(add.getGrpId());
+        }
+        return flag;
+    }
+
+    /**
+     * 修改政企集团客户信息
+     */
+    @Override
+    public Boolean updateByBo(ZqGrpGroupInfoBo bo) {
+        ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
+        validEntityBeforeSave(update);
+        return baseMapper.updateById(update) > 0;
+    }
+
+    /**
+     * 保存前的数据校验
+     */
+    private void validEntityBeforeSave(ZqGrpGroupInfo entity){
+        //TODO 做一些数据校验,如唯一约束
+    }
+
+    /**
+     * 批量删除政企集团客户信息
+     */
+    @Override
+    public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
+        if(isValid){
+            //TODO 做一些业务上的校验,判断是否需要校验
+        }
+        return baseMapper.deleteBatchIds(ids) > 0;
+    }
+}
