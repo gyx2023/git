@@ -1,0 +1,120 @@
+package com.crm.system.service.impl;
+
+import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.utils.StringUtils;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.core.domain.PageQuery;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import com.crm.system.domain.bo.SysAreaBo;
+import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.SysArea;
+import com.crm.system.mapper.SysAreaMapper;
+import com.crm.system.service.ISysAreaService;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Collection;
+
+/**
+ * 【请填写功能名称】Service业务层处理
+ *
+ * @author crm
+ * @date 2025-11-24
+ */
+@RequiredArgsConstructor
+@Service
+public class SysAreaServiceImpl implements ISysAreaService {
+
+    private final SysAreaMapper baseMapper;
+
+    /**
+     * 查询【请填写功能名称】
+     */
+    @Override
+    public SysAreaVo queryById(Long id){
+        return baseMapper.selectVoById(id);
+    }
+
+    /**
+     * 查询【请填写功能名称】列表
+     */
+    @Override
+    public TableDataInfo<SysAreaVo> queryPageList(SysAreaBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<SysArea> lqw = buildQueryWrapper(bo);
+        Page<SysAreaVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
+
+    /**
+     * 查询【请填写功能名称】列表
+     */
+    @Override
+    public List<SysAreaVo> queryList(SysAreaBo bo) {
+        LambdaQueryWrapper<SysArea> lqw = buildQueryWrapper(bo);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    private LambdaQueryWrapper<SysArea> buildQueryWrapper(SysAreaBo bo) {
+        Map<String, Object> params = bo.getParams();
+        LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(bo.getName()), SysArea::getName, bo.getName());
+        lqw.eq(StringUtils.isNotBlank(bo.getType()), SysArea::getType, bo.getType());
+        lqw.eq(bo.getParent() != null, SysArea::getParent, bo.getParent());
+        lqw.eq(StringUtils.isNotBlank(bo.getPinyin()), SysArea::getPinyin, bo.getPinyin());
+        lqw.eq(StringUtils.isNotBlank(bo.getLatlng()), SysArea::getLatlng, bo.getLatlng());
+        lqw.eq(StringUtils.isNotBlank(bo.getRemark()), SysArea::getRemark, bo.getRemark());
+        lqw.eq(StringUtils.isNotBlank(bo.getBssCode()), SysArea::getBssCode, bo.getBssCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getBssCodeParent()), SysArea::getBssCodeParent, bo.getBssCodeParent());
+        lqw.eq(bo.getOrder() != null, SysArea::getOrder, bo.getOrder());
+        lqw.eq(bo.getZqType() != null, SysArea::getZqType, bo.getZqType());
+        lqw.eq(bo.getZbArea() != null, SysArea::getZbArea, bo.getZbArea());
+        lqw.eq(StringUtils.isNotBlank(bo.getJtCode()), SysArea::getJtCode, bo.getJtCode());
+        return lqw;
+    }
+
+    /**
+     * 新增【请填写功能名称】
+     */
+    @Override
+    public Boolean insertByBo(SysAreaBo bo) {
+        SysArea add = BeanUtil.toBean(bo, SysArea.class);
+        validEntityBeforeSave(add);
+        boolean flag = baseMapper.insert(add) > 0;
+        if (flag) {
+            bo.setId(add.getId());
+        }
+        return flag;
+    }
+
+    /**
+     * 修改【请填写功能名称】
+     */
+    @Override
+    public Boolean updateByBo(SysAreaBo bo) {
+        SysArea update = BeanUtil.toBean(bo, SysArea.class);
+        validEntityBeforeSave(update);
+        return baseMapper.updateById(update) > 0;
+    }
+
+    /**
+     * 保存前的数据校验
+     */
+    private void validEntityBeforeSave(SysArea entity){
+        //TODO 做一些数据校验,如唯一约束
+    }
+
+    /**
+     * 批量删除【请填写功能名称】
+     */
+    @Override
+    public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
+        if(isValid){
+            //TODO 做一些业务上的校验,判断是否需要校验
+        }
+        return baseMapper.deleteBatchIds(ids) > 0;
+    }
+}
