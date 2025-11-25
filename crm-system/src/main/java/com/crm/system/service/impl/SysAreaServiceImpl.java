@@ -64,9 +64,19 @@ public class SysAreaServiceImpl implements ISysAreaService {
     @Override
     public List<SysAreaVo> queryZhejiangCities() {
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
-        // 假设浙江省的省份代码为"33"，并且type为"city"表示地级市
         lqw.eq(SysArea::getParent, "330000");
         lqw.eq(SysArea::getType, "二级");
+        return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 根据地级市ID查询其下辖的区县列表
+     */
+    @Override
+    public List<SysAreaVo> queryCountyListByCityId(String areaId) {
+        LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysArea::getParent, areaId);
+        lqw.eq(SysArea::getType, "三级");
         return baseMapper.selectVoList(lqw);
     }
 

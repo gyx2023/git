@@ -22,12 +22,12 @@ public class SysArea implements Serializable{
     private static final long serialVersionUID=1L;
 
     /**
-     *
+     * 主键ID
      */
     @TableId(value = "id_")
     private Long id;
     /**
-     *
+     * 地级市或区县的名称
      */
     @TableField(value = "name_")
     private String name;
@@ -37,7 +37,7 @@ public class SysArea implements Serializable{
     @TableField(value = "type_")
     private String type;
     /**
-     *
+     *父节点ID
      */
     @TableField(value = "parent_")
     private Long parent;
@@ -57,11 +57,11 @@ public class SysArea implements Serializable{
     @TableField(value = "remark_")
     private String remark;
     /**
-     * bss编码
+     *
      */
     private String bssCode;
     /**
-     * bss父级编码
+     *
      */
     private String bssCodeParent;
     /**
