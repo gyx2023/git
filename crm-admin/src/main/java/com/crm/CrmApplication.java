@@ -11,7 +11,6 @@ import org.springframework.boot.context.metrics.buffering.BufferingApplicationSt
  * @author crm
  */
 @SpringBootApplication
-@MapperScan("com.crm.customer.mapper")  // 添加这行
 public class CrmApplication {
 
     public static void main(String[] args) {

@@ -1,4 +1,4 @@
-package com.crm.system.controller;
+package com.crm.web.controller.system;
 
 import java.util.List;
 import java.util.Arrays;
@@ -38,6 +38,16 @@ import com.crm.common.core.page.TableDataInfo;
 public class SysAreaController extends BaseController {
 
     private final ISysAreaService iSysAreaService;
+
+    /**
+     * 查询浙江省地级市列表
+     */
+    @SaCheckPermission("system:area:list")
+    @GetMapping("/zhejiangCities")
+    public R<List<SysAreaVo>> zhejiangCities() {
+        List<SysAreaVo> cities = iSysAreaService.queryZhejiangCities();
+        return R.ok(cities);
+    }
 
     /**
      * 查询【请填写功能名称】列表

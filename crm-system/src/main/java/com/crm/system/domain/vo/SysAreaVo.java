@@ -24,43 +24,43 @@ public class SysAreaVo {
     /**
      * 
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "ID")
     private Long id;
 
     /**
-     * 
+     * 名称
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "名称")
     private String name;
 
     /**
-     * 
+     * 类型
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "类型")
     private String type;
 
     /**
-     * 
+     * 父级ID
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "父级ID")
     private Long parent;
 
     /**
-     * 
+     * 拼音
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "拼音")
     private String pinyin;
 
     /**
-     * 
+     * 经纬度
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "经纬度")
     private String latlng;
 
     /**
-     * 
+     * 备注
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "备注")
     private String remark;
 
     /**
@@ -76,9 +76,9 @@ public class SysAreaVo {
     private String bssCodeParent;
 
     /**
-     * 
+     * 排序
      */
-    @ExcelProperty(value = "")
+    @ExcelProperty(value = "排序")
     private Long order;
 
     /**

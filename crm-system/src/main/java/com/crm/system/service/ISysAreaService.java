@@ -33,6 +33,11 @@ public interface ISysAreaService {
     List<SysAreaVo> queryList(SysAreaBo bo);
 
     /**
+     * 查询浙江省地级市列表
+     */
+    List<SysAreaVo> queryZhejiangCities();
+
+    /**
      * 新增【请填写功能名称】
      */
     Boolean insertByBo(SysAreaBo bo);
