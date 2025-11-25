@@ -115,4 +115,22 @@ public class SysDictDataController extends BaseController {
         dictDataService.deleteDictDataByIds(dictCodes);
         return R.ok();
     }
+
+    /**
+     * 获取固定的五个字典类型数据
+     * 包含：集团类别、集团级别、拓展客户类型、客户归属分类、集团状态
+     */
+    @GetMapping(value = "/types/fixed")
+    public R<Map<String, List<SysDictData>>> getFixedDictTypes() {
+        // 固定查询的五个字典类型
+        List<String> dictTypes = Arrays.asList(
+            "sys_cust_type",     // 集团类别
+            "sys_grp_level",     // 集团级别
+            "sys_expand_type",   // 拓展客户类型
+            "sys_busi_dept_type", // 客户归属分类
+            "sys_grp_status"     // 集团状态
+        );
+        Map<String, List<SysDictData>> result = dictTypeService.selectDictDataByTypes(dictTypes);
+        return R.ok(result);
+    }
 }
