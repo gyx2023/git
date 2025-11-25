@@ -38,6 +38,11 @@ public interface ISysCategoryService {
     List<SysCategoryVo> selectMajorCategories();
 
     /**
+     * 根据父级ID查询行业亚类列表
+     */
+    List<SysCategoryVo> selectSubCategoriesByParentId(String parentId);
+
+    /**
      * 新增行业大类-亚类-细类分类
      */
     Boolean insertByBo(SysCategoryBo bo);

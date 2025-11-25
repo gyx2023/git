@@ -58,6 +58,17 @@ public class SysCategoryController extends BaseController {
     }
 
     /**
+     * 根据父级ID查询行业亚类列表
+     */
+    @GetMapping("/subCategories")
+    public R<List<SysCategoryVo>> listSubCategoriesByParentId(@RequestParam("parentId") String parentId) {
+        System.out.println("Received request for subCategories with parentId: " + parentId);
+        List<SysCategoryVo> list = iSysCategoryService.selectSubCategoriesByParentId(parentId);
+        System.out.println("Returning " + (list != null ? list.size() : 0) + " sub categories");
+        return R.ok(list);
+    }
+
+    /**
      * 导出行业大类-亚类-细类分类列表
      */
     @SaCheckPermission("system:category:export")
@@ -74,7 +85,7 @@ public class SysCategoryController extends BaseController {
      * @param id 主键
      */
     @SaCheckPermission("system:category:query")
-    @GetMapping("/{id}")
+    @GetMapping("/get/{id}")
     public R<SysCategoryVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable String id) {
         return R.ok(iSysCategoryService.queryById(id));

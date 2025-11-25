@@ -6,6 +6,7 @@ import com.crm.common.core.domain.entity.SysDictType;
 import com.crm.common.core.page.TableDataInfo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 字典 业务层
@@ -101,4 +102,6 @@ public interface ISysDictTypeService {
      * @return 结果
      */
     boolean checkDictTypeUnique(SysDictType dictType);
+
+
 }
