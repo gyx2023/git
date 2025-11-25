@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.generator.util.Desensitization;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,11 @@ import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 
+
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * 政企集团客户信息Service业务层处理
@@ -36,7 +39,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public ZqGrpGroupInfoVo queryById(Long grpId){
-        return baseMapper.selectVoById(grpId);
+        ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
+        return desensitizeVo(vo);
     }
 
     /**
@@ -46,6 +50,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 对查询结果进行脱敏处理
+        List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        result.setRecords(desensitizedList);
         return TableDataInfo.build(result);
     }
 
@@ -55,7 +64,32 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-        return baseMapper.selectVoList(lqw);
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+        // 对查询结果进行脱敏处理
+        return list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 对ZqGrpGroupInfoVo对象进行脱敏处理
+     * @param vo 要脱敏的ZqGrpGroupInfoVo对象
+     * @return 脱敏后的ZqGrpGroupInfoVo对象
+     */
+    private ZqGrpGroupInfoVo desensitizeVo(ZqGrpGroupInfoVo vo) {
+        if (vo == null) {
+            return null;
+        }
+
+        // 对集团名称进行脱敏
+        vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
+
+        // 对省、市、县客户经理姓名进行脱敏
+        vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
+        vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
+        vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+
+        return vo;
     }
 
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
