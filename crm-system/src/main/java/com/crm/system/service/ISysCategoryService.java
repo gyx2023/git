@@ -33,6 +33,11 @@ public interface ISysCategoryService {
     List<SysCategoryVo> queryList(SysCategoryBo bo);
 
     /**
+     * 查询所有行业大类列表
+     */
+    List<SysCategoryVo> selectMajorCategories();
+
+    /**
      * 新增行业大类-亚类-细类分类
      */
     Boolean insertByBo(SysCategoryBo bo);

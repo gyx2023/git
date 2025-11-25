@@ -58,6 +58,16 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 查询所有行业大类列表
+     */
+    @Override
+    public List<SysCategoryVo> selectMajorCategories() {
+        SysCategoryBo bo = new SysCategoryBo();
+        bo.setType("大类");
+        return queryList(bo);
+    }
+
     private LambdaQueryWrapper<SysCategory> buildQueryWrapper(SysCategoryBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysCategory> lqw = Wrappers.lambdaQuery();

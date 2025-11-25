@@ -49,6 +49,15 @@ public class SysCategoryController extends BaseController {
     }
 
     /**
+     * 查询所有行业大类列表
+     */
+    @GetMapping("/majorCategories")
+    public R<List<SysCategoryVo>> listMajorCategories() {
+        List<SysCategoryVo> list = iSysCategoryService.selectMajorCategories();
+        return R.ok(list);
+    }
+
+    /**
      * 导出行业大类-亚类-细类分类列表
      */
     @SaCheckPermission("system:category:export")
