@@ -92,7 +92,7 @@
             <if test="createTime != null">CREATE_TIME = #{createTime},</if>
             <if test="updateTime != null">UPDATE_TIME = #{updateTime},</if>
         </set>
-        where GRP_ID = #{grpId}
+        where GRP_ID = #{grpI}
     </update>
     
     <!-- 插入 -->

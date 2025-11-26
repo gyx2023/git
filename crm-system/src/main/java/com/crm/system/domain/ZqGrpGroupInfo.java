@@ -25,6 +25,7 @@ public class ZqGrpGroupInfo extends BaseEntity {
     /**
      * 集团标识
      */
+    @TableId(value = "GRP_ID")
     private Long grpId;
     /**
      * 集团名称
