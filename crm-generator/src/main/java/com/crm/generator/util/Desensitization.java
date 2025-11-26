@@ -14,6 +14,7 @@ public class Desensitization {
             return companyName;
         }
 
+
         String trimmedName = companyName.trim();
         int length = trimmedName.length();
 
