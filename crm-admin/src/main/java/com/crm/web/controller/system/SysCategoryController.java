@@ -49,26 +49,6 @@ public class SysCategoryController extends BaseController {
     }
 
     /**
-     * 查询所有行业大类列表
-     */
-    @GetMapping("/majorCategories")
-    public R<List<SysCategoryVo>> listMajorCategories() {
-        List<SysCategoryVo> list = iSysCategoryService.selectMajorCategories();
-        return R.ok(list);
-    }
-
-    /**
-     * 根据父级ID查询行业亚类列表
-     */
-    @GetMapping("/subCategories")
-    public R<List<SysCategoryVo>> listSubCategoriesByParentId(@RequestParam("parentId") String parentId) {
-        System.out.println("Received request for subCategories with parentId: " + parentId);
-        List<SysCategoryVo> list = iSysCategoryService.selectSubCategoriesByParentId(parentId);
-        System.out.println("Returning " + (list != null ? list.size() : 0) + " sub categories");
-        return R.ok(list);
-    }
-
-    /**
      * 导出行业大类-亚类-细类分类列表
      */
     @SaCheckPermission("system:category:export")
@@ -124,5 +104,24 @@ public class SysCategoryController extends BaseController {
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable String[] ids) {
         return toAjax(iSysCategoryService.deleteWithValidByIds(Arrays.asList(ids), true));
+    }
+
+    /**
+     * 获取所有type="大类"的数据
+     */
+    @GetMapping("/major-categories")
+    public R<List<SysCategoryVo>> getMajorCategories() {
+        return R.ok(iSysCategoryService.getMajorCategories());
+    }
+
+    /**
+     * 根据父ID获取子分类数据
+     *
+     * @param parentId 父分类ID
+     */
+    @GetMapping("/sub-categories/{parentId}")
+    public R<List<SysCategoryVo>> getSubCategoriesByParentId(@NotNull(message = "父分类ID不能为空")
+                                                           @PathVariable String parentId) {
+        return R.ok(iSysCategoryService.getSubCategoriesByParentId(parentId));
     }
 }

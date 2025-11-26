@@ -47,7 +47,26 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
         return desensitizeVo(vo);
     }
+    /**
+     * 查询政企集团客户信息列表
+     */
+    @Override
+    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+        // 打印SQL查询语句和参数，用于调试
+        System.out.println("查询SQL: " + lqw.getCustomSqlSegment());
+        System.out.println("完整SQL: " + lqw.getTargetSql());
+        System.out.println("assignTimeStart: " + bo.getAssignTimeStart());
+        System.out.println("assignTimeEnd: " + bo.getAssignTimeEnd());
+        System.out.println("createTimeStart: " + bo.getCreateTimeStart());
+        System.out.println("createTimeEnd: " + bo.getCreateTimeEnd());
 
+        // 添加日志查看MyBatis-Plus执行的SQL
+        System.out.println("参数表达式: " + lqw.getParamNameValuePairs());
+
+        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
     /**
      * 查询政企集团客户信息列表
      */

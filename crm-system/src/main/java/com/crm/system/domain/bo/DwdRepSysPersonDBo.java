@@ -99,7 +99,7 @@ public class DwdRepSysPersonDBo extends BaseEntity {
      *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long areaId;
+    private Integer areaId;
 
     /**
      *
@@ -111,7 +111,7 @@ public class DwdRepSysPersonDBo extends BaseEntity {
      *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long countyId;
+    private Integer countyId;
 
     /**
      *

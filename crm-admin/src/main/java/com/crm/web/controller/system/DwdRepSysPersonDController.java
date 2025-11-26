@@ -1,7 +1,6 @@
 package com.crm.web.controller.system;
 
 import java.util.*;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,6 @@ import liquibase.pro.packaged.I;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import com.crm.system.domain.vo.SysAreaVo;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
 import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
@@ -120,7 +117,7 @@ public class DwdRepSysPersonDController extends BaseController {
      * @return 按级别分类的客户经理信息
      */
     @GetMapping("/queryByCityCode")
-    public R<Map<String, List<Map<String, String>>>> queryByCityCode(@RequestParam String cityCode) {
+    public R<Map<String, List<Map<String, String>>>> queryByCityCode(@RequestParam String cityCode, @RequestParam(required = false) String cust) {
         try {
             // 查询SysArea表，根据cityCode匹配数据
             SysAreaVo areaVo = queryAreaByCityCode(cityCode);
@@ -163,22 +160,18 @@ public class DwdRepSysPersonDController extends BaseController {
     /**
      * 根据cityCode查询区域信息
      * @param cityCode 县市编码，将直接作为id查询
-     * @return 区域信息对象
+     * @return 区域信息对象，包含emp_area_id和emp_county_id，用于关联查询客户经理表
      */
     private SysAreaVo queryAreaByCityCode(String cityCode) {
         try {
-            // 发现关键问题：SysAreaServiceImpl的buildQueryWrapper方法中没有id字段的查询条件
-            // 因此直接使用queryById方法进行精确查询
+            // 直接使用id查询单条记录，获取区域信息
+            // 后续会使用查询结果中的emp_area_id和emp_county_id关联查询客户经理表
             Integer id = Integer.valueOf(cityCode);
-
-            // 直接使用id查询单条记录
             return iSysAreaService.queryById(Long.valueOf(id));
         } catch (NumberFormatException e) {
-            // 处理cityCode无法转换为数字类型的情况
             e.printStackTrace();
             throw new RuntimeException("cityCode格式错误，无法转换为数字类型");
         } catch (Exception e) {
-            // 处理其他可能的异常
             e.printStackTrace();
             throw new RuntimeException("查询区域信息失败：" + e.getMessage());
         }
@@ -209,7 +202,7 @@ public class DwdRepSysPersonDController extends BaseController {
      */
     private List<Map<String, String>> queryManagersByArea(int areaId, String level) {
         DwdRepSysPersonDBo bo = new DwdRepSysPersonDBo();
-        bo.setAreaId((long) areaId);
+        bo.setAreaId(areaId);
         bo.setPersonBigType(level);
         List<Map<String, String>> managers = new ArrayList<>();
 
@@ -229,18 +222,26 @@ public class DwdRepSysPersonDController extends BaseController {
      * 根据区县ID查询县级客户经理
      */
     private List<Map<String, String>> queryManagersByCounty(int countyId) {
+
         DwdRepSysPersonDBo bo = new DwdRepSysPersonDBo();
-        bo.setCountyId((long) countyId);
-        bo.setPersonBigType("COUNTY");
+        bo.setCountyId(countyId);
+
+        System.out.println("构建查询条件：countyId=" + countyId);
+
         List<Map<String, String>> managers = new ArrayList<>();
 
+        // 执行查询并打印查询结果数量
         List<DwdRepSysPersonDVo> list = iDwdRepSysPersonDService.queryList(bo);
+        System.out.println("县级客户经理查询结果数量: " + (list != null ? list.size() : 0));
 
-        for (DwdRepSysPersonDVo person : list) {
-            Map<String, String> manager = new HashMap<>();
-            manager.put("name", person.getFullName());
-            manager.put("oaAccount", person.getOaUserName());
-            managers.add(manager);
+        // 如果有结果，转换为所需格式
+        if (list != null && !list.isEmpty()) {
+            for (DwdRepSysPersonDVo person : list) {
+                Map<String, String> manager = new HashMap<>();
+                manager.put("name", person.getFullName());
+                manager.put("oaAccount", person.getOaUserName());
+                managers.add(manager);
+            }
         }
 
         return managers;

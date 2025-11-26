@@ -19,9 +19,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 数据字典信息
@@ -82,7 +80,23 @@ public class SysDictDataController extends BaseController {
         return R.ok(data);
     }
 
-
+    /**
+     * 获取固定的五个字典类型数据
+     * 包含：集团类别、集团级别、拓展客户类型、客户归属分类、集团状态
+     */
+    @GetMapping(value = "/types/fixed")
+    public R<java.util.Map<String, List<SysDictData>>> getFixedDictTypes() {
+        // 固定查询的五个字典类型
+        List<String> dictTypes = java.util.Arrays.asList(
+            "sys_cust_type",     // 集团类别
+            "sys_grp_level",     // 集团级别
+            "sys_expand_type",   // 拓展客户类型
+            "sys_busi_dept_type", // 客户归属分类
+            "sys_grp_status"     // 集团状态
+        );
+        Map<String, List<SysDictData>> result = dictTypeService.selectDictDataByTypes(dictTypes);
+        return R.ok(result);
+    }
 
     /**
      * 新增字典类型
@@ -117,24 +131,5 @@ public class SysDictDataController extends BaseController {
     public R<Void> remove(@PathVariable Long[] dictCodes) {
         dictDataService.deleteDictDataByIds(dictCodes);
         return R.ok();
-    }
-
-    /**
-     * 获取固定的五个字典类型数据
-     * 包含：集团类别、集团级别、拓展客户类型、客户归属分类、集团状态、集团客户省市名单制存增量标识状态
-     */
-    @GetMapping(value = "/types/fixed")
-    public R<Map<String, List<SysDictData>>> getFixedDictTypes() {
-        // 固定查询的六个字典类型
-        List<String> dictTypes = Arrays.asList(
-            "sys_cust_type",     // 集团类别
-            "sys_grp_level",     // 集团级别
-            "sys_expand_type",   // 拓展客户类型
-            "sys_busi_dept_type", // 客户归属分类
-            "sys_grp_status",     // 集团状态
-            "sys_province_newold_type" //集团客户省市名单制存增量标识状态
-        );
-        Map<String, List<SysDictData>> result = dictTypeService.selectDictDataByTypes(dictTypes);
-        return R.ok(result);
     }
 }
