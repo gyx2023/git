@@ -15,6 +15,7 @@ import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
+import com.crm.system.service.IZqGrpGroupLogService;
 import org.springframework.web.bind.annotation.RequestParam;
 
 
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
     private final ZqGrpGroupInfoMapper baseMapper;
+    private final IZqGrpGroupLogService zqGrpGroupLogService;
 
     /**
      * 查询政企集团客户信息
@@ -193,10 +195,33 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public Boolean updateByBo(ZqGrpGroupInfoBo bo) {
+        System.out.println("[DEBUG] updateByBo called with grpId: " + bo.getGrpId());
+        
+        // 先获取变更前的数据
+        ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
+        if (originalInfo != null) {
+            System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
+        } else {
+            System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
+        }
+        
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
         validEntityBeforeSave(update);
         update.setCountyManagerName(null);
-        return baseMapper.updateById(update) > 0;
+        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId() + ", grpName: " + update.getGrpName());
+        
+        // 执行更新操作
+        boolean success = baseMapper.updateById(update) > 0;
+        System.out.println("[DEBUG] Update operation result: " + success);
+        
+        // 如果更新成功，记录变更日志
+        if (success) {
+            System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
+            boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, update, "T1"); // T1-集团基本信息变更
+            System.out.println("[DEBUG] recordChangeLog result: " + logResult);
+        }
+        
+        return success;
     }
 
     /**

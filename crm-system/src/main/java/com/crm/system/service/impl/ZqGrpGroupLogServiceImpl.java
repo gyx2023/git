@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.ZqGrpGroupLogBo;
 import com.crm.system.domain.vo.ZqGrpGroupLogVo;
 import com.crm.system.domain.ZqGrpGroupLog;
+import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupLogMapper;
 import com.crm.system.service.IZqGrpGroupLogService;
 
@@ -94,8 +95,8 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
         lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupLog::getCountyManagerEmpId, bo.getCountyManagerEmpId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerOauser()), ZqGrpGroupLog::getCountyManagerOauser, bo.getCountyManagerOauser());
         lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupLog::getCountyManagerName, bo.getCountyManagerName());
-        lqw.eq(bo.getCreateTime() != null, ZqGrpGroupLog::getCreateTime, bo.getCreateTime());
-        lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupLog::getUpdateTime, bo.getUpdateTime());
+        //lqw.eq(bo.getCreateTime() != null, ZqGrpGroupLog::getCreateTime, bo.getCreateTime());
+        //lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupLog::getUpdateTime, bo.getUpdateTime());
         return lqw;
     }
 
@@ -139,5 +140,58 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    /**
+     * 记录集团客户信息变更日志
+     */
+    @Override
+    public Boolean recordChangeLog(ZqGrpGroupInfo originalInfo, ZqGrpGroupInfo updatedInfo, String updateType) {
+        System.out.println("[DEBUG] recordChangeLog called with updateType: " + updateType);
+        try {
+            if (originalInfo == null) {
+                System.out.println("[DEBUG] originalInfo is null");
+                return false;
+            }
+            if (updatedInfo == null) {
+                System.out.println("[DEBUG] updatedInfo is null");
+                return false;
+            }
+
+            System.out.println("[DEBUG] originalInfo grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
+            System.out.println("[DEBUG] updatedInfo grpId: " + updatedInfo.getGrpId() + ", grpName: " + updatedInfo.getGrpName());
+
+            // 创建变更前的日志记录
+            ZqGrpGroupLog logBefore = BeanUtil.toBean(originalInfo, ZqGrpGroupLog.class);
+            logBefore.setUpdateType(updateType);
+            logBefore.setDataType("1"); // 1-变更前
+            System.out.println("[DEBUG] Created logBefore with grpId: " + logBefore.getGrpId());
+
+            // 创建变更后的日志记录
+            ZqGrpGroupLog logAfter = BeanUtil.toBean(updatedInfo, ZqGrpGroupLog.class);
+            logAfter.setUpdateType(updateType);
+            logAfter.setDataType("2"); // 2-变更后
+            System.out.println("[DEBUG] Created logAfter with grpId: " + logAfter.getGrpId());
+
+            // 插入变更前记录
+            int beforeResult = baseMapper.insert(logBefore);
+            System.out.println("[DEBUG] Insert logBefore result: " + beforeResult);
+
+            // 插入变更后记录
+            int afterResult = baseMapper.insert(logAfter);
+            System.out.println("[DEBUG] Insert logAfter result: " + afterResult);
+
+            if (beforeResult > 0 && afterResult > 0) {
+                System.out.println("[DEBUG] Log records inserted successfully");
+                return true;
+            } else {
+                System.out.println("[DEBUG] Failed to insert log records");
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Exception in recordChangeLog: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }
