@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -22,10 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -243,4 +241,96 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    /**
+     * 获取政企集团客户信息相关字典数据
+     */
+    @Override
+    public Map<String, List<SysDictData>> getDictData() {
+        Map<String, List<SysDictData>> result = new HashMap<>();
+
+        // 使用一个SQL查询获取所有需要的字段
+        LambdaQueryWrapper<ZqGrpGroupInfo> wrapper = Wrappers.lambdaQuery();
+        wrapper.select(
+            ZqGrpGroupInfo::getAreaId,
+            ZqGrpGroupInfo::getCountyId,
+            ZqGrpGroupInfo::getIndustryMajorKind,
+            ZqGrpGroupInfo::getIndustrySubKind,
+            ZqGrpGroupInfo::getGrpCustType,
+            ZqGrpGroupInfo::getGrpLevel,
+            ZqGrpGroupInfo::getGrpExpandType,
+            ZqGrpGroupInfo::getGrpBusiDeptType,
+            ZqGrpGroupInfo::getGrpStatus,
+            ZqGrpGroupInfo::getProvManagerName,
+            ZqGrpGroupInfo::getProvManagerOauser,
+            ZqGrpGroupInfo::getCityManagerName,
+            ZqGrpGroupInfo::getCityManagerOauser,
+            ZqGrpGroupInfo::getCountyManagerName,
+            ZqGrpGroupInfo::getCountyManagerOauser
+        );
+
+        List<ZqGrpGroupInfo> dataList = baseMapper.selectList(wrapper);
+
+        // 使用Stream API处理数据并去重
+        Map<String, Set<String>> distinctValues = new HashMap<>();
+
+        dataList.forEach(item -> {
+            // 地市
+            addDistinctValue(distinctValues, "areaList", item.getAreaId());
+            // 县市
+            addDistinctValue(distinctValues, "countyList", item.getCountyId());
+            // 行业大类
+            addDistinctValue(distinctValues, "industryMajorList", item.getIndustryMajorKind());
+            // 行业亚类
+            addDistinctValue(distinctValues, "industrySubList", item.getIndustrySubKind());
+            // 集团类别
+            addDistinctValue(distinctValues, "grpCustTypeList", item.getGrpCustType());
+            // 集团级别
+            addDistinctValue(distinctValues, "grpLevelList", item.getGrpLevel());
+            // 拓展客户类型
+            addDistinctValue(distinctValues, "grpExpandTypeList", item.getGrpExpandType());
+            // 客户归属分类
+            addDistinctValue(distinctValues, "grpBusiDeptTypeList", item.getGrpBusiDeptType());
+            // 集团状态
+            addDistinctValue(distinctValues, "grpStatusList", item.getGrpStatus());
+
+            // 省级经理
+            addDistinctValue(distinctValues, "provManagerNameList", item.getProvManagerName());
+            addDistinctValue(distinctValues, "provManagerOauserList", item.getProvManagerOauser());
+
+            // 市级经理
+            addDistinctValue(distinctValues, "cityManagerNameList", item.getCityManagerName());
+            addDistinctValue(distinctValues, "cityManagerOauserList", item.getCityManagerOauser());
+
+            // 县级经理
+            addDistinctValue(distinctValues, "countyManagerNameList", item.getCountyManagerName());
+            addDistinctValue(distinctValues, "countyManagerOauserList", item.getCountyManagerOauser());
+        });
+
+        // 转换为SysDictData列表
+        distinctValues.forEach((key, values) -> {
+            List<SysDictData> dictList = values.stream()
+                .filter(StringUtils::isNotBlank)
+                .map(value -> {
+                    SysDictData dictData = new SysDictData();
+                    dictData.setDictValue(value);
+                    dictData.setDictLabel(value);
+                    return dictData;
+                })
+                .collect(Collectors.toList());
+            result.put(key, dictList);
+        });
+
+        return result;
+    }
+
+    /**
+     * 添加去重值到Map中
+     */
+    private void addDistinctValue(Map<String, Set<String>> map, String key, String value) {
+        if (StringUtils.isNotBlank(value)) {
+            map.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+        }
+    }
+
 }

@@ -58,13 +58,42 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 查询所有行业大类列表
+     */
+    @Override
+    public List<SysCategoryVo> selectMajorCategories() {
+        SysCategoryBo bo = new SysCategoryBo();
+        bo.setType("大类");
+        return queryList(bo);
+    }
+
+    /**
+     * 根据父级ID查询行业亚类列表
+     */
+    @Override
+    public List<SysCategoryVo> selectSubCategoriesByParentId(String parentId) {
+        System.out.println("Selecting sub categories for parentId: " + parentId);
+        SysCategoryBo bo = new SysCategoryBo();
+        bo.setParent(parentId);
+        bo.setType("亚类");
+        List<SysCategoryVo> result = queryList(bo);
+        System.out.println("Found " + (result != null ? result.size() : 0) + " sub categories");
+        return result;
+    }
+
     private LambdaQueryWrapper<SysCategory> buildQueryWrapper(SysCategoryBo bo) {
+        System.out.println("Building query wrapper with bo: " + bo);
+        if (bo != null) {
+            System.out.println("BO values - name: " + bo.getName() + ", type: " + bo.getType() + ", parent: " + bo.getParent() + ", pinyin: " + bo.getPinyin());
+        }
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysCategory> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getName()), SysCategory::getName, bo.getName());
         lqw.eq(StringUtils.isNotBlank(bo.getType()), SysCategory::getType, bo.getType());
         lqw.eq(StringUtils.isNotBlank(bo.getParent()), SysCategory::getParent, bo.getParent());
         lqw.eq(StringUtils.isNotBlank(bo.getPinyin()), SysCategory::getPinyin, bo.getPinyin());
+        System.out.println("Query wrapper built: " + lqw.getSqlSegment());
         return lqw;
     }
 

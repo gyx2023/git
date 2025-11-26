@@ -2,6 +2,7 @@ package com.crm.web.controller.system;
 
 import java.util.List;
 import java.util.Arrays;
+
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
@@ -47,65 +48,9 @@ public class ZqGrpGroupInfoController extends BaseController {
     @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/list")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
-            @RequestParam(value = "beginTime", required = false) String beginTime,
-            @RequestParam(value = "endTime", required = false) String endTime,
-            @RequestParam(value = "timeType", required = false) String timeType) {
-
-        // 处理前端传递的时间范围参数
-        if (beginTime != null && endTime != null && timeType != null) {
-            try {
-                // 解析时间字符串为Date对象
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(beginTime);
-                Date endDate = sdf.parse(endTime);
-
-                // 根据timeType设置对应的时间范围字段
-                if ("assign".equals(timeType)) {
-                    bo.setAssignTimeStart(beginDate);
-                    bo.setAssignTimeEnd(endDate);
-                } else if ("create".equals(timeType)) {
-                    bo.setCreateTimeStart(beginDate);
-                    bo.setCreateTimeEnd(endDate);
-                }
-
-                System.out.println("时间参数处理成功: timeType=" + timeType + ", beginTime=" + beginTime + ", endTime=" + endTime);
-            } catch (Exception e) {
-                System.out.println("时间参数解析失败: " + e.getMessage());
-            }
-        }
-
-        TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
-
-        // 添加调试日志
-        System.out.println("Controller返回数据 - 总数: " + result.getTotal());
-        System.out.println("Controller返回数据 - 记录数: " + result.getRows().size());
-
-        // 对返回数据进行脱敏处理
-        if (result.getRows() != null && !result.getRows().isEmpty()) {
-            for (ZqGrpGroupInfoVo vo : result.getRows()) {
-                // 脱敏集团名称
-                if (vo.getGrpName() != null) {
-                    vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
-                }
-
-                // 脱敏三种客户经理名称
-                if (vo.getProvManagerName() != null) {
-                    vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
-                }
-                if (vo.getCityManagerName() != null) {
-                    vo.setCityManagerName(DesensitizationUtils.desensitizeName(vo.getCityManagerName()));
-                }
-                if (vo.getCountyManagerName() != null) {
-                    vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
-                }
-            }
-
-            ZqGrpGroupInfoVo firstRecord = result.getRows().get(0);
-            System.out.println("Controller返回数据 - 第一条记录的cityManagerOauser: " + firstRecord.getCityManagerOauser());
-            System.out.println("Controller返回数据 - 第一条记录的cityManagerName: " + firstRecord.getCityManagerName());
-        }
-
-        return result;
+                                                @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
+                                                @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
+        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery, grpCreateTimeBegin, grpCreateTimeEnd);
     }
 
     /**
@@ -116,28 +61,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     @PostMapping("/export")
     public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response) {
         List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
-
-        // 对导出数据进行脱敏处理
-        if (list != null && !list.isEmpty()) {
-            for (ZqGrpGroupInfoVo vo : list) {
-                // 脱敏集团名称
-                if (vo.getGrpName() != null) {
-                    vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
-                }
-
-                // 脱敏三种客户经理名称
-                if (vo.getProvManagerName() != null) {
-                    vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
-                }
-                if (vo.getCityManagerName() != null) {
-                    vo.setCityManagerName(DesensitizationUtils.desensitizeName(vo.getCityManagerName()));
-                }
-                if (vo.getCountyManagerName() != null) {
-                    vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
-                }
-            }
-        }
-
         ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
     }
 

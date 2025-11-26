@@ -40,6 +40,26 @@ public class SysAreaController extends BaseController {
     private final ISysAreaService iSysAreaService;
 
     /**
+     * 查询浙江省地级市列表
+     */
+    @SaCheckPermission("system:area:list")
+    @GetMapping("/zhejiangCities")
+    public R<List<SysAreaVo>> zhejiangCities() {
+        List<SysAreaVo> cities = iSysAreaService.queryZhejiangCities();
+        return R.ok(cities);
+    }
+
+    /**
+     * 根据地级市ID查询其下辖的区县列表
+     */
+    @SaCheckPermission("system:area:list")
+    @GetMapping("/county/list")
+    public R<List<SysAreaVo>> countyList(@RequestParam String areaId) {
+        List<SysAreaVo> counties = iSysAreaService.queryCountyListByCityId(areaId);
+        return R.ok(counties);
+    }
+
+    /**
      * 查询【请填写功能名称】列表
      */
     @SaCheckPermission("system:area:list")
@@ -104,21 +124,5 @@ public class SysAreaController extends BaseController {
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
         return toAjax(iSysAreaService.deleteWithValidByIds(Arrays.asList(ids), true));
-    }
-
-    /**
-     * 获取浙江省下所有地级市
-     */
-    @GetMapping("/zhejiang-cities")
-    public R<List<SysAreaVo>> getZhejiangCities() {
-        return R.ok(iSysAreaService.getZhejiangCities());
-    }
-
-    /**
-     * 根据二级地市ID获取对应的三级县市数据
-     */
-    @GetMapping("/counties/{cityId}")
-    public R<List<SysAreaVo>> getCountiesByCityId(@PathVariable Long cityId) {
-        return R.ok(iSysAreaService.getCountiesByCityId(cityId));
     }
 }
