@@ -111,6 +111,7 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
         if (flag) {
             bo.setGrpId(add.getGrpId());
         }
+
         return flag;
     }
 
