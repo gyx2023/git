@@ -118,7 +118,7 @@ public class SysDictDataController extends BaseController {
 
     /**
      * 获取固定的五个字典类型数据
-     * 包含：集团类别、集团级别、拓展客户类型、客户归属分类、集团状态
+     * 包含：集团类别、集团级别、拓展客户类型、客户归属分类、集团状态、集团客户省市名单制存增量标识状态
      */
     @GetMapping(value = "/types/fixed")
     public R<Map<String, List<SysDictData>>> getFixedDictTypes() {
