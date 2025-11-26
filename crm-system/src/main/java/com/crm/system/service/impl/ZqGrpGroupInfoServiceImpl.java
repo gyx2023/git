@@ -85,9 +85,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
  * @return 返回组装好的LambdaQueryWrapper对象
  */
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
-    // 获取业务对象中的参数Map
         Map<String, Object> params = bo.getParams();
-    // 创建LambdaQueryWrapper实例
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
 
 
@@ -189,22 +187,20 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 处理时间范围查询参数
         // 分配时间范围查询
-        if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
-        } else if (bo.getAssignTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart());
-        } else if (bo.getAssignTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeEnd());
-        }
+        lqw.between(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null, 
+            ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
+        lqw.ge(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() == null, 
+            ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart());
+        lqw.le(bo.getAssignTimeStart() == null && bo.getAssignTimeEnd() != null, 
+            ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeEnd());
 
         // 创建时间范围查询
-        if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
-        } else if (bo.getCreateTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
-        } else if (bo.getCreateTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
-        }
+        lqw.between(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null, 
+            ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+        lqw.ge(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() == null, 
+            ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
+        lqw.le(bo.getCreateTimeStart() == null && bo.getCreateTimeEnd() != null, 
+            ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
 
     // 返回组装好的查询条件包装器
         return lqw;

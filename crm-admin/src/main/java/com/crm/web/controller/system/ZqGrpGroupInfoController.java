@@ -2,8 +2,6 @@ package com.crm.web.controller.system;
 
 import java.util.List;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
@@ -17,19 +15,17 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
-import com.crm.common.core.validate.QueryGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.service.IZqGrpGroupInfoService;
-import com.crm.system.service.ISysDictTypeService;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.generator.util.DesensitizationUtils;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 /**
  * 政企集团客户信息
@@ -50,13 +46,40 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/list")
-    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
+    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
+            @RequestParam(value = "beginTime", required = false) String beginTime,
+            @RequestParam(value = "endTime", required = false) String endTime,
+            @RequestParam(value = "timeType", required = false) String timeType) {
+
+        // 处理前端传递的时间范围参数
+        if (beginTime != null && endTime != null && timeType != null) {
+            try {
+                // 解析时间字符串为Date对象
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(beginTime);
+                Date endDate = sdf.parse(endTime);
+
+                // 根据timeType设置对应的时间范围字段
+                if ("assign".equals(timeType)) {
+                    bo.setAssignTimeStart(beginDate);
+                    bo.setAssignTimeEnd(endDate);
+                } else if ("create".equals(timeType)) {
+                    bo.setCreateTimeStart(beginDate);
+                    bo.setCreateTimeEnd(endDate);
+                }
+
+                System.out.println("时间参数处理成功: timeType=" + timeType + ", beginTime=" + beginTime + ", endTime=" + endTime);
+            } catch (Exception e) {
+                System.out.println("时间参数解析失败: " + e.getMessage());
+            }
+        }
+
         TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
 
         // 添加调试日志
         System.out.println("Controller返回数据 - 总数: " + result.getTotal());
         System.out.println("Controller返回数据 - 记录数: " + result.getRows().size());
-        
+
         // 对返回数据进行脱敏处理
         if (result.getRows() != null && !result.getRows().isEmpty()) {
             for (ZqGrpGroupInfoVo vo : result.getRows()) {
@@ -64,7 +87,7 @@ public class ZqGrpGroupInfoController extends BaseController {
                 if (vo.getGrpName() != null) {
                     vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
                 }
-                
+
                 // 脱敏三种客户经理名称
                 if (vo.getProvManagerName() != null) {
                     vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
@@ -76,7 +99,7 @@ public class ZqGrpGroupInfoController extends BaseController {
                     vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
                 }
             }
-            
+
             ZqGrpGroupInfoVo firstRecord = result.getRows().get(0);
             System.out.println("Controller返回数据 - 第一条记录的cityManagerOauser: " + firstRecord.getCityManagerOauser());
             System.out.println("Controller返回数据 - 第一条记录的cityManagerName: " + firstRecord.getCityManagerName());
@@ -93,7 +116,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     @PostMapping("/export")
     public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response) {
         List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
-        
+
         // 对导出数据进行脱敏处理
         if (list != null && !list.isEmpty()) {
             for (ZqGrpGroupInfoVo vo : list) {
@@ -101,7 +124,7 @@ public class ZqGrpGroupInfoController extends BaseController {
                 if (vo.getGrpName() != null) {
                     vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
                 }
-                
+
                 // 脱敏三种客户经理名称
                 if (vo.getProvManagerName() != null) {
                     vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
@@ -114,7 +137,7 @@ public class ZqGrpGroupInfoController extends BaseController {
                 }
             }
         }
-        
+
         ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
     }
 
@@ -128,14 +151,14 @@ public class ZqGrpGroupInfoController extends BaseController {
     public R<ZqGrpGroupInfoVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long grpId) {
         ZqGrpGroupInfoVo vo = iZqGrpGroupInfoService.queryById(grpId);
-        
+
         // 对详情数据进行脱敏处理
         if (vo != null) {
             // 脱敏集团名称
             if (vo.getGrpName() != null) {
                 vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
             }
-            
+
             // 脱敏三种客户经理名称
             if (vo.getProvManagerName() != null) {
                 vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
@@ -147,7 +170,7 @@ public class ZqGrpGroupInfoController extends BaseController {
                 vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
             }
         }
-        
+
         return R.ok(vo);
     }
 

@@ -69,7 +69,7 @@ public class DwdRepSysPersonDVo {
      * 
      */
     @ExcelProperty(value = "")
-    private String MOBILE;
+    private String mobile;
 
     /**
      * 

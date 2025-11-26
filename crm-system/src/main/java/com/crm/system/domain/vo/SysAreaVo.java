@@ -22,43 +22,43 @@ public class SysAreaVo {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Long id;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String name;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String type;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Long parent;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String pinyin;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String latlng;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String remark;
@@ -76,7 +76,7 @@ public class SysAreaVo {
     private String bssCodeParent;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Long order;
@@ -98,6 +98,16 @@ public class SysAreaVo {
      */
     @ExcelProperty(value = "集团 县市编码")
     private String jtCode;
+
+    /**
+     * 市ID
+     */
+    private int empAreaId;
+
+    /**
+     * 区县ID
+     */
+    private int empCountyId;
 
 
 }

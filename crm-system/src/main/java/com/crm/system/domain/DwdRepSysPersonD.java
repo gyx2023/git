@@ -56,7 +56,7 @@ public class DwdRepSysPersonD extends BaseEntity {
     /**
      * 
      */
-    private String MOBILE;
+    private String mobile;
     /**
      * 
      */

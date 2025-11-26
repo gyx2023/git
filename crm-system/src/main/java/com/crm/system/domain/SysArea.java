@@ -80,4 +80,10 @@ public class SysArea implements Serializable {
     @TableField("jt_code")
     private String jtCode;
 
+    @TableField("emp_area_id")
+    private int empAreaId;
+
+    @TableField("emp_county_id")
+    private int empCountyId;
+
 }

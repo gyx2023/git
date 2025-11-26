@@ -69,7 +69,7 @@ public class DwdRepSysPersonDBo extends BaseEntity {
      * 
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String MOBILE;
+    private String mobile;
 
     /**
      * 
