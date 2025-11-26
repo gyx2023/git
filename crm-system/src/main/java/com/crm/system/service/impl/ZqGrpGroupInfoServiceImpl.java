@@ -139,13 +139,35 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
         // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
-        lqw.eq(StringUtils.isNotBlank(bo.getProvManagerOauser()), ZqGrpGroupInfo::getProvManagerOauser, bo.getProvManagerOauser());
+
+        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
+        String provManagerOauser = bo.getProvManagerOauser();
+        String cityManagerOauser = bo.getCityManagerOauser();
+        String countyManagerOauser = bo.getCountyManagerOauser();
+
+        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
+            lqw.and(wrapper -> {
+                // 省级经理条件
+                if (StringUtils.isNotBlank(provManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
+                }
+
+                // 市级经理条件
+                if (StringUtils.isNotBlank(cityManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
+                }
+
+                // 县区级经理条件
+                if (StringUtils.isNotBlank(countyManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
+                }
+            });
+        }
+
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
-        lqw.eq(StringUtils.isNotBlank(bo.getCityManagerOauser()), ZqGrpGroupInfo::getCityManagerOauser, bo.getCityManagerOauser());
         lqw.like(StringUtils.isNotBlank(bo.getCityManagerName()), ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupInfo::getCountyManagerEmpId, bo.getCountyManagerEmpId());
-        lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerOauser()), ZqGrpGroupInfo::getCountyManagerOauser, bo.getCountyManagerOauser());
         lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
         lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
         lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());

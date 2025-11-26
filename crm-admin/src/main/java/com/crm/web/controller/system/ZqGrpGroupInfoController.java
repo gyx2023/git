@@ -88,7 +88,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     @SaCheckPermission("system:grpGroupInfo:edit")
     @Log(title = "政企集团客户信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
-    @PutMapping()
+    @PutMapping("/edit")
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody ZqGrpGroupInfoBo bo) {
         return toAjax(iZqGrpGroupInfoService.updateByBo(bo));
     }
