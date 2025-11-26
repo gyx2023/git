@@ -1,6 +1,7 @@
 package com.crm.system.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.io.Serializable;
@@ -9,7 +10,6 @@ import java.math.BigDecimal;
 
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 政企集团客户信息对象 zq_grp_group_log
@@ -157,4 +157,9 @@ public class ZqGrpGroupLog extends BaseEntity {
      */
     private String countyManagerName;
 
+    @TableField(exist = false)
+    private String createBy;
+
+    @TableField(exist = false)
+    private String updateBy;
 }

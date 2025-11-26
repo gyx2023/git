@@ -7,26 +7,26 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.generator.util.Desensitization;
+import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
-import com.crm.system.service.IZqGrpGroupInfoService;
-import com.crm.common.core.domain.entity.SysDictData;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
+import com.crm.system.service.IZqGrpGroupLogService;
+import org.springframework.web.bind.annotation.RequestParam;
 
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * 政企集团客户信息Service业务层处理
@@ -39,35 +39,49 @@ import java.util.ArrayList;
 public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
     private final ZqGrpGroupInfoMapper baseMapper;
+    private final IZqGrpGroupLogService zqGrpGroupLogService;
 
     /**
      * 查询政企集团客户信息
      */
     @Override
     public ZqGrpGroupInfoVo queryById(Long grpId){
-        return baseMapper.selectVoById(grpId);
+        ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
+        return desensitizeVo(vo);
     }
 
     /**
      * 查询政企集团客户信息列表
      */
     @Override
-    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
+    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-        // 打印SQL查询语句和参数，用于调试
-        System.out.println("查询SQL: " + lqw.getCustomSqlSegment());
-        System.out.println("完整SQL: " + lqw.getTargetSql());
-        System.out.println("assignTimeStart: " + bo.getAssignTimeStart());
-        System.out.println("assignTimeEnd: " + bo.getAssignTimeEnd());
-        System.out.println("createTimeStart: " + bo.getCreateTimeStart());
-        System.out.println("createTimeEnd: " + bo.getCreateTimeEnd());
 
-        // 添加日志查看MyBatis-Plus执行的SQL
-        System.out.println("参数表达式: " + lqw.getParamNameValuePairs());
+        // 处理时间范围参数
+        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+            try {
+                // 前端已传入完整的时间格式(yyyy-MM-dd HH:mm:ss)，直接解析使用
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(grpCreateTimeBegin);
+                Date endDate = sdf.parse(grpCreateTimeEnd);
+                System.out.println("成功应用时间范围查询: " + grpCreateTimeBegin + " 到 " + grpCreateTimeEnd);
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+
+            } catch (Exception e) {
+                System.out.println("时间参数解析失败: " + e.getMessage());
+            }
+        }
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 对查询结果进行脱敏处理
+        List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        result.setRecords(desensitizedList);
         return TableDataInfo.build(result);
     }
+
+
 
     /**
      * 查询政企集团客户信息列表
@@ -75,134 +89,92 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-        return baseMapper.selectVoList(lqw);
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+        // 对查询结果进行脱敏处理
+        return list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
     }
 
-/**
- * 构建查询条件包装器
- * 根据传入的业务对象(bo)中的参数，构建LambdaQueryWrapper用于数据库查询条件组装
- * @param bo 包含查询参数的业务对象
- * @return 返回组装好的LambdaQueryWrapper对象
- */
+    /**
+     * 对ZqGrpGroupInfoVo对象进行脱敏处理
+     * @param vo 要脱敏的ZqGrpGroupInfoVo对象
+     * @return 脱敏后的ZqGrpGroupInfoVo对象
+     */
+    private ZqGrpGroupInfoVo desensitizeVo(ZqGrpGroupInfoVo vo) {
+        if (vo == null) {
+            return null;
+        }
+
+        // 对集团名称进行脱敏
+        vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
+
+        // 对省、市、县客户经理姓名进行脱敏
+        vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
+        vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
+        vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+
+        return vo;
+    }
+
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getGrpId() != null, ZqGrpGroupInfo::getGrpId, bo.getGrpId());
+        lqw.like(StringUtils.isNotBlank(bo.getGrpName()), ZqGrpGroupInfo::getGrpName, bo.getGrpName());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
+        lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId2()), ZqGrpGroupInfo::getCountyId2, bo.getCountyId2());
+        lqw.eq(StringUtils.isNotBlank(bo.getGridId()), ZqGrpGroupInfo::getGridId, bo.getGridId());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustryMajorKind()), ZqGrpGroupInfo::getIndustryMajorKind, bo.getIndustryMajorKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustrySubKind()), ZqGrpGroupInfo::getIndustrySubKind, bo.getIndustrySubKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustryDetailKind()), ZqGrpGroupInfo::getIndustryDetailKind, bo.getIndustryDetailKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ZqGrpGroupInfo::getBusiType, bo.getBusiType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCustType()), ZqGrpGroupInfo::getGrpCustType, bo.getGrpCustType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpExpandType()), ZqGrpGroupInfo::getGrpExpandType, bo.getGrpExpandType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpBusiDeptType()), ZqGrpGroupInfo::getGrpBusiDeptType, bo.getGrpBusiDeptType());
+        lqw.eq(StringUtils.isNotBlank(bo.getProvinceNewoldType()), ZqGrpGroupInfo::getProvinceNewoldType, bo.getProvinceNewoldType());
+        lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
+        // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
+        lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
 
+        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
+        String provManagerOauser = bo.getProvManagerOauser();
+        String cityManagerOauser = bo.getCityManagerOauser();
+        String countyManagerOauser = bo.getCountyManagerOauser();
 
-    // 精确查询条件 - 使用eq方法，当参数不为空时添加查询条件
-        lqw.eq(bo.getGrpId() != null, ZqGrpGroupInfo::getGrpId, bo.getGrpId()); // 群组ID
-
-
-    // 模糊查询条件 - 使用like方法，当参数不为空时添加查询条件
-        lqw.like(StringUtils.isNotBlank(bo.getGrpName()), ZqGrpGroupInfo::getGrpName, bo.getGrpName()); // 群组名称
-
-
-    // 以下均为精确查询条件，根据业务对象中的各个字段值是否为空来决定是否添加查询条件
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode()); // 群组编码
-        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode()); // 总部群组编码
-        lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId()); // 客户ID
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel()); // 群组级别
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus()); // 群组状态
-        lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId()); // 区域ID
-        lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId()); // 县区ID
-        lqw.eq(StringUtils.isNotBlank(bo.getCountyId2()), ZqGrpGroupInfo::getCountyId2, bo.getCountyId2()); // 县区ID2
-        lqw.eq(StringUtils.isNotBlank(bo.getGridId()), ZqGrpGroupInfo::getGridId, bo.getGridId()); // 网格ID
-        lqw.eq(StringUtils.isNotBlank(bo.getIndustryMajorKind()), ZqGrpGroupInfo::getIndustryMajorKind, bo.getIndustryMajorKind()); // 行业大类
-        lqw.eq(StringUtils.isNotBlank(bo.getIndustrySubKind()), ZqGrpGroupInfo::getIndustrySubKind, bo.getIndustrySubKind()); // 行业中类
-        lqw.eq(StringUtils.isNotBlank(bo.getIndustryDetailKind()), ZqGrpGroupInfo::getIndustryDetailKind, bo.getIndustryDetailKind()); // 行业小类
-        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ZqGrpGroupInfo::getBusiType, bo.getBusiType()); // 业务类型
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpCustType()), ZqGrpGroupInfo::getGrpCustType, bo.getGrpCustType()); // 群组客户类型
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpExpandType()), ZqGrpGroupInfo::getGrpExpandType, bo.getGrpExpandType()); // 群组拓展类型
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpBusiDeptType()), ZqGrpGroupInfo::getGrpBusiDeptType, bo.getGrpBusiDeptType()); // 群组业务部门类型
-        lqw.eq(StringUtils.isNotBlank(bo.getProvinceNewoldType()), ZqGrpGroupInfo::getProvinceNewoldType, bo.getProvinceNewoldType()); // 省份新旧类型
-        lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId()); // 负责人ID
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator()); // 群组创建人
-
-
-    // 时间查询条件
-        lqw.eq(bo.getGrpCreateTime() != null, ZqGrpGroupInfo::getGrpCreateTime, bo.getGrpCreateTime()); // 群组创建时间
-
-
-    // 省级经理员工ID查询条件
-        lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId()); // 省级经理员工ID
-        // 市级经理员工ID查询条件
-        lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId()); // 市级经理员工ID
-        // 县区级经理员工ID查询条件
-        lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupInfo::getCountyManagerEmpId, bo.getCountyManagerEmpId()); // 县区级经理员工ID
-
-        // 处理三个OA账号查询条件，使用OR关系连接
-        boolean hasOaCondition = false;
-
-        // 如果有OA相关条件，则添加到主查询条件中
-        if (StringUtils.isNotBlank(bo.getProvManagerOauser()) ||
-            StringUtils.isNotBlank(bo.getProvManagerName()) ||
-            StringUtils.isNotBlank(bo.getCityManagerOauser()) ||
-            StringUtils.isNotBlank(bo.getCityManagerName()) ||
-            StringUtils.isNotBlank(bo.getCountyManagerOauser()) ||
-            StringUtils.isNotBlank(bo.getCountyManagerName())) {
-
-            hasOaCondition = true;
-
-            // 使用单个and条件包裹所有OR条件，并显式指定Consumer类型
-            lqw.and((Consumer<LambdaQueryWrapper<ZqGrpGroupInfo>>) wrapper -> {
+        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
+            lqw.and(wrapper -> {
                 // 省级经理条件
-                if (StringUtils.isNotBlank(bo.getProvManagerOauser()) && StringUtils.isNotBlank(bo.getProvManagerName())) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getProvManagerOauser, bo.getProvManagerOauser())
-                                     .or()
-                                     .like(ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName()));
-                } else if (StringUtils.isNotBlank(bo.getProvManagerOauser())) {
-                    wrapper.or().like(ZqGrpGroupInfo::getProvManagerOauser, bo.getProvManagerOauser());
-                } else if (StringUtils.isNotBlank(bo.getProvManagerName())) {
-                    wrapper.or().like(ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
+                if (StringUtils.isNotBlank(provManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
                 }
 
                 // 市级经理条件
-                if (StringUtils.isNotBlank(bo.getCityManagerOauser()) && StringUtils.isNotBlank(bo.getCityManagerName())) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, bo.getCityManagerOauser())
-                                     .or()
-                                     .like(ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName()));
-                } else if (StringUtils.isNotBlank(bo.getCityManagerOauser())) {
-                    wrapper.or().like(ZqGrpGroupInfo::getCityManagerOauser, bo.getCityManagerOauser());
-                } else if (StringUtils.isNotBlank(bo.getCityManagerName())) {
-                    wrapper.or().like(ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName());
+                if (StringUtils.isNotBlank(cityManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
                 }
 
                 // 县区级经理条件
-                if (StringUtils.isNotBlank(bo.getCountyManagerOauser()) && StringUtils.isNotBlank(bo.getCountyManagerName())) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, bo.getCountyManagerOauser())
-                                     .or()
-                                     .like(ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName()));
-                } else if (StringUtils.isNotBlank(bo.getCountyManagerOauser())) {
-                    wrapper.or().like(ZqGrpGroupInfo::getCountyManagerOauser, bo.getCountyManagerOauser());
-                } else if (StringUtils.isNotBlank(bo.getCountyManagerName())) {
-                    wrapper.or().like(ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
+                if (StringUtils.isNotBlank(countyManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
                 }
             });
         }
 
-
-    // 创建时间和更新时间查询条件
-        lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime()); // 创建时间
-        lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime()); // 更新时间
-
-        // 处理时间范围查询参数
-        // 分配时间范围查询
-        lqw.between(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null,
-            ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
-        lqw.ge(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() == null,
-            ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart());
-        lqw.le(bo.getAssignTimeStart() == null && bo.getAssignTimeEnd() != null,
-            ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeEnd());
-
-        // 创建时间范围查询
-        lqw.between(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null,
-            ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
-        lqw.ge(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() == null,
-            ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
-        lqw.le(bo.getCreateTimeStart() == null && bo.getCreateTimeEnd() != null,
-            ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
-
-    // 返回组装好的查询条件包装器
+        lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
+        lqw.like(StringUtils.isNotBlank(bo.getCityManagerName()), ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupInfo::getCountyManagerEmpId, bo.getCountyManagerEmpId());
+        lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
+        lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
+        lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());
         return lqw;
     }
 
@@ -225,9 +197,33 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public Boolean updateByBo(ZqGrpGroupInfoBo bo) {
+        System.out.println("[DEBUG] updateByBo called with grpId: " + bo.getGrpId());
+
+        // 先获取变更前的数据
+        ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
+        if (originalInfo != null) {
+            System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
+        } else {
+            System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
+        }
+
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
         validEntityBeforeSave(update);
-        return baseMapper.updateById(update) > 0;
+        update.setCountyManagerName(null);
+        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId() + ", grpName: " + update.getGrpName());
+
+        // 执行更新操作
+        boolean success = baseMapper.updateById(update) > 0;
+        System.out.println("[DEBUG] Update operation result: " + success);
+
+        // 如果更新成功，记录变更日志
+        if (success) {
+            System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
+            boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, update, "T1"); // T1-集团基本信息变更
+            System.out.println("[DEBUG] recordChangeLog result: " + logResult);
+        }
+
+        return success;
     }
 
     /**
@@ -247,96 +243,4 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
-
-    /**
-     * 获取政企集团客户信息相关字典数据
-     */
-    @Override
-    public Map<String, List<SysDictData>> getDictData() {
-        Map<String, List<SysDictData>> result = new HashMap<>();
-
-        // 使用一个SQL查询获取所有需要的字段
-        LambdaQueryWrapper<ZqGrpGroupInfo> wrapper = Wrappers.lambdaQuery();
-        wrapper.select(
-            ZqGrpGroupInfo::getAreaId,
-            ZqGrpGroupInfo::getCountyId,
-            ZqGrpGroupInfo::getIndustryMajorKind,
-            ZqGrpGroupInfo::getIndustrySubKind,
-            ZqGrpGroupInfo::getGrpCustType,
-            ZqGrpGroupInfo::getGrpLevel,
-            ZqGrpGroupInfo::getGrpExpandType,
-            ZqGrpGroupInfo::getGrpBusiDeptType,
-            ZqGrpGroupInfo::getGrpStatus,
-            ZqGrpGroupInfo::getProvManagerName,
-            ZqGrpGroupInfo::getProvManagerOauser,
-            ZqGrpGroupInfo::getCityManagerName,
-            ZqGrpGroupInfo::getCityManagerOauser,
-            ZqGrpGroupInfo::getCountyManagerName,
-            ZqGrpGroupInfo::getCountyManagerOauser
-        );
-
-        List<ZqGrpGroupInfo> dataList = baseMapper.selectList(wrapper);
-
-        // 使用Stream API处理数据并去重
-        Map<String, Set<String>> distinctValues = new HashMap<>();
-
-        dataList.forEach(item -> {
-            // 地市
-            addDistinctValue(distinctValues, "areaList", item.getAreaId());
-            // 县市
-            addDistinctValue(distinctValues, "countyList", item.getCountyId());
-            // 行业大类
-            addDistinctValue(distinctValues, "industryMajorList", item.getIndustryMajorKind());
-            // 行业亚类
-            addDistinctValue(distinctValues, "industrySubList", item.getIndustrySubKind());
-            // 集团类别
-            addDistinctValue(distinctValues, "grpCustTypeList", item.getGrpCustType());
-            // 集团级别
-            addDistinctValue(distinctValues, "grpLevelList", item.getGrpLevel());
-            // 拓展客户类型
-            addDistinctValue(distinctValues, "grpExpandTypeList", item.getGrpExpandType());
-            // 客户归属分类
-            addDistinctValue(distinctValues, "grpBusiDeptTypeList", item.getGrpBusiDeptType());
-            // 集团状态
-            addDistinctValue(distinctValues, "grpStatusList", item.getGrpStatus());
-
-            // 省级经理
-            addDistinctValue(distinctValues, "provManagerNameList", item.getProvManagerName());
-            addDistinctValue(distinctValues, "provManagerOauserList", item.getProvManagerOauser());
-
-            // 市级经理
-            addDistinctValue(distinctValues, "cityManagerNameList", item.getCityManagerName());
-            addDistinctValue(distinctValues, "cityManagerOauserList", item.getCityManagerOauser());
-
-            // 县级经理
-            addDistinctValue(distinctValues, "countyManagerNameList", item.getCountyManagerName());
-            addDistinctValue(distinctValues, "countyManagerOauserList", item.getCountyManagerOauser());
-        });
-
-        // 转换为SysDictData列表
-        distinctValues.forEach((key, values) -> {
-            List<SysDictData> dictList = values.stream()
-                .filter(StringUtils::isNotBlank)
-                .map(value -> {
-                    SysDictData dictData = new SysDictData();
-                    dictData.setDictValue(value);
-                    dictData.setDictLabel(value);
-                    return dictData;
-                })
-                .collect(Collectors.toList());
-            result.put(key, dictList);
-        });
-
-        return result;
-    }
-
-    /**
-     * 添加去重值到Map中
-     */
-    private void addDistinctValue(Map<String, Set<String>> map, String key, String value) {
-        if (StringUtils.isNotBlank(value)) {
-            map.computeIfAbsent(key, k -> new HashSet<>()).add(value);
-        }
-    }
-
 }
