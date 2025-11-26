@@ -9,7 +9,7 @@ public class Desensitization {
      * @return 脱敏后的名称，如果输入为 null 或空字符串则返回原输入
      */
     public static String desensitizeCompanyName(String companyName) {
-        // 1. 处理 null 或空字符串的情况
+        // 1. 处理 null或空字符串的情况
         if (companyName == null || companyName.trim().isEmpty()) {
             return companyName;
         }
