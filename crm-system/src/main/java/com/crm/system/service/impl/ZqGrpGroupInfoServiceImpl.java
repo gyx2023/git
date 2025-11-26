@@ -15,8 +15,11 @@ import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
+import org.springframework.web.bind.annotation.RequestParam;
 
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -47,8 +50,22 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * 查询政企集团客户信息列表
      */
     @Override
-    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
+    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String beginTime, String endTime) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+
+        // 处理时间范围参数
+        if (beginTime != null && !beginTime.isEmpty() && endTime != null && !endTime.isEmpty()) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(beginTime);
+                Date endDate = sdf.parse(endTime);
+
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+            } catch (Exception e) {
+                System.out.println("时间参数解析失败: " + e.getMessage());
+            }
+        }
+
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         // 对查询结果进行脱敏处理
         List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
@@ -57,6 +74,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         result.setRecords(desensitizedList);
         return TableDataInfo.build(result);
     }
+
+
 
     /**
      * 查询政企集团客户信息列表
@@ -116,7 +135,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getProvinceNewoldType()), ZqGrpGroupInfo::getProvinceNewoldType, bo.getProvinceNewoldType());
         lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
-        lqw.eq(bo.getGrpCreateTime() != null, ZqGrpGroupInfo::getGrpCreateTime, bo.getGrpCreateTime());
+        // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerOauser()), ZqGrpGroupInfo::getProvManagerOauser, bo.getProvManagerOauser());
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());

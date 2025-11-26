@@ -42,8 +42,10 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/list")
-    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
-        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
+    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
+                                                @RequestParam(value = "grpCreateTimeBegin", required = false) String beginTime,
+                                                @RequestParam(value = "grpCreateTimeEnd", required = false) String endTime) {
+        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery, beginTime, endTime);
     }
 
     /**

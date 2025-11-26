@@ -24,7 +24,7 @@ public interface IZqGrpGroupInfoService {
     /**
      * 查询政企集团客户信息列表
      */
-    TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
+    TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String beginTime, String endTime);
 
     /**
      * 查询政企集团客户信息列表
