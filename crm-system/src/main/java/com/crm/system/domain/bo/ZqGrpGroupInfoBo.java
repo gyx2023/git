@@ -210,5 +210,8 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
     private String countyManagerName;
 
 
+    private String grpCreateTimeBegin;
+
+    private String grpCreateTimeEnd;
 
 }

@@ -50,17 +50,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * 查询政企集团客户信息列表
      */
     @Override
-    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String beginTime, String endTime) {
+    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
 
         // 处理时间范围参数
-        if (beginTime != null && !beginTime.isEmpty() && endTime != null && !endTime.isEmpty()) {
+        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
             try {
+                // 前端已传入完整的时间格式(yyyy-MM-dd HH:mm:ss)，直接解析使用
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(beginTime);
-                Date endDate = sdf.parse(endTime);
-
+                Date beginDate = sdf.parse(grpCreateTimeBegin);
+                Date endDate = sdf.parse(grpCreateTimeEnd);
+                System.out.println("成功应用时间范围查询: " + grpCreateTimeBegin + " 到 " + grpCreateTimeEnd);
                 lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+
             } catch (Exception e) {
                 System.out.println("时间参数解析失败: " + e.getMessage());
             }
