@@ -32,7 +32,7 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
     /**
      * 集团名称
      */
-    @NotBlank(message = "集团名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "集团名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String grpName;
 
     /**
@@ -158,55 +158,55 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
     /**
      * 省级客户经理（省分字段）
      */
-    @NotBlank(message = "省级客户经理（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "省级客户经理（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String provManagerEmpId;
 
     /**
      * 省级客户经理OA账号（省分字段）
      */
-    @NotBlank(message = "省级客户经理OA账号（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "省级客户经理OA账号（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String provManagerOauser;
 
     /**
      * 省级客户名字（省分字段）
      */
-    @NotBlank(message = "省级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "省级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String provManagerName;
 
     /**
      * 市级客户经理（省分字段）
      */
-    @NotBlank(message = "市级客户经理（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "市级客户经理（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String cityManagerEmpId;
 
     /**
      * 市级客户经理OA账号（省分字段）
      */
-    @NotBlank(message = "市级客户经理OA账号（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "市级客户经理OA账号（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String cityManagerOauser;
 
     /**
      * 市级客户名字（省分字段）
      */
-    @NotBlank(message = "市级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "市级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String cityManagerName;
 
     /**
      * 县级客户经理（省分字段）
      */
-    @NotBlank(message = "县级客户经理（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "县级客户经理（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String countyManagerEmpId;
 
     /**
      * 县级客户经理OA账号（省分字段）
      */
-    @NotBlank(message = "县级客户经理OA账号（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "县级客户经理OA账号（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String countyManagerOauser;
 
     /**
      * 县级客户名字（省分字段）
      */
-    @NotBlank(message = "县级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "县级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String countyManagerName;
 
 

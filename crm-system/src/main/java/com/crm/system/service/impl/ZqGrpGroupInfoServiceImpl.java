@@ -195,6 +195,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public Boolean updateByBo(ZqGrpGroupInfoBo bo) {
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
         validEntityBeforeSave(update);
+        update.setCountyManagerName(null);
         return baseMapper.updateById(update) > 0;
     }
 
