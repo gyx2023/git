@@ -3,12 +3,9 @@ package com.crm.system.domain;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
-import java.util.Date;
-import java.math.BigDecimal;
 
 import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
+
 import com.crm.common.core.domain.BaseEntity;
 
 /**
@@ -17,6 +14,7 @@ import com.crm.common.core.domain.BaseEntity;
  * @author crm
  * @date 2025-11-20
  */
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("zq_grp_group_info")
@@ -27,6 +25,7 @@ public class ZqGrpGroupInfo extends BaseEntity {
     /**
      * 集团标识
      */
+    @TableId(value = "GRP_ID")
     private Long grpId;
     /**
      * 集团名称
@@ -69,9 +68,7 @@ public class ZqGrpGroupInfo extends BaseEntity {
      */
     private String gridId;
     /**
-     * 行业大类:01-金融业,02-党政军部门,03-科学教育文化体育卫生出版业,04-旅游饭店娱乐服务业,
-     *        05-采掘业和加工制造业,06-公共服务业,07-交通运输仓储和邮政业,08-批发零售业,
-     *        09-房地产业,10-建筑业,11-计算机信息业,12-农林牧副渔,99-其他
+     * 行业大类:01-金融业,02-党政军部门,03-科学教育文化体育卫生出版业,04-旅游饭店娱乐服务业,05-采掘业和加工制造业,06-公共服务业,07-交通运输仓储和邮政业,08-批发零售业,09-房地产业,10-建筑业,11-计算机信息业,12-农林牧副渔,99-其他
      */
     private String industryMajorKind;
     /**
@@ -95,19 +92,7 @@ public class ZqGrpGroupInfo extends BaseEntity {
      */
     private String grpExpandType;
     /**
-     * 集团客户业务部门分类:01-数字政府BU,02-军政（政法）,03-证券保险客户中心,
-     *                  04-银行客户中心,05-军政（军民融合）,智慧城市BU-智慧城市BU,
-     *                  07-智慧园区BU,08-教育行业BU,09-系统集成客户,
-     *                  10-生态环境（生态）,11-政法客户,12-军政客户,
-     *                  13-现代服务（交通）,14-智慧民生客户,15-健康文旅（医疗）,
-     *                  16-公共事业客户中心,17-智算营销中心（云数据）,18-工业互联网BU,
-     *                  19-健康文旅（文旅）,20-智慧制造客户,21-省行业客户部,
-     *                  22-商企客户,23-战略客户,24-生态环境（农业）,
-     *                  25-科创企业客户中心,26-政要客户,27-金融客户,
-     *                  28-阿里中心,29-网易中心,30-产业互联网客户,
-     *                  31-企业服务一部,32-企业服务二部,33-纺织服装行业服务部,
-     *                  34-现代服务（商贸）,35-健康文旅客户中心,36-吉利中心,
-     *                  98-公众客户,99-中小企业
+     * 集团客户业务部门分类:01-数字政府BU,02-军政（政法）,03-证券保险客户中心,04-银行客户中心,05-军政（军民融合）,06-智慧城市BU,07-智慧园区BU,08-教育行业BU,09-系统集成客户,10-生态环境（生态）,11-政法客户,12-军政客户,13-现代服务（交通）,14-智慧民生客户,15-健康文旅（医疗）,16-公共事业客户中心,17-智算营销中心（云数据）,18-工业互联网BU,19-健康文旅（文旅）,20-智慧制造客户,21-省行业客户部,22-商企客户,23-战略客户,24-生态环境（农业）,25-科创企业客户中心,26-政要客户,27-金融客户,28-阿里中心,29-网易中心,30-产业互联网客户,31-企业服务一部,32-企业服务二部,33-纺织服装行业服务部,34-现代服务（商贸）,35-健康文旅客户中心,36-吉利中心,98-公众客户,99-中小企业
      */
     private String grpBusiDeptType;
     /**
@@ -163,7 +148,6 @@ public class ZqGrpGroupInfo extends BaseEntity {
      */
     private String countyManagerName;
 
-    // 覆盖基类中的字段，告诉MyBatis-Plus这个字段在数据库中不存在
     @TableField(exist = false)
     private String createBy;
 

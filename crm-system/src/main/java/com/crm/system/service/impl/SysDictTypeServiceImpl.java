@@ -298,4 +298,22 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         }
     }
 
+    /**
+     * 批量根据字典类型查询字典数据
+     *
+     * @param dictTypes 字典类型列表
+     * @return 字典数据映射，key为字典类型，value为字典数据集合
+     */
+    @Override
+    public Map<String, List<SysDictData>> selectDictDataByTypes(List<String> dictTypes) {
+        Map<String, List<SysDictData>> result = new HashMap<>();
+        if (CollUtil.isNotEmpty(dictTypes)) {
+            for (String dictType : dictTypes) {
+                // 利用Spring AOP代理调用缓存方法
+                List<SysDictData> dictDatas = SpringUtils.getAopProxy(this).selectDictDataByType(dictType);
+                result.put(dictType, dictDatas != null ? dictDatas : new ArrayList<>());
+            }
+        }
+        return result;
+    }
 }

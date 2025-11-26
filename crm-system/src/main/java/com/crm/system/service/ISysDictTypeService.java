@@ -7,6 +7,7 @@ import com.crm.common.core.page.TableDataInfo;
 import java.util.Map;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 字典 业务层
@@ -110,4 +111,12 @@ public interface ISysDictTypeService {
      * @return 结果
      */
     boolean checkDictTypeUnique(SysDictType dictType);
+
+    /**
+     * 批量根据字典类型查询字典数据
+     *
+     * @param dictTypes 字典类型列表
+     * @return 字典数据映射，key为字典类型，value为字典数据集合
+     */
+    Map<String, List<SysDictData>> selectDictDataByTypes(List<String> dictTypes);
 }

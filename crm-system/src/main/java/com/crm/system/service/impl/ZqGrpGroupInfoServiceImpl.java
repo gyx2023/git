@@ -132,17 +132,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 处理三个OA账号查询条件，使用OR关系连接
         boolean hasOaCondition = false;
-        
+
         // 如果有OA相关条件，则添加到主查询条件中
-        if (StringUtils.isNotBlank(bo.getProvManagerOauser()) || 
-            StringUtils.isNotBlank(bo.getProvManagerName()) || 
-            StringUtils.isNotBlank(bo.getCityManagerOauser()) || 
-            StringUtils.isNotBlank(bo.getCityManagerName()) || 
-            StringUtils.isNotBlank(bo.getCountyManagerOauser()) || 
+        if (StringUtils.isNotBlank(bo.getProvManagerOauser()) ||
+            StringUtils.isNotBlank(bo.getProvManagerName()) ||
+            StringUtils.isNotBlank(bo.getCityManagerOauser()) ||
+            StringUtils.isNotBlank(bo.getCityManagerName()) ||
+            StringUtils.isNotBlank(bo.getCountyManagerOauser()) ||
             StringUtils.isNotBlank(bo.getCountyManagerName())) {
-            
+
             hasOaCondition = true;
-            
+
             // 使用单个and条件包裹所有OR条件，并显式指定Consumer类型
             lqw.and((Consumer<LambdaQueryWrapper<ZqGrpGroupInfo>>) wrapper -> {
                 // 省级经理条件
@@ -155,7 +155,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 } else if (StringUtils.isNotBlank(bo.getProvManagerName())) {
                     wrapper.or().like(ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
                 }
-                
+
                 // 市级经理条件
                 if (StringUtils.isNotBlank(bo.getCityManagerOauser()) && StringUtils.isNotBlank(bo.getCityManagerName())) {
                     wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, bo.getCityManagerOauser())
@@ -166,7 +166,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 } else if (StringUtils.isNotBlank(bo.getCityManagerName())) {
                     wrapper.or().like(ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName());
                 }
-                
+
                 // 县区级经理条件
                 if (StringUtils.isNotBlank(bo.getCountyManagerOauser()) && StringUtils.isNotBlank(bo.getCountyManagerName())) {
                     wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, bo.getCountyManagerOauser())
@@ -187,19 +187,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 处理时间范围查询参数
         // 分配时间范围查询
-        lqw.between(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null, 
+        lqw.between(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null,
             ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
-        lqw.ge(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() == null, 
+        lqw.ge(bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() == null,
             ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart());
-        lqw.le(bo.getAssignTimeStart() == null && bo.getAssignTimeEnd() != null, 
+        lqw.le(bo.getAssignTimeStart() == null && bo.getAssignTimeEnd() != null,
             ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeEnd());
 
         // 创建时间范围查询
-        lqw.between(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null, 
+        lqw.between(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null,
             ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
-        lqw.ge(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() == null, 
+        lqw.ge(bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() == null,
             ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
-        lqw.le(bo.getCreateTimeStart() == null && bo.getCreateTimeEnd() != null, 
+        lqw.le(bo.getCreateTimeStart() == null && bo.getCreateTimeEnd() != null,
             ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
 
     // 返回组装好的查询条件包装器

@@ -40,6 +40,14 @@
             <groupId>com.crm</groupId>
             <artifactId>crm-sms</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.crm</groupId>
+            <artifactId>crm-generator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.crm</groupId>
+            <artifactId>crm-generator</artifactId>
+        </dependency>
 
     </dependencies>
 

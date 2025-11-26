@@ -105,7 +105,7 @@ public class SysCategoryController extends BaseController {
                           @PathVariable String[] ids) {
         return toAjax(iSysCategoryService.deleteWithValidByIds(Arrays.asList(ids), true));
     }
-    
+
     /**
      * 获取所有type="大类"的数据
      */
@@ -113,7 +113,7 @@ public class SysCategoryController extends BaseController {
     public R<List<SysCategoryVo>> getMajorCategories() {
         return R.ok(iSysCategoryService.getMajorCategories());
     }
-    
+
     /**
      * 根据父ID获取子分类数据
      *

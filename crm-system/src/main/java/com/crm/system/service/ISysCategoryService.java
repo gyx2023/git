@@ -33,6 +33,16 @@ public interface ISysCategoryService {
     List<SysCategoryVo> queryList(SysCategoryBo bo);
 
     /**
+     * 查询所有行业大类列表
+     */
+    List<SysCategoryVo> selectMajorCategories();
+
+    /**
+     * 根据父级ID查询行业亚类列表
+     */
+    List<SysCategoryVo> selectSubCategoriesByParentId(String parentId);
+
+    /**
      * 新增行业大类-亚类-细类分类
      */
     Boolean insertByBo(SysCategoryBo bo);
@@ -46,12 +56,12 @@ public interface ISysCategoryService {
      * 校验并批量删除行业大类-亚类-细类分类信息
      */
     Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid);
-    
+
     /**
      * 获取所有type="大类"的数据
      */
     List<SysCategoryVo> getMajorCategories();
-    
+
     /**
      * 根据父ID获取子分类数据
      * @param parentId 父分类ID

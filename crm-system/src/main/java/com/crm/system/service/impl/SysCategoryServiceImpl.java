@@ -98,7 +98,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
     private void validEntityBeforeSave(SysCategory entity){
         //TODO 做一些数据校验,如唯一约束
     }
-    
+
     /**
      * 获取所有type="大类"的数据
      */
@@ -108,7 +108,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
         lqw.eq(SysCategory::getType, "大类");
         return baseMapper.selectVoList(lqw);
     }
-    
+
     /**
      * 根据父ID获取子分类数据
      */

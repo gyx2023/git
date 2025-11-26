@@ -121,17 +121,17 @@ public class SysAreaServiceImpl implements ISysAreaService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
-    
+
     /**
      * 获取浙江省下所有地级市
      */
     @Override
     public List<SysAreaVo> getZhejiangCities() {
         logger.info("开始查询浙江省下所有地级市");
-        
+
         // 根据用户提供的信息，浙江省的ID是330000，名称是"省本级"
         Long zhejiangId = 330000L;
-        
+
         try {
             // 直接查询所有父级为浙江省(ID=330000)的地区
             List<SysAreaVo> cities = baseMapper.selectVoList(new LambdaQueryWrapper<SysArea>()
@@ -141,29 +141,29 @@ public class SysAreaServiceImpl implements ISysAreaService {
         } catch (Exception e) {
             logger.error("查询浙江省下地级市时发生异常: {}", e.getMessage());
         }
-        
+
         logger.warn("未找到浙江省(ID=330000)下的相关数据");
         return new ArrayList<>();
     }
-    
+
     /**
      * 根据二级地市ID获取对应的三级县市数据
      */
     @Override
     public List<SysAreaVo> getCountiesByCityId(Long cityId) {
         logger.info("开始根据地市ID查询下属县市，cityId: {}", cityId);
-        
+
         if (cityId == null) {
             logger.warn("传入的cityId为null");
             return new ArrayList<>();
         }
-        
+
         try {
             // 先查询指定ID的地市信息
             SysArea city = baseMapper.selectById(cityId);
             if (city != null) {
                 logger.info("找到地市信息: {}, Type: {}", city.getName(), city.getType());
-                
+
                 // 查询所有父级为指定地市的地区，不依赖固定的type值
                 List<SysAreaVo> counties = baseMapper.selectVoList(new LambdaQueryWrapper<SysArea>()
                     .eq(SysArea::getParent, cityId));
@@ -175,7 +175,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
         } catch (Exception e) {
             logger.error("查询下属县市时发生异常: {}", e.getMessage());
         }
-        
+
         return new ArrayList<>();
     }
 }

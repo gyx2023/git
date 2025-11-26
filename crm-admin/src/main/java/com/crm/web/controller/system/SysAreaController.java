@@ -105,7 +105,7 @@ public class SysAreaController extends BaseController {
                           @PathVariable Long[] ids) {
         return toAjax(iSysAreaService.deleteWithValidByIds(Arrays.asList(ids), true));
     }
-    
+
     /**
      * 获取浙江省下所有地级市
      */
@@ -113,7 +113,7 @@ public class SysAreaController extends BaseController {
     public R<List<SysAreaVo>> getZhejiangCities() {
         return R.ok(iSysAreaService.getZhejiangCities());
     }
-    
+
     /**
      * 根据二级地市ID获取对应的三级县市数据
      */

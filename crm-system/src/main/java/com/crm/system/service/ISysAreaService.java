@@ -33,6 +33,16 @@ public interface ISysAreaService {
     List<SysAreaVo> queryList(SysAreaBo bo);
 
     /**
+     * 查询浙江省地级市列表
+     */
+    List<SysAreaVo> queryZhejiangCities();
+
+    /**
+     * 根据地级市ID查询其下辖的区县列表
+     */
+    List<SysAreaVo> queryCountyListByCityId(String areaId);
+
+    /**
      * 新增【请填写功能名称】
      */
     Boolean insertByBo(SysAreaBo bo);
@@ -46,12 +56,12 @@ public interface ISysAreaService {
      * 校验并批量删除【请填写功能名称】信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
-    
+
     /**
      * 获取浙江省下所有地级市
      */
     List<SysAreaVo> getZhejiangCities();
-    
+
     /**
      * 根据二级地市ID获取对应的三级县市数据
      * @param cityId 二级地市ID
