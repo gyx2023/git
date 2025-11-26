@@ -77,4 +77,6 @@ public class SysDept extends TreeEntity<SysDept> {
      */
     private String ancestors;
 
+    private String areaCode;
+
 }

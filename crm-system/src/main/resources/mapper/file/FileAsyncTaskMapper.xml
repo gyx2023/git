@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.file.FileAsyncTaskMapper">
+
+    <resultMap type="com.crm.system.domain.file.FileAsyncTaskDO" id="FileAsyncTaskResult">
+        <id     property="id"          column="id"          />
+        <result property="taskId"      column="task_id"      />
+        <result property="taskName"    column="task_name"    />
+        <result property="taskType"    column="task_type"    />
+        <result property="businessType" column="business_type" />
+        <result property="filePath"    column="file_path"    />
+        <result property="requestParams" column="request_params" />
+        <result property="status"      column="status"      />
+        <result property="errorMsg"    column="error_msg"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+    </resultMap>
+
+    <sql id="selectFileAsyncTaskVo">
+        select id, task_id, task_name, task_type, business_type, file_path, request_params, status, error_msg, create_by, create_time, update_by, update_time
+        from sys_file_async_task
+    </sql>
+
+    <select id="selectMaxTaskIdByDate" resultType="java.lang.Long">
+        select max(task_id) as max_task_id
+        from sys_file_async_task
+        where DATE_FORMAT(create_time, '%Y%m%d') = #{dateStr}
+    </select>
+
+    <!-- 查询待处理的任务列表 -->
+    <select id="selectPendingTasks" parameterType="int" resultMap="FileAsyncTaskDOResult">
+        select
+            task_id,
+            task_name,
+            task_type,
+            file_name,
+            file_url,
+            file_size,
+            business_type,
+            total_rows,
+            success_rows,
+            fail_rows,
+            status,
+            start_time,
+            finish_time,
+            remark,
+            request_params,
+            result_file_name,
+            result_file_url,
+            create_user_id
+        from
+            zqzt_file_async_task
+        where
+            status = 0
+        order by
+            create_time asc
+            limit #{limit}
+    </select>
+
+    <!-- 更新任务状态为处理中 -->
+    <update id="updateTaskStatusToProcessing" parameterType="long">
+        update
+            zqzt_file_async_task
+        set
+            status = 1,
+            update_time = now()
+        where
+            task_id = #{taskId}
+          and status = 0
+    </update>
+
+    <!-- 更新任务信息 -->
+    <update id="updateTask" parameterType="com.crm.system.domain.file.FileAsyncTaskDO">
+        update
+            zqzt_file_async_task
+        set
+            task_name = #{taskName},
+            task_type = #{taskType},
+            file_name = #{fileName},
+            file_url = #{fileUrl},
+            file_size = #{fileSize},
+            business_type = #{businessType},
+            total_rows = #{totalRows},
+            success_rows = #{successRows},
+            fail_rows = #{failRows},
+            status = #{status},
+            start_time = #{startTime},
+            finish_time = #{finishTime},
+            remark = #{remark},
+            request_params = #{requestParams},
+            result_file_name = #{resultFileName},
+            result_file_url = #{resultFileUrl},
+            update_time = now()
+        where
+            task_id = #{taskId}
+    </update>
+</mapper>

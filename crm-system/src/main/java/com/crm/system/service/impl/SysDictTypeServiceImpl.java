@@ -12,9 +12,11 @@ import com.crm.common.constant.UserConstants;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.entity.SysDictType;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.service.DictService;
 import com.crm.common.exception.ServiceException;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.CacheUtils;
@@ -23,6 +25,7 @@ import com.crm.system.mapper.SysDictDataMapper;
 import com.crm.system.mapper.SysDictTypeMapper;
 import com.crm.system.service.ISysDictTypeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
  *
  * @author Lion Li
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService {
@@ -45,6 +49,8 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
 
     @Override
     public TableDataInfo<SysDictType> selectPageDictTypeList(SysDictType dictType, PageQuery pageQuery) {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        log.info("loginUser.areacode：{}", loginUser.getAreaCode());
         Map<String, Object> params = dictType.getParams();
         LambdaQueryWrapper<SysDictType> lqw = new LambdaQueryWrapper<SysDictType>()
             .like(StringUtils.isNotBlank(dictType.getDictName()), SysDictType::getDictName, dictType.getDictName())
