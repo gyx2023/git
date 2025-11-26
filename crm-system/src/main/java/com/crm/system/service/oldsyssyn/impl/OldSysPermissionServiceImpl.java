@@ -93,7 +93,7 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
                     return sysRoleMenu;
                 }).collect(Collectors.toList());
                 sysRoleMenuList.addAll(sysRoleMenus);
-
+                sysRoleMenuMapper.deleteRoleMenuByRoleId(Long.valueOf(oldSysRoleDO.getId()));
             }
         });
         sysRoleMenuList.forEach(p -> {

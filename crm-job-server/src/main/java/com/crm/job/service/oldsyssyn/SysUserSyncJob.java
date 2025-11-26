@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -53,6 +54,22 @@ public class SysUserSyncJob {
         log.info("开始执行系统用户同步任务...");
 
         try {
+            // 在同步前清空zqzt_sys_user表（使用TRUNCATE方式清空，更高效且重置自增ID）
+            try {
+                XxlJobHelper.log("开始清空zqzt_sys_user表...");
+                log.info("开始清空zqzt_sys_user表...");
+                // 使用自定义SQL执行TRUNCATE操作，高效清空表并重置自增ID
+                sysUserMapper.executeTruncate();
+                XxlJobHelper.log("zqzt_sys_user表TRUNCATE完成");
+                log.info("zqzt_sys_user表TRUNCATE完成");
+            } catch (Exception e) {
+                XxlJobHelper.log("清空zqzt_sys_user表失败：{}", e.getMessage());
+                log.error("清空zqzt_sys_user表失败：{}", e.getMessage(), e);
+                // 设置任务执行失败
+                XxlJobHelper.handleFail("清空zqzt_sys_user表失败：" + e.getMessage());
+                return; // 表清空失败，终止后续同步操作
+            }
+
             // 查询所有sys_user数据
             List<OldSysUserDO> oldSysUserList = oldSysUserMapper.selectList(null);
 
@@ -61,6 +78,8 @@ public class SysUserSyncJob {
 
             int successCount = 0;
             int skipCount = 0;
+            int batchSize = 50; // 批处理大小
+            List<SysUser> batchInsertList = new ArrayList<>();
 
             for (OldSysUserDO oldUser : oldSysUserList) {
                 try {
@@ -71,38 +90,40 @@ public class SysUserSyncJob {
                         continue;
                     }
 
-                    // 检查是否已存在
-                    SysUser existingUser = sysUserMapper.selectOne(
-                        new LambdaQueryWrapper<SysUser>()
-                            .eq(SysUser::getUserName, oldUser.getName())
-                    );
-
-                    if (existingUser != null) {
-                        XxlJobHelper.log("用户{}已存在，跳过同步", oldUser.getName());
-                        log.debug("用户{}已存在，跳过同步", oldUser.getName());
-                        skipCount++;
-                        continue;
-                    }
-
+                    // 由于已使用TRUNCATE清空表，不需要再检查是否存在
                     // 创建新用户对象
                     SysUser newUser = buildSysUserFromOldUser(oldUser);
+                    batchInsertList.add(newUser);
+                    successCount++;
 
-                    // 插入数据
-                    int result = sysUserMapper.insert(newUser);
-                    if (result > 0) {
-                        successCount++;
-                        XxlJobHelper.log("成功同步用户：{}", oldUser.getName());
-                        log.debug("成功同步用户：{}", oldUser.getName());
+                    // 当积累到batchSize条记录时，执行批量插入
+                    if (batchInsertList.size() >= batchSize) {
+                        sysUserMapper.insertBatch(batchInsertList);
+                        XxlJobHelper.log("批量插入{}条用户数据成功", batchInsertList.size());
+                        log.info("批量插入{}条用户数据成功", batchInsertList.size());
+                        batchInsertList.clear();
                     }
 
                 } catch (Exception e) {
                     XxlJobHelper.log("同步用户{}失败：{}", oldUser.getName(), e.getMessage());
                     log.error("同步用户{}失败：{}", oldUser.getName(), e.getMessage());
+                    // 从批处理列表中移除失败的记录
+                    if (!batchInsertList.isEmpty()) {
+                        batchInsertList.remove(batchInsertList.size() - 1);
+                        successCount--;
+                    }
                 }
             }
 
-            XxlJobHelper.log("系统用户同步任务完成，成功同步{}条数据，跳过{}条已存在数据", successCount, skipCount);
-            log.info("系统用户同步任务完成，成功同步{}条数据，跳过{}条已存在数据", successCount, skipCount);
+            // 处理最后一批不足batchSize的数据
+            if (!batchInsertList.isEmpty()) {
+                sysUserMapper.insertBatch(batchInsertList);
+                XxlJobHelper.log("批量插入最后{}条用户数据成功", batchInsertList.size());
+                log.info("批量插入最后{}条用户数据成功", batchInsertList.size());
+            }
+
+            XxlJobHelper.log("系统用户同步任务完成，成功同步{}条数据", successCount);
+            log.info("系统用户同步任务完成，成功同步{}条数据", successCount);
 
 
         } catch (Exception e) {
@@ -125,6 +146,21 @@ public class SysUserSyncJob {
         log.info("开始执行部门同步任务...");
 
         try {
+            // 在同步前清空zqzt_sys_dept表（使用TRUNCATE方式清空，更高效且重置自增ID）
+            try {
+                XxlJobHelper.log("开始清空zqzt_sys_dept表...");
+                log.info("开始清空zqzt_sys_dept表...");
+                // 使用自定义SQL执行TRUNCATE操作，高效清空表并重置自增ID
+                sysDeptMapper.executeTruncate();
+                XxlJobHelper.log("zqzt_sys_dept表TRUNCATE完成");
+                log.info("zqzt_sys_dept表TRUNCATE完成");
+            } catch (Exception e) {
+                XxlJobHelper.log("清空zqzt_sys_dept表失败：{}", e.getMessage());
+                log.error("清空zqzt_sys_dept表失败：{}", e.getMessage(), e);
+                // 部门表清空失败，记录错误但继续执行（因为这是在子方法中）
+                return;
+            }
+
             // 查询所有sys_orgd数据
             List<OldSysOrgDO> oldSysOrgList = oldSysOrgMapper.selectList(null);
 
@@ -132,42 +168,45 @@ public class SysUserSyncJob {
             log.info("查询到{}条sys_orgd数据", oldSysOrgList.size());
 
             int successCount = 0;
-            int skipCount = 0;
+            int batchSize = 50; // 批处理大小
+            List<SysDept> batchInsertList = new ArrayList<>();
 
             for (OldSysOrgDO oldOrg : oldSysOrgList) {
                 try {
-                    // 检查是否已存在
-                    SysDept existingDept = sysDeptMapper.selectOne(
-                        new LambdaQueryWrapper<SysDept>()
-                            .eq(SysDept::getDeptId, oldOrg.getId())
-                    );
-
-                    if (existingDept != null) {
-                        XxlJobHelper.log("部门{}已存在，跳过同步", oldOrg.getId());
-                        log.debug("部门{}已存在，跳过同步", oldOrg.getId());
-                        skipCount++;
-                        continue;
-                    }
-
+                    // 由于已使用TRUNCATE清空表，不需要再检查是否存在
                     // 创建新部门对象
                     SysDept newDept = buildSysDeptFromOldOrg(oldOrg);
+                    batchInsertList.add(newDept);
+                    successCount++;
 
-                    // 插入数据
-                    int result = sysDeptMapper.insert(newDept);
-                    if (result > 0) {
-                        successCount++;
-                        XxlJobHelper.log("成功同步部门：{}", oldOrg.getId());
-                        log.debug("成功同步部门：{}", oldOrg.getId());
+                    // 当积累到batchSize条记录时，执行批量插入
+                    if (batchInsertList.size() >= batchSize) {
+                        sysDeptMapper.insertBatch(batchInsertList);
+                        XxlJobHelper.log("批量插入{}条部门数据成功", batchInsertList.size());
+                        log.info("批量插入{}条部门数据成功", batchInsertList.size());
+                        batchInsertList.clear();
                     }
 
                 } catch (Exception e) {
                     XxlJobHelper.log("同步部门{}失败：{}", oldOrg.getId(), e.getMessage());
                     log.error("同步部门{}失败：{}", oldOrg.getId(), e.getMessage());
+                    // 从批处理列表中移除失败的记录
+                    if (!batchInsertList.isEmpty()) {
+                        batchInsertList.remove(batchInsertList.size() - 1);
+                        successCount--;
+                    }
                 }
             }
 
-            XxlJobHelper.log("部门同步任务完成，成功同步{}条数据，跳过{}条已存在数据", successCount, skipCount);
-            log.info("部门同步任务完成，成功同步{}条数据，跳过{}条已存在数据", successCount, skipCount);
+            // 处理最后一批不足batchSize的数据
+            if (!batchInsertList.isEmpty()) {
+                sysDeptMapper.insertBatch(batchInsertList);
+                XxlJobHelper.log("批量插入最后{}条部门数据成功", batchInsertList.size());
+                log.info("批量插入最后{}条部门数据成功", batchInsertList.size());
+            }
+
+            XxlJobHelper.log("部门同步任务完成，成功同步{}条数据", successCount);
+            log.info("部门同步任务完成，成功同步{}条数据", successCount);
 
         } catch (Exception e) {
             XxlJobHelper.log("部门同步任务执行失败：{}", e.getMessage());

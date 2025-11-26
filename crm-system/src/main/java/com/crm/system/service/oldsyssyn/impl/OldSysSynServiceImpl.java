@@ -3,6 +3,7 @@ package com.crm.system.service.oldsyssyn.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.crm.common.constant.CacheConstants;
 import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
@@ -10,6 +11,7 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.TokenUtil;
+import com.crm.common.utils.redis.RedisUtils;
 import com.crm.system.service.ISysDeptService;
 import com.crm.system.service.ISysUserService;
 import com.crm.system.service.SysPermissionService;
@@ -109,17 +111,54 @@ public class OldSysSynServiceImpl implements OldSysSynService {
             loginUser.setRoles(roles);
 
 
-            // 7. 执行登录
-            LoginHelper.login(loginUser);
+            // 7. 检查用户是否已经登录
+            String existingToken = null;
+            try {
+                // 通过用户ID直接从Redis中获取对应的token（高性能查询）
+               existingToken = StpUtil.getTokenValueByLoginId(loginUser.getUserType()+":"+loginUser.getUserId());
+                // 如果找到了token，验证其是否仍然有效
+                if (existingToken != null) {
+                    try {
+                        // 检查token是否已过期或被踢下线
+                        if (StpUtil.stpLogic.getTokenActivityTimeoutByToken(existingToken) >= 0) {
+                            // 进一步验证token对应的用户是否匹配
+                            LoginUser onlineUser = LoginHelper.getLoginUser(existingToken);
+                            if (onlineUser != null && onlineUser.getUserId().equals(user.getUserId())) {
+                                log.info("用户: {} 已登录，复用现有token，无需重新登录", user.getUserName());
+                            } else {
+                                // token存在但用户不匹配，视为无效
+                                existingToken = null;
+                            }
+                        } else {
+                            // token已过期，清理映射关系
+                            existingToken = null;
+                        }
+                    } catch (Exception e) {
+                        // token无效或已过期
+                        existingToken = null;
+                        log.debug("验证token有效性失败: {}", e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                // 获取token失败，视为用户未登录
+                existingToken = null;
+                log.debug("获取用户token失败: {}", e.getMessage());
+            }
+
+            // 如果用户未登录，则执行登录
+            if (existingToken == null) {
+                // 执行正常登录流程
+                LoginHelper.login(loginUser);
+                log.info("用户: {} 执行新登录", user.getUserName());
+            }
 
             // 8. 如果有redirect参数，执行页面跳转
             if (redirect != null && !redirect.trim().isEmpty()) {
-                // 获取登录后的token
-                String newToken = StpUtil.getTokenValue();
+                // 获取token（复用的或新生成的）
+                String token = existingToken != null ? existingToken : StpUtil.getTokenValue();
 
                 // 构建带token的重定向URL
-                redirect = "http://127.0.0.1:1026/system/dict";
-                String redirectUrl = buildRedirectUrlWithToken(redirect, newToken);
+                String redirectUrl = buildRedirectUrlWithToken(redirect, token);
                 log.info("SSO登录成功，重定向到: {}", redirectUrl);
                 response.sendRedirect(redirectUrl);
             }
