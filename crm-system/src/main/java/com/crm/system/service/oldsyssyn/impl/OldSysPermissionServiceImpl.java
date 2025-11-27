@@ -51,17 +51,17 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void synMenuPermission(SysUser user) {
+    public void synMenuPermission(Long userId) {
         log.info("开始同步用户菜单权限");
-        log.info("用户ID: {}", user.getUserId());
-        OldSysUserDO oldSysUserDO = oldSysUserMapper.selectVoById(user.getUserId());
+        log.info("用户ID: {}", userId);
+        OldSysUserDO oldSysUserDO = oldSysUserMapper.selectVoById(userId);
         String roleList = oldSysUserDO.getRoleList();
 
         // 处理roleList：去除前后逗号并转换为List
         List<String> roleIdList = parseRoleListToList(roleList);
         log.info("解析后的角色ID列表: {}", roleIdList);
         //删除用户角色绑定关系
-        sysUserRoleMapper.deleteByUserId(user.getUserId());
+        sysUserRoleMapper.deleteByUserId(userId);
         //根据roleIdList查询老系统sys_role表
         List<OldSysRoleDO> oldSysRoleDOS = oldSysRoleMapper.selectList(new LambdaQueryWrapper<OldSysRoleDO>().in(OldSysRoleDO::getId, roleIdList).eq(OldSysRoleDO::getValid, true));
         //将这些role同步到新系统，同步规则为，如果该角色在老系统配置了新系统的菜单权限则进行同步，否则不同步
@@ -69,22 +69,22 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
         List<SysUserRole> sysUserRoles = new ArrayList<>();
         List<SysRoleMenu> sysRoleMenuList = new ArrayList<>();
         oldSysRoleDOS.forEach(oldSysRoleDO -> {
+            SysRole sysRole = new SysRole();
+            sysRole.setRoleId(Long.valueOf(oldSysRoleDO.getId()));
+            sysRole.setRoleName(oldSysRoleDO.getName());
+            sysRole.setRoleKey("common");
+            sysRole.setStatus("0");
+            sysRole.setDelFlag("0");
+            sysRoles.add(sysRole);
+            SysUserRole sysUserRole = new SysUserRole();
+            sysUserRole.setUserId(userId);
+            sysUserRole.setRoleId(sysRole.getRoleId());
+            sysUserRoles.add(sysUserRole);
             String functionList = oldSysRoleDO.getFunctionList();
             List<String> oldMenuIds = parseRoleListToList(functionList);
             List<SysMenuMappingDO> sysMenuMappingDOS = sysMenuMappingMapper.selectList(new LambdaQueryWrapper<SysMenuMappingDO>().in(SysMenuMappingDO::getOldMenuId, oldMenuIds));
             //不为空说明存在菜单权限，则同步角色数据
             if(!sysMenuMappingDOS.isEmpty()){
-                SysRole sysRole = new SysRole();
-                sysRole.setRoleId(Long.valueOf(oldSysRoleDO.getId()));
-                sysRole.setRoleName(oldSysRoleDO.getName());
-                sysRole.setRoleKey("common");
-                sysRole.setStatus("0");
-                sysRole.setDelFlag("0");
-                sysRoles.add(sysRole);
-                SysUserRole sysUserRole = new SysUserRole();
-                sysUserRole.setUserId(user.getUserId());
-                sysUserRole.setRoleId(sysRole.getRoleId());
-                sysUserRoles.add(sysUserRole);
                 //同步角色菜单绑定关系
                 List<SysRoleMenu> sysRoleMenus = sysMenuMappingDOS.stream().map(sysMenuMappingDO -> {
                     SysRoleMenu sysRoleMenu = new SysRoleMenu();
@@ -96,19 +96,7 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
                 sysRoleMenuMapper.deleteRoleMenuByRoleId(Long.valueOf(oldSysRoleDO.getId()));
             }
         });
-        sysRoleMenuList.forEach(p -> {
-            try {
-                sysRoleMenuMapper.insert(p);
-            } catch (Exception e) {
-                // 捕获并忽略主键重复异常
-                if (e.getMessage() != null && e.getMessage().contains("Duplicate entry") && e.getMessage().contains("for key")) {
-                    log.warn("忽略重复的角色菜单绑定关系: roleId={}, menuId={}", p.getRoleId(), p.getMenuId());
-                } else {
-                    // 重新抛出其他类型的异常
-                    throw e;
-                }
-            }
-        });
+        sysRoleMenuMapper.insertBatch(sysRoleMenuList);
         sysRoleMapper.insertOrUpdateBatch(sysRoles);
         //同步用户角色绑定关系
         sysUserRoleMapper.insertBatch(sysUserRoles);
