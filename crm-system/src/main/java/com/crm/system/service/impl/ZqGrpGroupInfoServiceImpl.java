@@ -217,7 +217,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 如果更新成功，记录变更日志
         if (success) {
             System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
-            boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, update, "T1"); // T1-集团基本信息变更
+            // 重新从数据库获取更新后的完整数据
+            ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
+            boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, updatedInfo, "T1"); // T1-集团基本信息变更
             System.out.println("[DEBUG] recordChangeLog result: " + logResult);
         }
 

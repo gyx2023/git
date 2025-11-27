@@ -164,12 +164,14 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
 
             // 创建变更前的日志记录
             ZqGrpGroupLog logBefore = BeanUtil.toBean(originalInfo, ZqGrpGroupLog.class);
+            logBefore.setGrpId(null); // 清空id，让数据库自动生成
             logBefore.setUpdateType(updateType);
             logBefore.setDataType("1"); // 1-变更前
             System.out.println("[DEBUG] Created logBefore with grpId: " + logBefore.getGrpId());
 
             // 创建变更后的日志记录
             ZqGrpGroupLog logAfter = BeanUtil.toBean(updatedInfo, ZqGrpGroupLog.class);
+            logAfter.setGrpId(null); // 清空id，让数据库自动生成
             logAfter.setUpdateType(updateType);
             logAfter.setDataType("2"); // 2-变更后
             System.out.println("[DEBUG] Created logAfter with grpId: " + logAfter.getGrpId());
