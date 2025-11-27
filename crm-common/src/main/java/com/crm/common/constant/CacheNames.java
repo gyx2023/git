@@ -23,7 +23,7 @@ public interface CacheNames {
     /**
      * 系统配置
      */
-    String SYS_CONFIG = "sys_config";
+    String SYS_CONFIG = "zqzt_sys_config";
 
     /**
      * 数据字典
@@ -43,17 +43,17 @@ public interface CacheNames {
     /**
      * 部门
      */
-    String SYS_DEPT = "sys_dept#30d";
+    String SYS_DEPT = "zqzt_sys_dept#30d";
 
     /**
      * OSS内容
      */
-    String SYS_OSS = "sys_oss#30d";
+    String SYS_OSS = "zqzt_sys_oss#30d";
 
     /**
      * OSS配置
      */
-    String SYS_OSS_CONFIG = "sys_oss_config";
+    String SYS_OSS_CONFIG = "zqzt_sys_oss_config";
 
     /**
      * 在线用户

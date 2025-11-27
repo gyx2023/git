@@ -19,7 +19,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
- * 角色表 sys_role
+ * 角色表 zqzt_sys_role
  *
  * @author Lion Li
  */
@@ -27,7 +27,7 @@ import javax.validation.constraints.Size;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_role")
+@TableName("zqzt_sys_role")
 @ExcelIgnoreUnannotated
 public class SysRole extends BaseEntity {
 

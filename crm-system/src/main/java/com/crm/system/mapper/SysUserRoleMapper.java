@@ -14,4 +14,6 @@ public interface SysUserRoleMapper extends BaseMapperPlus<SysUserRoleMapper, Sys
 
     List<Long> selectUserIdsByRoleId(Long roleId);
 
+    void deleteByUserId(Long userId);
+
 }

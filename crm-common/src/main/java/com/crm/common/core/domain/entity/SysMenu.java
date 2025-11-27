@@ -12,14 +12,14 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
- * 菜单权限表 sys_menu
+ * 菜单权限表 zqzt_sys_menu
  *
  * @author Lion Li
  */
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_menu")
+@TableName("zqzt_sys_menu")
 public class SysMenu extends TreeEntity<SysMenu> {
 
     /**

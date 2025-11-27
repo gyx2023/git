@@ -16,14 +16,14 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
- * 岗位表 sys_post
+ * 岗位表 zqzt_sys_post
  *
  * @author Lion Li
  */
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_post")
+@TableName("zqzt_sys_post")
 @ExcelIgnoreUnannotated
 public class SysPost extends BaseEntity {
 

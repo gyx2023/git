@@ -8,14 +8,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 流程抄送对象 wf_copy
+ * 流程抄送对象 zqzt_wf_copy
  *
  * @author KonBAI
  * @date 2022-05-19
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("wf_copy")
+@TableName("zqzt_wf_copy")
 public class WfCopy extends BaseEntity {
 
     private static final long serialVersionUID=1L;
