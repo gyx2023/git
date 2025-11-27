@@ -161,10 +161,10 @@ public class FileAsyncTaskController extends BaseController {
      * @param taskId 任务ID
      */
     @Log(title = "文件下载", businessType = BusinessType.OTHER)
-    @GetMapping("/downloadExportFile")
-    public void download(@NotNull(message = "任务ID不能为空") @RequestParam("taskId") Long taskId, HttpServletResponse response) {
+    @GetMapping("/downloadTaskFile")
+    public void download(@NotNull(message = "任务ID不能为空") @RequestParam("taskId") Long taskId,@NotNull(message = "任务ID不能为空") @RequestParam("fileType") String fileType, HttpServletResponse response) {
         try {
-            iFileAsyncTaskService.downloadFile(taskId, response);
+            iFileAsyncTaskService.downloadFile(taskId, fileType,response);
         } catch (Exception e) {
             log.error("文件下载失败，任务ID: {}", taskId, e);
             throw new RuntimeException("文件下载失败: " + e.getMessage());
