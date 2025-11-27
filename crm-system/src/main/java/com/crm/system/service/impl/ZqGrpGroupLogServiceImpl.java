@@ -168,8 +168,6 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
             logBefore.setDataType("1"); // 1-变更前
             // 保持createtime与groupinfo表一致，只更新updatetime为当前时间
             logBefore.setUpdateTime(currentTime); // 设置当前时间为修改时间
-            // 清空自动填充的用户字段，让MyBatis-Plus自动填充
-            logBefore.setUpdateBy(null);
 
             // 创建变更后的日志记录
             ZqGrpGroupLog logAfter = BeanUtil.toBean(updatedInfo, ZqGrpGroupLog.class);
@@ -177,8 +175,6 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
             logAfter.setDataType("2"); // 2-变更后
             // 保持createtime与groupinfo表一致，只更新updatetime为当前时间
             logAfter.setUpdateTime(currentTime); // 设置当前时间为修改时间
-            // 清空自动填充的用户字段，让MyBatis-Plus自动填充
-            logAfter.setUpdateBy(null);
 
             // 插入变更前记录
             int beforeResult = baseMapper.insert(logBefore);
