@@ -67,7 +67,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
         lqw.like(StringUtils.isNotBlank(bo.getOaUserName()), DwdRepSysPersonD::getOaUserName, bo.getOaUserName());
         lqw.eq(bo.getOnjobFlag() != null, DwdRepSysPersonD::getOnjobFlag, bo.getOnjobFlag());
         lqw.eq(StringUtils.isNotBlank(bo.getUserIdentityCode()), DwdRepSysPersonD::getUserIdentityCode, bo.getUserIdentityCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getMobile()), DwdRepSysPersonD::getMOBILE, bo.getMobile());
+        lqw.eq(StringUtils.isNotBlank(bo.getMobile()), DwdRepSysPersonD::getMobile, bo.getMobile());
         lqw.eq(StringUtils.isNotBlank(bo.getUserPersonTypeCode()), DwdRepSysPersonD::getUserPersonTypeCode, bo.getUserPersonTypeCode());
         lqw.eq(StringUtils.isNotBlank(bo.getLabelCategoryCode()), DwdRepSysPersonD::getLabelCategoryCode, bo.getLabelCategoryCode());
         lqw.eq(StringUtils.isNotBlank(bo.getElementName3MapCode()), DwdRepSysPersonD::getElementName3MapCode, bo.getElementName3MapCode());
