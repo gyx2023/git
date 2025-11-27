@@ -148,7 +148,6 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
      */
     @Override
     public Boolean recordChangeLog(ZqGrpGroupInfo originalInfo, ZqGrpGroupInfo updatedInfo, String updateType) {
-        System.out.println("[DEBUG] recordChangeLog called with updateType: " + updateType);
         try {
             if (originalInfo == null) {
                 System.out.println("[DEBUG] originalInfo is null");
@@ -159,30 +158,20 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
                 return false;
             }
 
-            System.out.println("[DEBUG] originalInfo grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
-            System.out.println("[DEBUG] updatedInfo grpId: " + updatedInfo.getGrpId() + ", grpName: " + updatedInfo.getGrpName());
-
             // 创建变更前的日志记录
             ZqGrpGroupLog logBefore = BeanUtil.toBean(originalInfo, ZqGrpGroupLog.class);
-            logBefore.setGrpId(null); // 清空id，让数据库自动生成
             logBefore.setUpdateType(updateType);
             logBefore.setDataType("1"); // 1-变更前
-            System.out.println("[DEBUG] Created logBefore with grpId: " + logBefore.getGrpId());
 
             // 创建变更后的日志记录
             ZqGrpGroupLog logAfter = BeanUtil.toBean(updatedInfo, ZqGrpGroupLog.class);
-            logAfter.setGrpId(null); // 清空id，让数据库自动生成
             logAfter.setUpdateType(updateType);
             logAfter.setDataType("2"); // 2-变更后
-            System.out.println("[DEBUG] Created logAfter with grpId: " + logAfter.getGrpId());
 
             // 插入变更前记录
             int beforeResult = baseMapper.insert(logBefore);
-            System.out.println("[DEBUG] Insert logBefore result: " + beforeResult);
-
             // 插入变更后记录
             int afterResult = baseMapper.insert(logAfter);
-            System.out.println("[DEBUG] Insert logAfter result: " + afterResult);
 
             if (beforeResult > 0 && afterResult > 0) {
                 System.out.println("[DEBUG] Log records inserted successfully");

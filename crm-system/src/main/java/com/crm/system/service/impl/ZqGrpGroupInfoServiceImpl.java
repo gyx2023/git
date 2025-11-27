@@ -203,12 +203,21 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
         } else {
             System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
+            return false;
         }
 
+        // 创建更新对象
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
         validEntityBeforeSave(update);
-        update.setCountyManagerName(null);
-        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId() + ", grpName: " + update.getGrpName());
+        
+        // 清空不能修改的字段，避免使用前端传递的脱敏数据
+        // 这些字段将保持数据库中的原始值不变
+        update.setGrpName(null); // 集团名称不能修改
+        update.setProvManagerName(null); // 省级客户经理名字不能修改
+        update.setCityManagerName(null); // 市级客户经理名字不能修改
+        update.setCountyManagerName(null); // 县级客户经理名字不能修改
+        
+        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
 
         // 执行更新操作
         boolean success = baseMapper.updateById(update) > 0;
@@ -217,7 +226,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 如果更新成功，记录变更日志
         if (success) {
             System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
-            // 重新从数据库获取更新后的完整数据
+            // 重新从数据库获取更新后的完整数据，包含未脱敏的集团名称和客户经理名字
             ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
             boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, updatedInfo, "T1"); // T1-集团基本信息变更
             System.out.println("[DEBUG] recordChangeLog result: " + logResult);
