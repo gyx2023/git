@@ -18,9 +18,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  * @date 2025-11-21
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("zq_grp_group_log")
-public class ZqGrpGroupLog extends BaseEntity {
+public class ZqGrpGroupLog implements Serializable {
 
     private static final long serialVersionUID=1L;
 
@@ -157,9 +156,7 @@ public class ZqGrpGroupLog extends BaseEntity {
      */
     private String countyManagerName;
 
-    @TableField(exist = false)
-    private String createBy;
+    private Date createTime;
 
-    @TableField(exist = false)
-    private String updateBy;
+    private Date updateTime;
 }

@@ -46,6 +46,10 @@ public interface IZqGrpGroupInfoService {
     Boolean updateByBo(ZqGrpGroupInfoBo bo);
 
     /**
+     * 修改政企集团客户信息
+     */
+    Boolean updateByBo1(ZqGrpGroupInfoBo bo);
+    /**
      * 校验并批量删除政企集团客户信息信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);

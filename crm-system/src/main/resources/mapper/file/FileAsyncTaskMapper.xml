@@ -32,7 +32,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 查询待处理的任务列表 -->
-    <select id="selectPendingTasks" parameterType="int" resultMap="FileAsyncTaskDOResult">
+    <select id="selectPendingTasks" parameterType="int" resultMap="FileAsyncTaskResult">
         select
             task_id,
             task_name,

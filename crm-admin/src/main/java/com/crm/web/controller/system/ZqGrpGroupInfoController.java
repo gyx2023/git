@@ -197,6 +197,59 @@ public class ZqGrpGroupInfoController extends BaseController {
     }
 
     /**
+     * 修改政企集团客户经理信息
+     */
+    @SaCheckPermission("system:grpGroupInfo:edit")
+    @Log(title = "政企集团客户经理信息", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PutMapping("/edits")
+    public R<Void> edits(@RequestBody ZqGrpGroupInfoBo bo) {
+        // 检查是否有需要更新的客户经理信息字段
+        boolean hasUpdateFields = false;
+        if (bo.getProvManagerOauser() != null || bo.getProvManagerName() != null ||
+            bo.getCityManagerOauser() != null || bo.getCityManagerName() != null ||
+            bo.getCountyManagerOauser() != null || bo.getCountyManagerName() != null) {
+            hasUpdateFields = true;
+        }
+
+        // 如果没有任何需要更新的字段，直接返回成功
+        if (!hasUpdateFields) {
+            return R.ok("没有需要更新的字段");
+        }
+
+        // 创建一个新的bo对象，只保留需要的字段
+        ZqGrpGroupInfoBo managerBo = new ZqGrpGroupInfoBo();
+        managerBo.setGrpId(bo.getGrpId());
+        
+        // 只设置非空的客户经理信息
+        if (bo.getProvManagerOauser() != null) {
+            managerBo.setProvManagerOauser(bo.getProvManagerOauser());
+        }
+        if (bo.getProvManagerName() != null) {
+            managerBo.setProvManagerName(bo.getProvManagerName());
+        }
+        if (bo.getCityManagerOauser() != null) {
+            managerBo.setCityManagerOauser(bo.getCityManagerOauser());
+        }
+        if (bo.getCityManagerName() != null) {
+            managerBo.setCityManagerName(bo.getCityManagerName());
+        }
+        if (bo.getCountyManagerOauser() != null) {
+            managerBo.setCountyManagerOauser(bo.getCountyManagerOauser());
+        }
+        if (bo.getCountyManagerName() != null) {
+            managerBo.setCountyManagerName(bo.getCountyManagerName());
+        }
+        
+        boolean result = iZqGrpGroupInfoService.updateByBo1(managerBo);
+        if (result) {
+            return R.ok("更新成功");
+        } else {
+            return R.fail("更新失败，未找到对应的集团信息");
+        }
+    }
+
+    /**
      * 删除政企集团客户信息
      *
      * @param grpIds 主键串
