@@ -16,6 +16,7 @@ import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupLogMapper;
 import com.crm.system.service.IZqGrpGroupLogService;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -158,15 +159,30 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
                 return false;
             }
 
+            // 获取当前时间，用于设置日志的createTime和updateTime
+            Date currentTime = new Date();
+
             // 创建变更前的日志记录
             ZqGrpGroupLog logBefore = BeanUtil.toBean(originalInfo, ZqGrpGroupLog.class);
             logBefore.setUpdateType(updateType);
             logBefore.setDataType("1"); // 1-变更前
+            // 重置时间字段，设置为当前时间
+            logBefore.setCreateTime(currentTime); // 设置当前时间为创建时间
+            logBefore.setUpdateTime(currentTime); // 设置当前时间为修改时间
+            // 清空自动填充的用户字段，让MyBatis-Plus自动填充
+            logBefore.setCreateBy(null);
+            logBefore.setUpdateBy(null);
 
             // 创建变更后的日志记录
             ZqGrpGroupLog logAfter = BeanUtil.toBean(updatedInfo, ZqGrpGroupLog.class);
             logAfter.setUpdateType(updateType);
             logAfter.setDataType("2"); // 2-变更后
+            // 重置时间字段，设置为当前时间
+            logAfter.setCreateTime(currentTime); // 设置当前时间为创建时间
+            logAfter.setUpdateTime(currentTime); // 设置当前时间为修改时间
+            // 清空自动填充的用户字段，让MyBatis-Plus自动填充
+            logAfter.setCreateBy(null);
+            logAfter.setUpdateBy(null);
 
             // 插入变更前记录
             int beforeResult = baseMapper.insert(logBefore);

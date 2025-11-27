@@ -16,7 +16,7 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2025-11-24
  */
 @Data
-@TableName("sys_category")
+@TableName("zqzt_sys_category")
 public class SysCategory implements Serializable{
 
     private static final long serialVersionUID=1L;
