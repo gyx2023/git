@@ -55,9 +55,15 @@ public interface IFileAsyncTaskService {
 
     /**
      * 申请导出任务
+     * 该方法用于用户申请数据导出任务，根据业务类型、请求参数和任务名称创建一个新的导出任务
+     *
+     * @param businessType 业务类型，用于标识不同的导出业务场景
+     * @param requestParams 请求参数，包含导出所需的具体条件和配置信息，通常为JSON格式字符串
+     * @param taskName 任务名称，用于标识和区分不同的导出任务
+     * @return 返回新创建的任务ID，Long类型，用于后续查询导出状态和获取导出结果
      */
     Long applyExport(String businessType, String requestParams,String taskName);
-    
+
     /**
      * 根据任务ID下载文件
      * @param taskId 任务ID

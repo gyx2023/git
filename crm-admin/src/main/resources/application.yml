@@ -277,7 +277,7 @@ management:
 flowable:
   # 关闭定时任务 job
   async-executor-activate: false
-  # 库与数据库表结构不一致时，会自动将数据库表结构升级至新版本。
+  # 关闭自动更新数据库表结构，避免表已存在的错误
   database-schema-update: false
   idm:
     # 关闭idm引擎 数据库不会创建act_id_*表，流程流转不会使用act_id_*相关的表
