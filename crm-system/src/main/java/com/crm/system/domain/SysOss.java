@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_oss")
+@TableName("zqzt_sys_oss")
 public class SysOss extends BaseEntity {
 
     /**

@@ -113,4 +113,13 @@ public interface ISysDeptService {
      * @return 结果
      */
     int deleteDeptById(Long deptId);
+
+
+    /**
+     * 获取顶级部门
+     *
+     * @param deptId 部门ID
+     * @return 结果
+     */
+    SysDept findTopDept(Long deptId);
 }

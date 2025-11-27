@@ -23,16 +23,16 @@
     </resultMap>
 
     <select id="selectDeptList" resultMap="SysDeptResult">
-        select * from sys_dept ${ew.getCustomSqlSegment}
+        select * from zqzt_sys_dept ${ew.getCustomSqlSegment}
     </select>
 
     <select id="selectDeptListByRoleId" resultType="Long">
         select d.dept_id
-        from sys_dept d
-            left join sys_role_dept rd on d.dept_id = rd.dept_id
+        from zqzt_sys_dept d
+            left join zqzt_sys_role_dept rd on d.dept_id = rd.dept_id
         where rd.role_id = #{roleId}
             <if test="deptCheckStrictly">
-                and d.dept_id not in (select d.parent_id from sys_dept d inner join sys_role_dept rd on d.dept_id = rd.dept_id and rd.role_id = #{roleId})
+                and d.dept_id not in (select d.parent_id from zqzt_sys_dept d inner join zqzt_sys_role_dept rd on d.dept_id = rd.dept_id and rd.role_id = #{roleId})
             </if>
         order by d.parent_id, d.order_num
     </select>

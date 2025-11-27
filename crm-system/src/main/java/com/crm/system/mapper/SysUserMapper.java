@@ -92,4 +92,11 @@ public interface SysUserMapper extends BaseMapperPlus<SysUserMapper, SysUser, Sy
      */
     SysUser selectUserById(Long userId);
 
+    /**
+     * 清空zqzt_sys_user表（使用TRUNCATE）
+     * 用于数据同步前的表清空操作
+     */
+    @org.apache.ibatis.annotations.Select("TRUNCATE TABLE zqzt_sys_user")
+    void executeTruncate();
+
 }

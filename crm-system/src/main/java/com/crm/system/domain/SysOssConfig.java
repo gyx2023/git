@@ -7,13 +7,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 对象存储配置对象 sys_oss_config
+ * 对象存储配置对象 zqzt_sys_oss_config
  *
  * @author Lion Li
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_oss_config")
+@TableName("zqzt_sys_oss_config")
 public class SysOssConfig extends BaseEntity {
 
     /**

@@ -11,7 +11,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
- * 对象存储配置业务对象 sys_oss_config
+ * 对象存储配置业务对象 zqzt_sys_oss_config
  *
  * @author Lion Li
  * @author 孤舟烟雨
