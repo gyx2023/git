@@ -57,11 +57,11 @@ public interface IFileAsyncTaskService {
      * 申请导出任务
      */
     Long applyExport(String businessType, String requestParams,String taskName);
-    
+
     /**
      * 根据任务ID下载文件
      * @param taskId 任务ID
      * @param response HTTP响应
      */
-    void downloadFile(Long taskId, HttpServletResponse response) throws Exception;
+    void downloadFile(Long taskId,String fileType, HttpServletResponse response) throws Exception;
 }
