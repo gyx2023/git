@@ -21,7 +21,7 @@ import java.util.Map;
  */
 
 @Data
-@TableName("sys_oper_log")
+@TableName("zqzt_sys_oper_log")
 @ExcelIgnoreUnannotated
 public class SysOperLog implements Serializable {
 

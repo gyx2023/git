@@ -18,7 +18,7 @@ xxl.job:
   access-token: xxl-job
   executor:
     # 执行器AppName：执行器心跳注册分组依据；为空则关闭自动注册
-    appname: xxl-job-executor
+    appname: zqzt-job
     # 执行器端口号 执行器从9101开始往后写
     port: 9101
     # 执行器注册：默认IP:PORT
@@ -49,9 +49,9 @@ spring:
           driverClassName: com.mysql.cj.jdbc.Driver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://localhost:3306/ry-flowable-plus?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
-          username: root
-          password: root123123
+          url: jdbc:mysql://192.168.124.160:2883/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
+          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
+          password: PPpomns12123##
         # 从库数据源
         slave:
           lazy: true

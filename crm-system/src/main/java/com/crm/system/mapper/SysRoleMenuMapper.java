@@ -10,4 +10,12 @@ import com.crm.system.domain.SysRoleMenu;
  */
 public interface SysRoleMenuMapper extends BaseMapperPlus<SysRoleMenuMapper, SysRoleMenu, SysRoleMenu> {
 
+    /**
+     * 根据角色ID删除角色与菜单关联
+     *
+     * @param roleId 角色ID
+     * @return 删除结果
+     */
+    @org.apache.ibatis.annotations.Delete("DELETE FROM zqzt_sys_role_menu WHERE role_id = #{roleId}")
+    int deleteRoleMenuByRoleId(Long roleId);
 }

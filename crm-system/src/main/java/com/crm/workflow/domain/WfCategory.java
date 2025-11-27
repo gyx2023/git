@@ -10,14 +10,14 @@ import lombok.EqualsAndHashCode;
 import javax.validation.constraints.NotBlank;
 
 /**
- * 流程分类对象 wf_category
+ * 流程分类对象 zqzt_wf_category
  *
  * @author KonBAI
  * @date 2022-01-15
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("wf_category")
+@TableName("zqzt_wf_category")
 public class WfCategory extends BaseEntity {
 
     private static final long serialVersionUID=1L;

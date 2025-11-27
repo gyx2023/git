@@ -30,10 +30,10 @@
     <select id="selectMenuListByUserId" parameterType="SysMenu" resultMap="SysMenuResult">
         select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.query_param, m.visible, m.status,
         m.perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
-        from sys_menu m
-        left join sys_role_menu rm on m.menu_id = rm.menu_id
-        left join sys_user_role sur on rm.role_id = sur.role_id
-        left join sys_role ro on sur.role_id = ro.role_id
+        from zqzt_sys_menu m
+        left join zqzt_sys_role_menu rm on m.menu_id = rm.menu_id
+        left join zqzt_sys_user_role sur on rm.role_id = sur.role_id
+        left join zqzt_sys_role ro on sur.role_id = ro.role_id
         ${ew.getCustomSqlSegment}
     </select>
 
@@ -53,11 +53,11 @@
                         m.icon,
                         m.order_num,
                         m.create_time
-        from sys_menu m
-                 left join sys_role_menu rm on m.menu_id = rm.menu_id
-                 left join sys_user_role sur on rm.role_id = sur.role_id
-                 left join sys_role ro on sur.role_id = ro.role_id
-                 left join sys_user u on sur.user_id = u.user_id
+        from zqzt_sys_menu m
+                 left join zqzt_sys_role_menu rm on m.menu_id = rm.menu_id
+                 left join zqzt_sys_user_role sur on rm.role_id = sur.role_id
+                 left join zqzt_sys_role ro on sur.role_id = ro.role_id
+                 left join zqzt_sys_user u on sur.user_id = u.user_id
         where u.user_id = #{userId}
           and m.menu_type in ('M', 'C')
           and m.status = '0'
@@ -67,11 +67,11 @@
 
     <select id="selectMenuListByRoleId" resultType="Long">
         select m.menu_id
-        from sys_menu m
-        left join sys_role_menu rm on m.menu_id = rm.menu_id
+        from zqzt_sys_menu m
+        left join zqzt_sys_role_menu rm on m.menu_id = rm.menu_id
         where rm.role_id = #{roleId}
         <if test="menuCheckStrictly">
-            and m.menu_id not in (select m.parent_id from sys_menu m inner join sys_role_menu rm on m.menu_id =
+            and m.menu_id not in (select m.parent_id from zqzt_sys_menu m inner join zqzt_sys_role_menu rm on m.menu_id =
             rm.menu_id and rm.role_id = #{roleId})
         </if>
         order by m.parent_id, m.order_num
@@ -79,17 +79,17 @@
 
     <select id="selectMenuPerms" resultType="String">
         select distinct m.perms
-        from sys_menu m
-                 left join sys_role_menu rm on m.menu_id = rm.menu_id
-                 left join sys_user_role sur on rm.role_id = sur.role_id
+        from zqzt_sys_menu m
+                 left join zqzt_sys_role_menu rm on m.menu_id = rm.menu_id
+                 left join zqzt_sys_user_role sur on rm.role_id = sur.role_id
     </select>
 
     <select id="selectMenuPermsByUserId" parameterType="Long" resultType="String">
         select distinct m.perms
-        from sys_menu m
-                 left join sys_role_menu rm on m.menu_id = rm.menu_id
-                 left join sys_user_role sur on rm.role_id = sur.role_id
-                 left join sys_role r on r.role_id = sur.role_id
+        from zqzt_sys_menu m
+                 left join zqzt_sys_role_menu rm on m.menu_id = rm.menu_id
+                 left join zqzt_sys_user_role sur on rm.role_id = sur.role_id
+                 left join zqzt_sys_role r on r.role_id = sur.role_id
         where m.status = '0'
           and r.status = '0'
           and sur.user_id = #{userId}
@@ -97,8 +97,8 @@
 
     <select id="selectMenuPermsByRoleId" parameterType="Long" resultType="String">
         select distinct m.perms
-        from sys_menu m
-                 left join sys_role_menu rm on m.menu_id = rm.menu_id
+        from zqzt_sys_menu m
+                 left join zqzt_sys_role_menu rm on m.menu_id = rm.menu_id
         where m.status = '0' and rm.role_id = #{roleId}
     </select>
 

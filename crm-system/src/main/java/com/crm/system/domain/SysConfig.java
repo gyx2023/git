@@ -14,14 +14,14 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 /**
- * 参数配置表 sys_config
+ * 参数配置表 zqzt_sys_config
  *
  * @author Lion Li
  */
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_config")
+@TableName("zqzt_sys_config")
 @ExcelIgnoreUnannotated
 public class SysConfig extends BaseEntity {
 

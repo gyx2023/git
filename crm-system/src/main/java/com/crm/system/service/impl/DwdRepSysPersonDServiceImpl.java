@@ -156,18 +156,18 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
     @Override
     public List<Map<String, Object>> queryManagersByCityCodeAndType(String cityCode, String expandCustType) {
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         try {
             // 1. 通过县市编码查询AREA表的empCountyId
             SysAreaVo areaVo = sysAreaService.queryById(Long.valueOf(cityCode));
             if (areaVo == null) {
                 return result;
             }
-            
+
             int empCountyId = areaVo.getEmpCountyId();
             String countyIdStr = String.valueOf(empCountyId);
             String countyPrefix = countyIdStr.substring(0, 4); // 获取前四位
-            
+
             // 2. 根据拓展客户类型执行不同的查询
             if ("01".equals(expandCustType)) {
                 // 省级: 查询三次
@@ -184,7 +184,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 if (!list1.isEmpty()) {
                     result.add(level1);
                 }
-                
+
                 Map<String, Object> level2 = new HashMap<>();
                 level2.put("category", "市级");
                 List<Map<String, Object>> list2 = new ArrayList<>();
@@ -198,7 +198,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 if (!list2.isEmpty()) {
                     result.add(level2);
                 }
-                
+
                 Map<String, Object> level3 = new HashMap<>();
                 level3.put("category", "县级");
                 List<Map<String, Object>> list3 = new ArrayList<>();
@@ -212,7 +212,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 if (!list3.isEmpty()) {
                     result.add(level3);
                 }
-                
+
             } else if ("02".equals(expandCustType)) {
                 // 市级: 返回两个结果
                 // 先查询市级所有结果
@@ -220,16 +220,16 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 lqw1.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
-                
+
                 // 再查询县级结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
                 lqw2.eq(DwdRepSysPersonD::getCountyId, empCountyId)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
-                
+
                 // 从市级结果中移除县级结果
                 dataList1.removeAll(dataList2);
-                
+
                 Map<String, Object> level1 = new HashMap<>();
                 level1.put("category", "市级");
                 List<Map<String, Object>> list1 = new ArrayList<>();
@@ -238,7 +238,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 if (!list1.isEmpty()) {
                     result.add(level1);
                 }
-                
+
                 Map<String, Object> level2 = new HashMap<>();
                 level2.put("category", "县级");
                 List<Map<String, Object>> list2 = new ArrayList<>();
@@ -247,7 +247,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 if (!list2.isEmpty()) {
                     result.add(level2);
                 }
-                
+
             } else if ("03".equals(expandCustType)) {
                 // 县级: 返回COUNTY_ID=数据库的该id的结果
                 Map<String, Object> level = new HashMap<>();
@@ -263,11 +263,11 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                     result.add(level);
                 }
             }
-            
+
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         return result;
     }
 

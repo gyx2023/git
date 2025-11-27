@@ -10,7 +10,7 @@ import lombok.Data;
  * @createTime 2022/3/7 22:07
  */
 @Data
-@TableName("wf_deploy_form")
+@TableName("zqzt_wf_deploy_form")
 public class WfDeployForm {
     private static final long serialVersionUID = 1L;
 

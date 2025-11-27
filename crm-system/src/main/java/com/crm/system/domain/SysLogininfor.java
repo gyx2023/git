@@ -15,13 +15,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 系统访问记录表 sys_logininfor
+ * 系统访问记录表 zqzt_sys_logininfor
  *
  * @author Lion Li
  */
 
 @Data
-@TableName("sys_logininfor")
+@TableName("zqzt_sys_logininfor")
 @ExcelIgnoreUnannotated
 public class SysLogininfor implements Serializable {
     private static final long serialVersionUID = 1L;

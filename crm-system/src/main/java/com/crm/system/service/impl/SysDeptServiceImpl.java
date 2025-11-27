@@ -304,4 +304,30 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
         return baseMapper.deleteById(deptId);
     }
 
+    /**
+     * 递归查询顶级部门（parentId=1的部门）
+     * @param deptId 当前部门ID
+     * @return 顶级部门信息
+     */
+    @Override
+    public SysDept findTopDept(Long deptId) {
+        if (deptId == null) {
+            return null;
+        }
+
+        // 查询当前部门信息
+        SysDept currentDept = baseMapper.selectById(deptId);
+        if (currentDept == null) {
+            return null;
+        }
+
+        // 如果当前部门的parentId为1，则当前部门就是顶级部门
+        if (currentDept.getParentId() != null && currentDept.getParentId() == 1L) {
+            return currentDept;
+        }
+
+        // 递归查询父部门
+        return findTopDept(currentDept.getParentId());
+    }
+
 }

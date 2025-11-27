@@ -37,4 +37,11 @@ public interface SysDeptMapper extends BaseMapperPlus<SysDeptMapper, SysDept, Sy
      */
     List<Long> selectDeptListByRoleId(@Param("roleId") Long roleId, @Param("deptCheckStrictly") boolean deptCheckStrictly);
 
+    /**
+     * 清空zqzt_sys_dept表（使用TRUNCATE）
+     * 用于数据同步前的表清空操作
+     */
+    @org.apache.ibatis.annotations.Select("TRUNCATE TABLE zqzt_sys_dept")
+    void executeTruncate();
+
 }
