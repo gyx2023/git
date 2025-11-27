@@ -27,7 +27,7 @@ public interface IZqGrpGroupInfoService {
     /**
      * 查询政企集团客户信息列表
      */
-    //TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
+    TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
     TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
 
     /**
@@ -45,6 +45,10 @@ public interface IZqGrpGroupInfoService {
      */
     Boolean updateByBo(ZqGrpGroupInfoBo bo);
 
+    /**
+     * 修改政企集团客户信息
+     */
+    Boolean updateByBo1(ZqGrpGroupInfoBo bo);
     /**
      * 校验并批量删除政企集团客户信息信息
      */

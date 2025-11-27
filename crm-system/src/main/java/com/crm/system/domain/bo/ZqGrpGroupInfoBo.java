@@ -209,6 +209,29 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
     //@NotBlank(message = "县级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String countyManagerName;
 
+    /**
+     * 分配时间开始
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date assignTimeStart;
+
+    /**
+     * 分配时间结束
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date assignTimeEnd;
+
+    /**
+     * 创建时间开始
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createTimeStart;
+
+    /**
+     * 创建时间结束
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createTimeEnd;
 
     private String grpCreateTimeBegin;
 

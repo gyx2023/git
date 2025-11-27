@@ -6,9 +6,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import javax.validation.constraints.*;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import java.util.Date;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
 
@@ -20,7 +23,6 @@ import com.crm.common.core.domain.BaseEntity;
  */
 
 @Data
-@EqualsAndHashCode(callSuper = true)
 public class DwdRepSysPersonDBo extends BaseEntity {
 
     /**
@@ -99,7 +101,7 @@ public class DwdRepSysPersonDBo extends BaseEntity {
      *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long areaId;
+    private Integer areaId;
 
     /**
      *
@@ -111,7 +113,7 @@ public class DwdRepSysPersonDBo extends BaseEntity {
      *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long countyId;
+    private Integer countyId;
 
     /**
      *

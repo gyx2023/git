@@ -4,5 +4,5 @@ import com.crm.common.core.domain.entity.SysUser;
 
 public interface OldSysPermissionService {
 
-    void synMenuPermission(SysUser user);
+    void synMenuPermission(Long userId);
 }

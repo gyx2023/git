@@ -156,11 +156,6 @@ public class ZqGrpGroupLog implements Serializable {
      */
     private String countyManagerName;
 
-//    @TableField(exist = false)
-//    private String createBy;
-//
-//    @TableField(exist = false)
-//    private String updateBy;
 
     private Date createTime;
 
