@@ -176,7 +176,8 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 List<Map<String, Object>> list1 = new ArrayList<>();
                 // 第一次: 只查询COUNTY_ID的前四位=3300的记录
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
-                lqw1.apply("SUBSTR(COUNTY_ID, 1, 4) = '3300'");
+                lqw1.apply("SUBSTR(COUNTY_ID, 1, 4) = '3300'")
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
                 addManagersToList(list1, dataList1);
                 level1.put("managers", list1);
@@ -189,7 +190,8 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 List<Map<String, Object>> list2 = new ArrayList<>();
                 // 第二次: 查询当前COUNTY_ID前四位=数据库里该字段的前四位
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
-                lqw2.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix);
+                lqw2.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix)
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
                 addManagersToList(list2, dataList2);
                 level2.put("managers", list2);
@@ -202,7 +204,8 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 List<Map<String, Object>> list3 = new ArrayList<>();
                 // 第三次: 查询COUNTY_ID=数据库的该id
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw3 = Wrappers.lambdaQuery();
-                lqw3.eq(DwdRepSysPersonD::getCountyId, empCountyId);
+                lqw3.eq(DwdRepSysPersonD::getCountyId, empCountyId)
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList3 = baseMapper.selectVoList(lqw3);
                 addManagersToList(list3, dataList3);
                 level3.put("managers", list3);
@@ -214,12 +217,14 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 // 市级: 返回两个结果
                 // 先查询市级所有结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
-                lqw1.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix);
+                lqw1.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix)
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
                 
                 // 再查询县级结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
-                lqw2.eq(DwdRepSysPersonD::getCountyId, empCountyId);
+                lqw2.eq(DwdRepSysPersonD::getCountyId, empCountyId)
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
                 
                 // 从市级结果中移除县级结果
@@ -249,7 +254,8 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 level.put("category", "县级");
                 List<Map<String, Object>> list = new ArrayList<>();
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
-                lqw.eq(DwdRepSysPersonD::getCountyId, empCountyId);
+                lqw.eq(DwdRepSysPersonD::getCountyId, empCountyId)
+                   .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList = baseMapper.selectVoList(lqw);
                 addManagersToList(list, dataList);
                 level.put("managers", list);
