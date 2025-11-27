@@ -13,7 +13,7 @@ public interface OssConstant {
     /**
      * 默认配置KEY
      */
-    String DEFAULT_CONFIG_KEY = "sys_oss:default_config";
+    String DEFAULT_CONFIG_KEY = "zqzt_sys_oss:default_config";
 
     /**
      * 预览列表资源开关Key

@@ -8,7 +8,7 @@ import java.util.Date;
 
 
 /**
- * 流程抄送视图对象 wf_copy
+ * 流程抄送视图对象 zqzt_wf_copy
  *
  * @author ruoyi
  * @date 2022-05-19

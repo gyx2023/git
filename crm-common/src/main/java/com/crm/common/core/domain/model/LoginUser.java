@@ -105,6 +105,8 @@ public class LoginUser implements Serializable {
      */
     private Long roleId;
 
+    private String areaCode;
+
     /**
      * 获取登录id
      */

@@ -6,13 +6,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 /**
- * 角色和菜单关联 sys_role_menu
+ * 角色和菜单关联 zqzt_sys_role_menu
  *
  * @author Lion Li
  */
 
 @Data
-@TableName("sys_role_menu")
+@TableName("zqzt_sys_role_menu")
 public class SysRoleMenu {
 
     /**

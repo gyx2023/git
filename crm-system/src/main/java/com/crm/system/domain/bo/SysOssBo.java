@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * OSS对象存储分页查询对象 sys_oss
+ * OSS对象存储分页查询对象 zqzt_sys_oss
  *
  * @author Lion Li
  */
