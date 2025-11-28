@@ -7,7 +7,9 @@ import com.crm.system.domain.vo.SysOssVo;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
@@ -25,8 +27,19 @@ public interface ISysOssService {
     SysOssVo getById(Long ossId);
 
     SysOssVo upload(MultipartFile file);
+    SysOssVo upload(File file);
 
     void download(Long ossId, HttpServletResponse response) throws IOException;
+
+    /**
+     * 获取文件内容
+     * 与download方法不同，此方法不写入response，而是返回文件的InputStream
+     *
+     * @param ossId 文件ID
+     * @return 文件输入流
+     * @throws IOException IO异常
+     */
+    InputStream getFileContent(Long ossId) throws IOException;
 
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 

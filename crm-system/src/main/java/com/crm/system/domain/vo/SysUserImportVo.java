@@ -70,4 +70,7 @@ public class SysUserImportVo implements Serializable {
     @ExcelDictFormat(dictType = "sys_normal_disable")
     private String status;
 
+    @ExcelProperty(value = "导入结果")
+    private String ExecutionResult;
+
 }
