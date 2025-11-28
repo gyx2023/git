@@ -1,7 +1,7 @@
 package com.crm.web.controller.system;
 
-import java.util.List;
-import java.util.Arrays;
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
@@ -20,11 +20,11 @@ import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.service.IZqGrpGroupInfoService;
+import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.generator.util.DesensitizationUtils;
-import java.util.Map;
-import java.util.Date;
+
 import java.text.SimpleDateFormat;
 
 /**
@@ -220,7 +220,7 @@ public class ZqGrpGroupInfoController extends BaseController {
         // 创建一个新的bo对象，只保留需要的字段
         ZqGrpGroupInfoBo managerBo = new ZqGrpGroupInfoBo();
         managerBo.setGrpId(bo.getGrpId());
-        
+
         // 只设置非空的客户经理信息
         if (bo.getProvManagerOauser() != null) {
             managerBo.setProvManagerOauser(bo.getProvManagerOauser());
@@ -240,7 +240,7 @@ public class ZqGrpGroupInfoController extends BaseController {
         if (bo.getCountyManagerName() != null) {
             managerBo.setCountyManagerName(bo.getCountyManagerName());
         }
-        
+
         boolean result = iZqGrpGroupInfoService.updateByBo1(managerBo);
         if (result) {
             return R.ok("更新成功");
@@ -271,5 +271,14 @@ public class ZqGrpGroupInfoController extends BaseController {
         // 从zq_grp_group_info表中获取字典数据
         Map<String, List<SysDictData>> result = iZqGrpGroupInfoService.getDictData();
         return R.ok(result);
+    }
+
+    /**
+     * 下载批量分配客户经理模板
+     */
+    @SaCheckPermission("system:grpGroupInfo:list")
+    @GetMapping("/downloadManagerTemplate")
+    public void downloadManagerTemplate(HttpServletResponse response) {
+        ExcelUtil.exportExcel(new ArrayList<>(), "批量分配客户经理模板", CustomerManagerTemplateVo.class, response);
     }
 }
