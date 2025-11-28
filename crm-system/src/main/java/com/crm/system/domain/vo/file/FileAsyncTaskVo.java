@@ -128,4 +128,8 @@ public class FileAsyncTaskVo {
      */
     private Date updateTime;
 
+    private Long fileUrlOssId;
+
+    private Long resultFileUrlOssId;
+
 }

@@ -31,6 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -118,6 +120,29 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         }
     }
 
+    /**
+     * 获取文件内容
+     * 与download方法不同，此方法不写入response，而是返回文件的InputStream
+     *
+     * @param ossId 文件ID
+     * @return 文件输入流
+     * @throws IOException IO异常
+     */
+    @Override
+    public java.io.InputStream getFileContent(Long ossId) throws IOException {
+        SysOssVo sysOss = SpringUtils.getAopProxy(this).getById(ossId);
+        if (ObjectUtil.isNull(sysOss)) {
+            throw new ServiceException("文件数据不存在!");
+        }
+        OssClient storage = OssFactory.instance();
+        try {
+            // 直接返回从S3获取的InputStream，不进行IO复制操作
+            return storage.getObjectContent(sysOss.getUrl());
+        } catch (Exception e) {
+            throw new ServiceException(e.getMessage());
+        }
+    }
+
     @Override
     public SysOssVo upload(MultipartFile file) {
         String originalfileName = file.getOriginalFilename();
@@ -126,6 +151,39 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         UploadResult uploadResult;
         try {
             uploadResult = storage.uploadSuffix(file.getBytes(), suffix, file.getContentType());
+        } catch (IOException e) {
+            throw new ServiceException(e.getMessage());
+        }
+        // 保存文件信息
+        SysOss oss = new SysOss();
+        oss.setUrl(uploadResult.getUrl());
+        oss.setFileSuffix(suffix);
+        oss.setFileName(uploadResult.getFilename());
+        oss.setOriginalName(originalfileName);
+        oss.setService(storage.getConfigKey());
+        baseMapper.insert(oss);
+        SysOssVo sysOssVo = new SysOssVo();
+        BeanCopyUtils.copy(oss, sysOssVo);
+        return this.matchingUrl(sysOssVo);
+    }
+
+    /**
+     * 上传文件
+     *
+     * @param file 文件对象
+     * @return 文件上传信息
+     */
+    @Override
+    public SysOssVo upload(File file) {
+        String originalfileName = file.getName();
+        String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
+        OssClient storage = OssFactory.instance();
+        UploadResult uploadResult;
+        try {
+            byte[] fileBytes = IoUtil.readBytes(new FileInputStream(file));
+            // 获取文件MIME类型
+            String contentType = FileUtils.getMimeType(file.getName());
+            uploadResult = storage.uploadSuffix(fileBytes, suffix, contentType);
         } catch (IOException e) {
             throw new ServiceException(e.getMessage());
         }
