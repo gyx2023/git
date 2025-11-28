@@ -70,6 +70,7 @@ public class ZqGrpGroupLog implements Serializable {
     /**
      * 行政县
      */
+
     private String countyId2;
     /**
      * 所属网格编码
