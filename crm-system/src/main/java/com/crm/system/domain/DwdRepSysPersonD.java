@@ -18,9 +18,8 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2025-11-24
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("dwd_rep_sys_person_d")
-public class DwdRepSysPersonD extends BaseEntity {
+public class DwdRepSysPersonD implements Serializable {
 
     private static final long serialVersionUID=1L;
 
@@ -56,7 +55,8 @@ public class DwdRepSysPersonD extends BaseEntity {
     /**
      *
      */
-    private String MOBILE;
+    @TableField("mobile")
+    private String mobile;
     /**
      *
      */

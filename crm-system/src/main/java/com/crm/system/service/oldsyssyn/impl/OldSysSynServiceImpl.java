@@ -75,6 +75,9 @@ public class OldSysSynServiceImpl implements OldSysSynService {
                 throw new ServiceException("SSO Token与用户ID不匹配");
             }
 
+            //5.获取用户角色，权限
+            oldSysPermissionService.synMenuPermission(Long.parseLong(userId));
+
             // 3. 根据用户ID查询新系统用户
             SysUser user = userService.selectUserById(Long.parseLong(userId));
             if (user == null) {
@@ -85,8 +88,6 @@ public class OldSysSynServiceImpl implements OldSysSynService {
             if ("1".equals(user.getStatus())) {
                 throw new ServiceException("用户已停用");
             }
-            //5.获取用户角色，权限
-            oldSysPermissionService.synMenuPermission(user);
 
 
             // 6. 构建登录用户信息

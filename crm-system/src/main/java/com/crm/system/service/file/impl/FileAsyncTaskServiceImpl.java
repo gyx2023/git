@@ -1,8 +1,7 @@
 package com.crm.system.service.file.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.core.domain.entity.SysDictType;
-import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.core.domain.BaseEntity;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
@@ -10,30 +9,26 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.file.FileAsyncTaskBo;
 import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.file.FileAsyncTaskVo;
+import com.crm.system.mapper.SysOssMapper;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
+import com.crm.system.service.ISysOssService;
 import com.crm.system.service.file.IFileAsyncTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -47,27 +42,17 @@ import javax.servlet.http.HttpServletResponse;
 @Service
 public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
 
-    // SFTP配置
-    @Value("${sftp.host:localhost}")
-    private String sftpHost;
-
-    @Value("${sftp.port:22}")
-    private int sftpPort;
-
-    @Value("${sftp.username:liutong}")
-    private String sftpUsername;
-
-    @Value("${sftp.password:123123}")
-    private String sftpPassword;
-
-    @Value("${sftp.base-path:/Users/liutong/upload}")
-    private String sftpBasePath;
-
     @Resource
     private RedisTemplate<String, String> redisTemplate;
 
     @Resource
     private FileAsyncTaskMapper baseMapper;
+
+    @Resource
+    private ISysOssService iSysOssService;
+
+    @Resource
+    private SysOssMapper ossMapper;
 
     /**
      * 查询任务管理
@@ -84,69 +69,26 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      * @throws Exception 异常信息
      */
     @Override
-    public void downloadFile(Long taskId, HttpServletResponse response) throws Exception {
+    public void downloadFile(Long taskId,String fileType, HttpServletResponse response) throws Exception {
         // 1. 根据taskId查询任务信息
         FileAsyncTaskVo taskVo = queryById(taskId);
         if (taskVo == null) {
             log.error("任务不存在，任务ID: {}", taskId);
             throw new RuntimeException("任务不存在");
         }
-
-        String fileUrl = taskVo.getFileUrl();
-        if (StringUtils.isBlank(fileUrl)) {
-            log.error("任务文件路径为空，任务ID: {}", taskId);
-            throw new RuntimeException("任务文件路径为空");
+        String fileUrl="";
+        if(fileType.equals("export")){
+            fileUrl = taskVo.getFileUrl();
+        }else if(fileType.equals("import")){
+            fileUrl = taskVo.getResultFileUrl();
         }
-
-        String fileName = taskVo.getFileName();
-        if (StringUtils.isBlank(fileName)) {
-            // 如果文件名不存在，从fileUrl中提取
-            int lastSlashIndex = fileUrl.lastIndexOf("/");
-            if (lastSlashIndex > -1 && lastSlashIndex < fileUrl.length() - 1) {
-                fileName = fileUrl.substring(lastSlashIndex + 1);
-            } else {
-                fileName = "download_file_" + taskId;
-            }
-        }
-
-        cn.hutool.extra.ssh.Sftp sftp = null;
         try {
-            // 2. 创建SFTP连接
-            sftp = cn.hutool.extra.ssh.JschUtil.createSftp(sftpHost, sftpPort, sftpUsername, sftpPassword);
-
-            // 3. 检查文件是否存在
-            if (!sftp.exist(fileUrl)) {
-                log.error("SFTP文件不存在，路径: {}", fileUrl);
-                throw new RuntimeException("文件不存在");
-            }
-
-            // 4. 设置响应头
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment; filename=" + java.net.URLEncoder.encode(fileName, "UTF-8"));
-
-            // 5. 从SFTP读取文件并写入响应流
-            try (InputStream in = sftp.getClient().get(fileUrl);
-                 OutputStream out = response.getOutputStream()) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, bytesRead);
-                }
-                out.flush();
-            }
-
+            SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, fileUrl));
+            iSysOssService.download(sysOss.getOssId(), response);
             log.info("文件下载成功，任务ID: {}, 文件路径: {}", taskId, fileUrl);
         } catch (Exception e) {
             log.error("文件下载失败，任务ID: {}, 文件路径: {}", taskId, fileUrl, e);
             throw new RuntimeException("文件下载失败: " + e.getMessage());
-        } finally {
-            if (sftp != null) {
-                try {
-                    sftp.close();
-                } catch (Exception e) {
-                    log.warn("关闭SFTP连接失败", e);
-                }
-            }
         }
     }
 
@@ -157,6 +99,15 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
     public TableDataInfo<FileAsyncTaskVo> queryPageList(FileAsyncTaskBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<FileAsyncTaskDO> lqw = buildQueryWrapper(bo);
         Page<FileAsyncTaskVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        result.getRecords().forEach(task -> {
+            if(task.getTaskType().equals("import") && StringUtils.isNotEmpty(task.getResultFileUrl())){
+                SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getResultFileUrl()));
+                task.setResultFileUrlOssId(sysOss.getOssId());
+            }else if(task.getTaskType().equals("export") && StringUtils.isNotEmpty(task.getFileUrl())){
+                SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
+                task.setFileUrlOssId(sysOss.getOssId());
+            }
+        });
         return TableDataInfo.build(result);
     }
 
@@ -192,6 +143,8 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
         lqw.like(StringUtils.isNotBlank(bo.getCreateBy()), FileAsyncTaskDO::getCreateBy, bo.getCreateBy());
         lqw.between(params.get("beginTime") != null && params.get("endTime") != null,
             FileAsyncTaskDO::getCreateTime, params.get("beginTime"), params.get("endTime"));
+        lqw.orderByDesc(BaseEntity::getCreateTime);
+        lqw.eq(FileAsyncTaskDO::getCreateUserId,LoginHelper.getUserId());
         return lqw;
     }
 
@@ -301,23 +254,14 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
 
     @Override
     public Long applyImport(MultipartFile file, String businessType,String taskName) {
+        SysOssVo upload = iSysOssService.upload(file);
+
         try {
-            // 使用原始文件名，SFTP会自动覆盖同名文件
-            String originalFilename = file.getOriginalFilename();
-            // 确保文件名不为空
-            if (originalFilename == null || originalFilename.trim().isEmpty()) {
-                throw new RuntimeException("文件名不能为空");
-            }
-            String remoteFilePath = sftpBasePath + "/" + originalFilename;
-
-            // 上传文件到SFTP
-            String fileUrl = uploadFileToSFTP(file, originalFilename, remoteFilePath);
-
             // 创建异步任务
             FileAsyncTaskBo taskBo = new FileAsyncTaskBo();
             taskBo.setTaskType("import");
-            taskBo.setFileName(originalFilename);
-            taskBo.setFileUrl(fileUrl);
+            taskBo.setFileName(upload.getFileName());
+            taskBo.setFileUrl(upload.getUrl());
             taskBo.setFileSize(file.getSize());
             taskBo.setBusinessType(businessType);
             taskBo.setStatus(0L); // 0-待处理
@@ -378,59 +322,6 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
         } catch (Exception e) {
             log.error("导出任务申请异常", e);
             throw new RuntimeException("导出任务申请异常: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 上传文件到SFTP服务器
-     */
-    private String uploadFileToSFTP(MultipartFile file, String newFilename, String remoteFilePath) {
-        cn.hutool.extra.ssh.Sftp sftp = null;
-        File tempFile = null;
-        try {
-            // 获取原始文件扩展名
-            String fileExtension = "";
-            if (newFilename != null && newFilename.contains(".")) {
-                fileExtension = newFilename.substring(newFilename.lastIndexOf("."));
-            }
-            // 创建临时文件，使用原始文件的扩展名
-            tempFile = File.createTempFile("temp_", fileExtension);
-            try (InputStream inputStream = file.getInputStream();
-                 FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-            }
-
-            // 使用JschUtil创建SFTP连接
-            sftp = cn.hutool.extra.ssh.JschUtil.createSftp(sftpHost, sftpPort, sftpUsername, sftpPassword);
-            // 确保目录存在
-            String directory = remoteFilePath.substring(0, remoteFilePath.lastIndexOf("/"));
-            if (!sftp.exist(directory)) {
-                sftp.mkDirs(directory);
-            }
-            // 上传文件
-            sftp.upload(remoteFilePath, tempFile);
-            log.info("文件上传到SFTP成功，路径: {}", remoteFilePath);
-
-            // 直接返回SFTP文件路径，不构建URL
-            return remoteFilePath;
-        } catch (Exception e) {
-            log.error("文件上传到SFTP失败", e);
-            throw new RuntimeException("文件上传到SFTP失败: " + e.getMessage());
-        } finally {
-            if (sftp != null) {
-                sftp.close();
-            }
-            // 删除临时文件
-            if (tempFile != null && tempFile.exists()) {
-                boolean deleted = tempFile.delete();
-                if (!deleted) {
-                    log.warn("临时文件删除失败: {}", tempFile.getAbsolutePath());
-                }
-            }
         }
     }
 }

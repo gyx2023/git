@@ -70,6 +70,7 @@ public class ZqGrpGroupLog implements Serializable {
     /**
      * 行政县
      */
+
     private String countyId2;
     /**
      * 所属网格编码
@@ -156,11 +157,6 @@ public class ZqGrpGroupLog implements Serializable {
      */
     private String countyManagerName;
 
-//    @TableField(exist = false)
-//    private String createBy;
-//
-//    @TableField(exist = false)
-//    private String updateBy;
 
     private Date createTime;
 

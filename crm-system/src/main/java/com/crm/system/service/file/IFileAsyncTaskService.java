@@ -69,5 +69,5 @@ public interface IFileAsyncTaskService {
      * @param taskId 任务ID
      * @param response HTTP响应
      */
-    void downloadFile(Long taskId, HttpServletResponse response) throws Exception;
+    void downloadFile(Long taskId,String fileType, HttpServletResponse response) throws Exception;
 }

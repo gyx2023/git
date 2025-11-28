@@ -1,8 +1,8 @@
 package com.crm.system.service;
 
 import com.crm.system.domain.ZqGrpGroupInfo;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDictData;
@@ -25,9 +25,17 @@ public interface IZqGrpGroupInfoService {
     ZqGrpGroupInfoVo queryById(Long grpId);
 
     /**
+     * 根据总部集团编码查询政企集团客户信息
+     *
+     * @param hqGrpCode 总部集团编码
+     * @return 政企集团客户信息
+     */
+    ZqGrpGroupInfo selectByHqGrpCode(String hqGrpCode);
+
+    /**
      * 查询政企集团客户信息列表
      */
-    //TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
+    TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
     TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
 
     /**
@@ -45,6 +53,10 @@ public interface IZqGrpGroupInfoService {
      */
     Boolean updateByBo(ZqGrpGroupInfoBo bo);
 
+    /**
+     * 修改政企集团客户信息
+     */
+    Boolean updateByBo1(ZqGrpGroupInfoBo bo);
     /**
      * 校验并批量删除政企集团客户信息信息
      */

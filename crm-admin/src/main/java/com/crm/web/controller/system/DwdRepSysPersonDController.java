@@ -1,7 +1,6 @@
 package com.crm.web.controller.system;
 
 import java.util.*;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,6 @@ import liquibase.pro.packaged.I;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import com.crm.system.domain.vo.SysAreaVo;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
 import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
@@ -114,135 +111,24 @@ public class DwdRepSysPersonDController extends BaseController {
         return toAjax(iDwdRepSysPersonDService.deleteWithValidByIds(Arrays.asList(ids), true));
     }
 
+
+
     /**
-     * 根据县市编码查询客户经理信息
-     * @param cityCode 县市编码（如330108）
-     * @return 按级别分类的客户经理信息
+     * 根据县市编码和拓展客户类型查询客户经理信息
+     * @param cityCode 县市编码
+     * @param expandCustType 拓展客户类型(01:省级,02:市级,03:县级)
+     * @return 客户经理信息列表
      */
-    @GetMapping("/queryByCityCode")
-    public R<Map<String, List<Map<String, String>>>> queryByCityCode(@RequestParam String cityCode) {
+    @GetMapping("/queryManagersByCityCodeAndType")
+    public R<List<Map<String, Object>>> queryManagersByCityCodeAndType(
+            @RequestParam String cityCode,
+            @RequestParam(name = "expandType", required = false) String expandCustType) {
         try {
-            // 查询SysArea表，根据cityCode匹配数据
-            SysAreaVo areaVo = queryAreaByCityCode(cityCode);
-            if (areaVo == null) {
-                return R.fail("未找到对应的地区信息");
-            }
-
-            String type = areaVo.getType();
-            int empAreaId = areaVo.getEmpAreaId();
-            int empCountyId = areaVo.getEmpCountyId();
-
-            // 准备返回结果
-            Map<String, List<Map<String, String>>> result = new HashMap<>();
-            result.put("provincialManagers", new ArrayList<>());
-            result.put("cityManagers", new ArrayList<>());
-            result.put("countyManagers", new ArrayList<>());
-
-            // 根据type级别查询客户经理
-            if ("一级".equals(type)) {
-                // 省级：查询所有客户经理
-                result.put("provincialManagers", queryManagersByLevel("PROVINCE"));
-                result.put("cityManagers", queryManagersByLevel("CITY"));
-                result.put("countyManagers", queryManagersByLevel("COUNTY"));
-            } else if ("二级".equals(type)) {
-                // 市级：查询市级和县级客户经理
-                result.put("cityManagers", queryManagersByArea(empAreaId, "CITY"));
-                result.put("countyManagers", queryManagersByArea(empAreaId, "COUNTY"));
-            } else if ("三级".equals(type)) {
-                // 县级：只查询县级客户经理
-                result.put("countyManagers", queryManagersByCounty(empCountyId));
-            }
-
+            List<Map<String, Object>> result = iDwdRepSysPersonDService.queryManagersByCityCodeAndType(cityCode, expandCustType);
             return R.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
             return R.fail("查询客户经理信息失败：" + e.getMessage());
         }
-    }
-
-    /**
-     * 根据cityCode查询区域信息
-     * @param cityCode 县市编码，将直接作为id查询
-     * @return 区域信息对象
-     */
-    private SysAreaVo queryAreaByCityCode(String cityCode) {
-        try {
-            // 发现关键问题：SysAreaServiceImpl的buildQueryWrapper方法中没有id字段的查询条件
-            // 因此直接使用queryById方法进行精确查询
-            Integer id = Integer.valueOf(cityCode);
-
-            // 直接使用id查询单条记录
-            return iSysAreaService.queryById(Long.valueOf(id));
-        } catch (NumberFormatException e) {
-            // 处理cityCode无法转换为数字类型的情况
-            e.printStackTrace();
-            throw new RuntimeException("cityCode格式错误，无法转换为数字类型");
-        } catch (Exception e) {
-            // 处理其他可能的异常
-            e.printStackTrace();
-            throw new RuntimeException("查询区域信息失败：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 根据客户经理级别查询
-     */
-    private List<Map<String, String>> queryManagersByLevel(String level) {
-        DwdRepSysPersonDBo bo = new DwdRepSysPersonDBo();
-        bo.setPersonBigType(level);
-        List<Map<String, String>> managers = new ArrayList<>();
-
-        List<DwdRepSysPersonDVo> list = iDwdRepSysPersonDService.queryList(bo);
-
-        for (DwdRepSysPersonDVo person : list) {
-            Map<String, String> manager = new HashMap<>();
-            manager.put("name", person.getFullName());
-            manager.put("oaAccount", person.getOaUserName());
-            managers.add(manager);
-        }
-
-        return managers;
-    }
-
-    /**
-     * 根据地区ID查询特定级别客户经理
-     */
-    private List<Map<String, String>> queryManagersByArea(int areaId, String level) {
-        DwdRepSysPersonDBo bo = new DwdRepSysPersonDBo();
-        bo.setAreaId((long) areaId);
-        bo.setPersonBigType(level);
-        List<Map<String, String>> managers = new ArrayList<>();
-
-        List<DwdRepSysPersonDVo> list = iDwdRepSysPersonDService.queryList(bo);
-
-        for (DwdRepSysPersonDVo person : list) {
-            Map<String, String> manager = new HashMap<>();
-            manager.put("name", person.getFullName());
-            manager.put("oaAccount", person.getOaUserName());
-            managers.add(manager);
-        }
-
-        return managers;
-    }
-
-    /**
-     * 根据区县ID查询县级客户经理
-     */
-    private List<Map<String, String>> queryManagersByCounty(int countyId) {
-        DwdRepSysPersonDBo bo = new DwdRepSysPersonDBo();
-        bo.setCountyId((long) countyId);
-        bo.setPersonBigType("COUNTY");
-        List<Map<String, String>> managers = new ArrayList<>();
-
-        List<DwdRepSysPersonDVo> list = iDwdRepSysPersonDService.queryList(bo);
-
-        for (DwdRepSysPersonDVo person : list) {
-            Map<String, String> manager = new HashMap<>();
-            manager.put("name", person.getFullName());
-            manager.put("oaAccount", person.getOaUserName());
-            managers.add(manager);
-        }
-
-        return managers;
     }
 }
