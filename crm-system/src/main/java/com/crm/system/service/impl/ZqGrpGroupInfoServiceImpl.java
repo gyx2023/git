@@ -428,4 +428,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
     }
 
+    @Override
+    public ZqGrpGroupInfo selectByHqGrpCode(String hqGrpCode) {
+        return baseMapper.selectByHqGrpCode(hqGrpCode);
+    }
+
 }
