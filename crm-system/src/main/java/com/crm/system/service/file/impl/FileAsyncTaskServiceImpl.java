@@ -357,6 +357,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             taskBo.setStatus(0L); // 0-待处理
             taskBo.setCreateUserId(LoginHelper.getUserId());
 
+
             // 生成任务ID：yyyymmdd+0001（4位序列号）格式
             String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
             String sequence = getDailySequence();
