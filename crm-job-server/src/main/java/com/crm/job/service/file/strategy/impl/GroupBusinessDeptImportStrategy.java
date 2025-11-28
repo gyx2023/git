@@ -1,17 +1,34 @@
 package com.crm.job.service.file.strategy.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.core.domain.entity.SysUser;
+import com.crm.common.excel.ExcelResult;
+import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractImportStrategy;
+import com.crm.system.domain.SysOss;
 import com.crm.system.domain.file.FileAsyncTaskDO;
 import cn.hutool.extra.ssh.JschRuntimeException;
 import cn.hutool.extra.ssh.Sftp;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import com.crm.system.domain.vo.SysOssVo;
+import com.crm.system.domain.vo.SysUserExportVo;
+import com.crm.system.domain.vo.SysUserImportVo;
+import com.crm.system.listener.SysUserExImportListener;
+import com.crm.system.listener.SysUserImportListener;
+import com.crm.system.mapper.SysOssMapper;
+import com.crm.system.mapper.file.FileAsyncTaskMapper;
+import com.crm.system.service.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,20 +43,11 @@ import java.util.List;
 @Slf4j
 public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
 
-    @Value("${sftp.base-path:/Users/liutong/upload}")
-    private String sftpBasePath;
+    @Resource
+    private ISysOssService iSysOssService;
 
-    @Value("${sftp.host:localhost}")
-    private String sftpHost;
-
-    @Value("${sftp.port:22}")
-    private int sftpPort;
-
-    @Value("${sftp.username:root}")
-    private String sftpUsername;
-
-    @Value("${sftp.password:}")
-    private String sftpPassword;
+    @Resource
+    private SysOssMapper sysOssMapper;
 
     @Override
     public String getBusinessType() {
@@ -48,110 +56,36 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
 
     @Override
     protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
-        // 获取项目部署路径作为基础路径
-        String basePath = System.getProperty("user.dir");
-        // 在项目路径下创建临时文件目录
-        String tempDirPath = basePath + File.separator + "temp";
-        File tempDir = new File(tempDirPath);
-        // 确保临时目录存在
-            if (!tempDir.exists()) {
-                tempDir.mkdirs();
-                log.info("创建临时目录: {}", tempDirPath);
-            }
+        //根据FileAsyncTaskDO获取上传到cos的ossid
+        SysOss sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
+        //获取文件流
+        InputStream fileContent = iSysOssService.getFileContent(sysOss.getOssId());
+        //excel文件操作
+        ExcelResult<SysUserImportVo> sysUserImportVoExcelResult = ExcelUtil.importExcel(fileContent, SysUserImportVo.class, new SysUserExImportListener(false));
 
-        // 本地临时文件路径
-        String localTempFilePath = tempDirPath + File.separator + "temp_" + System.currentTimeMillis() + "_" + task.getFileName();
-        File localTempFile = new File(localTempFilePath);
+        //导入成功后生成导入明细excel文件
+        List<SysUserImportVo> list = sysUserImportVoExcelResult.getList();
 
-        try {
-            // SFTP文件路径
-            String sftpFilePath = task.getFileUrl();
-            log.info("开始从SFTP获取导入文件: {}", sftpFilePath);
+        //这里建议将list转成SysUserExportVo的List,导出的时候用导出的list
 
-            // 确保本地目录存在
-            if (!localTempFile.getParentFile().exists()) {
-                localTempFile.getParentFile().mkdirs();
-            }
 
-            // 使用hutool的SFTP工具下载文件
-            log.info("使用hutool SFTP工具下载文件");
-            Sftp sftp = null;
-            try {
-                // 处理SFTP路径，确保路径格式正确
-                if (!sftpFilePath.startsWith("/")) {
-                    sftpFilePath = "/" + sftpFilePath;
-                }
+        // 创建临时文件
+        File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "执行结果", ".xlsx");
 
-                // 根据认证方式创建SFTP实例
-                // 使用密码连接
-                sftp = new Sftp(sftpHost, sftpPort, sftpUsername, sftpPassword);
-
-                // 下载文件到本地临时路径
-                sftp.download(sftpFilePath, localTempFile);
-                log.info("hutool SFTP文件下载成功: {} -> {}", sftpFilePath, localTempFilePath);
-            } catch (JschRuntimeException e) {
-                log.error("hutool SFTP文件下载失败: {} -> {}", sftpFilePath, localTempFilePath);
-                e.printStackTrace();
-                throw new RuntimeException("SFTP文件下载失败: " + e.getMessage(), e);
-            } finally {
-                // 安全关闭SFTP连接
-                if (sftp != null) {
-                    try {
-                        sftp.close();
-                        log.info("hutool SFTP连接已关闭");
-                    } catch (Exception e) {
-                        log.error("关闭SFTP连接时发生错误");
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            // 验证本地临时文件是否存在
-            if (!localTempFile.exists() || !localTempFile.isFile()) {
-                log.error("下载的临时文件不存在: {}", localTempFilePath);
-                throw new RuntimeException("下载的临时文件不存在");
-            }
-
-            log.info("开始读取导入文件: {}", localTempFilePath);
-
-            // TODO: 根据实际文件格式读取数据
-            // 这里需要根据实际的文件格式（Excel、CSV等）读取数据
-            List<Object> dataList = new ArrayList<>();
-            try (FileInputStream fis = new FileInputStream(localTempFile)) {
-                // 模拟文件读取过程
-                // dataList = ExcelUtils.readExcel(fis, GroupBusinessDept.class);
-                log.info("文件读取完成，共读取 {} 条数据", dataList.size());
-            }
-
-            // TODO: 调用业务服务处理数据
-            // 这里需要注入对应的业务服务来处理数据
-            // ImportResult result = groupBusinessDeptService.importData(dataList);
-
-            // 模拟处理结果
-            long totalRows = 100; // 模拟总数据量
-            long successRows = 95;
-            long failRows = 5;
-
-            // 设置任务结果信息
-            task.setTotalRows(totalRows);
-            task.setSuccessRows(successRows);
-            task.setFailRows(failRows);
-            task.setRemark("客户归属部门数据导入完成，成功: " + successRows + " 条，失败: " + failRows + " 条");
-
-            // 如果有失败记录，可以生成错误文件
-
-            return successRows > 0; // 只要有成功记录就认为导入成功
-        } catch (Exception e) {
-            log.error("客户归属部门数据导入失败，任务ID: {}", task.getTaskId(), e);
-            task.setRemark("导入失败: " + e.getMessage());
-            throw e;
-        } finally {
-            // 清理临时文件
-            if (localTempFile.exists()) {
-                boolean deleted = localTempFile.delete();
-                log.info("清理临时文件: {}, 结果: {}", localTempFilePath, deleted);
-            }
+        try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+            ExcelUtil.exportExcel(list, "执行结果", SysUserImportVo.class, fos);
         }
+        SysOssVo upload = iSysOssService.upload(tempFile);
+
+        // 删除临时文件
+        tempFile.deleteOnExit();
+
+        task.setResultFileUrl(upload.getUrl());
+        task.setTotalRows(Long.valueOf(list.size()));
+        task.setSuccessRows(list.stream().filter(item -> "成功".equals(item.getExecutionResult())).count());
+        task.setFailRows(list.stream().filter(item -> "失败".equals(item.getExecutionResult())).count());
+        //更新zqzt_file_async_task的结果文件名，结果文件url，总条数，成功失败条数
+        return true;
     }
 
     /**

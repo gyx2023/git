@@ -157,6 +157,7 @@ public class ZqGrpGroupLog implements Serializable {
      */
     private String countyManagerName;
 
+
     private Date createTime;
 
     private Date updateTime;

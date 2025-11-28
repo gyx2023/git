@@ -99,6 +99,15 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
     public TableDataInfo<FileAsyncTaskVo> queryPageList(FileAsyncTaskBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<FileAsyncTaskDO> lqw = buildQueryWrapper(bo);
         Page<FileAsyncTaskVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        result.getRecords().forEach(task -> {
+            if(task.getTaskType().equals("import") && StringUtils.isNotEmpty(task.getResultFileUrl())){
+                SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getResultFileUrl()));
+                task.setResultFileUrlOssId(sysOss.getOssId());
+            }else if(task.getTaskType().equals("export") && StringUtils.isNotEmpty(task.getFileUrl())){
+                SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
+                task.setFileUrlOssId(sysOss.getOssId());
+            }
+        });
         return TableDataInfo.build(result);
     }
 

@@ -45,7 +45,7 @@ public class ZqGrpGroupInfoController extends BaseController {
      * 查询政企集团客户信息列表
      */
     @SaCheckPermission("system:grpGroupInfo:list")
-    @GetMapping("/list")
+    @GetMapping("/lists")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
             @RequestParam(value = "beginTime", required = false) String beginTime,
             @RequestParam(value = "endTime", required = false) String endTime,
