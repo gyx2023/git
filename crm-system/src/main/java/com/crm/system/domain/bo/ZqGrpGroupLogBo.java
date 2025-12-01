@@ -182,7 +182,7 @@ public class ZqGrpGroupLogBo extends BaseEntity {
     /**
      * 省级客户名字（省分字段）
      */
-    @NotBlank(message = "省级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "省级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String provManagerName;
 
     /**
@@ -200,7 +200,7 @@ public class ZqGrpGroupLogBo extends BaseEntity {
     /**
      * 市级客户名字（省分字段）
      */
-    @NotBlank(message = "市级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "市级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String cityManagerName;
 
     /**
@@ -218,7 +218,7 @@ public class ZqGrpGroupLogBo extends BaseEntity {
     /**
      * 县级客户名字（省分字段）
      */
-    @NotBlank(message = "县级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
+    //@NotBlank(message = "县级客户名字（省分字段）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String countyManagerName;
 
 
