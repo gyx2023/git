@@ -74,6 +74,7 @@ public class GroupCustomerExportStrategy extends AbstractExportStrategy {
             task.setFileName(tempFile.getName());
             task.setFileUrl(upload.getUrl());
             task.setRemark("集团客户信息导出成功");
+
             return true;
         } catch (Exception e) {
             log.error("集团客户信息导出失败，任务ID: {}", task.getTaskId(), e);

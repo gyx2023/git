@@ -2,6 +2,7 @@ package com.crm.web.controller.system;
 
 import java.util.*;
 
+import com.crm.generator.util.Desensitization;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
@@ -24,7 +25,6 @@ import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
-import com.crm.generator.util.DesensitizationUtils;
 
 import java.text.SimpleDateFormat;
 
@@ -96,18 +96,18 @@ public class ZqGrpGroupInfoController extends BaseController {
             for (ZqGrpGroupInfoVo vo : result.getRows()) {
                 // 脱敏集团名称
                 if (vo.getGrpName() != null) {
-                    vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
+                    vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
                 }
 
                 // 脱敏三种客户经理名称
                 if (vo.getProvManagerName() != null) {
-                    vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
+                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
                 }
                 if (vo.getCityManagerName() != null) {
-                    vo.setCityManagerName(DesensitizationUtils.desensitizeName(vo.getCityManagerName()));
+                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
                 }
                 if (vo.getCountyManagerName() != null) {
-                    vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
+                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
                 }
             }
 
@@ -133,18 +133,18 @@ public class ZqGrpGroupInfoController extends BaseController {
             for (ZqGrpGroupInfoVo vo : list) {
                 // 脱敏集团名称
                 if (vo.getGrpName() != null) {
-                    vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
+                    vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
                 }
 
                 // 脱敏三种客户经理名称
                 if (vo.getProvManagerName() != null) {
-                    vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
+                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
                 }
                 if (vo.getCityManagerName() != null) {
-                    vo.setCityManagerName(DesensitizationUtils.desensitizeName(vo.getCityManagerName()));
+                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
                 }
                 if (vo.getCountyManagerName() != null) {
-                    vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
+                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
                 }
             }
         }
@@ -167,18 +167,18 @@ public class ZqGrpGroupInfoController extends BaseController {
         if (vo != null) {
             // 脱敏集团名称
             if (vo.getGrpName() != null) {
-                vo.setGrpName(DesensitizationUtils.desensitizeCompanyName(vo.getGrpName()));
+                vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
             }
 
             // 脱敏三种客户经理名称
             if (vo.getProvManagerName() != null) {
-                vo.setProvManagerName(DesensitizationUtils.desensitizeName(vo.getProvManagerName()));
+                vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
             }
             if (vo.getCityManagerName() != null) {
-                vo.setCityManagerName(DesensitizationUtils.desensitizeName(vo.getCityManagerName()));
+                vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
             }
             if (vo.getCountyManagerName() != null) {
-                vo.setCountyManagerName(DesensitizationUtils.desensitizeName(vo.getCountyManagerName()));
+                vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
             }
         }
 

@@ -13,14 +13,14 @@ xxl.job:
   # 执行器开关
   enabled: true
   # 调度中心地址：如调度中心集群部署存在多个地址则用逗号分隔。
-  admin-addresses: http://localhost:8081/xxl-job-admin
+  admin-addresses: http://192.168.124.91:9001/xxl-job-admin
   # 执行器通讯TOKEN：非空时启用
-  access-token: xxl-job
+  access-token:
   executor:
     # 执行器AppName：执行器心跳注册分组依据；为空则关闭自动注册
-    appname: zqzt-job
+    appname: zqzt-job-a
     # 执行器端口号 执行器从9101开始往后写
-    port: 9101
+    port: 9102
     # 执行器注册：默认IP:PORT
     address:
     # 执行器IP：默认自动获取IP
