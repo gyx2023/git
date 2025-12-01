@@ -21,6 +21,7 @@ import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.domain.vo.CustomerManagerTemplateVo;
+import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.generator.util.DesensitizationUtils;
@@ -290,5 +291,14 @@ public class ZqGrpGroupInfoController extends BaseController {
     @GetMapping("/downloadManagerTemplate")
     public void downloadManagerTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(new ArrayList<>(), "批量分配客户经理模板", CustomerManagerTemplateVo.class, response);
+    }
+
+    /**
+     * 下载客户归属部门维护模板
+     */
+    @SaCheckPermission("system:grpGroupInfo:list")
+    @GetMapping("/downloadBusiDeptTemplate")
+    public void downloadBusiDeptTemplate(HttpServletResponse response) {
+        ExcelUtil.exportExcel(new ArrayList<>(), "客户归属部门维护模板", GrpBusiDeptTemplateVo.class, response);
     }
 }
