@@ -107,11 +107,5 @@ public interface ISysDictTypeService {
      */
     boolean checkDictTypeUnique(SysDictType dictType);
 
-    /**
-     * 批量根据字典类型查询字典数据
-     *
-     * @param dictTypes 字典类型列表
-     * @return 字典数据映射，key为字典类型，value为字典数据集合
-     */
-    Map<String, List<SysDictData>> selectDictDataByTypes(List<String> dictTypes);
+
 }
