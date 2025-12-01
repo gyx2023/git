@@ -40,6 +40,26 @@ public class SysAreaController extends BaseController {
     private final ISysAreaService iSysAreaService;
 
     /**
+     * 查询浙江省地级市列表
+     */
+    @SaCheckPermission("system:area:list")
+    @GetMapping("/zhejiangCities")
+    public R<List<SysAreaVo>> zhejiangCities() {
+        List<SysAreaVo> cities = iSysAreaService.queryZhejiangCities();
+        return R.ok(cities);
+    }
+
+    /**
+     * 根据地级市ID查询其下辖的区县列表
+     */
+    @SaCheckPermission("system:area:list")
+    @GetMapping("/county/list")
+    public R<List<SysAreaVo>> countyList(@RequestParam String areaId) {
+        List<SysAreaVo> counties = iSysAreaService.queryCountyListByCityId(areaId);
+        return R.ok(counties);
+    }
+
+    /**
      * 查询【请填写功能名称】列表
      */
     @SaCheckPermission("system:area:list")

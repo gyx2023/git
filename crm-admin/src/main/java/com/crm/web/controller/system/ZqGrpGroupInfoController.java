@@ -47,6 +47,16 @@ public class ZqGrpGroupInfoController extends BaseController {
     @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/lists")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
+                                                @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
+                                                @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
+        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery, grpCreateTimeBegin, grpCreateTimeEnd);
+    }
+    /**
+     * 查询政企集团客户信息列表
+     */
+    @SaCheckPermission("system:grpGroupInfo:list")
+    @GetMapping("/list")
+    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
             @RequestParam(value = "beginTime", required = false) String beginTime,
             @RequestParam(value = "endTime", required = false) String endTime,
             @RequestParam(value = "timeType", required = false) String timeType) {
