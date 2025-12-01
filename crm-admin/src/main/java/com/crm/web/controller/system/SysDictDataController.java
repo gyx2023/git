@@ -15,6 +15,8 @@ import com.crm.system.service.ISysDictTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
@@ -79,6 +81,7 @@ public class SysDictDataController extends BaseController {
         }
         return R.ok(data);
     }
+
 
 
     /**

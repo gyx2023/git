@@ -49,6 +49,26 @@ public class SysCategoryController extends BaseController {
     }
 
     /**
+     * 查询所有行业大类列表
+     */
+    @GetMapping("/majorCategories")
+    public R<List<SysCategoryVo>> listMajorCategories() {
+        List<SysCategoryVo> list = iSysCategoryService.selectMajorCategories();
+        return R.ok(list);
+    }
+
+    /**
+     * 根据父级ID查询行业亚类列表
+     */
+    @GetMapping("/subCategories")
+    public R<List<SysCategoryVo>> listSubCategoriesByParentId(@RequestParam("parentId") String parentId) {
+        System.out.println("Received request for subCategories with parentId: " + parentId);
+        List<SysCategoryVo> list = iSysCategoryService.selectSubCategoriesByParentId(parentId);
+        System.out.println("Returning " + (list != null ? list.size() : 0) + " sub categories");
+        return R.ok(list);
+    }
+
+    /**
      * 导出行业大类-亚类-细类分类列表
      */
     @SaCheckPermission("system:category:export")
