@@ -192,6 +192,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
         lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
         lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());
+        
+        // 添加时间范围查询条件
+        // 处理分配时间范围查询
+        if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
+            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
+        }
+        // 处理创建时间范围查询
+        if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
+            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+        }
+        
         return lqw;
     }
 

@@ -47,7 +47,7 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
 
     @Resource
     private IZqGrpGroupInfoService zqGrpGroupInfoService;
-    
+
     @Resource
     private IDwdRepSysPersonDService dwdRepSysPersonDService;
 
@@ -56,6 +56,13 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
         return "grp_manager_import";
     }
 
+    /**
+     * 执行具体的导入任务
+     *
+     * @param task 任务信息
+     * @return 是否导入成功
+     * @throws Exception 导入过程中的异常
+     */
     @Override
     protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
         log.info("开始处理批量分配客户经理导入任务，任务ID: {}", task.getTaskId());
@@ -212,7 +219,7 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
             // 3. 构造更新参数
             ZqGrpGroupInfoBo updateBo = new ZqGrpGroupInfoBo();
             updateBo.setGrpId(groupInfo.getGrpId());
-            
+
             // 设置省级客户经理
             if (data.getProvManagerName() != null) {
                 updateBo.setProvManagerName(data.getProvManagerName());
@@ -220,7 +227,7 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
             if (data.getProvManagerOauser() != null) {
                 updateBo.setProvManagerOauser(data.getProvManagerOauser());
             }
-            
+
             // 设置市级客户经理
             if (data.getCityManagerName() != null) {
                 updateBo.setCityManagerName(data.getCityManagerName());
@@ -228,7 +235,7 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
             if (data.getCityManagerOauser() != null) {
                 updateBo.setCityManagerOauser(data.getCityManagerOauser());
             }
-            
+
             // 设置区县级客户经理
             if (data.getCountyManagerName() != null) {
                 updateBo.setCountyManagerName(data.getCountyManagerName());
@@ -268,8 +275,8 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
      * @return 是否匹配且在列表中
      */
     private boolean isManagerInList(String managerName, String managerOa, List<Map<String, Object>> managers) {
-        if ((managerName == null || managerName.isEmpty()) || 
-            (managerOa == null || managerOa.isEmpty()) || 
+        if ((managerName == null || managerName.isEmpty()) ||
+            (managerOa == null || managerOa.isEmpty()) ||
             managers == null || managers.isEmpty()) {
             return false;
         }
