@@ -260,7 +260,14 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             // 创建异步任务
             FileAsyncTaskBo taskBo = new FileAsyncTaskBo();
             taskBo.setTaskType("import");
-            taskBo.setFileName(upload.getFileName());
+            
+            // 根据业务类型设置文件名
+            if ("grp_manager_import".equals(businessType)) {
+                taskBo.setFileName("集团客户经理导入" + upload.getFileName());
+            } else {
+                taskBo.setFileName(upload.getFileName());
+            }
+            
             taskBo.setFileUrl(upload.getUrl());
             taskBo.setFileSize(file.getSize());
             taskBo.setBusinessType(businessType);
