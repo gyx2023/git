@@ -56,8 +56,16 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
 
     @Override
     protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
-        //根据FileAsyncTaskDO获取上传到cos的ossid
+        //根据FileAsyncTaskDO获取上传到cos的ossId
         SysOss sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
+        
+        // 检查sysOss是否存在
+        if (sysOss == null) {
+            log.error("未找到对应的OSS文件记录，文件URL: {}", task.getFileUrl());
+            task.setRemark("处理失败：未找到对应的OSS文件记录");
+            return false;
+        }
+        
         //获取文件流
         InputStream fileContent = iSysOssService.getFileContent(sysOss.getOssId());
         //excel文件操作

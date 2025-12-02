@@ -35,7 +35,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
     }
 
     @Override
-    protected boolean doExportTask(FileAsyncTaskDO task) {
+    protected boolean doExportTask(FileAsyncTaskDO task) throws Exception {
         try {
             // 解析请求参数
             ZqGrpGroupInfoBo queryParams = JSONUtil.toBean(task.getRequestParams(), ZqGrpGroupInfoBo.class);
