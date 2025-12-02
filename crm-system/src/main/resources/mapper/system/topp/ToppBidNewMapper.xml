@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ToppBidNewMapper">
+
+    <resultMap type="com.crm.system.domain.entity.topp.ToppBidNewDO" id="ToppBidNewResult">
+        <result property="id" column="id"/>
+        <result property="isSign" column="is_sign"/>
+        <result property="projectName" column="project_name"/>
+        <result property="bidProjectResume" column="bid_project_resume"/>
+        <result property="buyUser" column="buy_user"/>
+        <result property="openBidTime" column="open_bid_time"/>
+        <result property="isFrameworkContract" column="is_framework_contract"/>
+        <result property="contractTime" column="contract_time"/>
+        <result property="buyBudgetMoney" column="buy_budget_money"/>
+        <result property="checkUser" column="check_user"/>
+        <result property="competitionCondition" column="competition_condition"/>
+        <result property="bidBody" column="bid_body"/>
+        <result property="projectType" column="project_type"/>
+        <result property="ictProfit" column="ict_profit"/>
+        <result property="result" column="result"/>
+        <result property="matchBidMoney" column="match_bid_money"/>
+        <result property="tongfuMoney" column="tongfu_money"/>
+        <result property="bidResultText" column="bid_result_text"/>
+        <result property="remarkText" column="remark_text"/>
+        <result property="signMoney" column="sign_money"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="creator" column="creator"/>
+        <result property="opportunityCode" column="opportunity_code"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="endTime" column="end_time"/>
+        <result property="processOrderNumber" column="process_order_number"/>
+        <result property="nextId" column="next_id"/>
+        <result property="nextName" column="next_name"/>
+        <result property="cancleReason" column="cancle_reason"/>
+        <result property="expectedMainOperatingAmount" column="expected_main_operating_amount"/>
+    </resultMap>
+
+
+</mapper>

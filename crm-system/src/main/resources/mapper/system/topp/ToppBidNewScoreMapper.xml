@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ToppBidNewScoreMapper">
+
+    <resultMap type="com.crm.system.domain.bo.topp.ToppBidNewScore" id="ToppBidNewScoreResult">
+        <result property="id" column="id"/>
+        <result property="toppBidNewId" column="topp_bid_new_id"/>
+        <result property="opportunityCode" column="opportunity_code"/>
+        <result property="name" column="name"/>
+        <result property="role" column="role"/>
+        <result property="isNotSupport" column="is_not_support"/>
+        <result property="contribution" column="contribution"/>
+        <result property="createTime" column="create_time"/>
+        <result property="creator" column="creator"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+
+</mapper>
