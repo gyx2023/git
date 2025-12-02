@@ -200,4 +200,32 @@ public class SysAreaServiceImpl implements ISysAreaService {
 
         return new ArrayList<>();
     }
+
+    /**
+     * 根据城市代码前缀获取对应的三级县市数据
+     */
+    @Override
+    public List<SysAreaVo> getCountiesByCityCodePrefix(String cityCodePrefix) {
+        logger.info("开始根据城市代码前缀查询下属县市，cityCodePrefix: {}", cityCodePrefix);
+
+        if (cityCodePrefix == null) {
+            logger.warn("传入的cityCodePrefix为null");
+            return new ArrayList<>();
+        }
+
+        try {
+            // 查询所有ID前缀匹配且类型为"三级"的地区
+            LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+            lqw.apply("SUBSTR(id_, 1, {0}) = {1}", cityCodePrefix.length(), cityCodePrefix)
+               .eq(SysArea::getType, "三级");
+            
+            List<SysAreaVo> counties = baseMapper.selectVoList(lqw);
+            logger.info("查询到下属县市数量: {}", counties.size());
+            return counties;
+        } catch (Exception e) {
+            logger.error("查询下属县市时发生异常: {}", e.getMessage());
+        }
+
+        return new ArrayList<>();
+    }
 }

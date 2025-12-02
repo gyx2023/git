@@ -67,4 +67,11 @@ public interface ISysAreaService {
      * @param cityId 二级地市ID
      */
     List<SysAreaVo> getCountiesByCityId(Long cityId);
+
+    /**
+     * 根据城市代码前缀获取对应的三级县市数据
+     * @param cityCodePrefix 城市代码前缀
+     * @return 三级县市列表
+     */
+    List<SysAreaVo> getCountiesByCityCodePrefix(String cityCodePrefix);
 }
