@@ -18,11 +18,8 @@ import com.crm.system.service.ISysAreaService;
 import com.crm.system.domain.SysArea;
 import com.crm.system.domain.vo.SysAreaVo;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -168,7 +165,26 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
             String countyIdStr = String.valueOf(empCountyId);
             String countyPrefix = countyIdStr.substring(0, 4); // 获取前四位
 
-            // 2. 根据拓展客户类型执行不同的查询
+            // 2. 获取该市下所有的县名列表，用于后续匹配判断
+            List<SysAreaVo> countyAreas = sysAreaService.getCountiesByCityCodePrefix(countyPrefix);
+            Set<String> countyFullNames = new HashSet<>(); // 完整县名
+            Set<String> countyShortNames = new HashSet<>(); // 县名的前两个字和前三个字
+            
+            for (SysAreaVo county : countyAreas) {
+                String name = county.getName();
+                if (name != null) {
+                    countyFullNames.add(name);
+                    // 添加县名的前两个字和前三个字用于匹配
+                    if (name.length() >= 2) {
+                        countyShortNames.add(name.substring(0, 2));
+                    }
+                    if (name.length() >= 3) {
+                        countyShortNames.add(name.substring(0, 3));
+                    }
+                }
+            }
+
+            // 3. 根据拓展客户类型执行不同的查询
             if ("01".equals(expandCustType)) {
                 // 省级: 查询三次
                 Map<String, Object> level1 = new HashMap<>();
@@ -193,7 +209,22 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 lqw2.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
-                addManagersToList(list2, dataList2);
+                
+                // 过滤掉县名匹配的数据，只保留纯市级数据
+                List<DwdRepSysPersonDVo> cityManagers = dataList2.stream()
+                    .filter(person -> {
+                        if (person.getCountyName() == null) return true;
+                        // 检查是否包含完整县名或者县名的前缀
+                        boolean containsFullCounty = countyFullNames.stream()
+                            .anyMatch(cn -> person.getCountyName().contains(cn));
+                        boolean containsShortCounty = countyShortNames.stream()
+                            .anyMatch(sn -> person.getCountyName().contains(sn));
+                        // 如果包含任何县名标识，则为县级数据，应排除
+                        return !(containsFullCounty || containsShortCounty);
+                    })
+                    .collect(Collectors.toList());
+                    
+                addManagersToList(list2, cityManagers);
                 level2.put("managers", list2);
                 if (!list2.isEmpty()) {
                     result.add(level2);
@@ -221,19 +252,30 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
 
+                // 过滤掉县名匹配的数据，只保留纯市级数据
+                List<DwdRepSysPersonDVo> cityManagers = dataList1.stream()
+                    .filter(person -> {
+                        if (person.getCountyName() == null) return true;
+                        // 检查是否包含完整县名或者县名的前缀
+                        boolean containsFullCounty = countyFullNames.stream()
+                            .anyMatch(cn -> person.getCountyName().contains(cn));
+                        boolean containsShortCounty = countyShortNames.stream()
+                            .anyMatch(sn -> person.getCountyName().contains(sn));
+                        // 如果包含任何县名标识，则为县级数据，应排除
+                        return !(containsFullCounty || containsShortCounty);
+                    })
+                    .collect(Collectors.toList());
+
                 // 再查询县级结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
                 lqw2.eq(DwdRepSysPersonD::getCountyId, empCountyId)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
 
-                // 从市级结果中移除县级结果
-                dataList1.removeAll(dataList2);
-
                 Map<String, Object> level1 = new HashMap<>();
                 level1.put("category", "市级");
                 List<Map<String, Object>> list1 = new ArrayList<>();
-                addManagersToList(list1, dataList1);
+                addManagersToList(list1, cityManagers);
                 level1.put("managers", list1);
                 if (!list1.isEmpty()) {
                     result.add(level1);
