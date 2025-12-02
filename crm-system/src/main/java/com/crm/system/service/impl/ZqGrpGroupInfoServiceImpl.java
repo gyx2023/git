@@ -2,6 +2,7 @@ package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -62,7 +63,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
         return vo;
     }
-    
+
     /**
      * 查询政企集团客户信息列表
      */
@@ -84,7 +85,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 获取当前用户角色，0为超级管理员
         String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
         boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
-        
+
         // 根据用户角色决定是否对查询结果进行脱敏处理
         if (isSensitive) {
             List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
@@ -94,7 +95,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
         return TableDataInfo.build(result);
     }
-    
+
     /**
      * 查询政企集团客户信息列表
      */
@@ -121,7 +122,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 获取当前用户角色，0为超级管理员
         String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
         boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
-        
+
         // 根据用户角色决定是否对查询结果进行脱敏处理
         if (isSensitive) {
             List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
@@ -142,7 +143,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 获取当前用户角色，0为超级管理员
         String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
         boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
-        
+
         // 根据用户角色决定是否对查询结果进行脱敏处理
         if (isSensitive) {
             return list.stream()
@@ -254,6 +255,27 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         } catch (Exception e) {
             // 字段不存在或者访问异常时不处理
+        }
+
+        //-------------------------------数据权限处理-------------------------------
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        String areaCode = loginUser.getAreaCode();
+        // 如果不是省本级(330000)，则需要进行数据权限过滤
+        areaCode = "330106";
+        if (!"330000".equals(areaCode)) {
+            // 判断区域代码级别
+            if (areaCode.endsWith("0000")) {
+                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
+                // 不添加过滤条件，可查看全省数据
+            } else if (areaCode.endsWith("00")) {
+                // 地市级用户(如330100)，只能查看本市数据
+                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+            } else {
+                // 区县级用户(如330102)，可查看所属地市的所有数据
+                // 提取地市代码(前4位+00)
+                String cityCode = areaCode.substring(0, 4) + "00";
+                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+            }
         }
 
         return lqw;
@@ -570,130 +592,4 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         return baseMapper.selectByHqGrpCode(hqGrpCode);
     }
 
-    /**
-     * 根据countyId和countyName判断客户经理级别
-     *
-     * @param countyId   县ID
-     * @param countyName 县名
-     * @return 客户经理级别
-     */
-    @Override
-    public ManagerLevel determineManagerLevel(Long countyId, String countyName) {
-        // 省级判断：countyId前四位为3300
-        if (countyId != null) {
-            String countyIdStr = String.valueOf(countyId);
-            if (countyIdStr.startsWith("3300")) {
-                return ManagerLevel.PROVINCIAL;
-            }
-
-            // 获取该市下所有的县名列表，用于后续匹配判断
-            String countyPrefix = countyIdStr.substring(0, 4);
-            List<SysAreaVo> countyAreas = iSysAreaService.getCountiesByCityCodePrefix(countyPrefix);
-            Set<String> countyFullNames = new HashSet<>();
-
-            // 构造县名全称列表
-            for (SysAreaVo county : countyAreas) {
-                String name = county.getName();
-                if (name != null) {
-                    countyFullNames.add(name);
-                }
-            }
-
-            // 判断是否为县级：countyName包含任何县名标识
-            if (countyName != null) {
-                for (String fullName : countyFullNames) {
-                    if (countyName.contains(fullName)) {
-                        return ManagerLevel.COUNTY;
-                    }
-                }
-            }
-        }
-
-        // 默认为市级
-        return ManagerLevel.CITY;
-    }
-
-    /**
-     * 根据用户的OA账号确定其客户经理级别，并设置相应的数据过滤条件
-     * @param bo 查询条件对象
-     * @param currentUserOaAccount 当前用户的OA账号
-     */
-    @Override
-    public void applyDataManagerPermission(ZqGrpGroupInfoBo bo, String currentUserOaAccount) {
-        // 根据OA账号查找客户经理信息
-        DwdRepSysPersonDBo personBo = new DwdRepSysPersonDBo();
-        personBo.setOaUserName(currentUserOaAccount);
-        personBo.setOnjobFlag(0); // 只查询在职的客户经理
-        List<DwdRepSysPersonDVo> personList = iDwdRepSysPersonDService.queryList(personBo);
-
-        // 如果找不到对应的客户经理信息，则不过滤数据,说明当前用户是系统管理员
-        if (personList == null || personList.isEmpty()) {
-            return;
-        }
-
-        DwdRepSysPersonDVo currentManager = personList.get(0);
-        Long countyId = currentManager.getCountyId();
-        String countyName = currentManager.getCountyName();
-
-        // 根据countyId和countyName判断客户经理级别
-        ManagerLevel level = this.determineManagerLevel(countyId, countyName);
-
-        // 根据不同级别设置不同的数据过滤条件
-        switch (level) {
-            case PROVINCIAL:
-                // 省级客户经理不做过滤，可以看到所有数据
-                break;
-
-            case CITY:
-                // 市级客户经理只能看到本市及下属县的数据
-                if (countyId != null) {
-                    String countyIdStr = String.valueOf(countyId);
-                    if (countyIdStr.length() >= 4) {
-                        // 不做硬编码过滤，而是通过查询该市的所有下属县，然后构造OR查询条件
-                        String cityPrefix = countyIdStr.substring(0, 4);
-
-                        // 获取该市下所有的县名列表
-                        List<SysAreaVo> countyAreas = iSysAreaService.getCountiesByCityCodePrefix(cityPrefix);
-                        Set<String> countyIds = new HashSet<>();
-                        for (SysAreaVo county : countyAreas) {
-                            countyIds.add(String.valueOf(county.getEmpCountyId()));
-                        }
-                        countyIds.add(countyIdStr); // 加上本身
-
-                        // 使用反射方式设置过滤条件到BO对象
-                        try {
-                            java.lang.reflect.Field countyIdsFilterField = bo.getClass().getDeclaredField("countyIdsFilter");
-                            if (countyIdsFilterField != null) {
-                                countyIdsFilterField.setAccessible(true);
-                                countyIdsFilterField.set(bo, new ArrayList<>(countyIds));
-                            }
-                        } catch (Exception e) {
-                            // 字段不存在或者访问异常时不处理
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                break;
-
-            case COUNTY:
-                // 县级客户经理只能看到本县的数据
-                if (countyId != null) {
-                    List<String> countyIds = new ArrayList<>();
-                    countyIds.add(String.valueOf(countyId));
-
-                    // 使用反射方式设置过滤条件到BO对象
-                    try {
-                        java.lang.reflect.Field countyIdsFilterField = bo.getClass().getDeclaredField("countyIdsFilter");
-                        if (countyIdsFilterField != null) {
-                            countyIdsFilterField.setAccessible(true);
-                            countyIdsFilterField.set(bo, countyIds);
-                        }
-                    } catch (Exception e) {
-                        // 字段不存在或者访问异常时不处理
-                        e.printStackTrace();
-                    }
-                }
-                break;
-        }
-    }
 }

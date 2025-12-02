@@ -80,16 +80,10 @@ public class ZqGrpGroupInfoController extends BaseController {
             }
         }
 
-        // 获取当前登录用户
-        String currentUserOaAccount = getLoginUser().getUsername();
-
-        // 应用数据权限过滤
-        iZqGrpGroupInfoService.applyDataManagerPermission(bo, currentUserOaAccount);
-
         // 查询数据并返回
         TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
 
-        return result;
+        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
 
     /**
