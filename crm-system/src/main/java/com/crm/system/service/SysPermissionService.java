@@ -1,11 +1,14 @@
 package com.crm.system.service;
 
+import com.crm.common.core.domain.entity.SysRole;
 import com.crm.common.core.domain.entity.SysUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -29,7 +32,7 @@ public class SysPermissionService {
     public Set<String> getRolePermission(SysUser user) {
         Set<String> roles = new HashSet<>();
         // 管理员拥有所有权限
-        if (user.isAdmin()) {
+        if (user.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L)) {
             roles.add("admin");
         } else {
             roles.addAll(roleService.selectRolePermissionByUserId(user.getUserId()));
@@ -46,7 +49,7 @@ public class SysPermissionService {
     public Set<String> getMenuPermission(SysUser user) {
         Set<String> perms = new HashSet<>();
         // 管理员拥有所有权限
-        if (user.isAdmin()) {
+        if (user.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L)) {
             perms.add("*:*:*");
         } else {
             perms.addAll(menuService.selectMenuPermsByUserId(user.getUserId()));
