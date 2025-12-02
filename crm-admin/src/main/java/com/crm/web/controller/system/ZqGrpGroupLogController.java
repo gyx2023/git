@@ -42,7 +42,6 @@ public class ZqGrpGroupLogController extends BaseController {
     /**
      * 查询政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupLog:list")
     @GetMapping("/list")
     public TableDataInfo<ZqGrpGroupLogVo> list(ZqGrpGroupLogBo bo, PageQuery pageQuery) {
         return iZqGrpGroupLogService.queryPageList(bo, pageQuery);
@@ -51,7 +50,6 @@ public class ZqGrpGroupLogController extends BaseController {
     /**
      * 导出政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupLog:export")
     @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ZqGrpGroupLogBo bo, HttpServletResponse response) {
@@ -64,7 +62,6 @@ public class ZqGrpGroupLogController extends BaseController {
      *
      * @param grpId 主键
      */
-    @SaCheckPermission("system:grpGroupLog:query")
     @GetMapping("/{grpId}")
     public R<ZqGrpGroupLogVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long grpId) {
@@ -74,7 +71,6 @@ public class ZqGrpGroupLogController extends BaseController {
     /**
      * 新增政企集团客户信息
      */
-    @SaCheckPermission("system:grpGroupLog:add")
     @Log(title = "政企集团客户信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -85,7 +81,6 @@ public class ZqGrpGroupLogController extends BaseController {
     /**
      * 修改政企集团客户信息
      */
-    @SaCheckPermission("system:grpGroupLog:edit")
     @Log(title = "政企集团客户信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -98,7 +93,6 @@ public class ZqGrpGroupLogController extends BaseController {
      *
      * @param grpIds 主键串
      */
-    @SaCheckPermission("system:grpGroupLog:remove")
     @Log(title = "政企集团客户信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{grpIds}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")

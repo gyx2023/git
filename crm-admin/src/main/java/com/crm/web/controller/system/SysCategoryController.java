@@ -42,7 +42,6 @@ public class SysCategoryController extends BaseController {
     /**
      * 查询行业大类-亚类-细类分类列表
      */
-    @SaCheckPermission("system:category:list")
     @GetMapping("/list")
     public TableDataInfo<SysCategoryVo> list(SysCategoryBo bo, PageQuery pageQuery) {
         return iSysCategoryService.queryPageList(bo, pageQuery);
@@ -71,7 +70,6 @@ public class SysCategoryController extends BaseController {
     /**
      * 导出行业大类-亚类-细类分类列表
      */
-    @SaCheckPermission("system:category:export")
     @Log(title = "行业大类-亚类-细类分类", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(SysCategoryBo bo, HttpServletResponse response) {
@@ -84,7 +82,6 @@ public class SysCategoryController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:category:query")
     @GetMapping("/{id}")
     public R<SysCategoryVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable String id) {
@@ -94,7 +91,6 @@ public class SysCategoryController extends BaseController {
     /**
      * 新增行业大类-亚类-细类分类
      */
-    @SaCheckPermission("system:category:add")
     @Log(title = "行业大类-亚类-细类分类", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -105,7 +101,6 @@ public class SysCategoryController extends BaseController {
     /**
      * 修改行业大类-亚类-细类分类
      */
-    @SaCheckPermission("system:category:edit")
     @Log(title = "行业大类-亚类-细类分类", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -118,7 +113,6 @@ public class SysCategoryController extends BaseController {
      *
      * @param ids 主键串
      */
-    @SaCheckPermission("system:category:remove")
     @Log(title = "行业大类-亚类-细类分类", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")

@@ -42,7 +42,6 @@ public class SysAreaController extends BaseController {
     /**
      * 查询浙江省地级市列表
      */
-    @SaCheckPermission("system:area:list")
     @GetMapping("/zhejiangCities")
     public R<List<SysAreaVo>> zhejiangCities() {
         List<SysAreaVo> cities = iSysAreaService.queryZhejiangCities();
@@ -52,7 +51,6 @@ public class SysAreaController extends BaseController {
     /**
      * 根据地级市ID查询其下辖的区县列表
      */
-    @SaCheckPermission("system:area:list")
     @GetMapping("/county/list")
     public R<List<SysAreaVo>> countyList(@RequestParam String areaId) {
         List<SysAreaVo> counties = iSysAreaService.queryCountyListByCityId(areaId);
@@ -62,7 +60,6 @@ public class SysAreaController extends BaseController {
     /**
      * 查询【请填写功能名称】列表
      */
-    @SaCheckPermission("system:area:list")
     @GetMapping("/list")
     public TableDataInfo<SysAreaVo> list(SysAreaBo bo, PageQuery pageQuery) {
         return iSysAreaService.queryPageList(bo, pageQuery);
@@ -71,7 +68,6 @@ public class SysAreaController extends BaseController {
     /**
      * 导出【请填写功能名称】列表
      */
-    @SaCheckPermission("system:area:export")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(SysAreaBo bo, HttpServletResponse response) {
@@ -84,7 +80,6 @@ public class SysAreaController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:area:query")
     @GetMapping("/{id}")
     public R<SysAreaVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
@@ -94,7 +89,6 @@ public class SysAreaController extends BaseController {
     /**
      * 新增【请填写功能名称】
      */
-    @SaCheckPermission("system:area:add")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -105,7 +99,6 @@ public class SysAreaController extends BaseController {
     /**
      * 修改【请填写功能名称】
      */
-    @SaCheckPermission("system:area:edit")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -118,7 +111,6 @@ public class SysAreaController extends BaseController {
      *
      * @param ids 主键串
      */
-    @SaCheckPermission("system:area:remove")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")

@@ -1,7 +1,10 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -122,6 +125,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (vo == null) {
             return null;
         }
+        //--------------------------------------------查询权限如果是超级管理员则不进行脱敏
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        List<RoleDTO> roles = loginUser.getRoles();
+        roles.forEach(role -> {
+            if(role.getRoleId().equals("1")){
+                return;
+            }
+        });
 
         // 对集团名称进行脱敏
         vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
@@ -192,7 +203,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
         lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
         lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());
-        
+
         // 添加时间范围查询条件
         // 处理分配时间范围查询
         if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
@@ -202,7 +213,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         }
-        
+
+        //------------------------------------------------------------------数据权限处理
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        String areaCode = loginUser.getAreaCode();
+        if(!areaCode.equals("33000")){
+            lqw.eq(ZqGrpGroupInfo::getAreaId,areaCode);
+        }
+
+
         return lqw;
     }
 
@@ -240,14 +259,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
 
         validEntityBeforeSave(update);
-        
+
         // 清空不能修改的字段，避免使用前端传递的脱敏数据
         // 这些字段将保持数据库中的原始值不变
         update.setGrpName(null); // 集团名称不能修改
         update.setProvManagerName(null); // 省级客户经理名字不能修改
         update.setCityManagerName(null); // 市级客户经理名字不能修改
         update.setCountyManagerName(null); // 县级客户经理名字不能修改
-        
+
         System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
 
         // 执行更新操作
@@ -259,7 +278,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
             // 重新从数据库获取更新后的完整数据，包含未脱敏的集团名称和客户经理名字
             ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
-            
+
             // 比较修改前后的对象属性，只有当属性发生变化时才记录日志
             // 使用自定义方法比较对象属性是否相同
             boolean hasChanges = !isObjectsEqual(originalInfo, updatedInfo);
@@ -273,7 +292,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         return success;
     }
-    
+
     /**
      * 比较两个对象的属性是否完全相同
      * @param obj1 第一个对象
@@ -290,11 +309,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (obj1.getClass() != obj2.getClass()) {
             return false;
         }
-        
+
         // 直接使用手动比较方式，比较所有可能被修改的属性
         ZqGrpGroupInfo info1 = (ZqGrpGroupInfo) obj1;
         ZqGrpGroupInfo info2 = (ZqGrpGroupInfo) obj2;
-        
+
         // 比较所有可能被修改的属性
         return java.util.Objects.equals(info1.getGrpId(), info2.getGrpId()) &&
                java.util.Objects.equals(info1.getGrpCode(), info2.getGrpCode()) &&
@@ -347,7 +366,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 创建更新对象
         ZqGrpGroupInfo update = new ZqGrpGroupInfo();
         update.setGrpId(bo.getGrpId());
-        
+
         // 只更新非空的客户经理信息字段
         boolean hasUpdateFields = false;
         if (bo.getProvManagerOauser() != null) {

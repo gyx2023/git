@@ -41,7 +41,6 @@ public class SysDictDataController extends BaseController {
     /**
      * 查询字典数据列表
      */
-    @SaCheckPermission("system:dict:list")
     @GetMapping("/list")
     public TableDataInfo<SysDictData> list(SysDictData dictData, PageQuery pageQuery) {
         return dictDataService.selectPageDictDataList(dictData, pageQuery);
@@ -51,7 +50,6 @@ public class SysDictDataController extends BaseController {
      * 导出字典数据列表
      */
     @Log(title = "字典数据", businessType = BusinessType.EXPORT)
-    @SaCheckPermission("system:dict:export")
     @PostMapping("/export")
     public void export(SysDictData dictData, HttpServletResponse response) {
         List<SysDictData> list = dictDataService.selectDictDataList(dictData);
@@ -63,7 +61,6 @@ public class SysDictDataController extends BaseController {
      *
      * @param dictCode 字典code
      */
-    @SaCheckPermission("system:dict:query")
     @GetMapping(value = "/{dictCode}")
     public R<SysDictData> getInfo(@PathVariable Long dictCode) {
         return R.ok(dictDataService.selectDictDataById(dictCode));
@@ -104,7 +101,6 @@ public class SysDictDataController extends BaseController {
     /**
      * 新增字典类型
      */
-    @SaCheckPermission("system:dict:add")
     @Log(title = "字典数据", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysDictData dict) {
@@ -115,7 +111,6 @@ public class SysDictDataController extends BaseController {
     /**
      * 修改保存字典类型
      */
-    @SaCheckPermission("system:dict:edit")
     @Log(title = "字典数据", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysDictData dict) {
@@ -128,7 +123,6 @@ public class SysDictDataController extends BaseController {
      *
      * @param dictCodes 字典code串
      */
-    @SaCheckPermission("system:dict:remove")
     @Log(title = "字典类型", businessType = BusinessType.DELETE)
     @DeleteMapping("/{dictCodes}")
     public R<Void> remove(@PathVariable Long[] dictCodes) {

@@ -46,7 +46,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 查询政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/lists")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
                                                 @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
@@ -56,7 +55,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 查询政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/list")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
             @RequestParam(value = "beginTime", required = false) String beginTime,
@@ -124,7 +122,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 导出政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupInfo:export")
     @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response) {
@@ -159,7 +156,6 @@ public class ZqGrpGroupInfoController extends BaseController {
      *
      * @param grpId 主键
      */
-    @SaCheckPermission("system:grpGroupInfo:query")
     @GetMapping("/{grpId}")
     public R<ZqGrpGroupInfoVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long grpId) {
@@ -190,7 +186,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 新增政企集团客户信息
      */
-    @SaCheckPermission("system:grpGroupInfo:add")
     @Log(title = "政企集团客户信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -201,7 +196,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 修改政企集团客户信息
      */
-    @SaCheckPermission("system:grpGroupInfo:edit")
     @Log(title = "政企集团客户信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/edit")
@@ -212,7 +206,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 修改政企集团客户经理信息
      */
-    @SaCheckPermission("system:grpGroupInfo:edit")
     @Log(title = "政企集团客户经理信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/edits")
@@ -267,7 +260,6 @@ public class ZqGrpGroupInfoController extends BaseController {
      *
      * @param grpIds 主键串
      */
-    @SaCheckPermission("system:grpGroupInfo:remove")
     @Log(title = "政企集团客户信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{grpIds}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
@@ -278,7 +270,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 获取政企集团客户信息相关字典数据
      */
-    @SaCheckPermission("system:grpGroupInfo:query")
     @GetMapping("/dict")
     public R<Map<String, List<SysDictData>>> getDictData() {
         // 从zq_grp_group_info表中获取字典数据
@@ -289,7 +280,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 下载批量分配客户经理模板
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/downloadManagerTemplate")
     public void downloadManagerTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(new ArrayList<>(), "批量分配客户经理模板", CustomerManagerTemplateVo.class, response);
@@ -298,16 +288,14 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 下载客户归属部门维护模板
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/downloadBusiDeptTemplate")
     public void downloadBusiDeptTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(new ArrayList<>(), "客户归属部门维护模板", GrpBusiDeptTemplateVo.class, response);
     }
-    
+
     /**
      * 下载集团客户拓展类型维护模板
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/downloadExpandTypeTemplate")
     public void downloadExpandTypeTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(new ArrayList<>(), "集团客户拓展类型维护模板", GrpExpandTypeTemplateVo.class, response);
