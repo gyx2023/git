@@ -23,6 +23,7 @@ import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
+import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
 
@@ -301,5 +302,14 @@ public class ZqGrpGroupInfoController extends BaseController {
     @GetMapping("/downloadBusiDeptTemplate")
     public void downloadBusiDeptTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(new ArrayList<>(), "客户归属部门维护模板", GrpBusiDeptTemplateVo.class, response);
+    }
+    
+    /**
+     * 下载集团客户拓展类型维护模板
+     */
+    @SaCheckPermission("system:grpGroupInfo:list")
+    @GetMapping("/downloadExpandTypeTemplate")
+    public void downloadExpandTypeTemplate(HttpServletResponse response) {
+        ExcelUtil.exportExcel(new ArrayList<>(), "集团客户拓展类型维护模板", GrpExpandTypeTemplateVo.class, response);
     }
 }
