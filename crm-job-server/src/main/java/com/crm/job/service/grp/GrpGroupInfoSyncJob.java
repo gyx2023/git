@@ -1,0 +1,175 @@
+package com.crm.job.service.grp;
+
+import com.crm.job.config.properties.SftpProperties;
+import com.crm.job.service.grp.impl.GrpGroupInfoServiceImpl;
+import com.crm.job.utils.GroupFileParser;
+import com.crm.job.utils.SftpUtil;
+import com.crm.system.domain.grp.GrpGroupInfoDO;
+import com.xxl.job.core.context.XxlJobHelper;
+import com.xxl.job.core.handler.annotation.XxlJob;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 集团信息同步定时任务
+ * 从SFTP读取集团信息文件并导入到grp_group_info表
+ *
+ * @author crm
+ */
+@Slf4j
+@Component
+public class GrpGroupInfoSyncJob {
+
+    @Autowired
+    private SftpUtil sftpUtil;
+
+    @Autowired
+    private GroupFileParser groupFileParser;
+
+    @Autowired
+    private GrpGroupInfoService grpGroupInfoService;
+
+    /**
+     * 集团信息同步任务
+     * 在xxl-job调度中心配置JobHandler为：grpGroupInfoSyncJobHandler
+     * 支持传入日期参数（格式：YYYYMMDD），如果不传入则使用当前日期
+     */
+    @XxlJob("grpGroupInfoSyncJobHandler")
+    public void execute() {
+        log.info("开始执行集团信息同步任务");
+        XxlJobHelper.log("开始执行集团信息同步任务");
+
+        // 任务参数
+        String param = XxlJobHelper.getJobParam();
+        Date targetDate = new Date(); // 默认使用当前日期
+
+        // 如果传入了日期参数，则解析日期
+        if (param != null && !param.isEmpty()) {
+            log.info("任务参数: {}", param);
+            XxlJobHelper.log("任务参数: {}", param);
+
+            try {
+                // 尝试解析日期参数（格式：YYYYMMDD）
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+                targetDate = dateFormat.parse(param);
+                log.info("成功解析日期参数: {}", dateFormat.format(targetDate));
+            } catch (ParseException e) {
+                log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", param, e.getMessage());
+                XxlJobHelper.log("日期参数格式错误，使用当前日期");
+            }
+        }
+
+        try {
+            // 生成目标文件路径：/opt/home/bi/dataout/ZQ/YYYYMMDD/GRP_GROUP_INFO_YYYYMMDD.txt
+            String filePath = sftpUtil.generateFullFilePath(targetDate);
+            log.info("生成的文件路径: {}", filePath);
+
+            // 1. 检查文件是否存在
+            if (!sftpUtil.exists(filePath)) {
+                String errorMsg = "集团信息文件不存在: " + filePath;
+                log.error(errorMsg);
+                XxlJobHelper.handleFail(errorMsg);
+                return;
+            }
+
+            // 2. 清空表数据（可选，根据业务需求决定）
+            grpGroupInfoService.truncateTable();
+
+            // 3. 使用批处理器处理大文件，每批处理100行数据以优化内存使用
+            final int BATCH_SIZE = 500;
+            log.info("开始使用批处理器处理大文件，每批处理 {} 行数据", BATCH_SIZE);
+            XxlJobHelper.log("开始使用批处理器处理大文件，每批处理 {} 行数据", BATCH_SIZE);
+
+            // 记录初始内存使用情况
+            Runtime runtime = Runtime.getRuntime();
+            long initialMemory = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+            log.info("初始内存使用情况: {}MB, 最大可用内存: {}MB",
+                    initialMemory, runtime.maxMemory() / (1024 * 1024));
+            XxlJobHelper.log("初始内存使用情况: {}MB", initialMemory);
+
+            // 统计变量
+            final int[] totalSuccess = {0};
+            final int[] totalRows = {0};
+
+            // 为大文件设置更大的缓冲区（64KB）以提高读取性能
+            final int BUFFER_SIZE = 65536;
+
+            // 使用批处理器处理文件，配置更大的缓冲区
+            sftpUtil.processFileInBatches(filePath, BATCH_SIZE, batchData -> {
+
+                    try {
+                        // 如果批次为空，继续处理下一批
+                        if (batchData.isEmpty()) {
+                            return true;
+                        }
+
+                        // 记录总行数
+                        totalRows[0] += batchData.size();
+
+                        // 将批次数据转换为字符串
+                        StringBuilder txtContent = new StringBuilder();
+                        for (String line : batchData) {
+                            txtContent.append(line).append("\n");
+                        }
+
+                        // 解析文本数据
+                        List<GrpGroupInfoDO> groupInfoList = groupFileParser.parseCsvFile(txtContent.toString());
+
+                        if (!groupInfoList.isEmpty()) {
+                            // 批量插入数据库
+                            int success = grpGroupInfoService.batchUpsert(groupInfoList);
+                            totalSuccess[0] += success;
+
+                            log.info("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
+                                    totalRows[0], totalSuccess[0]);
+                            XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
+                                    totalRows[0], totalSuccess[0]);
+                        }
+
+                        // 显式清空中间变量，释放内存
+                        groupInfoList.clear();
+                        groupInfoList = null;
+                        txtContent = null;
+                        return true; // 继续处理下一批数据
+                    } catch (Exception e) {
+                        log.error("批次处理失败: {}", e.getMessage(), e);
+                        XxlJobHelper.log("批次处理失败: {}", e.getMessage());
+                        // 发生异常时的处理
+                        return true; // 可以根据业务需求决定是否继续处理，这里选择继续
+                    }
+            });
+
+            // 验证是否有数据被处理
+            if (totalRows[0] == 0) {
+                log.warn("文件中没有有效数据需要导入");
+                XxlJobHelper.handleSuccess("文件中没有有效数据需要导入");
+                return;
+            }
+
+            // 4. 任务完成，记录结果
+            // 记录最终内存使用情况
+            long finalMemory = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+            log.info("最终内存使用情况: {}MB, 内存使用变化: {}MB",
+                    finalMemory, finalMemory - initialMemory);
+            XxlJobHelper.log("最终内存使用情况: {}MB", finalMemory);
+
+            String successMsg = String.format("集团信息同步任务执行完成，成功导入: %d 条，失败: %d 条",
+                    totalSuccess[0], totalRows[0] - totalSuccess[0]);
+            log.info(successMsg);
+            XxlJobHelper.handleSuccess(successMsg);
+
+        } catch (Exception e) {
+            // 7. 处理异常
+            String errorMsg = "集团信息同步任务执行失败: " + e.getMessage();
+            log.error(errorMsg, e);
+            XxlJobHelper.log("任务执行失败: {}", e.getMessage());
+            XxlJobHelper.handleFail(errorMsg);
+        }
+    }
+}

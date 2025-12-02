@@ -25,10 +25,10 @@ public abstract class AbstractExportStrategy implements FileTaskStrategy {
             // 更新任务状态为处理中
             task.setStatus(1L); // 1-处理中
             task.setStartTime(new java.util.Date());
-            
+
             // 执行具体的导出逻辑
             boolean result = doExportTask(task);
-            
+
             // 更新任务结果
             if (result) {
                 task.setStatus(2L); // 2-处理成功
