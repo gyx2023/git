@@ -24,6 +24,7 @@ import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
+import com.crm.common.helper.LoginHelper;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -53,8 +54,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public ZqGrpGroupInfoVo queryById(Long grpId){
         ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
-        return desensitizeVo(vo);
+        // 获取当前用户角色，0为超级管理员
+        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
+        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
+        if (isSensitive) {
+            return desensitizeVo(vo);
+        }
+        return vo;
     }
+    
     /**
      * 查询政企集团客户信息列表
      */
@@ -73,8 +81,20 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         System.out.println("参数表达式: " + lqw.getParamNameValuePairs());
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 获取当前用户角色，0为超级管理员
+        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
+        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
+        
+        // 根据用户角色决定是否对查询结果进行脱敏处理
+        if (isSensitive) {
+            List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
+                    .map(this::desensitizeVo)
+                    .collect(Collectors.toList());
+            result.setRecords(desensitizedList);
+        }
         return TableDataInfo.build(result);
     }
+    
     /**
      * 查询政企集团客户信息列表
      */
@@ -98,15 +118,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        // 对查询结果进行脱敏处理
-        List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
-                .map(this::desensitizeVo)
-                .collect(Collectors.toList());
-        result.setRecords(desensitizedList);
+        // 获取当前用户角色，0为超级管理员
+        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
+        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
+        
+        // 根据用户角色决定是否对查询结果进行脱敏处理
+        if (isSensitive) {
+            List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
+                    .map(this::desensitizeVo)
+                    .collect(Collectors.toList());
+            result.setRecords(desensitizedList);
+        }
         return TableDataInfo.build(result);
     }
-
-
 
     /**
      * 查询政企集团客户信息列表
@@ -115,10 +139,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
-        // 对查询结果进行脱敏处理
-        return list.stream()
-                .map(this::desensitizeVo)
-                .collect(Collectors.toList());
+        // 获取当前用户角色，0为超级管理员
+        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
+        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
+        
+        // 根据用户角色决定是否对查询结果进行脱敏处理
+        if (isSensitive) {
+            return list.stream()
+                    .map(this::desensitizeVo)
+                    .collect(Collectors.toList());
+        }
+        return list;
     }
 
     /**

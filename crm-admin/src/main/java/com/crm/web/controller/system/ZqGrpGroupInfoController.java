@@ -2,11 +2,9 @@ package com.crm.web.controller.system;
 
 import java.util.*;
 
-import com.crm.generator.util.Desensitization;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import com.crm.common.annotation.RepeatSubmit;
@@ -44,7 +42,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 查询政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/lists")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
                                                 @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
@@ -54,7 +51,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 查询政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/list")
     public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
             @RequestParam(value = "beginTime", required = false) String beginTime,
@@ -87,38 +83,11 @@ public class ZqGrpGroupInfoController extends BaseController {
         // 获取当前登录用户
         String currentUserOaAccount = getLoginUser().getUsername();
 
-
-
         // 应用数据权限过滤
         iZqGrpGroupInfoService.applyDataManagerPermission(bo, currentUserOaAccount);
 
         // 查询数据并返回
         TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
-
-        // 对返回数据进行脱敏处理
-        if (result.getRows() != null && !result.getRows().isEmpty()) {
-            for (ZqGrpGroupInfoVo vo : result.getRows()) {
-                // 脱敏集团名称
-                if (vo.getGrpName() != null) {
-                    vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
-                }
-
-                // 脱敏三种客户经理名称
-                if (vo.getProvManagerName() != null) {
-                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
-                }
-                if (vo.getCityManagerName() != null) {
-                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
-                }
-                if (vo.getCountyManagerName() != null) {
-                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
-                }
-            }
-
-            ZqGrpGroupInfoVo firstRecord = result.getRows().get(0);
-            System.out.println("Controller返回数据 - 第一条记录的cityManagerOauser: " + firstRecord.getCityManagerOauser());
-            System.out.println("Controller返回数据 - 第一条记录的cityManagerName: " + firstRecord.getCityManagerName());
-        }
 
         return result;
     }
@@ -126,33 +95,10 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 导出政企集团客户信息列表
      */
-    @SaCheckPermission("system:grpGroupInfo:export")
     @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response) {
         List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
-
-        // 对导出数据进行脱敏处理
-        if (list != null && !list.isEmpty()) {
-            for (ZqGrpGroupInfoVo vo : list) {
-                // 脱敏集团名称
-                if (vo.getGrpName() != null) {
-                    vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
-                }
-
-                // 脱敏三种客户经理名称
-                if (vo.getProvManagerName() != null) {
-                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
-                }
-                if (vo.getCityManagerName() != null) {
-                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
-                }
-                if (vo.getCountyManagerName() != null) {
-                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
-                }
-            }
-        }
-
         ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
     }
 
@@ -161,38 +107,16 @@ public class ZqGrpGroupInfoController extends BaseController {
      *
      * @param grpId 主键
      */
-    @SaCheckPermission("system:grpGroupInfo:query")
     @GetMapping("/{grpId}")
     public R<ZqGrpGroupInfoVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long grpId) {
         ZqGrpGroupInfoVo vo = iZqGrpGroupInfoService.queryById(grpId);
-
-        // 对详情数据进行脱敏处理
-        if (vo != null) {
-            // 脱敏集团名称
-            if (vo.getGrpName() != null) {
-                vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
-            }
-
-            // 脱敏三种客户经理名称
-            if (vo.getProvManagerName() != null) {
-                vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
-            }
-            if (vo.getCityManagerName() != null) {
-                vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
-            }
-            if (vo.getCountyManagerName() != null) {
-                vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
-            }
-        }
-
         return R.ok(vo);
     }
 
     /**
      * 新增政企集团客户信息
      */
-    @SaCheckPermission("system:grpGroupInfo:add")
     @Log(title = "政企集团客户信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -203,7 +127,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 修改政企集团客户信息
      */
-    @SaCheckPermission("system:grpGroupInfo:edit")
     @Log(title = "政企集团客户信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/edit")
@@ -214,7 +137,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 修改政企集团客户经理信息
      */
-    @SaCheckPermission("system:grpGroupInfo:edit")
     @Log(title = "政企集团客户经理信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/edits")
@@ -269,7 +191,6 @@ public class ZqGrpGroupInfoController extends BaseController {
      *
      * @param grpIds 主键串
      */
-    @SaCheckPermission("system:grpGroupInfo:remove")
     @Log(title = "政企集团客户信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{grpIds}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
@@ -280,7 +201,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 获取政企集团客户信息相关字典数据
      */
-    @SaCheckPermission("system:grpGroupInfo:query")
     @GetMapping("/dict")
     public R<Map<String, List<SysDictData>>> getDictData() {
         // 从zq_grp_group_info表中获取字典数据
@@ -291,7 +211,6 @@ public class ZqGrpGroupInfoController extends BaseController {
     /**
      * 下载批量分配客户经理模板
      */
-    @SaCheckPermission("system:grpGroupInfo:list")
     @GetMapping("/downloadManagerTemplate")
     public void downloadManagerTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(new ArrayList<>(), "批量分配客户经理模板", CustomerManagerTemplateVo.class, response);
