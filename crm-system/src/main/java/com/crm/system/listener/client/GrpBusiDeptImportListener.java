@@ -88,7 +88,7 @@ public class GrpBusiDeptImportListener {
                 ZqGrpGroupInfoBo updateBo = new ZqGrpGroupInfoBo();
                 updateBo.setGrpId(groupInfo.getGrpId());
                 updateBo.setGrpBusiDeptType(data.getBusiDeptName());
-                boolean success = zqGrpGroupInfoService.updateByBo1(updateBo);
+                boolean success = zqGrpGroupInfoService.updateByBo(updateBo);
 
                 if (success) {
                     resultVo.setProcessResult("成功");
