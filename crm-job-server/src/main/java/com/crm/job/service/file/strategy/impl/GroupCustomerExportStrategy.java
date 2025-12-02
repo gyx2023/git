@@ -42,7 +42,7 @@ public class GroupCustomerExportStrategy extends AbstractExportStrategy {
 
     @Override
     public String getBusinessType() {
-        return "grp_group_export";
+        return "grp_group_export_abcd";
     }
 
     @Override

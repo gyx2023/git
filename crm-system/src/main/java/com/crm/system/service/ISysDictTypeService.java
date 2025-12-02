@@ -39,13 +39,8 @@ public interface ISysDictTypeService {
      * @return 字典数据集合信息
      */
     List<SysDictData> selectDictDataByType(String dictType);
-    
-    /**
-     * 查询集团客户业务部门分类
-     *
-     * @return 集团客户业务部门分类数据集合
-     */
-    List<SysDictData> selectGrpBusiDeptType();
+
+
 
 
     /**

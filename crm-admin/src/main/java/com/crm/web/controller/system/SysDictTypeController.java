@@ -123,14 +123,6 @@ public class SysDictTypeController extends BaseController {
         List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
         return R.ok(dictTypes);
     }
-    
-    /**
-     * 获取集团客户业务部门分类
-     */
-    @GetMapping("/grpBusiDeptType")
-    public R<List<SysDictData>> getGrpBusiDeptType() {
-        List<SysDictData> dictDatas = dictTypeService.selectGrpBusiDeptType();
-        return R.ok(dictDatas);
-    }
+
 
 }

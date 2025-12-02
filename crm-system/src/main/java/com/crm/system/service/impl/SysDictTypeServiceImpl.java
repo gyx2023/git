@@ -104,17 +104,8 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         }
         return null;
     }
-    
-    /**
-     * 查询集团客户业务部门分类
-     *
-     * @return 集团客户业务部门分类数据集合
-     */
-    @Cacheable(cacheNames = CacheNames.SYS_DICT, key = "'GRP_BUSI_DEPT_TYPE'")
-    @Override
-    public List<SysDictData> selectGrpBusiDeptType() {
-        return selectDictDataByType("GRP_BUSI_DEPT_TYPE");
-    }
+
+
 
     /**
      * 批量根据字典类型查询字典数据

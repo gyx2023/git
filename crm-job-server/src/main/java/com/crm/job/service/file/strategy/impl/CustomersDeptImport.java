@@ -50,17 +50,27 @@ public class CustomersDeptImport extends AbstractImportStrategy {
     @Override
     protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
         //根据FileAsyncTaskDO获取上传到cos的ossId
-        // 去除URL中的查询参数，只使用基础URL进行查询
-        String baseUrl = task.getFileUrl();
-        if (StringUtils.hasText(baseUrl) && baseUrl.contains("?")) {
-            baseUrl = baseUrl.substring(0, baseUrl.indexOf("?"));
+        String fileUrl = task.getFileUrl();
+        log.info("开始处理客户归属部门导入任务，文件URL: {}", fileUrl);
+        
+        // 先尝试直接精确匹配URL
+        SysOss sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, fileUrl));
+        
+        // 如果没找到，并且URL包含查询参数，则尝试去除查询参数后再查找
+        if (sysOss == null && StringUtils.hasText(fileUrl) && fileUrl.contains("?")) {
+            String baseUrl = fileUrl.substring(0, fileUrl.indexOf("?"));
+            log.info("完整URL未找到记录，尝试使用基础URL查询: {}", baseUrl);
+            sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, baseUrl));
         }
-        SysOss sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, baseUrl));
-
-        // 检查sysOss是否存在
+        
+        // 如果仍然没找到，记录所有存在的URL供调试
         if (sysOss == null) {
-            log.error("未找到对应的OSS文件记录，文件URL: {}", task.getFileUrl());
-            task.setRemark("处理失败：未找到对应的OSS文件记录");
+            List<SysOss> allOssRecords = sysOssMapper.selectList(new LambdaQueryWrapper<SysOss>().isNotNull(SysOss::getUrl));
+            log.info("未找到对应的OSS文件记录，文件URL: {}，系统中存在的URL记录数量: {}", fileUrl, allOssRecords.size());
+            for (SysOss oss : allOssRecords) {
+                log.info("系统中存在的URL: {}", oss.getUrl());
+            }
+            task.setRemark("处理失败：未找到对应的OSS文件记录，文件URL: " + fileUrl);
             return false;
         }
 

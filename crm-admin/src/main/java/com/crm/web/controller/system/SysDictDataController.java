@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 数据字典信息
@@ -80,6 +81,22 @@ public class SysDictDataController extends BaseController {
             data = new ArrayList<>();
         }
         return R.ok(data);
+    }
+
+    /**
+     * 根据字典类型查询字典值列表
+     *
+     * @param dictType 字典类型
+     */
+    @GetMapping(value = "/values/{dictType}")
+    public R<List<String>> dictValues(@PathVariable String dictType) {
+        List<SysDictData> data = dictDataService.selectDictDataByType(dictType);
+        if (ObjectUtil.isNull(data)) {
+            data = new ArrayList<>();
+        }
+        // 提取所有的 dictValue
+        List<String> values = data.stream().map(SysDictData::getDictValue).collect(Collectors.toList());
+        return R.ok(values);
     }
 
 

@@ -5,6 +5,7 @@ import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo;
+import com.crm.system.service.ISysDictDataService;
 import com.crm.system.service.ISysDictTypeService;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +31,9 @@ public class GrpBusiDeptImportListener {
 
     @Autowired
     private IZqGrpGroupInfoService zqGrpGroupInfoService;
-    
+
     @Autowired
-    private ISysDictTypeService sysDictTypeService;
+    private ISysDictDataService sysDictTypeService;
 
     /**
      * 处理导入数据列表
@@ -42,7 +43,7 @@ public class GrpBusiDeptImportListener {
      */
     public List<GrpBusiDeptTemplateResultVo> processImportData(List<GrpBusiDeptTemplateVo> dataList) {
         List<GrpBusiDeptTemplateResultVo> resultList = new ArrayList<>();
-        
+
         // 获取有效的客户归属部门列表
         List<String> validDeptNames = getValidBusiDeptNames();
 
@@ -108,19 +109,19 @@ public class GrpBusiDeptImportListener {
 
     /**
      * 获取有效的客户归属部门名称列表
-     * 
+     *
      * @return 客户归属部门名称列表
      */
     private List<String> getValidBusiDeptNames() {
         // 调用之前创建的接口获取集团客户业务部门分类数据
-        List<SysDictData> dictDataList = sysDictTypeService.selectGrpBusiDeptType();
+        List<SysDictData> dictDataList = sysDictTypeService.selectDictDataByType("sys_busi_dept_type");
         if (CollectionUtils.isEmpty(dictDataList)) {
             return new ArrayList<>();
         }
-        
+
         // 提取字典标签作为有效的客户归属部门名称
         return dictDataList.stream()
-                .map(SysDictData::getDictLabel)
+                .map(SysDictData::getDictValue)
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toList());
     }
