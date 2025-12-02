@@ -125,14 +125,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (vo == null) {
             return null;
         }
-        //--------------------------------------------查询权限如果是超级管理员则不进行脱敏
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        roles.forEach(role -> {
-            if(role.getRoleId().equals("1")){
-                return;
-            }
-        });
+        //------------------------查询权限如果是超级管理员则不进行脱敏--------------------
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        List<RoleDTO> roles = loginUser.getRoles();
+//        roles.forEach(role -> {
+//            if(role.getRoleId().equals("1")){
+//                return;
+//            }
+//        });
 
         // 对集团名称进行脱敏
         vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
@@ -214,13 +214,25 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         }
 
-        //------------------------------------------------------------------数据权限处理
+        //-------------------------------数据权限处理-------------------------------
         LoginUser loginUser = LoginHelper.getLoginUser();
         String areaCode = loginUser.getAreaCode();
-        if(!areaCode.equals("33000")){
-            lqw.eq(ZqGrpGroupInfo::getAreaId,areaCode);
+        // 如果不是省本级(330000)，则需要进行数据权限过滤
+        if (!"330000".equals(areaCode)) {
+            // 判断区域代码级别
+            if (areaCode.endsWith("0000")) {
+                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
+                // 不添加过滤条件，可查看全省数据
+            } else if (areaCode.endsWith("00")) {
+                // 地市级用户(如330100)，只能查看本市数据
+                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+            } else {
+                // 区县级用户(如330102)，可查看所属地市的所有数据
+                // 提取地市代码(前4位+00)
+                String cityCode = areaCode.substring(0, 4) + "00";
+                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+            }
         }
-
 
         return lqw;
     }
