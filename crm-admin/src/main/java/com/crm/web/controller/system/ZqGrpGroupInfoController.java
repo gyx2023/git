@@ -84,12 +84,13 @@ public class ZqGrpGroupInfoController extends BaseController {
             }
         }
 
+        // 获取当前登录用户
+        String currentUserOaAccount = getLoginUser().getUsername();
+        // 应用数据权限过滤
+        iZqGrpGroupInfoService.applyDataManagerPermission(bo, currentUserOaAccount);
 
+        // 查询数据并返回
         TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
-
-        // 添加调试日志
-        System.out.println("Controller返回数据 - 总数: " + result.getTotal());
-        System.out.println("Controller返回数据 - 记录数: " + result.getRows().size());
 
         // 对返回数据进行脱敏处理
         if (result.getRows() != null && !result.getRows().isEmpty()) {
