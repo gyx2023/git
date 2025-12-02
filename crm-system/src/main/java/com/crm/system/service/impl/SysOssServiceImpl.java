@@ -196,8 +196,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         oss.setService(storage.getConfigKey());
         baseMapper.insert(oss);
         SysOssVo sysOssVo = new SysOssVo();
-        BeanCopyUtils.copy(oss, sysOssVo);
-        return this.matchingUrl(sysOssVo);
+        return BeanCopyUtils.copy(oss, sysOssVo);
     }
 
     @Override
