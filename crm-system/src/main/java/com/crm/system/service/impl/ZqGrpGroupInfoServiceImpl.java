@@ -19,6 +19,12 @@ import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.service.IZqGrpGroupLogService;
+import com.crm.system.domain.bo.DwdRepSysPersonDBo;
+import com.crm.system.domain.vo.DwdRepSysPersonDVo;
+import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.service.IDwdRepSysPersonDService;
+import com.crm.system.service.ISysAreaService;
+
 import org.springframework.web.bind.annotation.RequestParam;
 
 
@@ -38,6 +44,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
     private final ZqGrpGroupInfoMapper baseMapper;
     private final IZqGrpGroupLogService zqGrpGroupLogService;
+    private final IDwdRepSysPersonDService iDwdRepSysPersonDService;
+    private final ISysAreaService iSysAreaService;
 
     /**
      * 查询政企集团客户信息
@@ -192,7 +200,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
         lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
         lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());
-        
+
         // 添加时间范围查询条件
         // 处理分配时间范围查询
         if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
@@ -202,7 +210,21 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         }
-        
+
+        // 添加县级ID过滤条件（使用反射获取字段值）
+        try {
+            java.lang.reflect.Field countyIdsFilterField = bo.getClass().getDeclaredField("countyIdsFilter");
+            if (countyIdsFilterField != null) {
+                countyIdsFilterField.setAccessible(true);
+                Object countyIdsFilterValue = countyIdsFilterField.get(bo);
+                if (countyIdsFilterValue instanceof java.util.List && !((java.util.List<?>) countyIdsFilterValue).isEmpty()) {
+                    lqw.in(ZqGrpGroupInfo::getCountyId, (java.util.List<String>) countyIdsFilterValue);
+                }
+            }
+        } catch (Exception e) {
+            // 字段不存在或者访问异常时不处理
+        }
+
         return lqw;
     }
 
@@ -240,14 +262,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
 
         validEntityBeforeSave(update);
-        
+
         // 清空不能修改的字段，避免使用前端传递的脱敏数据
         // 这些字段将保持数据库中的原始值不变
         update.setGrpName(null); // 集团名称不能修改
         update.setProvManagerName(null); // 省级客户经理名字不能修改
         update.setCityManagerName(null); // 市级客户经理名字不能修改
         update.setCountyManagerName(null); // 县级客户经理名字不能修改
-        
+
         System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
 
         // 执行更新操作
@@ -259,7 +281,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
             // 重新从数据库获取更新后的完整数据，包含未脱敏的集团名称和客户经理名字
             ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
-            
+
             // 比较修改前后的对象属性，只有当属性发生变化时才记录日志
             // 使用自定义方法比较对象属性是否相同
             boolean hasChanges = !isObjectsEqual(originalInfo, updatedInfo);
@@ -273,7 +295,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         return success;
     }
-    
+
     /**
      * 比较两个对象的属性是否完全相同
      * @param obj1 第一个对象
@@ -290,11 +312,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (obj1.getClass() != obj2.getClass()) {
             return false;
         }
-        
+
         // 直接使用手动比较方式，比较所有可能被修改的属性
         ZqGrpGroupInfo info1 = (ZqGrpGroupInfo) obj1;
         ZqGrpGroupInfo info2 = (ZqGrpGroupInfo) obj2;
-        
+
         // 比较所有可能被修改的属性
         return java.util.Objects.equals(info1.getGrpId(), info2.getGrpId()) &&
                java.util.Objects.equals(info1.getGrpCode(), info2.getGrpCode()) &&
@@ -347,7 +369,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 创建更新对象
         ZqGrpGroupInfo update = new ZqGrpGroupInfo();
         update.setGrpId(bo.getGrpId());
-        
+
         // 只更新非空的客户经理信息字段
         boolean hasUpdateFields = false;
         if (bo.getProvManagerOauser() != null) {
@@ -517,4 +539,130 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         return baseMapper.selectByHqGrpCode(hqGrpCode);
     }
 
+    /**
+     * 根据countyId和countyName判断客户经理级别
+     *
+     * @param countyId   县ID
+     * @param countyName 县名
+     * @return 客户经理级别
+     */
+    @Override
+    public ManagerLevel determineManagerLevel(Long countyId, String countyName) {
+        // 省级判断：countyId前四位为3300
+        if (countyId != null) {
+            String countyIdStr = String.valueOf(countyId);
+            if (countyIdStr.startsWith("3300")) {
+                return ManagerLevel.PROVINCIAL;
+            }
+
+            // 获取该市下所有的县名列表，用于后续匹配判断
+            String countyPrefix = countyIdStr.substring(0, 4);
+            List<SysAreaVo> countyAreas = iSysAreaService.getCountiesByCityCodePrefix(countyPrefix);
+            Set<String> countyFullNames = new HashSet<>();
+
+            // 构造县名全称列表
+            for (SysAreaVo county : countyAreas) {
+                String name = county.getName();
+                if (name != null) {
+                    countyFullNames.add(name);
+                }
+            }
+
+            // 判断是否为县级：countyName包含任何县名标识
+            if (countyName != null) {
+                for (String fullName : countyFullNames) {
+                    if (countyName.contains(fullName)) {
+                        return ManagerLevel.COUNTY;
+                    }
+                }
+            }
+        }
+
+        // 默认为市级
+        return ManagerLevel.CITY;
+    }
+
+    /**
+     * 根据用户的OA账号确定其客户经理级别，并设置相应的数据过滤条件
+     * @param bo 查询条件对象
+     * @param currentUserOaAccount 当前用户的OA账号
+     */
+    @Override
+    public void applyDataManagerPermission(ZqGrpGroupInfoBo bo, String currentUserOaAccount) {
+        // 根据OA账号查找客户经理信息
+        DwdRepSysPersonDBo personBo = new DwdRepSysPersonDBo();
+        personBo.setOaUserName(currentUserOaAccount);
+        personBo.setOnjobFlag(0); // 只查询在职的客户经理
+        List<DwdRepSysPersonDVo> personList = iDwdRepSysPersonDService.queryList(personBo);
+
+        // 如果找不到对应的客户经理信息，则不过滤数据,说明当前用户是系统管理员
+        if (personList == null || personList.isEmpty()) {
+            return;
+        }
+
+        DwdRepSysPersonDVo currentManager = personList.get(0);
+        Long countyId = currentManager.getCountyId();
+        String countyName = currentManager.getCountyName();
+
+        // 根据countyId和countyName判断客户经理级别
+        ManagerLevel level = this.determineManagerLevel(countyId, countyName);
+
+        // 根据不同级别设置不同的数据过滤条件
+        switch (level) {
+            case PROVINCIAL:
+                // 省级客户经理不做过滤，可以看到所有数据
+                break;
+
+            case CITY:
+                // 市级客户经理只能看到本市及下属县的数据
+                if (countyId != null) {
+                    String countyIdStr = String.valueOf(countyId);
+                    if (countyIdStr.length() >= 4) {
+                        // 不做硬编码过滤，而是通过查询该市的所有下属县，然后构造OR查询条件
+                        String cityPrefix = countyIdStr.substring(0, 4);
+
+                        // 获取该市下所有的县名列表
+                        List<SysAreaVo> countyAreas = iSysAreaService.getCountiesByCityCodePrefix(cityPrefix);
+                        Set<String> countyIds = new HashSet<>();
+                        for (SysAreaVo county : countyAreas) {
+                            countyIds.add(String.valueOf(county.getEmpCountyId()));
+                        }
+                        countyIds.add(countyIdStr); // 加上本身
+
+                        // 使用反射方式设置过滤条件到BO对象
+                        try {
+                            java.lang.reflect.Field countyIdsFilterField = bo.getClass().getDeclaredField("countyIdsFilter");
+                            if (countyIdsFilterField != null) {
+                                countyIdsFilterField.setAccessible(true);
+                                countyIdsFilterField.set(bo, new ArrayList<>(countyIds));
+                            }
+                        } catch (Exception e) {
+                            // 字段不存在或者访问异常时不处理
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                break;
+
+            case COUNTY:
+                // 县级客户经理只能看到本县的数据
+                if (countyId != null) {
+                    List<String> countyIds = new ArrayList<>();
+                    countyIds.add(String.valueOf(countyId));
+
+                    // 使用反射方式设置过滤条件到BO对象
+                    try {
+                        java.lang.reflect.Field countyIdsFilterField = bo.getClass().getDeclaredField("countyIdsFilter");
+                        if (countyIdsFilterField != null) {
+                            countyIdsFilterField.setAccessible(true);
+                            countyIdsFilterField.set(bo, countyIds);
+                        }
+                    } catch (Exception e) {
+                        // 字段不存在或者访问异常时不处理
+                        e.printStackTrace();
+                    }
+                }
+                break;
+        }
+    }
 }

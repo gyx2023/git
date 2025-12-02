@@ -66,4 +66,40 @@ public interface IZqGrpGroupInfoService {
      * 获取政企集团客户信息相关字典数据
      */
     Map<String, List<SysDictData>> getDictData();
+    
+    /**
+     * 客户经理级别枚举
+     */
+    enum ManagerLevel {
+        /**
+         * 省级
+         */
+        PROVINCIAL,
+
+        /**
+         * 市级
+         */
+        CITY,
+
+        /**
+         * 县级
+         */
+        COUNTY
+    }
+    
+    /**
+     * 根据countyId和countyName判断客户经理级别
+     *
+     * @param countyId   县ID
+     * @param countyName 县名
+     * @return 客户经理级别
+     */
+    ManagerLevel determineManagerLevel(Long countyId, String countyName);
+    
+    /**
+     * 根据用户的OA账号确定其客户经理级别，并设置相应的数据过滤条件
+     * @param bo 查询条件对象
+     * @param currentUserOaAccount 当前用户的OA账号
+     */
+    void applyDataManagerPermission(ZqGrpGroupInfoBo bo, String currentUserOaAccount);
 }
