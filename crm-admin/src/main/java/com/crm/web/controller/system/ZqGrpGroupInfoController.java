@@ -86,6 +86,9 @@ public class ZqGrpGroupInfoController extends BaseController {
 
         // 获取当前登录用户
         String currentUserOaAccount = getLoginUser().getUsername();
+
+
+
         // 应用数据权限过滤
         iZqGrpGroupInfoService.applyDataManagerPermission(bo, currentUserOaAccount);
 
