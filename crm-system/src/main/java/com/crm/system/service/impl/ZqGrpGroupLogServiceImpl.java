@@ -96,8 +96,6 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
         lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupLog::getCountyManagerEmpId, bo.getCountyManagerEmpId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerOauser()), ZqGrpGroupLog::getCountyManagerOauser, bo.getCountyManagerOauser());
         lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupLog::getCountyManagerName, bo.getCountyManagerName());
-        //lqw.eq(bo.getCreateTime() != null, ZqGrpGroupLog::getCreateTime, bo.getCreateTime());
-        //lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupLog::getUpdateTime, bo.getUpdateTime());
         return lqw;
     }
 
@@ -148,14 +146,9 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
      * 记录集团客户信息变更日志
      */
     @Override
-    public Boolean recordChangeLog(ZqGrpGroupInfo originalInfo, ZqGrpGroupInfo updatedInfo, String updateType) {
+    public Boolean recordChangeLog(ZqGrpGroupInfo originalInfo,String updateType) {
         try {
             if (originalInfo == null) {
-                System.out.println("[DEBUG] originalInfo is null");
-                return false;
-            }
-            if (updatedInfo == null) {
-                System.out.println("[DEBUG] updatedInfo is null");
                 return false;
             }
 
@@ -165,27 +158,16 @@ public class ZqGrpGroupLogServiceImpl implements IZqGrpGroupLogService {
             // 创建变更前的日志记录
             ZqGrpGroupLog logBefore = BeanUtil.toBean(originalInfo, ZqGrpGroupLog.class);
             logBefore.setUpdateType(updateType);
-            logBefore.setDataType("1"); // 1-变更前
+            logBefore.setDataType("1"); // 1-变更前,2-变更后
             // 保持createtime与groupinfo表一致，只更新updatetime为当前时间
             logBefore.setUpdateTime(currentTime); // 设置当前时间为修改时间
 
-            // 创建变更后的日志记录
-            ZqGrpGroupLog logAfter = BeanUtil.toBean(updatedInfo, ZqGrpGroupLog.class);
-            logAfter.setUpdateType(updateType);
-            logAfter.setDataType("2"); // 2-变更后
-            // 保持createtime与groupinfo表一致，只更新updatetime为当前时间
-            logAfter.setUpdateTime(currentTime); // 设置当前时间为修改时间
-
             // 插入变更前记录
             int beforeResult = baseMapper.insert(logBefore);
-            // 插入变更后记录
-            int afterResult = baseMapper.insert(logAfter);
 
-            if (beforeResult > 0 && afterResult > 0) {
-                System.out.println("[DEBUG] Log records inserted successfully");
+            if (beforeResult > 0) {
                 return true;
             } else {
-                System.out.println("[DEBUG] Failed to insert log records");
                 return false;
             }
         } catch (Exception e) {

@@ -1,6 +1,5 @@
 package com.crm.system.listener.manager;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.CustomerManagerImportResultVo;
@@ -54,7 +53,7 @@ public class CustomerManagerImportListener {
                     resultList.add(resultVo);
                     continue;
                 }
-                
+
                 // 处理单条记录
                 boolean success = processSingleRecord(data, resultVo);
                 if (success) {

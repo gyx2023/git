@@ -62,16 +62,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-        // 打印SQL查询语句和参数，用于调试
-        System.out.println("查询SQL: " + lqw.getCustomSqlSegment());
-        System.out.println("完整SQL: " + lqw.getTargetSql());
-        System.out.println("assignTimeStart: " + bo.getAssignTimeStart());
-        System.out.println("assignTimeEnd: " + bo.getAssignTimeEnd());
-        System.out.println("createTimeStart: " + bo.getCreateTimeStart());
-        System.out.println("createTimeEnd: " + bo.getCreateTimeEnd());
-
-        // 添加日志查看MyBatis-Plus执行的SQL
-        System.out.println("参数表达式: " + lqw.getParamNameValuePairs());
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         // 获取当前用户角色，0为超级管理员
@@ -272,8 +262,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getGrpId() != null, ZqGrpGroupInfo::getGrpId, bo.getGrpId());
         lqw.like(StringUtils.isNotBlank(bo.getGrpName()), ZqGrpGroupInfo::getGrpName, bo.getGrpName());
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
+        lqw.like(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
+        lqw.like(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
@@ -303,17 +293,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.and(wrapper -> {
                 // 省级经理条件
                 if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
+                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
                 }
 
                 // 市级经理条件
                 if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
+                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
                 }
 
                 // 县区级经理条件
                 if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
+                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
                 }
             });
         }
@@ -499,21 +489,18 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public Boolean updateByBo(ZqGrpGroupInfoBo bo) {
-        System.out.println("[DEBUG] updateByBo called with grpId: " + bo.getGrpId());
 
         // 先获取变更前的数据
         ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
-        if (originalInfo != null) {
-            System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
-        } else {
-            System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
+
+        if (originalInfo == null) {
             return false;
         }
 
+        zqGrpGroupLogService.recordChangeLog(originalInfo, "T1"); // T1-集团基本信息变更
+
         // 创建更新对象
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
-
-        validEntityBeforeSave(update);
 
         // 清空不能修改的字段，避免使用前端传递的脱敏数据
         // 这些字段将保持数据库中的原始值不变
@@ -522,30 +509,67 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         update.setCityManagerName(null); // 市级客户经理名字不能修改
         update.setCountyManagerName(null); // 县级客户经理名字不能修改
 
-        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
 
         // 执行更新操作
-        boolean success = baseMapper.updateById(update) > 0;
-        System.out.println("[DEBUG] Update operation result: " + success);
+        return baseMapper.updateById(update) > 0;
+    }
 
-        // 如果更新成功，记录变更日志
-        if (success) {
-            System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
-            // 重新从数据库获取更新后的完整数据，包含未脱敏的集团名称和客户经理名字
-            ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
+    /**
+     * 修改政企集团客户信息
+     */
+    @Override
+    public Boolean updateByBo1(ZqGrpGroupInfoBo bo) {
 
-            // 比较修改前后的对象属性，只有当属性发生变化时才记录日志
-            // 使用自定义方法比较对象属性是否相同
-            boolean hasChanges = !isObjectsEqual(originalInfo, updatedInfo);
-            if (hasChanges) {
-                boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, updatedInfo, "T1"); // T1-集团基本信息变更
-                System.out.println("[DEBUG] recordChangeLog result: " + logResult);
-            } else {
-                System.out.println("[DEBUG] No changes detected, skipping log record");
-            }
+        // 先获取变更前的数据
+        ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
+
+        if (originalInfo == null) {
+            return false; // 如果找不到原始记录，直接返回失败} else {
         }
 
-        return success;
+        // 记录变更日志
+        zqGrpGroupLogService.recordChangeLog(originalInfo, "T2");
+
+        // 创建更新对象
+        ZqGrpGroupInfo update = new ZqGrpGroupInfo();
+        update.setGrpId(bo.getGrpId());
+
+        // 只更新非空的客户经理信息字段
+        boolean hasUpdateFields = false;
+        if (bo.getProvManagerOauser() != null) {
+            update.setProvManagerOauser(bo.getProvManagerOauser());
+            hasUpdateFields = true;
+        }
+        if (bo.getProvManagerName() != null) {
+            update.setProvManagerName(bo.getProvManagerName());
+            hasUpdateFields = true;
+        }
+        if (bo.getCityManagerOauser() != null) {
+            update.setCityManagerOauser(bo.getCityManagerOauser());
+            hasUpdateFields = true;
+        }
+        if (bo.getCityManagerName() != null) {
+            update.setCityManagerName(bo.getCityManagerName());
+            hasUpdateFields = true;
+        }
+        if (bo.getCountyManagerOauser() != null) {
+            update.setCountyManagerOauser(bo.getCountyManagerOauser());
+            hasUpdateFields = true;
+        }
+        if (bo.getCountyManagerName() != null) {
+            update.setCountyManagerName(bo.getCountyManagerName());
+            hasUpdateFields = true;
+        }
+
+        // 如果没有任何需要更新的字段，直接返回成功
+        if (!hasUpdateFields) {
+            return true;
+        }
+
+        update.setUpdateTime(new Date());
+        // 执行更新操作
+
+        return baseMapper.updateById(update) > 0;
     }
 
     /**
@@ -601,81 +625,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                java.util.Objects.equals(info1.getCountyManagerOauser(), info2.getCountyManagerOauser()) &&
                java.util.Objects.equals(info1.getCountyManagerName(), info2.getCountyManagerName());
     }
-
-    /**
-     * 修改政企集团客户信息
-     */
-    @Override
-    public Boolean updateByBo1(ZqGrpGroupInfoBo bo) {
-        System.out.println("[DEBUG] updateByBo called with grpId: " + bo.getGrpId());
-
-        // 先获取变更前的数据
-        ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
-        if (originalInfo != null) {
-            System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
-        } else {
-            System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
-            return false; // 如果找不到原始记录，直接返回失败
-        }
-
-        // 创建更新对象
-        ZqGrpGroupInfo update = new ZqGrpGroupInfo();
-        update.setGrpId(bo.getGrpId());
-
-        // 只更新非空的客户经理信息字段
-        boolean hasUpdateFields = false;
-        if (bo.getProvManagerOauser() != null) {
-            update.setProvManagerOauser(bo.getProvManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getProvManagerName() != null) {
-            update.setProvManagerName(bo.getProvManagerName());
-            hasUpdateFields = true;
-        }
-        if (bo.getCityManagerOauser() != null) {
-            update.setCityManagerOauser(bo.getCityManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCityManagerName() != null) {
-            update.setCityManagerName(bo.getCityManagerName());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerOauser() != null) {
-            update.setCountyManagerOauser(bo.getCountyManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerName() != null) {
-            update.setCountyManagerName(bo.getCountyManagerName());
-            hasUpdateFields = true;
-        }
-
-        // 如果没有任何需要更新的字段，直接返回成功
-        if (!hasUpdateFields) {
-            System.out.println("[DEBUG] No fields to update, returning success");
-            return true;
-        }
-
-        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
-
-        update.setUpdateTime(new Date());
-        // 执行更新操作
-        Boolean success = baseMapper.updateById(update) > 0;
-        System.out.println("[DEBUG] Update operation result: " + success);
-
-        // 如果更新成功，记录变更日志
-        if (success) {
-            System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
-            // 获取更新后的完整对象用于日志记录
-            ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
-            boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, updatedInfo, "T2"); // T2-集团客户经理变更
-            System.out.println("[DEBUG] recordChangeLog result: " + logResult);
-        }
-
-        return success;
-    }
-
-
-
 
     /**
      * 保存前的数据校验

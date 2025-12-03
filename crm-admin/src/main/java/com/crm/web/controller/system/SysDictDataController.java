@@ -1,6 +1,5 @@
 package com.crm.web.controller.system;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
@@ -15,9 +14,6 @@ import com.crm.system.service.ISysDictTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Arrays;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;

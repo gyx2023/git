@@ -1,10 +1,9 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.SysArea;
-import com.crm.system.domain.vo.SysAreaVo;
-import com.crm.system.domain.bo.SysAreaBo;
-import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.system.domain.bo.SysAreaBo;
+import com.crm.system.domain.vo.SysAreaVo;
 
 import java.util.Collection;
 import java.util.List;
