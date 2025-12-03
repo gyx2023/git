@@ -16,7 +16,8 @@
     <!-- 根据 userId 批量删除用户角色关联记录 -->
     <delete id="deleteByUserId" parameterType="Long">
         DELETE FROM zqzt_sys_user_role
-        WHERE user_id = #{userId}
+        WHERE user_id = #{userId} AND role_id != 1
+        )
     </delete>
 
 
