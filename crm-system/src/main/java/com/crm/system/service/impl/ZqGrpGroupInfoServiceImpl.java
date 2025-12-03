@@ -172,64 +172,71 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ISysDictDataService dictService = SpringUtils.getBean(ISysDictDataService.class);
 
         list.forEach(vo -> {
-            // 集团级别翻译
+            // 集团级别翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getGrpLevel())) {
                 try {
-                    vo.setGrpLevelName(dictService.selectDictLabel("sys_grp_level", vo.getGrpLevel()));
+                    String label = dictService.selectDictLabel("sys_grp_level", vo.getGrpLevel());
+                    vo.setGrpLevel(label);
                 } catch (Exception e) {
                     log.warn("集团级别翻译失败: {}", e.getMessage());
                 }
             }
 
-            // 集团状态翻译
+            // 集团状态翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getGrpStatus())) {
                 try {
-                    vo.setGrpStatusName(dictService.selectDictLabel("sys_grp_status", vo.getGrpStatus()));
+                    String label = dictService.selectDictLabel("sys_grp_status", vo.getGrpStatus());
+                    vo.setGrpStatus(label);
                 } catch (Exception e) {
                     log.warn("集团状态翻译失败: {}", e.getMessage());
                 }
             }
 
-            // 集团业务分类翻译
+            // 集团业务分类翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getBusiType())) {
                 try {
-                    vo.setBusiTypeName(dictService.selectDictLabel("sys_busi_type", vo.getBusiType()));
+                    String label = dictService.selectDictLabel("sys_busi_type", vo.getBusiType());
+                    vo.setBusiType(label);
                 } catch (Exception e) {
                     log.warn("集团业务分类翻译失败: {}", e.getMessage());
                 }
             }
 
-            // 集团客户类别翻译
+            // 集团客户类别翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getGrpCustType())) {
                 try {
-                    vo.setGrpCustTypeName(dictService.selectDictLabel("sys_cust_type", vo.getGrpCustType()));
+                    String label = dictService.selectDictLabel("sys_cust_type", vo.getGrpCustType());
+                    vo.setGrpCustType(label);
                 } catch (Exception e) {
                     log.warn("集团客户类别翻译失败: {}", e.getMessage());
                 }
             }
 
-            // 集团客户拓展类型翻译
+            // 集团客户拓展类型翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getGrpExpandType())) {
                 try {
-                    vo.setGrpExpandTypeName(dictService.selectDictLabel("sys_expand_type", vo.getGrpExpandType()));
+                    String label = dictService.selectDictLabel("sys_expand_type", vo.getGrpExpandType());
+                    vo.setGrpExpandType(label);
                 } catch (Exception e) {
                     log.warn("集团客户拓展类型翻译失败: {}", e.getMessage());
                 }
             }
 
-            // 集团客户业务部门分类翻译
+            // 集团客户业务部门分类翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getGrpBusiDeptType())) {
                 try {
-                    vo.setGrpBusiDeptTypeName(dictService.selectDictLabel("sys_busi_dept_type", vo.getGrpBusiDeptType()));
+                    String label = dictService.selectDictLabel("sys_busi_dept_type", vo.getGrpBusiDeptType());
+                    vo.setGrpBusiDeptType(label);
                 } catch (Exception e) {
                     log.warn("集团客户业务部门分类翻译失败: {}", e.getMessage());
                 }
             }
 
-            // 集团客户省市名单制存增量标识翻译
+            // 集团客户省市名单制存增量标识翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getProvinceNewoldType())) {
                 try {
-                    vo.setProvinceNewoldTypeName(dictService.selectDictLabel("sys_province_newold_type", vo.getProvinceNewoldType()));
+                    String label = dictService.selectDictLabel("sys_province_newold_type", vo.getProvinceNewoldType());
+                    vo.setProvinceNewoldType(label);
                 } catch (Exception e) {
                     log.warn("集团客户省市名单制存增量标识翻译失败: {}", e.getMessage());
                 }
