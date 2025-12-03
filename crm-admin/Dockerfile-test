@@ -15,7 +15,7 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo 'Asia/Shangh
 
 EXPOSE ${SERVER_PORT}
 
-ADD ./target/crm-admin.jar ./app.jar
+ADD ./crm-admin/target/crm-admin.jar ./app.jar
 
 ENTRYPOINT ["java", \
             "-Djava.security.egd=file:/dev/./urandom", \
