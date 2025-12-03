@@ -58,7 +58,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             File tempFile = File.createTempFile("集团客户信息导出_" + System.currentTimeMillis(), ".xlsx");
 
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                ExcelUtil.exportExcel(desensitizedList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
+                ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
             }
 
             // 验证文件是否创建成功

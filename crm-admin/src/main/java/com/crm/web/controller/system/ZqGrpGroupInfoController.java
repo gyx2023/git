@@ -50,6 +50,15 @@ public class ZqGrpGroupInfoController extends BaseController {
                                                 @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery, grpCreateTimeBegin, grpCreateTimeEnd);
     }
+
+    //查询需要导出的数据
+//    @GetMapping("/queryExportData")
+//    public TableDataInfo<ZqGrpGroupInfoVo> queryExportData(ZqGrpGroupInfoBo bo,
+//                                                           @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
+//                                                           @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd){
+//        return iZqGrpGroupInfoService.queryExportData(bo, grpCreateTimeBegin, grpCreateTimeEnd);
+//    }
+
     /**
      * 查询政企集团客户信息列表
      */
@@ -82,8 +91,6 @@ public class ZqGrpGroupInfoController extends BaseController {
             }
         }
 
-        // 查询数据并返回
-        TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
 
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }

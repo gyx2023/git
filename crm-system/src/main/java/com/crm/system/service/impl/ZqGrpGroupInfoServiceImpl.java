@@ -1,37 +1,27 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.core.domain.dto.RoleDTO;
-import com.crm.common.core.domain.entity.SysDictData;
-import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
-import com.crm.common.utils.StringUtils;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.core.domain.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.StringUtils;
 import com.crm.generator.util.Desensitization;
-import com.crm.system.service.IZqGrpGroupInfoService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import com.crm.system.domain.ZqGrpGroupInfo;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
-import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
-import com.crm.system.service.IZqGrpGroupLogService;
-import com.crm.system.domain.bo.DwdRepSysPersonDBo;
-import com.crm.system.domain.vo.DwdRepSysPersonDVo;
-import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
-import com.crm.common.helper.LoginHelper;
-
-import org.springframework.web.bind.annotation.RequestParam;
-
+import com.crm.system.service.IZqGrpGroupInfoService;
+import com.crm.system.service.IZqGrpGroupLogService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -44,6 +34,7 @@ import java.util.stream.Collectors;
  * @date 2025-11-20
  */
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
@@ -246,7 +237,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         }
 
-        //-------------------------------数据权限处理-------------------------------
+
+        //数据权限处理
         LoginUser loginUser = LoginHelper.getLoginUser();
         String areaCode = loginUser.getAreaCode();
         // 如果不是省本级(330000)，则需要进行数据权限过滤
@@ -265,6 +257,18 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
             }
         }
+
+
+
+//        try{
+//
+//        }catch (cn.dev33.satoken.exception.NotWebContextException e){
+//            // 在非Web上下文中（如定时任务），使用默认处理方式
+//            log.warn("非Web上下文环境，跳过数据权限处理: {}", e.getMessage());
+//            // 可以根据业务需求决定是否需要特殊处理
+//        }
+
+
 
         return lqw;
     }
