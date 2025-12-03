@@ -54,10 +54,10 @@ public class CustomerManagerTemplateVo {
     @ExcelProperty(value = "区县级客户经理OA")
     private String countyManagerOauser;
 
-    /**
-     * 处理结果
-     */
-    @ExcelProperty(value = "处理结果")
-    private String processResult;
+//    /**
+//     * 处理结果
+//     */
+//    @ExcelProperty(value = "处理结果")
+//    private String processResult;
 
 }
