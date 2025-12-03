@@ -1,18 +1,10 @@
 package com.crm.system.domain.bo.file;
 
-import com.crm.common.core.validate.AddGroup;
-import com.crm.common.core.validate.EditGroup;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import javax.validation.constraints.*;
 
 import java.time.LocalDateTime;
-import java.util.Date;
-
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.crm.common.core.domain.BaseEntity;
-import sun.util.resources.LocaleData;
 
 /**
  * 任务管理业务对象 zqzt_file_async_task
