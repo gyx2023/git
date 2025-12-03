@@ -51,13 +51,6 @@ public class ZqGrpGroupInfoController extends BaseController {
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery, grpCreateTimeBegin, grpCreateTimeEnd);
     }
 
-    //查询需要导出的数据
-//    @GetMapping("/queryExportData")
-//    public TableDataInfo<ZqGrpGroupInfoVo> queryExportData(ZqGrpGroupInfoBo bo,
-//                                                           @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
-//                                                           @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd){
-//        return iZqGrpGroupInfoService.queryExportData(bo, grpCreateTimeBegin, grpCreateTimeEnd);
-//    }
 
     /**
      * 查询政企集团客户信息列表

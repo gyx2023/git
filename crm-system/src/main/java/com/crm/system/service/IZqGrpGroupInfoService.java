@@ -42,6 +42,15 @@ public interface IZqGrpGroupInfoService {
      * 查询政企集团客户信息列表
      */
     List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo);
+    
+    /**
+     * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
+     * 
+     * @param bo 查询条件
+     * @param areaCode 区域代码
+     * @return 政企集团客户信息列表
+     */
+    List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode);
 
     /**
      * 新增政企集团客户信息

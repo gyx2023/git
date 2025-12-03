@@ -17,7 +17,7 @@ import com.crm.common.core.domain.BaseEntity;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("zq_grp_group_info")
+@TableName("zqzt_grp_group_info")
 public class ZqGrpGroupInfo extends BaseEntity {
 
     private static final long serialVersionUID=1L;

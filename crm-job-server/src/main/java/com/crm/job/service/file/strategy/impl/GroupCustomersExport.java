@@ -39,20 +39,46 @@ public class GroupCustomersExport extends AbstractExportStrategy {
         try {
             // 解析请求参数
             ZqGrpGroupInfoBo queryParams = JSONUtil.toBean(task.getRequestParams(), ZqGrpGroupInfoBo.class);
+            
+            // 从任务参数中获取areaCode
+            String areaCode = "330000"; // 默认省本级
+            try {
+                cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+                if (jsonObject.containsKey("areaCode")) {
+                    areaCode = jsonObject.getStr("areaCode");
+                }
+            } catch (Exception e) {
+                log.warn("解析areaCode失败，使用默认值: {}", e.getMessage());
+            }
 
-            // 调用业务服务获取数据
-            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.queryList(queryParams);
+            // 调用新的exportList方法，传入areaCode进行数据权限控制
+            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode);
+
+            // 检查是否需要脱敏 - 从任务参数中获取isAdmin标识
+            boolean needDesensitize = true;
+            try {
+                cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+                // 如果用户是管理员(isAdmin=true)，则不需要脱敏
+                if (jsonObject.containsKey("isAdmin")) {
+                    boolean isAdmin = jsonObject.getBool("isAdmin");
+                    needDesensitize = !isAdmin; // 管理员不需要脱敏，非管理员需要脱敏
+                }
+            } catch (Exception e) {
+                log.warn("解析isAdmin失败，默认进行脱敏处理: {}", e.getMessage());
+            }
+
+            // 如果需要脱敏，则对数据进行脱敏处理
+            if (needDesensitize) {
+                dataList = dataList.stream()
+                        .map(this::desensitizeData)
+                        .collect(Collectors.toList());
+            }
 
             // 检查数据是否为空
             if (dataList == null || dataList.isEmpty()) {
                 task.setRemark("导出数据为空");
                 return false;
             }
-
-            // 对数据进行脱敏处理
-            List<ZqGrpGroupInfoVo> desensitizedList = dataList.stream()
-                .map(this::desensitizeData)
-                .collect(Collectors.toList());
 
             // 创建临时文件
             File tempFile = File.createTempFile("集团客户信息导出_" + System.currentTimeMillis(), ".xlsx");

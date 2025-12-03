@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  * @date 2025-11-21
  */
 @Data
-@TableName("zq_grp_group_log")
+@TableName("zqzt_grp_group_info_log")
 public class ZqGrpGroupLog implements Serializable {
 
     private static final long serialVersionUID=1L;

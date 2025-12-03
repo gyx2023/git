@@ -148,6 +148,20 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     }
 
     /**
+     * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
+     *
+     * @param bo 查询条件
+     * @param areaCode 区域代码
+     * @return 政企集团客户信息列表
+     */
+    @Override
+    public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+        return list;
+    }
+
+    /**
      * 对ZqGrpGroupInfoVo对象进行脱敏处理
      * @param vo 要脱敏的ZqGrpGroupInfoVo对象
      * @return 脱敏后的ZqGrpGroupInfoVo对象
@@ -237,14 +251,26 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         }
 
+        // 处理grpCreateTime时间范围查询（用于导出）
+        if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin()) && StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
+                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+            } catch (Exception e) {
+                log.warn("导出时解析时间参数失败: {}", e.getMessage());
+            }
+        }
 
-        //数据权限处理
+        // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
         LoginUser loginUser = LoginHelper.getLoginUser();
         String areaCode = loginUser.getAreaCode();
         // 如果不是省本级(330000)，则需要进行数据权限过滤
         if (!"330000".equals(areaCode)) {
             // 判断区域代码级别
             if (areaCode.endsWith("0000")) {
+                log.info("省本级");
                 // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
                 // 不添加过滤条件，可查看全省数据
             } else if (areaCode.endsWith("00")) {
@@ -258,8 +284,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-
-
 //        try{
 //
 //        }catch (cn.dev33.satoken.exception.NotWebContextException e){
@@ -269,6 +293,104 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 //        }
 
 
+
+        return lqw;
+    }
+
+    /**
+     * 构建用于导出的查询条件包装器
+     *
+     * @param bo 查询条件
+     * @param areaCode 区域代码
+     * @return LambdaQueryWrapper
+     */
+    private LambdaQueryWrapper<ZqGrpGroupInfo> buildExportQueryWrapper(ZqGrpGroupInfoBo bo, String areaCode) {
+        Map<String, Object> params = bo.getParams();
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getGrpId() != null, ZqGrpGroupInfo::getGrpId, bo.getGrpId());
+        lqw.like(StringUtils.isNotBlank(bo.getGrpName()), ZqGrpGroupInfo::getGrpName, bo.getGrpName());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
+        lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId2()), ZqGrpGroupInfo::getCountyId2, bo.getCountyId2());
+        lqw.eq(StringUtils.isNotBlank(bo.getGridId()), ZqGrpGroupInfo::getGridId, bo.getGridId());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustryMajorKind()), ZqGrpGroupInfo::getIndustryMajorKind, bo.getIndustryMajorKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustrySubKind()), ZqGrpGroupInfo::getIndustrySubKind, bo.getIndustrySubKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getIndustryDetailKind()), ZqGrpGroupInfo::getIndustryDetailKind, bo.getIndustryDetailKind());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ZqGrpGroupInfo::getBusiType, bo.getBusiType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCustType()), ZqGrpGroupInfo::getGrpCustType, bo.getGrpCustType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpExpandType()), ZqGrpGroupInfo::getGrpExpandType, bo.getGrpExpandType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpBusiDeptType()), ZqGrpGroupInfo::getGrpBusiDeptType, bo.getGrpBusiDeptType());
+        lqw.eq(StringUtils.isNotBlank(bo.getProvinceNewoldType()), ZqGrpGroupInfo::getProvinceNewoldType, bo.getProvinceNewoldType());
+        lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
+        // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
+        lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
+
+        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
+        String provManagerOauser = bo.getProvManagerOauser();
+        String cityManagerOauser = bo.getCityManagerOauser();
+        String countyManagerOauser = bo.getCountyManagerOauser();
+
+        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
+            lqw.and(wrapper -> {
+                // 省级经理条件
+                if (StringUtils.isNotBlank(provManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
+                }
+
+                // 市级经理条件
+                if (StringUtils.isNotBlank(cityManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
+                }
+
+                // 县区级经理条件
+                if (StringUtils.isNotBlank(countyManagerOauser)) {
+                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
+                }
+            });
+        }
+
+        lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
+        lqw.like(StringUtils.isNotBlank(bo.getCityManagerName()), ZqGrpGroupInfo::getCityManagerName, bo.getCityManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyManagerEmpId()), ZqGrpGroupInfo::getCountyManagerEmpId, bo.getCountyManagerEmpId());
+        lqw.like(StringUtils.isNotBlank(bo.getCountyManagerName()), ZqGrpGroupInfo::getCountyManagerName, bo.getCountyManagerName());
+        lqw.eq(bo.getCreateTime() != null, ZqGrpGroupInfo::getCreateTime, bo.getCreateTime());
+        lqw.eq(bo.getUpdateTime() != null, ZqGrpGroupInfo::getUpdateTime, bo.getUpdateTime());
+
+        // 添加时间范围查询条件
+        // 处理分配时间范围查询
+        if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
+            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
+        }
+        // 处理创建时间范围查询
+        if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
+            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+        }
+
+        // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
+        // 如果不是省本级(330000)，则需要进行数据权限过滤
+        if (!"330000".equals(areaCode)) {
+            // 判断区域代码级别
+            if (areaCode.endsWith("0000")) {
+                log.info("省本级用户导出");
+                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
+                // 不添加过滤条件，可查看全省数据
+            } else if (areaCode.endsWith("00")) {
+                // 地市级用户(如330100)，只能查看本市数据
+                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+            } else {
+                // 区县级用户(如330102)，可查看所属地市的所有数据
+                // 提取地市代码(前4位+00)
+                String cityCode = areaCode.substring(0, 4) + "00";
+                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+            }
+        }
 
         return lqw;
     }

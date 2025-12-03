@@ -210,4 +210,5 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
 
     private String grpCreateTimeEnd;
 
+    private String areaCode;
 }
