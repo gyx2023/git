@@ -1,11 +1,10 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.ZqGrpGroupLog;
-import com.crm.system.domain.ZqGrpGroupInfo;
-import com.crm.system.domain.vo.ZqGrpGroupLogVo;
-import com.crm.system.domain.bo.ZqGrpGroupLogBo;
-import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.bo.ZqGrpGroupLogBo;
+import com.crm.system.domain.vo.ZqGrpGroupLogVo;
 
 import java.util.Collection;
 import java.util.List;
