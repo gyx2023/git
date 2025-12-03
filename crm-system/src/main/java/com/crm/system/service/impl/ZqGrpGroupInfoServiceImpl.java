@@ -73,16 +73,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-        // 打印SQL查询语句和参数，用于调试
-        System.out.println("查询SQL: " + lqw.getCustomSqlSegment());
-        System.out.println("完整SQL: " + lqw.getTargetSql());
-        System.out.println("assignTimeStart: " + bo.getAssignTimeStart());
-        System.out.println("assignTimeEnd: " + bo.getAssignTimeEnd());
-        System.out.println("createTimeStart: " + bo.getCreateTimeStart());
-        System.out.println("createTimeEnd: " + bo.getCreateTimeEnd());
-
-        // 添加日志查看MyBatis-Plus执行的SQL
-        System.out.println("参数表达式: " + lqw.getParamNameValuePairs());
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         // 获取当前用户角色，0为超级管理员
@@ -182,8 +172,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getGrpId() != null, ZqGrpGroupInfo::getGrpId, bo.getGrpId());
         lqw.like(StringUtils.isNotBlank(bo.getGrpName()), ZqGrpGroupInfo::getGrpName, bo.getGrpName());
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
+        lqw.like(StringUtils.isNotBlank(bo.getGrpCode()), ZqGrpGroupInfo::getGrpCode, bo.getGrpCode());
+        lqw.like(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
@@ -213,17 +203,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.and(wrapper -> {
                 // 省级经理条件
                 if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
+                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
                 }
 
                 // 市级经理条件
                 if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
+                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
                 }
 
                 // 县区级经理条件
                 if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
+                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
                 }
             });
         }

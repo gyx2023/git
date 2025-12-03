@@ -150,8 +150,15 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
      * @param expandCustType 拓展客户类型(01:省级,02:市级,03:县级)
      * @return 客户经理信息列表
      */
+    /**
+     * 根据城市编码和客户类型查询管理人员信息
+     * @param cityCode 城市编码
+     * @param expandCustType 拓展客户类型，01-省级，02-市级，03-县级
+     * @return 返回管理人员列表，按省级、市级、县级分类
+     */
     @Override
     public List<Map<String, Object>> queryManagersByCityCodeAndType(String cityCode, String expandCustType) {
+        // 初始化结果集
         List<Map<String, Object>> result = new ArrayList<>();
 
         try {
@@ -161,15 +168,17 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 return result;
             }
 
+            // 获取员工县ID和县ID字符串
             int empCountyId = areaVo.getEmpCountyId();
             String countyIdStr = String.valueOf(empCountyId);
-            String countyPrefix = countyIdStr.substring(0, 4); // 获取前四位
+            String countyPrefix = countyIdStr.substring(0, 4); // 获取前四位作为市级标识
 
             // 2. 获取该市下所有的县名列表，用于后续匹配判断
             List<SysAreaVo> countyAreas = sysAreaService.getCountiesByCityCodePrefix(countyPrefix);
-            Set<String> countyFullNames = new HashSet<>(); // 完整县名
-            Set<String> countyShortNames = new HashSet<>(); // 县名的前两个字和前三个字
-            
+            Set<String> countyFullNames = new HashSet<>(); // 完整县名集合
+            Set<String> countyShortNames = new HashSet<>(); // 县名的前两个字和前三个字的集合
+
+            // 遍历所有县区域信息，提取县名及其简称
             for (SysAreaVo county : countyAreas) {
                 String name = county.getName();
                 if (name != null) {
@@ -209,7 +218,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 lqw2.apply("SUBSTR(COUNTY_ID, 1, 4) = {0}", countyPrefix)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
-                
+
                 // 过滤掉县名匹配的数据，只保留纯市级数据
                 List<DwdRepSysPersonDVo> cityManagers = dataList2.stream()
                     .filter(person -> {
@@ -223,7 +232,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                         return !(containsFullCounty || containsShortCounty);
                     })
                     .collect(Collectors.toList());
-                    
+
                 addManagersToList(list2, cityManagers);
                 level2.put("managers", list2);
                 if (!list2.isEmpty()) {
