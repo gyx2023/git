@@ -1,4 +1,4 @@
-FROM  harbor.dcos.guangzhou.unicom.local/zj_zqyypt/jdk1.8
+FROM harbor.dcos.wuxi.unicom.local/ccr_zjzqyypt_test/jdk8:8u342-custom
 
 MAINTAINER Lion Li
 
