@@ -132,7 +132,8 @@ public class LoginHelper {
      * @return 结果
      */
     public static boolean isAdmin(Long userId) {
-        return UserConstants.ADMIN_ID.equals(userId);
+        LoginUser loginUser = getLoginUser();
+        return loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L);
     }
 
     public static boolean isAdmin() {

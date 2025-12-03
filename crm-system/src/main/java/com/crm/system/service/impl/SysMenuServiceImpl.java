@@ -10,6 +10,7 @@ import com.crm.common.constant.Constants;
 import com.crm.common.constant.UserConstants;
 import com.crm.common.core.domain.entity.SysMenu;
 import com.crm.common.core.domain.entity.SysRole;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;
@@ -125,7 +126,8 @@ public class SysMenuServiceImpl implements ISysMenuService {
     @Override
     public List<SysMenu> selectMenuTreeByUserId(Long userId) {
         List<SysMenu> menus = null;
-        if (LoginHelper.isAdmin(userId)) {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        if (loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L)) {
             menus = baseMapper.selectMenuTreeAll();
         } else {
             menus = baseMapper.selectMenuTreeByUserId(userId);
