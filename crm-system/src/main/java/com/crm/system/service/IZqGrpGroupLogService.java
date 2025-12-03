@@ -50,9 +50,8 @@ public interface IZqGrpGroupLogService {
     /**
      * 记录集团客户信息变更日志
      * @param originalInfo 变更前的集团信息
-     * @param updatedInfo 变更后的集团信息
      * @param updateType 变更类型：T1-集团基本信息变更,T2-集团客户经理变更
      * @return 是否记录成功
      */
-    Boolean recordChangeLog(ZqGrpGroupInfo originalInfo, ZqGrpGroupInfo updatedInfo, String updateType);
+    Boolean recordChangeLog(ZqGrpGroupInfo originalInfo, String updateType);
 }

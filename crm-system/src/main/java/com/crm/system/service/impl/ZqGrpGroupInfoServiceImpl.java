@@ -317,7 +317,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             // 使用自定义方法比较对象属性是否相同
             boolean hasChanges = !isObjectsEqual(originalInfo, updatedInfo);
             if (hasChanges) {
-                boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, updatedInfo, "T1"); // T1-集团基本信息变更
+                boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, "T1"); // T1-集团基本信息变更
                 System.out.println("[DEBUG] recordChangeLog result: " + logResult);
             } else {
                 System.out.println("[DEBUG] No changes detected, skipping log record");
@@ -386,16 +386,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public Boolean updateByBo1(ZqGrpGroupInfoBo bo) {
-        System.out.println("[DEBUG] updateByBo called with grpId: " + bo.getGrpId());
 
         // 先获取变更前的数据
         ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
-        if (originalInfo != null) {
-            System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
-        } else {
-            System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
-            return false; // 如果找不到原始记录，直接返回失败
+
+        if (originalInfo == null) {
+            return false; // 如果找不到原始记录，直接返回失败} else {
         }
+
+        // 记录变更日志
+        zqGrpGroupLogService.recordChangeLog(originalInfo, "T2");
 
         // 创建更新对象
         ZqGrpGroupInfo update = new ZqGrpGroupInfo();
@@ -430,27 +430,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 如果没有任何需要更新的字段，直接返回成功
         if (!hasUpdateFields) {
-            System.out.println("[DEBUG] No fields to update, returning success");
             return true;
         }
 
-        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
-
         update.setUpdateTime(new Date());
         // 执行更新操作
-        Boolean success = baseMapper.updateById(update) > 0;
-        System.out.println("[DEBUG] Update operation result: " + success);
 
-        // 如果更新成功，记录变更日志
-        if (success) {
-            System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
-            // 获取更新后的完整对象用于日志记录
-            ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
-            boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, updatedInfo, "T2"); // T2-集团客户经理变更
-            System.out.println("[DEBUG] recordChangeLog result: " + logResult);
-        }
-
-        return success;
+        return baseMapper.updateById(update) > 0;
     }
 
 
