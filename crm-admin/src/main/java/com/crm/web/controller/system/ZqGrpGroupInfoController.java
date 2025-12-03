@@ -83,8 +83,6 @@ public class ZqGrpGroupInfoController extends BaseController {
         }
 
         // 查询数据并返回
-        TableDataInfo<ZqGrpGroupInfoVo> result = iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
-
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
 
