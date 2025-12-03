@@ -278,21 +278,18 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public Boolean updateByBo(ZqGrpGroupInfoBo bo) {
-        System.out.println("[DEBUG] updateByBo called with grpId: " + bo.getGrpId());
 
         // 先获取变更前的数据
         ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
-        if (originalInfo != null) {
-            System.out.println("[DEBUG] Retrieved originalInfo with grpId: " + originalInfo.getGrpId() + ", grpName: " + originalInfo.getGrpName());
-        } else {
-            System.out.println("[DEBUG] Failed to retrieve originalInfo for grpId: " + bo.getGrpId());
+
+        if (originalInfo == null) {
             return false;
         }
 
+        zqGrpGroupLogService.recordChangeLog(originalInfo, "T1"); // T1-集团基本信息变更
+
         // 创建更新对象
         ZqGrpGroupInfo update = BeanUtil.toBean(bo, ZqGrpGroupInfo.class);
-
-        validEntityBeforeSave(update);
 
         // 清空不能修改的字段，避免使用前端传递的脱敏数据
         // 这些字段将保持数据库中的原始值不变
@@ -301,84 +298,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         update.setCityManagerName(null); // 市级客户经理名字不能修改
         update.setCountyManagerName(null); // 县级客户经理名字不能修改
 
-        System.out.println("[DEBUG] Created update object with grpId: " + update.getGrpId());
 
         // 执行更新操作
-        boolean success = baseMapper.updateById(update) > 0;
-        System.out.println("[DEBUG] Update operation result: " + success);
-
-        // 如果更新成功，记录变更日志
-        if (success) {
-            System.out.println("[DEBUG] Calling recordChangeLog for grpId: " + update.getGrpId());
-            // 重新从数据库获取更新后的完整数据，包含未脱敏的集团名称和客户经理名字
-            ZqGrpGroupInfo updatedInfo = baseMapper.selectById(bo.getGrpId());
-
-            // 比较修改前后的对象属性，只有当属性发生变化时才记录日志
-            // 使用自定义方法比较对象属性是否相同
-            boolean hasChanges = !isObjectsEqual(originalInfo, updatedInfo);
-            if (hasChanges) {
-                boolean logResult = zqGrpGroupLogService.recordChangeLog(originalInfo, "T1"); // T1-集团基本信息变更
-                System.out.println("[DEBUG] recordChangeLog result: " + logResult);
-            } else {
-                System.out.println("[DEBUG] No changes detected, skipping log record");
-            }
-        }
-
-        return success;
-    }
-
-    /**
-     * 比较两个对象的属性是否完全相同
-     * @param obj1 第一个对象
-     * @param obj2 第二个对象
-     * @return 如果属性完全相同返回true，否则返回false
-     */
-    private boolean isObjectsEqual(Object obj1, Object obj2) {
-        if (obj1 == obj2) {
-            return true;
-        }
-        if (obj1 == null || obj2 == null) {
-            return false;
-        }
-        if (obj1.getClass() != obj2.getClass()) {
-            return false;
-        }
-
-        // 直接使用手动比较方式，比较所有可能被修改的属性
-        ZqGrpGroupInfo info1 = (ZqGrpGroupInfo) obj1;
-        ZqGrpGroupInfo info2 = (ZqGrpGroupInfo) obj2;
-
-        // 比较所有可能被修改的属性
-        return java.util.Objects.equals(info1.getGrpId(), info2.getGrpId()) &&
-               java.util.Objects.equals(info1.getGrpCode(), info2.getGrpCode()) &&
-               java.util.Objects.equals(info1.getHqGrpCode(), info2.getHqGrpCode()) &&
-               java.util.Objects.equals(info1.getCustId(), info2.getCustId()) &&
-               java.util.Objects.equals(info1.getGrpLevel(), info2.getGrpLevel()) &&
-               java.util.Objects.equals(info1.getGrpStatus(), info2.getGrpStatus()) &&
-               java.util.Objects.equals(info1.getAreaId(), info2.getAreaId()) &&
-               java.util.Objects.equals(info1.getCountyId(), info2.getCountyId()) &&
-               java.util.Objects.equals(info1.getCountyId2(), info2.getCountyId2()) &&
-               java.util.Objects.equals(info1.getGridId(), info2.getGridId()) &&
-               java.util.Objects.equals(info1.getIndustryMajorKind(), info2.getIndustryMajorKind()) &&
-               java.util.Objects.equals(info1.getIndustrySubKind(), info2.getIndustrySubKind()) &&
-               java.util.Objects.equals(info1.getIndustryDetailKind(), info2.getIndustryDetailKind()) &&
-               java.util.Objects.equals(info1.getBusiType(), info2.getBusiType()) &&
-               java.util.Objects.equals(info1.getGrpCustType(), info2.getGrpCustType()) &&
-               java.util.Objects.equals(info1.getGrpExpandType(), info2.getGrpExpandType()) &&
-               java.util.Objects.equals(info1.getGrpBusiDeptType(), info2.getGrpBusiDeptType()) &&
-               java.util.Objects.equals(info1.getProvinceNewoldType(), info2.getProvinceNewoldType()) &&
-               java.util.Objects.equals(info1.getManagerId(), info2.getManagerId()) &&
-               java.util.Objects.equals(info1.getGrpCreator(), info2.getGrpCreator()) &&
-               java.util.Objects.equals(info1.getGrpCreateTime(), info2.getGrpCreateTime()) &&
-               java.util.Objects.equals(info1.getProvManagerEmpId(), info2.getProvManagerEmpId()) &&
-               java.util.Objects.equals(info1.getProvManagerOauser(), info2.getProvManagerOauser()) &&
-               java.util.Objects.equals(info1.getProvManagerName(), info2.getProvManagerName()) &&
-               java.util.Objects.equals(info1.getCityManagerEmpId(), info2.getCityManagerEmpId()) &&
-               java.util.Objects.equals(info1.getCityManagerOauser(), info2.getCityManagerOauser()) &&
-               java.util.Objects.equals(info1.getCityManagerName(), info2.getCityManagerName()) &&
-               java.util.Objects.equals(info1.getCountyManagerEmpId(), info2.getCountyManagerEmpId()) &&
-               java.util.Objects.equals(info1.getCountyManagerOauser(), info2.getCountyManagerOauser()) &&
-               java.util.Objects.equals(info1.getCountyManagerName(), info2.getCountyManagerName());
+        return baseMapper.updateById(update) > 0;
     }
 
     /**
@@ -439,8 +361,59 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         return baseMapper.updateById(update) > 0;
     }
 
+    /**
+     * 比较两个对象的属性是否完全相同
+     * @param obj1 第一个对象
+     * @param obj2 第二个对象
+     * @return 如果属性完全相同返回true，否则返回false
+     */
+    private boolean isObjectsEqual(Object obj1, Object obj2) {
+        if (obj1 == obj2) {
+            return true;
+        }
+        if (obj1 == null || obj2 == null) {
+            return false;
+        }
+        if (obj1.getClass() != obj2.getClass()) {
+            return false;
+        }
 
+        // 直接使用手动比较方式，比较所有可能被修改的属性
+        ZqGrpGroupInfo info1 = (ZqGrpGroupInfo) obj1;
+        ZqGrpGroupInfo info2 = (ZqGrpGroupInfo) obj2;
 
+        // 比较所有可能被修改的属性
+        return java.util.Objects.equals(info1.getGrpId(), info2.getGrpId()) &&
+               java.util.Objects.equals(info1.getGrpCode(), info2.getGrpCode()) &&
+               java.util.Objects.equals(info1.getHqGrpCode(), info2.getHqGrpCode()) &&
+               java.util.Objects.equals(info1.getCustId(), info2.getCustId()) &&
+               java.util.Objects.equals(info1.getGrpLevel(), info2.getGrpLevel()) &&
+               java.util.Objects.equals(info1.getGrpStatus(), info2.getGrpStatus()) &&
+               java.util.Objects.equals(info1.getAreaId(), info2.getAreaId()) &&
+               java.util.Objects.equals(info1.getCountyId(), info2.getCountyId()) &&
+               java.util.Objects.equals(info1.getCountyId2(), info2.getCountyId2()) &&
+               java.util.Objects.equals(info1.getGridId(), info2.getGridId()) &&
+               java.util.Objects.equals(info1.getIndustryMajorKind(), info2.getIndustryMajorKind()) &&
+               java.util.Objects.equals(info1.getIndustrySubKind(), info2.getIndustrySubKind()) &&
+               java.util.Objects.equals(info1.getIndustryDetailKind(), info2.getIndustryDetailKind()) &&
+               java.util.Objects.equals(info1.getBusiType(), info2.getBusiType()) &&
+               java.util.Objects.equals(info1.getGrpCustType(), info2.getGrpCustType()) &&
+               java.util.Objects.equals(info1.getGrpExpandType(), info2.getGrpExpandType()) &&
+               java.util.Objects.equals(info1.getGrpBusiDeptType(), info2.getGrpBusiDeptType()) &&
+               java.util.Objects.equals(info1.getProvinceNewoldType(), info2.getProvinceNewoldType()) &&
+               java.util.Objects.equals(info1.getManagerId(), info2.getManagerId()) &&
+               java.util.Objects.equals(info1.getGrpCreator(), info2.getGrpCreator()) &&
+               java.util.Objects.equals(info1.getGrpCreateTime(), info2.getGrpCreateTime()) &&
+               java.util.Objects.equals(info1.getProvManagerEmpId(), info2.getProvManagerEmpId()) &&
+               java.util.Objects.equals(info1.getProvManagerOauser(), info2.getProvManagerOauser()) &&
+               java.util.Objects.equals(info1.getProvManagerName(), info2.getProvManagerName()) &&
+               java.util.Objects.equals(info1.getCityManagerEmpId(), info2.getCityManagerEmpId()) &&
+               java.util.Objects.equals(info1.getCityManagerOauser(), info2.getCityManagerOauser()) &&
+               java.util.Objects.equals(info1.getCityManagerName(), info2.getCityManagerName()) &&
+               java.util.Objects.equals(info1.getCountyManagerEmpId(), info2.getCountyManagerEmpId()) &&
+               java.util.Objects.equals(info1.getCountyManagerOauser(), info2.getCountyManagerOauser()) &&
+               java.util.Objects.equals(info1.getCountyManagerName(), info2.getCountyManagerName());
+    }
 
     /**
      * 保存前的数据校验
