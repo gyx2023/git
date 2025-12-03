@@ -10,15 +10,13 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.utils.spring.SpringUtils;
 import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
-import com.crm.system.service.IDwdRepSysPersonDService;
-import com.crm.system.service.ISysAreaService;
-import com.crm.system.service.IZqGrpGroupInfoService;
-import com.crm.system.service.IZqGrpGroupLogService;
+import com.crm.system.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -158,8 +156,88 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
         List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+
+        // 字典翻译
+        translateDictLabels(list);
+
         return list;
     }
+
+    /**
+     * 对字典字段进行翻译
+     * @param list 集团客户信息列表
+     */
+    private void translateDictLabels(List<ZqGrpGroupInfoVo> list) {
+        // 注入字典服务
+        ISysDictDataService dictService = SpringUtils.getBean(ISysDictDataService.class);
+
+        list.forEach(vo -> {
+            // 集团级别翻译
+            if (StringUtils.isNotBlank(vo.getGrpLevel())) {
+                try {
+                    vo.setGrpLevelName(dictService.selectDictLabel("sys_grp_level", vo.getGrpLevel()));
+                } catch (Exception e) {
+                    log.warn("集团级别翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 集团状态翻译
+            if (StringUtils.isNotBlank(vo.getGrpStatus())) {
+                try {
+                    vo.setGrpStatusName(dictService.selectDictLabel("sys_grp_status", vo.getGrpStatus()));
+                } catch (Exception e) {
+                    log.warn("集团状态翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 集团业务分类翻译
+            if (StringUtils.isNotBlank(vo.getBusiType())) {
+                try {
+                    vo.setBusiTypeName(dictService.selectDictLabel("sys_busi_type", vo.getBusiType()));
+                } catch (Exception e) {
+                    log.warn("集团业务分类翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 集团客户类别翻译
+            if (StringUtils.isNotBlank(vo.getGrpCustType())) {
+                try {
+                    vo.setGrpCustTypeName(dictService.selectDictLabel("sys_cust_type", vo.getGrpCustType()));
+                } catch (Exception e) {
+                    log.warn("集团客户类别翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 集团客户拓展类型翻译
+            if (StringUtils.isNotBlank(vo.getGrpExpandType())) {
+                try {
+                    vo.setGrpExpandTypeName(dictService.selectDictLabel("sys_expand_type", vo.getGrpExpandType()));
+                } catch (Exception e) {
+                    log.warn("集团客户拓展类型翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 集团客户业务部门分类翻译
+            if (StringUtils.isNotBlank(vo.getGrpBusiDeptType())) {
+                try {
+                    vo.setGrpBusiDeptTypeName(dictService.selectDictLabel("sys_busi_dept_type", vo.getGrpBusiDeptType()));
+                } catch (Exception e) {
+                    log.warn("集团客户业务部门分类翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 集团客户省市名单制存增量标识翻译
+            if (StringUtils.isNotBlank(vo.getProvinceNewoldType())) {
+                try {
+                    vo.setProvinceNewoldTypeName(dictService.selectDictLabel("sys_province_newold_type", vo.getProvinceNewoldType()));
+                } catch (Exception e) {
+                    log.warn("集团客户省市名单制存增量标识翻译失败: {}", e.getMessage());
+                }
+            }
+        });
+    }
+
+
 
     /**
      * 对ZqGrpGroupInfoVo对象进行脱敏处理
