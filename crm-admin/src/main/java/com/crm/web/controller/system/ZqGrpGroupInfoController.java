@@ -1,36 +1,36 @@
 package com.crm.web.controller.system;
 
+import java.util.*;
+
+import lombok.RequiredArgsConstructor;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
-import com.crm.common.annotation.Log;
 import com.crm.common.annotation.RepeatSubmit;
+import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
-import com.crm.common.core.domain.entity.SysDictData;
-import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
-import com.crm.common.utils.file.FileUtils;
 import com.crm.common.utils.poi.ExcelUtil;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
+import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
-import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.utils.ExcelDropdownHandler;
-import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.utils.file.FileUtils;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.text.SimpleDateFormat;
-import java.util.*;
 
 /**
  * 政企集团客户信息
@@ -107,12 +107,21 @@ public class ZqGrpGroupInfoController extends BaseController {
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
 
+
     /**
      * 导出政企集团客户信息列表
      */
     @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response) {
+    public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response,
+                       @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
+                       @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
+        // 处理时间范围参数
+        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+            bo.setGrpCreateTimeBegin(grpCreateTimeBegin);
+            bo.setGrpCreateTimeEnd(grpCreateTimeEnd);
+        }
+
         List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
         ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
     }
