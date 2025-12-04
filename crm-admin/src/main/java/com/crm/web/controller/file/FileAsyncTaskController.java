@@ -145,7 +145,8 @@ public class FileAsyncTaskController extends BaseController {
     @PostMapping("/applyExport")
     @Log(title = "导出任务申请", businessType = BusinessType.INSERT)
     public R<Long> applyExport(@RequestParam("businessType") String businessType,
-                             @RequestParam("requestParams") String requestParams,@RequestParam("taskName") String taskName) {
+                             @RequestParam("requestParams") String requestParams,
+                               @RequestParam("taskName") String taskName) {
         try {
             Long taskId = iFileAsyncTaskService.applyExport(businessType, requestParams,taskName);
             return R.ok(taskId);

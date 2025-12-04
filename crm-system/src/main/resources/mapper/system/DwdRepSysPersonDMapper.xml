@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.DwdRepSysPersonDMapper">
+
+    <resultMap type="com.crm.system.domain.DwdRepSysPersonD" id="DwdRepSysPersonDResult">
+        <result property="id" column="id_"/>
+        <result property="empId" column="EMP_ID"/>
+        <result property="hrCode" column="HR_CODE"/>
+        <result property="fullName" column="FULL_NAME"/>
+        <result property="oaUserName" column="OA_USER_NAME"/>
+        <result property="onjobFlag" column="ONJOB_FLAG"/>
+        <result property="userIdentityCode" column="USER_IDENTITY_CODE"/>
+        <result property="MOBILE" column="MOBILE"/>
+        <result property="userPersonTypeCode" column="USER_PERSON_TYPE_CODE"/>
+        <result property="labelCategoryCode" column="LABEL_CATEGORY_CODE"/>
+        <result property="elementName3MapCode" column="ELEMENT_NAME3_MAP_CODE"/>
+        <result property="personBigType" column="PERSON_BIG_TYPE"/>
+        <result property="areaId" column="AREA_ID"/>
+        <result property="areaName" column="AREA_NAME"/>
+        <result property="countyId" column="COUNTY_ID"/>
+        <result property="countyName" column="COUNTY_NAME"/>
+        <result property="hxZoneId" column="HX_ZONE_ID"/>
+        <result property="hxZoneName" column="HX_ZONE_NAME"/>
+        <result property="deptTypeCode" column="DEPT_TYPE_CODE"/>
+        <result property="bakColumn1" column="BAK_COLUMN1"/>
+        <result property="bakColumn2" column="BAK_COLUMN2"/>
+        <result property="bakColumn3" column="BAK_COLUMN3"/>
+        <result property="bakColumn4" column="BAK_COLUMN4"/>
+        <result property="bakColumn5" column="BAK_COLUMN5"/>
+        <result property="bakColumn6" column="BAK_COLUMN6"/>
+        <result property="quitDate" column="QUIT_DATE"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="creationDate" column="CREATION_DATE"/>
+        <result property="lastUpdatedBy" column="LAST_UPDATED_BY"/>
+        <result property="lastUpdateDate" column="LAST_UPDATE_DATE"/>
+        <result property="bakColumn7" column="BAK_COLUMN7"/>
+        <result property="bakColumn8" column="BAK_COLUMN8"/>
+        <result property="bakColumn9" column="BAK_COLUMN9"/>
+        <result property="srZoneId" column="sr_zone_id"/>
+        <result property="etlDataCycle" column="ETL_DATA_CYCLE"/>
+        <result property="etlTime" column="ETL_TIME"/>
+    </resultMap>
+
+
+</mapper>

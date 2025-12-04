@@ -14,6 +14,7 @@ import java.awt.geom.RoundRectangle2D;
 public class MyDefaultProcessDiagramCanvas extends DefaultProcessDiagramCanvas {
     //设置高亮线的颜色  这里我设置成绿色
     protected static Color HIGHLIGHT_SEQUENCEFLOW_COLOR = Color.GREEN;
+    private Stroke originalStroke;
 
     public MyDefaultProcessDiagramCanvas(int width, int height, int minX, int minY, String imageType, String activityFontName, String labelFontName, String annotationFontName, ClassLoader customClassLoader) {
         super(width, height, minX, minY, imageType, activityFontName, labelFontName, annotationFontName, customClassLoader);

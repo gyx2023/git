@@ -1,7 +1,10 @@
 package com.crm.system.service.file.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.crm.common.core.domain.BaseEntity;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
@@ -61,6 +64,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
     public FileAsyncTaskVo queryById(Long taskId){
         return baseMapper.selectVoById(taskId);
     }
+
 
     /**
      * 根据任务ID下载文件
@@ -260,7 +264,14 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             // 创建异步任务
             FileAsyncTaskBo taskBo = new FileAsyncTaskBo();
             taskBo.setTaskType("import");
-            taskBo.setFileName(upload.getFileName());
+
+            // 根据业务类型设置文件名
+            if ("grp_manager_import".equals(businessType)) {
+                taskBo.setFileName("集团客户经理导入" + upload.getFileName());
+            } else {
+                taskBo.setFileName(upload.getFileName());
+            }
+
             taskBo.setFileUrl(upload.getUrl());
             taskBo.setFileSize(file.getSize());
             taskBo.setBusinessType(businessType);
@@ -293,13 +304,30 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
     @Override
     public Long applyExport(String businessType, String requestParams,String taskName) {
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = LoginHelper.getLoginUser();
+            String areaCode = loginUser.getAreaCode();
+            
+            // 判断当前用户是否为管理员
+            boolean isAdmin = LoginHelper.isAdmin();
+
+            // 解析原始请求参数
+            JSONObject jsonObject = JSONUtil.parseObj(requestParams);
+            // 添加areaCode到请求参数中
+            jsonObject.set("areaCode", areaCode);
+            // 添加isAdmin到请求参数中
+            jsonObject.set("isAdmin", isAdmin);
+            // 将修改后的参数转回字符串
+            String modifiedRequestParams = jsonObject.toString();
+
             // 创建异步任务
             FileAsyncTaskBo taskBo = new FileAsyncTaskBo();
             taskBo.setTaskType("export");
             taskBo.setBusinessType(businessType);
-            taskBo.setRequestParams(requestParams);
+            taskBo.setRequestParams(modifiedRequestParams);
             taskBo.setStatus(0L); // 0-待处理
             taskBo.setCreateUserId(LoginHelper.getUserId());
+
 
             // 生成任务ID：yyyymmdd+0001（4位序列号）格式
             String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));

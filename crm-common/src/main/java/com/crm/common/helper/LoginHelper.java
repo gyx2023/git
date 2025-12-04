@@ -54,6 +54,7 @@ public class LoginHelper {
         if (ObjectUtil.isNotNull(deviceType)) {
             model.setDevice(deviceType.getDevice());
         }
+
         StpUtil.login(loginUser.getLoginId(), model.setExtra(USER_KEY, loginUser.getUserId()));
         StpUtil.getTokenSession().set(LOGIN_USER_KEY, loginUser);
     }
@@ -131,7 +132,8 @@ public class LoginHelper {
      * @return 结果
      */
     public static boolean isAdmin(Long userId) {
-        return UserConstants.ADMIN_ID.equals(userId);
+        LoginUser loginUser = getLoginUser();
+        return loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L);
     }
 
     public static boolean isAdmin() {
