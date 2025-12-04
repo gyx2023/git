@@ -12,9 +12,12 @@ import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.spring.SpringUtils;
 import com.crm.generator.util.Desensitization;
+import com.crm.system.domain.SysArea;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
+import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.service.*;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +40,12 @@ import java.util.stream.Collectors;
 public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
     private final ZqGrpGroupInfoMapper baseMapper;
+    private final SysAreaMapper sysAreaMapper;
     private final IZqGrpGroupLogService zqGrpGroupLogService;
+    private final ISysDictDataService dictService;
+    private final ISysAreaService sysAreaService;
     private final IDwdRepSysPersonDService iDwdRepSysPersonDService;
-    private final ISysAreaService iSysAreaService;
+    private final ISysCategoryService sysCategoryService; // 添加行业分类服务
 
     /**
      * 查询政企集团客户信息
@@ -92,15 +98,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date beginDate = sdf.parse(grpCreateTimeBegin);
                 Date endDate = sdf.parse(grpCreateTimeEnd);
-                System.out.println("成功应用时间范围查询: " + grpCreateTimeBegin + " 到 " + grpCreateTimeEnd);
                 lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
-
             } catch (Exception e) {
-                System.out.println("时间参数解析失败: " + e.getMessage());
+                log.warn("时间参数解析失败: {}", e.getMessage());
             }
         }
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+
         // 获取当前用户角色，0为超级管理员
         String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
         boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
@@ -112,6 +117,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     .collect(Collectors.toList());
             result.setRecords(desensitizedList);
         }
+
         return TableDataInfo.build(result);
     }
 
@@ -122,16 +128,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
-        // 获取当前用户角色，0为超级管理员
-        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
-        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
 
-        // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (isSensitive) {
-            return list.stream()
-                    .map(this::desensitizeVo)
-                    .collect(Collectors.toList());
-        }
+        // 字典翻译
+        translateDictLabels(list);
+
         return list;
     }
 
@@ -158,9 +158,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * @param list 集团客户信息列表
      */
     private void translateDictLabels(List<ZqGrpGroupInfoVo> list) {
-        // 注入字典服务
-        ISysDictDataService dictService = SpringUtils.getBean(ISysDictDataService.class);
-
         list.forEach(vo -> {
             // 集团级别翻译，直接替换原始值
             if (StringUtils.isNotBlank(vo.getGrpLevel())) {
@@ -229,6 +226,66 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     vo.setProvinceNewoldType(label);
                 } catch (Exception e) {
                     log.warn("集团客户省市名单制存增量标识翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 地市翻译，将数字ID转换为中文名称
+            if (StringUtils.isNotBlank(vo.getAreaId())) {
+                try {
+                    SysArea area = sysAreaMapper.selectById(Long.valueOf(vo.getAreaId()));
+                    if (area != null) {
+                        vo.setAreaId(area.getName());
+                    }
+                } catch (Exception e) {
+                    log.warn("地市翻译失败: {}", e.getMessage());
+                }
+            }
+
+            // 县分翻译，将数字ID转换为中文名称
+            if (StringUtils.isNotBlank(vo.getCountyId())) {
+                try {
+                    SysArea county = sysAreaMapper.selectById(Long.valueOf(vo.getCountyId()));
+                    if (county != null) {
+                        vo.setCountyId(county.getName());
+                    }
+                } catch (Exception e) {
+                    log.warn("县分翻译失败: {}", e.getMessage());
+                }
+            }
+            
+            // 行业大类翻译，将编码转换为中文名称
+            if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
+                try {
+                    SysCategoryVo category = sysCategoryService.queryById(vo.getIndustryMajorKind());
+                    if (category != null) {
+                        vo.setIndustryMajorKind(category.getName());
+                    }
+                } catch (Exception e) {
+                    log.warn("行业大类翻译失败: {}", e.getMessage());
+                }
+            }
+            
+            // 行业亚类翻译，将编码转换为中文名称
+            if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
+                try {
+                    SysCategoryVo category = sysCategoryService.queryById(vo.getIndustrySubKind());
+                    if (category != null) {
+                        vo.setIndustrySubKind(category.getName());
+                    }
+                } catch (Exception e) {
+                    log.warn("行业亚类翻译失败: {}", e.getMessage());
+                }
+            }
+            
+            // 行业细类翻译，将编码转换为中文名称
+            if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
+                try {
+                    SysCategoryVo category = sysCategoryService.queryById(vo.getIndustryDetailKind());
+                    if (category != null) {
+                        vo.setIndustryDetailKind(category.getName());
+                    }
+                } catch (Exception e) {
+                    log.warn("行业细类翻译失败: {}", e.getMessage());
                 }
             }
         });
