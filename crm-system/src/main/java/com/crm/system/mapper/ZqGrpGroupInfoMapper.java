@@ -1,5 +1,10 @@
 package com.crm.system.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Constants;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
