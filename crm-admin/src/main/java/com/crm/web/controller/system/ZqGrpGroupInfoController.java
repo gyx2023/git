@@ -53,41 +53,91 @@ public class ZqGrpGroupInfoController extends BaseController {
 
 
     /**
-     * 查询政企集团客户信息列表
+     * 查询政企集团客户信息列表 - 处理前端传来的分配时间和创建时间参数
      */
     @GetMapping("/list")
-    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
-            @RequestParam(value = "beginTime", required = false) String beginTime,
-            @RequestParam(value = "endTime", required = false) String endTime,
-            @RequestParam(value = "timeType", required = false) String timeType) {
+    public TableDataInfo<ZqGrpGroupInfoVo> listWithTimes(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
+            @RequestParam(value = "assignBeginTime", required = false) String assignBeginTime,
+            @RequestParam(value = "assignEndTime", required = false) String assignEndTime,
+            @RequestParam(value = "createBeginTime", required = false) String createBeginTime,
+            @RequestParam(value = "createEndTime", required = false) String createEndTime) {
 
-        // 处理前端传递的时间范围参数
-        if (beginTime != null && endTime != null && timeType != null) {
+        // 处理分配时间范围参数
+        if (assignBeginTime != null || assignEndTime != null) {
             try {
-                // 解析时间字符串为Date对象
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(beginTime);
-                Date endDate = sdf.parse(endTime);
-
-                // 根据timeType设置对应的时间范围字段
-                if ("assign".equals(timeType)) {
+                if (assignBeginTime != null) {
+                    Date beginDate = sdf.parse(assignBeginTime);
                     bo.setAssignTimeStart(beginDate);
+                }
+                if (assignEndTime != null) {
+                    Date endDate = sdf.parse(assignEndTime);
                     bo.setAssignTimeEnd(endDate);
-                } else if ("create".equals(timeType)) {
+                }
+                System.out.println("分配时间参数处理成功: assignBeginTime=" + assignBeginTime + ", assignEndTime=" + assignEndTime);
+            } catch (Exception e) {
+                System.out.println("分配时间参数解析失败: " + e.getMessage());
+            }
+        }
+
+        // 处理创建时间范围参数
+        if (createBeginTime != null || createEndTime != null) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                if (createBeginTime != null) {
+                    Date beginDate = sdf.parse(createBeginTime);
                     bo.setCreateTimeStart(beginDate);
+                }
+                if (createEndTime != null) {
+                    Date endDate = sdf.parse(createEndTime);
                     bo.setCreateTimeEnd(endDate);
                 }
-
-                System.out.println("时间参数处理成功: timeType=" + timeType + ", beginTime=" + beginTime + ", endTime=" + endTime);
+                System.out.println("创建时间参数处理成功: createBeginTime=" + createBeginTime + ", createEndTime=" + createEndTime);
             } catch (Exception e) {
-                System.out.println("时间参数解析失败: " + e.getMessage());
+                System.out.println("创建时间参数解析失败: " + e.getMessage());
             }
         }
 
         // 查询数据并返回
-
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
+
+//    /**
+//     * 查询政企集团客户信息列表
+//     */
+//    @GetMapping("/list")
+//    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
+//            @RequestParam(value = "beginTime", required = false) String beginTime,
+//            @RequestParam(value = "endTime", required = false) String endTime,
+//            @RequestParam(value = "timeType", required = false) String timeType) {
+//
+//        // 处理前端传递的时间范围参数
+//        if (beginTime != null && endTime != null && timeType != null) {
+//            try {
+//                // 解析时间字符串为Date对象
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                Date beginDate = sdf.parse(beginTime);
+//                Date endDate = sdf.parse(endTime);
+//
+//                // 根据timeType设置对应的时间范围字段
+//                if ("assign".equals(timeType)) {
+//                    bo.setAssignTimeStart(beginDate);
+//                    bo.setAssignTimeEnd(endDate);
+//                } else if ("create".equals(timeType)) {
+//                    bo.setCreateTimeStart(beginDate);
+//                    bo.setCreateTimeEnd(endDate);
+//                }
+//
+//                System.out.println("时间参数处理成功: timeType=" + timeType + ", beginTime=" + beginTime + ", endTime=" + endTime);
+//            } catch (Exception e) {
+//                System.out.println("时间参数解析失败: " + e.getMessage());
+//            }
+//        }
+//
+//        // 查询数据并返回
+//
+//        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
+//    }
 
     /**
      * 导出政企集团客户信息列表

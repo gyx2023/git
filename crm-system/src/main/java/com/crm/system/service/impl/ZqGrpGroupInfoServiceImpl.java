@@ -320,10 +320,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 处理分配时间范围查询
         if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
+        } else if (bo.getAssignTimeStart() != null) {
+            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart());
+        } else if (bo.getAssignTimeEnd() != null) {
+            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeEnd());
         }
+        
         // 处理创建时间范围查询
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+        } else if (bo.getCreateTimeStart() != null) {
+            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
+        } else if (bo.getCreateTimeEnd() != null) {
+            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
         }
 
         // 处理grpCreateTime时间范围查询（用于导出）
@@ -335,6 +344,22 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
             } catch (Exception e) {
                 log.warn("导出时解析时间参数失败: {}", e.getMessage());
+            }
+        } else if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
+                lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, beginDate);
+            } catch (Exception e) {
+                log.warn("导出时解析开始时间参数失败: {}", e.getMessage());
+            }
+        } else if (StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
+                lqw.le(ZqGrpGroupInfo::getGrpCreateTime, endDate);
+            } catch (Exception e) {
+                log.warn("导出时解析结束时间参数失败: {}", e.getMessage());
             }
         }
 
