@@ -1,6 +1,9 @@
 package com.crm.system.listener.client;
 
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.excel.ExcelResult;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
@@ -27,13 +30,44 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
-public class GrpBusiDeptImportListener {
-
+public class GrpBusiDeptImportListener implements ReadListener<GrpBusiDeptTemplateVo> {
+    
     @Autowired
     private IZqGrpGroupInfoService zqGrpGroupInfoService;
 
     @Autowired
     private ISysDictDataService sysDictTypeService;
+    
+    private List<GrpBusiDeptTemplateVo> cachedDataList = new ArrayList<>();
+    
+    @Override
+    public void invoke(GrpBusiDeptTemplateVo data, AnalysisContext context) {
+        cachedDataList.add(data);
+    }
+
+    @Override
+    public void doAfterAllAnalysed(AnalysisContext context) {
+        // Excel解析完成后不需要特殊处理
+    }
+    
+    public ExcelResult<GrpBusiDeptTemplateResultVo> getExcelResult() {
+        return new ExcelResult<GrpBusiDeptTemplateResultVo>() {
+            @Override
+            public String getAnalysis() {
+                return "解析完成";
+            }
+
+            @Override
+            public List<GrpBusiDeptTemplateResultVo> getList() {
+                return processImportData(cachedDataList);
+            }
+
+            @Override
+            public List<String> getErrorList() {
+                return new ArrayList<>();
+            }
+        };
+    }
 
     /**
      * 处理导入数据列表

@@ -11,11 +11,13 @@ import cn.hutool.extra.ssh.JschRuntimeException;
 import cn.hutool.extra.ssh.Sftp;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserExportVo;
 import com.crm.system.domain.vo.SysUserImportVo;
 import com.crm.system.listener.SysUserExImportListener;
 import com.crm.system.listener.SysUserImportListener;
+import com.crm.system.listener.client.GrpBusiDeptImportListener;
 import com.crm.system.mapper.SysOssMapper;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
 import com.crm.system.service.ISysOssService;
@@ -49,6 +51,9 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
     @Resource
     private SysOssMapper sysOssMapper;
 
+    @Resource
+    private GrpBusiDeptImportListener grpBusiDeptImportListener;
+
     @Override
     public String getBusinessType() {
         return "grp_busi_dept_import_abcdefg";
@@ -69,19 +74,19 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
         //获取文件流
         InputStream fileContent = iSysOssService.getFileContent(sysOss.getOssId());
         //excel文件操作
-        ExcelResult<SysUserImportVo> sysUserImportVoExcelResult = ExcelUtil.importExcel(fileContent, SysUserImportVo.class, new SysUserExImportListener(false));
+        ExcelResult<com.crm.system.domain.vo.GrpBusiDeptTemplateVo> excelResult = ExcelUtil.importExcel(
+                fileContent,
+                com.crm.system.domain.vo.GrpBusiDeptTemplateVo.class,
+                (com.crm.common.excel.ExcelListener<com.crm.system.domain.vo.GrpBusiDeptTemplateVo>) grpBusiDeptImportListener);
 
         //导入成功后生成导入明细excel文件
-        List<SysUserImportVo> list = sysUserImportVoExcelResult.getList();
-
-        //这里建议将list转成SysUserExportVo的List,导出的时候用导出的list
-
+        List<GrpBusiDeptTemplateResultVo> resultList = grpBusiDeptImportListener.processImportData(excelResult.getList());
 
         // 创建临时文件
         File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "执行结果", ".xlsx");
 
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-            ExcelUtil.exportExcel(list, "执行结果", SysUserImportVo.class, fos);
+            ExcelUtil.exportExcel(resultList, "执行结果", com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo.class, fos);
         }
         SysOssVo upload = iSysOssService.upload(tempFile);
 
@@ -89,9 +94,10 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
         tempFile.deleteOnExit();
 
         task.setResultFileUrl(upload.getUrl());
-        task.setTotalRows(Long.valueOf(list.size()));
-        task.setSuccessRows(list.stream().filter(item -> "成功".equals(item.getExecutionResult())).count());
-        task.setFailRows(list.stream().filter(item -> "失败".equals(item.getExecutionResult())).count());
+        task.setResultFileName(upload.getFileName());
+        task.setTotalRows(Long.valueOf(resultList.size()));
+        task.setSuccessRows(resultList.stream().filter(item -> "成功".equals(item.getProcessResult())).count());
+        task.setFailRows(resultList.stream().filter(item -> "失败".equals(item.getProcessResult())).count());
         //更新zqzt_file_async_task的结果文件名，结果文件url，总条数，成功失败条数
         return true;
     }
