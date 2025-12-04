@@ -6,7 +6,7 @@ import com.crm.job.service.file.strategy.AbstractImportStrategy;
 import com.crm.system.domain.SysOss;
 import com.crm.system.domain.file.FileAsyncTaskDO;
 import com.crm.system.domain.vo.GrpExpandTypeTemplateResultVo;
-import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
+import com.crm.system.domain.vo.GrpExpandTypeImportVo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.listener.client.ExtendTypeImportListener;
 import com.crm.system.mapper.SysOssMapper;
@@ -88,9 +88,9 @@ public class ExtendTypeImport extends AbstractImportStrategy {
         //获取文件流
         InputStream fileContent = iSysOssService.getFileContent(sysOss.getOssId());
 
-        // 读取Excel文件
-        List<GrpExpandTypeTemplateVo> dataList = EasyExcel.read(fileContent)
-                .head(GrpExpandTypeTemplateVo.class)
+        // 读取Excel文件，使用新的VO类避免转换器问题
+        List<GrpExpandTypeImportVo> dataList = EasyExcel.read(fileContent)
+                .head(GrpExpandTypeImportVo.class)
                 .sheet()
                 .doReadSync();
 

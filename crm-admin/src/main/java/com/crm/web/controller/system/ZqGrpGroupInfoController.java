@@ -7,6 +7,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
 import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
@@ -22,8 +25,10 @@ import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
+import com.crm.system.utils.ExcelDropdownHandler;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.utils.file.FileUtils;
 
 import java.text.SimpleDateFormat;
 
@@ -276,6 +281,21 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @GetMapping("/downloadExpandTypeTemplate")
     public void downloadExpandTypeTemplate(HttpServletResponse response) {
-        ExcelUtil.exportExcel(new ArrayList<>(), "集团客户拓展类型维护模板", GrpExpandTypeTemplateVo.class, response);
+        try {
+            // 设置响应头
+            FileUtils.setAttachmentResponseHeader(response, "集团客户拓展类型维护模板.xlsx");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+            
+            // 创建Excel写入器并注册下拉框处理器
+            ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpExpandTypeTemplateVo.class)
+                    .registerWriteHandler(new ExcelDropdownHandler(1, "sys_expand_type")) // 第二列(索引1)是集团客户拓展类型
+                    .build();
+            
+            WriteSheet writeSheet = EasyExcel.writerSheet("集团客户拓展类型维护模板").build();
+            excelWriter.write(new ArrayList<>(), writeSheet);
+            excelWriter.finish();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
