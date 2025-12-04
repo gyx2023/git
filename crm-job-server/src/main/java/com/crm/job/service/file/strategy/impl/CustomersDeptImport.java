@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.service.file.strategy.AbstractImportStrategy;
 import com.crm.system.domain.SysOss;
 import com.crm.system.domain.file.FileAsyncTaskDO;
-import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo;
+import com.crm.system.domain.vo.GrpBusiDeptImportVo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.listener.client.GrpBusiDeptImportListener;
 import com.crm.system.mapper.SysOssMapper;
@@ -77,9 +77,9 @@ public class CustomersDeptImport extends AbstractImportStrategy {
         //获取文件流
         InputStream fileContent = iSysOssService.getFileContent(sysOss.getOssId());
 
-        // 读取Excel文件
-        List<GrpBusiDeptTemplateVo> dataList = EasyExcel.read(fileContent)
-                .head(GrpBusiDeptTemplateVo.class)
+        // 读取Excel文件，使用新的VO类避免转换器问题
+        List<GrpBusiDeptImportVo> dataList = EasyExcel.read(fileContent)
+                .head(GrpBusiDeptImportVo.class)
                 .sheet()
                 .doReadSync();
 

@@ -273,7 +273,22 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @GetMapping("/downloadBusiDeptTemplate")
     public void downloadBusiDeptTemplate(HttpServletResponse response) {
-        ExcelUtil.exportExcel(new ArrayList<>(), "客户归属部门维护模板", GrpBusiDeptTemplateVo.class, response);
+        try {
+            // 设置响应头
+            FileUtils.setAttachmentResponseHeader(response, "客户归属部门维护模板.xlsx");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+            
+            // 创建Excel写入器并注册下拉框处理器
+            ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpBusiDeptTemplateVo.class)
+                    .registerWriteHandler(new ExcelDropdownHandler(1, "sys_busi_dept_type")) // 第二列(索引1)是客户归属部门
+                    .build();
+            
+            WriteSheet writeSheet = EasyExcel.writerSheet("客户归属部门维护模板").build();
+            excelWriter.write(new ArrayList<>(), writeSheet);
+            excelWriter.finish();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
