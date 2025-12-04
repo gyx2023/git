@@ -21,10 +21,13 @@ import java.util.List;
 public interface ZqGrpGroupInfoMapper extends BaseMapperPlus<ZqGrpGroupInfoMapper, ZqGrpGroupInfo, ZqGrpGroupInfoVo> {
 
     /**
-     * 根据hqGrpCode查询政企集团客户信息
+     * 根据总部集团编码查询政企集团客户信息
      *
      * @param hqGrpCode 总部集团编码
      * @return 政企集团客户信息
      */
-    ZqGrpGroupInfo selectByHqGrpCode(String hqGrpCode);
+    default ZqGrpGroupInfo selectByHqGrpCode(String hqGrpCode) {
+        return selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ZqGrpGroupInfo>()
+            .eq(ZqGrpGroupInfo::getHqGrpCode, hqGrpCode));
+    }
 }
