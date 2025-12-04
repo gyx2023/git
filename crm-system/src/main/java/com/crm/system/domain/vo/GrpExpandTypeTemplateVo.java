@@ -1,6 +1,8 @@
 package com.crm.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.crm.common.annotation.ExcelDictFormat;
+import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
 
 /**
@@ -21,7 +23,8 @@ public class GrpExpandTypeTemplateVo {
     /**
      * 集团客户拓展类型
      */
-    @ExcelProperty(value = "集团客户拓展类型")
+    @ExcelProperty(value = "集团客户拓展类型", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_expand_type")
     private String expandTypeName;
 
 }
