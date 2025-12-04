@@ -1,12 +1,9 @@
 package com.crm.web.controller.system;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.crm.common.annotation.Log;
-import com.crm.common.constant.UserConstants;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
-import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.entity.SysDictType;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;

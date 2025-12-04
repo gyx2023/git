@@ -1,36 +1,36 @@
 package com.crm.web.controller.system;
 
-import java.util.*;
-
-import lombok.RequiredArgsConstructor;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.*;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
-import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.annotation.Log;
+import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
+import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
+import com.crm.common.utils.file.FileUtils;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
-import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.utils.ExcelDropdownHandler;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.core.domain.entity.SysDictData;
-import com.crm.common.utils.file.FileUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 政企集团客户信息
@@ -106,43 +106,6 @@ public class ZqGrpGroupInfoController extends BaseController {
         // 查询数据并返回
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
-
-//    /**
-//     * 查询政企集团客户信息列表
-//     */
-//    @GetMapping("/list")
-//    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
-//            @RequestParam(value = "beginTime", required = false) String beginTime,
-//            @RequestParam(value = "endTime", required = false) String endTime,
-//            @RequestParam(value = "timeType", required = false) String timeType) {
-//
-//        // 处理前端传递的时间范围参数
-//        if (beginTime != null && endTime != null && timeType != null) {
-//            try {
-//                // 解析时间字符串为Date对象
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//                Date beginDate = sdf.parse(beginTime);
-//                Date endDate = sdf.parse(endTime);
-//
-//                // 根据timeType设置对应的时间范围字段
-//                if ("assign".equals(timeType)) {
-//                    bo.setAssignTimeStart(beginDate);
-//                    bo.setAssignTimeEnd(endDate);
-//                } else if ("create".equals(timeType)) {
-//                    bo.setCreateTimeStart(beginDate);
-//                    bo.setCreateTimeEnd(endDate);
-//                }
-//
-//                System.out.println("时间参数处理成功: timeType=" + timeType + ", beginTime=" + beginTime + ", endTime=" + endTime);
-//            } catch (Exception e) {
-//                System.out.println("时间参数解析失败: " + e.getMessage());
-//            }
-//        }
-//
-//        // 查询数据并返回
-//
-//        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
-//    }
 
     /**
      * 导出政企集团客户信息列表
@@ -277,12 +240,12 @@ public class ZqGrpGroupInfoController extends BaseController {
             // 设置响应头
             FileUtils.setAttachmentResponseHeader(response, "客户归属部门维护模板.xlsx");
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
-            
+
             // 创建Excel写入器并注册下拉框处理器
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpBusiDeptTemplateVo.class)
                     .registerWriteHandler(new ExcelDropdownHandler(1, "sys_busi_dept_type")) // 第二列(索引1)是客户归属部门
                     .build();
-            
+
             WriteSheet writeSheet = EasyExcel.writerSheet("客户归属部门维护模板").build();
             excelWriter.write(new ArrayList<>(), writeSheet);
             excelWriter.finish();
@@ -300,12 +263,12 @@ public class ZqGrpGroupInfoController extends BaseController {
             // 设置响应头
             FileUtils.setAttachmentResponseHeader(response, "集团客户拓展类型维护模板.xlsx");
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
-            
+
             // 创建Excel写入器并注册下拉框处理器
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpExpandTypeTemplateVo.class)
                     .registerWriteHandler(new ExcelDropdownHandler(1, "sys_expand_type")) // 第二列(索引1)是集团客户拓展类型
                     .build();
-            
+
             WriteSheet writeSheet = EasyExcel.writerSheet("集团客户拓展类型维护模板").build();
             excelWriter.write(new ArrayList<>(), writeSheet);
             excelWriter.finish();

@@ -1,33 +1,30 @@
 package com.crm.web.controller.system;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import lombok.RequiredArgsConstructor;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import liquibase.pro.packaged.I;
-
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
-import com.crm.system.domain.vo.SysAreaVo;
-import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.annotation.Log;
+import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
+import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
-import com.crm.common.core.validate.QueryGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.SysArea;
-import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;
+import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
-import com.crm.common.core.page.TableDataInfo;
+import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 客户经理信息控制器
