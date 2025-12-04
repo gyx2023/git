@@ -27,14 +27,8 @@ public interface ZqGrpGroupInfoMapper extends BaseMapperPlus<ZqGrpGroupInfoMappe
      * @param hqGrpCode 总部集团编码
      * @return 政企集团客户信息
      */
-    /**
-     * 根据总部集团编码查询政企集团客户信息
-     *
-     * @param hqGrpCode 总部集团编码
-     * @return 政企集团客户信息
-     */
     default ZqGrpGroupInfo selectByHqGrpCode(String hqGrpCode) {
-        return selectOne(new LambdaQueryWrapper<ZqGrpGroupInfo>()
+        return selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ZqGrpGroupInfo>()
             .eq(ZqGrpGroupInfo::getHqGrpCode, hqGrpCode));
     }
 }
