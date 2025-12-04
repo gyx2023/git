@@ -530,6 +530,34 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         }
 
+        // 处理grpCreateTime时间范围查询（用于导出）
+        if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin()) && StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
+                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+            } catch (Exception e) {
+                log.warn("导出时解析时间参数失败: {}", e.getMessage());
+            }
+        } else if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
+                lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, beginDate);
+            } catch (Exception e) {
+                log.warn("导出时解析开始时间参数失败: {}", e.getMessage());
+            }
+        } else if (StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
+                lqw.le(ZqGrpGroupInfo::getGrpCreateTime, endDate);
+            } catch (Exception e) {
+                log.warn("导出时解析结束时间参数失败: {}", e.getMessage());
+            }
+        }
+
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
         // 如果不是省本级(330000)，则需要进行数据权限过滤
         if (!"330000".equals(areaCode)) {
