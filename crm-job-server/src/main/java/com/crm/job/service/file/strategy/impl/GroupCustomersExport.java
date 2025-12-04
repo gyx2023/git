@@ -54,9 +54,6 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 log.warn("解析areaCode失败，使用默认值: {}", e.getMessage());
             }
 
-            // 调用新的exportList方法，传入areaCode进行数据权限控制
-            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode);
-
             // 检查是否需要脱敏 - 从任务参数中获取isAdmin标识
             boolean needDesensitize = true;
             try {
@@ -70,7 +67,10 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 log.warn("解析isAdmin失败，默认进行脱敏处理: {}", e.getMessage());
             }
 
-            // 如果需要脱敏，则对数据进行脱敏处理
+            // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
+            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode, needDesensitize);
+
+            // 如果需要脱敏，则对数据进行脱敏处理（作为双重保障）
             if (needDesensitize) {
                 dataList = dataList.stream()
                         .map(this::desensitizeData)
