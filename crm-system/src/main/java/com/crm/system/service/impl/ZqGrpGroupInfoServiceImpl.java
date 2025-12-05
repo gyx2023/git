@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
@@ -15,15 +16,18 @@ import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.SysArea;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
+import com.crm.system.domain.param.SysParamDO;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
+import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +50,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final ISysAreaService sysAreaService;
     private final IDwdRepSysPersonDService iDwdRepSysPersonDService;
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
+    @Resource
+    private SysParamMapper sysParamMapper;
+
+    private static final String SENSITIVE_ROLE = "SENSITIVE_ROLE";
 
     /**
      * 查询政企集团客户信息
@@ -71,11 +79,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         // 获取当前用户角色，0为超级管理员
-        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
-        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
-
+        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        List<RoleDTO> roles = loginUser.getRoles();
+        boolean isSensitive = sensitiveRoles.stream()
+                .anyMatch(roleStr -> roles.stream()
+                        .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
         // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (isSensitive) {
+        if (!isSensitive) {
             List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
                     .map(this::desensitizeVo)
                     .collect(Collectors.toList());
@@ -98,7 +110,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date beginDate = sdf.parse(grpCreateTimeBegin);
                 Date endDate = sdf.parse(grpCreateTimeEnd);
-                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+                lqw.between(ZqGrpGroupInfo::getCreateTime, beginDate, endDate);
             } catch (Exception e) {
                 log.warn("时间参数解析失败: {}", e.getMessage());
             }
@@ -146,7 +158,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
         return exportList(bo, areaCode, true); // 默认需要脱敏
     }
-    
+
     /**
      * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
      *
@@ -271,7 +283,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("县分翻译失败: {}", e.getMessage());
                 }
             }
-            
+
             // 行业大类翻译，将编码转换为中文名称
             if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
                 try {
@@ -283,7 +295,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("行业大类翻译失败: {}", e.getMessage());
                 }
             }
-            
+
             // 行业亚类翻译，将编码转换为中文名称
             if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
                 try {
@@ -295,7 +307,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("行业亚类翻译失败: {}", e.getMessage());
                 }
             }
-            
+
             // 行业细类翻译，将编码转换为中文名称
             if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
                 try {
@@ -395,13 +407,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 添加时间范围查询条件
         // 处理分配时间范围查询
         if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
+            lqw.between(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
         } else if (bo.getAssignTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart());
+            lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart());
         } else if (bo.getAssignTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeEnd());
+            lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeEnd());
         }
-        
+
         // 处理创建时间范围查询
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());

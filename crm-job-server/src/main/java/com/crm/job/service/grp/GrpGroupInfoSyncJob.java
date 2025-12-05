@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -48,7 +49,9 @@ public class GrpGroupInfoSyncJob {
 
         // 任务参数
         String param = XxlJobHelper.getJobParam();
-        Date targetDate = new Date(); // 默认使用当前日期
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -1);
+        Date targetDate = calendar.getTime();
         String sftpConfigType = "grp_group_info_syn"; // 默认配置类型
 
         // 处理任务参数
