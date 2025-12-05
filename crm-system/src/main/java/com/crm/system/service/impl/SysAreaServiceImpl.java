@@ -216,7 +216,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
         try {
             // 查询所有ID前缀匹配且类型为"三级"的地区
             LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
-            lqw.apply("SUBSTR(id_, 1, {0}) = {1}", cityCodePrefix.length(), cityCodePrefix)
+            lqw.likeRight(SysArea::getId, cityCodePrefix)
                .eq(SysArea::getType, "三级");
             
             List<SysAreaVo> counties = baseMapper.selectVoList(lqw);
