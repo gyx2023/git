@@ -55,7 +55,8 @@ public class CustomerManagerImportListener {
                 }
 
                 // 判断客户拓展类型是否为空
-                if (groupInfo.getGrpExpandType() ==  null) {
+                String expandType = groupInfo.getGrpExpandType();
+                if (expandType == null || expandType.isEmpty()) {
                     log.warn("该集团信息的拓展类型为空: {}", data.getHqGrpCode());
                     resultVo.setProcessResult("失败");
                     resultVo.setErrorMessage("拓展类型为空");
@@ -94,6 +95,7 @@ public class CustomerManagerImportListener {
         return resultList;
     }
 
+
     /**
      * 处理单条记录
      *
@@ -104,31 +106,41 @@ public class CustomerManagerImportListener {
      */
     public boolean processSingleRecord(CustomerManagerTemplateVo data, CustomerManagerImportResultVo resultVo, ZqGrpGroupInfo groupInfo) {
         try {
-            // 1. 获取客户经理可选列表并验证Excel中填写的客户经理是否在可选列表中
-            // 验证省级客户经理
+            // 获取集团拓展类型
+            String expandType = groupInfo.getGrpExpandType();
+
+            // 验证省级客户经理 (只有01类型可以修改省级客户经理)
             if (isManagerInfoProvided(data.getProvManagerName(), data.getProvManagerOauser())) {
+                if (!"01".equals(expandType)) {
+                    resultVo.setErrorMessage("当前集团拓展类型(" + expandType + ")不允许修改省级客户经理信息");
+                    return false;
+                }
                 List<Map<String, Object>> provManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                        groupInfo.getCountyId(), "01");
+                    groupInfo.getCountyId(), "01");
                 if (!isManagerInList(data.getProvManagerName(), data.getProvManagerOauser(), provManagers)) {
                     resultVo.setErrorMessage("省级客户经理信息不匹配或不在可选列表中");
                     return false;
                 }
             }
 
-            // 验证市级客户经理
+            // 验证市级客户经理 (01和02类型可以修改市级客户经理)
             if (isManagerInfoProvided(data.getCityManagerName(), data.getCityManagerOauser())) {
+                if (!"01".equals(expandType) && !"02".equals(expandType)) {
+                    resultVo.setErrorMessage("当前集团拓展类型(" + expandType + ")不允许修改市级客户经理信息");
+                    return false;
+                }
                 List<Map<String, Object>> cityManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                        groupInfo.getCountyId(), "02");
-                if (!isManagerInList(data.getCityManagerName(), data.getCityManagerOauser(), cityManagers)) {
+                    groupInfo.getCountyId(), "02");
+                if (!isManagerInList(data.getCityManagerName(), data.getCityManagerOauser(),cityManagers)) {
                     resultVo.setErrorMessage("市级客户经理信息不匹配或不在可选列表中");
                     return false;
                 }
             }
 
-            // 验证区县级客户经理
+            // 验证区县级客户经理 (01、02和03类型都可以修改区县级客户经理)
             if (isManagerInfoProvided(data.getCountyManagerName(), data.getCountyManagerOauser())) {
                 List<Map<String, Object>> countyManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                        groupInfo.getCountyId(), "03");
+                    groupInfo.getCountyId(), "03");
                 if (!isManagerInList(data.getCountyManagerName(), data.getCountyManagerOauser(), countyManagers)) {
                     resultVo.setErrorMessage("区县级客户经理信息不匹配或不在可选列表中");
                     return false;
@@ -141,18 +153,23 @@ public class CustomerManagerImportListener {
 
             // 设置省级客户经理
             if (isManagerInfoProvided(data.getProvManagerName(), data.getProvManagerOauser())) {
-                updateBo.setProvManagerName(data.getProvManagerName());
-                updateBo.setProvManagerOauser(data.getProvManagerOauser());
+                if ("01".equals(expandType)) { // 只有01类型可以修改省级客户经理
+                    updateBo.setProvManagerName(data.getProvManagerName());
+                    updateBo.setProvManagerOauser(data.getProvManagerOauser());
+                }
             }
 
             // 设置市级客户经理
             if (isManagerInfoProvided(data.getCityManagerName(), data.getCityManagerOauser())) {
-                updateBo.setCityManagerName(data.getCityManagerName());
-                updateBo.setCityManagerOauser(data.getCityManagerOauser());
+                if ("01".equals(expandType) || "02".equals(expandType)) { // 01和02类型可以修改市级客户经理
+                    updateBo.setCityManagerName(data.getCityManagerName());
+                    updateBo.setCityManagerOauser(data.getCityManagerOauser());
+                }
             }
 
             // 设置区县级客户经理
             if (isManagerInfoProvided(data.getCountyManagerName(), data.getCountyManagerOauser())) {
+                // 01、02和03类型都可以修改区县级客户经理
                 updateBo.setCountyManagerName(data.getCountyManagerName());
                 updateBo.setCountyManagerOauser(data.getCountyManagerOauser());
             }
@@ -166,6 +183,7 @@ public class CustomerManagerImportListener {
             return false;
         }
     }
+
 
     /**
      * 判断客户经理信息是否已提供（姓名和OA账号都非空且非空白）
