@@ -70,7 +70,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             .anyMatch(roleStr -> roles.stream()
                 .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
 
-        if (isSensitive) {
+        if (!isSensitive) {
             return desensitizeVo(vo);
         }
         return vo;
@@ -133,7 +133,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
 
         // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (isSensitive) {
+        if (!isSensitive) {
             List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
                     .map(this::desensitizeVo)
                     .collect(Collectors.toList());
@@ -429,34 +429,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
         } else if (bo.getCreateTimeEnd() != null) {
             lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
-        }
-
-        // 处理grpCreateTime时间范围查询（用于导出）
-        if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin()) && StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
-                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
-                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
-            } catch (Exception e) {
-                log.warn("导出时解析时间参数失败: {}", e.getMessage());
-            }
-        } else if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin())) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
-                lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, beginDate);
-            } catch (Exception e) {
-                log.warn("导出时解析开始时间参数失败: {}", e.getMessage());
-            }
-        } else if (StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
-                lqw.le(ZqGrpGroupInfo::getGrpCreateTime, endDate);
-            } catch (Exception e) {
-                log.warn("导出时解析结束时间参数失败: {}", e.getMessage());
-            }
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
