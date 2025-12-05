@@ -79,7 +79,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         // 获取当前用户角色，0为超级管理员
-        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, SENSITIVE_ROLE));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
         LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
