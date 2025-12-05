@@ -107,49 +107,21 @@ public class ZqGrpGroupInfoController extends BaseController {
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
 
-//    /**
-//     * 查询政企集团客户信息列表
-//     */
-//    @GetMapping("/list")
-//    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
-//            @RequestParam(value = "beginTime", required = false) String beginTime,
-//            @RequestParam(value = "endTime", required = false) String endTime,
-//            @RequestParam(value = "timeType", required = false) String timeType) {
-//
-//        // 处理前端传递的时间范围参数
-//        if (beginTime != null && endTime != null && timeType != null) {
-//            try {
-//                // 解析时间字符串为Date对象
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//                Date beginDate = sdf.parse(beginTime);
-//                Date endDate = sdf.parse(endTime);
-//
-//                // 根据timeType设置对应的时间范围字段
-//                if ("assign".equals(timeType)) {
-//                    bo.setAssignTimeStart(beginDate);
-//                    bo.setAssignTimeEnd(endDate);
-//                } else if ("create".equals(timeType)) {
-//                    bo.setCreateTimeStart(beginDate);
-//                    bo.setCreateTimeEnd(endDate);
-//                }
-//
-//                System.out.println("时间参数处理成功: timeType=" + timeType + ", beginTime=" + beginTime + ", endTime=" + endTime);
-//            } catch (Exception e) {
-//                System.out.println("时间参数解析失败: " + e.getMessage());
-//            }
-//        }
-//
-//        // 查询数据并返回
-//
-//        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
-//    }
 
     /**
      * 导出政企集团客户信息列表
      */
     @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response) {
+    public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response,
+                       @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
+                       @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
+        // 处理时间范围参数
+        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+            bo.setGrpCreateTimeBegin(grpCreateTimeBegin);
+            bo.setGrpCreateTimeEnd(grpCreateTimeEnd);
+        }
+
         List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
         ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
     }
@@ -273,7 +245,22 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @GetMapping("/downloadBusiDeptTemplate")
     public void downloadBusiDeptTemplate(HttpServletResponse response) {
-        ExcelUtil.exportExcel(new ArrayList<>(), "客户归属部门维护模板", GrpBusiDeptTemplateVo.class, response);
+        try {
+            // 设置响应头
+            FileUtils.setAttachmentResponseHeader(response, "客户归属部门维护模板.xlsx");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+
+            // 创建Excel写入器并注册下拉框处理器
+            ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpBusiDeptTemplateVo.class)
+                    .registerWriteHandler(new ExcelDropdownHandler(1, "sys_busi_dept_type")) // 第二列(索引1)是客户归属部门
+                    .build();
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("客户归属部门维护模板").build();
+            excelWriter.write(new ArrayList<>(), writeSheet);
+            excelWriter.finish();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -285,12 +272,12 @@ public class ZqGrpGroupInfoController extends BaseController {
             // 设置响应头
             FileUtils.setAttachmentResponseHeader(response, "集团客户拓展类型维护模板.xlsx");
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
-            
+
             // 创建Excel写入器并注册下拉框处理器
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpExpandTypeTemplateVo.class)
                     .registerWriteHandler(new ExcelDropdownHandler(1, "sys_expand_type")) // 第二列(索引1)是集团客户拓展类型
                     .build();
-            
+
             WriteSheet writeSheet = EasyExcel.writerSheet("集团客户拓展类型维护模板").build();
             excelWriter.write(new ArrayList<>(), writeSheet);
             excelWriter.finish();

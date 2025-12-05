@@ -3,9 +3,9 @@ package com.crm.system.listener.client;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
-import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
+import com.crm.system.domain.vo.GrpBusiDeptImportVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo;
-import com.crm.system.service.ISysDictDataService;
+import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
 import com.crm.system.service.ISysDictTypeService;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -15,14 +15,16 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * 客户归属部门导入监听器
  * 处理客户归属部门数据导入的具体业务逻辑
  *
- * @author lingma
+ * @author wcf
  * @date 2025-12-01
  */
 @Component
@@ -33,7 +35,7 @@ public class GrpBusiDeptImportListener {
     private IZqGrpGroupInfoService zqGrpGroupInfoService;
 
     @Autowired
-    private ISysDictDataService sysDictTypeService;
+    private ISysDictTypeService sysDictTypeService;
 
     /**
      * 处理导入数据列表
@@ -41,14 +43,15 @@ public class GrpBusiDeptImportListener {
      * @param dataList 数据列表
      * @return 结果列表
      */
-    public List<GrpBusiDeptTemplateResultVo> processImportData(List<GrpBusiDeptTemplateVo> dataList) {
+    public List<GrpBusiDeptTemplateResultVo> processImportData(List<GrpBusiDeptImportVo> dataList) {
         List<GrpBusiDeptTemplateResultVo> resultList = new ArrayList<>();
 
-        // 获取有效的客户归属部门列表
+        // 获取有效的客户归属部门列表和标签到值的映射
         List<String> validDeptNames = getValidBusiDeptNames();
+        Map<String, String> labelToValueMap = getLabelToValueMap();
 
         // 逐条处理数据
-        for (GrpBusiDeptTemplateVo data : dataList) {
+        for (GrpBusiDeptImportVo data : dataList) {
             GrpBusiDeptTemplateResultVo resultVo = convertToResultVo(data);
             try {
                 // 验证总部集团编码是否为空
@@ -87,7 +90,9 @@ public class GrpBusiDeptImportListener {
                 // 构造更新参数并调用更新接口
                 ZqGrpGroupInfoBo updateBo = new ZqGrpGroupInfoBo();
                 updateBo.setGrpId(groupInfo.getGrpId());
-                updateBo.setGrpBusiDeptType(data.getBusiDeptName());
+                // 使用标签对应的值进行更新（仿照集团客户拓展类型处理方式）
+                String busiDeptValue = labelToValueMap.get(data.getBusiDeptName());
+                updateBo.setGrpBusiDeptType(busiDeptValue);
                 boolean success = zqGrpGroupInfoService.updateByBo(updateBo);
 
                 if (success) {
@@ -108,6 +113,24 @@ public class GrpBusiDeptImportListener {
     }
 
     /**
+     * 处理导入数据列表 - 重载方法，处理原始的TemplateVo类型
+     *
+     * @param dataList 数据列表
+     * @return 结果列表
+     */
+    public List<GrpBusiDeptTemplateResultVo> processImportDataTemplate(List<GrpBusiDeptTemplateVo> dataList) {
+        // 将TemplateVo转换为ImportVo
+        List<GrpBusiDeptImportVo> importDataList = new ArrayList<>();
+        for (GrpBusiDeptTemplateVo templateVo : dataList) {
+            GrpBusiDeptImportVo importVo = new GrpBusiDeptImportVo();
+            importVo.setHqGrpCode(templateVo.getHqGrpCode());
+            importVo.setBusiDeptName(templateVo.getBusiDeptName());
+            importDataList.add(importVo);
+        }
+        return processImportData(importDataList);
+    }
+
+    /**
      * 获取有效的客户归属部门名称列表
      *
      * @return 客户归属部门名称列表
@@ -119,11 +142,28 @@ public class GrpBusiDeptImportListener {
             return new ArrayList<>();
         }
 
-        // 提取字典标签作为有效的客户归属部门名称
+        // 提取字典标签作为有效的客户归属部门名称（Excel中存储的是标签）
         return dictDataList.stream()
-                .map(SysDictData::getDictValue)
+                .map(SysDictData::getDictLabel)
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取标签到值的映射（仿照集团客户拓展类型处理方式）
+     *
+     * @return 标签到值的映射
+     */
+    private Map<String, String> getLabelToValueMap() {
+        // 调用接口获取集团客户业务部门分类数据
+        List<SysDictData> dictDataList = sysDictTypeService.selectDictDataByType("sys_busi_dept_type");
+        if (CollectionUtils.isEmpty(dictDataList)) {
+            return Collections.emptyMap();
+        }
+
+        // 构建标签到值的映射
+        return dictDataList.stream()
+                .collect(Collectors.toMap(SysDictData::getDictLabel, SysDictData::getDictValue));
     }
 
     /**
@@ -132,7 +172,7 @@ public class GrpBusiDeptImportListener {
      * @param data 模板数据
      * @return 结果VO
      */
-    private GrpBusiDeptTemplateResultVo convertToResultVo(GrpBusiDeptTemplateVo data) {
+    private GrpBusiDeptTemplateResultVo convertToResultVo(GrpBusiDeptImportVo data) {
         GrpBusiDeptTemplateResultVo resultVo = new GrpBusiDeptTemplateResultVo();
         resultVo.setHqGrpCode(data.getHqGrpCode());
         resultVo.setBusiDeptName(data.getBusiDeptName());
