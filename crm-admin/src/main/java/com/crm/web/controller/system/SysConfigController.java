@@ -2,7 +2,6 @@ package com.crm.web.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.crm.common.annotation.Log;
-import com.crm.common.constant.UserConstants;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;

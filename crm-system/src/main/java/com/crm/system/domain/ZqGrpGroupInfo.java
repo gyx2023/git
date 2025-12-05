@@ -1,12 +1,13 @@
 package com.crm.system.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.Date;
-
-import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 政企集团客户信息对象 zq_grp_group_info

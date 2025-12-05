@@ -1,9 +1,6 @@
 package com.crm.job.service.file.strategy.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.write.builder.*;
-import com.alibaba.excel.write.metadata.WriteSheet;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.generator.util.Desensitization;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
@@ -11,7 +8,6 @@ import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.file.FileAsyncTaskDO;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
-import com.crm.system.handler.GrpBusiDeptDropdownHandler;
 import com.crm.system.service.ISysOssService;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -55,9 +51,6 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 log.warn("解析areaCode失败，使用默认值: {}", e.getMessage());
             }
 
-            // 调用新的exportList方法，传入areaCode进行数据权限控制
-            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode);
-
             // 检查是否需要脱敏 - 从任务参数中获取isAdmin标识
             boolean needDesensitize = true;
             try {
@@ -71,7 +64,10 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 log.warn("解析isAdmin失败，默认进行脱敏处理: {}", e.getMessage());
             }
 
-            // 如果需要脱敏，则对数据进行脱敏处理
+            // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
+            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode, needDesensitize);
+
+            // 如果需要脱敏，则对数据进行脱敏处理（作为双重保障）
             if (needDesensitize) {
                 dataList = dataList.stream()
                         .map(this::desensitizeData)
@@ -88,18 +84,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             File tempFile = File.createTempFile("集团客户信息导出_" + System.currentTimeMillis(), ".xlsx");
 
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                // 使用带有下拉框处理器的Excel导出
-                ExcelWriterBuilder writerBuilder = new ExcelWriterBuilder()
-                        .file(fos)
-                        .head(ZqGrpGroupInfoVo.class)
-                        .registerWriteHandler(new GrpBusiDeptDropdownHandler());
-
-                ExcelWriter excelWriter = writerBuilder.build();
-                WriteSheet writeSheet = new ExcelWriterSheetBuilder()
-                        .sheetName("集团客户信息")
-                        .build();
-                excelWriter.write(dataList, writeSheet);
-                excelWriter.finish();
+                ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
             }
 
             // 验证文件是否创建成功

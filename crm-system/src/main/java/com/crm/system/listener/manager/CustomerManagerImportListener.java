@@ -44,7 +44,17 @@ public class CustomerManagerImportListener {
         for (CustomerManagerTemplateVo data : dataList) {
             CustomerManagerImportResultVo resultVo = convertToResultVo(data);
             try {
-                // 检查是否所有客户经理信息都为空
+                // 1. 先根据总部集团编码查询集团信息
+                ZqGrpGroupInfo groupInfo = zqGrpGroupInfoService.selectByHqGrpCode(data.getHqGrpCode());
+                if (groupInfo == null) {
+                    log.warn("未找到总部集团编码对应的集团信息: {}", data.getHqGrpCode());
+                    resultVo.setProcessResult("失败");
+                    resultVo.setErrorMessage("未找到对应的集团信息");
+                    resultList.add(resultVo);
+                    continue;
+                }
+
+                // 2. 检查是否所有客户经理信息都为空
                 if (!isManagerInfoProvided(data.getProvManagerName(), data.getProvManagerOauser()) &&
                     !isManagerInfoProvided(data.getCityManagerName(), data.getCityManagerOauser()) &&
                     !isManagerInfoProvided(data.getCountyManagerName(), data.getCountyManagerOauser())) {
@@ -54,8 +64,8 @@ public class CustomerManagerImportListener {
                     continue;
                 }
 
-                // 处理单条记录
-                boolean success = processSingleRecord(data, resultVo);
+                // 3. 处理单条记录
+                boolean success = processSingleRecord(data, resultVo, groupInfo);
                 if (success) {
                     resultVo.setProcessResult("成功");
                 } else {
@@ -80,19 +90,12 @@ public class CustomerManagerImportListener {
      *
      * @param data 客户经理数据
      * @param resultVo 结果VO，用于记录错误信息
+     * @param groupInfo 集团信息
      * @return 是否处理成功
      */
-    public boolean processSingleRecord(CustomerManagerTemplateVo data, CustomerManagerImportResultVo resultVo) {
+    public boolean processSingleRecord(CustomerManagerTemplateVo data, CustomerManagerImportResultVo resultVo, ZqGrpGroupInfo groupInfo) {
         try {
-            // 1. 根据总部集团编码查询集团信息
-            ZqGrpGroupInfo groupInfo = zqGrpGroupInfoService.selectByHqGrpCode(data.getHqGrpCode());
-            if (groupInfo == null) {
-                log.warn("未找到总部集团编码对应的集团信息: {}", data.getHqGrpCode());
-                resultVo.setErrorMessage("未找到对应的集团信息");
-                return false;
-            }
-
-            // 2. 获取客户经理可选列表并验证Excel中填写的客户经理是否在可选列表中
+            // 1. 获取客户经理可选列表并验证Excel中填写的客户经理是否在可选列表中
             // 验证省级客户经理
             if (isManagerInfoProvided(data.getProvManagerName(), data.getProvManagerOauser())) {
                 List<Map<String, Object>> provManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
@@ -123,7 +126,7 @@ public class CustomerManagerImportListener {
                 }
             }
 
-            // 3. 构造更新参数
+            // 2. 构造更新参数
             ZqGrpGroupInfoBo updateBo = new ZqGrpGroupInfoBo();
             updateBo.setGrpId(groupInfo.getGrpId());
 
@@ -145,7 +148,7 @@ public class CustomerManagerImportListener {
                 updateBo.setCountyManagerOauser(data.getCountyManagerOauser());
             }
 
-            // 4. 调用更新接口
+            // 3. 调用更新接口
             // 直接调用服务方法更新客户经理信息
             return zqGrpGroupInfoService.updateByBo1(updateBo);
         } catch (Exception e) {

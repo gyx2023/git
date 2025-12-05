@@ -1,15 +1,10 @@
 package com.crm.system.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
-import com.crm.common.core.domain.BaseEntity;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+
 import java.io.Serializable;
 import java.util.Date;
-import java.math.BigDecimal;
-
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * 政企集团客户信息对象 zq_grp_group_log
