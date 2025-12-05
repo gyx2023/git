@@ -98,7 +98,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date beginDate = sdf.parse(grpCreateTimeBegin);
                 Date endDate = sdf.parse(grpCreateTimeEnd);
-                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+                lqw.between(ZqGrpGroupInfo::getCreateTime, beginDate, endDate);
             } catch (Exception e) {
                 log.warn("时间参数解析失败: {}", e.getMessage());
             }
