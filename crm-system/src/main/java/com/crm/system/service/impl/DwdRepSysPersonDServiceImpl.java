@@ -183,7 +183,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 // 第一次: 只查询COUNTY_ID的前四位=3300的记录
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
                 // 使用范围查询代替SUBSTR函数以提高性能
-                lqw1.likeRight(DwdRepSysPersonD::getCountyId, "3300")
+                lqw1.apply("COUNTY_ID LIKE {0}", "3300%")
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
                 addManagersToList(list1, dataList1);
@@ -198,7 +198,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 // 第二次: 查询当前COUNTY_ID前四位=数据库里该字段的前四位
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
                 // 使用范围查询代替SUBSTR函数以提高性能
-                lqw2.likeRight(DwdRepSysPersonD::getCountyId, countyPrefix)
+                lqw2.apply("COUNTY_ID LIKE {0}", countyPrefix + "%")
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
 
@@ -230,7 +230,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 // 先查询市级所有结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
                 // 使用范围查询代替SUBSTR函数以提高性能
-                lqw1.likeRight(DwdRepSysPersonD::getCountyId, countyPrefix)
+                lqw1.apply("COUNTY_ID LIKE {0}", countyPrefix + "%")
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
 
@@ -293,36 +293,21 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
      * @return 过滤后的市级客户经理列表
      */
     private List<DwdRepSysPersonDVo> filterCityManagers(List<DwdRepSysPersonDVo> dataList, String countyPrefix) {
-        // 2. 获取该市下所有的县名列表，用于后续匹配判断
+        // 获取该市下所有的县ID列表，用于后续匹配判断
         List<SysAreaVo> countyAreas = sysAreaService.getCountiesByCityCodePrefix(countyPrefix);
-        Set<String> countyFullNames = new HashSet<>(); // 完整县名集合
-        Set<String> countyShortNames = new HashSet<>(); // 县名的前两个字和前三个字的集合
+        Set<Long> countyIds = new HashSet<>();
 
-        // 遍历所有县区域信息，提取县名及其简称
+        // 收集所有县的ID
         for (SysAreaVo county : countyAreas) {
-            String name = county.getName();
-            if (name != null) {
-                countyFullNames.add(name);
-                // 添加县名的前两个字和前三个字用于匹配
-                if (name.length() >= 2) {
-                    countyShortNames.add(name.substring(0, 2));
-                }
-                if (name.length() >= 3) {
-                    countyShortNames.add(name.substring(0, 3));
-                }
-            }
+            countyIds.add((long) county.getEmpCountyId());
         }
 
+        // 直接通过countyId进行过滤，避免字符串匹配
         return dataList.stream()
             .filter(person -> {
-                if (person.getCountyName() == null) return true;
-                // 检查是否包含完整县名或者县名的前缀
-                boolean containsFullCounty = countyFullNames.stream()
-                    .anyMatch(cn -> person.getCountyName().contains(cn));
-                boolean containsShortCounty = countyShortNames.stream()
-                    .anyMatch(sn -> person.getCountyName().contains(sn));
-                // 如果包含任何县名标识，则为县级数据，应排除
-                return !(containsFullCounty || containsShortCounty);
+                if (person.getCountyId() == null) return true;
+                // 如果客户的countyId在县列表中，则为县级数据，应排除
+                return !countyIds.contains(person.getCountyId());
             })
             .collect(Collectors.toList());
     }
