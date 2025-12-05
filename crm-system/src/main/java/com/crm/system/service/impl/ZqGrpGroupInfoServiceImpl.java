@@ -61,9 +61,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public ZqGrpGroupInfoVo queryById(Long grpId){
         ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
-        // 获取当前用户角色，0为超级管理员
-        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
-        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
+
+        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        List<RoleDTO> roles = loginUser.getRoles();
+        boolean isSensitive = sensitiveRoles.stream()
+            .anyMatch(roleStr -> roles.stream()
+                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
+
         if (isSensitive) {
             return desensitizeVo(vo);
         }
@@ -78,7 +84,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        // 获取当前用户角色，0为超级管理员
+
         SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
         LoginUser loginUser = LoginHelper.getLoginUser();
@@ -118,9 +124,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
-        // 获取当前用户角色，0为超级管理员
-        String currentUserRole = LoginHelper.isAdmin() ? "0" : "1"; // 简化处理，后续可根据实际角色体系调整
-        boolean isSensitive = !"0".equals(currentUserRole); // 0为超级管理员，不脱敏；其他角色脱敏
+        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        List<RoleDTO> roles = loginUser.getRoles();
+        boolean isSensitive = sensitiveRoles.stream()
+            .anyMatch(roleStr -> roles.stream()
+                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
 
         // 根据用户角色决定是否对查询结果进行脱敏处理
         if (isSensitive) {
@@ -322,8 +332,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         });
     }
 
-
-
     /**
      * 对ZqGrpGroupInfoVo对象进行脱敏处理
      * @param vo 要脱敏的ZqGrpGroupInfoVo对象
@@ -472,16 +480,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-//        try{
-//
-//        }catch (cn.dev33.satoken.exception.NotWebContextException e){
-//            // 在非Web上下文中（如定时任务），使用默认处理方式
-//            log.warn("非Web上下文环境，跳过数据权限处理: {}", e.getMessage());
-//            // 可以根据业务需求决定是否需要特殊处理
-//        }
-
-
-
         return lqw;
     }
 
@@ -516,7 +514,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getProvinceNewoldType()), ZqGrpGroupInfo::getProvinceNewoldType, bo.getProvinceNewoldType());
         lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
-        // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
 
         // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
