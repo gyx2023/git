@@ -146,7 +146,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
         return exportList(bo, areaCode, true); // 默认需要脱敏
     }
-    
+
     /**
      * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
      *
@@ -271,7 +271,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("县分翻译失败: {}", e.getMessage());
                 }
             }
-            
+
             // 行业大类翻译，将编码转换为中文名称
             if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
                 try {
@@ -283,7 +283,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("行业大类翻译失败: {}", e.getMessage());
                 }
             }
-            
+
             // 行业亚类翻译，将编码转换为中文名称
             if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
                 try {
@@ -295,7 +295,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("行业亚类翻译失败: {}", e.getMessage());
                 }
             }
-            
+
             // 行业细类翻译，将编码转换为中文名称
             if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
                 try {
@@ -395,13 +395,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 添加时间范围查询条件
         // 处理分配时间范围查询
         if (bo.getAssignTimeStart() != null && bo.getAssignTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
+            lqw.between(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart(), bo.getAssignTimeEnd());
         } else if (bo.getAssignTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeStart());
+            lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeStart());
         } else if (bo.getAssignTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getAssignTimeEnd());
+            lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getAssignTimeEnd());
         }
-        
+
         // 处理创建时间范围查询
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
             lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
