@@ -54,6 +54,15 @@ public class CustomerManagerImportListener {
                     continue;
                 }
 
+                // 判断客户拓展类型是否为空
+                if (groupInfo.getGrpExpandType() ==  null) {
+                    log.warn("该集团信息的拓展类型为空: {}", data.getHqGrpCode());
+                    resultVo.setProcessResult("失败");
+                    resultVo.setErrorMessage("拓展类型为空");
+                    resultList.add(resultVo);
+                    continue;
+                }
+
                 // 2. 检查是否所有客户经理信息都为空
                 if (!isManagerInfoProvided(data.getProvManagerName(), data.getProvManagerOauser()) &&
                     !isManagerInfoProvided(data.getCityManagerName(), data.getCityManagerOauser()) &&
