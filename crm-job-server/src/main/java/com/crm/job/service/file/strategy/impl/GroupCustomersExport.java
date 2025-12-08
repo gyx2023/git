@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,6 +48,23 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 if (jsonObject.containsKey("areaCode")) {
                     areaCode = jsonObject.getStr("areaCode");
                 }
+                
+                // 处理时间范围参数
+                if (jsonObject.containsKey("grpCreateTimeBegin") && jsonObject.containsKey("grpCreateTimeEnd")) {
+                    String grpCreateTimeBegin = jsonObject.getStr("grpCreateTimeBegin");
+                    String grpCreateTimeEnd = jsonObject.getStr("grpCreateTimeEnd");
+                    
+                    if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() 
+                        && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            queryParams.setCreateTimeStart(sdf.parse(grpCreateTimeBegin));
+                            queryParams.setCreateTimeEnd(sdf.parse(grpCreateTimeEnd));
+                        } catch (Exception e) {
+                            log.warn("时间参数解析失败: {}", e.getMessage());
+                        }
+                    }
+                }
             } catch (Exception e) {
                 log.warn("解析areaCode失败，使用默认值: {}", e.getMessage());
             }
@@ -66,13 +84,6 @@ public class GroupCustomersExport extends AbstractExportStrategy {
 
             // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
             List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode, needDesensitize);
-
-            // 如果需要脱敏，则对数据进行脱敏处理（作为双重保障）
-            if (needDesensitize) {
-                dataList = dataList.stream()
-                        .map(this::desensitizeData)
-                        .collect(Collectors.toList());
-            }
 
             // 检查数据是否为空
             if (dataList == null || dataList.isEmpty()) {
@@ -115,27 +126,5 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             task.setRemark("导出失败: " + e.getMessage());
             return false;
         }
-    }
-
-
-    /**
-     * 对数据进行脱敏处理
-     * @param vo 原始数据
-     * @return 脱敏后的数据
-     */
-    private ZqGrpGroupInfoVo desensitizeData(ZqGrpGroupInfoVo vo) {
-        if (vo == null) {
-            return null;
-        }
-
-        // 对集团名称进行脱敏
-        vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
-
-        // 对省、市、县客户经理姓名进行脱敏
-        vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
-        vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
-        vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
-
-        return vo;
     }
 }
