@@ -163,15 +163,18 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
         List<Map<String, Object>> result = new ArrayList<>();
 
         try {
-            // 1. 通过县市编码查询AREA表的empCountyId
-            SysAreaVo areaVo = sysAreaService.queryById(Long.valueOf(cityCode));
-            if (areaVo == null) {
+            // 1. 通过县市编码查询AREA表对应的数据
+            SysAreaVo sysAreaVo = sysAreaService.queryById(Long.valueOf(cityCode));
+
+            if (sysAreaVo == null) {
                 return result;
             }
+            // 2. 获取AREA表的empCountyId和empAreaId
+            int empCountyId = sysAreaVo.getEmpCountyId();
+            int empAreaId = sysAreaVo.getEmpAreaId();
 
-            // 获取员工县ID和县ID字符串
-            int empCountyId = areaVo.getEmpCountyId();
             String countyIdStr = String.valueOf(empCountyId);
+
             String countyPrefix = countyIdStr.substring(0, 4); // 获取前四位作为市级标识
 
             // 3. 根据拓展客户类型执行不同的查询
