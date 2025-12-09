@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -108,7 +109,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         if (ObjectUtil.isNull(sysOss)) {
             throw new ServiceException("文件数据不存在!");
         }
-        FileUtils.setAttachmentResponseHeader(response, sysOss.getOriginalName());
+        FileUtils.setAttachmentResponseHeader(response, URLEncoder.encode(sysOss.getOriginalName()));
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
         OssClient storage = OssFactory.instance();
         try(InputStream inputStream = storage.getObjectContent(sysOss.getUrl())) {
@@ -176,7 +177,19 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     @Override
     public SysOssVo upload(File file) {
         String originalfileName = file.getName();
-        String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
+        return upload(file, originalfileName);
+    }
+
+    /**
+     * 上传文件
+     *
+     * @param file 文件对象
+     * @param originalName 原始文件名（用于下载时显示）
+     * @return 文件上传信息
+     */
+    @Override
+    public SysOssVo upload(File file, String originalName) {
+        String suffix = StringUtils.substring(file.getName(), file.getName().lastIndexOf("."), file.getName().length());
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult;
         try {
@@ -192,7 +205,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         oss.setUrl(uploadResult.getUrl());
         oss.setFileSuffix(suffix);
         oss.setFileName(uploadResult.getFilename());
-        oss.setOriginalName(originalfileName);
+        oss.setOriginalName(originalName);
         oss.setService(storage.getConfigKey());
         baseMapper.insert(oss);
         SysOssVo sysOssVo = new SysOssVo();
@@ -212,6 +225,12 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         return baseMapper.deleteBatchIds(ids) > 0;
     }
 
+    /**
+     * 更新文件信息
+     *
+     * @param oss 文件信息
+     * @return 更新结果
+     */
     /**
      * 匹配Url
      *
