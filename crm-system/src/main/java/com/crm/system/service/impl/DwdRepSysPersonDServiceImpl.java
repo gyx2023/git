@@ -144,13 +144,6 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
         return baseMapper.deleteBatchIds(ids) > 0;
     }
 
-
-    /**
-     * 根据县市编码和拓展客户类型查询客户经理信息
-     * @param cityCode 县市编码
-     * @param expandCustType 拓展客户类型(01:省级,02:市级,03:县级)
-     * @return 客户经理信息列表
-     */
     /**
      * 根据城市编码和客户类型查询管理人员信息
      * @param cityCode 城市编码
@@ -173,20 +166,15 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
             int empCountyId = sysAreaVo.getEmpCountyId();
             int empAreaId = sysAreaVo.getEmpAreaId();
 
-            String countyIdStr = String.valueOf(empCountyId);
-
-            String countyPrefix = countyIdStr.substring(0, 4); // 获取前四位作为市级标识
-
             // 3. 根据拓展客户类型执行不同的查询
             if ("01".equals(expandCustType)) {
                 // 省级: 查询三次
                 Map<String, Object> level1 = new HashMap<>();
                 level1.put("category", "省级");
                 List<Map<String, Object>> list1 = new ArrayList<>();
-                // 第一次: 只查询COUNTY_ID的前四位=3300的记录
+                // 第一次: 查询AREA_ID=3300的记录
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
-                // 使用范围查询代替SUBSTR函数以提高性能
-                lqw1.apply("COUNTY_ID LIKE {0}", "3300%")
+                lqw1.eq(DwdRepSysPersonD::getAreaId, 3300L)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
                 addManagersToList(list1, dataList1);
@@ -198,15 +186,14 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 Map<String, Object> level2 = new HashMap<>();
                 level2.put("category", "市级");
                 List<Map<String, Object>> list2 = new ArrayList<>();
-                // 第二次: 查询当前COUNTY_ID前四位=数据库里该字段的前四位
+                // 第二次: 查询AREA_ID=empAreaId的记录
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
-                // 使用范围查询代替SUBSTR函数以提高性能
-                lqw2.apply("COUNTY_ID LIKE {0}", countyPrefix + "%")
+                lqw2.eq(DwdRepSysPersonD::getAreaId, (long) empAreaId)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
 
                 // 过滤掉县名匹配的数据，只保留纯市级数据
-                List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList2, countyPrefix);
+                List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList2, String.valueOf(empAreaId));
 
                 addManagersToList(list2, cityManagers);
                 level2.put("managers", list2);
@@ -232,13 +219,12 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                 // 市级: 返回两个结果
                 // 先查询市级所有结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
-                // 使用范围查询代替SUBSTR函数以提高性能
-                lqw1.apply("COUNTY_ID LIKE {0}", countyPrefix + "%")
+                lqw1.eq(DwdRepSysPersonD::getAreaId, (long) empAreaId)
                     .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
 
                 // 过滤掉县名匹配的数据，只保留纯市级数据
-                List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList1, countyPrefix);
+                List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList1, String.valueOf(empAreaId));
 
                 // 再查询县级结果
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
