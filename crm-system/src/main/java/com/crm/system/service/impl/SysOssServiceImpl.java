@@ -109,7 +109,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         if (ObjectUtil.isNull(sysOss)) {
             throw new ServiceException("文件数据不存在!");
         }
-        FileUtils.setAttachmentResponseHeader(response, URLEncoder.encode(sysOss.getOriginalName()));
+        FileUtils.setAttachmentResponseHeader(response, sysOss.getOriginalName());
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
         OssClient storage = OssFactory.instance();
         try(InputStream inputStream = storage.getObjectContent(sysOss.getUrl())) {
@@ -225,12 +225,6 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         return baseMapper.deleteBatchIds(ids) > 0;
     }
 
-    /**
-     * 更新文件信息
-     *
-     * @param oss 文件信息
-     * @return 更新结果
-     */
     /**
      * 匹配Url
      *
