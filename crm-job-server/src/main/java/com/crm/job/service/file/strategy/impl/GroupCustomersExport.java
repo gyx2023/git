@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,13 +50,13 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 if (jsonObject.containsKey("areaCode")) {
                     areaCode = jsonObject.getStr("areaCode");
                 }
-                
+
                 // 处理时间范围参数
                 if (jsonObject.containsKey("grpCreateTimeBegin") && jsonObject.containsKey("grpCreateTimeEnd")) {
                     String grpCreateTimeBegin = jsonObject.getStr("grpCreateTimeBegin");
                     String grpCreateTimeEnd = jsonObject.getStr("grpCreateTimeEnd");
-                    
-                    if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() 
+
+                    if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty()
                         && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
                         try {
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -92,7 +94,8 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             }
 
             // 创建临时文件
-            File tempFile = File.createTempFile("集团客户信息导出_" + System.currentTimeMillis(), ".xlsx");
+            String prefix = URLEncoder.encode("集团客户信息导出", StandardCharsets.UTF_8.toString()).replace("%", "");
+            File tempFile = File.createTempFile(prefix + "_" + System.currentTimeMillis(), ".xlsx");
 
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
