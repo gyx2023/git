@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: container-zqzt-backend
-          image: huailaikxq-registry.cucloud.cn/zj_zq2025/zqzt-backend-test
+          image: huailaikxq-registry.cucloud.cn/zj_zq2025_test/zqzt-backend-test
           ports:
             - name: tcp-backend
               containerPort: 8080
