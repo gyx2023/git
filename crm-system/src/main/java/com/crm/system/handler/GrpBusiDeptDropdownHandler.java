@@ -13,6 +13,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 @Component
 public class GrpBusiDeptDropdownHandler implements SheetWriteHandler {
 
-    @Autowired
+    @Resource
     private ISysDictDataService dictDataService;
 
     // 客户归属部门列索引(从0开始)
