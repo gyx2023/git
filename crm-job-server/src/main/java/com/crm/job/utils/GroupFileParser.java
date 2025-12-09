@@ -5,14 +5,12 @@ import com.crm.system.domain.grp.GrpGroupInfoDO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
- * 集团文件解析工具类
- * 用于将文件内容解析为GrpGroupInfoDO对象列表
+ * 文件解析通用工具类
+ * 用于将文件内容解析为指定类型的对象列表
  *
  * @author crm
  */
@@ -21,24 +19,27 @@ import java.util.List;
 public class GroupFileParser {
 
     /**
-     * 解析CSV格式的集团信息文件
-     * 假设文件格式为：grpId,grpName,grpCode,custid,grpLevel,grpStat,isFocus,grpDept,areaid,countyid,...
+     * 通用文件解析方法
+     * 支持解析不同类型的DO对象
      *
      * @param fileContent 文件内容
-     * @return 集团信息列表
+     * @param clazz       要解析成的对象类型
+     * @param delimiter   字段分隔符
+     * @param <T>         泛型类型
+     * @return 解析后的对象列表
      */
-    public List<GrpGroupInfoDO> parseCsvFile(String fileContent) {
-        List<GrpGroupInfoDO> groupInfoList = new ArrayList<>();
+    public <T> List<T> parseFile(String fileContent, Class<T> clazz, String delimiter) {
+        List<T> resultList = new ArrayList<>();
 
         if (fileContent == null || fileContent.trim().isEmpty()) {
             log.warn("文件内容为空，无法解析");
-            return groupInfoList;
+            return resultList;
         }
 
         String[] lines = fileContent.split("\n");
-        log.info("开始解析集团信息文件，总行数: {}", lines.length);
+        log.info("开始解析文件，总行数: {}", lines.length);
 
-        // 处理txt文件的每一行数据，不跳过第一行
+        // 处理文件的每一行数据
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty()) {
@@ -46,55 +47,46 @@ public class GroupFileParser {
             }
 
             try {
-                GrpGroupInfoDO groupInfo = parseLine(line);
-                if (groupInfo != null) {
-                    groupInfoList.add(groupInfo);
+                T obj = parseLine(line, clazz, delimiter);
+                if (obj != null) {
+                    resultList.add(obj);
                 }
             } catch (Exception e) {
                 log.error("解析第{}行数据失败: {}", i + 1, line, e);
             }
         }
 
-        log.info("文件解析完成，成功解析集团信息数量: {}", groupInfoList.size());
-        return groupInfoList;
+        log.info("文件解析完成，成功解析对象数量: {}", resultList.size());
+        return resultList;
     }
 
+
+
     /**
-     * 解析单行数据
+     * 解析单行数据为指定类型的对象
      *
-     * @param line 单行数据
-     * @return 集团信息对象
+     * @param line      单行数据
+     * @param clazz     要解析成的对象类型
+     * @param delimiter 字段分隔符
+     * @param <T>       泛型类型
+     * @return 解析后的对象
      */
-    private GrpGroupInfoDO parseLine(String line) {
-
-
-        GrpGroupInfoDO groupInfo = new GrpGroupInfoDO();
-        // 根据字段索引设置对应的值
+    private <T> T parseLine(String line, Class<T> clazz, String delimiter) {
         try {
-            FieldAnnotaionUtil.setFiledValFromValuesByOrder(groupInfo, line.split("\\x1b", -1), 0);
+            // 创建目标对象实例
+            T obj = clazz.getDeclaredConstructor().newInstance();
+
+            // 使用FieldAnnotaionUtil工具类根据字段索引设置对应的值
+            String[] values = line.split(delimiter, -1);
+            FieldAnnotaionUtil.setFiledValFromValuesByOrder(obj, values, 0);
+
+            return obj;
+        } catch (InstantiationException | IllegalAccessException e) {
+            log.error("创建对象实例失败: {}", clazz.getName(), e);
+            throw new RuntimeException("创建对象实例失败", e);
         } catch (Exception e) {
             log.error("解析字段值失败", e);
-            throw e;
+            throw new RuntimeException("解析字段值失败", e);
         }
-        return groupInfo;
-    }
-
-    /**
-     * 批量处理集团信息，用于分批插入
-     *
-     * @param groupInfoList 完整的集团信息列表
-     * @param batchSize     每批大小
-     * @return 分批后的集团信息列表
-     */
-    public List<List<GrpGroupInfoDO>> batchProcess(List<GrpGroupInfoDO> groupInfoList, int batchSize) {
-        List<List<GrpGroupInfoDO>> batches = new ArrayList<>();
-
-        for (int i = 0; i < groupInfoList.size(); i += batchSize) {
-            int endIndex = Math.min(i + batchSize, groupInfoList.size());
-            List<GrpGroupInfoDO> batch = groupInfoList.subList(i, endIndex);
-            batches.add(new ArrayList<>(batch));
-        }
-
-        return batches;
     }
 }

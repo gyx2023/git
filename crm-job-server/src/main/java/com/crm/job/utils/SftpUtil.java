@@ -68,7 +68,7 @@ public class SftpUtil implements InitializingBean {
     @Getter
     private String configType = "SFTP";
     // 多SFTP配置缓存，按配置类型分组
-    private volatile Map<String, Map<String, String>> sftpConfigCaches = new HashMap<>();
+    private final Map<String, Map<String, String>> sftpConfigCaches = new HashMap<>();
 
     // 当前活跃的配置类型
     @Getter
@@ -401,15 +401,6 @@ public class SftpUtil implements InitializingBean {
      */
     public String getFolderFormat(String configType) {
         return getSftpParam(configType, "folderFormat", DEFAULT_FOLDER_FORMAT);
-    }
-
-    /**
-     * 获取文件夹日期格式（使用当前活跃配置类型）
-     *
-     * @return 文件夹日期格式
-     */
-    public String getFolderFormat() {
-        return getFolderFormat(activeConfigType);
     }
 
     /**
@@ -758,64 +749,4 @@ public class SftpUtil implements InitializingBean {
         return getDataRootPath(configType) + "/" + dateStr;
     }
 
-    /**
-     * 根据日期生成文件夹路径（使用当前活跃配置类型）
-     * 格式: /opt/home/bi/dataout/ZQ/YYYYMMDD
-     *
-     * @param date 指定日期
-     * @return 文件夹路径
-     */
-    public String generateFolderPath(Date date) {
-        return generateFolderPath(activeConfigType, date);
-    }
-
-    /**
-     * 根据日期生成指定配置类型的文件名
-     * 格式: GRP_GROUP_INFO_YYYYMMDD.txt
-     *
-     * @param configType 配置类型
-     * @param date 指定日期
-     * @return 文件名
-     */
-    public String generateFileName(String configType, Date date) {
-        SimpleDateFormat fileSdf = new SimpleDateFormat(getFileDateFormat(configType));
-        String dateStr = fileSdf.format(date);
-        return getFilePrefix(configType) + "_" + dateStr + getFileExtension(configType);
-    }
-
-    /**
-     * 根据日期生成文件名（使用当前活跃配置类型）
-     * 格式: GRP_GROUP_INFO_YYYYMMDD.txt
-     *
-     * @param date 指定日期
-     * @return 文件名
-     */
-    public String generateFileName(Date date) {
-        return generateFileName(activeConfigType, date);
-    }
-
-    /**
-     * 根据日期生成指定配置类型的完整文件路径
-     * 格式: /opt/home/bi/dataout/ZQ/YYYYMMDD/GRP_GROUP_INFO_YYYYMMDD.txt
-     *
-     * @param configType 配置类型
-     * @param date 指定日期
-     * @return 完整文件路径
-     */
-    public String generateFullFilePath(String configType, Date date) {
-        String folderPath = generateFolderPath(configType, date);
-        String fileName = generateFileName(configType, date);
-        return folderPath + "/" + fileName;
-    }
-
-    /**
-     * 根据日期生成完整的文件路径（使用当前活跃配置类型）
-     * 格式: /opt/home/bi/dataout/ZQ/YYYYMMDD/GRP_GROUP_INFO_YYYYMMDD.txt
-     *
-     * @param date 指定日期
-     * @return 完整文件路径
-     */
-    public String generateFullFilePath(Date date) {
-        return generateFullFilePath(activeConfigType, date);
-    }
 }
