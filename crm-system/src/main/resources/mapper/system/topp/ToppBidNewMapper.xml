@@ -268,7 +268,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectSignStatisticsUserRespDTO" resultMap="SignStatisticsResult" >
         select
-        a.user_name,
+        a.nick_name as user_name,
         count_tb  ,
         money_tb ,
         ybw_tb ,
@@ -284,29 +284,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         gxed_zb
         from (
         SELECT
-        t1.user_name,
-        -- 简化合计逻辑（复用子查询已计算的字段）
+        t1.nick_name,
         SUM(t1.ybw_tb + t1.ybyq_tb + t1.ybwq_tb + t1.wq_tb) AS count_tb,
         SUM(t1.buy_budget_money) AS money_tb,
         SUM(t1.ybw_tb) AS ybw_tb,
         SUM(t1.ybyq_tb) AS ybyq_tb,
         SUM(t1.ybwq_tb) AS ybwq_tb,
-        SUM(t1.wq_tb) AS wq_tb  -- 修正：移除多余的as关键字
+        SUM(t1.wq_tb) AS wq_tb
         FROM (
         SELECT
-        d.user_name,
+        d.nick_name,
         a.buy_budget_money,
-        -- 简化if判断为CASE WHEN（可读性更高）
         CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_tb,
         CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_tb,
         CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_tb,
         CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_tb
         FROM topp_bid_new a
         INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
-        INNER JOIN zqzt_sys_user d ON b.designer = d.user_id
+        inner join topp_member c on b.id_ = c.project_id
+        INNER JOIN zqzt_sys_user d ON c .member_id = d.user_id
         INNER JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
-        -- 过滤条件前置，减少关联数据量
-        WHERE e.dept_id = 1
+        WHERE e.dept_id = #{deptId}
         AND a.is_sign = '0'
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
@@ -368,13 +366,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endTime != null">
             and a.open_bid_time &lt;= #{endTime}
         </if>
-        ) t1  -- 修正：给子查询添加别名t1
-        GROUP BY t1.user_name )a
+        ) t1
+        GROUP BY t1.nick_name )a
         left join
 
         ( SELECT
-        t1.user_name,
-        -- 简化合计逻辑（复用子查询已计算的字段）
+        t1.nick_name,
         SUM(t1.ybw_zb + t1.ybyq_zb + t1.ybwq_zb + t1.wq_zb) AS count_zb,
         SUM(t1.match_bid_money) AS money_zb,
         SUM(t1.ybw_zb) AS ybw_zb,
@@ -384,9 +381,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         sum(t1.match_bid_money * t1.contribution) as gxed_zb
         FROM (
         SELECT
-        d.user_name,
+        d.nick_name,
         a.match_bid_money,
-        -- 简化if判断为CASE WHEN（可读性更高）
         CASE WHEN a.match_bid_money &lt; 100 THEN 1 ELSE 0 END AS ybw_zb,
         CASE WHEN a.match_bid_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_zb,
         CASE WHEN a.match_bid_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_zb,
@@ -395,9 +391,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         FROM topp_bid_new a
         INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
         inner join topp_bid_new_score c on a.id=c.topp_bid_new_id
-        INNER JOIN zqzt_sys_user d ON b.designer = d.user_id
+        inner join topp_member f on b.id_ = f.project_id
+        INNER JOIN zqzt_sys_user d ON f .member_id = d.user_id
         INNER JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
-        -- 过滤条件前置，减少关联数据量
         WHERE  e.dept_id =#{deptId}
         and a.is_sign='0' and a.result='match_bid'
         <if test="minCgAmount != null">
@@ -460,7 +456,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endTime != null">
             and a.open_bid_time &lt;= #{endTime}
         </if>
-        )t1 GROUP BY t1.user_name)b on a.user_name=b.user_name
+        )t1 GROUP BY t1.nick_name)b on a.nick_name=b.nick_name
     </select>
 
 

@@ -1,8 +1,13 @@
 package com.crm.system.mapper.topp;
 
+import com.crm.common.core.domain.dto.BiddingListReqDTO;
+import com.crm.common.core.domain.dto.BiddingListRespDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.entity.topp.ToppBidNewScoreDO;
 import com.crm.system.domain.vo.topp.ToppBidNewScoreVo;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * 【请填写功能名称】Mapper接口
@@ -10,6 +15,7 @@ import com.crm.system.domain.vo.topp.ToppBidNewScoreVo;
  * @author crm
  * @date 2025-12-02
  */
+@Mapper
 public interface ToppBidNewScoreMapper extends BaseMapperPlus<ToppBidNewScoreMapper, ToppBidNewScoreDO, ToppBidNewScoreVo> {
-
+    List<BiddingListRespDTO>  selectBidList(BiddingListReqDTO reqDTO);
 }

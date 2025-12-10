@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
@@ -34,7 +35,8 @@ import java.util.List;
 @RequestMapping("/statistics/sign")
 public class StatisticsSignController extends BaseController {
 
-    private final StatisticsSignService statisticsSignService;
+    @Resource
+    private StatisticsSignService statisticsSignService;
 
     /**
      * 获取用户列表
