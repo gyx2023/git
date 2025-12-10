@@ -85,10 +85,10 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
         List<CustomerManagerImportResultVo> resultList = customerManagerImportListener.processImportData(dataList);
 
         // 创建临时文件
-        File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "执行结果", ".xlsx");
+        File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "Execution_Results", ".xlsx");
 
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-            EasyExcel.write(fos, CustomerManagerImportResultVo.class).sheet("导入结果").doWrite(resultList);
+            EasyExcel.write(fos, CustomerManagerImportResultVo.class).sheet("Import_Results").doWrite(resultList);
         }
 
         // 上传结果文件到OSS
@@ -106,9 +106,9 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
         task.setTotalRows(totalRows);
         task.setSuccessRows(successRows);
         task.setFailRows(failRows);
-        task.setResultFileName("导入结果_" + task.getFileName());
+        task.setResultFileName("request_" + task.getFileName());
         task.setResultFileUrl(upload.getUrl());
-        task.setRemark("批量分配客户经理导入完成，成功: " + successRows + " 条，失败: " + failRows + " 条");
+        task.setRemark("success: " + successRows + "; fail: " + failRows);
 
         return successRows > 0; // 只要有成功记录就认为导入成功
     }
