@@ -11,6 +11,7 @@ import com.crm.common.constant.UserConstants;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysRole;
 import com.crm.common.core.domain.entity.SysUser;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.service.DeptService;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.helper.DataBaseHelper;
@@ -72,6 +73,11 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
      */
     @Override
     public List<Tree<Long>> selectDeptTreeList(SysDept dept) {
+        if(ObjectUtil.isEmpty(dept.getDeptId())){
+            LoginUser loginUser = LoginHelper.getLoginUser();
+            SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
+            dept.setParentId(loginDept.getParentId());
+        }
         List<SysDept> depts = this.selectDeptList(dept);
         return buildDeptTreeSelect(depts);
     }
