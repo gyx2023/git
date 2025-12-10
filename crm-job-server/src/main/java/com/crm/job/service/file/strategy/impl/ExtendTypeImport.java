@@ -40,7 +40,7 @@ public class ExtendTypeImport extends AbstractImportStrategy {
     @Resource
     private SysOssMapper sysOssMapper;
 
-    @Autowired
+    @Resource
     private ExtendTypeImportListener extendTypeImportListener;
 
     @Override
@@ -97,18 +97,35 @@ public class ExtendTypeImport extends AbstractImportStrategy {
         // 处理数据并生成结果列表
         List<GrpExpandTypeTemplateResultVo> resultList = extendTypeImportListener.processImportData(dataList);
 
-        // 创建临时文件
-        File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "执行结果", ".xlsx");
+        // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
+        String prefix = "grp_expand_type_import_" + System.currentTimeMillis();
+        File tempFile = File.createTempFile(prefix, ".xlsx");
+
+        // 定义原始中文文件名（用于用户下载时显示）
+        String originalFileName = "集团客户拓展类型导入结果_" + System.currentTimeMillis() + ".xlsx";
 
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             EasyExcel.write(fos, GrpExpandTypeTemplateResultVo.class).sheet("导入结果").doWrite(resultList);
         }
 
-        // 上传结果文件到OSS
-        SysOssVo upload = iSysOssService.upload(tempFile);
+        // 验证文件是否创建成功
+        if (!tempFile.exists() || tempFile.length() == 0) {
+            task.setRemark("临时文件创建失败");
+            return false;
+        }
+
+        // 上传结果文件到OSS - 使用新方法直接设置原始文件名
+        SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
+
+        // 验证上传是否成功
+        if (upload == null) {
+            task.setRemark("文件上传失败");
+            tempFile.delete();
+            return false;
+        }
 
         // 删除临时文件
-        tempFile.deleteOnExit();
+        tempFile.delete();
 
         // 统计处理结果
         long totalRows = resultList.size();
