@@ -40,7 +40,7 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
     @Resource
     private SysOssMapper sysOssMapper;
 
-    @Autowired
+    @Resource
     private CustomerManagerImportListener customerManagerImportListener;
 
     @Override
@@ -84,15 +84,19 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
         // 处理数据并生成结果列表
         List<CustomerManagerImportResultVo> resultList = customerManagerImportListener.processImportData(dataList);
 
-        // 创建临时文件
-        File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "执行结果", ".xlsx");
+        // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
+        String prefix = "customer_manager_import_" + System.currentTimeMillis();
+        File tempFile = File.createTempFile(prefix, ".xlsx");
+
+        // 定义原始中文文件名（用于用户下载时显示）
+        String originalFileName = "客户经理导入结果_"+System.currentTimeMillis()+".xlsx";
 
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-            EasyExcel.write(fos, CustomerManagerImportResultVo.class).sheet("导入结果").doWrite(resultList);
+            EasyExcel.write(fos, CustomerManagerImportResultVo.class).sheet("Import_Results").doWrite(resultList);
         }
 
-        // 上传结果文件到OSS
-        SysOssVo upload = iSysOssService.upload(tempFile);
+        // 上传结果文件到OSS - 使用新方法直接设置原始文件名
+        SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
 
         // 删除临时文件
         tempFile.deleteOnExit();
@@ -106,9 +110,9 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
         task.setTotalRows(totalRows);
         task.setSuccessRows(successRows);
         task.setFailRows(failRows);
-        task.setResultFileName("导入结果_" + task.getFileName());
+        task.setResultFileName(originalFileName);
         task.setResultFileUrl(upload.getUrl());
-        task.setRemark("批量分配客户经理导入完成，成功: " + successRows + " 条，失败: " + failRows + " 条");
+        task.setRemark("success: " + successRows + "; fail: " + failRows);
 
         return successRows > 0; // 只要有成功记录就认为导入成功
     }
