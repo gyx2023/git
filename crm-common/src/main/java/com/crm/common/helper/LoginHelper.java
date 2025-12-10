@@ -133,7 +133,7 @@ public class LoginHelper {
      */
     public static boolean isAdmin(Long userId) {
         LoginUser loginUser = getLoginUser();
-        return loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L);
+        return loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 999L);
     }
 
     public static boolean isAdmin() {
