@@ -255,4 +255,14 @@ public class SysUserController extends BaseController {
         return R.ok(deptService.selectDeptTreeList(dept));
     }
 
+
+    /**
+     * 获取部门树列表
+     */
+    @SaCheckPermission("system:user:currentDeptTree")
+    @GetMapping("/currentDeptTree")
+    public R<List<Tree<Long>>> currentDeptTree() {
+        return R.ok(deptService.querySysDeptTree());
+    }
+
 }
