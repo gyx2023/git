@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ToppMemberMapper">
+
+    <resultMap type="com.crm.system.domain.entity.topp.ToppMemberDO" id="ToppMemberResult">
+        <result property="id" column="id_"/>
+        <result property="projectId" column="project_id"/>
+        <result property="memberRole" column="member_role"/>
+        <result property="memberId" column="member_id"/>
+        <result property="memberArea" column="member_area"/>
+        <result property="memberOrg" column="member_org"/>
+        <result property="name" column="name_"/>
+        <result property="roleDesc" column="role_desc"/>
+        <result property="createTime" column="create_time"/>
+        <result property="creator" column="creator"/>
+        <result property="memo" column="memo_"/>
+        <result property="score" column="score_"/>
+        <result property="scoreExplain" column="score_explain"/>
+        <result property="scoreTime" column="score_time"/>
+        <result property="contri" column="contri_"/>
+        <result property="teamLeaderFlag" column="team_leader_flag"/>
+    </resultMap>
+
+
+</mapper>
