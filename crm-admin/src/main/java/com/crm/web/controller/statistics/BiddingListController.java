@@ -57,8 +57,6 @@ public class BiddingListController {
     public void export(BiddingListReqDTO reqDTO, HttpServletResponse response) {
         List<BiddingListRespDTO> list = biddingListService.getBiddingListRespDTOS(reqDTO);
         List<BiddingListExportVo> listVo = BeanUtil.copyToList(list, BiddingListExportVo.class);
-
-
         ExcelUtil.exportExcel(listVo, "投标清单文件", BiddingListExportVo.class, response);
     }
 
