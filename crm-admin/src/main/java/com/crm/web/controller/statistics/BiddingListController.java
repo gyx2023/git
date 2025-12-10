@@ -12,6 +12,7 @@ import com.crm.common.core.domain.dto.SignStatisticsRespDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
+import com.crm.system.domain.vo.topp.BiddingListExportVo;
 import com.crm.system.domain.vo.topp.StatisticsOrgExportVo;
 import com.crm.system.service.statistics.BiddingListService;
 import com.crm.system.service.statistics.StatisticsSignService;
@@ -55,10 +56,10 @@ public class BiddingListController {
     @PostMapping("/export")
     public void export(BiddingListReqDTO reqDTO, HttpServletResponse response) {
         List<BiddingListRespDTO> list = biddingListService.getBiddingListRespDTOS(reqDTO);
-        List<StatisticsOrgExportVo> listVo = BeanUtil.copyToList(list, StatisticsOrgExportVo.class);
+        List<BiddingListExportVo> listVo = BeanUtil.copyToList(list, BiddingListExportVo.class);
 
 
-        ExcelUtil.exportExcel(listVo, "投标统计按组织", StatisticsOrgExportVo.class, response);
+        ExcelUtil.exportExcel(listVo, "投标清单文件", BiddingListExportVo.class, response);
     }
 
 }
