@@ -73,11 +73,21 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
      */
     @Override
     public List<Tree<Long>> selectDeptTreeList(SysDept dept) {
-        if(ObjectUtil.isEmpty(dept.getDeptId())){
-            LoginUser loginUser = LoginHelper.getLoginUser();
-            SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
-            dept.setParentId(loginDept.getParentId());
-        }
+        List<SysDept> depts = this.selectDeptList(dept);
+        return buildDeptTreeSelect(depts);
+    }
+
+    /**
+     * 查询部门树结构信息
+     *
+     * @return 部门树信息集合
+     */
+    @Override
+    public List<Tree<Long>> querySysDeptTree() {
+        SysDept dept = new SysDept();
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
+        dept.setParentId(loginDept.getParentId());
         List<SysDept> depts = this.selectDeptList(dept);
         return buildDeptTreeSelect(depts);
     }
@@ -312,6 +322,7 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
 
     /**
      * 递归查询顶级部门（parentId=1的部门）
+     *
      * @param deptId 当前部门ID
      * @return 顶级部门信息
      */
