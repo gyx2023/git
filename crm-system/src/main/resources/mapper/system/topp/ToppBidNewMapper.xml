@@ -91,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
         from (
         select sum(t1.ybw_tb+t1.ybyq_tb+t1.ybwq_tb+wq_tb) as count_tb,
-        sum(t1.buy_budget_money) as money_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
         sum(ybw_tb) as ybw_tb,
         sum(ybyq_tb) as ybyq_tb,
         sum(ybwq_tb) as ybwq_tb,
@@ -166,7 +166,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join
 
         (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        sum(t1.sign_money) as money_zb,
+        ROUND(SUM(t1.sign_money), 2) AS money_zb,
         sum(ybw_zb) as ybw_zb,
         sum(ybyq_zb) as ybyq_zb,
         sum(ybwq_zb) as ybwq_zb,
@@ -257,7 +257,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         wq_zb
         from (
         select sum(t1.ybw_tb+t1.ybyq_tb+t1.ybwq_tb+wq_tb) as count_tb,
-        sum(t1.buy_budget_money) as money_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
         sum(ybw_tb) as ybw_tb,
         sum(ybyq_tb) as ybyq_tb,
         sum(ybwq_tb) as ybwq_tb,
@@ -327,7 +327,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join
 
         (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        sum(t1.sign_money) as money_zb,
+        ROUND(SUM(t1.sign_money), 2) AS money_zb,
         sum(ybw_zb) as ybw_zb,
         sum(ybyq_zb) as ybyq_zb,
         sum(ybwq_zb) as ybwq_zb,
@@ -417,7 +417,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT
         t1.nick_name,
         SUM(t1.ybw_tb + t1.ybyq_tb + t1.ybwq_tb + t1.wq_tb) AS count_tb,
-        SUM(t1.buy_budget_money) AS money_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
         SUM(t1.ybw_tb) AS ybw_tb,
         SUM(t1.ybyq_tb) AS ybyq_tb,
         SUM(t1.ybwq_tb) AS ybwq_tb,
@@ -492,7 +492,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ( SELECT
         t1.nick_name,
         SUM(t1.ybw_zb + t1.ybyq_zb + t1.ybwq_zb + t1.wq_zb) AS count_zb,
-        SUM(t1.match_bid_money) AS money_zb,
+        ROUND(SUM(t1.match_bid_money), 2) AS money_zb,
         SUM(t1.ybw_zb) AS ybw_zb,
         SUM(t1.ybyq_zb) AS ybyq_zb,
         SUM(t1.ybwq_zb) AS ybwq_zb,
