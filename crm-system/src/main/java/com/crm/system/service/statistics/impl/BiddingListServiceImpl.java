@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -91,6 +93,40 @@ public class BiddingListServiceImpl implements BiddingListService {
             reqDTO.setDeptId(loginDept.getDeptId().toString());
         }
         List<BiddingListRespDTO> list = scoreMapper.selectBidList(reqDTO);
+        // 如果list里相同行的oppCode一致，那么contributionSituation等于supportManager拼接contribon再加上,如果最后一个字符是，则去掉
+        if (ObjectUtil.isNotEmpty(list)) {
+            // 使用Map按oppCode分组，提高查找效率
+            Map<String, List<BiddingListRespDTO>> oppCodeMap = new HashMap<>();
+            for (BiddingListRespDTO item : list) {
+                if (item.getOppCode() != null) {
+                    oppCodeMap.computeIfAbsent(item.getOppCode(), k -> new ArrayList<>()).add(item);
+                }
+            }
+
+            // 处理相同oppCode的项
+            for (List<BiddingListRespDTO> sameOppCodeList : oppCodeMap.values()) {
+                if (sameOppCodeList.size() > 1) {
+                    // 构建统一的贡献情况字符串
+                    StringBuilder unifiedContribution = new StringBuilder();
+                    for (BiddingListRespDTO dto : sameOppCodeList) {
+                        if (dto.getSupportManager() != null && dto.getContribution() != null) {
+                            unifiedContribution.append(dto.getSupportManager())
+                                    .append(dto.getContribution())
+                                    .append(",");
+                        }
+                    }
+                    // 去掉最后一个逗号
+                    String unifiedContributionStr = unifiedContribution.toString();
+                    if (unifiedContributionStr.endsWith(",")) {
+                        unifiedContributionStr = unifiedContributionStr.substring(0, unifiedContributionStr.length() - 1);
+                    }
+                    // 为所有相同oppCode的项设置相同的贡献情况
+                    for (BiddingListRespDTO dto : sameOppCodeList) {
+                        dto.setContributionSituation(unifiedContributionStr);
+                    }
+                }
+            }
+        }
         return list;
     }
 }

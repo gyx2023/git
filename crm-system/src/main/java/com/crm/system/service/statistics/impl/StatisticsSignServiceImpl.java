@@ -97,8 +97,11 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         setDeptCondition(reqDTO);
 
         List<SignStatisticsRespDTO> list = new ArrayList<>();
-        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId()));
-
+        SysDept sysDept = sysDeptMapper.selectById(reqDTO.getDeptId());
+        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId())
+            .ne(SysDept::getAreaCode, sysDept.getAreaCode()));
+        deptList.add(sysDept);
+        reqDTO.setAreaCode(sysDept.getAreaCode());
         // 计算分页起始位置和结束位置
         int total = deptList.size();
         int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
@@ -108,15 +111,28 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         List<SysDept> pagedDeptList = deptList.subList(startIndex, endIndex);
 
         for (SysDept dept : pagedDeptList) {
-            reqDTO.setTempDeptId(dept.getDeptId());
-            SignStatisticsRespDTO respDTO = topBidNewMapper.selectSignStatisticsRespDTO(reqDTO);
+            SignStatisticsRespDTO respDTO = new SignStatisticsRespDTO();
+            if (dept.getDeptId().equals(sysDept.getDeptId())) {
+                respDTO = topBidNewMapper.selectSignStatisticsBj(reqDTO);
+            } else {
+                respDTO = topBidNewMapper.selectSignStatisticsRespDTO(reqDTO);
+            }
             respDTO = ObjectUtil.isEmpty(respDTO) ? new SignStatisticsRespDTO() : respDTO;
             calculateProportion(respDTO);
             respDTO.setDeptId(dept.getDeptId().toString());
             respDTO.setDeptName(dept.getDeptName());
+            if(ObjectUtil.isNotEmpty(respDTO.getCountTb())&&ObjectUtil.isNotEmpty(respDTO.getCountZb())){
+                double tb = Double.parseDouble(respDTO.getCountTb());
+                double zb = Double.parseDouble(respDTO.getCountZb());
+                if(tb != 0){
+                    double proportion = zb / tb * 100;
+                    respDTO.setZbl(String.format("%.2f", proportion));
+                }else{
+                    respDTO.setZbl("0.00");
+                }
+            }
             list.add(respDTO);
         }
-
         TableDataInfo<SignStatisticsRespDTO> tableDataInfo = TableDataInfo.build(list);
         tableDataInfo.setTotal(total);
         return tableDataInfo;
@@ -158,15 +174,33 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         setDeptCondition(reqDTO);
 
         List<SignStatisticsRespDTO> list = new ArrayList<>();
-        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId()));
+        SysDept sysDept = sysDeptMapper.selectById(reqDTO.getDeptId());
+        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId())
+            .ne(SysDept::getAreaCode, sysDept.getAreaCode()));
+        deptList.add(sysDept);
+        reqDTO.setAreaCode(sysDept.getAreaCode());
 
         for (SysDept dept : deptList) {
-            reqDTO.setTempDeptId(dept.getDeptId());
-            SignStatisticsRespDTO respDTO = topBidNewMapper.selectSignStatisticsRespDTO(reqDTO);
+            SignStatisticsRespDTO respDTO = new SignStatisticsRespDTO();
+            if (dept.getDeptId().equals(sysDept.getDeptId())) {
+                respDTO = topBidNewMapper.selectSignStatisticsBj(reqDTO);
+            } else {
+                respDTO = topBidNewMapper.selectSignStatisticsRespDTO(reqDTO);
+            }
             respDTO = ObjectUtil.isEmpty(respDTO) ? new SignStatisticsRespDTO() : respDTO;
             calculateProportion(respDTO);
             respDTO.setDeptId(dept.getDeptId().toString());
             respDTO.setDeptName(dept.getDeptName());
+            if(ObjectUtil.isNotEmpty(respDTO.getCountTb())&&ObjectUtil.isNotEmpty(respDTO.getCountZb())){
+                double tb = Double.parseDouble(respDTO.getCountTb());
+                double zb = Double.parseDouble(respDTO.getCountZb());
+                if(tb != 0){
+                    double proportion = zb / tb * 100;
+                    respDTO.setZbl(String.format("%.2f", proportion));
+                }else{
+                    respDTO.setZbl("0.00");
+                }
+            }
             list.add(respDTO);
         }
         return list;

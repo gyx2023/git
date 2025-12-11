@@ -84,12 +84,24 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
      */
     @Override
     public List<Tree<Long>> querySysDeptTree() {
-        SysDept dept = new SysDept();
         LoginUser loginUser = LoginHelper.getLoginUser();
         SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
-        dept.setParentId(loginDept.getParentId());
-        List<SysDept> depts = this.selectDeptList(dept);
+        Long   deptId = getParentDept(loginDept);
+        List<SysDept> depts = baseMapper.selectDqDeptList(deptId);
         return buildDeptTreeSelect(depts);
+    }
+
+    private  Long getParentDept(SysDept dept) {
+        if (ObjectUtil.isEmpty(dept.getParentId())) {
+            return dept.getDeptId();
+        } else {
+            SysDept parentDept = baseMapper.selectById(dept.getParentId());
+            if (!parentDept.getAreaCode().equals(dept.getAreaCode())) {
+                return dept.getDeptId();
+            } else {
+                return getParentDept(parentDept);
+            }
+        }
     }
 
     /**
