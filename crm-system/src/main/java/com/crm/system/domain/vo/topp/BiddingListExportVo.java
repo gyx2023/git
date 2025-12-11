@@ -51,7 +51,7 @@ public class BiddingListExportVo {
          * 投标主体
          */
         @ExcelProperty("投标主体")
-        @ExcelDictFormat(dictType = "bid_main_personnel")
+        @ExcelDictFormat(dictType = "bid_body")
         private String bidBody;
         /**
          * 项目类型
