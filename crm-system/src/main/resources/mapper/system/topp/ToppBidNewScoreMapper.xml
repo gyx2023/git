@@ -161,7 +161,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         order by a.project_name asc
     </select>
-    <select id="selectList" resultType="com.crm.common.core.domain.dto.BiddingListRespDTO"></select>
 
 
 </mapper>

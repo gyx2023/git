@@ -2,19 +2,15 @@ package com.crm.web.controller.statistics;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.BiddingListReqDTO;
 import com.crm.common.core.domain.dto.BiddingListRespDTO;
-import com.crm.common.core.domain.dto.SignStatisticsReqDTO;
-import com.crm.common.core.domain.dto.SignStatisticsRespDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.topp.StatisticsOrgExportVo;
+import com.crm.system.domain.vo.topp.BiddingListExportVo;
 import com.crm.system.service.statistics.BiddingListService;
-import com.crm.system.service.statistics.StatisticsSignService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,10 +51,8 @@ public class BiddingListController {
     @PostMapping("/export")
     public void export(BiddingListReqDTO reqDTO, HttpServletResponse response) {
         List<BiddingListRespDTO> list = biddingListService.getBiddingListRespDTOS(reqDTO);
-        List<StatisticsOrgExportVo> listVo = BeanUtil.copyToList(list, StatisticsOrgExportVo.class);
-
-
-        ExcelUtil.exportExcel(listVo, "投标统计按组织", StatisticsOrgExportVo.class, response);
+        List<BiddingListExportVo> listVo = BeanUtil.copyToList(list, BiddingListExportVo.class);
+        ExcelUtil.exportExcel(listVo, "投标清单文件", BiddingListExportVo.class, response);
     }
 
 }
