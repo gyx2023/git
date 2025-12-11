@@ -1,10 +1,13 @@
 package com.crm.job.service.grp;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
+import com.crm.system.domain.SysArea;
 import com.crm.system.domain.grp.GrpGroupInfoDO;
 import com.crm.system.domain.param.SysParamDO;
+import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -14,9 +17,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * 集团信息同步定时任务
@@ -40,6 +41,12 @@ public class GrpGroupInfoSyncJob {
     @Resource
     private SysParamMapper sysParamMapper;
 
+    @Resource
+    private SysAreaMapper sysAreaMapper;
+
+    private final Map<String,String> cityMap = new HashMap<>();
+    private volatile boolean cityListInitialized = false;
+
     /**
      * 集团信息同步任务
      * 在xxl-job调度中心配置JobHandler为：grpGroupInfoSyncJobHandler
@@ -52,6 +59,16 @@ public class GrpGroupInfoSyncJob {
     public void execute() {
         log.info("开始执行集团信息同步任务");
         XxlJobHelper.log("开始执行集团信息同步任务");
+
+        // 初始化地市列表（仅在首次执行时加载）
+        if (!cityListInitialized) {
+            synchronized (this) {
+                if (!cityListInitialized) {
+                    initJobData();
+                    cityListInitialized = true;
+                }
+            }
+        }
 
         // 任务参数
         String param = XxlJobHelper.getJobParam();
@@ -153,6 +170,17 @@ public class GrpGroupInfoSyncJob {
                     List<GrpGroupInfoDO> groupInfoList = groupFileParser.parseFile(txtContent.toString(), GrpGroupInfoDO.class, "\\x1b");
 
                     if (!groupInfoList.isEmpty()) {
+                        groupInfoList.forEach(p->{
+                            if(StringUtils.isNotBlank(p.getAreaid())){
+                                p.setAreaid(cityMap.get(p.getAreaid())==null?p.getAreaid():cityMap.get(p.getAreaid()));
+                            }
+                            if(StringUtils.isNotBlank(p.getCountyid())){
+                                p.setCountyid(cityMap.get(p.getCountyid())==null?p.getCountyid():cityMap.get(p.getCountyid()));
+                            }
+                            if(StringUtils.isNotBlank(p.getCountyid2())){
+                                p.setCountyid2(cityMap.get(p.getCountyid2())==null?p.getCountyid2():cityMap.get(p.getCountyid2()));
+                            }
+                        });
                         // 批量插入数据库
                         int success = grpGroupInfoService.batchUpsert(groupInfoList);
                         totalSuccess[0] += success;
@@ -193,6 +221,15 @@ public class GrpGroupInfoSyncJob {
             log.error(errorMsg, e);
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
+        }
+    }
+
+
+    private void initJobData(){
+        for (SysArea sysArea : sysAreaMapper.selectList()) {
+            if(StringUtils.isNotBlank(sysArea.getBssCode())){
+                cityMap.put(sysArea.getBssCode(),String.valueOf(sysArea.getId()));
+            }
         }
     }
 
