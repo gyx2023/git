@@ -85,7 +85,7 @@
             <id>prod</id>
             <properties>
                 <profiles.active>prod</profiles.active>
-                <logging.level>warn</logging.level>
+                <logging.level>debug</logging.level>
             </properties>
         </profile>
     </profiles>
