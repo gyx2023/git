@@ -127,7 +127,7 @@ public class SysMenuServiceImpl implements ISysMenuService {
     public List<SysMenu> selectMenuTreeByUserId(Long userId) {
         List<SysMenu> menus = null;
         LoginUser loginUser = LoginHelper.getLoginUser();
-        if (loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L)) {
+        if (loginUser.getRoles().stream().anyMatch(role -> role.getRoleId() == 999L)) {
             menus = baseMapper.selectMenuTreeAll();
         } else {
             menus = baseMapper.selectMenuTreeByUserId(userId);

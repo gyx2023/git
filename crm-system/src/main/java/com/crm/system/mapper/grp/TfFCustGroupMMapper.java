@@ -1,0 +1,13 @@
+package com.crm.system.mapper.grp;
+import com.crm.system.domain.grp.TfFCustGroupMDO;
+import com.crm.common.core.mapper.BaseMapperPlus;
+
+/**
+ * 总部集团客户月Mapper接口
+ *
+ * @author crm
+ * @date 2025-12-08
+ */
+public interface TfFCustGroupMMapper extends BaseMapperPlus<TfFCustGroupMMapper, TfFCustGroupMDO, TfFCustGroupMDO> {
+
+}

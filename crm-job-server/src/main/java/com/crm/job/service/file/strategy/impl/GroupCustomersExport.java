@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,13 +50,13 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 if (jsonObject.containsKey("areaCode")) {
                     areaCode = jsonObject.getStr("areaCode");
                 }
-                
+
                 // 处理时间范围参数
                 if (jsonObject.containsKey("grpCreateTimeBegin") && jsonObject.containsKey("grpCreateTimeEnd")) {
                     String grpCreateTimeBegin = jsonObject.getStr("grpCreateTimeBegin");
                     String grpCreateTimeEnd = jsonObject.getStr("grpCreateTimeEnd");
-                    
-                    if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() 
+
+                    if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty()
                         && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
                         try {
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -91,8 +93,12 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 return false;
             }
 
-            // 创建临时文件
-            File tempFile = File.createTempFile("集团客户信息导出_" + System.currentTimeMillis(), ".xlsx");
+            // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
+            String prefix = "group_customers_export_" + System.currentTimeMillis();
+            File tempFile = File.createTempFile(prefix, ".xlsx");
+
+            // 定义原始中文文件名（用于用户下载时显示）
+            String originalFileName = "集团客户信息导出_"+System.currentTimeMillis()+".xlsx";
 
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
@@ -104,7 +110,8 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 return false;
             }
 
-            SysOssVo upload = iSysOssService.upload(tempFile);
+            // 上传文件到OSS - 使用新方法直接设置原始文件名
+            SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
 
             // 验证上传是否成功
             if (upload == null) {
@@ -116,8 +123,8 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             // 删除临时文件
             tempFile.delete();
 
-            // 设置文件信息
-            task.setFileName(upload.getFileName());
+            // 设置文件信息 - 使用原始中文文件名
+            task.setFileName(originalFileName);
             task.setFileUrl(upload.getUrl());
             task.setRemark("集团客户信息导出成功");
             return true;
