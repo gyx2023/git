@@ -1,0 +1,26 @@
+FROM harbor.dcos.wuxi.unicom.local/ccr_zjzqyypt_test/jdk8:8u342-custom
+
+MAINTAINER Lion Li
+
+RUN mkdir -p /crm/server/logs \
+    /crm/server/temp \
+    /crm/skywalking/agent
+
+WORKDIR /crm/server
+
+ENV SERVER_PORT=8080 LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+# 创建日志目录
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo 'Asia/Shanghai' > /etc/timezone
+
+EXPOSE ${SERVER_PORT}
+
+ADD ./crm-job-server/target/crm-job-server.jar ./app.jar
+
+ENTRYPOINT ["java", \
+            "-Djava.security.egd=file:/dev/./urandom", \
+            "-Dserver.port=${SERVER_PORT}", \
+            # 应用名称 如果想区分集群节点监控 改成不同的名称即可
+#            "-Dskywalking.agent.service_name=crm-server", \
+#            "-javaagent:/crm/skywalking/agent/skywalking-agent.jar", \
+            "-jar", "app.jar"]

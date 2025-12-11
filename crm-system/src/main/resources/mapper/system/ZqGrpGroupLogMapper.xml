@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ZqGrpGroupLogMapper">
+
+    <resultMap type="com.crm.system.domain.ZqGrpGroupLog" id="ZqGrpGroupLogResult">
+        <result property="grpId" column="GRP_ID"/>
+        <result property="grpName" column="GRP_NAME"/>
+        <result property="grpCode" column="GRP_CODE"/>
+        <result property="hqGrpCode" column="HQ_GRP_CODE"/>
+        <result property="custId" column="CUST_ID"/>
+        <result property="updateType" column="UPDATE_TYPE"/>
+        <result property="dataType" column="DATA_TYPE"/>
+        <result property="grpLevel" column="GRP_LEVEL"/>
+        <result property="grpStatus" column="GRP_STATUS"/>
+        <result property="areaId" column="AREA_ID"/>
+        <result property="countyId" column="COUNTY_ID"/>
+        <result property="countyId2" column="COUNTY_ID2"/>
+        <result property="gridId" column="GRID_ID"/>
+        <result property="industryMajorKind" column="INDUSTRY_MAJOR_KIND"/>
+        <result property="industrySubKind" column="INDUSTRY_SUB_KIND"/>
+        <result property="industryDetailKind" column="INDUSTRY_DETAIL_KIND"/>
+        <result property="busiType" column="BUSI_TYPE"/>
+        <result property="grpCustType" column="GRP_CUST_TYPE"/>
+        <result property="grpExpandType" column="GRP_EXPAND_TYPE"/>
+        <result property="grpBusiDeptType" column="GRP_BUSI_DEPT_TYPE"/>
+        <result property="provinceNewoldType" column="PROVINCE_NEWOLD_TYPE"/>
+        <result property="managerId" column="MANAGER_ID"/>
+        <result property="grpCreator" column="GRP_CREATOR"/>
+        <result property="grpCreateTime" column="GRP_CREATE_TIME"/>
+        <result property="provManagerEmpId" column="PROV_MANAGER_EMP_ID"/>
+        <result property="provManagerOauser" column="PROV_MANAGER_OAUSER"/>
+        <result property="provManagerName" column="PROV_MANAGER_NAME"/>
+        <result property="cityManagerEmpId" column="CITY_MANAGER_EMP_ID"/>
+        <result property="cityManagerOauser" column="CITY_MANAGER_OAUSER"/>
+        <result property="cityManagerName" column="CITY_MANAGER_NAME"/>
+        <result property="countyManagerEmpId" column="COUNTY_MANAGER_EMP_ID"/>
+        <result property="countyManagerOauser" column="COUNTY_MANAGER_OAUSER"/>
+        <result property="countyManagerName" column="COUNTY_MANAGER_NAME"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="updateTime" column="UPDATE_TIME"/>
+    </resultMap>
+
+
+</mapper>
