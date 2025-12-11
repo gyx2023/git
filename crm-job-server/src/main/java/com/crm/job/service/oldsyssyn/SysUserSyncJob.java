@@ -205,6 +205,19 @@ public class SysUserSyncJob {
                 log.info("批量插入最后{}条部门数据成功", batchInsertList.size());
             }
 
+            SysDept sysDept = new SysDept();
+            sysDept.setDeptId(1L);
+            sysDept.setParentId(1L);
+            sysDept.setDeptName("浙江省本部");
+            sysDept.setAreaCode("330000");
+            sysDept.setOrderNum(0);
+            sysDept.setStatus("0");
+            sysDept.setDelFlag("0");
+            sysDept.setCreateBy("system_sync");
+            sysDept.setCreateTime(new Date());
+            sysDept.setUpdateBy("system_sync");
+            sysDept.setUpdateTime(new Date());
+            sysDeptMapper.insert(sysDept);
             XxlJobHelper.log("部门同步任务完成，成功同步{}条数据", successCount);
             log.info("部门同步任务完成，成功同步{}条数据", successCount);
 
