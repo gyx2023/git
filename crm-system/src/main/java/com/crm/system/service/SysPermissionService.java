@@ -32,7 +32,7 @@ public class SysPermissionService {
     public Set<String> getRolePermission(SysUser user) {
         Set<String> roles = new HashSet<>();
         // 管理员拥有所有权限
-        if (user.getRoles().stream().anyMatch(role -> role.getRoleId() == 1L)) {
+        if (user.getRoles().stream().anyMatch(role -> role.getRoleId() == 999L)) {
             roles.add("admin");
         } else {
             roles.addAll(roleService.selectRolePermissionByUserId(user.getUserId()));
