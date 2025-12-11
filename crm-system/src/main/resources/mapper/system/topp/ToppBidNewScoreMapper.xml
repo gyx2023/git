@@ -120,21 +120,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
+            and a.bid_body like
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
@@ -154,9 +154,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and a.open_bid_time &lt;= #{endTime}
         </if>
         <if test="unicomType != null">
-            and c.unicom_type in
+            and c.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         order by a.project_name asc

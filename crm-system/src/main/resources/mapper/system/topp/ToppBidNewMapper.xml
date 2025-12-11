@@ -138,28 +138,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="bidMainPersonnel != null">
             and a.bid_body in
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+               concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null ">
-            and b.unicom_type in
+            and b.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="minMll != null">
@@ -223,30 +223,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
+            and a.bid_body like
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type in
+            and b.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="minMll != null">
@@ -321,30 +321,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
+            and a.bid_body like
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null ">
-            and b.unicom_type in
+            and b.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="minMll != null">
@@ -403,30 +403,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
+            and a.bid_body like
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type in
+            and b.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="minMll != null">
@@ -508,30 +508,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
+            and a.bid_body like
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null ">
-            and b.unicom_type in
+            and b.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="minMll != null">
@@ -598,30 +598,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
+            and a.bid_body like
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
+            and a.competition_condition like
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type in
+            and a.project_type like
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type in
+            and b.unicom_type like
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
+                concat('%', #{item}, '%')
             </foreach>
         </if>
         <if test="minMll != null">
