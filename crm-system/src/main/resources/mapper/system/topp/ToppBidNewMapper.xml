@@ -98,9 +98,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         sum(wq_tb) as wq_tb from
         (select
         a.buy_budget_money,
-        if(a.buy_budget_money&gt;100,1,0) as ybw_tb,
-        if(a.buy_budget_money>=100 and a.buy_budget_money &gt;1000 ,1,0) as ybyq_tb,
-        if(a.buy_budget_money>=1000 and a.buy_budget_money &gt;5000 ,1,0) as ybwq_tb,
+        if(a.buy_budget_money&lt;100,1,0) as ybw_tb,
+        if(a.buy_budget_money>=100 and a.buy_budget_money &lt;1000 ,1,0) as ybyq_tb,
+        if(a.buy_budget_money>=1000 and a.buy_budget_money &lt;5000 ,1,0) as ybwq_tb,
         if(a.buy_budget_money>=5000,1,0) as wq_tb
         from  topp_bid_new a inner join  topp_opportunity b
         on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
@@ -173,9 +173,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         sum(wq_zb) as wq_zb from
         (select
         a.sign_money,
-        if(a.sign_money &gt;100,1,0) as ybw_zb,
-        if(a.sign_money>=100 and a.sign_money &gt;1000 ,1,0) as ybyq_zb,
-        if(a.sign_money>=1000 and a.sign_money &gt;5000 ,1,0) as ybwq_zb,
+        if(a.sign_money &lt;100,1,0) as ybw_zb,
+        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_zb,
+        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_zb,
         if(a.sign_money>=5000,1,0) as wq_zb
         from  topp_bid_new a inner join  topp_opportunity b
         on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
@@ -264,17 +264,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         sum(wq_tb) as wq_tb from
         (select
         a.buy_budget_money,
-        if(a.buy_budget_money&gt;100,1,0) as ybw_tb,
-        if(a.buy_budget_money>=100 and a.buy_budget_money &gt;1000 ,1,0) as ybyq_tb,
-        if(a.buy_budget_money>=1000 and a.buy_budget_money &gt;5000 ,1,0) as ybwq_tb,
+        if(a.buy_budget_money&lt;100,1,0) as ybw_tb,
+        if(a.buy_budget_money>=100 and a.buy_budget_money &lt;1000 ,1,0) as ybyq_tb,
+        if(a.buy_budget_money>=1000 and a.buy_budget_money &lt;5000 ,1,0) as ybwq_tb,
         if(a.buy_budget_money>=5000,1,0) as wq_tb
         from  topp_bid_new a inner join  topp_opportunity b
         on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
         on b.designer =c.user_id
         inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where d.dept_id  in (
-        select dept_id from zqzt_sys_dept where area_code = #{areaCode}
-        )and a.is_sign='0'
+        where d.dept_id = #{areaCode}  and a.is_sign='0'
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -334,17 +332,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         sum(wq_zb) as wq_zb from
         (select
         a.sign_money,
-        if(a.sign_money &gt;100,1,0) as ybw_zb,
-        if(a.sign_money>=100 and a.sign_money &gt;1000 ,1,0) as ybyq_zb,
-        if(a.sign_money>=1000 and a.sign_money &gt;5000 ,1,0) as ybwq_zb,
+        if(a.sign_money &lt;100,1,0) as ybw_zb,
+        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_zb,
+        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_zb,
         if(a.sign_money>=5000,1,0) as wq_zb
         from  topp_bid_new a inner join  topp_opportunity b
         on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
         on b.designer =c.user_id
         inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where  d.dept_id  in (
-        select dept_id from zqzt_sys_dept where area_code = #{areaCode}
-        ) and a.is_sign='0' and result='match_bid'
+        where  d.dept_id  = #{areaCode}  and a.is_sign='0' and result='match_bid'
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -397,7 +393,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
 
 
-    <select id="selectSignStatisticsUserRespDTO" resultMap="SignStatisticsResult" >
+    <select id="selectSignStatisticsUserRespDTO" resultMap="UserResult" >
         select
         a.nick_name as user_name,
         count_tb  ,
@@ -431,10 +427,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_tb,
         CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_tb
         FROM topp_bid_new a
-        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
-        inner join topp_member c on b.id_ = c.project_id
-        INNER JOIN zqzt_sys_user d ON c .member_id = d.user_id
-        INNER JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
+        left JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        left JOIN zqzt_sys_user d ON b.designer = d.user_id
+        left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE e.dept_id = #{deptId}
         AND a.is_sign = '0'
         <if test="minCgAmount != null">
@@ -510,9 +505,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         FROM topp_bid_new a
         INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
         inner join topp_bid_new_score c on a.id=c.topp_bid_new_id
-        inner join topp_member f on b.id_ = f.project_id
-        INNER JOIN zqzt_sys_user d ON f .member_id = d.user_id
-        INNER JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
+        left JOIN zqzt_sys_user d ON b.designer = d.user_id
+        left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE  e.dept_id =#{deptId}
         and a.is_sign='0' and a.result='match_bid'
         <if test="minCgAmount != null">
