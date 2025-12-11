@@ -204,7 +204,6 @@ public class SysUserSyncJob {
                 XxlJobHelper.log("批量插入最后{}条部门数据成功", batchInsertList.size());
                 log.info("批量插入最后{}条部门数据成功", batchInsertList.size());
             }
-
             XxlJobHelper.log("部门同步任务完成，成功同步{}条数据", successCount);
             log.info("部门同步任务完成，成功同步{}条数据", successCount);
 
@@ -225,7 +224,7 @@ public class SysUserSyncJob {
 
         // 基础信息映射
         newDept.setDeptId(Long.valueOf(oldOrg.getId()));
-        newDept.setParentId(Long.valueOf(oldOrg.getParent())); // 默认根节点
+        newDept.setParentId(oldOrg.getParent()==null?null:Long.valueOf(oldOrg.getParent())); // 默认根节点
         newDept.setDeptName(oldOrg.getName());
         newDept.setStatus("0"); // 默认启用状态
         newDept.setDelFlag("0"); // 默认未删除

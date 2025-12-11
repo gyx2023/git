@@ -101,12 +101,16 @@ public class OldSysSynServiceImpl implements OldSysSynService {
             loginUser.setRolePermission(permissionService.getRolePermission(user));
             loginUser.setDeptName(ObjectUtil.isNull(user.getDept()) ? "" : user.getDept().getDeptName());
            // 根据deptId查询顶级组织并设置areaCode
-            SysDept topDept = iSysDeptService.findTopDept(user.getDeptId());
-            if (topDept != null) {
-                loginUser.setAreaCode(topDept.getAreaCode());
-                log.info("用户: {} 的顶级部门: {}, 区域代码: {}", user.getUserName(), topDept.getDeptName(), topDept.getAreaCode());
-            } else {
-                log.warn("未找到用户: {} 的顶级部门信息", user.getUserName());
+            if(user.getDeptId() !=null && user.getDeptId()==1L){
+                loginUser.setAreaCode("330000");
+            }else {
+                SysDept topDept = iSysDeptService.findTopDept(user.getDeptId());
+                if (topDept != null) {
+                    loginUser.setAreaCode(topDept.getAreaCode());
+                    log.info("用户: {} 的顶级部门: {}, 区域代码: {}", user.getUserName(), topDept.getDeptName(), topDept.getAreaCode());
+                } else {
+                    log.warn("未找到用户: {} 的顶级部门信息", user.getUserName());
+                }
             }
             List<RoleDTO> roles = BeanUtil.copyToList(user.getRoles(), RoleDTO.class);
             loginUser.setRoles(roles);
