@@ -44,4 +44,6 @@ public interface SysDeptMapper extends BaseMapperPlus<SysDeptMapper, SysDept, Sy
     @org.apache.ibatis.annotations.Select("TRUNCATE TABLE zqzt_sys_dept")
     void executeTruncate();
 
+
+    List<SysDept> selectDqDeptList(Long deptId);
 }

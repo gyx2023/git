@@ -91,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
         from (
         select sum(t1.ybw_tb+t1.ybyq_tb+t1.ybwq_tb+wq_tb) as count_tb,
-        sum(t1.buy_budget_money) as money_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
         sum(ybw_tb) as ybw_tb,
         sum(ybyq_tb) as ybyq_tb,
         sum(ybwq_tb) as ybwq_tb,
@@ -136,31 +136,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null ">
-            and b.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+        <if test="unicomType != null">
+            and b.unicom_type like concat('%',#{unicomType},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -178,7 +166,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join
 
         (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        sum(t1.sign_money) as money_zb,
+        ROUND(SUM(t1.sign_money), 2) AS money_zb,
         sum(ybw_zb) as ybw_zb,
         sum(ybyq_zb) as ybyq_zb,
         sum(ybwq_zb) as ybwq_zb,
@@ -223,31 +211,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and b.unicom_type like concat('%',#{unicomType},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -281,7 +257,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         wq_zb
         from (
         select sum(t1.ybw_tb+t1.ybyq_tb+t1.ybwq_tb+wq_tb) as count_tb,
-        sum(t1.buy_budget_money) as money_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
         sum(ybw_tb) as ybw_tb,
         sum(ybyq_tb) as ybyq_tb,
         sum(ybwq_tb) as ybwq_tb,
@@ -321,31 +297,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null ">
-            and b.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+        <if test="unicomType != null">
+            and b.unicom_type like concat('%',#{unicomType},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -363,7 +327,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join
 
         (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        sum(t1.sign_money) as money_zb,
+        ROUND(SUM(t1.sign_money), 2) AS money_zb,
         sum(ybw_zb) as ybw_zb,
         sum(ybyq_zb) as ybyq_zb,
         sum(ybwq_zb) as ybwq_zb,
@@ -401,33 +365,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="maxSjAmount != null">
             and b.expect_count_money &lt; #{maxYjAmount}
         </if>
-
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and b.unicom_type like concat('%',#{unicomType},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -466,7 +417,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT
         t1.nick_name,
         SUM(t1.ybw_tb + t1.ybyq_tb + t1.ybwq_tb + t1.wq_tb) AS count_tb,
-        SUM(t1.buy_budget_money) AS money_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
         SUM(t1.ybw_tb) AS ybw_tb,
         SUM(t1.ybyq_tb) AS ybyq_tb,
         SUM(t1.ybwq_tb) AS ybwq_tb,
@@ -508,31 +459,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null ">
-            and b.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+        <if test="unicomType != null">
+            and b.unicom_type like concat('%',#{unicomType},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -553,7 +492,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ( SELECT
         t1.nick_name,
         SUM(t1.ybw_zb + t1.ybyq_zb + t1.ybwq_zb + t1.wq_zb) AS count_zb,
-        SUM(t1.match_bid_money) AS money_zb,
+        ROUND(SUM(t1.match_bid_money), 2) AS money_zb,
         SUM(t1.ybw_zb) AS ybw_zb,
         SUM(t1.ybyq_zb) AS ybyq_zb,
         SUM(t1.ybwq_zb) AS ybwq_zb,
@@ -598,31 +537,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and b.unicom_type like concat('%',#{unicomType},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
