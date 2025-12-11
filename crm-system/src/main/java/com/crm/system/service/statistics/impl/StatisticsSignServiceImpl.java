@@ -98,10 +98,9 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
 
         List<SignStatisticsRespDTO> list = new ArrayList<>();
         SysDept sysDept = sysDeptMapper.selectById(reqDTO.getDeptId());
-        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId())
-            .ne(SysDept::getAreaCode, sysDept.getAreaCode()));
+        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId()));
         deptList.add(sysDept);
-        reqDTO.setAreaCode(sysDept.getAreaCode());
+        reqDTO.setAreaCode(sysDept.getDeptId());
         // 计算分页起始位置和结束位置
         int total = deptList.size();
         int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
@@ -115,6 +114,7 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
             if (dept.getDeptId().equals(sysDept.getDeptId())) {
                 respDTO = topBidNewMapper.selectSignStatisticsBj(reqDTO);
             } else {
+                reqDTO.setTempDeptId(dept.getDeptId());
                 respDTO = topBidNewMapper.selectSignStatisticsRespDTO(reqDTO);
             }
             respDTO = ObjectUtil.isEmpty(respDTO) ? new SignStatisticsRespDTO() : respDTO;
@@ -175,16 +175,16 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
 
         List<SignStatisticsRespDTO> list = new ArrayList<>();
         SysDept sysDept = sysDeptMapper.selectById(reqDTO.getDeptId());
-        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId())
-            .ne(SysDept::getAreaCode, sysDept.getAreaCode()));
+        List<SysDept> deptList = sysDeptMapper.selectList(new LambdaQueryWrapper<SysDept>().eq(SysDept::getParentId, reqDTO.getDeptId()));
         deptList.add(sysDept);
-        reqDTO.setAreaCode(sysDept.getAreaCode());
+        reqDTO.setAreaCode(sysDept.getDeptId());
 
         for (SysDept dept : deptList) {
             SignStatisticsRespDTO respDTO = new SignStatisticsRespDTO();
             if (dept.getDeptId().equals(sysDept.getDeptId())) {
                 respDTO = topBidNewMapper.selectSignStatisticsBj(reqDTO);
             } else {
+                reqDTO.setTempDeptId(dept.getDeptId());
                 respDTO = topBidNewMapper.selectSignStatisticsRespDTO(reqDTO);
             }
             respDTO = ObjectUtil.isEmpty(respDTO) ? new SignStatisticsRespDTO() : respDTO;
