@@ -120,22 +120,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body like
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                concat('%', #{item}, '%')
-            </foreach>
+            and a.bid_body like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition like
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                concat('%', #{item}, '%')
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type like
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                concat('%', #{item}, '%')
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
@@ -154,10 +145,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and a.open_bid_time &lt;= #{endTime}
         </if>
         <if test="unicomType != null">
-            and c.unicom_type like
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                concat('%', #{item}, '%')
-            </foreach>
+            and c.unicom_type like concat('%',#{unicomType},'%')
         </if>
         order by a.project_name asc
     </select>
