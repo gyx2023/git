@@ -77,7 +77,7 @@
             <id>pre</id>
             <properties>
                 <profiles.active>pre</profiles.active>
-                <logging.level>warn</logging.level>
+                <logging.level>debug</logging.level>
             </properties>
         </profile>
 
