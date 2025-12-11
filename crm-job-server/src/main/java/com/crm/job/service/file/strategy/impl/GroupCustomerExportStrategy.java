@@ -6,25 +6,15 @@ import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDO;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserExportVo;
-import com.crm.system.domain.vo.SysUserImportVo;
 import com.crm.system.service.ISysOssService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 集团客户信息导出策略实现类
@@ -42,7 +32,7 @@ public class GroupCustomerExportStrategy extends AbstractExportStrategy {
 
     @Override
     public String getBusinessType() {
-        return "grp_group_export";
+        return "grp_group_export_abcd";
     }
 
     @Override
@@ -74,6 +64,7 @@ public class GroupCustomerExportStrategy extends AbstractExportStrategy {
             task.setFileName(tempFile.getName());
             task.setFileUrl(upload.getUrl());
             task.setRemark("集团客户信息导出成功");
+
             return true;
         } catch (Exception e) {
             log.error("集团客户信息导出失败，任务ID: {}", task.getTaskId(), e);

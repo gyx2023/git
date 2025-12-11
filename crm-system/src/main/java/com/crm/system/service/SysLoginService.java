@@ -8,6 +8,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.constant.CacheConstants;
 import com.crm.common.constant.Constants;
+import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.event.LogininforEvent;
 import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysUser;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
@@ -55,6 +57,9 @@ public class SysLoginService {
 
     @Value("${user.password.lockTime}")
     private Integer lockTime;
+
+    @Resource
+    private ISysDeptService iSysDeptService;
 
     /**
      * 登录验证
@@ -278,6 +283,14 @@ public class SysLoginService {
         loginUser.setDeptName(ObjectUtil.isNull(user.getDept()) ? "" : user.getDept().getDeptName());
         List<RoleDTO> roles = BeanUtil.copyToList(user.getRoles(), RoleDTO.class);
         loginUser.setRoles(roles);
+        // 根据deptId查询顶级组织并设置areaCode
+        SysDept topDept = iSysDeptService.findTopDept(user.getDeptId());
+        if (topDept != null) {
+            loginUser.setAreaCode(topDept.getAreaCode());
+            log.info("用户: {} 的顶级部门: {}, 区域代码: {}", user.getUserName(), topDept.getDeptName(), topDept.getAreaCode());
+        } else {
+            log.warn("未找到用户: {} 的顶级部门信息", user.getUserName());
+        }
         return loginUser;
     }
 

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ZqGrpGroupInfoMapper">
+    <resultMap type="com.crm.system.domain.ZqGrpGroupInfo" id="ZqGrpGroupInfoResult">
+        <result property="grpId" column="GRP_ID"/>
+        <result property="grpName" column="GRP_NAME"/>
+        <result property="grpCode" column="GRP_CODE"/>
+        <result property="hqGrpCode" column="HQ_GRP_CODE"/>
+        <result property="custId" column="CUST_ID"/>
+        <result property="grpLevel" column="GRP_LEVEL"/>
+        <result property="grpStatus" column="GRP_STATUS"/>
+        <result property="areaId" column="AREA_ID"/>
+        <result property="countyId" column="COUNTY_ID"/>
+        <result property="countyId2" column="COUNTY_ID2"/>
+        <result property="gridId" column="GRID_ID"/>
+        <result property="industryMajorKind" column="INDUSTRY_MAJOR_KIND"/>
+        <result property="industrySubKind" column="INDUSTRY_SUB_KIND"/>
+        <result property="industryDetailKind" column="INDUSTRY_DETAIL_KIND"/>
+        <result property="busiType" column="BUSI_TYPE"/>
+        <result property="grpCustType" column="GRP_CUST_TYPE"/>
+        <result property="grpExpandType" column="GRP_EXPAND_TYPE"/>
+        <result property="grpBusiDeptType" column="GRP_BUSI_DEPT_TYPE"/>
+        <result property="provinceNewoldType" column="PROVINCE_NEWOLD_TYPE"/>
+        <result property="managerId" column="MANAGER_ID"/>
+        <result property="grpCreator" column="GRP_CREATOR"/>
+        <result property="grpCreateTime" column="GRP_CREATE_TIME"/>
+        <result property="provManagerEmpId" column="PROV_MANAGER_EMP_ID"/>
+        <result property="provManagerOauser" column="PROV_MANAGER_OAUSER"/>
+        <result property="provManagerName" column="PROV_MANAGER_NAME"/>
+        <result property="cityManagerEmpId" column="CITY_MANAGER_EMP_ID"/>
+        <result property="cityManagerOauser" column="CITY_MANAGER_OAUSER"/>
+        <result property="cityManagerName" column="CITY_MANAGER_NAME"/>
+        <result property="countyManagerEmpId" column="COUNTY_MANAGER_EMP_ID"/>
+        <result property="countyManagerOauser" column="COUNTY_MANAGER_OAUSER"/>
+        <result property="countyManagerName" column="COUNTY_MANAGER_NAME"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="updateTime" column="UPDATE_TIME"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="selectZqGrpGroupInfoVo">
+        select GRP_ID, GRP_NAME, GRP_CODE, HQ_GRP_CODE, CUST_ID, GRP_LEVEL, GRP_STATUS, AREA_ID, COUNTY_ID, COUNTY_ID2, GRID_ID, INDUSTRY_MAJOR_KIND, INDUSTRY_SUB_KIND, INDUSTRY_DETAIL_KIND, BUSI_TYPE, GRP_CUST_TYPE, GRP_EXPAND_TYPE, GRP_BUSI_DEPT_TYPE, PROVINCE_NEWOLD_TYPE, MANAGER_ID, GRP_CREATOR, GRP_CREATE_TIME, PROV_MANAGER_EMP_ID, PROV_MANAGER_OAUSER, PROV_MANAGER_NAME, CITY_MANAGER_EMP_ID, CITY_MANAGER_OAUSER, CITY_MANAGER_NAME, COUNTY_MANAGER_EMP_ID, COUNTY_MANAGER_OAUSER, COUNTY_MANAGER_NAME, CREATE_TIME, UPDATE_TIME from zq_grp_group_info
+    </sql>
+    
+    <!-- 查询所有 -->
+    <select id="selectList" resultMap="ZqGrpGroupInfoResult">
+        <include refid="selectZqGrpGroupInfoVo"/>
+    </select>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="Long" resultMap="ZqGrpGroupInfoResult">
+        <include refid="selectZqGrpGroupInfoVo"/>
+        where GRP_ID = #{id}
+    </select>
+    
+    <!-- 根据ID更新 -->
+    <update id="updateById" parameterType="com.crm.system.domain.ZqGrpGroupInfo">
+        update zq_grp_group_info
+        <set>
+            <if test="grpName != null and grpName != ''">GRP_NAME = #{grpName},</if>
+            <if test="grpCode != null and grpCode != ''">GRP_CODE = #{grpCode},</if>
+            <if test="hqGrpCode != null and hqGrpCode != ''">HQ_GRP_CODE = #{hqGrpCode},</if>
+            <if test="custId != null and custId != ''">CUST_ID = #{custId},</if>
+            <if test="grpLevel != null and grpLevel != ''">GRP_LEVEL = #{grpLevel},</if>
+            <if test="grpStatus != null and grpStatus != ''">GRP_STATUS = #{grpStatus},</if>
+            <if test="areaId != null and areaId != ''">AREA_ID = #{areaId},</if>
+            <if test="countyId != null and countyId != ''">COUNTY_ID = #{countyId},</if>
+            <if test="countyId2 != null and countyId2 != ''">COUNTY_ID2 = #{countyId2},</if>
+            <if test="gridId != null and gridId != ''">GRID_ID = #{gridId},</if>
+            <if test="industryMajorKind != null and industryMajorKind != ''">INDUSTRY_MAJOR_KIND = #{industryMajorKind},</if>
+            <if test="industrySubKind != null and industrySubKind != ''">INDUSTRY_SUB_KIND = #{industrySubKind},</if>
+            <if test="industryDetailKind != null and industryDetailKind != ''">INDUSTRY_DETAIL_KIND = #{industryDetailKind},</if>
+            <if test="busiType != null and busiType != ''">BUSI_TYPE = #{busiType},</if>
+            <if test="grpCustType != null and grpCustType != ''">GRP_CUST_TYPE = #{grpCustType},</if>
+            <if test="grpExpandType != null and grpExpandType != ''">GRP_EXPAND_TYPE = #{grpExpandType},</if>
+            <if test="grpBusiDeptType != null and grpBusiDeptType != ''">GRP_BUSI_DEPT_TYPE = #{grpBusiDeptType},</if>
+            <if test="provinceNewoldType != null and provinceNewoldType != ''">PROVINCE_NEWOLD_TYPE = #{provinceNewoldType},</if>
+            <if test="managerId != null and managerId != ''">MANAGER_ID = #{managerId},</if>
+            <if test="grpCreator != null and grpCreator != ''">GRP_CREATOR = #{grpCreator},</if>
+            <if test="grpCreateTime != null">GRP_CREATE_TIME = #{grpCreateTime},</if>
+            <if test="provManagerEmpId != null and provManagerEmpId != ''">PROV_MANAGER_EMP_ID = #{provManagerEmpId},</if>
+            <if test="provManagerOauser != null and provManagerOauser != ''">PROV_MANAGER_OAUSER = #{provManagerOauser},</if>
+            <if test="provManagerName != null and provManagerName != ''">PROV_MANAGER_NAME = #{provManagerName},</if>
+            <if test="cityManagerEmpId != null and cityManagerEmpId != ''">CITY_MANAGER_EMP_ID = #{cityManagerEmpId},</if>
+            <if test="cityManagerOauser != null and cityManagerOauser != ''">CITY_MANAGER_OAUSER = #{cityManagerOauser},</if>
+            <if test="cityManagerName != null and cityManagerName != ''">CITY_MANAGER_NAME = #{cityManagerName},</if>
+            <if test="countyManagerEmpId != null and countyManagerEmpId != ''">COUNTY_MANAGER_EMP_ID = #{countyManagerEmpId},</if>
+            <if test="countyManagerOauser != null and countyManagerOauser != ''">COUNTY_MANAGER_OAUSER = #{countyManagerOauser},</if>
+            <if test="countyManagerName != null and countyManagerName != ''">COUNTY_MANAGER_NAME = #{countyManagerName},</if>
+            <if test="createTime != null">CREATE_TIME = #{createTime},</if>
+            <if test="updateTime != null">UPDATE_TIME = #{updateTime},</if>
+        </set>
+        where GRP_ID = #{grpI}
+    </update>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.crm.system.domain.ZqGrpGroupInfo" useGeneratedKeys="true" keyProperty="grpId">
+        insert into zq_grp_group_info (
+        <trim suffixOverrides=",">
+            <if test="grpId != null">GRP_ID,</if>
+            <if test="grpName != null and grpName != ''">GRP_NAME,</if>
+            <if test="grpCode != null and grpCode != ''">GRP_CODE,</if>
+            <if test="hqGrpCode != null and hqGrpCode != ''">HQ_GRP_CODE,</if>
+            <if test="custId != null and custId != ''">CUST_ID,</if>
+            <if test="grpLevel != null and grpLevel != ''">GRP_LEVEL,</if>
+            <if test="grpStatus != null and grpStatus != ''">GRP_STATUS,</if>
+            <if test="areaId != null and areaId != ''">AREA_ID,</if>
+            <if test="countyId != null and countyId != ''">COUNTY_ID,</if>
+            <if test="countyId2 != null and countyId2 != ''">COUNTY_ID2,</if>
+            <if test="gridId != null and gridId != ''">GRID_ID,</if>
+            <if test="industryMajorKind != null and industryMajorKind != ''">INDUSTRY_MAJOR_KIND,</if>
+            <if test="industrySubKind != null and industrySubKind != ''">INDUSTRY_SUB_KIND,</if>
+            <if test="industryDetailKind != null and industryDetailKind != ''">INDUSTRY_DETAIL_KIND,</if>
+            <if test="busiType != null and busiType != ''">BUSI_TYPE,</if>
+            <if test="grpCustType != null and grpCustType != ''">GRP_CUST_TYPE,</if>
+            <if test="grpExpandType != null and grpExpandType != ''">GRP_EXPAND_TYPE,</if>
+            <if test="grpBusiDeptType != null and grpBusiDeptType != ''">GRP_BUSI_DEPT_TYPE,</if>
+            <if test="provinceNewoldType != null and provinceNewoldType != ''">PROVINCE_NEWOLD_TYPE,</if>
+            <if test="managerId != null and managerId != ''">MANAGER_ID,</if>
+            <if test="grpCreator != null and grpCreator != ''">GRP_CREATOR,</if>
+            <if test="grpCreateTime != null">GRP_CREATE_TIME,</if>
+            <if test="provManagerEmpId != null and provManagerEmpId != ''">PROV_MANAGER_EMP_ID,</if>
+            <if test="provManagerOauser != null and provManagerOauser != ''">PROV_MANAGER_OAUSER,</if>
+            <if test="provManagerName != null and provManagerName != ''">PROV_MANAGER_NAME,</if>
+            <if test="cityManagerEmpId != null and cityManagerEmpId != ''">CITY_MANAGER_EMP_ID,</if>
+            <if test="cityManagerOauser != null and cityManagerOauser != ''">CITY_MANAGER_OAUSER,</if>
+            <if test="cityManagerName != null and cityManagerName != ''">CITY_MANAGER_NAME,</if>
+            <if test="countyManagerEmpId != null and countyManagerEmpId != ''">COUNTY_MANAGER_EMP_ID,</if>
+            <if test="countyManagerOauser != null and countyManagerOauser != ''">COUNTY_MANAGER_OAUSER,</if>
+            <if test="countyManagerName != null and countyManagerName != ''">COUNTY_MANAGER_NAME,</if>
+            <if test="createTime != null">CREATE_TIME,</if>
+            <if test="updateTime != null">UPDATE_TIME,</if>
+        </trim>
+        )values(
+        <trim suffixOverrides=",">
+            <if test="grpId != null">#{grpId},</if>
+            <if test="grpName != null and grpName != ''">#{grpName},</if>
+            <if test="grpCode != null and grpCode != ''">#{grpCode},</if>
+            <if test="hqGrpCode != null and hqGrpCode != ''">#{hqGrpCode},</if>
+            <if test="custId != null and custId != ''">#{custId},</if>
+            <if test="grpLevel != null and grpLevel != ''">#{grpLevel},</if>
+            <if test="grpStatus != null and grpStatus != ''">#{grpStatus},</if>
+            <if test="areaId != null and areaId != ''">#{areaId},</if>
+            <if test="countyId != null and countyId != ''">#{countyId},</if>
+            <if test="countyId2 != null and countyId2 != ''">#{countyId2},</if>
+            <if test="gridId != null and gridId != ''">#{gridId},</if>
+            <if test="industryMajorKind != null and industryMajorKind != ''">#{industryMajorKind},</if>
+            <if test="industrySubKind != null and industrySubKind != ''">#{industrySubKind},</if>
+            <if test="industryDetailKind != null and industryDetailKind != ''">#{industryDetailKind},</if>
+            <if test="busiType != null and busiType != ''">#{busiType},</if>
+            <if test="grpCustType != null and grpCustType != ''">#{grpCustType},</if>
+            <if test="grpExpandType != null and grpExpandType != ''">#{grpExpandType},</if>
+            <if test="grpBusiDeptType != null and grpBusiDeptType != ''">#{grpBusiDeptType},</if>
+            <if test="provinceNewoldType != null and provinceNewoldType != ''">#{provinceNewoldType},</if>
+            <if test="managerId != null and managerId != ''">#{managerId},</if>
+            <if test="grpCreator != null and grpCreator != ''">#{grpCreator},</if>
+            <if test="grpCreateTime != null">#{grpCreateTime},</if>
+            <if test="provManagerEmpId != null and provManagerEmpId != ''">#{provManagerEmpId},</if>
+            <if test="provManagerOauser != null and provManagerOauser != ''">#{provManagerOauser},</if>
+            <if test="provManagerName != null and provManagerName != ''">#{provManagerName},</if>
+            <if test="cityManagerEmpId != null and cityManagerEmpId != ''">#{cityManagerEmpId},</if>
+            <if test="cityManagerOauser != null and cityManagerOauser != ''">#{cityManagerOauser},</if>
+            <if test="cityManagerName != null and cityManagerName != ''">#{cityManagerName},</if>
+            <if test="countyManagerEmpId != null and countyManagerEmpId != ''">#{countyManagerEmpId},</if>
+            <if test="countyManagerOauser != null and countyManagerOauser != ''">#{countyManagerOauser},</if>
+            <if test="countyManagerName != null and countyManagerName != ''">#{countyManagerName},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+        )
+    </insert>
+    
+    <!-- 根据ID删除 -->
+    <delete id="deleteById" parameterType="Long">
+        delete from zq_grp_group_info where GRP_ID = #{id}
+    </delete>
+    
+    <!-- MyBatis-Plus需要的update方法 -->
+    <update id="update" parameterType="com.crm.system.domain.ZqGrpGroupInfo">
+        update zq_grp_group_info
+        <set>
+            <if test="grpName != null and grpName != ''">GRP_NAME = #{grpName},</if>
+            <if test="grpCode != null and grpCode != ''">GRP_CODE = #{grpCode},</if>
+            <if test="hqGrpCode != null and hqGrpCode != ''">HQ_GRP_CODE = #{hqGrpCode},</if>
+            <if test="custId != null and custId != ''">CUST_ID = #{custId},</if>
+            <if test="grpLevel != null and grpLevel != ''">GRP_LEVEL = #{grpLevel},</if>
+            <if test="grpStatus != null and grpStatus != ''">GRP_STATUS = #{grpStatus},</if>
+            <if test="areaId != null and areaId != ''">AREA_ID = #{areaId},</if>
+            <if test="countyId != null and countyId != ''">COUNTY_ID = #{countyId},</if>
+            <if test="countyId2 != null and countyId2 != ''">COUNTY_ID2 = #{countyId2},</if>
+            <if test="gridId != null and gridId != ''">GRID_ID = #{gridId},</if>
+            <if test="industryMajorKind != null and industryMajorKind != ''">INDUSTRY_MAJOR_KIND = #{industryMajorKind},</if>
+            <if test="industrySubKind != null and industrySubKind != ''">INDUSTRY_SUB_KIND = #{industrySubKind},</if>
+            <if test="industryDetailKind != null and industryDetailKind != ''">INDUSTRY_DETAIL_KIND = #{industryDetailKind},</if>
+            <if test="busiType != null and busiType != ''">BUSI_TYPE = #{busiType},</if>
+            <if test="grpCustType != null and grpCustType != ''">GRP_CUST_TYPE = #{grpCustType},</if>
+            <if test="grpExpandType != null and grpExpandType != ''">GRP_EXPAND_TYPE = #{grpExpandType},</if>
+            <if test="grpBusiDeptType != null and grpBusiDeptType != ''">GRP_BUSI_DEPT_TYPE = #{grpBusiDeptType},</if>
+            <if test="provinceNewoldType != null and provinceNewoldType != ''">PROVINCE_NEWOLD_TYPE = #{provinceNewoldType},</if>
+            <if test="managerId != null and managerId != ''">MANAGER_ID = #{managerId},</if>
+            <if test="grpCreator != null and grpCreator != ''">GRP_CREATOR = #{grpCreator},</if>
+            <if test="grpCreateTime != null">GRP_CREATE_TIME = #{grpCreateTime},</if>
+            <if test="provManagerEmpId != null and provManagerEmpId != ''">PROV_MANAGER_EMP_ID = #{provManagerEmpId},</if>
+            <if test="provManagerOauser != null and provManagerOauser != ''">PROV_MANAGER_OAUSER = #{provManagerOauser},</if>
+            <if test="provManagerName != null and provManagerName != ''">PROV_MANAGER_NAME = #{provManagerName},</if>
+            <if test="cityManagerEmpId != null and cityManagerEmpId != ''">CITY_MANAGER_EMP_ID = #{cityManagerEmpId},</if>
+            <if test="cityManagerOauser != null and cityManagerOauser != ''">CITY_MANAGER_OAUSER = #{cityManagerOauser},</if>
+            <if test="cityManagerName != null and cityManagerName != ''">CITY_MANAGER_NAME = #{cityManagerName},</if>
+            <if test="countyManagerEmpId != null and countyManagerEmpId != ''">COUNTY_MANAGER_EMP_ID = #{countyManagerEmpId},</if>
+            <if test="countyManagerOauser != null and countyManagerOauser != ''">COUNTY_MANAGER_OAUSER = #{countyManagerOauser},</if>
+            <if test="countyManagerName != null and countyManagerName != ''">COUNTY_MANAGER_NAME = #{countyManagerName},</if>
+            <if test="createTime != null">CREATE_TIME = #{createTime},</if>
+            <if test="updateTime != null">UPDATE_TIME = #{updateTime},</if>
+        </set>
+        where GRP_ID = #{id}
+    </update>
+</mapper>

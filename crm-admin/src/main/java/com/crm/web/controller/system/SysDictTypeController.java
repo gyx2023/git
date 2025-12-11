@@ -1,8 +1,6 @@
 package com.crm.web.controller.system;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.crm.common.annotation.Log;
-import com.crm.common.constant.UserConstants;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
@@ -34,7 +32,6 @@ public class SysDictTypeController extends BaseController {
     /**
      * 查询字典类型列表
      */
-    @SaCheckPermission("system:dict:list")
     @GetMapping("/list")
     public TableDataInfo<SysDictType> list(SysDictType dictType, PageQuery pageQuery) {
         return dictTypeService.selectPageDictTypeList(dictType, pageQuery);
@@ -44,7 +41,6 @@ public class SysDictTypeController extends BaseController {
      * 导出字典类型列表
      */
     @Log(title = "字典类型", businessType = BusinessType.EXPORT)
-    @SaCheckPermission("system:dict:export")
     @PostMapping("/export")
     public void export(SysDictType dictType, HttpServletResponse response) {
         List<SysDictType> list = dictTypeService.selectDictTypeList(dictType);
@@ -56,7 +52,6 @@ public class SysDictTypeController extends BaseController {
      *
      * @param dictId 字典ID
      */
-    @SaCheckPermission("system:dict:query")
     @GetMapping(value = "/{dictId}")
     public R<SysDictType> getInfo(@PathVariable Long dictId) {
         return R.ok(dictTypeService.selectDictTypeById(dictId));
@@ -65,7 +60,6 @@ public class SysDictTypeController extends BaseController {
     /**
      * 新增字典类型
      */
-    @SaCheckPermission("system:dict:add")
     @Log(title = "字典类型", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysDictType dict) {
@@ -79,7 +73,6 @@ public class SysDictTypeController extends BaseController {
     /**
      * 修改字典类型
      */
-    @SaCheckPermission("system:dict:edit")
     @Log(title = "字典类型", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysDictType dict) {
@@ -95,7 +88,6 @@ public class SysDictTypeController extends BaseController {
      *
      * @param dictIds 字典ID串
      */
-    @SaCheckPermission("system:dict:remove")
     @Log(title = "字典类型", businessType = BusinessType.DELETE)
     @DeleteMapping("/{dictIds}")
     public R<Void> remove(@PathVariable Long[] dictIds) {
@@ -106,7 +98,6 @@ public class SysDictTypeController extends BaseController {
     /**
      * 刷新字典缓存
      */
-    @SaCheckPermission("system:dict:remove")
     @Log(title = "字典类型", businessType = BusinessType.CLEAN)
     @DeleteMapping("/refreshCache")
     public R<Void> refreshCache() {
@@ -122,4 +113,6 @@ public class SysDictTypeController extends BaseController {
         List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
         return R.ok(dictTypes);
     }
+
+
 }

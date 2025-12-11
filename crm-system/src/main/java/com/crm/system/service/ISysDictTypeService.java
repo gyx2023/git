@@ -40,6 +40,9 @@ public interface ISysDictTypeService {
      */
     List<SysDictData> selectDictDataByType(String dictType);
 
+
+
+
     /**
      * 根据字典类型ID查询信息
      *
@@ -101,4 +104,6 @@ public interface ISysDictTypeService {
      * @return 结果
      */
     boolean checkDictTypeUnique(SysDictType dictType);
+
+
 }

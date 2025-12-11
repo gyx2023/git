@@ -28,9 +28,18 @@ import java.util.Map;
 @Slf4j
 public class CellMergeStrategy extends AbstractMergeStrategy {
 
+    // 数据列表
 	private List<?> list;
+    // 是否包含标题行
 	private boolean hasTitle;
 
+    /**
+     * 合并单元格方法
+     * @param sheet Excel工作表对象
+     * @param cell 当前单元格
+     * @param head 表头信息
+     * @param relativeRowIndex 相对行索引
+     */
 	@Override
 	protected void merge(Sheet sheet, Cell cell, Head head, Integer relativeRowIndex) {
 		List<CellRangeAddress> cellList = handle(list, hasTitle);

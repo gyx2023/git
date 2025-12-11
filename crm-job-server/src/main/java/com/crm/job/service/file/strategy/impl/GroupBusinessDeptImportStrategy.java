@@ -1,35 +1,24 @@
 package com.crm.job.service.file.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.excel.ExcelResult;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractImportStrategy;
 import com.crm.system.domain.SysOss;
 import com.crm.system.domain.file.FileAsyncTaskDO;
-import cn.hutool.extra.ssh.JschRuntimeException;
-import cn.hutool.extra.ssh.Sftp;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
 import com.crm.system.domain.vo.SysOssVo;
-import com.crm.system.domain.vo.SysUserExportVo;
 import com.crm.system.domain.vo.SysUserImportVo;
 import com.crm.system.listener.SysUserExImportListener;
-import com.crm.system.listener.SysUserImportListener;
 import com.crm.system.mapper.SysOssMapper;
-import com.crm.system.mapper.file.FileAsyncTaskMapper;
 import com.crm.system.service.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,13 +40,21 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
 
     @Override
     public String getBusinessType() {
-        return "grp_busi_dept_import";
+        return "grp_busi_dept_import_abcdefg";
     }
 
     @Override
     protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
-        //根据FileAsyncTaskDO获取上传到cos的ossid
+        //根据FileAsyncTaskDO获取上传到cos的ossId
         SysOss sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
+
+        // 检查sysOss是否存在
+        if (sysOss == null) {
+            log.error("未找到对应的OSS文件记录，文件URL: {}", task.getFileUrl());
+            task.setRemark("处理失败：未找到对应的OSS文件记录");
+            return false;
+        }
+
         //获取文件流
         InputStream fileContent = iSysOssService.getFileContent(sysOss.getOssId());
         //excel文件操作
@@ -65,9 +62,6 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
 
         //导入成功后生成导入明细excel文件
         List<SysUserImportVo> list = sysUserImportVoExcelResult.getList();
-
-        //这里建议将list转成SysUserExportVo的List,导出的时候用导出的list
-
 
         // 创建临时文件
         File tempFile = File.createTempFile(FilenameUtils.getBaseName(task.getFileName()) + "执行结果", ".xlsx");

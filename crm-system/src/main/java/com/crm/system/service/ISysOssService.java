@@ -2,6 +2,7 @@ package com.crm.system.service;
 
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.SysOssBo;
 import com.crm.system.domain.vo.SysOssVo;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +29,7 @@ public interface ISysOssService {
 
     SysOssVo upload(MultipartFile file);
     SysOssVo upload(File file);
+    SysOssVo upload(File file, String originalName);
 
     void download(Long ossId, HttpServletResponse response) throws IOException;
 
