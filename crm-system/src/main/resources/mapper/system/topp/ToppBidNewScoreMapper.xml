@@ -40,15 +40,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select distinct
             a.project_name,
             a.buy_user as buy_user_name ,
-            a.buy_budget_money,
+            ROUND(a.buy_budget_money, 2) AS buy_budget_money,
             a.open_bid_time,
             c.unicom_type,
             a.competition_condition,
             a.result as bid_result,
             a.bid_body,
             a.project_type,
-            a.sign_money,
-            a.expected_main_operating_amount,
+           ROUND(a.sign_money, 2) AS sign_money,
+           ROUND(a.expected_main_operating_amount, 2) AS expected_main_operating_amount,
             a.ict_profit,
             a.is_framework_contract,
             a.contract_time,
@@ -120,22 +120,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body in
-            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.bid_body like concat('%',#{bidMainPersonnel},'%')
         </if>
         <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.competition_condition like concat('%',#{jzqk},'%')
         </if>
         <if test="projectType != null">
-            and a.project_type in
-            <foreach collection="projectType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and a.project_type like concat('%',#{projectType},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
@@ -154,14 +145,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and a.open_bid_time &lt;= #{endTime}
         </if>
         <if test="unicomType != null">
-            and c.unicom_type in
-            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
+            and c.unicom_type like concat('%',#{unicomType},'%')
         </if>
         order by a.project_name asc
     </select>
-    <select id="selectList" resultType="com.crm.common.core.domain.dto.BiddingListRespDTO"></select>
 
 
 </mapper>

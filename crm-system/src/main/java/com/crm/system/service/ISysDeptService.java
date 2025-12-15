@@ -28,6 +28,12 @@ public interface ISysDeptService {
     List<Tree<Long>> selectDeptTreeList(SysDept dept);
 
     /**
+     * 当前人所在单位
+     * @return
+     */
+
+    List<Tree<Long>>   querySysDeptTree();
+    /**
      * 构建前端所需要下拉树结构
      *
      * @param depts 部门列表

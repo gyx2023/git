@@ -21,4 +21,7 @@ public interface ToppBidNewMapper extends BaseMapperPlus<ToppBidNewMapper, ToppB
     SignStatisticsRespDTO selectSignStatisticsRespDTO(SignStatisticsReqDTO reqDTO);
 
     List<SignStatisticsUserRespDTO> selectSignStatisticsUserRespDTO(SignStatisticsReqDTO reqDTO);
+
+    SignStatisticsRespDTO selectSignStatisticsBj(SignStatisticsReqDTO reqDTO);
+
 }

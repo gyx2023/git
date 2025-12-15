@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.alibaba.excel.annotation.ExcelProperty;
 
-import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 public class BiddingListExportVo {
@@ -28,7 +27,7 @@ public class BiddingListExportVo {
          * 开标时间
          */
         @ExcelProperty("开标时间")
-        private LocalDateTime openBidTime;
+        private String openBidTime;
         /**
          * 客户行业
          */
@@ -51,7 +50,7 @@ public class BiddingListExportVo {
          * 投标主体
          */
         @ExcelProperty("投标主体")
-        @ExcelDictFormat(dictType = "bid_main_personnel")
+        @ExcelDictFormat(dictType = "bid_body")
         private String bidBody;
         /**
          * 项目类型
