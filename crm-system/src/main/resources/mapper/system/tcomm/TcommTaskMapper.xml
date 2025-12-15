@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.TcommTaskMapper">
+
+    <resultMap type="com.crm.system.domain.entity.tcomm.TcommTaskDO" id="TcommTaskResult">
+        <result property="id" column="id_"/>
+        <result property="taskCode" column="task_code"/>
+        <result property="taskName" column="task_name"/>
+        <result property="flowNo" column="flow_no"/>
+        <result property="custName" column="cust_name"/>
+        <result property="oppoName" column="oppo_name"/>
+        <result property="infoId" column="info_id"/>
+        <result property="infoType" column="info_type"/>
+        <result property="createTime" column="create_time"/>
+        <result property="dueLimit" column="due_limit"/>
+        <result property="dueTime" column="due_time"/>
+        <result property="actorsWait" column="actors_wait"/>
+        <result property="isSended" column="is_sended"/>
+        <result property="actor" column="actor_"/>
+        <result property="dealUrl" column="deal_url"/>
+        <result property="startTime" column="start_time"/>
+        <result property="resultCode" column="result_code"/>
+        <result property="result" column="result"/>
+        <result property="resultMemo" column="result_memo"/>
+        <result property="endTime" column="end_time"/>
+        <result property="memo" column="memo_"/>
+        <result property="score" column="score_"/>
+        <result property="resultScore" column="result_score"/>
+        <result property="json" column="json_"/>
+        <result property="scoreDetail" column="score_detail"/>
+        <result property="defaultDafen" column="default_dafen"/>
+        <result property="parent" column="parent_"/>
+        <result property="create" column="create_"/>
+        <result property="taskMemo" column="task_memo"/>
+        <result property="shortSend" column="short_send"/>
+        <result property="shortSendTime" column="short_send_time"/>
+        <result property="piId" column="pi_id"/>
+        <result property="userOwnerProduct" column="user_owner_product"/>
+        <result property="productCode" column="product_code"/>
+        <result property="teamLeaderId" column="team_leader_id"/>
+        <result property="notUseOwnerProductReason" column="not_use_owner_product_reason"/>
+        <result property="supportHours" column="support_hours"/>
+    </resultMap>
+
+
+</mapper>
