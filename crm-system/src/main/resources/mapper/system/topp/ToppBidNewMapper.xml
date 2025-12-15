@@ -122,10 +122,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -135,20 +135,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and b.expect_count_money &lt;  #{maxYjAmount}
         </if>
 
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body  like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and b.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -166,17 +166,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join
 
         (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        ROUND(SUM(t1.sign_money), 2) AS money_zb,
+        ROUND(SUM(t1.match_bid_money), 2) AS money_zb,
         sum(ybw_zb) as ybw_zb,
         sum(ybyq_zb) as ybyq_zb,
         sum(ybwq_zb) as ybwq_zb,
         sum(wq_zb) as wq_zb from
         (select
-        a.sign_money,
-        if(a.sign_money &lt;100,1,0) as ybw_zb,
-        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_zb,
-        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_zb,
-        if(a.sign_money>=5000,1,0) as wq_zb
+        a.match_bid_money,
+        if(a.match_bid_money &lt;100,1,0) as ybw_zb,
+        if(a.match_bid_money>=100 and a.match_bid_money &lt;1000 ,1,0) as ybyq_zb,
+        if(a.match_bid_money>=1000 and a.match_bid_money &lt;5000 ,1,0) as ybwq_zb,
+        if(a.match_bid_money>=5000,1,0) as wq_zb
         from  topp_bid_new a inner join  topp_opportunity b
         on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
         on b.designer =c.user_id
@@ -197,10 +197,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -210,20 +210,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and b.expect_count_money &lt; #{maxYjAmount}
         </if>
 
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body  like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and b.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -281,10 +281,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -294,20 +294,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and b.expect_count_money &lt;  #{maxYjAmount}
         </if>
 
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body  like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and b.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -325,17 +325,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join
 
         (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        ROUND(SUM(t1.sign_money), 2) AS money_zb,
+        ROUND(SUM(t1.match_bid_money), 2) AS money_zb,
         sum(ybw_zb) as ybw_zb,
         sum(ybyq_zb) as ybyq_zb,
         sum(ybwq_zb) as ybwq_zb,
         sum(wq_zb) as wq_zb from
         (select
-        a.sign_money,
-        if(a.sign_money &lt;100,1,0) as ybw_zb,
-        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_zb,
-        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_zb,
-        if(a.sign_money>=5000,1,0) as wq_zb
+        a.match_bid_money,
+        if(a.match_bid_money &lt;100,1,0) as ybw_zb,
+        if(a.match_bid_money>=100 and a.match_bid_money &lt;1000 ,1,0) as ybyq_zb,
+        if(a.match_bid_money>=1000 and a.match_bid_money &lt;5000 ,1,0) as ybwq_zb,
+        if(a.match_bid_money>=5000,1,0) as wq_zb
         from  topp_bid_new a inner join  topp_opportunity b
         on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
         on b.designer =c.user_id
@@ -349,10 +349,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -361,20 +361,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="maxSjAmount != null">
             and b.expect_count_money &lt; #{maxYjAmount}
         </if>
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body  like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and b.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -440,10 +440,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -453,20 +453,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and b.expect_count_money &lt;  #{maxYjAmount}
         </if>
 
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body  like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and b.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -517,10 +517,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -530,20 +530,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and b.expect_count_money &lt; #{maxYjAmount}
         </if>
 
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body  like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and b.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}

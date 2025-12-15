@@ -1,6 +1,7 @@
 package com.crm.system.domain.vo.topp;
 
 import com.crm.common.annotation.ExcelDictFormat;
+import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.alibaba.excel.annotation.ExcelProperty;
@@ -31,38 +32,38 @@ public class BiddingListExportVo {
         /**
          * 客户行业
          */
-        @ExcelProperty("客户行业")
+        @ExcelProperty(value = "客户行业", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "unicom_type")
         private String unicomType;
         /**
          * 竞争情况
          */
-        @ExcelProperty("竞争情况")
+        @ExcelProperty(value ="竞争情况", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "competition_condition")
         private String competitionCondition;
         /**
          * 投标结果
          */
-        @ExcelProperty("投标结果")
+        @ExcelProperty(value ="投标结果", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "bid_result")
         private String bidResult;
         /**
          * 投标主体
          */
-        @ExcelProperty("投标主体")
+        @ExcelProperty(value ="投标主体",converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "bid_body")
         private String bidBody;
         /**
          * 项目类型
          */
-        @ExcelProperty("项目类型")
+        @ExcelProperty(value ="项目类型", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "project_type")
         private String projectType;
         /**
          * 预计签约金额（万元）
          */
         @ExcelProperty("预计签约金额（万元）")
-        private String signMoney;
+        private String matchBidMoney;
         /**
          * 预计主营金额（万元）
          */
@@ -76,7 +77,7 @@ public class BiddingListExportVo {
         /**
          * 是否框架合同
          */
-        @ExcelProperty("是否框架合同")
+        @ExcelProperty(value ="是否框架合同", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "is_framework_contract")
         private String isFrameworkContract;
         /**
