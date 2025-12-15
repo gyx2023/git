@@ -1,8 +1,6 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.common.core.domain.dto.SignStatisticsReqDTO;
-import com.crm.common.core.domain.dto.SignStatisticsRespDTO;
-import com.crm.common.core.domain.dto.SignStatisticsUserRespDTO;
+import com.crm.common.core.domain.dto.*;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.entity.topp.ToppBidNewDO;
 import com.crm.system.domain.vo.topp.ToppBidNewVo;
@@ -24,4 +22,10 @@ public interface ToppBidNewMapper extends BaseMapperPlus<ToppBidNewMapper, ToppB
 
     SignStatisticsRespDTO selectSignStatisticsBj(SignStatisticsReqDTO reqDTO);
 
+
+    ContractStatisticsRespDTO selectContractStatisticsBj(ContractStatisticsReqDTO reqDTO);
+
+    ContractStatisticsRespDTO selectContractStatisticsRespDTO(ContractStatisticsReqDTO reqDTO);
+
+    List<ContractStatisticsUserRespDTO> selectContractStatisticsUserRespDTO(ContractStatisticsReqDTO reqDTO);
 }
