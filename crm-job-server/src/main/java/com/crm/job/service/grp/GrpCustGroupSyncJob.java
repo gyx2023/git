@@ -58,6 +58,8 @@ public class GrpCustGroupSyncJob {
 
     private final Map<String,String> custStateMap = new HashMap<>();
 
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     /**
      * 客户集团信息同步任务
      * 在xxl-job调度中心配置JobHandler为：grpCustGroupSyncJobHandler
@@ -177,6 +179,15 @@ public class GrpCustGroupSyncJob {
                     List<TfFCustGroupMDO> custGroupList = groupFileParser.parseFile(txtContent.toString(), TfFCustGroupMDO.class, "\\x1b");
 
                     if (!custGroupList.isEmpty()) {
+
+                        custGroupList.forEach(p->{
+                            if(StringUtils.isNotBlank(p.getEparchyCode())){
+                                p.setEparchyCode(cityMap.get(p.getEparchyCode())==null?p.getEparchyCode():cityMap.get(p.getEparchyCode()));
+                            }
+                            if(StringUtils.isNotBlank(p.getBCityCode())){
+                                p.setBCityCode(cityMap.get(p.getBCityCode())==null?p.getBCityCode():cityMap.get(p.getBCityCode()));
+                            }
+                        });
                         // 批量插入数据库
                         int success = tfFCustGroupMService.batchInsert(custGroupList);
                         totalSuccess[0] += success;
@@ -241,13 +252,21 @@ public class GrpCustGroupSyncJob {
                 newGroup.setHqGrpCode(custGroup.getCertiCode());
                 newGroup.setCustId(custGroup.getProvinceCustId());
                 newGroup.setGrpStatus(custStateMap.get(custGroup.getCustState()));
-                newGroup.setAreaId(cityMap.get(custGroup.getEparchyCode()));
-                newGroup.setCountyId(cityMap.get(custGroup.getBCityCode()));
+                newGroup.setAreaId(custGroup.getEparchyCode());
+                newGroup.setCountyId(custGroup.getBCityCode());
                 newGroup.setIndustryMajorKind(custGroup.getFirstCallingTypeCode());
                 newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
                 newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
                 newGroup.setGrpCustType(custGroup.getCustClassType());
-                //newGroup.setGrpCreateTime(custGroup.getCreateDate());
+                // 转换字符串日期为Date类型
+                if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
+                    try {
+                        Date grpCreateTime = formatter.parse(custGroup.getCreateDate());
+                        newGroup.setGrpCreateTime(grpCreateTime);
+                    } catch (ParseException e) {
+                        log.info("日期转换失败，createDate:{}, error:{}", custGroup.getCreateDate(),e.getMessage());
+                    }
+                }
                 newGroup.setCreateTime(new Date());
                 newGroup.setUpdateTime(new Date());
                 groupInfoList.add(newGroup);
