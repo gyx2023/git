@@ -92,7 +92,7 @@
         left join topp_member h on h.project_id = c.id_ and h.member_role = 'member_role_zcjl'
         left join zqzt_sys_user i on h.member_id=i.user_id
         left join (select aa.info_id,aa.actor_,sum(support_hours) hours from tcomm_task aa
-        where aa.actor_ is not null group by aa.info_id,aa.actor_)k
+        where aa.actor_ is not null and task_code = 'responseBidnew'   group by aa.info_id,aa.actor_)k
         on k.info_id=c.id_
         and h.member_id=k.actor_
         left join (select project_id, GROUP_CONCAT( CONCAT_WS( ',', name_) SEPARATOR ';' ) as tdry from (select distinct
