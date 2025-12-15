@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -184,10 +185,15 @@ public class BiddingListServiceImpl implements BiddingListService {
                     .filter(dto -> dto.getSupportManager() != null && dto.getContribution() != null)
                     .map(dto -> dto.getSupportManager() + dto.getContribution())
                     .collect(Collectors.joining(","));
+                String zcjl = sameOppCodeList.stream()
+                    .map(BiddingListRespDTO::getSupportManager)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining(","));
 
                 // 为所有相同oppCode的项设置相同的贡献情况
                 for (BiddingListRespDTO dto : sameOppCodeList) {
                     dto.setContributionSituation(unifiedContribution);
+                    dto.setSupportTeam(zcjl);
                 }
             }
         }
