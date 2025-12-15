@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppBidNewScoreMapper">
 
     <resultMap type="com.crm.common.core.domain.dto.BiddingListRespDTO" id="resultMap">
@@ -14,7 +14,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="bidResult" column="bid_result"/>
         <result property="bidBody" column="bid_body"/>
         <result property="projectType" column="project_type"/>
-        <result property="signMoney" column="sign_money"/>
+        <result property="matchBidMoney" column="match_bid_money"/>
         <result property="expectedMainOperatingAmount" column="expected_main_operating_amount"/>
         <result property="ictProfit" column="ict_profit"/>
         <result property="isFrameworkContract" column="is_framework_contract"/>
@@ -36,61 +36,79 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectBidList" resultMap="resultMap">
 
 
-
         select distinct
-            a.project_name,
-            a.buy_user as buy_user_name ,
-            ROUND(a.buy_budget_money, 2) AS buy_budget_money,
-            a.open_bid_time,
-            c.unicom_type,
-            a.competition_condition,
-            a.result as bid_result,
-            a.bid_body,
-            a.project_type,
-           ROUND(a.sign_money, 2) AS sign_money,
-           ROUND(a.expected_main_operating_amount, 2) AS expected_main_operating_amount,
-            a.ict_profit,
-            a.is_framework_contract,
-            a.contract_time,
-            c.opp_code,
-            c.opp_name,
-            f.dept_name as opp_dept_name,
-            d.nick_name as opp_manager,
-            g.dept_name as main_support_dept_name,
-            if(h.member_id=e.user_id,'主责支撑经理','支撑经理') as support_role,
-            i.nick_name as support_manager,
-            l.tdry as support_team,
-            k.hours as work_days,
-            x.contribution,
-            x.grgxed as personal_contribution_amount
+        a.project_name,
+        a.buy_user as buy_user_name ,
+        CASE
+            WHEN a.buy_budget_money IS NOT NULL THEN CONCAT(ROUND(a.buy_budget_money, 2), '（万元）')
+            ELSE NULL
+        END AS buy_budget_money,
+        ifnull(null,DATE_FORMAT(a.open_bid_time, '%Y-%m-%d')) as open_bid_time,
+        c.unicom_type,
+        a.competition_condition,
+        a.result as bid_result,
+        a.bid_body,
+        a.project_type,
+
+        CASE
+            WHEN a.match_bid_money IS NOT NULL THEN CONCAT(ROUND(a.match_bid_money, 2), '（万元）')
+            ELSE NULL
+        END AS match_bid_money,
+            CASE
+            WHEN a.expected_main_operating_amount IS NOT NULL THEN CONCAT(ROUND(a.expected_main_operating_amount, 2), '（万元）')
+            ELSE NULL
+        END AS expected_main_operating_amount,
+        CASE
+            WHEN a.ict_profit IS NOT NULL THEN CONCAT(ROUND(a.ict_profit, 2), '%')
+            ELSE NULL
+        END AS ict_profit,
+        a.is_framework_contract,
+        CASE
+            WHEN a.contract_time IS NOT NULL THEN CONCAT(a.contract_time, '（月）')
+            ELSE NULL
+        END AS contract_time,
+        c.opp_code,
+        c.opp_name,
+        f.dept_name as opp_dept_name,
+        d.nick_name as opp_manager,
+        g.dept_name as main_support_dept_name,
+        if(h.member_id=e.user_id,'主责支撑经理','支撑经理') as support_role,
+        i.nick_name as support_manager,
+        l.tdry as support_team,
+        k.hours as work_days,
+        CASE
+            WHEN x.contribution IS NOT NULL THEN CONCAT(x.contribution, '%')
+            ELSE NULL
+        END AS contribution,
+        x.grgxed as personal_contribution_amount
 
         from topp_bid_new a
-                 inner  join  topp_bid_new_score b  on a.id=b.topp_bid_new_id
-                 inner join topp_opportunity c on c.id_=b.opportunity_code
-                 left join   zqzt_sys_user d on c.cust_manager_id=d.user_id
-                 left join   zqzt_sys_user e on c.designer =e.user_id
-                 left join zqzt_sys_dept f on d.dept_id=f.dept_id
-                 left join zqzt_sys_dept g on e.dept_id=g.dept_id
-                 left join topp_member h on h.project_id = c.id_
-                 left join zqzt_sys_user i on h.member_id=i.user_id
-                 left join (select aa.info_id,aa.actor_,sum(support_hours) hours  from tcomm_task aa
-                            where aa.actor_ is  not null  group by aa.info_id,aa.actor_)k
-                           on k.info_id=c.id_
-                               and h.member_id=k.actor_
-                 left join (select  project_id, GROUP_CONCAT( CONCAT_WS( ',', name_) SEPARATOR ';' ) as tdry from (select distinct project_id,name_ from  topp_member aa where
-            aa.member_role = 'member_role_zcjl'  )ss    group by project_id
+        inner join topp_bid_new_score b on a.id=b.topp_bid_new_id
+        inner join topp_opportunity c on c.id_=b.opportunity_code
+        inner join zqzt_sys_user d on c.cust_manager_id=d.user_id
+        inner join zqzt_sys_user e on c.designer =e.user_id
+        inner join zqzt_sys_dept f on d.dept_id=f.dept_id
+        inner join zqzt_sys_dept g on e.dept_id=g.dept_id
+        left join topp_member h on h.project_id = c.id_ and h.member_role = 'member_role_zcjl'
+        left join zqzt_sys_user i on h.member_id=i.user_id
+        left join (select aa.info_id,aa.actor_,sum(support_hours) hours from tcomm_task aa
+        where aa.actor_ is not null group by aa.info_id,aa.actor_)k
+        on k.info_id=c.id_
+        and h.member_id=k.actor_
+        left join (select project_id, GROUP_CONCAT( CONCAT_WS( ',', name_) SEPARATOR ';' ) as tdry from (select distinct
+        project_id,name_ from topp_member aa where
+        aa.member_role = 'member_role_zcjl' )ss group by project_id
         )l on l.project_id =c.id_
-                 left join (select a.id,any_value(name_) as name_ts,b.contribution, a.sign_money * b.contribution/100 as grgxed
-                            from  topp_bid_new a
-                                      inner join  topp_bid_new_score b on a.id=b.topp_bid_new_id
-                                      inner join  topp_member c on  b.name=c.name_
-                                and c.project_id =b.opportunity_code
+        left join (select a.id,any_value(name_) as name_ts,b.contribution, a.match_bid_money * b.contribution/100 as grgxed
+        from topp_bid_new a
+        inner join topp_bid_new_score b on a.id=b.topp_bid_new_id
+        inner join topp_member c on b.name=c.name_
+        and c.project_id =b.opportunity_code
         ) x
-                           on a.id=x.id
-                               and h.name_=x.name_ts
-        where  a.is_sign='0'
-          and h.member_role = 'member_role_zcjl'
-          and i.dept_id in(
+        on a.id=x.id
+        and h.name_=x.name_ts
+        where a.is_sign='0'
+        and e.dept_id in(
         select dept_id from zqzt_sys_dept where dept_id = #{deptId}
         union
         select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
@@ -106,10 +124,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
@@ -119,14 +137,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and c.expect_count_money &lt; #{maxYjAmount}
         </if>
 
-        <if test="bidMainPersonnel != null">
-            and a.bid_body like concat('%',#{bidMainPersonnel},'%')
+        <if test="bidMainPersonnelT != null">
+            and a.bid_body like concat('%',#{bidMainPersonnelT},'%')
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+        <if test="jzqkT != null">
+            and a.competition_condition like concat('%',#{jzqkT},'%')
         </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+        <if test="projectTypeT != null">
+            and a.project_type like concat('%',#{projectTypeT},'%')
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
@@ -144,8 +162,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endTime != null">
             and a.open_bid_time &lt;= #{endTime}
         </if>
-        <if test="unicomType != null">
-            and c.unicom_type like concat('%',#{unicomType},'%')
+        <if test="unicomTypeT != null">
+            and c.unicom_type like concat('%',#{unicomTypeT},'%')
         </if>
         order by a.project_name asc
     </select>

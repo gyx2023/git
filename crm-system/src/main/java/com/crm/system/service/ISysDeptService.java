@@ -33,6 +33,8 @@ public interface ISysDeptService {
      */
 
     List<Tree<Long>>   querySysDeptTree();
+
+    SysDept getParentDept(SysDept dept);
     /**
      * 构建前端所需要下拉树结构
      *
