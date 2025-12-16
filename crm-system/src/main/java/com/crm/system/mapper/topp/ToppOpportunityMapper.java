@@ -1,9 +1,12 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.system.domain.entity.topp.ToppOpportunityDO;
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
+import com.crm.system.domain.entity.topp.ToppOpportunityDO;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * 【请填写功能名称】Mapper接口
@@ -14,4 +17,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMapper, ToppOpportunityDO, ToppOpportunityVo> {
 
+    List<SignOppoFileExportDTO> selectToppOpportunity();
 }
