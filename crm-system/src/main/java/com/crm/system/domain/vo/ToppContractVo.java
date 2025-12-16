@@ -55,7 +55,7 @@ public class ToppContractVo {
     private String finalCustName;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String contractNo;
@@ -128,7 +128,7 @@ public class ToppContractVo {
     private Integer isNeedPerformMoney;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private BigDecimal performMoney;
@@ -224,103 +224,103 @@ public class ToppContractVo {
     private String status;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String wfZt;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String dfName;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String contState;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String cbDepartment;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String cbUser;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String ssDate;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String sptgDate;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String contXingzhi;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String lastSpUser;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String contractAddType;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String zzsSl;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String bhZzsMoney;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String lxDepartment;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String htSmQdyj;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String qdgzDate;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String allInMoney;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String lxUser;
@@ -344,43 +344,43 @@ public class ToppContractVo {
     private String expectIncome;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String includeType;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String contractCategory;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String contractType2;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Date auditTime;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Long auditUser;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String auditStatus;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String isValid;
@@ -392,13 +392,11 @@ public class ToppContractVo {
     private String ictRat;
 
     /**
-     * 合同标签：
-1：5G合同
-2：非5G合同
+     *  合同标签：
+        1：5G合同
+        2：非5G合同
      */
-    @ExcelProperty(value = "合同标签：
-1：5G合同
-2：非5G合同")
+    @ExcelProperty(value = "合同标签： 1：5G合同 2：非5G合同")
     private String contractLabel;
 
     /**

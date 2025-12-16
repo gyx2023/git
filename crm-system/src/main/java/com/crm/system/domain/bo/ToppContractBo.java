@@ -55,7 +55,7 @@ public class ToppContractBo extends BaseEntity {
     private String finalCustName;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractNo;
@@ -127,7 +127,7 @@ public class ToppContractBo extends BaseEntity {
     private Integer isNeedPerformMoney;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private BigDecimal performMoney;
@@ -223,103 +223,103 @@ public class ToppContractBo extends BaseEntity {
     private String status;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String wfZt;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String dfName;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contState;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String cbDepartment;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String cbUser;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String ssDate;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String sptgDate;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contXingzhi;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String lastSpUser;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractAddType;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String zzsSl;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String bhZzsMoney;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String lxDepartment;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String htSmQdyj;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String qdgzDate;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String allInMoney;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String lxUser;
@@ -343,43 +343,43 @@ public class ToppContractBo extends BaseEntity {
     private String expectIncome;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String includeType;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractCategory;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractType2;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private Date auditTime;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long auditUser;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String auditStatus;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String isValid;
@@ -391,13 +391,11 @@ public class ToppContractBo extends BaseEntity {
     private String ictRat;
 
     /**
-     * 合同标签：
-1：5G合同
-2：非5G合同
+     *  合同标签：
+        1：5G合同
+        2：非5G合同
      */
-    @NotBlank(message = "合同标签：
-1：5G合同
-2：非5G合同不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "合同标签： 1：5G合同 2：非5G合同不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractLabel;
 
     /**
