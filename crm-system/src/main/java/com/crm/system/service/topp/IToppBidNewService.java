@@ -1,8 +1,9 @@
 package com.crm.system.service.topp;
+
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.vo.topp.ToppOpportunityVo;
+import com.crm.system.domain.bo.topp.ToppBidNewBo;
+import com.crm.system.domain.vo.topp.ToppBidNewVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,32 +14,32 @@ import java.util.List;
  * @author crm
  * @date 2025-12-02
  */
-public interface ToppOpportunityService {
+public interface IToppBidNewService {
 
     /**
      * 查询【请填写功能名称】
      */
-    ToppOpportunityVo queryById(Long id);
+    ToppBidNewVo queryById(Long id);
 
     /**
      * 查询【请填写功能名称】列表
      */
-    TableDataInfo<ToppOpportunityVo> queryPageList(ToppOpportunityBo bo, PageQuery pageQuery);
+    TableDataInfo<ToppBidNewVo> queryPageList(ToppBidNewBo bo, PageQuery pageQuery);
 
     /**
      * 查询【请填写功能名称】列表
      */
-    List<ToppOpportunityVo> queryList(ToppOpportunityBo bo);
+    List<ToppBidNewVo> queryList(ToppBidNewBo bo);
 
     /**
      * 新增【请填写功能名称】
      */
-    Boolean insertByBo(ToppOpportunityBo bo);
+    Boolean insertByBo(ToppBidNewBo bo);
 
     /**
      * 修改【请填写功能名称】
      */
-    Boolean updateByBo(ToppOpportunityBo bo);
+    Boolean updateByBo(ToppBidNewBo bo);
 
     /**
      * 校验并批量删除【请填写功能名称】信息
