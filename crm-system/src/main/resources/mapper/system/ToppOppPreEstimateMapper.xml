@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ToppOppPreEstimateMapper">
+
+    <resultMap type="com.crm.system.domain.ToppOppPreEstimate" id="ToppOppPreEstimateResult">
+        <result property="id" column="id_"/>
+        <result property="oppoId" column="oppo_id"/>
+        <result property="oppDesigner" column="opp_designer"/>
+        <result property="projectNumber" column="project_number"/>
+        <result property="projectName" column="project_name"/>
+        <result property="evaluationResult" column="evaluation_result"/>
+        <result property="fiveFusion" column="five_fusion"/>
+        <result property="fiveFusionType" column="five_fusion_type"/>
+        <result property="natureCustId" column="nature_cust_id"/>
+        <result property="natureCustName" column="nature_cust_name"/>
+    </resultMap>
+
+
+</mapper>
