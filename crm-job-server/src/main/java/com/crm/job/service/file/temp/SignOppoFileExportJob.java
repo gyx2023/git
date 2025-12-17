@@ -1,10 +1,11 @@
 package com.crm.job.service.file.temp;
 
-import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.ExcelWriter;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.utils.BeanCopyUtils;
+import com.crm.common.utils.poi.ExcelUtil;
+import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
+import com.crm.system.service.ISysOssService;
 import com.crm.system.service.topp.ToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.util.List;
 
 
@@ -23,16 +23,13 @@ import java.util.List;
 public class SignOppoFileExportJob {
     @Resource
     private ToppOpportunityService service;
+    @Resource
+    private ISysOssService iSysOssService;
 
     @XxlJob("signOppoFileExportJob")
     public void execute() {
         log.info("开始执行商机文件导出");
         XxlJobHelper.log("开始执行商机文件导出");
-
-        // 1. 定义文件路径和名称（建议用时间戳避免覆盖）
-        String filePath = "C:\\test";
-        String fileName = "投标清单文件_" + System.currentTimeMillis() + ".xlsx";
-        File targetFile = new File(filePath, fileName);
 
         try {
             // 2. 查询数据并转换
@@ -45,34 +42,18 @@ public class SignOppoFileExportJob {
                 return;
             }
             List<SignOppoFileExportVO> voList = BeanCopyUtils.copyList(list, SignOppoFileExportVO.class);
+            File tempFile = File.createTempFile("SJ2025_" + System.currentTimeMillis(), ".xlsx");
 
-            // 3. 自动创建目录（核心修复：解决目录不存在报错）
-            File parentDir = targetFile.getParentFile();
-            if (!parentDir.exists()) {
-                boolean mkdirs = parentDir.mkdirs(); // 多级目录创建
-                if (!mkdirs) {
-                    throw new RuntimeException("创建导出目录失败：" + parentDir.getAbsolutePath());
-                }
-                log.info("成功创建导出目录：{}", parentDir.getAbsolutePath());
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                ExcelUtil.exportExcel(voList, "商机信息", SignOppoFileExportVO.class, fos);
             }
 
-            // 4. 生成Excel文件（使用 Alibaba EasyExcel）
-            try (OutputStream os = new FileOutputStream(targetFile);
-                 ExcelWriter writer = EasyExcel.write(os, SignOppoFileExportVO.class).build()) {
-
-                // 写入数据
-                writer.write(voList, EasyExcel.writerSheet("投标清单").build());
-
-                log.info("Excel导出成功，文件路径：{}", targetFile.getAbsolutePath());
-                XxlJobHelper.log("Excel导出成功，文件路径：{}", targetFile.getAbsolutePath());
-
-            } catch (Exception e) {
-                throw new RuntimeException("Excel写入失败", e);
-            }
-
+            SysOssVo upload = iSysOssService.upload(tempFile);
+            tempFile.deleteOnExit();
+            log.info("商机信息导出成功，文件地址：{}", upload.getUrl());
         } catch (Exception e) {
             // 5. 异常处理：记录日志+标记XXL-Job任务失败
-            String errorMsg = "导出投标清单文件失败：" + e.getMessage();
+            String errorMsg = "商机信息导出失败：" + e.getMessage();
             log.error(errorMsg, e);
             XxlJobHelper.log(errorMsg);
             XxlJobHelper.handleFail(errorMsg); // 关键：标记任务执行失败

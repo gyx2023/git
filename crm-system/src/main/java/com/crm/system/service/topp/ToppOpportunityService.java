@@ -7,6 +7,7 @@ import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 【请填写功能名称】Service接口
@@ -47,4 +48,5 @@ public interface ToppOpportunityService {
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
     List<SignOppoFileExportDTO> selectToppOpportunity();
+
 }
