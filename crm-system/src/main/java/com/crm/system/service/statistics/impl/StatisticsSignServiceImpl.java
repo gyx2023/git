@@ -115,29 +115,6 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
      */
     @Override
     public TableDataInfo<SignStatisticsRespDTO> selectPageList(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
-        // 处理多个联通类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理多个项目类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理多个主要人员参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String mainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(mainPersonnelStr);
-        }
-
-        // 处理多个进展状态参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
 
         // 设置查询时间和部门条件
         setDateRange(reqDTO);
@@ -222,29 +199,6 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
      */
     @Override
     public TableDataInfo<SignStatisticsUserRespDTO> selectUserPageList(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
-        // 处理多个联通类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理多个项目类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理多个主要人员参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String mainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(mainPersonnelStr);
-        }
-
-        // 处理多个进展状态参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
 
         // 设置查询时间和部门条件
         setDateRange(reqDTO);
