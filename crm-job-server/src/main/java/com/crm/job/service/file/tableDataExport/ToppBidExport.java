@@ -34,15 +34,6 @@ public class ToppBidExport {
     @Resource
     private ToppBidMapper toppBidMapper;
 
-    /**
-     * topp_bid表数据导出任务
-     * 在xxl-job调度中心配置JobHandler为：toppBidExportHandler
-     * 支持传入参数格式：
-     * 1. 无参数 - 使用默认SFTP配置和当前日期
-     * 2. configType - 使用指定的SFTP配置类型（例如：grp_group_info_syn）
-     * 3. configType:yyyyMMdd - 使用指定的SFTP配置类型和日期
-     * 4. :yyyyMMdd - 使用默认SFTP配置和指定日期
-     */
     @XxlJob("toppBidExportHandler")
     public void execute() {
         log.info("开始执行topp_bid表数据导出任务");

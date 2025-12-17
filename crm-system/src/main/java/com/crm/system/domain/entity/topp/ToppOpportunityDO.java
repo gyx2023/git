@@ -149,6 +149,7 @@ public class ToppOpportunityDO extends BaseEntity {
     /**
      *
      */
+    @TableField("is_rec_partner_")
     private Integer isRecPartner;
     /**
      * 是否需要外部资源
@@ -345,6 +346,7 @@ public class ToppOpportunityDO extends BaseEntity {
     /**
      * 十分制评分
      */
+    @TableField("score_")
     private Integer score;
     /**
      * 商机终结类型
@@ -365,10 +367,12 @@ public class ToppOpportunityDO extends BaseEntity {
     /**
      *
      */
+    @TableField("memo_")
     private String memo;
     /**
      *
      */
+    @TableField("sfzt_")
     private String sfzt;
     /**
      * 转实施时间
@@ -558,5 +562,23 @@ public class ToppOpportunityDO extends BaseEntity {
      *
      */
     private String preDecision;
+
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 
 }
