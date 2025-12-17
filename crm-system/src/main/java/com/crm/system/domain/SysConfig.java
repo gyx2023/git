@@ -2,6 +2,7 @@ package com.crm.system.domain;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.crm.common.annotation.ExcelDictFormat;
@@ -29,7 +30,7 @@ public class SysConfig extends BaseEntity {
      * 参数主键
      */
     @ExcelProperty(value = "参数主键")
-    @TableId(value = "config_id")
+    @TableId(value = "config_id",type = IdType.AUTO)
     private Long configId;
 
     /**
