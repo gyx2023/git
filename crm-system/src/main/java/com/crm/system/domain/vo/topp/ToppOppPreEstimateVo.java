@@ -1,4 +1,4 @@
-package com.crm.system.domain.vo;
+package com.crm.system.domain.vo.topp;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;

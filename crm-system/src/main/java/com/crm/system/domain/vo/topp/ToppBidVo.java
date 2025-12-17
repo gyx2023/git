@@ -1,4 +1,4 @@
-package com.crm.system.domain.vo;
+package com.crm.system.domain.vo.topp;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -37,7 +37,7 @@ public class ToppBidVo {
     private String opportunityCode;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String bidCode;
@@ -61,19 +61,19 @@ public class ToppBidVo {
     private String result;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private BigDecimal money;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Date getTime;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private Date returnTime;
@@ -109,7 +109,7 @@ public class ToppBidVo {
     private Long auditTaskId;
 
     /**
-     * 
+     *
      */
     @ExcelProperty(value = "")
     private String auditPerson;

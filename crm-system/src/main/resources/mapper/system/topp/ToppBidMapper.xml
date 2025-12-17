@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.crm.system.mapper.ToppBidMapper">
+<mapper namespace="com.crm.system.mapper.topp.ToppBidMapper">
 
-    <resultMap type="com.crm.system.domain.ToppBid" id="ToppBidResult">
+    <resultMap type="com.crm.system.domain.entity.topp.ToppBidDo" id="ToppBidResult">
         <result property="id" column="id_"/>
         <result property="opportunityCode" column="opportunity_code"/>
         <result property="bidCode" column="bid_code"/>

@@ -1,4 +1,4 @@
-package com.crm.system.domain.bo;
+package com.crm.system.domain.bo.topp;
 
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;

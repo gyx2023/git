@@ -1,8 +1,7 @@
-package com.crm.system.service;
+package com.crm.system.service.topp;
 
-import com.crm.system.domain.ToppOppPreEstimate;
-import com.crm.system.domain.vo.ToppOppPreEstimateVo;
-import com.crm.system.domain.bo.ToppOppPreEstimateBo;
+import com.crm.system.domain.vo.topp.ToppOppPreEstimateVo;
+import com.crm.system.domain.bo.topp.ToppOppPreEstimateBo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 

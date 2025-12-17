@@ -2,8 +2,8 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.ToppOppPreEstimate;
-import com.crm.system.mapper.ToppOppPreEstimateMapper;
+import com.crm.system.domain.entity.topp.ToppOppPreEstimateDo;
+import com.crm.system.mapper.topp.ToppOppPreEstimateMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +88,7 @@ public class ToppOppPreEstimateExport {
 
         try {
             // 查询topp_opp_pre_estimate表所有数据
-            List<ToppOppPreEstimate> toppOppPreEstimateList = toppOppPreEstimateMapper.selectList(new LambdaQueryWrapper<>());
+            List<ToppOppPreEstimateDo> toppOppPreEstimateList = toppOppPreEstimateMapper.selectList(new LambdaQueryWrapper<>());
 
             if (toppOppPreEstimateList.isEmpty()) {
                 String warnMsg = "topp_opp_pre_estimate表中没有数据需要导出";
@@ -104,7 +104,7 @@ public class ToppOppPreEstimateExport {
             fileContent.append("id_|oppoId_|oppDesigner_|projectNumber_|projectName_|evaluationResult_|fiveFusion_|fiveFusionType_|natureCustId_|natureCustName_|createBy_|createTime_|updateBy_|updateTime_\n");
 
             // 添加数据行
-            for (ToppOppPreEstimate toppOppPreEstimate : toppOppPreEstimateList) {
+            for (ToppOppPreEstimateDo toppOppPreEstimate : toppOppPreEstimateList) {
                 fileContent.append(formatField(toppOppPreEstimate.getId()))
                     .append("|")
                     .append(formatField(toppOppPreEstimate.getOppoId()))

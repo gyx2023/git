@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.crm.system.mapper.ToppOppPreEstimateMapper">
+<mapper namespace="com.crm.system.mapper.topp.ToppOppPreEstimateMapper">
 
-    <resultMap type="com.crm.system.domain.ToppOppPreEstimate" id="ToppOppPreEstimateResult">
+    <resultMap type="com.crm.system.domain.entity.topp.ToppOppPreEstimateDo" id="ToppOppPreEstimateResult">
         <result property="id" column="id_"/>
         <result property="oppoId" column="oppo_id"/>
         <result property="oppDesigner" column="opp_designer"/>

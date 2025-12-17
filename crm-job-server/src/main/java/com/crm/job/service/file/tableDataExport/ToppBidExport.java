@@ -2,8 +2,8 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.ToppBid;
-import com.crm.system.mapper.ToppBidMapper;
+import com.crm.system.domain.entity.topp.ToppBidDo;
+import com.crm.system.mapper.topp.ToppBidMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +88,7 @@ public class ToppBidExport {
 
         try {
             // 查询topp_bid表所有数据
-            List<ToppBid> toppBidList = toppBidMapper.selectList(new LambdaQueryWrapper<>());
+            List<ToppBidDo> toppBidList = toppBidMapper.selectList(new LambdaQueryWrapper<>());
 
             if (toppBidList.isEmpty()) {
                 String warnMsg = "topp_bid表中没有数据需要导出";
@@ -104,7 +104,7 @@ public class ToppBidExport {
             fileContent.append("id_|opportunityCode_|bidCode_|bidBody_|resultTime_|result_|money_|getTime_|returnTime_|creator_|memo_|borrower_|reportUser_|auditTaskId_|auditPerson_|auditStatus_|auditResult_|auditTime_|matchBidMoney_|bidMoney_|endTime_|contractType_|projectId_|projectName_|contractTime_|ictProfit_|softProfit_|isSign_|isFrameworkContract_|isSelfReserch_|notSelfReserchReason_|selfReserchName_|selfReserchMoney_|bidResultText_|bidProjectResume_|contractMoney_|createBy_|createTime_|updateBy_|updateTime_\n");
 
             // 添加数据行
-            for (ToppBid toppBid : toppBidList) {
+            for (ToppBidDo toppBid : toppBidList) {
                 fileContent.append(formatField(toppBid.getId()))
                     .append("|")
                     .append(formatField(toppBid.getOpportunityCode()))

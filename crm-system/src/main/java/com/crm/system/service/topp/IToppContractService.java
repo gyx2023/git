@@ -1,8 +1,7 @@
-package com.crm.system.service;
+package com.crm.system.service.topp;
 
-import com.crm.system.domain.ToppContract;
-import com.crm.system.domain.vo.ToppContractVo;
-import com.crm.system.domain.bo.ToppContractBo;
+import com.crm.system.domain.vo.topp.ToppContractVo;
+import com.crm.system.domain.bo.topp.ToppContractBo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 

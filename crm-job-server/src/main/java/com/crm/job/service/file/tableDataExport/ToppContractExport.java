@@ -2,8 +2,8 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.ToppContract;
-import com.crm.system.mapper.ToppContractMapper;
+import com.crm.system.domain.entity.topp.ToppContractDo;
+import com.crm.system.mapper.topp.ToppContractMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +88,7 @@ public class ToppContractExport {
 
         try {
             // 查询topp_contract表所有数据
-            List<ToppContract> toppContractList = toppContractMapper.selectList(new LambdaQueryWrapper<>());
+            List<ToppContractDo> toppContractList = toppContractMapper.selectList(new LambdaQueryWrapper<>());
 
             if (toppContractList.isEmpty()) {
                 String warnMsg = "topp_contract表中没有数据需要导出";
@@ -104,7 +104,7 @@ public class ToppContractExport {
             fileContent.append("id_|projectId_|ourCompany_|otherCompany_|finalCustName_|contractNo_|contractName_|contractType_|contractCurrency_|totalMoney_|contractStatus_|agentPerson_|agentDepartment_|performNo_|performName_|performTel_|isNeedPerformMoney_|performMoney_|memo_|signDate_|startDate_|endDate_|validityTime_|isAutoDelay_|delayTo_|creator_|isExpire_|isRemind_|performMoneyNum_|incomeType_|operationType_|relationId_|status_|wfZt_|dfName_|contState_|cbDepartment_|cbUser_|ssDate_|sptgDate_|contXingzhi_|lastSpUser_|contractAddType_|zzsSl_|bhZzsMoney_|lxDepartment_|htSmQdyj_|qdgzDate_|allInMoney_|lxUser_|serviceInMoney_|grossProfitMargin_|expectIncome_|includeType_|contractCategory_|contractType2_|auditTime_|auditUser_|auditStatus_|isValid_|ictRat_|contractLabel_|normPlanIncome_|ictPlanIncome_|normDate_|contractCateL1Code_|contractCateL1Name_|contractCateL2Code_|contractCateL2Name_|contractCateL3Code_|contractCateL3Name_|planCycle_|payInfo_|createBy_|createTime_|updateBy_|updateTime_\n");
 
             // 添加数据行
-            for (ToppContract toppContract : toppContractList) {
+            for (ToppContractDo toppContract : toppContractList) {
                 fileContent.append(formatField(toppContract.getId()))
                     .append("|")
                     .append(formatField(toppContract.getProjectId()))

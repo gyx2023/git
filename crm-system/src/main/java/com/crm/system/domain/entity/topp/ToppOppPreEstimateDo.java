@@ -1,11 +1,8 @@
-package com.crm.system.domain;
+package com.crm.system.domain.entity.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
-import java.util.Date;
-import java.math.BigDecimal;
 
 import com.crm.common.core.domain.BaseEntity;
 
@@ -18,7 +15,7 @@ import com.crm.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("topp_opp_pre_estimate")
-public class ToppOppPreEstimate extends BaseEntity {
+public class ToppOppPreEstimateDo extends BaseEntity {
 
     private static final long serialVersionUID=1L;
 

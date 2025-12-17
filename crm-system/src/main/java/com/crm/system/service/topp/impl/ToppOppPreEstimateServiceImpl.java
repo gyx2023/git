@@ -1,4 +1,4 @@
-package com.crm.system.service.impl;
+package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.crm.common.utils.StringUtils;
@@ -9,11 +9,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.crm.system.domain.bo.ToppOppPreEstimateBo;
-import com.crm.system.domain.vo.ToppOppPreEstimateVo;
-import com.crm.system.domain.ToppOppPreEstimate;
-import com.crm.system.mapper.ToppOppPreEstimateMapper;
-import com.crm.system.service.IToppOppPreEstimateService;
+import com.crm.system.domain.bo.topp.ToppOppPreEstimateBo;
+import com.crm.system.domain.vo.topp.ToppOppPreEstimateVo;
+import com.crm.system.domain.entity.topp.ToppOppPreEstimateDo;
+import com.crm.system.mapper.topp.ToppOppPreEstimateMapper;
+import com.crm.system.service.topp.IToppOppPreEstimateService;
 
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
      */
     @Override
     public TableDataInfo<ToppOppPreEstimateVo> queryPageList(ToppOppPreEstimateBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<ToppOppPreEstimate> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppOppPreEstimateDo> lqw = buildQueryWrapper(bo);
         Page<ToppOppPreEstimateVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -54,22 +54,22 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
      */
     @Override
     public List<ToppOppPreEstimateVo> queryList(ToppOppPreEstimateBo bo) {
-        LambdaQueryWrapper<ToppOppPreEstimate> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppOppPreEstimateDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<ToppOppPreEstimate> buildQueryWrapper(ToppOppPreEstimateBo bo) {
+    private LambdaQueryWrapper<ToppOppPreEstimateDo> buildQueryWrapper(ToppOppPreEstimateBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<ToppOppPreEstimate> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getOppoId() != null, ToppOppPreEstimate::getOppoId, bo.getOppoId());
-        lqw.eq(bo.getOppDesigner() != null, ToppOppPreEstimate::getOppDesigner, bo.getOppDesigner());
-        lqw.eq(StringUtils.isNotBlank(bo.getProjectNumber()), ToppOppPreEstimate::getProjectNumber, bo.getProjectNumber());
-        lqw.like(StringUtils.isNotBlank(bo.getProjectName()), ToppOppPreEstimate::getProjectName, bo.getProjectName());
-        lqw.eq(bo.getEvaluationResult() != null, ToppOppPreEstimate::getEvaluationResult, bo.getEvaluationResult());
-        lqw.eq(bo.getFiveFusion() != null, ToppOppPreEstimate::getFiveFusion, bo.getFiveFusion());
-        lqw.eq(StringUtils.isNotBlank(bo.getFiveFusionType()), ToppOppPreEstimate::getFiveFusionType, bo.getFiveFusionType());
-        lqw.eq(StringUtils.isNotBlank(bo.getNatureCustId()), ToppOppPreEstimate::getNatureCustId, bo.getNatureCustId());
-        lqw.like(StringUtils.isNotBlank(bo.getNatureCustName()), ToppOppPreEstimate::getNatureCustName, bo.getNatureCustName());
+        LambdaQueryWrapper<ToppOppPreEstimateDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getOppoId() != null, ToppOppPreEstimateDo::getOppoId, bo.getOppoId());
+        lqw.eq(bo.getOppDesigner() != null, ToppOppPreEstimateDo::getOppDesigner, bo.getOppDesigner());
+        lqw.eq(StringUtils.isNotBlank(bo.getProjectNumber()), ToppOppPreEstimateDo::getProjectNumber, bo.getProjectNumber());
+        lqw.like(StringUtils.isNotBlank(bo.getProjectName()), ToppOppPreEstimateDo::getProjectName, bo.getProjectName());
+        lqw.eq(bo.getEvaluationResult() != null, ToppOppPreEstimateDo::getEvaluationResult, bo.getEvaluationResult());
+        lqw.eq(bo.getFiveFusion() != null, ToppOppPreEstimateDo::getFiveFusion, bo.getFiveFusion());
+        lqw.eq(StringUtils.isNotBlank(bo.getFiveFusionType()), ToppOppPreEstimateDo::getFiveFusionType, bo.getFiveFusionType());
+        lqw.eq(StringUtils.isNotBlank(bo.getNatureCustId()), ToppOppPreEstimateDo::getNatureCustId, bo.getNatureCustId());
+        lqw.like(StringUtils.isNotBlank(bo.getNatureCustName()), ToppOppPreEstimateDo::getNatureCustName, bo.getNatureCustName());
         return lqw;
     }
 
@@ -78,7 +78,7 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
      */
     @Override
     public Boolean insertByBo(ToppOppPreEstimateBo bo) {
-        ToppOppPreEstimate add = BeanUtil.toBean(bo, ToppOppPreEstimate.class);
+        ToppOppPreEstimateDo add = BeanUtil.toBean(bo, ToppOppPreEstimateDo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -92,7 +92,7 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
      */
     @Override
     public Boolean updateByBo(ToppOppPreEstimateBo bo) {
-        ToppOppPreEstimate update = BeanUtil.toBean(bo, ToppOppPreEstimate.class);
+        ToppOppPreEstimateDo update = BeanUtil.toBean(bo, ToppOppPreEstimateDo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -100,7 +100,7 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppOppPreEstimate entity){
+    private void validEntityBeforeSave(ToppOppPreEstimateDo entity){
         //TODO 做一些数据校验,如唯一约束
     }
 

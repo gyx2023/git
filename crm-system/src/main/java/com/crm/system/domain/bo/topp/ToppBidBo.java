@@ -1,4 +1,4 @@
-package com.crm.system.domain.bo;
+package com.crm.system.domain.bo.topp;
 
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
@@ -37,7 +37,7 @@ public class ToppBidBo extends BaseEntity {
     private String opportunityCode;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String bidCode;
@@ -61,19 +61,19 @@ public class ToppBidBo extends BaseEntity {
     private String result;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private BigDecimal money;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private Date getTime;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private Date returnTime;
@@ -109,7 +109,7 @@ public class ToppBidBo extends BaseEntity {
     private Long auditTaskId;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String auditPerson;
