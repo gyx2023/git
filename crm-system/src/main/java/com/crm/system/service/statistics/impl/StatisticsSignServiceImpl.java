@@ -341,7 +341,7 @@ public TableDataInfo<SignStatisticsRespDTO> selectPageList(SignStatisticsReqDTO 
                 totalWqZb += Integer.parseInt(respDTO.getWqZb());
             }
             if (ObjectUtil.isNotEmpty(respDTO.getGxedZb())) {
-                totalGxedZb += Integer.parseInt(respDTO.getGxedZb());
+                totalGxedZb += Double.parseDouble(respDTO.getGxedZb());
             }
         }
         // 设置合计行数据

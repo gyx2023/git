@@ -580,6 +580,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE  e.dept_id =#{deptId}
         and a.is_sign='0' and a.result='match_bid'
+        and c.name=d.nick_name
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
