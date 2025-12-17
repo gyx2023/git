@@ -3,12 +3,7 @@ package com.crm.system.domain.file;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
 import java.util.Date;
-import java.math.BigDecimal;
-
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
 
 /**

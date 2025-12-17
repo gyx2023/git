@@ -464,62 +464,77 @@ public class GrpGroupInfoDo {
     /**
      *
      */
+    @TableField("int_1")
     private Long int1;
     /**
      *
      */
+    @TableField("int_2")
     private Long int2;
     /**
      *
      */
+    @TableField("int_3")
     private Long int3;
     /**
      *
      */
+    @TableField("int_4")
     private Long int4;
     /**
      *
      */
+    @TableField("int_5")
     private Long int5;
     /**
      *
      */
+    @TableField("int_6")
     private Long int6;
     /**
      *
      */
+    @TableField("int_7")
     private Long int7;
     /**
      *
      */
+    @TableField("int_8")
     private Long int8;
     /**
      *
      */
+    @TableField("int_9")
     private Long int9;
     /**
      *
      */
+    @TableField("int_10")
     private Long int10;
     /**
      *
      */
+    @TableField("int_11")
     private Long int11;
     /**
      *
      */
+    @TableField("int_12")
     private Long int12;
     /**
      *
      */
+    @TableField("int_13")
     private Long int13;
     /**
      *
      */
+    @TableField("int_14")
     private Long int14;
     /**
      *
      */
+    @TableField("int_15")
     private Long int15;
     /**
      *
@@ -713,5 +728,9 @@ public class GrpGroupInfoDo {
      * 集团实名制标识，定义同UCS_CUSTOMER，Y S N1，默认值是N1
      */
     private String certVerified;
+    /**
+     *
+     */
+    private String string40;
 
 }
