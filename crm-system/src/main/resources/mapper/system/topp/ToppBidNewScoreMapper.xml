@@ -142,10 +142,10 @@
         </if>
 
         <if test="minSjAmount != null">
-            and c.expect_contract_money &gt;= #{minYjAmount}
+            and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and c.expect_contract_money &lt; #{maxYjAmount}
+            and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
@@ -270,10 +270,10 @@
         </if>
 
         <if test="minSjAmount != null">
-            and c.expect_contract_money &gt;= #{minYjAmount}
+            and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and c.expect_contract_money &lt; #{maxYjAmount}
+            and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
 
