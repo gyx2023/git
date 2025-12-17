@@ -1,5 +1,6 @@
 package com.crm.system.domain;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -26,7 +27,7 @@ public class ZqGrpGroupInfo extends BaseEntity {
     /**
      * 集团标识
      */
-    @TableId(value = "grp_id")
+    @TableId(value = "grp_id",type = IdType.AUTO)
     private Long grpId;
     /**
      * 集团名称
