@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppMemberBo;
-import com.crm.system.domain.entity.topp.ToppMemberDO;
+import com.crm.system.domain.topp.ToppMemberDo;
 import com.crm.system.domain.vo.topp.ToppMemberVo;
 import com.crm.system.mapper.topp.ToppMemberMapper;
 import com.crm.system.service.topp.ToppMemberService;
@@ -45,7 +45,7 @@ public class ToppMemberServiceImpl implements ToppMemberService {
      */
     @Override
     public TableDataInfo<ToppMemberVo> queryPageList(ToppMemberBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<ToppMemberDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppMemberDo> lqw = buildQueryWrapper(bo);
         Page<ToppMemberVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -55,27 +55,27 @@ public class ToppMemberServiceImpl implements ToppMemberService {
      */
     @Override
     public List<ToppMemberVo> queryList(ToppMemberBo bo) {
-        LambdaQueryWrapper<ToppMemberDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppMemberDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<ToppMemberDO> buildQueryWrapper(ToppMemberBo bo) {
+    private LambdaQueryWrapper<ToppMemberDo> buildQueryWrapper(ToppMemberBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<ToppMemberDO> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getProjectId() != null, ToppMemberDO::getProjectId, bo.getProjectId());
-        lqw.eq(StringUtils.isNotBlank(bo.getMemberRole()), ToppMemberDO::getMemberRole, bo.getMemberRole());
-        lqw.eq(bo.getMemberId() != null, ToppMemberDO::getMemberId, bo.getMemberId());
-        lqw.eq(bo.getMemberArea() != null, ToppMemberDO::getMemberArea, bo.getMemberArea());
-        lqw.eq(bo.getMemberOrg() != null, ToppMemberDO::getMemberOrg, bo.getMemberOrg());
-        lqw.eq(StringUtils.isNotBlank(bo.getName()), ToppMemberDO::getName, bo.getName());
-        lqw.eq(StringUtils.isNotBlank(bo.getRoleDesc()), ToppMemberDO::getRoleDesc, bo.getRoleDesc());
-        lqw.eq(bo.getCreator() != null, ToppMemberDO::getCreator, bo.getCreator());
-        lqw.eq(StringUtils.isNotBlank(bo.getMemo()), ToppMemberDO::getMemo, bo.getMemo());
-        lqw.eq(StringUtils.isNotBlank(bo.getScore()), ToppMemberDO::getScore, bo.getScore());
-        lqw.eq(StringUtils.isNotBlank(bo.getScoreExplain()), ToppMemberDO::getScoreExplain, bo.getScoreExplain());
-        lqw.eq(bo.getScoreTime() != null, ToppMemberDO::getScoreTime, bo.getScoreTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getContri()), ToppMemberDO::getContri, bo.getContri());
-        lqw.eq(StringUtils.isNotBlank(bo.getTeamLeaderFlag()), ToppMemberDO::getTeamLeaderFlag, bo.getTeamLeaderFlag());
+        LambdaQueryWrapper<ToppMemberDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getProjectId() != null, ToppMemberDo::getProjectId, bo.getProjectId());
+        lqw.eq(StringUtils.isNotBlank(bo.getMemberRole()), ToppMemberDo::getMemberRole, bo.getMemberRole());
+        lqw.eq(bo.getMemberId() != null, ToppMemberDo::getMemberId, bo.getMemberId());
+        lqw.eq(bo.getMemberArea() != null, ToppMemberDo::getMemberArea, bo.getMemberArea());
+        lqw.eq(bo.getMemberOrg() != null, ToppMemberDo::getMemberOrg, bo.getMemberOrg());
+        lqw.eq(StringUtils.isNotBlank(bo.getName()), ToppMemberDo::getName, bo.getName());
+        lqw.eq(StringUtils.isNotBlank(bo.getRoleDesc()), ToppMemberDo::getRoleDesc, bo.getRoleDesc());
+        lqw.eq(bo.getCreator() != null, ToppMemberDo::getCreator, bo.getCreator());
+        lqw.eq(StringUtils.isNotBlank(bo.getMemo()), ToppMemberDo::getMemo, bo.getMemo());
+        lqw.eq(StringUtils.isNotBlank(bo.getScore()), ToppMemberDo::getScore, bo.getScore());
+        lqw.eq(StringUtils.isNotBlank(bo.getScoreExplain()), ToppMemberDo::getScoreExplain, bo.getScoreExplain());
+        lqw.eq(bo.getScoreTime() != null, ToppMemberDo::getScoreTime, bo.getScoreTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getContri()), ToppMemberDo::getContri, bo.getContri());
+        lqw.eq(StringUtils.isNotBlank(bo.getTeamLeaderFlag()), ToppMemberDo::getTeamLeaderFlag, bo.getTeamLeaderFlag());
         return lqw;
     }
 
@@ -84,7 +84,7 @@ public class ToppMemberServiceImpl implements ToppMemberService {
      */
     @Override
     public Boolean insertByBo(ToppMemberBo bo) {
-        ToppMemberDO add = BeanUtil.toBean(bo, ToppMemberDO.class);
+        ToppMemberDo add = BeanUtil.toBean(bo, ToppMemberDo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -98,7 +98,7 @@ public class ToppMemberServiceImpl implements ToppMemberService {
      */
     @Override
     public Boolean updateByBo(ToppMemberBo bo) {
-        ToppMemberDO update = BeanUtil.toBean(bo, ToppMemberDO.class);
+        ToppMemberDo update = BeanUtil.toBean(bo, ToppMemberDo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -106,7 +106,7 @@ public class ToppMemberServiceImpl implements ToppMemberService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppMemberDO entity) {
+    private void validEntityBeforeSave(ToppMemberDo entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 

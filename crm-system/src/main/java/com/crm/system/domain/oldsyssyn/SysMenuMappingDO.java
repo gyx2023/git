@@ -15,7 +15,7 @@ import com.crm.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("zqzt_sys_menu_mapping")
-public class SysMenuMappingDO extends BaseEntity {
+public class SysMenuMappingDo extends BaseEntity {
 
     private static final long serialVersionUID=1L;
 

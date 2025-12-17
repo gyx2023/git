@@ -54,7 +54,7 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
                     paramInfo = "无参数";
                 }
             }
-            
+
             // 保存参数信息到 ThreadLocal
             requestParamTL.set(paramInfo);
 
@@ -74,13 +74,14 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
             StopWatch stopWatch = invokeTimeTL.get();
-            stopWatch.stop();
-            String url = request.getMethod() + " " + request.getRequestURI();
-            String paramInfo = requestParamTL.get();
-            
-            // 一行日志打印：URL + 参数 + 耗时
-            log.debug("[PLUS]请求完成 => URL[{}],{},耗时:[{}]毫秒", url, paramInfo, stopWatch.getTime());
-            
+            if (stopWatch != null) {
+                stopWatch.stop();
+                String url = request.getMethod() + " " + request.getRequestURI();
+                String paramInfo = requestParamTL.get();
+
+                // 一行日志打印：URL + 参数 + 耗时
+                log.debug("[PLUS]请求完成 => URL[{}],{},耗时:[{}]毫秒", url, paramInfo, stopWatch.getTime());
+            }
             invokeTimeTL.remove();
             requestParamTL.remove();
         }

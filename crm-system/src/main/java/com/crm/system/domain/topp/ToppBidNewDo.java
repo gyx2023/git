@@ -1,4 +1,4 @@
-package com.crm.system.domain.entity.topp;
+package com.crm.system.domain.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -21,7 +21,7 @@ import com.crm.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("topp_bid_new")
-public class ToppBidNewDO extends BaseEntity {
+public class ToppBidNewDo extends BaseEntity {
 
     private static final long serialVersionUID=1L;
 

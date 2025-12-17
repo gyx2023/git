@@ -6,12 +6,10 @@ import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysArea;
 import com.crm.system.domain.ZqGrpGroupInfo;
-import com.crm.system.domain.grp.GrpGroupInfoDO;
-import com.crm.system.domain.grp.TfFCustGroupMDO;
-import com.crm.system.domain.param.SysParamDO;
+import com.crm.system.domain.grp.TfFCustGroupMDo;
+import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
-import com.crm.system.mapper.grp.GrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -125,9 +123,9 @@ public class GrpCustGroupSyncJob {
 
         try {
             // 生成目标文件路径：/opt/home/bi/dataout/ZQ/YYYY/MM/DD/GRP_CUST_GROUP_YYYYMMDD.txt
-            SysParamDO grpCustGroupSyn = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>()
-                .eq(SysParamDO::getType, "grp_group_info_syn")
-                .eq(SysParamDO::getCode, "sftp.dataRootPath"));
+            SysParamDo grpCustGroupSyn = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
+                .eq(SysParamDo::getType, "grp_group_info_syn")
+                .eq(SysParamDo::getCode, "sftp.dataRootPath"));
 
             // 获取基础路径
             String basePath = grpCustGroupSyn.getValue(); // 例如 "/opt/home/bi/dataout/ZQ/"
@@ -176,7 +174,7 @@ public class GrpCustGroupSyncJob {
                     }
 
                     // 解析文本数据 - 使用通用解析方法
-                    List<TfFCustGroupMDO> custGroupList = groupFileParser.parseFile(txtContent.toString(), TfFCustGroupMDO.class, "\\x1b");
+                    List<TfFCustGroupMDo> custGroupList = groupFileParser.parseFile(txtContent.toString(), TfFCustGroupMDo.class, "\\x1b");
 
                     if (!custGroupList.isEmpty()) {
 
@@ -238,9 +236,9 @@ public class GrpCustGroupSyncJob {
      *
      * @param custGroupList 客户集团列表
      */
-    private void processGrpGroupInfo(List<TfFCustGroupMDO> custGroupList) {
+    private void processGrpGroupInfo(List<TfFCustGroupMDo> custGroupList) {
         List<ZqGrpGroupInfo> groupInfoList = new ArrayList<>();
-        for (TfFCustGroupMDO custGroup : custGroupList) {
+        for (TfFCustGroupMDo custGroup : custGroupList) {
             String groupId = custGroup.getGroupId(); // 假设TfFCustGroupMDO有getGroupId方法
 
             // 查询zqzt_grp_group_info表是否有该GROUP_ID的数据

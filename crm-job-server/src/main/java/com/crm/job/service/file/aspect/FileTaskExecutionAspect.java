@@ -1,6 +1,6 @@
 package com.crm.job.service.file.aspect;
 
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -30,7 +30,7 @@ public class FileTaskExecutionAspect {
     /**
      * 定义切点，拦截FileAsyncTaskJob中的processTask方法
      */
-    @Pointcut("execution(boolean com.crm.job.service.file.FileAsyncTaskJob.processTask(com.crm.system.domain.file.FileAsyncTaskDO))")
+    @Pointcut("execution(boolean com.crm.job.service.file.FileAsyncTaskJob.processTask(com.crm.system.domain.file.FileAsyncTaskDo))")
     public void taskExecutionPointcut() {
     }
 
@@ -45,12 +45,12 @@ public class FileTaskExecutionAspect {
     public Object aroundTaskExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         // 获取参数
         Object[] args = joinPoint.getArgs();
-        if (args == null || args.length == 0 || !(args[0] instanceof FileAsyncTaskDO)) {
+        if (args == null || args.length == 0 || !(args[0] instanceof FileAsyncTaskDo)) {
             log.warn("无法获取任务信息，参数: {}", Arrays.toString(args));
             return joinPoint.proceed();
         }
 
-        FileAsyncTaskDO task = (FileAsyncTaskDO) args[0];
+        FileAsyncTaskDo task = (FileAsyncTaskDo) args[0];
         String taskId = String.valueOf(task.getTaskId());
         String businessType = task.getBusinessType();
         String taskType = task.getTaskType();
@@ -75,13 +75,13 @@ public class FileTaskExecutionAspect {
             // 计算执行时间
             long executionTime = System.currentTimeMillis() - startTimeMillis;
             String finishTime = DATE_TIME_FORMATTER.format(LocalDateTime.now());
-            
+
             // 记录任务执行结果
             log.info("[任务执行切面] 任务执行完成，任务ID: {}, 结果: {}, 状态: {}, 开始时间: {}, 结束时间: {}, 执行时间: {}ms({}s)",
-                    taskId, result ? "成功" : "失败", 
-                    getStatusDesc(task.getStatus()), 
-                    startTime, finishTime, 
-                    executionTime, 
+                    taskId, result ? "成功" : "失败",
+                    getStatusDesc(task.getStatus()),
+                    startTime, finishTime,
+                    executionTime,
                     String.format("%.3f", TimeUnit.MILLISECONDS.toSeconds(executionTime)));
 
             // 记录详细的任务指标
@@ -100,15 +100,15 @@ public class FileTaskExecutionAspect {
      */
     private String getStatusDesc(Long status) {
         if (status == null) {
-            return "未知状态";  
+            return "未知状态";
         }
         switch (status.intValue()) {
-            case 0: return "待处理";    
-            case 1: return "处理中";    
-            case 2: return "处理成功";  
-            case 3: return "处理失败";  
-            case 4: return "已取消";    
-            default: return "未知状态"; 
+            case 0: return "待处理";
+            case 1: return "处理中";
+            case 2: return "处理成功";
+            case 3: return "处理失败";
+            case 4: return "已取消";
+            default: return "未知状态";
         }
     }
 }

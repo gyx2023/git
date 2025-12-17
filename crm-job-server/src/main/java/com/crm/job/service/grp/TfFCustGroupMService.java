@@ -1,6 +1,6 @@
 package com.crm.job.service.grp;
 
-import com.crm.system.domain.grp.TfFCustGroupMDO;
+import com.crm.system.domain.grp.TfFCustGroupMDo;
 import java.util.List;
 
 /**
@@ -17,7 +17,7 @@ public interface TfFCustGroupMService {
      * @param custGroupList 客户集团信息列表
      * @return 插入成功的数量
      */
-    int batchInsert(List<TfFCustGroupMDO> custGroupList);
+    int batchInsert(List<TfFCustGroupMDo> custGroupList);
 
     /**
      * 清空tf_f_cust_group_m表数据

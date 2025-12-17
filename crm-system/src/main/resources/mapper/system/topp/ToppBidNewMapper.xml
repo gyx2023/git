@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppBidNewMapper">
 
-    <resultMap type="com.crm.system.domain.entity.topp.ToppBidNewDO" id="ToppBidNewResult">
+    <resultMap type="com.crm.system.domain.topp.ToppBidNewDo" id="ToppBidNewResult">
         <result property="id" column="id"/>
         <result property="isSign" column="is_sign"/>
         <result property="projectName" column="project_name"/>

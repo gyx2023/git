@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysArea;
-import com.crm.system.domain.grp.GrpGroupInfoDO;
-import com.crm.system.domain.param.SysParamDO;
+import com.crm.system.domain.grp.GrpGroupInfoDo;
+import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
@@ -118,9 +118,9 @@ public class GrpGroupInfoSyncJob {
 
         try {
             // 生成目标文件路径：/opt/home/bi/dataout/ZQ/YYYY/MM/DD/GRP_GROUP_INFO_YYYYMMDD.txt
-            SysParamDO grpGroupInfoSyn = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>()
-                .eq(SysParamDO::getType, "grp_group_info_syn")
-                .eq(SysParamDO::getCode, "sftp.dataRootPath"));
+            SysParamDo grpGroupInfoSyn = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
+                .eq(SysParamDo::getType, "grp_group_info_syn")
+                .eq(SysParamDo::getCode, "sftp.dataRootPath"));
 
             // 获取基础路径
             String basePath = grpGroupInfoSyn.getValue(); // 例如 "/opt/home/bi/dataout/ZQ/"
@@ -171,7 +171,7 @@ public class GrpGroupInfoSyncJob {
                     }
 
                     // 解析文本数据
-                    List<GrpGroupInfoDO> groupInfoList = groupFileParser.parseFile(txtContent.toString(), GrpGroupInfoDO.class, "\\x1b");
+                    List<GrpGroupInfoDo> groupInfoList = groupFileParser.parseFile(txtContent.toString(), GrpGroupInfoDo.class, "\\x1b");
 
                     if (!groupInfoList.isEmpty()) {
                         groupInfoList.forEach(p->{

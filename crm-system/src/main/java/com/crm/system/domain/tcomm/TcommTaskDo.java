@@ -1,15 +1,12 @@
-package com.crm.system.domain.entity.tcomm;
+package com.crm.system.domain.tcomm;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
+
 import java.util.Date;
 import java.math.BigDecimal;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
 
 /**
@@ -21,7 +18,7 @@ import com.crm.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("tcomm_task")
-public class TcommTaskDO extends BaseEntity {
+public class TcommTaskDo extends BaseEntity {
 
     private static final long serialVersionUID=1L;
 
