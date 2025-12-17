@@ -1,6 +1,6 @@
 package com.crm.system.mapper.tcomm;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.entity.tcomm.TcommTaskDO;
+import com.crm.system.domain.tcomm.TcommTaskDo;
 import com.crm.system.domain.vo.tcomm.TcommTaskVo;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -11,6 +11,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @date 2025-12-02
  */
 @Mapper
-public interface TcommTaskMapper extends BaseMapperPlus<TcommTaskMapper, TcommTaskDO, TcommTaskVo> {
+public interface TcommTaskMapper extends BaseMapperPlus<TcommTaskMapper, TcommTaskDo, TcommTaskVo> {
 
 }

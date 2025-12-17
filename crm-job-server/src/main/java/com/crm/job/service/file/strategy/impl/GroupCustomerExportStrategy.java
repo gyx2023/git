@@ -3,7 +3,7 @@ package com.crm.job.service.file.strategy.impl;
 import cn.hutool.json.JSONUtil;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserExportVo;
 import com.crm.system.service.ISysOssService;
@@ -36,10 +36,10 @@ public class GroupCustomerExportStrategy extends AbstractExportStrategy {
     }
 
     @Override
-    protected boolean doExportTask(FileAsyncTaskDO task) throws Exception {
+    protected boolean doExportTask(FileAsyncTaskDo task) throws Exception {
         try {
             // 解析请求参数
-            FileAsyncTaskDO bean = JSONUtil.toBean(task.getRequestParams(), FileAsyncTaskDO.class);
+            FileAsyncTaskDo bean = JSONUtil.toBean(task.getRequestParams(), FileAsyncTaskDo.class);
 
 
             // TODO: 调用业务服务获取数据,查询到数据后该脱敏脱敏，该转换转换

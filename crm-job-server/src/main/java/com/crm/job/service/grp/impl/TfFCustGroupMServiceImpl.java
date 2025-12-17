@@ -1,6 +1,6 @@
 package com.crm.job.service.grp.impl;
 
-import com.crm.system.domain.grp.TfFCustGroupMDO;
+import com.crm.system.domain.grp.TfFCustGroupMDo;
 import com.crm.system.mapper.grp.TfFCustGroupMMapper;
 import com.crm.job.service.grp.TfFCustGroupMService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ public class TfFCustGroupMServiceImpl implements TfFCustGroupMService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchInsert(List<TfFCustGroupMDO> custGroupList) {
+    public int batchInsert(List<TfFCustGroupMDo> custGroupList) {
         if (custGroupList == null || custGroupList.isEmpty()) {
             return 0;
         }

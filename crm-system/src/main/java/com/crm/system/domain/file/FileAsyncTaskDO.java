@@ -3,12 +3,7 @@ package com.crm.system.domain.file;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
 import java.util.Date;
-import java.math.BigDecimal;
-
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
 
 /**
@@ -20,7 +15,7 @@ import com.crm.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("zqzt_file_async_task")
-public class FileAsyncTaskDO extends BaseEntity {
+public class FileAsyncTaskDo extends BaseEntity {
 
     private static final long serialVersionUID=1L;
 
