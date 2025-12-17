@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -238,4 +240,10 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    @Override
+    public List<SignOppoFileExportDTO> selectToppOpportunity() {
+        return baseMapper.selectToppOpportunity();
+    }
+
 }
