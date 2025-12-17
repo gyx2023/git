@@ -1,8 +1,8 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.ToppOpportunity;
-import com.crm.system.service.IToppOpportunityService;
+import com.crm.system.domain.entity.topp.ToppOpportunityDO;
+import com.crm.system.service.topp.ToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class ToppOpportunityExport {
  private SftpUtil sftpUtil;
 
     @Resource
- private IToppOpportunityService toppOpportunityService;
+ private ToppOpportunityService toppOpportunityService;
 
     /**
      * topp_opportunity表数据导出任务
@@ -90,7 +90,7 @@ public class ToppOpportunityExport {
         try {
             // 查询topp_opportunity表满足条件的数据 (CREATE_TIME >= '2024-01-01')
             Date startTime = new SimpleDateFormat("yyyy-MM-dd").parse("2024-01-01");
-            List<ToppOpportunity> toppOpportunityList = toppOpportunityService.queryListByStartTime(startTime);
+            List<ToppOpportunityDO> toppOpportunityList = toppOpportunityService.queryListByStartTime(startTime);
 
             if (toppOpportunityList.isEmpty()) {
                 String warnMsg = "topp_opportunity表中没有满足条件的数据需要导出";
@@ -106,7 +106,7 @@ public class ToppOpportunityExport {
             fileContent.append("id_|custId_|custName_|custNo_|custNeed_|custContact_|custContactTel_|custCapitalSource_|custManagerId_|custManagerName_|custManagerNo_|custManagerTel_|custManagerEmail_|oppCode_|oppName_|oppSource_|projectType_|oppType_|oppIncludeType_|oppPhase_|oppPhaseTime_|clueId_|isBigProduct_|isNeedIndependent_|isNeedProject_|isNeedDesigner_|isNeedProv_|isNeedAdvance_|isBidding_|bidId_|isRecPartner_|isNeedExternalResources_|isHaveInnovate_|bandServiceEarning_|beloneProductInfo_|benefitProportion_|expectCountMoney_|expectAdvance_|expectAdvanceDuration_|expectContractMoney_|expectCtEarning_|expectMoneyRate_|investMoney_|lineServiceEarning_|moServiceEarning_|idcEarning_|ictEarning_|industryAppEarning_|groupNetEarning_|bigDataEarning_|cloudComputEarning_|netThingEarning_|groupSmmsEarning_|backwardFlowEarning_|callCenterEarning_|monthIncomeContribution_|contractMonth_|privacyTreasureEarning_|otherServiceEarning_|partnerInfo_|signMainPart_|contractIntention_|unicomType_|unicomDirector_|unicomDeputyDirector_|explainReason_|auditTaskId_|auditStatus_|auditResult_|auditTime_|supportPlanProvDescribe_|supportTaskCode_|supportPlanDescribe_|isDistribute_|designer_|designerOrg_|designerTime_|designType_|designScore_|score_|endOppType_|endOppTypeDetail_|endOppTypeMemo_|createTime_|creator_|memo_|sfzt_|zssTime_|contractId_|whiteList_|oppoState_|dingyueList_|designerZid_|unicomType2_|syncStatus_|syncTime_|newOppPhase_|newOppPhaseTime_|isBxqj_|bxqjProjectCount_|isKhkj_|isJfkj_|levelType_|levelAreaId_|dabiaoCreator_|dabiaoCreateTime_|dabiaoUpdateTime_|dabiaoMemo_|oppAreaId_|oppOrgId_|bgType_|sfoppoType_|isValid_|signTime_|clientInvestBudgetAmount_|estimatTotalContratAmount_|productCode_|sfProductName_|headquartersCustomerTypeCode_|sfCustomerType_|newIct_|markunit_|isSimpleOpp_|groupClueKey_|buildingName_|buildingCode_|visitJsonPamram_|oppDataReform_|fiveMergeState_|fiveMergeCode_|referTerminal_|supportStage_|supportStageTime_|preDecision_\n");
 
             // 添加数据行
-            for (ToppOpportunity toppOpportunity : toppOpportunityList) {
+            for (ToppOpportunityDO toppOpportunity : toppOpportunityList) {
                 fileContent.append(formatField(toppOpportunity.getId()))
                     .append("|")
                     .append(formatField(toppOpportunity.getCustId()))

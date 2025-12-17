@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -57,6 +58,16 @@ public class ToppOpportunityServiceImpl implements ToppOpportunityService {
     public List<ToppOpportunityVo> queryList(ToppOpportunityBo bo) {
         LambdaQueryWrapper<ToppOpportunityDO> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 查询创建时间大于等于指定时间的商机列表
+     */
+    @Override
+    public List<ToppOpportunityDO> queryListByStartTime(Date startTime) {
+        LambdaQueryWrapper<ToppOpportunityDO> lqw = Wrappers.lambdaQuery();
+        lqw.ge(ToppOpportunityDO::getCreateTime, startTime);
+        return baseMapper.selectList(lqw);
     }
 
     private LambdaQueryWrapper<ToppOpportunityDO> buildQueryWrapper(ToppOpportunityBo bo) {
