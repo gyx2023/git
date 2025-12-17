@@ -563,7 +563,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SUM(t1.ybyq_zb) AS ybyq_zb,
         SUM(t1.ybwq_zb) AS ybwq_zb,
         SUM(t1.wq_zb) AS wq_zb,
-        sum(t1.match_bid_money * t1.contribution) as gxed_zb
+        sum(t1.match_bid_money * t1.contribution / 100) as gxed_zb
         FROM (
         SELECT
         d.nick_name,
