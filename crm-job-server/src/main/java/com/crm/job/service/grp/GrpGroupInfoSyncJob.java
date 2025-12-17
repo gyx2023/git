@@ -270,10 +270,10 @@ public class GrpGroupInfoSyncJob {
     private void syncToZqGrpGroupInfo() {
         try {
             // 查询同步开关配置
-            SysParamDO syncSwitchParam = sysParamMapper.selectOne(
-                new LambdaQueryWrapper<SysParamDO>()
-                    .eq(SysParamDO::getType, "insert_grp_group_info")
-                    .eq(SysParamDO::getCode, "zqzt.switch")
+            SysParamDo syncSwitchParam = sysParamMapper.selectOne(
+                new LambdaQueryWrapper<SysParamDo>()
+                    .eq(SysParamDo::getType, "insert_grp_group_info")
+                    .eq(SysParamDo::getCode, "zqzt.switch")
             );
 
             // 检查开关是否为开启状态（值为"1"或"true"表示开启）
