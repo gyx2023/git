@@ -8,6 +8,7 @@ import com.crm.system.domain.SysArea;
 import com.crm.system.domain.grp.GrpGroupInfoDO;
 import com.crm.system.domain.param.SysParamDO;
 import com.crm.system.mapper.SysAreaMapper;
+import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -43,6 +44,9 @@ public class GrpGroupInfoSyncJob {
 
     @Resource
     private SysAreaMapper sysAreaMapper;
+
+    @Resource
+    private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper;
 
     private final Map<String,String> cityMap = new HashMap<>();
     private volatile boolean cityListInitialized = false;
@@ -208,6 +212,8 @@ public class GrpGroupInfoSyncJob {
                 XxlJobHelper.handleSuccess("文件中没有有效数据需要导入");
                 return;
             }
+            //通过开关控制是否要插入
+            syncToZqGrpGroupInfo();
 
             // 4. 任务完成，记录结果
             String successMsg = String.format("集团信息同步任务执行完成，成功导入: %d 条，失败: %d 条",
@@ -255,5 +261,52 @@ public class GrpGroupInfoSyncJob {
         String dateStr = fullDateFormat.format(yesterday);
 
         return basePath + dateStr + "/GRP_GROUP_INFO_" + dateStr + ".txt";
+    }
+
+    /**
+     * 同步数据到zqzt_grp_group_info表
+     * 根据sys_param表中的开关配置决定是否同步
+     */
+    private void syncToZqGrpGroupInfo() {
+        try {
+            // 查询同步开关配置
+            SysParamDO syncSwitchParam = sysParamMapper.selectOne(
+                new LambdaQueryWrapper<SysParamDO>()
+                    .eq(SysParamDO::getType, "insert_grp_group_info")
+                    .eq(SysParamDO::getCode, "zqzt.switch")
+            );
+
+            // 检查开关是否为开启状态（值为"1"或"true"表示开启）
+            if (syncSwitchParam == null || syncSwitchParam.getValue() == null) {
+                log.info("未配置同步到zqzt_grp_group_info的开关，跳过同步");
+                XxlJobHelper.log("未配置同步到zqzt_grp_group_info的开关，跳过同步");
+                return;
+            }
+
+            String switchValue = syncSwitchParam.getValue().trim();
+            if (!"1".equals(switchValue) && !"true".equalsIgnoreCase(switchValue)) {
+                log.info("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
+                XxlJobHelper.log("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
+                return;
+            }
+
+            log.info("开始同步数据到zqzt_grp_group_info表");
+            XxlJobHelper.log("开始同步数据到zqzt_grp_group_info表");
+
+            // 1. 全表删除zqzt_grp_group_info表数据
+            int deleteCount = zqGrpGroupInfoMapper.truncateZqGrpGroupInfo();
+            log.info("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
+            XxlJobHelper.log("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
+
+            // 2. 从grp_group_info同步数据
+            int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
+            log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
+            XxlJobHelper.log("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
+
+        } catch (Exception e) {
+            log.error("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage(), e);
+            XxlJobHelper.log("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage());
+            // 注意：这里不抛出异常，避免影响主任务的成功状态
+        }
     }
 }

@@ -61,3 +61,4 @@ ALTER TABLE `zqzt_sys_role` MODIFY COLUMN `role_id` bigint(20) NOT NULL AUTO_INC
 
 ALTER TABLE `zqzt_sys_user` MODIFY COLUMN `user_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '用户ID' FIRST;
 
+INSERT INTO sys_param (type_, code_, value_, remark_,name_) VALUES ('insert_grp_group_info', 'zqzt.switch', '1', '同步到zqzt_grp_group_info表的开关：1或true表示开启，0或false表示关闭','同步开关');
