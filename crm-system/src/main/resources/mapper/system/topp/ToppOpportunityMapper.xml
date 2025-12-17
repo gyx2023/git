@@ -200,9 +200,9 @@
                db.name_ch                                                    AS marker,
                op.level_area_id                                              AS area_level,
                CONCAT(IFNULL(lev.name_, ''), '--', IFNULL(le.name_, ''))     AS marker_org,
-               DATE_FORMAT(op.dabiao_create_Time, '%Y-%m-%d')       AS mark_time,
-               DATE_FORMAT(op.audit_time, '%Y-%m-%d')               AS audit_time,
-               DATE_FORMAT(op.sign_time, '%Y-%m-%d')                AS sign_time,
+               DATE_FORMAT(op.dabiao_create_Time, '%Y-%m-%d %H:%i:%s')       AS mark_time,
+               DATE_FORMAT(op.audit_time, '%Y-%m-%d %H:%i:%s')               AS audit_time,
+               DATE_FORMAT(op.sign_time, '%Y-%m-%d %H:%i:%s')                AS sign_time,
                case when op.is_valid = 1 then '有效' else '无效' end         AS is_valid
         FROM topp_opportunity op
                  LEFT JOIN sys_user cs ON cs.id_ = op.designer
