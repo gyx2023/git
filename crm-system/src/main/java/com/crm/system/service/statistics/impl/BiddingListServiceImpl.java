@@ -81,29 +81,6 @@ public class BiddingListServiceImpl implements BiddingListService {
      */
     @Override
     public List<BiddingListRespDTO> getBiddingListRespDTOS(BiddingListReqDTO reqDTO) {
-        // 处理联通类型参数，将其转换为逗号分隔的字符串
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理项目类型参数，将其转换为逗号分隔的字符串
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理投标主要人员参数，将其转换为逗号分隔的字符串
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String bidMainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(bidMainPersonnelStr);
-        }
-
-        // 处理进展情况下拉框参数，将其转换为逗号分隔的字符串
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
 
         // 根据开标时间选项设置时间范围
         setTimeRangeByKbsjOption(reqDTO);
@@ -173,28 +150,26 @@ public class BiddingListServiceImpl implements BiddingListService {
 
         // 按照oppCode分组
         Map<String, List<BiddingListRespDTO>> oppCodeMap = list.stream()
-            .filter(item -> item.getOppCode() != null)
-            .collect(Collectors.groupingBy(BiddingListRespDTO::getOppCode));
+            .filter(item -> ObjectUtil.isNotEmpty(item.getOppCode()) && ObjectUtil.isNotEmpty(item.getProjectName()))
+            .collect(Collectors.groupingBy(dto -> dto.getOppCode() + "_" + dto.getProjectName() + "_" + dto.getContractTime()));
 
         // 处理每个分组
         for (List<BiddingListRespDTO> sameOppCodeList : oppCodeMap.values()) {
             // 只处理有多个相同oppCode的情况
-            if (sameOppCodeList.size() > 1) {
-                // 构建统一的贡献情况字符串
-                String unifiedContribution = sameOppCodeList.stream()
-                    .filter(dto -> dto.getSupportManager() != null && dto.getContribution() != null)
-                    .map(dto -> dto.getSupportManager() + dto.getContribution())
-                    .collect(Collectors.joining(","));
-                String zcjl = sameOppCodeList.stream()
-                    .map(BiddingListRespDTO::getSupportManager)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.joining(","));
+            // 构建统一的贡献情况字符串
+            String unifiedContribution = sameOppCodeList.stream()
+                .filter(dto -> ObjectUtil.isNotEmpty(dto.getSupportManager()) && ObjectUtil.isNotEmpty(dto.getContribution()))
+                .map(dto -> dto.getSupportManager() + dto.getContribution() + "%")
+                .collect(Collectors.joining(","));
+            String zcjl = sameOppCodeList.stream()
+                .map(BiddingListRespDTO::getSupportManager)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(","));
 
-                // 为所有相同oppCode的项设置相同的贡献情况
-                for (BiddingListRespDTO dto : sameOppCodeList) {
-                    dto.setContributionSituation(unifiedContribution);
-                    dto.setSupportTeam(zcjl);
-                }
+            // 为所有相同oppCode的项设置相同的贡献情况
+            for (BiddingListRespDTO dto : sameOppCodeList) {
+                dto.setContributionSituation(unifiedContribution);
+                dto.setSupportTeam(zcjl);
             }
         }
     }

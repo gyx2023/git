@@ -63,7 +63,7 @@
         a.project_name,
         a.buy_user AS buy_user_name,
         CASE WHEN a.buy_budget_money IS NOT NULL
-        THEN CONCAT(ROUND(a.buy_budget_money, 2), '（万元）')
+        THEN ROUND(a.buy_budget_money, 2)
         ELSE NULL END AS buy_budget_money,
         DATE_FORMAT(a.open_bid_time, '%Y-%m-%d') AS open_bid_time,
         c.unicom_type,
@@ -72,18 +72,16 @@
         a.bid_body,
         a.project_type,
         CASE WHEN a.match_bid_money IS NOT NULL
-        THEN CONCAT(ROUND(a.match_bid_money, 2), '（万元）')
+        THEN ROUND(a.match_bid_money, 2)
         ELSE NULL END AS match_bid_money,
         CASE WHEN a.expected_main_operating_amount IS NOT NULL
-        THEN CONCAT(ROUND(a.expected_main_operating_amount, 2), '（万元）')
+        THEN ROUND(a.expected_main_operating_amount, 2)
         ELSE NULL END AS expected_main_operating_amount,
         CASE WHEN a.ict_profit IS NOT NULL
-        THEN CONCAT(ROUND(a.ict_profit, 2), '%')
+        THEN ROUND(a.ict_profit, 2)
         ELSE NULL END AS ict_profit,
         a.is_framework_contract,
-        CASE WHEN a.contract_time IS NOT NULL
-        THEN CONCAT(a.contract_time, '（月）')
-        ELSE NULL END AS contract_time,
+        a.contract_time  ,
         c.opp_code,
         c.opp_name,
         f.dept_name AS opp_dept_name,
@@ -92,12 +90,8 @@
         '支撑经理' AS support_role,
         i.nick_name AS support_manager,
         th.hours AS work_days,
-        CASE WHEN ci.contribution IS NOT NULL AND ci.contribution != ''
-        THEN CONCAT(ci.contribution, '%')
-        ELSE NULL END AS contribution,
-        CASE WHEN ci.grgxed IS NOT NULL
-        THEN CONCAT(ci.grgxed, '（万元）')
-        ELSE NULL END AS personal_contribution_amount
+        ci.contribution,
+        ci.grgxed AS personal_contribution_amount
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         INNER JOIN topp_opportunity c ON c.id_ = b.opportunity_code
@@ -148,20 +142,29 @@
         </if>
 
         <if test="minSjAmount != null">
-            and c.expect_count_money &gt;= #{minYjAmount}
+            and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and c.expect_count_money &lt; #{maxYjAmount}
+            and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
-        <if test="bidMainPersonnelT != null">
-            and a.bid_body like concat('%',#{bidMainPersonnelT},'%')
+        <if test="bidMainPersonnel != null">
+            and a.bid_body in
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
-        <if test="jzqkT != null">
-            and a.competition_condition like concat('%',#{jzqkT},'%')
+        <if test="jzqk != null">
+            and a.competition_condition in
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
-        <if test="projectTypeT != null">
-            and a.project_type like concat('%',#{projectTypeT},'%')
+        <if test="projectType != null">
+            and a.project_type in
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
@@ -179,8 +182,11 @@
         <if test="endTime != null">
             and a.open_bid_time &lt;= #{endTime}
         </if>
-        <if test="unicomTypeT != null">
-            and c.unicom_type like concat('%',#{unicomTypeT},'%')
+        <if test="unicomType != null">
+            and c.unicom_type in
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         UNION
 
@@ -188,7 +194,7 @@
         a.project_name,
         a.buy_user AS buy_user_name,
         CASE WHEN a.buy_budget_money IS NOT NULL
-        THEN CONCAT(ROUND(a.buy_budget_money, 2), '（万元）')
+        THEN ROUND(a.buy_budget_money, 2)
         ELSE NULL END AS buy_budget_money,
         DATE_FORMAT(a.open_bid_time, '%Y-%m-%d') AS open_bid_time,
         c.unicom_type,
@@ -197,18 +203,16 @@
         a.bid_body,
         a.project_type,
         CASE WHEN a.match_bid_money IS NOT NULL
-        THEN CONCAT(ROUND(a.match_bid_money, 2), '（万元）')
+        THEN ROUND(a.match_bid_money, 2)
         ELSE NULL END AS match_bid_money,
         CASE WHEN a.expected_main_operating_amount IS NOT NULL
-        THEN CONCAT(ROUND(a.expected_main_operating_amount, 2), '（万元）')
+        THEN ROUND(a.expected_main_operating_amount, 2)
         ELSE NULL END AS expected_main_operating_amount,
         CASE WHEN a.ict_profit IS NOT NULL
-        THEN CONCAT(ROUND(a.ict_profit, 2), '%')
+        THEN ROUND(a.ict_profit, 2)
         ELSE NULL END AS ict_profit,
         a.is_framework_contract,
-        CASE WHEN a.contract_time IS NOT NULL
-        THEN CONCAT(a.contract_time, '（月）')
-        ELSE NULL END AS contract_time,
+        a.contract_time,
         c.opp_code,
         c.opp_name,
         f.dept_name AS opp_dept_name,
@@ -217,12 +221,8 @@
         '主责支撑经理' AS support_role,
         e.nick_name AS support_manager,
         th.hours AS work_days,
-        CASE WHEN ci.contribution IS NOT NULL AND ci.contribution != ''
-        THEN CONCAT(ci.contribution, '%')
-        ELSE NULL END AS contribution,
-        CASE WHEN ci.grgxed IS NOT NULL
-        THEN CONCAT(ci.grgxed, '（万元）')
-        ELSE NULL END AS personal_contribution_amount
+        ci.contribution,
+        ci.grgxed AS personal_contribution_amount
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         INNER JOIN topp_opportunity c ON c.id_ = b.opportunity_code
@@ -270,21 +270,32 @@
         </if>
 
         <if test="minSjAmount != null">
-            and c.expect_count_money &gt;= #{minYjAmount}
+            and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and c.expect_count_money &lt; #{maxYjAmount}
+            and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
-        <if test="bidMainPersonnelT != null">
-            and a.bid_body like concat('%',#{bidMainPersonnelT},'%')
+
+        <if test="bidMainPersonnel != null">
+            and a.bid_body in
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
-        <if test="jzqkT != null">
-            and a.competition_condition like concat('%',#{jzqkT},'%')
+        <if test="jzqk != null">
+            and a.competition_condition in
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
-        <if test="projectTypeT != null">
-            and a.project_type like concat('%',#{projectTypeT},'%')
+        <if test="projectType != null">
+            and a.project_type in
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
+
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
@@ -301,8 +312,11 @@
         <if test="endTime != null">
             and a.open_bid_time &lt;= #{endTime}
         </if>
-        <if test="unicomTypeT != null">
-            and c.unicom_type like concat('%',#{unicomTypeT},'%')
+        <if test="unicomType != null">
+            and c.unicom_type in
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
 
         ) t

@@ -1,11 +1,10 @@
 package com.crm.job.service.oldsyssyn;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.enums.UserType;
-import com.crm.system.domain.oldsyssyn.OldSysOrgDO;
-import com.crm.system.domain.oldsyssyn.OldSysUserDO;
+import com.crm.system.domain.oldsyssyn.OldSysOrgDo;
+import com.crm.system.domain.oldsyssyn.OldSysUserDo;
 import com.crm.system.mapper.SysDeptMapper;
 import com.crm.system.mapper.SysUserMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -71,7 +69,7 @@ public class SysUserSyncJob {
             }
 
             // 查询所有sys_user数据
-            List<OldSysUserDO> oldSysUserList = oldSysUserMapper.selectList(null);
+            List<OldSysUserDo> oldSysUserList = oldSysUserMapper.selectList(null);
 
             XxlJobHelper.log("查询到{}条sys_user数据", oldSysUserList.size());
             log.info("查询到{}条sys_user数据", oldSysUserList.size());
@@ -81,7 +79,7 @@ public class SysUserSyncJob {
             int batchSize = 50; // 批处理大小
             List<SysUser> batchInsertList = new ArrayList<>();
 
-            for (OldSysUserDO oldUser : oldSysUserList) {
+            for (OldSysUserDo oldUser : oldSysUserList) {
                 try {
                     // 跳过无效用户
                     if (oldUser.getValid() != null && !oldUser.getValid()) {
@@ -162,7 +160,7 @@ public class SysUserSyncJob {
             }
 
             // 查询所有sys_orgd数据
-            List<OldSysOrgDO> oldSysOrgList = oldSysOrgMapper.selectList(null);
+            List<OldSysOrgDo> oldSysOrgList = oldSysOrgMapper.selectList(null);
 
             XxlJobHelper.log("查询到{}条sys_orgd数据", oldSysOrgList.size());
             log.info("查询到{}条sys_orgd数据", oldSysOrgList.size());
@@ -171,7 +169,7 @@ public class SysUserSyncJob {
             int batchSize = 50; // 批处理大小
             List<SysDept> batchInsertList = new ArrayList<>();
 
-            for (OldSysOrgDO oldOrg : oldSysOrgList) {
+            for (OldSysOrgDo oldOrg : oldSysOrgList) {
                 try {
                     // 由于已使用TRUNCATE清空表，不需要再检查是否存在
                     // 创建新部门对象
@@ -219,7 +217,7 @@ public class SysUserSyncJob {
      * @param oldOrg 旧系统组织对象
      * @return 新系统部门对象
      */
-    private SysDept buildSysDeptFromOldOrg(OldSysOrgDO oldOrg) {
+    private SysDept buildSysDeptFromOldOrg(OldSysOrgDo oldOrg) {
         SysDept newDept = new SysDept();
 
         // 基础信息映射
@@ -243,7 +241,7 @@ public class SysUserSyncJob {
      * @param oldUser 旧系统用户对象
      * @return 新系统用户对象
      */
-    private SysUser buildSysUserFromOldUser(OldSysUserDO oldUser) {
+    private SysUser buildSysUserFromOldUser(OldSysUserDo oldUser) {
         SysUser newUser = new SysUser();
 
         // 基础信息映射

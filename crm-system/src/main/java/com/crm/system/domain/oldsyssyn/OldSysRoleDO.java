@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 @TableName("sys_role")
 @ExcelIgnoreUnannotated
-public class OldSysRoleDO {
+public class OldSysRoleDo {
 
 
     @TableId("id_")

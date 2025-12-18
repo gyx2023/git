@@ -1,6 +1,6 @@
 package com.crm.job.service.grp;
 
-import com.crm.system.domain.grp.GrpGroupInfoDO;
+import com.crm.system.domain.grp.GrpGroupInfoDo;
 import java.util.List;
 
 /**
@@ -17,7 +17,7 @@ public interface GrpGroupInfoService {
      * @param groupInfoList 集团信息列表
      * @return 插入成功的数量
      */
-    int batchInsert(List<GrpGroupInfoDO> groupInfoList);
+    int batchInsert(List<GrpGroupInfoDo> groupInfoList);
 
     /**
      * 清空grp_group_info表数据
@@ -32,7 +32,7 @@ public interface GrpGroupInfoService {
      * @param groupInfo 集团信息
      * @return 更新成功的数量
      */
-    int updateByGrpId(GrpGroupInfoDO groupInfo);
+    int updateByGrpId(GrpGroupInfoDo groupInfo);
 
     /**
      * 批量更新集团信息（如果存在则更新，不存在则插入）
@@ -40,5 +40,5 @@ public interface GrpGroupInfoService {
      * @param groupInfoList 集团信息列表
      * @return 处理成功的数量
      */
-    int batchUpsert(List<GrpGroupInfoDO> groupInfoList);
+    int batchUpsert(List<GrpGroupInfoDo> groupInfoList);
 }
