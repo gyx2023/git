@@ -96,7 +96,11 @@ public class ToppBidExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|creator|memo|borrower|reportUser|auditTaskId|auditPerson|auditStatus|auditResult|auditTime|matchBidMoney|bidMoney|endTime|contractType|projectId|projectName|contractTime|ictProfit|softProfit|isSign|isFrameworkContract|isSelfReserch|notSelfReserchReason|selfReserchName|selfReserchMoney|bidResultText|bidProjectResume|contractMoney\n");
+            fileContent.append("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|creator" +
+                "|memo|borrower|reportUser|auditTaskId|auditPerson|auditStatus|auditResult|auditTime|matchBidMoney" +
+                "|bidMoney|endTime|contractType|projectId|projectName|contractTime|ictProfit|softProfit|isSign" +
+                "|isFrameworkContract|isSelfReserch|notSelfReserchReason|selfReserchName|selfReserchMoney|bidResultText" +
+                "|bidProjectResume|contractMoney\n");
 
             // 添加数据行
             for (ToppBidDo toppBid : toppBidList) {

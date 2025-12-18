@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppBidBo;
 import com.crm.system.domain.vo.topp.ToppBidVo;
-import com.crm.system.domain.entity.topp.ToppBidDo;
+import com.crm.system.domain.topp.ToppBidDo;
 import com.crm.system.mapper.topp.ToppBidMapper;
 import com.crm.system.service.topp.IToppBidService;
 

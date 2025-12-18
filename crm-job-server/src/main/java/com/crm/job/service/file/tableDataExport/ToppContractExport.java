@@ -96,7 +96,15 @@ public class ToppContractExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|contractType|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|performName|performTel|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|validityTime|isAutoDelay|delayTo|creator|isExpire|isRemind|performMoneyNum|incomeType|operationType|relationId|status|wfZt|dfName|contState|cbDepartment|cbUser|ssDate|sptgDate|contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney|lxDepartment|htSmQdyj|qdgzDate|allInMoney|lxUser|serviceInMoney|grossProfitMargin|expectIncome|includeType|contractCategory|contractType2|auditTime|auditUser|auditStatus|isValid|ictRat|contractLabel|normPlanIncome|ictPlanIncome|normDate|contractCateL1Code|contractCateL1Name|contractCateL2Code|contractCateL2Name|contractCateL3Code|contractCateL3Name|planCycle|payInfo\n");
+            fileContent.append("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|contractType" +
+                "|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|performName|performTel" +
+                "|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|validityTime|isAutoDelay|delayTo" +
+                "|creator|isExpire|isRemind|performMoneyNum|incomeType|operationType|relationId|status|wfZt|dfName" +
+                "|contState|cbDepartment|cbUser|ssDate|sptgDate|contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney" +
+                "|lxDepartment|htSmQdyj|qdgzDate|allInMoney|lxUser|serviceInMoney|grossProfitMargin|expectIncome" +
+                "|includeType|contractCategory|contractType2|auditTime|auditUser|auditStatus|isValid|ictRat" +
+                "|contractLabel|normPlanIncome|ictPlanIncome|normDate|contractCateL1Code|contractCateL1Name" +
+                "|contractCateL2Code|contractCateL2Name|contractCateL3Code|contractCateL3Name|planCycle|payInfo\n");
 
             // 添加数据行
             for (ToppContractDo toppContract : toppContractList) {

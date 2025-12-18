@@ -107,7 +107,26 @@ public class ToppOpportunityExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id|custId|custName|custNo|custNeed|custContact|custContactTel|custCapitalSource|custManagerId|custManagerName|custManagerNo|custManagerTel|custManagerEmail|oppCode|oppName|oppSource|projectType|oppType|oppIncludeType|oppPhase|oppPhaseTime|clueId|isBigProduct|isNeedIndependent|isNeedProject|isNeedDesigner|isNeedProv|isNeedAdvance|isBidding|bidId|isRecPartner|isNeedExternalResources|isHaveInnovate|bandServiceEarning|beloneProductInfo|benefitProportion|expectCountMoney|expectAdvance|expectAdvanceDuration|expectContractMoney|expectCtEarning|expectMoneyRate|investMoney|lineServiceEarning|moServiceEarning|idcEarning|ictEarning|industryAppEarning|groupNetEarning|bigDataEarning|cloudComputEarning|netThingEarning|groupSmmsEarning|backwardFlowEarning|callCenterEarning|monthIncomeContribution|contractMonth|privacyTreasureEarning|otherServiceEarning|partnerInfo|signMainPart|contractIntention|unicomType|unicomDirector|unicomDeputyDirector|explainReason|auditTaskId|auditStatus|auditResult|auditTime|supportPlanProvDescribe|supportTaskCode|supportPlanDescribe|isDistribute|designer|designerOrg|designerTime|designType|designScore|score|endOppType|endOppTypeDetail|endOppTypeMemo|createTime|creator|memo|sfzt|zssTime|contractId|whiteList|oppoState|dingyueList|designerZid|unicomType2|syncStatus|syncTime|newOppPhase|newOppPhaseTime|isBxqj|bxqjProjectCount|isKhkj|isJfkj|levelType|levelAreaId|dabiaoCreator|dabiaoCreateTime|dabiaoUpdateTime|dabiaoMemo|oppAreaId|oppOrgId|bgType|sfoppoType|isValid|signTime|clientInvestBudgetAmount|estimatTotalContratAmount|productCode|sfProductName|headquartersCustomerTypeCode|sfCustomerType|newIct|markunit|isSimpleOpp|groupClueKey|buildingName|buildingCode|visitJsonPamram|oppDataReform|fiveMergeState|fiveMergeCode|referTerminal|supportStage|supportStageTime|preDecision\n");
+            fileContent.append("id|custId|custName|custNo|custNeed|custContact|custContactTel|custCapitalSource" +
+                "|custManagerId|custManagerName|custManagerNo|custManagerTel|custManagerEmail|oppCode|oppName" +
+                "|oppSource|projectType|oppType|oppIncludeType|oppPhase|oppPhaseTime|clueId|isBigProduct" +
+                "|isNeedIndependent|isNeedProject|isNeedDesigner|isNeedProv|isNeedAdvance|isBidding|bidId" +
+                "|isRecPartner|isNeedExternalResources|isHaveInnovate|bandServiceEarning|beloneProductInfo" +
+                "|benefitProportion|expectCountMoney|expectAdvance|expectAdvanceDuration|expectContractMoney" +
+                "|expectCtEarning|expectMoneyRate|investMoney|lineServiceEarning|moServiceEarning|idcEarning" +
+                "|ictEarning|industryAppEarning|groupNetEarning|bigDataEarning|cloudComputEarning|netThingEarning" +
+                "|groupSmmsEarning|backwardFlowEarning|callCenterEarning|monthIncomeContribution|contractMonth" +
+                "|privacyTreasureEarning|otherServiceEarning|partnerInfo|signMainPart|contractIntention|unicomType" +
+                "|unicomDirector|unicomDeputyDirector|explainReason|auditTaskId|auditStatus|auditResult|auditTime" +
+                "|supportPlanProvDescribe|supportTaskCode|supportPlanDescribe|isDistribute|designer|designerOrg" +
+                "|designerTime|designType|designScore|score|endOppType|endOppTypeDetail|endOppTypeMemo|createTime" +
+                "|creator|memo|sfzt|zssTime|contractId|whiteList|oppoState|dingyueList|designerZid|unicomType2" +
+                "|syncStatus|syncTime|newOppPhase|newOppPhaseTime|isBxqj|bxqjProjectCount|isKhkj|isJfkj|levelType" +
+                "|levelAreaId|dabiaoCreator|dabiaoCreateTime|dabiaoUpdateTime|dabiaoMemo|oppAreaId|oppOrgId|bgType" +
+                "|sfoppoType|isValid|signTime|clientInvestBudgetAmount|estimatTotalContratAmount|productCode" +
+                "|sfProductName|headquartersCustomerTypeCode|sfCustomerType|newIct|markunit|isSimpleOpp|groupClueKey" +
+                "|buildingName|buildingCode|visitJsonPamram|oppDataReform|fiveMergeState|fiveMergeCode|referTerminal" +
+                "|supportStage|supportStageTime|preDecision\n");
 
             // 添加数据行
             for (ToppOpportunityDo toppOpportunity : toppOpportunityList) {

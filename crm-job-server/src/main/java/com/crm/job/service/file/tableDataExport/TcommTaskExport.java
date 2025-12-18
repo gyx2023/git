@@ -96,7 +96,10 @@ public class TcommTaskExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime|actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score|resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId|userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason\n");
+            fileContent.append("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime" +
+                "|actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score" +
+                "|resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId" +
+                "|userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason\n");
 
             // 添加数据行
             for (TcommTaskDo tcommTask : tcommTaskList) {

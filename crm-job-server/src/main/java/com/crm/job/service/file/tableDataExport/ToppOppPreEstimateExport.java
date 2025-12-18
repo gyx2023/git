@@ -96,7 +96,8 @@ public class ToppOppPreEstimateExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id|oppoId|oppDesigner|projectNumber|projectName|evaluationResult|fiveFusion|fiveFusionType|natureCustId|natureCustName\n");
+            fileContent.append("id|oppoId|oppDesigner|projectNumber|projectName|evaluationResult|fiveFusion" +
+                "|fiveFusionType|natureCustId|natureCustName\n");
 
             // 添加数据行
             for (ToppOppPreEstimateDo toppOppPreEstimate : toppOppPreEstimateList) {
