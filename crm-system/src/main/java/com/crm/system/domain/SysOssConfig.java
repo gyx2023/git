@@ -1,5 +1,6 @@
 package com.crm.system.domain;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.crm.common.core.domain.BaseEntity;
@@ -19,7 +20,7 @@ public class SysOssConfig extends BaseEntity {
     /**
      * 主建
      */
-    @TableId(value = "oss_config_id")
+    @TableId(value = "oss_config_id", type = IdType.AUTO)
     private Long ossConfigId;
 
     /**

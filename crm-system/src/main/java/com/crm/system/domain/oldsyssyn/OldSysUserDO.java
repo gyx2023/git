@@ -14,7 +14,7 @@ import java.util.Date;
 @Data
 @TableName("sys_user")
 @ExcelIgnoreUnannotated
-public class OldSysUserDO{
+public class OldSysUserDo {
 
     @TableId("id_")
     private Integer id;

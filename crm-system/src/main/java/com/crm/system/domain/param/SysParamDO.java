@@ -17,7 +17,7 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("sys_param")
-public class SysParamDO{
+public class SysParamDo {
 
     private static final long serialVersionUID=1L;
 

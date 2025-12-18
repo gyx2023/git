@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppBidNewBo;
-import com.crm.system.domain.entity.topp.ToppBidNewDO;
+import com.crm.system.domain.topp.ToppBidNewDo;
 import com.crm.system.domain.vo.topp.ToppBidNewVo;
 import com.crm.system.mapper.topp.ToppBidNewMapper;
 import com.crm.system.service.topp.ToppBidNewService;
@@ -45,7 +45,7 @@ public class ToppBidNewServiceImpl implements ToppBidNewService {
      */
     @Override
     public TableDataInfo<ToppBidNewVo> queryPageList(ToppBidNewBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<ToppBidNewDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppBidNewDo> lqw = buildQueryWrapper(bo);
         Page<ToppBidNewVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -55,44 +55,44 @@ public class ToppBidNewServiceImpl implements ToppBidNewService {
      */
     @Override
     public List<ToppBidNewVo> queryList(ToppBidNewBo bo) {
-        LambdaQueryWrapper<ToppBidNewDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppBidNewDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<ToppBidNewDO> buildQueryWrapper(ToppBidNewBo bo) {
+    private LambdaQueryWrapper<ToppBidNewDo> buildQueryWrapper(ToppBidNewBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<ToppBidNewDO> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getIsSign()), ToppBidNewDO::getIsSign, bo.getIsSign());
-        lqw.like(StringUtils.isNotBlank(bo.getProjectName()), ToppBidNewDO::getProjectName, bo.getProjectName());
-        lqw.eq(StringUtils.isNotBlank(bo.getBidProjectResume()), ToppBidNewDO::getBidProjectResume, bo.getBidProjectResume());
-        lqw.eq(StringUtils.isNotBlank(bo.getBuyUser()), ToppBidNewDO::getBuyUser, bo.getBuyUser());
-        lqw.eq(bo.getOpenBidTime() != null, ToppBidNewDO::getOpenBidTime, bo.getOpenBidTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsFrameworkContract()), ToppBidNewDO::getIsFrameworkContract, bo.getIsFrameworkContract());
-        lqw.eq(StringUtils.isNotBlank(bo.getContractTime()), ToppBidNewDO::getContractTime, bo.getContractTime());
-        lqw.eq(bo.getBuyBudgetMoney() != null, ToppBidNewDO::getBuyBudgetMoney, bo.getBuyBudgetMoney());
-        lqw.eq(StringUtils.isNotBlank(bo.getCheckUser()), ToppBidNewDO::getCheckUser, bo.getCheckUser());
-        lqw.eq(StringUtils.isNotBlank(bo.getCompetitionCondition()), ToppBidNewDO::getCompetitionCondition, bo.getCompetitionCondition());
-        lqw.eq(StringUtils.isNotBlank(bo.getBidBody()), ToppBidNewDO::getBidBody, bo.getBidBody());
-        lqw.eq(StringUtils.isNotBlank(bo.getProjectType()), ToppBidNewDO::getProjectType, bo.getProjectType());
-        lqw.eq(bo.getIctProfit() != null, ToppBidNewDO::getIctProfit, bo.getIctProfit());
-        lqw.eq(StringUtils.isNotBlank(bo.getResult()), ToppBidNewDO::getResult, bo.getResult());
-        lqw.eq(bo.getMatchBidMoney() != null, ToppBidNewDO::getMatchBidMoney, bo.getMatchBidMoney());
-        lqw.eq(bo.getTongfuMoney() != null, ToppBidNewDO::getTongfuMoney, bo.getTongfuMoney());
-        lqw.eq(StringUtils.isNotBlank(bo.getBidResultText()), ToppBidNewDO::getBidResultText, bo.getBidResultText());
-        lqw.eq(StringUtils.isNotBlank(bo.getRemarkText()), ToppBidNewDO::getRemarkText, bo.getRemarkText());
-        lqw.eq(bo.getSignMoney() != null, ToppBidNewDO::getSignMoney, bo.getSignMoney());
-        lqw.eq(bo.getSignTime() != null, ToppBidNewDO::getSignTime, bo.getSignTime());
-        lqw.eq(bo.getUpdatedAt() != null, ToppBidNewDO::getUpdatedAt, bo.getUpdatedAt());
-        lqw.eq(StringUtils.isNotBlank(bo.getCreator()), ToppBidNewDO::getCreator, bo.getCreator());
-        lqw.eq(StringUtils.isNotBlank(bo.getOpportunityCode()), ToppBidNewDO::getOpportunityCode, bo.getOpportunityCode());
-        lqw.eq(bo.getAuditTime() != null, ToppBidNewDO::getAuditTime, bo.getAuditTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getAuditStatus()), ToppBidNewDO::getAuditStatus, bo.getAuditStatus());
-        lqw.eq(bo.getEndTime() != null, ToppBidNewDO::getEndTime, bo.getEndTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getProcessOrderNumber()), ToppBidNewDO::getProcessOrderNumber, bo.getProcessOrderNumber());
-        lqw.eq(bo.getNextId() != null, ToppBidNewDO::getNextId, bo.getNextId());
-        lqw.like(StringUtils.isNotBlank(bo.getNextName()), ToppBidNewDO::getNextName, bo.getNextName());
-        lqw.eq(StringUtils.isNotBlank(bo.getCancleReason()), ToppBidNewDO::getCancleReason, bo.getCancleReason());
-        lqw.eq(bo.getExpectedMainOperatingAmount() != null, ToppBidNewDO::getExpectedMainOperatingAmount, bo.getExpectedMainOperatingAmount());
+        LambdaQueryWrapper<ToppBidNewDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(bo.getIsSign()), ToppBidNewDo::getIsSign, bo.getIsSign());
+        lqw.like(StringUtils.isNotBlank(bo.getProjectName()), ToppBidNewDo::getProjectName, bo.getProjectName());
+        lqw.eq(StringUtils.isNotBlank(bo.getBidProjectResume()), ToppBidNewDo::getBidProjectResume, bo.getBidProjectResume());
+        lqw.eq(StringUtils.isNotBlank(bo.getBuyUser()), ToppBidNewDo::getBuyUser, bo.getBuyUser());
+        lqw.eq(bo.getOpenBidTime() != null, ToppBidNewDo::getOpenBidTime, bo.getOpenBidTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsFrameworkContract()), ToppBidNewDo::getIsFrameworkContract, bo.getIsFrameworkContract());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractTime()), ToppBidNewDo::getContractTime, bo.getContractTime());
+        lqw.eq(bo.getBuyBudgetMoney() != null, ToppBidNewDo::getBuyBudgetMoney, bo.getBuyBudgetMoney());
+        lqw.eq(StringUtils.isNotBlank(bo.getCheckUser()), ToppBidNewDo::getCheckUser, bo.getCheckUser());
+        lqw.eq(StringUtils.isNotBlank(bo.getCompetitionCondition()), ToppBidNewDo::getCompetitionCondition, bo.getCompetitionCondition());
+        lqw.eq(StringUtils.isNotBlank(bo.getBidBody()), ToppBidNewDo::getBidBody, bo.getBidBody());
+        lqw.eq(StringUtils.isNotBlank(bo.getProjectType()), ToppBidNewDo::getProjectType, bo.getProjectType());
+        lqw.eq(bo.getIctProfit() != null, ToppBidNewDo::getIctProfit, bo.getIctProfit());
+        lqw.eq(StringUtils.isNotBlank(bo.getResult()), ToppBidNewDo::getResult, bo.getResult());
+        lqw.eq(bo.getMatchBidMoney() != null, ToppBidNewDo::getMatchBidMoney, bo.getMatchBidMoney());
+        lqw.eq(bo.getTongfuMoney() != null, ToppBidNewDo::getTongfuMoney, bo.getTongfuMoney());
+        lqw.eq(StringUtils.isNotBlank(bo.getBidResultText()), ToppBidNewDo::getBidResultText, bo.getBidResultText());
+        lqw.eq(StringUtils.isNotBlank(bo.getRemarkText()), ToppBidNewDo::getRemarkText, bo.getRemarkText());
+        lqw.eq(bo.getSignMoney() != null, ToppBidNewDo::getSignMoney, bo.getSignMoney());
+        lqw.eq(bo.getSignTime() != null, ToppBidNewDo::getSignTime, bo.getSignTime());
+        lqw.eq(bo.getUpdatedAt() != null, ToppBidNewDo::getUpdatedAt, bo.getUpdatedAt());
+        lqw.eq(StringUtils.isNotBlank(bo.getCreator()), ToppBidNewDo::getCreator, bo.getCreator());
+        lqw.eq(StringUtils.isNotBlank(bo.getOpportunityCode()), ToppBidNewDo::getOpportunityCode, bo.getOpportunityCode());
+        lqw.eq(bo.getAuditTime() != null, ToppBidNewDo::getAuditTime, bo.getAuditTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getAuditStatus()), ToppBidNewDo::getAuditStatus, bo.getAuditStatus());
+        lqw.eq(bo.getEndTime() != null, ToppBidNewDo::getEndTime, bo.getEndTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getProcessOrderNumber()), ToppBidNewDo::getProcessOrderNumber, bo.getProcessOrderNumber());
+        lqw.eq(bo.getNextId() != null, ToppBidNewDo::getNextId, bo.getNextId());
+        lqw.like(StringUtils.isNotBlank(bo.getNextName()), ToppBidNewDo::getNextName, bo.getNextName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCancleReason()), ToppBidNewDo::getCancleReason, bo.getCancleReason());
+        lqw.eq(bo.getExpectedMainOperatingAmount() != null, ToppBidNewDo::getExpectedMainOperatingAmount, bo.getExpectedMainOperatingAmount());
         return lqw;
     }
 
@@ -101,7 +101,7 @@ public class ToppBidNewServiceImpl implements ToppBidNewService {
      */
     @Override
     public Boolean insertByBo(ToppBidNewBo bo) {
-        ToppBidNewDO add = BeanUtil.toBean(bo, ToppBidNewDO.class);
+        ToppBidNewDo add = BeanUtil.toBean(bo, ToppBidNewDo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -115,7 +115,7 @@ public class ToppBidNewServiceImpl implements ToppBidNewService {
      */
     @Override
     public Boolean updateByBo(ToppBidNewBo bo) {
-        ToppBidNewDO update = BeanUtil.toBean(bo, ToppBidNewDO.class);
+        ToppBidNewDo update = BeanUtil.toBean(bo, ToppBidNewDo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -123,7 +123,7 @@ public class ToppBidNewServiceImpl implements ToppBidNewService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppBidNewDO entity) {
+    private void validEntityBeforeSave(ToppBidNewDo entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 

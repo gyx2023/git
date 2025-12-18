@@ -1,4 +1,4 @@
-package com.crm.system.domain.entity.topp;
+package com.crm.system.domain.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -19,9 +19,8 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2025-12-02
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("topp_opportunity")
-public class ToppOpportunityDO extends BaseEntity {
+public class ToppOpportunityDo {
 
     private static final long serialVersionUID=1L;
 

@@ -37,4 +37,14 @@
         order by d.parent_id, d.order_num
     </select>
 
+
+    <select id="selectDqDeptList" resultMap="SysDeptResult">
+        select * from zqzt_sys_dept where dept_id = #{deptId}
+        union
+        select t.* from (select * from zqzt_sys_dept where parent_id is not null) t,
+                        (select @parent_id := #{deptId}) pd
+        where FIND_IN_SET(parent_id,@parent_id) > 0
+          and @parent_id := CONCAT(@parent_id,',',dept_id)
+    </select>
+
 </mapper>
