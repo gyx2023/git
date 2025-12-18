@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppBidNewScoreMapper">
 
     <resultMap type="com.crm.common.core.domain.dto.BiddingListRespDTO" id="resultMap">
@@ -14,7 +14,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="bidResult" column="bid_result"/>
         <result property="bidBody" column="bid_body"/>
         <result property="projectType" column="project_type"/>
-        <result property="signMoney" column="sign_money"/>
+        <result property="matchBidMoney" column="match_bid_money"/>
         <result property="expectedMainOperatingAmount" column="expected_main_operating_amount"/>
         <result property="ictProfit" column="ict_profit"/>
         <result property="isFrameworkContract" column="is_framework_contract"/>
@@ -26,7 +26,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="mainSupportDeptName" column="main_support_dept_name"/>
         <result property="supportRole" column="support_role"/>
         <result property="supportManager" column="support_manager"/>
-        <result property="supportTeam" column="support_team"/>
         <result property="projectCode" column="project_code"/>
         <result property="workDays" column="work_days"/>
         <result property="contribution" column="contribution"/>
@@ -34,63 +33,93 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contributionSituation" column="contribution_situation"/>
     </resultMap>
     <select id="selectBidList" resultMap="resultMap">
-
-
-
-        select distinct
-            a.project_name,
-            a.buy_user as buy_user_name ,
-            ROUND(a.buy_budget_money, 2) AS buy_budget_money,
-            a.open_bid_time,
-            c.unicom_type,
-            a.competition_condition,
-            a.result as bid_result,
-            a.bid_body,
-            a.project_type,
-           ROUND(a.sign_money, 2) AS sign_money,
-           ROUND(a.expected_main_operating_amount, 2) AS expected_main_operating_amount,
-            a.ict_profit,
-            a.is_framework_contract,
-            a.contract_time,
-            c.opp_code,
-            c.opp_name,
-            f.dept_name as opp_dept_name,
-            d.nick_name as opp_manager,
-            g.dept_name as main_support_dept_name,
-            if(h.member_id=e.user_id,'主责支撑经理','支撑经理') as support_role,
-            i.nick_name as support_manager,
-            l.tdry as support_team,
-            k.hours as work_days,
-            x.contribution,
-            x.grgxed as personal_contribution_amount
-
-        from topp_bid_new a
-                 inner  join  topp_bid_new_score b  on a.id=b.topp_bid_new_id
-                 inner join topp_opportunity c on c.id_=b.opportunity_code
-                 left join   zqzt_sys_user d on c.cust_manager_id=d.user_id
-                 left join   zqzt_sys_user e on c.designer =e.user_id
-                 left join zqzt_sys_dept f on d.dept_id=f.dept_id
-                 left join zqzt_sys_dept g on e.dept_id=g.dept_id
-                 left join topp_member h on h.project_id = c.id_
-                 left join zqzt_sys_user i on h.member_id=i.user_id
-                 left join (select aa.info_id,aa.actor_,sum(support_hours) hours  from tcomm_task aa
-                            where aa.actor_ is  not null  group by aa.info_id,aa.actor_)k
-                           on k.info_id=c.id_
-                               and h.member_id=k.actor_
-                 left join (select  project_id, GROUP_CONCAT( CONCAT_WS( ',', name_) SEPARATOR ';' ) as tdry from (select distinct project_id,name_ from  topp_member aa where
-            aa.member_role = 'member_role_zcjl'  )ss    group by project_id
-        )l on l.project_id =c.id_
-                 left join (select a.id,any_value(name_) as name_ts,b.contribution, a.sign_money * b.contribution/100 as grgxed
-                            from  topp_bid_new a
-                                      inner join  topp_bid_new_score b on a.id=b.topp_bid_new_id
-                                      inner join  topp_member c on  b.name=c.name_
-                                and c.project_id =b.opportunity_code
-        ) x
-                           on a.id=x.id
-                               and h.name_=x.name_ts
-        where  a.is_sign='0'
-          and h.member_role = 'member_role_zcjl'
-          and i.dept_id in(
+        SELECT
+        t.project_name,
+        t.buy_user_name,
+        t.buy_budget_money,
+        t.open_bid_time,
+        t.unicom_type,
+        t.competition_condition,
+        t.bid_result,
+        t.bid_body,
+        t.project_type,
+        t.match_bid_money,
+        t.expected_main_operating_amount,
+        t.ict_profit,
+        t.is_framework_contract,
+        t.contract_time,
+        t.opp_code,
+        t.opp_name,
+        t.opp_dept_name,
+        t.opp_manager,
+        t.main_support_dept_name,
+        t.support_role,
+        t.support_manager,
+        t.work_days,
+        t.contribution,
+        t.personal_contribution_amount
+        FROM (
+        SELECT
+        a.project_name,
+        a.buy_user AS buy_user_name,
+        CASE WHEN a.buy_budget_money IS NOT NULL
+        THEN ROUND(a.buy_budget_money, 2)
+        ELSE NULL END AS buy_budget_money,
+        DATE_FORMAT(a.open_bid_time, '%Y-%m-%d') AS open_bid_time,
+        c.unicom_type,
+        a.competition_condition,
+        a.result AS bid_result,
+        a.bid_body,
+        a.project_type,
+        CASE WHEN a.match_bid_money IS NOT NULL
+        THEN ROUND(a.match_bid_money, 2)
+        ELSE NULL END AS match_bid_money,
+        CASE WHEN a.expected_main_operating_amount IS NOT NULL
+        THEN ROUND(a.expected_main_operating_amount, 2)
+        ELSE NULL END AS expected_main_operating_amount,
+        CASE WHEN a.ict_profit IS NOT NULL
+        THEN ROUND(a.ict_profit, 2)
+        ELSE NULL END AS ict_profit,
+        a.is_framework_contract,
+        a.contract_time  ,
+        c.opp_code,
+        c.opp_name,
+        f.dept_name AS opp_dept_name,
+        d.nick_name AS opp_manager,
+        g.dept_name AS main_support_dept_name,
+        '支撑经理' AS support_role,
+        i.nick_name AS support_manager,
+        th.hours AS work_days,
+        ci.contribution,
+        ci.grgxed AS personal_contribution_amount
+        FROM topp_bid_new a
+        INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
+        INNER JOIN topp_opportunity c ON c.id_ = b.opportunity_code
+        INNER JOIN zqzt_sys_user d ON c.cust_manager_id = d.user_id
+        INNER JOIN zqzt_sys_user e ON c.designer = e.user_id
+        INNER JOIN zqzt_sys_dept f ON d.dept_id = f.dept_id
+        INNER JOIN zqzt_sys_dept g ON e.dept_id = g.dept_id
+        INNER JOIN topp_member h ON h.project_id = c.id_
+        AND h.member_role = 'member_role_zcjl'
+        AND h.member_id != c.designer
+        INNER JOIN zqzt_sys_user i ON h.member_id = i.user_id
+        LEFT JOIN (
+        SELECT info_id, actor_, SUM(support_hours) AS hours
+        FROM tcomm_task
+        WHERE actor_ IS NOT NULL
+        GROUP BY info_id, actor_
+        ) th ON th.info_id = c.id_ AND th.actor_ = h.member_id
+        LEFT JOIN (
+        SELECT
+        b.topp_bid_new_id AS bid_id,
+        b.name AS member_name,
+        b.contribution,
+        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
+        FROM topp_bid_new a
+        INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
+        ) ci ON ci.bid_id = a.id AND ci.member_name = h.name_
+        WHERE a.is_sign = '0'
+        and e.dept_id in(
         select dept_id from zqzt_sys_dept where dept_id = #{deptId}
         union
         select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
@@ -106,27 +135,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
 
         <if test="minSjAmount != null">
-            and c.expect_count_money &gt;= #{minYjAmount}
+            and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and c.expect_count_money &lt; #{maxYjAmount}
+            and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body like concat('%',#{bidMainPersonnel},'%')
+            and a.bid_body in
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+            and a.competition_condition in
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+            and a.project_type in
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="bidResult != null">
             and a.result = #{bidResult}
@@ -145,9 +183,145 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and a.open_bid_time &lt;= #{endTime}
         </if>
         <if test="unicomType != null">
-            and c.unicom_type like concat('%',#{unicomType},'%')
+            and c.unicom_type in
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
-        order by a.project_name asc
+        UNION
+
+        SELECT
+        a.project_name,
+        a.buy_user AS buy_user_name,
+        CASE WHEN a.buy_budget_money IS NOT NULL
+        THEN ROUND(a.buy_budget_money, 2)
+        ELSE NULL END AS buy_budget_money,
+        DATE_FORMAT(a.open_bid_time, '%Y-%m-%d') AS open_bid_time,
+        c.unicom_type,
+        a.competition_condition,
+        a.result AS bid_result,
+        a.bid_body,
+        a.project_type,
+        CASE WHEN a.match_bid_money IS NOT NULL
+        THEN ROUND(a.match_bid_money, 2)
+        ELSE NULL END AS match_bid_money,
+        CASE WHEN a.expected_main_operating_amount IS NOT NULL
+        THEN ROUND(a.expected_main_operating_amount, 2)
+        ELSE NULL END AS expected_main_operating_amount,
+        CASE WHEN a.ict_profit IS NOT NULL
+        THEN ROUND(a.ict_profit, 2)
+        ELSE NULL END AS ict_profit,
+        a.is_framework_contract,
+        a.contract_time,
+        c.opp_code,
+        c.opp_name,
+        f.dept_name AS opp_dept_name,
+        d.nick_name AS opp_manager,
+        g.dept_name AS main_support_dept_name,
+        '主责支撑经理' AS support_role,
+        e.nick_name AS support_manager,
+        th.hours AS work_days,
+        ci.contribution,
+        ci.grgxed AS personal_contribution_amount
+        FROM topp_bid_new a
+        INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
+        INNER JOIN topp_opportunity c ON c.id_ = b.opportunity_code
+        INNER JOIN zqzt_sys_user d ON c.cust_manager_id = d.user_id
+        INNER JOIN zqzt_sys_user e ON c.designer = e.user_id
+        INNER JOIN zqzt_sys_dept f ON d.dept_id = f.dept_id
+        INNER JOIN zqzt_sys_dept g ON e.dept_id = g.dept_id
+        LEFT JOIN (
+        SELECT info_id, actor_, SUM(support_hours) AS hours
+        FROM tcomm_task
+        WHERE actor_ IS NOT NULL
+        GROUP BY info_id, actor_
+        ) th ON th.info_id = c.id_ AND th.actor_ = c.designer
+        LEFT JOIN (
+        SELECT
+        b.topp_bid_new_id AS bid_id,
+        b.name AS member_name,
+        b.contribution,
+        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
+        FROM topp_bid_new a
+        INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
+        GROUP BY a.id, b.name
+        ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
+        WHERE a.is_sign = '0'
+        and e.dept_id in(
+        select dept_id from zqzt_sys_dept where dept_id = #{deptId}
+        union
+        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+        (select @parent_id := #{deptId}) pd
+        where FIND_IN_SET(parent_id,@parent_id) > 0
+        and @parent_id := CONCAT(@parent_id,',',dept_id)
+        )
+        <if test="minCgAmount != null">
+            and a.buy_budget_money &gt;= #{minCgAmount}
+        </if>
+        <if test="maxCgAmount != null">
+            and a.buy_budget_money &lt; #{maxCgAmount}
+        </if>
+
+        <if test="minYjAmount != null">
+            and a.match_bid_money &gt;= #{minYjAmount}
+        </if>
+        <if test="maxYjAmount != null">
+            and a.match_bid_money &lt; #{maxYjAmount}
+        </if>
+
+        <if test="minSjAmount != null">
+            and c.expect_contract_money &gt;= #{minSjAmount}
+        </if>
+        <if test="maxSjAmount != null">
+            and c.expect_contract_money &lt; #{maxSjAmount}
+        </if>
+
+
+        <if test="bidMainPersonnel != null">
+            and a.bid_body in
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="jzqk != null">
+            and a.competition_condition in
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="projectType != null">
+            and a.project_type in
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        <if test="bidResult != null">
+            and a.result = #{bidResult}
+        </if>
+
+        <if test="minMll != null">
+            and a.ict_profit>= #{minMll}
+        </if>
+        <if test="maxMll != null">
+            and a.ict_profit &lt;= #{maxMll}
+        </if>
+        <if test="startTime != null">
+            and a.open_bid_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            and a.open_bid_time &lt;= #{endTime}
+        </if>
+        <if test="unicomType != null">
+            and c.unicom_type in
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        ) t
+        ORDER BY t.project_name;
+
     </select>
 
 
