@@ -96,7 +96,7 @@ public class TcommTaskExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id_|taskCode_|taskName_|flowNo_|custName_|oppoName_|infoId_|infoType_|dueLimit_|dueTime_|actorsWait_|isSended_|actor_|dealUrl_|startTime_|resultCode_|result_|resultMemo_|endTime_|memo_|score_|resultScore_|json_|scoreDetail_|defaultDafen_|parent_|create_|taskMemo_|shortSend_|shortSendTime_|piId_|userOwnerProduct_|productCode_|teamLeaderId_|notUseOwnerProductReason_|supportHours_|createBy_|createTime_|updateBy_|updateTime_\n");
+            fileContent.append("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime|actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score|resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId|userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason\n");
 
             // 添加数据行
             for (TcommTaskDo tcommTask : tcommTaskList) {
@@ -169,8 +169,6 @@ public class TcommTaskExport {
                     .append(formatField(tcommTask.getTeamLeaderId()))
                     .append("|")
                     .append(formatField(tcommTask.getNotUseOwnerProductReason()))
-                    .append("|")
-                    .append(formatField(tcommTask.getSupportHours()))
                     .append("|")
                     .append(formatField(tcommTask.getCreateBy()))
                     .append("|")
