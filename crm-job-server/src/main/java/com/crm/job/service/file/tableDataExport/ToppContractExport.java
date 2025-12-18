@@ -2,7 +2,7 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.entity.topp.ToppContractDo;
+import com.crm.system.domain.topp.ToppContractDo;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -47,7 +47,7 @@ public class ToppContractExport {
         String param = XxlJobHelper.getJobParam();
 
         Date targetDate = new Date();
-        String sftpConfigType = "local_test"; // 默认使用local_test配置类型
+        String sftpConfigType = "ict_owe_fee_smart_brain_file"; // 默认使用ict_owe_fee_smart_brain_file配置类型
 
         // 处理任务参数
         if (param != null && !param.isEmpty()) {

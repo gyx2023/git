@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppOppPreEstimateBo;
 import com.crm.system.domain.vo.topp.ToppOppPreEstimateVo;
-import com.crm.system.domain.entity.topp.ToppOppPreEstimateDo;
+import com.crm.system.domain.topp.ToppOppPreEstimateDo;
 import com.crm.system.mapper.topp.ToppOppPreEstimateMapper;
 import com.crm.system.service.topp.IToppOppPreEstimateService;
 

@@ -57,7 +57,7 @@ public class ToppOpportunityExport {
         String param = XxlJobHelper.getJobParam();
 
         Date targetDate = new Date();
-        String sftpConfigType = "local_test"; // 本地测试,后面改成实际配置类型
+        String sftpConfigType = "ict_owe_fee_smart_brain_file"; // 默认使用ict_owe_fee_smart_brain_file配置类型
 
         // 处理任务参数
         if (param != null && !param.isEmpty()) {

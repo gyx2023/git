@@ -1,6 +1,6 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.system.domain.entity.topp.ToppOppPreEstimateDo;
+import com.crm.system.domain.topp.ToppOppPreEstimateDo;
 import com.crm.system.domain.vo.topp.ToppOppPreEstimateVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 

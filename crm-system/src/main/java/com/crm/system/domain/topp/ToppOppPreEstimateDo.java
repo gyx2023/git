@@ -1,10 +1,12 @@
-package com.crm.system.domain.entity.topp;
+package com.crm.system.domain.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import com.crm.common.core.domain.BaseEntity;
+
+import java.util.Date;
 
 /**
  * 商机前评估信息对象 topp_opp_pre_estimate
@@ -60,5 +62,28 @@ public class ToppOppPreEstimateDo extends BaseEntity {
      * 自然客户名称
      */
     private String natureCustName;
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 创建时间
+     */
+    @TableField(exist = false)
+    private Date createTime;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 
 }

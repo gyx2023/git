@@ -99,6 +99,7 @@ public class ToppContractDo extends BaseEntity {
     /**
      * 备注
      */
+    @TableField(value = "memo_")
     private String memo;
     /**
      * 合同签订时间
@@ -155,6 +156,7 @@ public class ToppContractDo extends BaseEntity {
     /**
      * 处理状态 0：处理；1:已处理；
      */
+    @TableField(value = "status_")
     private String status;
     /**
      *
@@ -318,4 +320,21 @@ public class ToppContractDo extends BaseEntity {
      * 合同付款条款信息
      */
     private String payInfo;
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 }
