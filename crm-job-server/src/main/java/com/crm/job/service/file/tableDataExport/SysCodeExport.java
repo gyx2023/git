@@ -96,7 +96,7 @@ public class SysCodeExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id_|name_|type_|code_|order_|remark_|isSystem_|settingInt1_|settingInt2_|settingStr1_|settingStr2_|settingStr3_\n");
+            fileContent.append("id|name|type|code|order|remark|isSystem|settingInt1|settingInt2|settingStr1|settingStr2|settingStr3\n");
 
             // 添加数据行
             for (SysCode sysCode : sysCodeList) {

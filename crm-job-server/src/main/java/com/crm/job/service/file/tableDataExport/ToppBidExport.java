@@ -2,7 +2,7 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.entity.topp.ToppBidDo;
+import com.crm.system.domain.topp.ToppBidDo;
 import com.crm.system.mapper.topp.ToppBidMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -96,7 +96,7 @@ public class ToppBidExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id_|opportunityCode_|bidCode_|bidBody_|resultTime_|result_|money_|getTime_|returnTime_|creator_|memo_|borrower_|reportUser_|auditTaskId_|auditPerson_|auditStatus_|auditResult_|auditTime_|matchBidMoney_|bidMoney_|endTime_|contractType_|projectId_|projectName_|contractTime_|ictProfit_|softProfit_|isSign_|isFrameworkContract_|isSelfReserch_|notSelfReserchReason_|selfReserchName_|selfReserchMoney_|bidResultText_|bidProjectResume_|contractMoney_|createBy_|createTime_|updateBy_|updateTime_\n");
+            fileContent.append("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|creator|memo|borrower|reportUser|auditTaskId|auditPerson|auditStatus|auditResult|auditTime|matchBidMoney|bidMoney|endTime|contractType|projectId|projectName|contractTime|ictProfit|softProfit|isSign|isFrameworkContract|isSelfReserch|notSelfReserchReason|selfReserchName|selfReserchMoney|bidResultText|bidProjectResume|contractMoney\n");
 
             // 添加数据行
             for (ToppBidDo toppBid : toppBidList) {
@@ -171,14 +171,6 @@ public class ToppBidExport {
                     .append(formatField(toppBid.getBidProjectResume()))
                     .append("|")
                     .append(formatField(toppBid.getContractMoney()))
-                    .append("|")
-                    .append(formatField(toppBid.getCreateBy()))
-                    .append("|")
-                    .append(formatField(toppBid.getCreateTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getUpdateBy()))
-                    .append("|")
-                    .append(formatField(toppBid.getUpdateTime()))
                     .append("\n");
             }
 

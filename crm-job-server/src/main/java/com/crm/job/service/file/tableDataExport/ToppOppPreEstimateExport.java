@@ -96,7 +96,7 @@ public class ToppOppPreEstimateExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id_|oppoId_|oppDesigner_|projectNumber_|projectName_|evaluationResult_|fiveFusion_|fiveFusionType_|natureCustId_|natureCustName_|createBy_|createTime_|updateBy_|updateTime_\n");
+            fileContent.append("id|oppoId|oppDesigner|projectNumber|projectName|evaluationResult|fiveFusion|fiveFusionType|natureCustId|natureCustName\n");
 
             // 添加数据行
             for (ToppOppPreEstimateDo toppOppPreEstimate : toppOppPreEstimateList) {
@@ -119,14 +119,6 @@ public class ToppOppPreEstimateExport {
                     .append(formatField(toppOppPreEstimate.getNatureCustId()))
                     .append("|")
                     .append(formatField(toppOppPreEstimate.getNatureCustName()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getCreateBy()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getCreateTime()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getUpdateBy()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getUpdateTime()))
                     .append("\n");
             }
 

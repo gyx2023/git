@@ -96,7 +96,7 @@ public class ToppContractExport {
             StringBuilder fileContent = new StringBuilder();
 
             // 添加表头（可选）
-            fileContent.append("id_|projectId_|ourCompany_|otherCompany_|finalCustName_|contractNo_|contractName_|contractType_|contractCurrency_|totalMoney_|contractStatus_|agentPerson_|agentDepartment_|performNo_|performName_|performTel_|isNeedPerformMoney_|performMoney_|memo_|signDate_|startDate_|endDate_|validityTime_|isAutoDelay_|delayTo_|creator_|isExpire_|isRemind_|performMoneyNum_|incomeType_|operationType_|relationId_|status_|wfZt_|dfName_|contState_|cbDepartment_|cbUser_|ssDate_|sptgDate_|contXingzhi_|lastSpUser_|contractAddType_|zzsSl_|bhZzsMoney_|lxDepartment_|htSmQdyj_|qdgzDate_|allInMoney_|lxUser_|serviceInMoney_|grossProfitMargin_|expectIncome_|includeType_|contractCategory_|contractType2_|auditTime_|auditUser_|auditStatus_|isValid_|ictRat_|contractLabel_|normPlanIncome_|ictPlanIncome_|normDate_|contractCateL1Code_|contractCateL1Name_|contractCateL2Code_|contractCateL2Name_|contractCateL3Code_|contractCateL3Name_|planCycle_|payInfo_|createBy_|createTime_|updateBy_|updateTime_\n");
+            fileContent.append("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|contractType|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|performName|performTel|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|validityTime|isAutoDelay|delayTo|creator|isExpire|isRemind|performMoneyNum|incomeType|operationType|relationId|status|wfZt|dfName|contState|cbDepartment|cbUser|ssDate|sptgDate|contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney|lxDepartment|htSmQdyj|qdgzDate|allInMoney|lxUser|serviceInMoney|grossProfitMargin|expectIncome|includeType|contractCategory|contractType2|auditTime|auditUser|auditStatus|isValid|ictRat|contractLabel|normPlanIncome|ictPlanIncome|normDate|contractCateL1Code|contractCateL1Name|contractCateL2Code|contractCateL2Name|contractCateL3Code|contractCateL3Name|planCycle|payInfo\n");
 
             // 添加数据行
             for (ToppContractDo toppContract : toppContractList) {
@@ -246,13 +246,6 @@ public class ToppContractExport {
                     .append("|")
                     .append(formatField(toppContract.getPayInfo()))
                     .append("|")
-                    .append(formatField(toppContract.getCreateBy()))
-                    .append("|")
-                    .append(formatField(toppContract.getCreateTime()))
-                    .append("|")
-                    .append(formatField(toppContract.getUpdateBy()))
-                    .append("|")
-                    .append(formatField(toppContract.getUpdateTime()))
                     .append("\n");
             }
 
