@@ -65,4 +65,5 @@ public class BiddingListReqDTO {
 
     private  String endTime;
 
+
 }

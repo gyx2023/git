@@ -11,7 +11,7 @@ import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
-import com.crm.system.service.topp.ToppOpportunityService;
+import com.crm.system.service.topp.IToppOpportunityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
-public class ToppOpportunityServiceImpl implements ToppOpportunityService {
+public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     @Resource
     private ToppOpportunityMapper baseMapper;
 
