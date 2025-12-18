@@ -24,7 +24,7 @@ public class BiddingListRespDTO {
     /**
      * 开标时间
      */
-    private LocalDateTime openBidTime;
+    private String openBidTime;
     /**
      * 客户行业
      */
@@ -48,7 +48,7 @@ public class BiddingListRespDTO {
     /**
      * 预计签约金额（万元）
      */
-    private String signMoney;
+    private String matchBidMoney;
     /**
      * 预计主营金额（万元）
      */
