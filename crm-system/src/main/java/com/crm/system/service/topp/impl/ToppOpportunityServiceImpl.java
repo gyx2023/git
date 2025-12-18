@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,17 @@ public class ToppOpportunityServiceImpl implements ToppOpportunityService {
     public List<ToppOpportunityVo> queryList(ToppOpportunityBo bo) {
         LambdaQueryWrapper<ToppOpportunityDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 查询满足条件的商机数据（创建时间在指定时间之后，并且在tcomm_customer表中存在对应的客户记录）
+     *
+     * @param createTime 创建时间下限
+     * @return 满足条件的商机数据列表
+     */
+    @Override
+    public List<ToppOpportunityDo> selectFilteredOpportunities(LocalDateTime createTime) {
+        return baseMapper.selectFilteredOpportunities(createTime);
     }
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {

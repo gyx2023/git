@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.tcomm.TcommCustomerMapper">
+
+    <resultMap type="com.crm.system.domain.tcomm.TcommCustomer" id="TcommCustomerResult">
+        <result property="id" column="id_"/>
+        <result property="bssCustId" column="bss_cust_id"/>
+        <result property="certificateAddr" column="certificate_addr"/>
+        <result property="certificateType" column="certificate_type"/>
+        <result property="certificateNo" column="certificate_no"/>
+        <result property="custName" column="cust_name"/>
+        <result property="custNo" column="cust_no"/>
+        <result property="custType" column="cust_type"/>
+        <result property="custAddr" column="cust_addr"/>
+        <result property="provinceCode" column="province_code"/>
+        <result property="provinceName" column="province_name"/>
+        <result property="eparchyCode" column="eparchy_code"/>
+        <result property="eparchyName" column="eparchy_name"/>
+        <result property="areaCode" column="area_code"/>
+        <result property="areaName" column="area_name"/>
+        <result property="cityId" column="city_id"/>
+        <result property="city" column="city"/>
+        <result property="org" column="org"/>
+        <result property="custContact" column="cust_contact"/>
+        <result property="contactTel" column="contact_tel"/>
+        <result property="contactAddr" column="contact_addr"/>
+        <result property="custManager" column="cust_manager"/>
+        <result property="createTime" column="create_time"/>
+        <result property="creator" column="creator"/>
+        <result property="memo" column="memo_"/>
+        <result property="staffSize" column="staff_size"/>
+        <result property="custSize" column="cust_size"/>
+        <result property="custClassType" column="cust_class_type"/>
+        <result property="custClassTypeDesc" column="cust_class_type_desc"/>
+        <result property="custLevel" column="cust_level"/>
+        <result property="custLevelDesc" column="cust_level_desc"/>
+        <result property="custState" column="cust_state"/>
+        <result property="custManagerCode" column="cust_manager_code"/>
+        <result property="custManagerNo" column="cust_manager_no"/>
+        <result property="custManagerName" column="cust_manager_name"/>
+        <result property="custNamagerTel" column="cust_namager_tel"/>
+        <result property="fristPvCallingType" column="frist_pv_calling_type"/>
+        <result property="fristPvCallingTypeName" column="frist_pv_calling_type_name"/>
+        <result property="secondPvCallingType" column="second_pv_calling_type"/>
+        <result property="secondPvCallingTypeName" column="second_pv_calling_type_name"/>
+        <result property="thirdPvCallingType" column="third_pv_calling_type"/>
+        <result property="thirdPvCallingTypeName" column="third_pv_calling_type_name"/>
+        <result property="fourPvCallingType" column="four_pv_calling_type"/>
+        <result property="fourPvCallingTypeName" column="four_pv_calling_type_name"/>
+        <result property="developFlag" column="develop_flag"/>
+        <result property="developFlagDesc" column="develop_flag_desc"/>
+        <result property="departmentCode" column="department_code"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="fristCallingType" column="frist_calling_type"/>
+        <result property="fristCallingTypeName" column="frist_calling_type_name"/>
+        <result property="secondCallingType" column="second_calling_type"/>
+        <result property="secondCallingTypeName" column="second_calling_type_name"/>
+        <result property="thirdCallingType" column="third_calling_type"/>
+        <result property="thirdCallingTypeName" column="third_calling_type_name"/>
+        <result property="custId" column="cust_id"/>
+        <result property="bbssCustId" column="bbss_cust_id"/>
+    </resultMap>
+
+
+</mapper>
