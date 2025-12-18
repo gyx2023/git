@@ -1,6 +1,6 @@
 package com.crm.job.service.file.strategy;
 
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 
 /**
  * 文件任务处理策略接口
@@ -16,7 +16,7 @@ public interface FileTaskStrategy {
      * @param task 任务信息对象
      * @return 是否处理成功
      */
-    boolean processTask(FileAsyncTaskDO task);
+    boolean processTask(FileAsyncTaskDo task);
 
     /**
      * 获取业务类型标识

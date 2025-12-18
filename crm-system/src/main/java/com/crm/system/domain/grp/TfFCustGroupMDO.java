@@ -14,7 +14,7 @@ import java.util.Date;
  */
 @Data
 @TableName("tf_f_cust_group_m")
-public class TfFCustGroupMDO implements Serializable {
+public class TfFCustGroupMDo implements Serializable {
 
     /**
      * 账期

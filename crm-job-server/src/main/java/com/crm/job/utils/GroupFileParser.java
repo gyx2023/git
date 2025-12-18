@@ -1,7 +1,6 @@
 package com.crm.job.utils;
 
 import com.crm.common.utils.file.FieldAnnotaionUtil;
-import com.crm.system.domain.grp.GrpGroupInfoDO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

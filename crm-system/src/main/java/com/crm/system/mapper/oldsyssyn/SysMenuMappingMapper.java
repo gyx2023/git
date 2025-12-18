@@ -1,6 +1,6 @@
 package com.crm.system.mapper.oldsyssyn;
 
-import com.crm.system.domain.oldsyssyn.SysMenuMappingDO;
+import com.crm.system.domain.oldsyssyn.SysMenuMappingDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**
@@ -9,6 +9,6 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  * @author crm
  * @date 2025-11-20
  */
-public interface SysMenuMappingMapper extends BaseMapperPlus<SysMenuMappingMapper, SysMenuMappingDO, SysMenuMappingDO> {
+public interface SysMenuMappingMapper extends BaseMapperPlus<SysMenuMappingMapper, SysMenuMappingDo, SysMenuMappingDo> {
 
 }

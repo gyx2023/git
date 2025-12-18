@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.file.FileAsyncTaskBo;
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.file.FileAsyncTaskVo;
 import com.crm.system.mapper.SysOssMapper;
@@ -101,7 +101,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      */
     @Override
     public TableDataInfo<FileAsyncTaskVo> queryPageList(FileAsyncTaskBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<FileAsyncTaskDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<FileAsyncTaskDo> lqw = buildQueryWrapper(bo);
         Page<FileAsyncTaskVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         result.getRecords().forEach(task -> {
             if(task.getTaskType().equals("import") && StringUtils.isNotEmpty(task.getResultFileUrl())){
@@ -120,35 +120,35 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      */
     @Override
     public List<FileAsyncTaskVo> queryList(FileAsyncTaskBo bo) {
-        LambdaQueryWrapper<FileAsyncTaskDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<FileAsyncTaskDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<FileAsyncTaskDO> buildQueryWrapper(FileAsyncTaskBo bo) {
+    private LambdaQueryWrapper<FileAsyncTaskDo> buildQueryWrapper(FileAsyncTaskBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<FileAsyncTaskDO> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getTaskId() != null, FileAsyncTaskDO::getTaskId, bo.getTaskId());
-        lqw.like(StringUtils.isNotBlank(bo.getTaskName()), FileAsyncTaskDO::getTaskName, bo.getTaskName());
-        lqw.eq(StringUtils.isNotBlank(bo.getTaskType()), FileAsyncTaskDO::getTaskType, bo.getTaskType());
-        lqw.like(StringUtils.isNotBlank(bo.getFileName()), FileAsyncTaskDO::getFileName, bo.getFileName());
-        lqw.eq(StringUtils.isNotBlank(bo.getFileUrl()), FileAsyncTaskDO::getFileUrl, bo.getFileUrl());
-        lqw.eq(bo.getFileSize() != null, FileAsyncTaskDO::getFileSize, bo.getFileSize());
-        lqw.eq(StringUtils.isNotBlank(bo.getBusinessType()), FileAsyncTaskDO::getBusinessType, bo.getBusinessType());
-        lqw.eq(bo.getTotalRows() != null, FileAsyncTaskDO::getTotalRows, bo.getTotalRows());
-        lqw.eq(bo.getSuccessRows() != null, FileAsyncTaskDO::getSuccessRows, bo.getSuccessRows());
-        lqw.eq(bo.getFailRows() != null, FileAsyncTaskDO::getFailRows, bo.getFailRows());
-        lqw.eq(bo.getStatus() != null, FileAsyncTaskDO::getStatus, bo.getStatus());
-        lqw.eq(bo.getStartTime() != null, FileAsyncTaskDO::getStartTime, bo.getStartTime());
-        lqw.eq(bo.getFinishTime() != null, FileAsyncTaskDO::getFinishTime, bo.getFinishTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getRequestParams()), FileAsyncTaskDO::getRequestParams, bo.getRequestParams());
-        lqw.like(StringUtils.isNotBlank(bo.getResultFileName()), FileAsyncTaskDO::getResultFileName, bo.getResultFileName());
-        lqw.eq(StringUtils.isNotBlank(bo.getResultFileUrl()), FileAsyncTaskDO::getResultFileUrl, bo.getResultFileUrl());
-        lqw.eq(bo.getCreateUserId() != null, FileAsyncTaskDO::getCreateBy, bo.getCreateUserId());
-        lqw.like(StringUtils.isNotBlank(bo.getCreateBy()), FileAsyncTaskDO::getCreateBy, bo.getCreateBy());
+        LambdaQueryWrapper<FileAsyncTaskDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getTaskId() != null, FileAsyncTaskDo::getTaskId, bo.getTaskId());
+        lqw.like(StringUtils.isNotBlank(bo.getTaskName()), FileAsyncTaskDo::getTaskName, bo.getTaskName());
+        lqw.eq(StringUtils.isNotBlank(bo.getTaskType()), FileAsyncTaskDo::getTaskType, bo.getTaskType());
+        lqw.like(StringUtils.isNotBlank(bo.getFileName()), FileAsyncTaskDo::getFileName, bo.getFileName());
+        lqw.eq(StringUtils.isNotBlank(bo.getFileUrl()), FileAsyncTaskDo::getFileUrl, bo.getFileUrl());
+        lqw.eq(bo.getFileSize() != null, FileAsyncTaskDo::getFileSize, bo.getFileSize());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusinessType()), FileAsyncTaskDo::getBusinessType, bo.getBusinessType());
+        lqw.eq(bo.getTotalRows() != null, FileAsyncTaskDo::getTotalRows, bo.getTotalRows());
+        lqw.eq(bo.getSuccessRows() != null, FileAsyncTaskDo::getSuccessRows, bo.getSuccessRows());
+        lqw.eq(bo.getFailRows() != null, FileAsyncTaskDo::getFailRows, bo.getFailRows());
+        lqw.eq(bo.getStatus() != null, FileAsyncTaskDo::getStatus, bo.getStatus());
+        lqw.eq(bo.getStartTime() != null, FileAsyncTaskDo::getStartTime, bo.getStartTime());
+        lqw.eq(bo.getFinishTime() != null, FileAsyncTaskDo::getFinishTime, bo.getFinishTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getRequestParams()), FileAsyncTaskDo::getRequestParams, bo.getRequestParams());
+        lqw.like(StringUtils.isNotBlank(bo.getResultFileName()), FileAsyncTaskDo::getResultFileName, bo.getResultFileName());
+        lqw.eq(StringUtils.isNotBlank(bo.getResultFileUrl()), FileAsyncTaskDo::getResultFileUrl, bo.getResultFileUrl());
+        lqw.eq(bo.getCreateUserId() != null, FileAsyncTaskDo::getCreateBy, bo.getCreateUserId());
+        lqw.like(StringUtils.isNotBlank(bo.getCreateBy()), FileAsyncTaskDo::getCreateBy, bo.getCreateBy());
         lqw.between(params.get("beginTime") != null && params.get("endTime") != null,
-            FileAsyncTaskDO::getCreateTime, params.get("beginTime"), params.get("endTime"));
+            FileAsyncTaskDo::getCreateTime, params.get("beginTime"), params.get("endTime"));
         lqw.orderByDesc(BaseEntity::getCreateTime);
-        lqw.eq(FileAsyncTaskDO::getCreateUserId,LoginHelper.getUserId());
+        lqw.eq(FileAsyncTaskDo::getCreateUserId,LoginHelper.getUserId());
         return lqw;
     }
 
@@ -157,7 +157,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      */
     @Override
     public Boolean insertByBo(FileAsyncTaskBo bo) {
-        FileAsyncTaskDO add = BeanUtil.toBean(bo, FileAsyncTaskDO.class);
+        FileAsyncTaskDo add = BeanUtil.toBean(bo, FileAsyncTaskDo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -171,7 +171,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      */
     @Override
     public Boolean updateByBo(FileAsyncTaskBo bo) {
-        FileAsyncTaskDO update = BeanUtil.toBean(bo, FileAsyncTaskDO.class);
+        FileAsyncTaskDo update = BeanUtil.toBean(bo, FileAsyncTaskDo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -179,7 +179,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(FileAsyncTaskDO entity){
+    private void validEntityBeforeSave(FileAsyncTaskDo entity){
         //TODO 做一些数据校验,如唯一约束
     }
 
@@ -307,7 +307,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             // 获取当前登录用户信息
             LoginUser loginUser = LoginHelper.getLoginUser();
             String areaCode = loginUser.getAreaCode();
-            
+
             // 判断当前用户是否为管理员
             boolean isAdmin = LoginHelper.isAdmin();
 

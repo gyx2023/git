@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppBidNewScoreBo;
-import com.crm.system.domain.entity.topp.ToppBidNewScoreDO;
+import com.crm.system.domain.topp.ToppBidNewScoreDo;
 import com.crm.system.domain.vo.topp.ToppBidNewScoreVo;
 import com.crm.system.mapper.topp.ToppBidNewScoreMapper;
 import com.crm.system.service.topp.ToppBidNewScoreService;
@@ -46,7 +46,7 @@ public class ToppBidNewScoreServiceImpl implements ToppBidNewScoreService {
      */
     @Override
     public TableDataInfo<ToppBidNewScoreVo> queryPageList(ToppBidNewScoreBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<ToppBidNewScoreDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppBidNewScoreDo> lqw = buildQueryWrapper(bo);
         Page<ToppBidNewScoreVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -56,21 +56,21 @@ public class ToppBidNewScoreServiceImpl implements ToppBidNewScoreService {
      */
     @Override
     public List<ToppBidNewScoreVo> queryList(ToppBidNewScoreBo bo) {
-        LambdaQueryWrapper<ToppBidNewScoreDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppBidNewScoreDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<ToppBidNewScoreDO> buildQueryWrapper(ToppBidNewScoreBo bo) {
+    private LambdaQueryWrapper<ToppBidNewScoreDo> buildQueryWrapper(ToppBidNewScoreBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<ToppBidNewScoreDO> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getToppBidNewId() != null, ToppBidNewScoreDO::getToppBidNewId, bo.getToppBidNewId());
-        lqw.eq(StringUtils.isNotBlank(bo.getOpportunityCode()), ToppBidNewScoreDO::getOpportunityCode, bo.getOpportunityCode());
-        lqw.like(StringUtils.isNotBlank(bo.getName()), ToppBidNewScoreDO::getName, bo.getName());
-        lqw.eq(StringUtils.isNotBlank(bo.getRole()), ToppBidNewScoreDO::getRole, bo.getRole());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsNotSupport()), ToppBidNewScoreDO::getIsNotSupport, bo.getIsNotSupport());
-        lqw.eq(StringUtils.isNotBlank(bo.getContribution()), ToppBidNewScoreDO::getContribution, bo.getContribution());
-        lqw.eq(StringUtils.isNotBlank(bo.getCreator()), ToppBidNewScoreDO::getCreator, bo.getCreator());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), ToppBidNewScoreDO::getStatus, bo.getStatus());
+        LambdaQueryWrapper<ToppBidNewScoreDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getToppBidNewId() != null, ToppBidNewScoreDo::getToppBidNewId, bo.getToppBidNewId());
+        lqw.eq(StringUtils.isNotBlank(bo.getOpportunityCode()), ToppBidNewScoreDo::getOpportunityCode, bo.getOpportunityCode());
+        lqw.like(StringUtils.isNotBlank(bo.getName()), ToppBidNewScoreDo::getName, bo.getName());
+        lqw.eq(StringUtils.isNotBlank(bo.getRole()), ToppBidNewScoreDo::getRole, bo.getRole());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsNotSupport()), ToppBidNewScoreDo::getIsNotSupport, bo.getIsNotSupport());
+        lqw.eq(StringUtils.isNotBlank(bo.getContribution()), ToppBidNewScoreDo::getContribution, bo.getContribution());
+        lqw.eq(StringUtils.isNotBlank(bo.getCreator()), ToppBidNewScoreDo::getCreator, bo.getCreator());
+        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), ToppBidNewScoreDo::getStatus, bo.getStatus());
         return lqw;
     }
 
@@ -79,7 +79,7 @@ public class ToppBidNewScoreServiceImpl implements ToppBidNewScoreService {
      */
     @Override
     public Boolean insertByBo(ToppBidNewScoreBo bo) {
-        ToppBidNewScoreDO add = BeanUtil.toBean(bo, ToppBidNewScoreDO.class);
+        ToppBidNewScoreDo add = BeanUtil.toBean(bo, ToppBidNewScoreDo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -93,7 +93,7 @@ public class ToppBidNewScoreServiceImpl implements ToppBidNewScoreService {
      */
     @Override
     public Boolean updateByBo(ToppBidNewScoreBo bo) {
-        ToppBidNewScoreDO update = BeanUtil.toBean(bo, ToppBidNewScoreDO.class);
+        ToppBidNewScoreDo update = BeanUtil.toBean(bo, ToppBidNewScoreDo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -101,7 +101,7 @@ public class ToppBidNewScoreServiceImpl implements ToppBidNewScoreService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppBidNewScoreDO entity) {
+    private void validEntityBeforeSave(ToppBidNewScoreDo entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 

@@ -4,7 +4,7 @@ import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.service.file.strategy.AbstractImportStrategy;
 import com.crm.system.domain.SysOss;
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.CustomerManagerImportResultVo;
 import com.crm.system.domain.vo.CustomerManagerTemplateVo;
 import com.crm.system.domain.vo.SysOssVo;
@@ -12,8 +12,6 @@ import com.crm.system.listener.manager.CustomerManagerImportListener;
 import com.crm.system.mapper.SysOssMapper;
 import com.crm.system.service.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -56,7 +54,7 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
      * @throws Exception 导入过程中的异常
      */
     @Override
-    protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
+    protected boolean doImportTask(FileAsyncTaskDo task) throws Exception {
         //根据FileAsyncTaskDO获取上传到cos的ossId
         // 去除URL中的查询参数，只使用基础URL进行查询
         String baseUrl = task.getFileUrl();

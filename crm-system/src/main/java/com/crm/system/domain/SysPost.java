@@ -2,6 +2,7 @@ package com.crm.system.domain;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -31,7 +32,7 @@ public class SysPost extends BaseEntity {
      * 岗位序号
      */
     @ExcelProperty(value = "岗位序号")
-    @TableId(value = "post_id")
+    @TableId(value = "post_id", type = IdType.AUTO)
     private Long postId;
 
     /**
