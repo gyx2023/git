@@ -81,7 +81,7 @@
         THEN ROUND(a.ict_profit, 2)
         ELSE NULL END AS ict_profit,
         a.is_framework_contract,
-        a.contract_time  ,
+        a.contract_time,
         c.opp_code,
         c.opp_name,
         f.dept_name AS opp_dept_name,
@@ -117,6 +117,7 @@
         ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
+        GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = h.name_
         WHERE a.is_sign = '0'
         and e.dept_id in(
@@ -133,21 +134,18 @@
         <if test="maxCgAmount != null">
             and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
-
         <if test="minYjAmount != null">
             and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
             and a.match_bid_money &lt; #{maxYjAmount}
         </if>
-
         <if test="minSjAmount != null">
             and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
             and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
-
         <if test="bidMainPersonnel != null">
             and a.bid_body in
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
@@ -169,7 +167,6 @@
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
         </if>
@@ -189,7 +186,6 @@
             </foreach>
         </if>
         UNION
-
         SELECT
         a.project_name,
         a.buy_user AS buy_user_name,
@@ -244,7 +240,7 @@
         ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
-        GROUP BY a.id, b.name
+        GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
         WHERE a.is_sign = '0'
         and e.dept_id in(
@@ -261,22 +257,18 @@
         <if test="maxCgAmount != null">
             and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
-
         <if test="minYjAmount != null">
             and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
             and a.match_bid_money &lt; #{maxYjAmount}
         </if>
-
         <if test="minSjAmount != null">
             and c.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
             and c.expect_contract_money &lt; #{maxSjAmount}
         </if>
-
-
         <if test="bidMainPersonnel != null">
             and a.bid_body in
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
@@ -295,11 +287,9 @@
                 #{item}
             </foreach>
         </if>
-
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
-
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
         </if>
@@ -318,11 +308,7 @@
                 #{item}
             </foreach>
         </if>
-
         ) t
         ORDER BY t.project_name;
-
     </select>
-
-
 </mapper>
