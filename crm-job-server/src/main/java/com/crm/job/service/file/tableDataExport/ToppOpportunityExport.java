@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.entity.topp.ToppOpportunityDO;
+import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.service.topp.ToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
