@@ -1,6 +1,6 @@
 package com.crm.job.service.file.strategy;
 
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,16 +19,16 @@ public abstract class AbstractImportStrategy implements FileTaskStrategy {
     }
 
     @Override
-    public boolean processTask(FileAsyncTaskDO task) {
+    public boolean processTask(FileAsyncTaskDo task) {
         log.info("开始处理导入任务，任务ID: {}, 业务类型: {}", task.getTaskId(), getBusinessType());
         try {
             // 更新任务状态为处理中
             task.setStatus(1L); // 1-处理中
             task.setStartTime(new java.util.Date());
-            
+
             // 执行具体的导入逻辑
             boolean result = doImportTask(task);
-            
+
             // 更新任务结果
             if (result) {
                 task.setStatus(2L); // 2-处理成功
@@ -55,5 +55,5 @@ public abstract class AbstractImportStrategy implements FileTaskStrategy {
      * @return 是否导入成功
      * @throws Exception 导入过程中的异常
      */
-    protected abstract boolean doImportTask(FileAsyncTaskDO task) throws Exception;
+    protected abstract boolean doImportTask(FileAsyncTaskDo task) throws Exception;
 }

@@ -1,6 +1,6 @@
 package com.crm.job.service.file.strategy;
 
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,7 +19,7 @@ public abstract class AbstractExportStrategy implements FileTaskStrategy {
     }
 
     @Override
-    public boolean processTask(FileAsyncTaskDO task) {
+    public boolean processTask(FileAsyncTaskDo task) {
         log.info("开始处理导出任务，任务ID: {}, 业务类型: {}", task.getTaskId(), getBusinessType());
         try {
             // 更新任务状态为处理中
@@ -55,5 +55,5 @@ public abstract class AbstractExportStrategy implements FileTaskStrategy {
      * @return 是否导出成功
      * @throws Exception 导出过程中的异常
      */
-    protected abstract boolean doExportTask(FileAsyncTaskDO task) throws Exception;
+    protected abstract boolean doExportTask(FileAsyncTaskDo task) throws Exception;
 }

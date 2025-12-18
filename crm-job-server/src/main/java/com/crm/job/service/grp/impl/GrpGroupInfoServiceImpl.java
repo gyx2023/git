@@ -1,11 +1,10 @@
 package com.crm.job.service.grp.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.grp.GrpGroupInfoDO;
+import com.crm.system.domain.grp.GrpGroupInfoDo;
 import com.crm.system.mapper.grp.GrpGroupInfoMapper;
 import com.crm.job.service.grp.GrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +25,7 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchInsert(List<GrpGroupInfoDO> groupInfoList) {
+    public int batchInsert(List<GrpGroupInfoDo> groupInfoList) {
         if (groupInfoList == null || groupInfoList.isEmpty()) {
             return 0;
         }
@@ -34,7 +33,7 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
         log.info("开始批量插入集团信息，数量: {}", groupInfoList.size());
         int result = 0;
         // 使用BaseMapper的insert方法逐个插入
-        for (GrpGroupInfoDO groupInfo : groupInfoList) {
+        for (GrpGroupInfoDo groupInfo : groupInfoList) {
             if (grpGroupInfoMapper.insert(groupInfo) > 0) {
                 result++;
             }
@@ -54,7 +53,7 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateByGrpId(GrpGroupInfoDO groupInfo) {
+    public int updateByGrpId(GrpGroupInfoDo groupInfo) {
         if (groupInfo == null || groupInfo.getGrpId() == null) {
             return 0;
         }
@@ -62,8 +61,8 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
         log.info("开始更新集团信息，集团ID: {}", groupInfo.getGrpId());
         int result = grpGroupInfoMapper.update(
                 groupInfo,
-                Wrappers.<GrpGroupInfoDO>lambdaUpdate()
-                        .eq(GrpGroupInfoDO::getGrpId, groupInfo.getGrpId())
+                Wrappers.<GrpGroupInfoDo>lambdaUpdate()
+                        .eq(GrpGroupInfoDo::getGrpId, groupInfo.getGrpId())
         );
         log.info("更新集团信息完成，成功数量: {}", result);
         return result;
@@ -71,7 +70,7 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchUpsert(List<GrpGroupInfoDO> groupInfoList) {
+    public int batchUpsert(List<GrpGroupInfoDo> groupInfoList) {
         if (groupInfoList == null || groupInfoList.isEmpty()) {
             return 0;
         }

@@ -2,12 +2,11 @@ package com.crm.system.service.oldsyssyn.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.core.domain.entity.SysRole;
-import com.crm.common.core.domain.entity.SysUser;
 import com.crm.system.domain.SysRoleMenu;
 import com.crm.system.domain.SysUserRole;
-import com.crm.system.domain.oldsyssyn.OldSysRoleDO;
-import com.crm.system.domain.oldsyssyn.OldSysUserDO;
-import com.crm.system.domain.oldsyssyn.SysMenuMappingDO;
+import com.crm.system.domain.oldsyssyn.OldSysRoleDo;
+import com.crm.system.domain.oldsyssyn.OldSysUserDo;
+import com.crm.system.domain.oldsyssyn.SysMenuMappingDo;
 import com.crm.system.mapper.SysRoleMapper;
 import com.crm.system.mapper.SysRoleMenuMapper;
 import com.crm.system.mapper.SysUserRoleMapper;
@@ -54,7 +53,7 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
     public void synMenuPermission(Long userId) {
         log.info("开始同步用户菜单权限");
         log.info("用户ID: {}", userId);
-        OldSysUserDO oldSysUserDO = oldSysUserMapper.selectVoById(userId);
+        OldSysUserDo oldSysUserDO = oldSysUserMapper.selectVoById(userId);
         String roleList = oldSysUserDO.getRoleList();
 
         // 处理roleList：去除前后逗号并转换为List
@@ -63,15 +62,15 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
         //删除用户角色绑定关系
         sysUserRoleMapper.deleteByUserId(userId);
         //根据roleIdList查询老系统sys_role表
-        List<OldSysRoleDO> oldSysRoleDOS = oldSysRoleMapper.selectList(new LambdaQueryWrapper<OldSysRoleDO>().in(OldSysRoleDO::getId, roleIdList).eq(OldSysRoleDO::getValid, true));
+        List<OldSysRoleDo> oldSysRoleDos = oldSysRoleMapper.selectList(new LambdaQueryWrapper<OldSysRoleDo>().in(OldSysRoleDo::getId, roleIdList).eq(OldSysRoleDo::getValid, true));
         //将这些role同步到新系统，同步规则为，如果该角色在老系统配置了新系统的菜单权限则进行同步，否则不同步
         List<SysRole> sysRoles = new ArrayList<>();
         List<SysUserRole> sysUserRoles = new ArrayList<>();
         List<SysRoleMenu> sysRoleMenuList = new ArrayList<>();
-        oldSysRoleDOS.forEach(oldSysRoleDO -> {
+        oldSysRoleDos.forEach(oldSysRoleDo -> {
             SysRole sysRole = new SysRole();
-            sysRole.setRoleId(Long.valueOf(oldSysRoleDO.getId()));
-            sysRole.setRoleName(oldSysRoleDO.getName());
+            sysRole.setRoleId(Long.valueOf(oldSysRoleDo.getId()));
+            sysRole.setRoleName(oldSysRoleDo.getName());
             sysRole.setRoleKey("common");
             sysRole.setStatus("0");
             sysRole.setDelFlag("0");
@@ -80,20 +79,20 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
             sysUserRole.setUserId(userId);
             sysUserRole.setRoleId(sysRole.getRoleId());
             sysUserRoles.add(sysUserRole);
-            String functionList = oldSysRoleDO.getFunctionList();
+            String functionList = oldSysRoleDo.getFunctionList();
             List<String> oldMenuIds = parseRoleListToList(functionList);
-            List<SysMenuMappingDO> sysMenuMappingDOS = sysMenuMappingMapper.selectList(new LambdaQueryWrapper<SysMenuMappingDO>().in(SysMenuMappingDO::getOldMenuId, oldMenuIds));
+            List<SysMenuMappingDo> sysMenuMappingDos = sysMenuMappingMapper.selectList(new LambdaQueryWrapper<SysMenuMappingDo>().in(SysMenuMappingDo::getOldMenuId, oldMenuIds));
             //不为空说明存在菜单权限，则同步角色数据
-            if(!sysMenuMappingDOS.isEmpty()){
+            if(!sysMenuMappingDos.isEmpty()){
                 //同步角色菜单绑定关系
-                List<SysRoleMenu> sysRoleMenus = sysMenuMappingDOS.stream().map(sysMenuMappingDO -> {
+                List<SysRoleMenu> sysRoleMenus = sysMenuMappingDos.stream().map(sysMenuMappingDo -> {
                     SysRoleMenu sysRoleMenu = new SysRoleMenu();
                     sysRoleMenu.setRoleId(sysRole.getRoleId());
-                    sysRoleMenu.setMenuId(sysMenuMappingDO.getNewMenuId());
+                    sysRoleMenu.setMenuId(sysMenuMappingDo.getNewMenuId());
                     return sysRoleMenu;
                 }).collect(Collectors.toList());
                 sysRoleMenuList.addAll(sysRoleMenus);
-                sysRoleMenuMapper.deleteRoleMenuByRoleId(Long.valueOf(oldSysRoleDO.getId()));
+                sysRoleMenuMapper.deleteRoleMenuByRoleId(Long.valueOf(oldSysRoleDo.getId()));
             }
         });
         sysRoleMenuMapper.insertBatch(sysRoleMenuList);

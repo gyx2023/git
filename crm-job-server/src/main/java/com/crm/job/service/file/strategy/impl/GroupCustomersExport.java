@@ -2,10 +2,9 @@ package com.crm.job.service.file.strategy.impl;
 
 import cn.hutool.json.JSONUtil;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.generator.util.Desensitization;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.service.ISysOssService;
@@ -16,11 +15,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -38,7 +34,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
     }
 
     @Override
-    protected boolean doExportTask(FileAsyncTaskDO task) throws Exception {
+    protected boolean doExportTask(FileAsyncTaskDo task) throws Exception {
         try {
             // 解析请求参数
             ZqGrpGroupInfoBo queryParams = JSONUtil.toBean(task.getRequestParams(), ZqGrpGroupInfoBo.class);

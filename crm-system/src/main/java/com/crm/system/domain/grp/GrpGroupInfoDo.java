@@ -20,7 +20,7 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("grp_group_info")
-public class GrpGroupInfoDO{
+public class GrpGroupInfoDo {
 
     /**
      * 集团标识

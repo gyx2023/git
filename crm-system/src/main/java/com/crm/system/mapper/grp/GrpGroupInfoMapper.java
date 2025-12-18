@@ -1,6 +1,6 @@
 package com.crm.system.mapper.grp;
 
-import com.crm.system.domain.grp.GrpGroupInfoDO;
+import com.crm.system.domain.grp.GrpGroupInfoDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**
@@ -9,6 +9,6 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  * @author crm
  * @date 2025-12-01
  */
-public interface GrpGroupInfoMapper extends BaseMapperPlus<GrpGroupInfoMapper, GrpGroupInfoDO, GrpGroupInfoDO> {
+public interface GrpGroupInfoMapper extends BaseMapperPlus<GrpGroupInfoMapper, GrpGroupInfoDo, GrpGroupInfoDo> {
 
 }

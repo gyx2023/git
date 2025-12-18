@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppBidNewMapper">
 
-    <resultMap type="com.crm.system.domain.entity.topp.ToppBidNewDO" id="ToppBidNewResult">
+    <resultMap type="com.crm.system.domain.topp.ToppBidNewDo" id="ToppBidNewResult">
         <result property="id" column="id"/>
         <result property="isSign" column="is_sign"/>
         <result property="projectName" column="project_name"/>
@@ -129,10 +129,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_contract_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_contract_money &lt;  #{maxYjAmount}
+            and b.expect_contract_money &lt;  #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
@@ -219,10 +219,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_contract_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_contract_money &lt; #{maxYjAmount}
+            and b.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
 
@@ -318,10 +318,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_contract_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_contract_money &lt;  #{maxYjAmount}
+            and b.expect_contract_money &lt;  #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
@@ -400,10 +400,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_contract_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_contract_money &lt; #{maxYjAmount}
+            and b.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
@@ -505,10 +505,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_contract_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_contract_money &lt;  #{maxYjAmount}
+            and b.expect_contract_money &lt;  #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
@@ -563,7 +563,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SUM(t1.ybyq_zb) AS ybyq_zb,
         SUM(t1.ybwq_zb) AS ybwq_zb,
         SUM(t1.wq_zb) AS wq_zb,
-        sum(t1.match_bid_money * t1.contribution) as gxed_zb
+        sum(t1.match_bid_money * t1.contribution / 100) as gxed_zb
         FROM (
         SELECT
         d.nick_name,
@@ -580,6 +580,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE  e.dept_id =#{deptId}
         and a.is_sign='0' and a.result='match_bid'
+        and c.name=d.nick_name
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -595,10 +596,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_contract_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_contract_money &lt; #{maxYjAmount}
+            and b.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
 

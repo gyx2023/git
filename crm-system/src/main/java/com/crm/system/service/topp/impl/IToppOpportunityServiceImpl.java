@@ -9,7 +9,7 @@ import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.entity.topp.ToppOpportunityDO;
+import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;
@@ -47,7 +47,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
      */
     @Override
     public TableDataInfo<ToppOpportunityVo> queryPageList(ToppOpportunityBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<ToppOpportunityDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = buildQueryWrapper(bo);
         Page<ToppOpportunityVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -57,145 +57,145 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
      */
     @Override
     public List<ToppOpportunityVo> queryList(ToppOpportunityBo bo) {
-        LambdaQueryWrapper<ToppOpportunityDO> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<ToppOpportunityDO> buildQueryWrapper(ToppOpportunityBo bo) {
+    private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<ToppOpportunityDO> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getCustId() != null, ToppOpportunityDO::getCustId, bo.getCustId());
-        lqw.like(StringUtils.isNotBlank(bo.getCustName()), ToppOpportunityDO::getCustName, bo.getCustName());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustNo()), ToppOpportunityDO::getCustNo, bo.getCustNo());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustNeed()), ToppOpportunityDO::getCustNeed, bo.getCustNeed());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustContact()), ToppOpportunityDO::getCustContact, bo.getCustContact());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustContactTel()), ToppOpportunityDO::getCustContactTel, bo.getCustContactTel());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustCapitalSource()), ToppOpportunityDO::getCustCapitalSource, bo.getCustCapitalSource());
-        lqw.eq(bo.getCustManagerId() != null, ToppOpportunityDO::getCustManagerId, bo.getCustManagerId());
-        lqw.like(StringUtils.isNotBlank(bo.getCustManagerName()), ToppOpportunityDO::getCustManagerName, bo.getCustManagerName());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustManagerNo()), ToppOpportunityDO::getCustManagerNo, bo.getCustManagerNo());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustManagerTel()), ToppOpportunityDO::getCustManagerTel, bo.getCustManagerTel());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustManagerEmail()), ToppOpportunityDO::getCustManagerEmail, bo.getCustManagerEmail());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppCode()), ToppOpportunityDO::getOppCode, bo.getOppCode());
-        lqw.like(StringUtils.isNotBlank(bo.getOppName()), ToppOpportunityDO::getOppName, bo.getOppName());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppSource()), ToppOpportunityDO::getOppSource, bo.getOppSource());
-        lqw.eq(StringUtils.isNotBlank(bo.getProjectType()), ToppOpportunityDO::getProjectType, bo.getProjectType());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppType()), ToppOpportunityDO::getOppType, bo.getOppType());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppIncludeType()), ToppOpportunityDO::getOppIncludeType, bo.getOppIncludeType());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppPhase()), ToppOpportunityDO::getOppPhase, bo.getOppPhase());
-        lqw.eq(bo.getOppPhaseTime() != null, ToppOpportunityDO::getOppPhaseTime, bo.getOppPhaseTime());
-        lqw.eq(bo.getClueId() != null, ToppOpportunityDO::getClueId, bo.getClueId());
-        lqw.eq(bo.getIsBigProduct() != null, ToppOpportunityDO::getIsBigProduct, bo.getIsBigProduct());
-        lqw.eq(bo.getIsNeedIndependent() != null, ToppOpportunityDO::getIsNeedIndependent, bo.getIsNeedIndependent());
-        lqw.eq(bo.getIsNeedProject() != null, ToppOpportunityDO::getIsNeedProject, bo.getIsNeedProject());
-        lqw.eq(bo.getIsNeedDesigner() != null, ToppOpportunityDO::getIsNeedDesigner, bo.getIsNeedDesigner());
-        lqw.eq(bo.getIsNeedProv() != null, ToppOpportunityDO::getIsNeedProv, bo.getIsNeedProv());
-        lqw.eq(bo.getIsNeedAdvance() != null, ToppOpportunityDO::getIsNeedAdvance, bo.getIsNeedAdvance());
-        lqw.eq(bo.getIsBidding() != null, ToppOpportunityDO::getIsBidding, bo.getIsBidding());
-        lqw.eq(bo.getBidId() != null, ToppOpportunityDO::getBidId, bo.getBidId());
-        lqw.eq(bo.getIsRecPartner() != null, ToppOpportunityDO::getIsRecPartner, bo.getIsRecPartner());
-        lqw.eq(bo.getIsNeedExternalResources() != null, ToppOpportunityDO::getIsNeedExternalResources, bo.getIsNeedExternalResources());
-        lqw.eq(bo.getIsHaveInnovate() != null, ToppOpportunityDO::getIsHaveInnovate, bo.getIsHaveInnovate());
-        lqw.eq(bo.getBandServiceEarning() != null, ToppOpportunityDO::getBandServiceEarning, bo.getBandServiceEarning());
-        lqw.eq(StringUtils.isNotBlank(bo.getBeloneProductInfo()), ToppOpportunityDO::getBeloneProductInfo, bo.getBeloneProductInfo());
-        lqw.eq(bo.getBenefitProportion() != null, ToppOpportunityDO::getBenefitProportion, bo.getBenefitProportion());
-        lqw.eq(bo.getExpectCountMoney() != null, ToppOpportunityDO::getExpectCountMoney, bo.getExpectCountMoney());
-        lqw.eq(bo.getExpectAdvance() != null, ToppOpportunityDO::getExpectAdvance, bo.getExpectAdvance());
-        lqw.eq(StringUtils.isNotBlank(bo.getExpectAdvanceDuration()), ToppOpportunityDO::getExpectAdvanceDuration, bo.getExpectAdvanceDuration());
-        lqw.eq(bo.getExpectContractMoney() != null, ToppOpportunityDO::getExpectContractMoney, bo.getExpectContractMoney());
-        lqw.eq(bo.getExpectCtEarning() != null, ToppOpportunityDO::getExpectCtEarning, bo.getExpectCtEarning());
-        lqw.eq(bo.getExpectMoneyRate() != null, ToppOpportunityDO::getExpectMoneyRate, bo.getExpectMoneyRate());
-        lqw.eq(bo.getInvestMoney() != null, ToppOpportunityDO::getInvestMoney, bo.getInvestMoney());
-        lqw.eq(bo.getLineServiceEarning() != null, ToppOpportunityDO::getLineServiceEarning, bo.getLineServiceEarning());
-        lqw.eq(bo.getMoServiceEarning() != null, ToppOpportunityDO::getMoServiceEarning, bo.getMoServiceEarning());
-        lqw.eq(bo.getIdcEarning() != null, ToppOpportunityDO::getIdcEarning, bo.getIdcEarning());
-        lqw.eq(bo.getIctEarning() != null, ToppOpportunityDO::getIctEarning, bo.getIctEarning());
-        lqw.eq(bo.getIndustryAppEarning() != null, ToppOpportunityDO::getIndustryAppEarning, bo.getIndustryAppEarning());
-        lqw.eq(bo.getGroupNetEarning() != null, ToppOpportunityDO::getGroupNetEarning, bo.getGroupNetEarning());
-        lqw.eq(bo.getBigDataEarning() != null, ToppOpportunityDO::getBigDataEarning, bo.getBigDataEarning());
-        lqw.eq(bo.getCloudComputEarning() != null, ToppOpportunityDO::getCloudComputEarning, bo.getCloudComputEarning());
-        lqw.eq(bo.getNetThingEarning() != null, ToppOpportunityDO::getNetThingEarning, bo.getNetThingEarning());
-        lqw.eq(bo.getGroupSmmsEarning() != null, ToppOpportunityDO::getGroupSmmsEarning, bo.getGroupSmmsEarning());
-        lqw.eq(bo.getBackwardFlowEarning() != null, ToppOpportunityDO::getBackwardFlowEarning, bo.getBackwardFlowEarning());
-        lqw.eq(bo.getCallCenterEarning() != null, ToppOpportunityDO::getCallCenterEarning, bo.getCallCenterEarning());
-        lqw.eq(bo.getMonthIncomeContribution() != null, ToppOpportunityDO::getMonthIncomeContribution, bo.getMonthIncomeContribution());
-        lqw.eq(bo.getContractMonth() != null, ToppOpportunityDO::getContractMonth, bo.getContractMonth());
-        lqw.eq(bo.getPrivacyTreasureEarning() != null, ToppOpportunityDO::getPrivacyTreasureEarning, bo.getPrivacyTreasureEarning());
-        lqw.eq(bo.getOtherServiceEarning() != null, ToppOpportunityDO::getOtherServiceEarning, bo.getOtherServiceEarning());
-        lqw.eq(StringUtils.isNotBlank(bo.getPartnerInfo()), ToppOpportunityDO::getPartnerInfo, bo.getPartnerInfo());
-        lqw.eq(StringUtils.isNotBlank(bo.getSignMainPart()), ToppOpportunityDO::getSignMainPart, bo.getSignMainPart());
-        lqw.eq(StringUtils.isNotBlank(bo.getContractIntention()), ToppOpportunityDO::getContractIntention, bo.getContractIntention());
-        lqw.eq(StringUtils.isNotBlank(bo.getUnicomType()), ToppOpportunityDO::getUnicomType, bo.getUnicomType());
-        lqw.eq(bo.getUnicomDirector() != null, ToppOpportunityDO::getUnicomDirector, bo.getUnicomDirector());
-        lqw.eq(bo.getUnicomDeputyDirector() != null, ToppOpportunityDO::getUnicomDeputyDirector, bo.getUnicomDeputyDirector());
-        lqw.eq(StringUtils.isNotBlank(bo.getExplainReason()), ToppOpportunityDO::getExplainReason, bo.getExplainReason());
-        lqw.eq(bo.getAuditTaskId() != null, ToppOpportunityDO::getAuditTaskId, bo.getAuditTaskId());
-        lqw.eq(StringUtils.isNotBlank(bo.getAuditStatus()), ToppOpportunityDO::getAuditStatus, bo.getAuditStatus());
-        lqw.eq(StringUtils.isNotBlank(bo.getAuditResult()), ToppOpportunityDO::getAuditResult, bo.getAuditResult());
-        lqw.eq(bo.getAuditTime() != null, ToppOpportunityDO::getAuditTime, bo.getAuditTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getSupportPlanProvDescribe()), ToppOpportunityDO::getSupportPlanProvDescribe, bo.getSupportPlanProvDescribe());
-        lqw.eq(StringUtils.isNotBlank(bo.getSupportTaskCode()), ToppOpportunityDO::getSupportTaskCode, bo.getSupportTaskCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getSupportPlanDescribe()), ToppOpportunityDO::getSupportPlanDescribe, bo.getSupportPlanDescribe());
-        lqw.eq(bo.getIsDistribute() != null, ToppOpportunityDO::getIsDistribute, bo.getIsDistribute());
-        lqw.eq(bo.getDesigner() != null, ToppOpportunityDO::getDesigner, bo.getDesigner());
-        lqw.eq(bo.getDesignerOrg() != null, ToppOpportunityDO::getDesignerOrg, bo.getDesignerOrg());
-        lqw.eq(bo.getDesignerTime() != null, ToppOpportunityDO::getDesignerTime, bo.getDesignerTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getDesignType()), ToppOpportunityDO::getDesignType, bo.getDesignType());
-        lqw.eq(bo.getDesignScore() != null, ToppOpportunityDO::getDesignScore, bo.getDesignScore());
-        lqw.eq(bo.getScore() != null, ToppOpportunityDO::getScore, bo.getScore());
-        lqw.eq(StringUtils.isNotBlank(bo.getEndOppType()), ToppOpportunityDO::getEndOppType, bo.getEndOppType());
-        lqw.eq(StringUtils.isNotBlank(bo.getEndOppTypeDetail()), ToppOpportunityDO::getEndOppTypeDetail, bo.getEndOppTypeDetail());
-        lqw.eq(StringUtils.isNotBlank(bo.getEndOppTypeMemo()), ToppOpportunityDO::getEndOppTypeMemo, bo.getEndOppTypeMemo());
-        lqw.eq(bo.getCreator() != null, ToppOpportunityDO::getCreator, bo.getCreator());
-        lqw.eq(StringUtils.isNotBlank(bo.getMemo()), ToppOpportunityDO::getMemo, bo.getMemo());
-        lqw.eq(StringUtils.isNotBlank(bo.getSfzt()), ToppOpportunityDO::getSfzt, bo.getSfzt());
-        lqw.eq(bo.getZssTime() != null, ToppOpportunityDO::getZssTime, bo.getZssTime());
-        lqw.eq(bo.getContractId() != null, ToppOpportunityDO::getContractId, bo.getContractId());
-        lqw.eq(StringUtils.isNotBlank(bo.getWhiteList()), ToppOpportunityDO::getWhiteList, bo.getWhiteList());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppoState()), ToppOpportunityDO::getOppoState, bo.getOppoState());
-        lqw.eq(StringUtils.isNotBlank(bo.getDingyueList()), ToppOpportunityDO::getDingyueList, bo.getDingyueList());
-        lqw.eq(bo.getDesignerZid() != null, ToppOpportunityDO::getDesignerZid, bo.getDesignerZid());
-        lqw.eq(StringUtils.isNotBlank(bo.getUnicomType2()), ToppOpportunityDO::getUnicomType2, bo.getUnicomType2());
-        lqw.eq(StringUtils.isNotBlank(bo.getSyncStatus()), ToppOpportunityDO::getSyncStatus, bo.getSyncStatus());
-        lqw.eq(bo.getSyncTime() != null, ToppOpportunityDO::getSyncTime, bo.getSyncTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getNewOppPhase()), ToppOpportunityDO::getNewOppPhase, bo.getNewOppPhase());
-        lqw.eq(bo.getNewOppPhaseTime() != null, ToppOpportunityDO::getNewOppPhaseTime, bo.getNewOppPhaseTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsBxqj()), ToppOpportunityDO::getIsBxqj, bo.getIsBxqj());
-        lqw.eq(bo.getBxqjProjectCount() != null, ToppOpportunityDO::getBxqjProjectCount, bo.getBxqjProjectCount());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsKhkj()), ToppOpportunityDO::getIsKhkj, bo.getIsKhkj());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsJfkj()), ToppOpportunityDO::getIsJfkj, bo.getIsJfkj());
-        lqw.eq(StringUtils.isNotBlank(bo.getLevelType()), ToppOpportunityDO::getLevelType, bo.getLevelType());
-        lqw.eq(bo.getLevelAreaId() != null, ToppOpportunityDO::getLevelAreaId, bo.getLevelAreaId());
-        lqw.eq(bo.getDabiaoCreator() != null, ToppOpportunityDO::getDabiaoCreator, bo.getDabiaoCreator());
-        lqw.eq(bo.getDabiaoCreateTime() != null, ToppOpportunityDO::getDabiaoCreateTime, bo.getDabiaoCreateTime());
-        lqw.eq(bo.getDabiaoUpdateTime() != null, ToppOpportunityDO::getDabiaoUpdateTime, bo.getDabiaoUpdateTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getDabiaoMemo()), ToppOpportunityDO::getDabiaoMemo, bo.getDabiaoMemo());
-        lqw.eq(bo.getOppAreaId() != null, ToppOpportunityDO::getOppAreaId, bo.getOppAreaId());
-        lqw.eq(bo.getOppOrgId() != null, ToppOpportunityDO::getOppOrgId, bo.getOppOrgId());
-        lqw.eq(StringUtils.isNotBlank(bo.getBgType()), ToppOpportunityDO::getBgType, bo.getBgType());
-        lqw.eq(StringUtils.isNotBlank(bo.getSfoppoType()), ToppOpportunityDO::getSfoppoType, bo.getSfoppoType());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), ToppOpportunityDO::getIsValid, bo.getIsValid());
-        lqw.eq(bo.getSignTime() != null, ToppOpportunityDO::getSignTime, bo.getSignTime());
-        lqw.eq(bo.getClientInvestBudgetAmount() != null, ToppOpportunityDO::getClientInvestBudgetAmount, bo.getClientInvestBudgetAmount());
-        lqw.eq(bo.getEstimatTotalContratAmount() != null, ToppOpportunityDO::getEstimatTotalContratAmount, bo.getEstimatTotalContratAmount());
-        lqw.eq(StringUtils.isNotBlank(bo.getProductCode()), ToppOpportunityDO::getProductCode, bo.getProductCode());
-        lqw.like(StringUtils.isNotBlank(bo.getSfProductName()), ToppOpportunityDO::getSfProductName, bo.getSfProductName());
-        lqw.eq(StringUtils.isNotBlank(bo.getHeadquartersCustomerTypeCode()), ToppOpportunityDO::getHeadquartersCustomerTypeCode, bo.getHeadquartersCustomerTypeCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getSfCustomerType()), ToppOpportunityDO::getSfCustomerType, bo.getSfCustomerType());
-        lqw.eq(StringUtils.isNotBlank(bo.getNewIct()), ToppOpportunityDO::getNewIct, bo.getNewIct());
-        lqw.eq(StringUtils.isNotBlank(bo.getMarkunit()), ToppOpportunityDO::getMarkunit, bo.getMarkunit());
-        lqw.eq(bo.getIsSimpleOpp() != null, ToppOpportunityDO::getIsSimpleOpp, bo.getIsSimpleOpp());
-        lqw.eq(StringUtils.isNotBlank(bo.getGroupClueKey()), ToppOpportunityDO::getGroupClueKey, bo.getGroupClueKey());
-        lqw.like(StringUtils.isNotBlank(bo.getBuildingName()), ToppOpportunityDO::getBuildingName, bo.getBuildingName());
-        lqw.eq(StringUtils.isNotBlank(bo.getBuildingCode()), ToppOpportunityDO::getBuildingCode, bo.getBuildingCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getVisitJsonPamram()), ToppOpportunityDO::getVisitJsonPamram, bo.getVisitJsonPamram());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppDataReform()), ToppOpportunityDO::getOppDataReform, bo.getOppDataReform());
-        lqw.eq(bo.getFiveMergeState() != null, ToppOpportunityDO::getFiveMergeState, bo.getFiveMergeState());
-        lqw.eq(StringUtils.isNotBlank(bo.getFiveMergeCode()), ToppOpportunityDO::getFiveMergeCode, bo.getFiveMergeCode());
-        lqw.eq(bo.getReferTerminal() != null, ToppOpportunityDO::getReferTerminal, bo.getReferTerminal());
-        lqw.eq(StringUtils.isNotBlank(bo.getSupportStage()), ToppOpportunityDO::getSupportStage, bo.getSupportStage());
-        lqw.eq(bo.getSupportStageTime() != null, ToppOpportunityDO::getSupportStageTime, bo.getSupportStageTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getPreDecision()), ToppOpportunityDO::getPreDecision, bo.getPreDecision());
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getCustId() != null, ToppOpportunityDo::getCustId, bo.getCustId());
+        lqw.like(StringUtils.isNotBlank(bo.getCustName()), ToppOpportunityDo::getCustName, bo.getCustName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustNo()), ToppOpportunityDo::getCustNo, bo.getCustNo());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustNeed()), ToppOpportunityDo::getCustNeed, bo.getCustNeed());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustContact()), ToppOpportunityDo::getCustContact, bo.getCustContact());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustContactTel()), ToppOpportunityDo::getCustContactTel, bo.getCustContactTel());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustCapitalSource()), ToppOpportunityDo::getCustCapitalSource, bo.getCustCapitalSource());
+        lqw.eq(bo.getCustManagerId() != null, ToppOpportunityDo::getCustManagerId, bo.getCustManagerId());
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerName()), ToppOpportunityDo::getCustManagerName, bo.getCustManagerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustManagerNo()), ToppOpportunityDo::getCustManagerNo, bo.getCustManagerNo());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustManagerTel()), ToppOpportunityDo::getCustManagerTel, bo.getCustManagerTel());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustManagerEmail()), ToppOpportunityDo::getCustManagerEmail, bo.getCustManagerEmail());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppCode()), ToppOpportunityDo::getOppCode, bo.getOppCode());
+        lqw.like(StringUtils.isNotBlank(bo.getOppName()), ToppOpportunityDo::getOppName, bo.getOppName());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppSource()), ToppOpportunityDo::getOppSource, bo.getOppSource());
+        lqw.eq(StringUtils.isNotBlank(bo.getProjectType()), ToppOpportunityDo::getProjectType, bo.getProjectType());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppType()), ToppOpportunityDo::getOppType, bo.getOppType());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppIncludeType()), ToppOpportunityDo::getOppIncludeType, bo.getOppIncludeType());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppPhase()), ToppOpportunityDo::getOppPhase, bo.getOppPhase());
+        lqw.eq(bo.getOppPhaseTime() != null, ToppOpportunityDo::getOppPhaseTime, bo.getOppPhaseTime());
+        lqw.eq(bo.getClueId() != null, ToppOpportunityDo::getClueId, bo.getClueId());
+        lqw.eq(bo.getIsBigProduct() != null, ToppOpportunityDo::getIsBigProduct, bo.getIsBigProduct());
+        lqw.eq(bo.getIsNeedIndependent() != null, ToppOpportunityDo::getIsNeedIndependent, bo.getIsNeedIndependent());
+        lqw.eq(bo.getIsNeedProject() != null, ToppOpportunityDo::getIsNeedProject, bo.getIsNeedProject());
+        lqw.eq(bo.getIsNeedDesigner() != null, ToppOpportunityDo::getIsNeedDesigner, bo.getIsNeedDesigner());
+        lqw.eq(bo.getIsNeedProv() != null, ToppOpportunityDo::getIsNeedProv, bo.getIsNeedProv());
+        lqw.eq(bo.getIsNeedAdvance() != null, ToppOpportunityDo::getIsNeedAdvance, bo.getIsNeedAdvance());
+        lqw.eq(bo.getIsBidding() != null, ToppOpportunityDo::getIsBidding, bo.getIsBidding());
+        lqw.eq(bo.getBidId() != null, ToppOpportunityDo::getBidId, bo.getBidId());
+        lqw.eq(bo.getIsRecPartner() != null, ToppOpportunityDo::getIsRecPartner, bo.getIsRecPartner());
+        lqw.eq(bo.getIsNeedExternalResources() != null, ToppOpportunityDo::getIsNeedExternalResources, bo.getIsNeedExternalResources());
+        lqw.eq(bo.getIsHaveInnovate() != null, ToppOpportunityDo::getIsHaveInnovate, bo.getIsHaveInnovate());
+        lqw.eq(bo.getBandServiceEarning() != null, ToppOpportunityDo::getBandServiceEarning, bo.getBandServiceEarning());
+        lqw.eq(StringUtils.isNotBlank(bo.getBeloneProductInfo()), ToppOpportunityDo::getBeloneProductInfo, bo.getBeloneProductInfo());
+        lqw.eq(bo.getBenefitProportion() != null, ToppOpportunityDo::getBenefitProportion, bo.getBenefitProportion());
+        lqw.eq(bo.getExpectCountMoney() != null, ToppOpportunityDo::getExpectCountMoney, bo.getExpectCountMoney());
+        lqw.eq(bo.getExpectAdvance() != null, ToppOpportunityDo::getExpectAdvance, bo.getExpectAdvance());
+        lqw.eq(StringUtils.isNotBlank(bo.getExpectAdvanceDuration()), ToppOpportunityDo::getExpectAdvanceDuration, bo.getExpectAdvanceDuration());
+        lqw.eq(bo.getExpectContractMoney() != null, ToppOpportunityDo::getExpectContractMoney, bo.getExpectContractMoney());
+        lqw.eq(bo.getExpectCtEarning() != null, ToppOpportunityDo::getExpectCtEarning, bo.getExpectCtEarning());
+        lqw.eq(bo.getExpectMoneyRate() != null, ToppOpportunityDo::getExpectMoneyRate, bo.getExpectMoneyRate());
+        lqw.eq(bo.getInvestMoney() != null, ToppOpportunityDo::getInvestMoney, bo.getInvestMoney());
+        lqw.eq(bo.getLineServiceEarning() != null, ToppOpportunityDo::getLineServiceEarning, bo.getLineServiceEarning());
+        lqw.eq(bo.getMoServiceEarning() != null, ToppOpportunityDo::getMoServiceEarning, bo.getMoServiceEarning());
+        lqw.eq(bo.getIdcEarning() != null, ToppOpportunityDo::getIdcEarning, bo.getIdcEarning());
+        lqw.eq(bo.getIctEarning() != null, ToppOpportunityDo::getIctEarning, bo.getIctEarning());
+        lqw.eq(bo.getIndustryAppEarning() != null, ToppOpportunityDo::getIndustryAppEarning, bo.getIndustryAppEarning());
+        lqw.eq(bo.getGroupNetEarning() != null, ToppOpportunityDo::getGroupNetEarning, bo.getGroupNetEarning());
+        lqw.eq(bo.getBigDataEarning() != null, ToppOpportunityDo::getBigDataEarning, bo.getBigDataEarning());
+        lqw.eq(bo.getCloudComputEarning() != null, ToppOpportunityDo::getCloudComputEarning, bo.getCloudComputEarning());
+        lqw.eq(bo.getNetThingEarning() != null, ToppOpportunityDo::getNetThingEarning, bo.getNetThingEarning());
+        lqw.eq(bo.getGroupSmmsEarning() != null, ToppOpportunityDo::getGroupSmmsEarning, bo.getGroupSmmsEarning());
+        lqw.eq(bo.getBackwardFlowEarning() != null, ToppOpportunityDo::getBackwardFlowEarning, bo.getBackwardFlowEarning());
+        lqw.eq(bo.getCallCenterEarning() != null, ToppOpportunityDo::getCallCenterEarning, bo.getCallCenterEarning());
+        lqw.eq(bo.getMonthIncomeContribution() != null, ToppOpportunityDo::getMonthIncomeContribution, bo.getMonthIncomeContribution());
+        lqw.eq(bo.getContractMonth() != null, ToppOpportunityDo::getContractMonth, bo.getContractMonth());
+        lqw.eq(bo.getPrivacyTreasureEarning() != null, ToppOpportunityDo::getPrivacyTreasureEarning, bo.getPrivacyTreasureEarning());
+        lqw.eq(bo.getOtherServiceEarning() != null, ToppOpportunityDo::getOtherServiceEarning, bo.getOtherServiceEarning());
+        lqw.eq(StringUtils.isNotBlank(bo.getPartnerInfo()), ToppOpportunityDo::getPartnerInfo, bo.getPartnerInfo());
+        lqw.eq(StringUtils.isNotBlank(bo.getSignMainPart()), ToppOpportunityDo::getSignMainPart, bo.getSignMainPart());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractIntention()), ToppOpportunityDo::getContractIntention, bo.getContractIntention());
+        lqw.eq(StringUtils.isNotBlank(bo.getUnicomType()), ToppOpportunityDo::getUnicomType, bo.getUnicomType());
+        lqw.eq(bo.getUnicomDirector() != null, ToppOpportunityDo::getUnicomDirector, bo.getUnicomDirector());
+        lqw.eq(bo.getUnicomDeputyDirector() != null, ToppOpportunityDo::getUnicomDeputyDirector, bo.getUnicomDeputyDirector());
+        lqw.eq(StringUtils.isNotBlank(bo.getExplainReason()), ToppOpportunityDo::getExplainReason, bo.getExplainReason());
+        lqw.eq(bo.getAuditTaskId() != null, ToppOpportunityDo::getAuditTaskId, bo.getAuditTaskId());
+        lqw.eq(StringUtils.isNotBlank(bo.getAuditStatus()), ToppOpportunityDo::getAuditStatus, bo.getAuditStatus());
+        lqw.eq(StringUtils.isNotBlank(bo.getAuditResult()), ToppOpportunityDo::getAuditResult, bo.getAuditResult());
+        lqw.eq(bo.getAuditTime() != null, ToppOpportunityDo::getAuditTime, bo.getAuditTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getSupportPlanProvDescribe()), ToppOpportunityDo::getSupportPlanProvDescribe, bo.getSupportPlanProvDescribe());
+        lqw.eq(StringUtils.isNotBlank(bo.getSupportTaskCode()), ToppOpportunityDo::getSupportTaskCode, bo.getSupportTaskCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getSupportPlanDescribe()), ToppOpportunityDo::getSupportPlanDescribe, bo.getSupportPlanDescribe());
+        lqw.eq(bo.getIsDistribute() != null, ToppOpportunityDo::getIsDistribute, bo.getIsDistribute());
+        lqw.eq(bo.getDesigner() != null, ToppOpportunityDo::getDesigner, bo.getDesigner());
+        lqw.eq(bo.getDesignerOrg() != null, ToppOpportunityDo::getDesignerOrg, bo.getDesignerOrg());
+        lqw.eq(bo.getDesignerTime() != null, ToppOpportunityDo::getDesignerTime, bo.getDesignerTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getDesignType()), ToppOpportunityDo::getDesignType, bo.getDesignType());
+        lqw.eq(bo.getDesignScore() != null, ToppOpportunityDo::getDesignScore, bo.getDesignScore());
+        lqw.eq(bo.getScore() != null, ToppOpportunityDo::getScore, bo.getScore());
+        lqw.eq(StringUtils.isNotBlank(bo.getEndOppType()), ToppOpportunityDo::getEndOppType, bo.getEndOppType());
+        lqw.eq(StringUtils.isNotBlank(bo.getEndOppTypeDetail()), ToppOpportunityDo::getEndOppTypeDetail, bo.getEndOppTypeDetail());
+        lqw.eq(StringUtils.isNotBlank(bo.getEndOppTypeMemo()), ToppOpportunityDo::getEndOppTypeMemo, bo.getEndOppTypeMemo());
+        lqw.eq(bo.getCreator() != null, ToppOpportunityDo::getCreator, bo.getCreator());
+        lqw.eq(StringUtils.isNotBlank(bo.getMemo()), ToppOpportunityDo::getMemo, bo.getMemo());
+        lqw.eq(StringUtils.isNotBlank(bo.getSfzt()), ToppOpportunityDo::getSfzt, bo.getSfzt());
+        lqw.eq(bo.getZssTime() != null, ToppOpportunityDo::getZssTime, bo.getZssTime());
+        lqw.eq(bo.getContractId() != null, ToppOpportunityDo::getContractId, bo.getContractId());
+        lqw.eq(StringUtils.isNotBlank(bo.getWhiteList()), ToppOpportunityDo::getWhiteList, bo.getWhiteList());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppoState()), ToppOpportunityDo::getOppoState, bo.getOppoState());
+        lqw.eq(StringUtils.isNotBlank(bo.getDingyueList()), ToppOpportunityDo::getDingyueList, bo.getDingyueList());
+        lqw.eq(bo.getDesignerZid() != null, ToppOpportunityDo::getDesignerZid, bo.getDesignerZid());
+        lqw.eq(StringUtils.isNotBlank(bo.getUnicomType2()), ToppOpportunityDo::getUnicomType2, bo.getUnicomType2());
+        lqw.eq(StringUtils.isNotBlank(bo.getSyncStatus()), ToppOpportunityDo::getSyncStatus, bo.getSyncStatus());
+        lqw.eq(bo.getSyncTime() != null, ToppOpportunityDo::getSyncTime, bo.getSyncTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getNewOppPhase()), ToppOpportunityDo::getNewOppPhase, bo.getNewOppPhase());
+        lqw.eq(bo.getNewOppPhaseTime() != null, ToppOpportunityDo::getNewOppPhaseTime, bo.getNewOppPhaseTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsBxqj()), ToppOpportunityDo::getIsBxqj, bo.getIsBxqj());
+        lqw.eq(bo.getBxqjProjectCount() != null, ToppOpportunityDo::getBxqjProjectCount, bo.getBxqjProjectCount());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsKhkj()), ToppOpportunityDo::getIsKhkj, bo.getIsKhkj());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsJfkj()), ToppOpportunityDo::getIsJfkj, bo.getIsJfkj());
+        lqw.eq(StringUtils.isNotBlank(bo.getLevelType()), ToppOpportunityDo::getLevelType, bo.getLevelType());
+        lqw.eq(bo.getLevelAreaId() != null, ToppOpportunityDo::getLevelAreaId, bo.getLevelAreaId());
+        lqw.eq(bo.getDabiaoCreator() != null, ToppOpportunityDo::getDabiaoCreator, bo.getDabiaoCreator());
+        lqw.eq(bo.getDabiaoCreateTime() != null, ToppOpportunityDo::getDabiaoCreateTime, bo.getDabiaoCreateTime());
+        lqw.eq(bo.getDabiaoUpdateTime() != null, ToppOpportunityDo::getDabiaoUpdateTime, bo.getDabiaoUpdateTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getDabiaoMemo()), ToppOpportunityDo::getDabiaoMemo, bo.getDabiaoMemo());
+        lqw.eq(bo.getOppAreaId() != null, ToppOpportunityDo::getOppAreaId, bo.getOppAreaId());
+        lqw.eq(bo.getOppOrgId() != null, ToppOpportunityDo::getOppOrgId, bo.getOppOrgId());
+        lqw.eq(StringUtils.isNotBlank(bo.getBgType()), ToppOpportunityDo::getBgType, bo.getBgType());
+        lqw.eq(StringUtils.isNotBlank(bo.getSfoppoType()), ToppOpportunityDo::getSfoppoType, bo.getSfoppoType());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), ToppOpportunityDo::getIsValid, bo.getIsValid());
+        lqw.eq(bo.getSignTime() != null, ToppOpportunityDo::getSignTime, bo.getSignTime());
+        lqw.eq(bo.getClientInvestBudgetAmount() != null, ToppOpportunityDo::getClientInvestBudgetAmount, bo.getClientInvestBudgetAmount());
+        lqw.eq(bo.getEstimatTotalContratAmount() != null, ToppOpportunityDo::getEstimatTotalContratAmount, bo.getEstimatTotalContratAmount());
+        lqw.eq(StringUtils.isNotBlank(bo.getProductCode()), ToppOpportunityDo::getProductCode, bo.getProductCode());
+        lqw.like(StringUtils.isNotBlank(bo.getSfProductName()), ToppOpportunityDo::getSfProductName, bo.getSfProductName());
+        lqw.eq(StringUtils.isNotBlank(bo.getHeadquartersCustomerTypeCode()), ToppOpportunityDo::getHeadquartersCustomerTypeCode, bo.getHeadquartersCustomerTypeCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getSfCustomerType()), ToppOpportunityDo::getSfCustomerType, bo.getSfCustomerType());
+        lqw.eq(StringUtils.isNotBlank(bo.getNewIct()), ToppOpportunityDo::getNewIct, bo.getNewIct());
+        lqw.eq(StringUtils.isNotBlank(bo.getMarkunit()), ToppOpportunityDo::getMarkunit, bo.getMarkunit());
+        lqw.eq(bo.getIsSimpleOpp() != null, ToppOpportunityDo::getIsSimpleOpp, bo.getIsSimpleOpp());
+        lqw.eq(StringUtils.isNotBlank(bo.getGroupClueKey()), ToppOpportunityDo::getGroupClueKey, bo.getGroupClueKey());
+        lqw.like(StringUtils.isNotBlank(bo.getBuildingName()), ToppOpportunityDo::getBuildingName, bo.getBuildingName());
+        lqw.eq(StringUtils.isNotBlank(bo.getBuildingCode()), ToppOpportunityDo::getBuildingCode, bo.getBuildingCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getVisitJsonPamram()), ToppOpportunityDo::getVisitJsonPamram, bo.getVisitJsonPamram());
+        lqw.eq(StringUtils.isNotBlank(bo.getOppDataReform()), ToppOpportunityDo::getOppDataReform, bo.getOppDataReform());
+        lqw.eq(bo.getFiveMergeState() != null, ToppOpportunityDo::getFiveMergeState, bo.getFiveMergeState());
+        lqw.eq(StringUtils.isNotBlank(bo.getFiveMergeCode()), ToppOpportunityDo::getFiveMergeCode, bo.getFiveMergeCode());
+        lqw.eq(bo.getReferTerminal() != null, ToppOpportunityDo::getReferTerminal, bo.getReferTerminal());
+        lqw.eq(StringUtils.isNotBlank(bo.getSupportStage()), ToppOpportunityDo::getSupportStage, bo.getSupportStage());
+        lqw.eq(bo.getSupportStageTime() != null, ToppOpportunityDo::getSupportStageTime, bo.getSupportStageTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getPreDecision()), ToppOpportunityDo::getPreDecision, bo.getPreDecision());
         return lqw;
     }
 
@@ -204,7 +204,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
      */
     @Override
     public Boolean insertByBo(ToppOpportunityBo bo) {
-        ToppOpportunityDO add = BeanUtil.toBean(bo, ToppOpportunityDO.class);
+        ToppOpportunityDo add = BeanUtil.toBean(bo, ToppOpportunityDo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -218,7 +218,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
      */
     @Override
     public Boolean updateByBo(ToppOpportunityBo bo) {
-        ToppOpportunityDO update = BeanUtil.toBean(bo, ToppOpportunityDO.class);
+        ToppOpportunityDo update = BeanUtil.toBean(bo, ToppOpportunityDo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -226,7 +226,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppOpportunityDO entity) {
+    private void validEntityBeforeSave(ToppOpportunityDo entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 
