@@ -1,13 +1,12 @@
 package com.crm.job.utils;
 
 import cn.hutool.extra.ssh.Sftp;
-import com.crm.system.domain.param.SysParamDO;
+import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -16,7 +15,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -160,8 +158,8 @@ public class SftpUtil implements InitializingBean {
             log.info("刷新SFTP配置类型 '{}' 的缓存", configType);
 
             // 按type查询所有SFTP配置
-            List<SysParamDO> sftpParams = sysParamMapper.selectList(
-                new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, configType)
+            List<SysParamDo> sftpParams = sysParamMapper.selectList(
+                new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, configType)
             );
             log.debug("使用配置类型 '{}' 查询系统参数", configType);
 
@@ -170,7 +168,7 @@ public class SftpUtil implements InitializingBean {
                 log.info("找到 {} 个系统参数记录", sftpParams.size());
                 int loadedCount = 0;
 
-                for (SysParamDO param : sftpParams) {
+                for (SysParamDo param : sftpParams) {
                     if (param.getCode() != null && param.getValue() != null &&
                         param.getCode().startsWith(SFTP_CONFIG_PREFIX)) {
                         // 验证配置值不为空
@@ -239,9 +237,9 @@ public class SftpUtil implements InitializingBean {
             // 缓存未初始化时，回退到直接查询数据库
             String fullKey = SFTP_CONFIG_PREFIX + paramKey;
             try {
-                SysParamDO param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>()
-                        .eq(SysParamDO::getType, configType)
-                        .eq(SysParamDO::getCode, fullKey));
+                SysParamDo param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
+                        .eq(SysParamDo::getType, configType)
+                        .eq(SysParamDo::getCode, fullKey));
                 if (param != null && param.getValue() != null) {
                     return param.getValue();
                 }

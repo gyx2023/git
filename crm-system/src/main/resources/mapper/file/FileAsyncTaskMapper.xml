@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.file.FileAsyncTaskMapper">
 
-    <resultMap type="com.crm.system.domain.file.FileAsyncTaskDO" id="FileAsyncTaskResult">
+    <resultMap type="com.crm.system.domain.file.FileAsyncTaskDo" id="FileAsyncTaskResult">
         <id     property="id"          column="id"          />
         <result property="taskId"      column="task_id"      />
         <result property="taskName"    column="task_name"    />
@@ -74,7 +74,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <!-- 更新任务信息 -->
-    <update id="updateTask" parameterType="com.crm.system.domain.file.FileAsyncTaskDO">
+    <update id="updateTask" parameterType="com.crm.system.domain.file.FileAsyncTaskDo">
         update
             zqzt_file_async_task
         set

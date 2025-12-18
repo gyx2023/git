@@ -1,0 +1,64 @@
+ALTER TABLE `zqzt_gen_table` MODIFY COLUMN `table_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号' FIRST;
+ALTER TABLE `zqzt_gen_table_column` MODIFY COLUMN `column_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号' FIRST;
+ALTER TABLE `zqzt_grp_group_info` MODIFY COLUMN `GRP_ID` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '集团标识' FIRST;
+
+ALTER TABLE `zqzt_grp_group_info_log`
+    MODIFY COLUMN `CUST_ID` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '客户id' AFTER `HQ_GRP_CODE`,
+    MODIFY COLUMN `UPDATE_TYPE` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '变更类型：T1-集团基本信息变更,T2-集团客户经理变更' AFTER `CUST_ID`,
+    MODIFY COLUMN `DATA_TYPE` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '1-变更前,2-变更后' AFTER `UPDATE_TYPE`,
+    MODIFY COLUMN `GRP_LEVEL` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团级别:A-B-C-D-E-F-G-H-I-Y-Z' AFTER `DATA_TYPE`,
+    MODIFY COLUMN `GRP_STATUS` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团状态:01-目标,02-潜在,03-正式,04-注销' AFTER `GRP_LEVEL`,
+    MODIFY COLUMN `AREA_ID` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '地市' AFTER `GRP_STATUS`,
+    MODIFY COLUMN `COUNTY_ID` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '县分' AFTER `AREA_ID`,
+    MODIFY COLUMN `COUNTY_ID2` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '行政县' AFTER `COUNTY_ID`,
+    MODIFY COLUMN `GRID_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '所属网格编码' AFTER `COUNTY_ID2`,
+    MODIFY COLUMN `INDUSTRY_MAJOR_KIND` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '行业大类:01-金融业,02-党政军部门,03-科学教育文化体育卫生出版业,04-旅游饭店娱乐服务业,05-采掘业和加工制造业,06-公共服务业,07-交通运输仓储和邮政业,08-批发零售业,09-房地产业,10-建筑业,11-计算机信息业,12-农林牧副渔,99-其他' AFTER `GRID_ID`,
+    MODIFY COLUMN `INDUSTRY_SUB_KIND` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '行业亚类' AFTER `INDUSTRY_MAJOR_KIND`,
+    MODIFY COLUMN `INDUSTRY_DETAIL_KIND` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '行业细类' AFTER `INDUSTRY_SUB_KIND`,
+    MODIFY COLUMN `BUSI_TYPE` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团业务分类:00-综合集团,10-移动集团,20-固网集团' AFTER `INDUSTRY_DETAIL_KIND`,
+    MODIFY COLUMN `GRP_CUST_TYPE` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团客户类别:400-大客户,500-中小企业客户,600-普通客户' AFTER `BUSI_TYPE`,
+    MODIFY COLUMN `GRP_EXPAND_TYPE` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团客户拓展类型:01-省直拓,02-市直拓,03-县直拓' AFTER `GRP_CUST_TYPE`,
+    MODIFY COLUMN `GRP_BUSI_DEPT_TYPE` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团客户业务部门分类:01-数字政府BU,02-军政（政法）,03-证券保险客户中心,04-银行客户中心,05-军政（军民融合）,06-智慧城市BU,07-智慧园区BU,08-教育行业BU,09-系统集成客户,10-生态环境（生态）,11-政法客户,12-军政客户,13-现代服务（交通）,14-智慧民生客户,15-健康文旅（医疗）,16-公共事业客户中心,17-智算营销中心（云数据）,18-工业互联网BU,19-健康文旅（文旅）,20-智慧制造客户,21-省行业客户部,22-商企客户,23-战略客户,24-生态环境（农业）,25-科创企业客户中心,26-政要客户,27-金融客户,28-阿里中心,29-网易中心,30-产业互联网客户,31-企业服务一部,32-企业服务二部,33-纺织服装行业服务部,34-现代服务（商贸）,35-健康文旅客户中心,36-吉利中心,98-公众客户,99-中小企业' AFTER `GRP_EXPAND_TYPE`,
+    MODIFY COLUMN `PROVINCE_NEWOLD_TYPE` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '集团客户省市名单制存增量标识:01-存量,02-增量' AFTER `GRP_BUSI_DEPT_TYPE`,
+    MODIFY COLUMN `GRP_CREATOR` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '资料创建人' AFTER `MANAGER_ID`,
+    MODIFY COLUMN `GRP_CREATE_TIME` datetime NULL COMMENT '资料录入时间' AFTER `GRP_CREATOR`,
+    MODIFY COLUMN `PROV_MANAGER_EMP_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '省级客户经理（省分字段）' AFTER `GRP_CREATE_TIME`,
+    MODIFY COLUMN `PROV_MANAGER_OAUSER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '省级客户经理OA账号（省分字段）' AFTER `PROV_MANAGER_EMP_ID`,
+    MODIFY COLUMN `PROV_MANAGER_NAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '省级客户名字（省分字段）' AFTER `PROV_MANAGER_OAUSER`,
+    MODIFY COLUMN `CITY_MANAGER_EMP_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '市级客户经理（省分字段）' AFTER `PROV_MANAGER_NAME`,
+    MODIFY COLUMN `CITY_MANAGER_OAUSER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '市级客户经理OA账号（省分字段）' AFTER `CITY_MANAGER_EMP_ID`,
+    MODIFY COLUMN `CITY_MANAGER_NAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '市级客户名字（省分字段）' AFTER `CITY_MANAGER_OAUSER`,
+    MODIFY COLUMN `COUNTY_MANAGER_EMP_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '县级客户经理（省分字段）' AFTER `CITY_MANAGER_NAME`,
+    MODIFY COLUMN `COUNTY_MANAGER_OAUSER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '县级客户经理OA账号（省分字段）' AFTER `COUNTY_MANAGER_EMP_ID`,
+    MODIFY COLUMN `COUNTY_MANAGER_NAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '县级客户名字（省分字段）' AFTER `COUNTY_MANAGER_OAUSER`,
+    MODIFY COLUMN `CREATE_TIME` datetime NULL COMMENT '创建时间' AFTER `COUNTY_MANAGER_NAME`,
+    MODIFY COLUMN `UPDATE_TIME` datetime NULL COMMENT '更新时间' AFTER `CREATE_TIME`,
+    MODIFY COLUMN `ETL_TIME` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '处理时间' AFTER `UPDATE_TIME`;
+
+
+ALTER TABLE `zqzt_sys_config` MODIFY COLUMN `config_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '参数主键' FIRST;
+ALTER TABLE `zqzt_sys_dept` MODIFY COLUMN `dept_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '部门id' FIRST;
+
+ALTER TABLE `zqzt_sys_dict_data` MODIFY COLUMN `dict_code` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '字典编码' FIRST;
+
+ALTER TABLE `zqzt_sys_dict_type` MODIFY COLUMN `dict_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '字典主键' FIRST;
+
+ALTER TABLE `zqzt_sys_logininfor` MODIFY COLUMN `info_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '访问ID' FIRST;
+
+ALTER TABLE `zqzt_sys_menu` MODIFY COLUMN `menu_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '菜单ID' FIRST;
+
+ALTER TABLE `zqzt_sys_notice` MODIFY COLUMN `notice_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '公告ID' FIRST;
+
+ALTER TABLE `zqzt_sys_oper_log` MODIFY COLUMN `oper_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '日志主键' FIRST;
+
+ALTER TABLE `zqzt_sys_oss` MODIFY COLUMN `oss_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '对象存储主键' FIRST;
+
+ALTER TABLE `zqzt_sys_oss_config` MODIFY COLUMN `oss_config_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主建' FIRST;
+
+ALTER TABLE `zqzt_sys_post` MODIFY COLUMN `post_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '岗位ID' FIRST;
+
+ALTER TABLE `zqzt_sys_role` MODIFY COLUMN `role_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '角色ID' FIRST;
+
+ALTER TABLE `zqzt_sys_user` MODIFY COLUMN `user_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '用户ID' FIRST;
+
+INSERT INTO sys_param (type_, code_, value_, remark_,name_) VALUES ('insert_grp_group_info', 'zqzt.switch', '1', '同步到zqzt_grp_group_info表的开关：1或true表示开启，0或false表示关闭','同步开关');

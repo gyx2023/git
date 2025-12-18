@@ -31,29 +31,32 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
     private final String prodProfile = "prod";
 
     private final TransmittableThreadLocal<StopWatch> invokeTimeTL = new TransmittableThreadLocal<>();
+    private final TransmittableThreadLocal<String> requestParamTL = new TransmittableThreadLocal<>();
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
-            String url = request.getMethod() + " " + request.getRequestURI();
-
-            // 打印请求参数
+            // 收集请求参数，暂不打印
+            String paramInfo;
             if (isJsonRequest(request)) {
                 String jsonParam = "";
                 if (request instanceof RepeatedlyRequestWrapper) {
                     BufferedReader reader = request.getReader();
                     jsonParam = IoUtil.read(reader);
                 }
-                log.debug("[PLUS]开始请求 => URL[{}],参数类型[json],参数:[{}]", url, jsonParam);
+                paramInfo = "参数类型[json],参数:[" + jsonParam + "]";
             } else {
                 Map<String, String[]> parameterMap = request.getParameterMap();
                 if (MapUtil.isNotEmpty(parameterMap)) {
                     String parameters = JsonUtils.toJsonString(parameterMap);
-                    log.debug("[PLUS]开始请求 => URL[{}],参数类型[param],参数:[{}]", url, parameters);
+                    paramInfo = "参数类型[param],参数:[" + parameters + "]";
                 } else {
-                    log.debug("[PLUS]开始请求 => URL[{}],无参数", url);
+                    paramInfo = "无参数";
                 }
             }
+
+            // 保存参数信息到 ThreadLocal
+            requestParamTL.set(paramInfo);
 
             StopWatch stopWatch = new StopWatch();
             invokeTimeTL.set(stopWatch);
@@ -71,9 +74,16 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
             StopWatch stopWatch = invokeTimeTL.get();
-            stopWatch.stop();
-            log.debug("[PLUS]结束请求 => URL[{}],耗时:[{}]毫秒", request.getMethod() + " " + request.getRequestURI(), stopWatch.getTime());
+            if (stopWatch != null) {
+                stopWatch.stop();
+                String url = request.getMethod() + " " + request.getRequestURI();
+                String paramInfo = requestParamTL.get();
+
+                // 一行日志打印：URL + 参数 + 耗时
+                log.debug("[PLUS]请求完成 => URL[{}],{},耗时:[{}]毫秒", url, paramInfo, stopWatch.getTime());
+            }
             invokeTimeTL.remove();
+            requestParamTL.remove();
         }
     }
 

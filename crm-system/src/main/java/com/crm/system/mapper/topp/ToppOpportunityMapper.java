@@ -1,7 +1,7 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.system.domain.entity.topp.ToppOpportunityDO;
 import com.crm.common.core.mapper.BaseMapperPlus;
+import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -12,6 +12,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @date 2025-12-02
  */
 @Mapper
-public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMapper, ToppOpportunityDO, ToppOpportunityVo> {
+public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMapper, ToppOpportunityDo, ToppOpportunityVo> {
 
 }

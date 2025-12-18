@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("sys_org")
 @ExcelIgnoreUnannotated
-public class OldSysOrgDO {
+public class OldSysOrgDo {
 
 
     @TableId("id_")

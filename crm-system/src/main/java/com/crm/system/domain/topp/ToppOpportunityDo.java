@@ -1,4 +1,4 @@
-package com.crm.system.domain.entity.topp;
+package com.crm.system.domain.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -19,9 +19,8 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2025-12-02
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("topp_opportunity")
-public class ToppOpportunityDO extends BaseEntity {
+public class ToppOpportunityDo {
 
     private static final long serialVersionUID=1L;
 
@@ -149,6 +148,7 @@ public class ToppOpportunityDO extends BaseEntity {
     /**
      *
      */
+    @TableField("is_rec_partner_")
     private Integer isRecPartner;
     /**
      * 是否需要外部资源
@@ -345,6 +345,7 @@ public class ToppOpportunityDO extends BaseEntity {
     /**
      * 十分制评分
      */
+    @TableField("score_")
     private Integer score;
     /**
      * 商机终结类型
@@ -365,10 +366,12 @@ public class ToppOpportunityDO extends BaseEntity {
     /**
      *
      */
+    @TableField("memo_")
     private String memo;
     /**
      *
      */
+    @TableField("sfzt_")
     private String sfzt;
     /**
      * 转实施时间

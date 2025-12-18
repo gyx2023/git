@@ -2,7 +2,7 @@ package com.crm.job.service.file;
 
 import com.crm.job.service.file.strategy.FileTaskStrategy;
 import com.crm.job.service.file.strategy.FileTaskStrategyFactory;
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -42,7 +42,7 @@ public class FileAsyncTaskJob {
 
             // 每次处理10个任务，避免单次处理过多导致性能问题
             final int BATCH_SIZE = 50;
-            List<FileAsyncTaskDO> pendingTasks = fileAsyncTaskMapper.selectPendingTasks(BATCH_SIZE);
+            List<FileAsyncTaskDo> pendingTasks = fileAsyncTaskMapper.selectPendingTasks(BATCH_SIZE);
 
             log.info("查询到待处理任务数量: {}", pendingTasks.size());
             XxlJobHelper.log("查询到待处理任务数量: {}", pendingTasks.size());
@@ -50,7 +50,7 @@ public class FileAsyncTaskJob {
             int successCount = 0;
             int failCount = 0;
 
-            for (FileAsyncTaskDO task : pendingTasks) {
+            for (FileAsyncTaskDo task : pendingTasks) {
                 try {
                     // 使用乐观锁获取任务，避免多个实例重复处理
                     boolean taskAcquired = acquireTask(task.getTaskId());
@@ -100,7 +100,7 @@ public class FileAsyncTaskJob {
      * @return 是否处理成功
      */
     @Transactional
-    public boolean processTask(FileAsyncTaskDO task) {
+    public boolean processTask(FileAsyncTaskDo task) {
         log.info("开始处理任务: {}, 业务类型: {}, 任务类型: {}",
             task.getTaskId(), task.getBusinessType(), task.getTaskType());
 
