@@ -26,7 +26,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class ToppOpportunityFilteredExportJob {
+public class TcommCustomerExportJob {
 
     @Resource
     private ToppOpportunityService toppOpportunityService;
@@ -35,7 +35,7 @@ public class ToppOpportunityFilteredExportJob {
      * 商机信息导出任务（带过滤条件）
      * 在xxl-job调度中心配置JobHandler为：toppOpportunityFilteredExportJobHandler
      */
-    @XxlJob("toppOpportunityFilteredExportJobHandler")
+    @XxlJob("tcommCustomerExportJobHandler")
     public void execute() {
         log.info("开始执行带过滤条件的商机信息导出任务");
         XxlJobHelper.log("开始执行带过滤条件的商机信息导出任务");
@@ -57,7 +57,7 @@ public class ToppOpportunityFilteredExportJob {
 
             // 创建临时文件
             String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-            String prefix = "topp_opportunity_filtered_" + dateStr;
+            String prefix = "tcomm_customer_" + dateStr;
             File tempFile = new File("C:\\Users\\FBODC\\Desktop", prefix + ".txt");
 
             // 写入数据到txt文件
