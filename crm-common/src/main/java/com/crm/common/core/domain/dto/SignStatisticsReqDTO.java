@@ -65,6 +65,7 @@ public class SignStatisticsReqDTO {
 
     private  String endTime;
 
-    private String areaCode;
+    private Long areaCode;
+
 
 }

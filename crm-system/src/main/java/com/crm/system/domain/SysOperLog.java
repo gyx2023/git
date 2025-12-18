@@ -2,6 +2,7 @@ package com.crm.system.domain;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -31,7 +32,7 @@ public class SysOperLog implements Serializable {
      * 日志主键
      */
     @ExcelProperty(value = "日志主键")
-    @TableId(value = "oper_id")
+    @TableId(value = "oper_id",type = IdType.AUTO)
     private Long operId;
 
     /**
