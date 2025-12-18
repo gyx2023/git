@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.topp.ToppOpportunityDo;
+import com.crm.system.domain.entity.topp.ToppOpportunityDO;
 import com.crm.system.service.topp.ToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -16,6 +16,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -38,6 +39,15 @@ public class ToppOpportunityExport {
     @Resource
  private ToppOpportunityService toppOpportunityService;
 
+    /**
+     * topp_opportunity表数据导出任务
+     * 在xxl-job调度中心配置JobHandler为：toppOpportunityExportHandler
+     * 支持传入参数格式：
+     * 1. 无参数 - 使用默认SFTP配置和当前日期
+     * 2. configType - 使用指定的SFTP配置类型（例如：grp_group_info_syn）
+     * 3. configType:yyyyMMdd - 使用指定的SFTP配置类型和日期
+     * 4. :yyyyMMdd - 使用默认SFTP配置和指定日期
+     */
     @XxlJob("toppOpportunityExportHandler")
     public void execute() {
         log.info("开始执行topp_opportunity表数据导出任务");

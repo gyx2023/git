@@ -1,4 +1,4 @@
-package com.crm.system.domain.entity.topp;
+package com.crm.system.domain.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -28,14 +28,6 @@ public class ToppContractDo extends BaseEntity {
     @TableId(value = "id_")
     private Long id;
 
-    private String exportKey;
-
-    private String itemName;
-
-    private String codeType;
-
-    @TableField(value = "order_")
-    private String order;
     /**
      * 关联商机
      */
@@ -326,29 +318,4 @@ public class ToppContractDo extends BaseEntity {
      * 合同付款条款信息
      */
     private String payInfo;
-
-    /**
-     * 创建者
-     */
-    @TableField(exist = false)
-    private String createBy;
-
-    /**
-     * 创建时间
-     */
-    @TableField(exist = false)
-    private Date createTime;
-
-    /**
-     * 更新者
-     */
-    @TableField(exist = false)
-    private String updateBy;
-
-    /**
-     * 更新时间
-     */
-    @TableField(exist = false)
-    private Date updateTime;
-
 }
