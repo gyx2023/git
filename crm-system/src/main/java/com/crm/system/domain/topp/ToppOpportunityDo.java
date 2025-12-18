@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.math.BigDecimal;
 
@@ -359,6 +360,9 @@ public class ToppOpportunityDo {
      * 商机终结描述
      */
     private String endOppTypeMemo;
+
+
+    private LocalDateTime createTime;
     /**
      *
      */
