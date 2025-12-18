@@ -64,9 +64,9 @@ public class ToppOpportunityServiceImpl implements ToppOpportunityService {
      * 查询创建时间大于等于指定时间的商机列表
      */
     @Override
-    public List<ToppOpportunityDO> queryListByStartTime(Date startTime) {
-        LambdaQueryWrapper<ToppOpportunityDO> lqw = Wrappers.lambdaQuery();
-        lqw.ge(ToppOpportunityDO::getCreateTime, startTime);
+    public List<ToppOpportunityDo> queryListByStartTime(Date startTime) {
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
+        lqw.ge(ToppOpportunityDo::getCreateTime, startTime);
         return baseMapper.selectList(lqw);
     }
 

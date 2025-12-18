@@ -2,7 +2,7 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.entity.tcomm.TcommTaskDO;
+import com.crm.system.domain.tcomm.TcommTaskDo;
 import com.crm.system.mapper.tcomm.TcommTaskMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -83,7 +83,7 @@ public class TcommTaskExport {
 
         try {
             // 查询tcomm_task表所有数据
-            List<TcommTaskDO> tcommTaskList = tcommTaskMapper.selectList(new LambdaQueryWrapper<>());
+            List<TcommTaskDo> tcommTaskList = tcommTaskMapper.selectList(new LambdaQueryWrapper<>());
 
             if (tcommTaskList.isEmpty()) {
                 String warnMsg = "tcomm_task表中没有数据需要导出";
@@ -99,7 +99,7 @@ public class TcommTaskExport {
             fileContent.append("id_|taskCode_|taskName_|flowNo_|custName_|oppoName_|infoId_|infoType_|dueLimit_|dueTime_|actorsWait_|isSended_|actor_|dealUrl_|startTime_|resultCode_|result_|resultMemo_|endTime_|memo_|score_|resultScore_|json_|scoreDetail_|defaultDafen_|parent_|create_|taskMemo_|shortSend_|shortSendTime_|piId_|userOwnerProduct_|productCode_|teamLeaderId_|notUseOwnerProductReason_|supportHours_|createBy_|createTime_|updateBy_|updateTime_\n");
 
             // 添加数据行
-            for (TcommTaskDO tcommTask : tcommTaskList) {
+            for (TcommTaskDo tcommTask : tcommTaskList) {
                 fileContent.append(formatField(tcommTask.getId()))
                     .append("|")
                     .append(formatField(tcommTask.getTaskCode()))

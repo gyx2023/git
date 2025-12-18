@@ -20,7 +20,7 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("topp_opportunity")
-public class ToppOpportunityDo {
+public class ToppOpportunityDo extends BaseEntity{
 
     private static final long serialVersionUID=1L;
 

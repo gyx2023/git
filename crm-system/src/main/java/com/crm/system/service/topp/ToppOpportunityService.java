@@ -3,7 +3,7 @@ package com.crm.system.service.topp;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.entity.topp.ToppOpportunityDO;
+import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
 import java.util.Collection;
@@ -35,11 +35,11 @@ public interface ToppOpportunityService {
 
     /**
      * 查询创建时间大于等于指定时间的商机列表
-     * 
+     *
      * @param startTime 起始时间
      * @return 满足条件的商机列表
      */
-    List<ToppOpportunityDO> queryListByStartTime(Date startTime);
+    List<ToppOpportunityDo> queryListByStartTime(Date startTime);
 
     /**
      * 新增【请填写功能名称】
