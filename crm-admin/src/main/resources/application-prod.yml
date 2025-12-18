@@ -130,3 +130,53 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+# security配置
+security:
+  # 排除路径
+  excludes:
+    # 静态资源
+    - /*.html
+    - /**/*.html
+    - /**/*.css
+    - /**/*.js
+    # 公共路径
+    - /favicon.ico
+    - /error
+    # SSO自动登录接口
+    - /sso/autoLogin
+# Swagger配置
+swagger:
+  info:
+    # 标题
+    title: '标题：${crm.name}后台管理系统_接口文档'
+    # 描述
+    description: '描述：用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...'
+    # 版本
+    version: '版本号: ${zqzt_backend.version}'
+    # 作者信息
+    contact:
+      name: KonBAI
+      email: 1527468660@qq.com
+      url: https://gitee.com/KonBAI-Q/zqzt_backend
+  components:
+    # 鉴权方式配置
+    security-schemes:
+      apiKey:
+        type: APIKEY
+        in: HEADER
+        name: ${sa-token.token-name}
+springdoc:
+  api-docs:
+    # 是否开启接口文档
+    enabled: false
+  swagger-ui:
+    # 持久化认证数据
+    persistAuthorization: true
+  #这里定义了两个分组，可定义多个，也可以不定义
+  group-configs:
+    - group: 1.演示模块
+      packages-to-scan: com.crm.demo
+    - group: 2.系统模块
+      packages-to-scan: com.crm.web
+    - group: 3.代码生成模块
+      packages-to-scan: com.crm.generator
