@@ -6,6 +6,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <resultMap type="com.crm.system.domain.entity.topp.ToppContractDo" id="ToppContractResult">
         <result property="id" column="id_"/>
+        <result property="exportKey" column="export_key"/>
+        <result property="itemName" column="item_name"/>
+        <result property="codeType" column="code_type"/>
+        <result property="order" column="order_"/>
         <result property="projectId" column="project_id"/>
         <result property="ourCompany" column="our_company"/>
         <result property="otherCompany" column="other_company"/>

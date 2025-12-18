@@ -66,6 +66,7 @@ public class ToppBidDo extends BaseEntity {
     /**
      * 备注说明
      */
+    @TableField(value = "memo_")
     private String memo;
     /**
      * 借款人
@@ -167,5 +168,20 @@ public class ToppBidDo extends BaseEntity {
      * 签约金额
      */
     private BigDecimal contractMoney;
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
 
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 }

@@ -77,6 +77,7 @@ public class TcommTaskDO extends BaseEntity {
     /**
      *
      */
+    @TableField(value = "actor_")
     private Long actor;
     /**
      *
@@ -105,10 +106,12 @@ public class TcommTaskDO extends BaseEntity {
     /**
      *
      */
+    @TableField(value = "memo_")
     private String memo;
     /**
      *
      */
+    @TableField(value = "score_")
     private BigDecimal score;
     /**
      * 最终得分
@@ -117,6 +120,7 @@ public class TcommTaskDO extends BaseEntity {
     /**
      *
      */
+    @TableField(value = "json_")
     private String json;
     /**
      *
@@ -129,10 +133,12 @@ public class TcommTaskDO extends BaseEntity {
     /**
      *
      */
+    @TableField(value = "parent_")
     private Long parent;
     /**
      *
      */
+    @TableField(value = "create_")
     private String create;
     /**
      * 工单需求描述(新增字段)
@@ -170,5 +176,27 @@ public class TcommTaskDO extends BaseEntity {
      *
      */
     private String supportHours;
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
 
+    /**
+     * 创建时间
+     */
+    @TableField(exist = false)
+    private Date createTime;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 }

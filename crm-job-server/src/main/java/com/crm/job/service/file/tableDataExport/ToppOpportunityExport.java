@@ -9,10 +9,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -23,7 +26,7 @@ import java.util.List;
  * 数据列之间使用|分隔
  * 导出条件：CREATE_TIME >= '2024-01-01'
  *
- * @author crm
+ * @author wcf
  */
 @Slf4j
 @Component
@@ -35,15 +38,6 @@ public class ToppOpportunityExport {
     @Resource
  private ToppOpportunityService toppOpportunityService;
 
-    /**
-     * topp_opportunity表数据导出任务
-     * 在xxl-job调度中心配置JobHandler为：toppOpportunityExportHandler
-     * 支持传入参数格式：
-     * 1. 无参数 - 使用默认SFTP配置和当前日期
-     * 2. configType - 使用指定的SFTP配置类型（例如：grp_group_info_syn）
-     * 3. configType:yyyyMMdd - 使用指定的SFTP配置类型和日期
-     * 4. :yyyyMMdd - 使用默认SFTP配置和指定日期
-     */
     @XxlJob("toppOpportunityExportHandler")
     public void execute() {
         log.info("开始执行topp_opportunity表数据导出任务");
@@ -53,7 +47,7 @@ public class ToppOpportunityExport {
         String param = XxlJobHelper.getJobParam();
 
         Date targetDate = new Date();
-        String sftpConfigType = "grp_group_info_syn"; // 默认使用grp_group_info_syn配置类型
+        String sftpConfigType = "local_test"; // 本地测试,后面改成实际配置类型
 
         // 处理任务参数
         if (param != null && !param.isEmpty()) {
@@ -387,13 +381,30 @@ public class ToppOpportunityExport {
                 // 将内容写入临时文件
                 Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
 
-                // 上传文件到SFTP服务器
-                // 确保目录存在
-                String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
+                // 检查是否是本地路径（以file:开头）
+                if (sftpConfigType.equals("local_test")) {
+                    // 保存到本地文件系统
+                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
+                    File localFile = new File(localPath);
 
-                // 上传文件
-                sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
+                    // 确保目录存在
+                    localFile.getParentFile().mkdirs();
+
+                    // 写入文件内容
+                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
+                        writer.write(fileContent.toString());
+                    }
+
+                    log.info("文件已保存到本地路径: {}", localPath);
+                } else {
+                    // 上传文件到SFTP服务器
+                    // 确保目录存在
+                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
+                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
+
+                    // 上传文件
+                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
+                }
 
                 String successMsg = String.format("topp_opportunity表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
                     toppOpportunityList.size(), filePath);

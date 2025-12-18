@@ -10,6 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +47,7 @@ public class ToppBidExport {
         String param = XxlJobHelper.getJobParam();
 
         Date targetDate = new Date();
-        String sftpConfigType = "grp_group_info_syn"; // 默认使用grp_group_info_syn配置类型
+        String sftpConfigType = "local_test"; // 默认使用local_test配置类型
 
         // 处理任务参数
         if (param != null && !param.isEmpty()) {
@@ -188,13 +192,30 @@ public class ToppBidExport {
                 // 将内容写入临时文件
                 Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
 
-                // 上传文件到SFTP服务器
-                // 确保目录存在
-                String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
+                // 检查是否是本地路径（以local_test开头）
+                if (sftpConfigType.equals("local_test")) {
+                    // 保存到本地文件系统
+                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
+                    File localFile = new File(localPath);
 
-                // 上传文件
-                sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
+                    // 确保目录存在
+                    localFile.getParentFile().mkdirs();
+
+                    // 写入文件内容
+                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
+                        writer.write(fileContent.toString());
+                    }
+
+                    log.info("文件已保存到本地路径: {}", localPath);
+                } else {
+                    // 上传文件到SFTP服务器
+                    // 确保目录存在
+                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
+                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
+
+                    // 上传文件
+                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
+                }
 
                 String successMsg = String.format("topp_bid表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
                     toppBidList.size(), filePath);
