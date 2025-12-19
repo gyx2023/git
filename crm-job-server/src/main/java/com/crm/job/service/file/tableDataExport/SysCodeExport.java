@@ -47,7 +47,8 @@ public class SysCodeExport {
         String param = XxlJobHelper.getJobParam();
 
         Date targetDate = new Date();
-        String sftpConfigType = "ict_owe_fee_smart_brain_file"; // 默认使用ict_owe_fee_smart_brain_file配置类型
+        // SFTP配置类型
+        String sftpConfigType = "topp_tcomm_sys_import";
 
         // 处理任务参数
         if (param != null && !param.isEmpty()) {
