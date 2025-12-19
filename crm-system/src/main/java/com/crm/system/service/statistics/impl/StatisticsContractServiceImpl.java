@@ -8,6 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.ContractStatisticsReqDTO;
 import com.crm.common.core.domain.dto.ContractStatisticsRespDTO;
 import com.crm.common.core.domain.dto.ContractStatisticsUserRespDTO;
+import com.crm.common.core.domain.dto.SignStatisticsRespDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
@@ -105,56 +106,33 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
      */
     @Override
     public TableDataInfo<ContractStatisticsRespDTO> selectPageList(ContractStatisticsReqDTO reqDTO, PageQuery pageQuery) {
-        // 处理多个联通类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理多个项目类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理多个主要人员参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String mainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(mainPersonnelStr);
-        }
-
-        // 处理多个进展状态参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
-
         // 设置查询时间和部门条件
         setDateRange(reqDTO);
         setDeptCondition(reqDTO);
 
-        List<ContractStatisticsRespDTO> list = new ArrayList<>();
         SysDept sysDept = sysDeptMapper.selectById(reqDTO.getDeptId());
 
         // 获取所有子部门
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, reqDTO.getDeptId()));
-        if (!sysDept.getDeptId().equals(1L)) {
-            deptList.add(sysDept);
-        }
+        deptList.add(sysDept);
         reqDTO.setAreaCode(sysDept.getDeptId());
 
-        // 计算分页参数
-        int total = deptList.size();
-        int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
-        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
+        // 合计数据
+        ContractStatisticsRespDTO totalDTO = new ContractStatisticsRespDTO();
+        totalDTO.setDeptName("合计");
+        int totalCountQy = 0;
+        double totalMoneyQy = 0;
+        int totalYbwQy = 0;
+        int totalYbyqQy = 0;
+        int totalYbwqQy = 0;
+        int totalWqQy = 0;
 
-        // 分页处理
-        List<SysDept> pagedDeptList = deptList.subList(startIndex, endIndex);
 
-        // 遍历部门列表，获取各部门统计数据
-        for (SysDept dept : pagedDeptList) {
+        // 先查询出所有数据
+        List<ContractStatisticsRespDTO> allList = new ArrayList<>();
+        for (SysDept dept : deptList) {
             ContractStatisticsRespDTO respDTO = new ContractStatisticsRespDTO();
 
             // 判断是否为当前查询的根部门
@@ -168,9 +146,50 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
             respDTO = ObjectUtil.isEmpty(respDTO) ? new ContractStatisticsRespDTO() : respDTO;
             respDTO.setDeptId(dept.getDeptId().toString());
             respDTO.setDeptName(dept.getDeptName());
+            // 累加统计数据
+            if (ObjectUtil.isNotEmpty(respDTO.getCountQy())) {
+                totalCountQy += Integer.parseInt(respDTO.getCountQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getMoneyQy())) {
+                totalMoneyQy += Double.parseDouble(respDTO.getMoneyQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwQy())) {
+                totalYbwQy +=  Integer.parseInt(respDTO.getYbwQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbyqQy())) {
+                totalYbyqQy +=  Integer.parseInt(respDTO.getYbyqQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwqQy())) {
+                totalYbwqQy +=  Integer.parseInt(respDTO.getYbwqQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getWqQy())) {
+                totalWqQy +=  Integer.parseInt(respDTO.getWqQy());
+            }
+
+            allList.add(respDTO);
+        }
+        // 设置合计行数据
+        totalDTO.setDeptId(reqDTO.getDeptId());
+        totalDTO.setCountQy(String.valueOf(totalCountQy));
+        totalDTO.setMoneyQy(String.valueOf(totalMoneyQy));
+        totalDTO.setYbwQy(String.valueOf(totalYbwQy));
+        totalDTO.setYbyqQy(String.valueOf(totalYbyqQy));
+        totalDTO.setYbwqQy(String.valueOf(totalYbwqQy));
+        totalDTO.setWqQy(String.valueOf(totalWqQy));
+        allList.add(totalDTO);
+
+        // 再进行分页处理
+        int total = allList.size();
+        int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
+        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
+
+        // 分页数据
+        List<ContractStatisticsRespDTO> pagedList = new ArrayList<>();
+        if (startIndex < total) {
+            pagedList = allList.subList(startIndex, endIndex);
         }
 
-        TableDataInfo<ContractStatisticsRespDTO> tableDataInfo = TableDataInfo.build(list);
+        TableDataInfo<ContractStatisticsRespDTO> tableDataInfo = TableDataInfo.build(pagedList);
         tableDataInfo.setTotal(total);
         return tableDataInfo;
     }
