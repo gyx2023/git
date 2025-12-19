@@ -32,7 +32,7 @@ public class TcommCustomerExportJob {
 
     @Resource
     private ToppOpportunityService toppOpportunityService;
-    
+
     @Resource
     private SftpUtil sftpUtil;
 
@@ -219,7 +219,7 @@ public class TcommCustomerExportJob {
             // 上传文件到SFTP服务器
             String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                sftpUtil.uploadFile(tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile("iob_gov2_table_export",tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("带过滤条件的商机信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);

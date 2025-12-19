@@ -31,7 +31,7 @@ public class ToppOrderExportJob {
 
     @Resource
     private IToppOrderService toppOrderService;
-    
+
     @Resource
     private SftpUtil sftpUtil;
 
@@ -129,7 +129,7 @@ public class ToppOrderExportJob {
             // 上传文件到SFTP服务器
             String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                sftpUtil.uploadFile(tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile("iob_gov2_table_export",tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("订单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);

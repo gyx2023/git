@@ -29,7 +29,7 @@ public class ToppContractEformExportJob {
 
     @Resource
     private ToppContractEformMapper toppContractEformMapper;
-    
+
     @Resource
     private SftpUtil sftpUtil;
 
@@ -98,7 +98,7 @@ public class ToppContractEformExportJob {
             // 上传文件到SFTP服务器
             String remoteFilePath = "/upload/" + prefix + ".txt"; // 远程文件路径
             try {
-                sftpUtil.uploadFile(tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile("iob_gov2_table_export",tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("合同电子表单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);

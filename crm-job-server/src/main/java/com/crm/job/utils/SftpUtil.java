@@ -73,10 +73,10 @@ public class SftpUtil implements InitializingBean {
     private String activeConfigType = "SFTP";
 
     // 默认配置值
-    private static final String DEFAULT_HOST = "192.168.124.191";
+    private static final String DEFAULT_HOST = "127.0.0.1";
     private static final int DEFAULT_PORT = 22;
-    private static final String DEFAULT_USERNAME = "test";
-    private static final String DEFAULT_PASSWORD = "1qaz1QAZ";
+    private static final String DEFAULT_USERNAME = "";
+    private static final String DEFAULT_PASSWORD = "";
     private static final int DEFAULT_TIMEOUT = 30000;
     private static final String DEFAULT_DATA_ROOT_PATH = "/opt/home/bi/dataout/ZQ";
     private static final String DEFAULT_FOLDER_FORMAT = "yyyyMMdd";
@@ -747,35 +747,36 @@ public class SftpUtil implements InitializingBean {
         return getDataRootPath(configType) + "/" + dateStr;
     }
 
+
+
     /**
-     * 使用指定配置类型上传文件到SFTP服务器
+     * 上传文件到SFTP服务器
      *
-     * @param configType 配置类型
+     * @param configType 配置类型，如果为null或空字符串则使用默认配置
      * @param localFilePath 本地文件路径
      * @param remoteFilePath 远程文件路径
      */
     public void uploadFile(String configType, String localFilePath, String remoteFilePath) {
         Sftp sftp = null;
         try {
-            sftp = getSftp(configType);
+            // 如果configType为null或空字符串，则使用默认配置类型
+            String actualConfigType = (configType == null || configType.trim().isEmpty())
+                ? activeConfigType
+                : configType;
+
+            sftp = getSftp(actualConfigType);
             sftp.getClient().put(localFilePath, remoteFilePath);
-            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", configType, localFilePath, remoteFilePath);
+            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteFilePath);
         } catch (Exception e) {
-            log.error("使用配置类型 '{}' 上传文件失败: {}", configType, e.getMessage(), e);
+            String actualConfigType = (configType == null || configType.trim().isEmpty())
+                ? activeConfigType
+                : configType;
+            log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);
             throw new RuntimeException("文件上传失败", e);
         } finally {
             close(sftp);
         }
     }
 
-    /**
-     * 使用当前活跃配置类型上传文件到SFTP服务器
-     *
-     * @param localFilePath 本地文件路径
-     * @param remoteFilePath 远程文件路径
-     */
-    public void uploadFile(String localFilePath, String remoteFilePath) {
-        uploadFile(activeConfigType, localFilePath, remoteFilePath);
-    }
 
 }
