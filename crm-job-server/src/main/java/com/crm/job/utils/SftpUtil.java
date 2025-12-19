@@ -760,17 +760,12 @@ public class SftpUtil implements InitializingBean {
         Sftp sftp = null;
         try {
             // 如果configType为null或空字符串，则使用默认配置类型
-            String actualConfigType = (configType == null || configType.trim().isEmpty())
-                ? activeConfigType
-                : configType;
-
+            String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             sftp = getSftp(actualConfigType);
             sftp.getClient().put(localFilePath, remoteFilePath);
             log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteFilePath);
         } catch (Exception e) {
-            String actualConfigType = (configType == null || configType.trim().isEmpty())
-                ? activeConfigType
-                : configType;
+            String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);
             throw new RuntimeException("文件上传失败", e);
         } finally {

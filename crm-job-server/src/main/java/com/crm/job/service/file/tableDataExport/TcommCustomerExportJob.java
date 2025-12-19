@@ -38,7 +38,7 @@ public class TcommCustomerExportJob {
 
     /**
      * 商机信息导出任务（带过滤条件）
-     * 在xxl-job调度中心配置JobHandler为：toppOpportunityFilteredExportJobHandler
+     * 在xxl-job调度中心配置JobHandler为：tcommCustomerExportJobHandler
      */
     @XxlJob("tcommCustomerExportJobHandler")
     public void execute() {
