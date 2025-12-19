@@ -57,7 +57,7 @@ public class StatisticsContractController {
     /**
      * 导出用户列表
      */
-    @Log(title = "投标统计按组织导出", businessType = BusinessType.EXPORT)
+    @Log(title = "签约统计按组织导出", businessType = BusinessType.EXPORT)
     @SaCheckPermission("statistics:contract:orgExport")
     @PostMapping("/orgExport")
     public void orgExport(ContractStatisticsReqDTO reqDTO, HttpServletResponse response) {
@@ -80,7 +80,7 @@ public class StatisticsContractController {
     /**
      * 导出用户列表
      */
-    @Log(title = "投标统计按人员导出", businessType = BusinessType.EXPORT)
+    @Log(title = "签约统计按人员导出", businessType = BusinessType.EXPORT)
     @SaCheckPermission("statistics:contract:userExport")
     @PostMapping("/userExport")
     public void userExport(ContractStatisticsReqDTO reqDTO, HttpServletResponse response) {
