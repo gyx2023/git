@@ -5,10 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.domain.dto.ContractStatisticsReqDTO;
-import com.crm.common.core.domain.dto.ContractStatisticsRespDTO;
-import com.crm.common.core.domain.dto.ContractStatisticsUserRespDTO;
-import com.crm.common.core.domain.dto.SignStatisticsRespDTO;
+import com.crm.common.core.domain.dto.*;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
@@ -204,36 +201,55 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
      */
     @Override
     public TableDataInfo<ContractStatisticsUserRespDTO> selectUserPageList(ContractStatisticsReqDTO reqDTO, PageQuery pageQuery) {
-        // 处理多个联通类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理多个项目类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理多个主要人员参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String mainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(mainPersonnelStr);
-        }
-
-        // 处理多个进展状态参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
-
         // 设置查询时间和部门条件
         setDateRange(reqDTO);
         setDeptCondition(reqDTO);
+        // 设置合计行数据
 
+        ContractStatisticsUserRespDTO totalDTO = new ContractStatisticsUserRespDTO();
+        totalDTO.setUserName("合计");
+        int totalCountQy = 0;
+        double totalMoneyQy = 0;
+        int totalYbwQy = 0;
+        int totalYbyqQy = 0;
+        int totalYbwqQy = 0;
+        int totalWqQy = 0;
+        double totalGxedZb = 0;
         // 查询所有用户统计数据
         List<ContractStatisticsUserRespDTO> list = topBidNewMapper.selectContractStatisticsUserRespDTO(reqDTO);
+        for (ContractStatisticsUserRespDTO respDTO : list) {
+            // 累加统计数据
+            if (ObjectUtil.isNotEmpty(respDTO.getCountQy())) {
+                totalCountQy += Integer.parseInt(respDTO.getCountQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getMoneyQy())) {
+                totalMoneyQy += Double.parseDouble(respDTO.getMoneyQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwQy())) {
+                totalYbwQy +=  Integer.parseInt(respDTO.getYbwQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbyqQy())) {
+                totalYbyqQy +=  Integer.parseInt(respDTO.getYbyqQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwqQy())) {
+                totalYbwqQy +=  Integer.parseInt(respDTO.getYbwqQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getWqQy())) {
+                totalWqQy +=  Integer.parseInt(respDTO.getWqQy());
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getGxedMoney())) {
+                totalGxedZb += Double.parseDouble(respDTO.getGxedMoney());
+            }
+        }
+        // 设置合计行数据
+        totalDTO.setCountQy(String.valueOf(totalCountQy));
+        totalDTO.setMoneyQy(String.valueOf(totalMoneyQy));
+        totalDTO.setYbwQy(String.valueOf(totalYbwQy));
+        totalDTO.setYbyqQy(String.valueOf(totalYbyqQy));
+        totalDTO.setYbwqQy(String.valueOf(totalYbwqQy));
+        totalDTO.setWqQy(String.valueOf(totalWqQy));
+        totalDTO.setGxedMoney(String.valueOf(totalGxedZb));
+        list.add(totalDTO);
 
         // 创建分页对象并设置分页参数
         Page<ContractStatisticsUserRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
