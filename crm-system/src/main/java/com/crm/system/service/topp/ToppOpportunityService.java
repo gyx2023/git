@@ -6,8 +6,8 @@ import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -34,12 +34,12 @@ public interface ToppOpportunityService {
     List<ToppOpportunityVo> queryList(ToppOpportunityBo bo);
 
     /**
-     * 查询满足条件的商机数据（创建时间在指定时间之后，并且在tcomm_customer表中存在对应的客户记录）
+     * 查询创建时间大于等于指定时间的商机列表
      *
-     * @param createTime 创建时间下限
-     * @return 满足条件的商机数据列表
+     * @param startTime 起始时间
+     * @return 满足条件的商机列表
      */
-    List<ToppOpportunityDo> selectFilteredOpportunities(LocalDateTime createTime);
+    List<ToppOpportunityDo> queryListByStartTime(Date startTime);
 
     /**
      * 新增【请填写功能名称】

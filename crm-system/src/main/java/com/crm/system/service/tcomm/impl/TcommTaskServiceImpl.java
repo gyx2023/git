@@ -27,7 +27,6 @@ import java.util.Map;
  * @date 2025-12-02
  */
 @RequiredArgsConstructor
-@Service
 public class TcommTaskServiceImpl implements TcommTaskService {
     @Resource
     private TcommTaskMapper baseMapper;
@@ -96,7 +95,6 @@ public class TcommTaskServiceImpl implements TcommTaskService {
         lqw.eq(StringUtils.isNotBlank(bo.getProductCode()), TcommTaskDo::getProductCode, bo.getProductCode());
         lqw.eq(StringUtils.isNotBlank(bo.getTeamLeaderId()), TcommTaskDo::getTeamLeaderId, bo.getTeamLeaderId());
         lqw.eq(StringUtils.isNotBlank(bo.getNotUseOwnerProductReason()), TcommTaskDo::getNotUseOwnerProductReason, bo.getNotUseOwnerProductReason());
-        lqw.eq(StringUtils.isNotBlank(bo.getSupportHours()), TcommTaskDo::getSupportHours, bo.getSupportHours());
         return lqw;
     }
 

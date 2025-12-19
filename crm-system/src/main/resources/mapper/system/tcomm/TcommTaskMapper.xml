@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.crm.system.mapper.TcommTaskMapper">
+<mapper namespace="com.crm.system.mapper.tcomm.TcommTaskMapper">
 
     <resultMap type="com.crm.system.domain.tcomm.TcommTaskDo" id="TcommTaskResult">
         <result property="id" column="id_"/>
@@ -41,7 +41,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="productCode" column="product_code"/>
         <result property="teamLeaderId" column="team_leader_id"/>
         <result property="notUseOwnerProductReason" column="not_use_owner_product_reason"/>
-        <result property="supportHours" column="support_hours"/>
     </resultMap>
 
 
