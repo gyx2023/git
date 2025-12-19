@@ -7,6 +7,8 @@ import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.crm.job.utils.SftpUtil;
+
 import javax.annotation.Resource;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -29,6 +31,9 @@ public class ToppOrderExportJob {
 
     @Resource
     private IToppOrderService toppOrderService;
+    
+    @Resource
+    private SftpUtil sftpUtil;
 
     /**
      * 订单信息导出任务
@@ -57,7 +62,7 @@ public class ToppOrderExportJob {
             // 创建临时文件
             String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
             String prefix = "topp_order_" + dateStr;
-            File tempFile = new File("C:\\Users\\FBODC\\Desktop", prefix + ".txt");
+            File tempFile = File.createTempFile(prefix, ".txt");
 
             // 写入数据到txt文件
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
@@ -121,9 +126,21 @@ public class ToppOrderExportJob {
                 return;
             }
 
-            String successMsg = String.format("订单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), tempFile.getAbsolutePath());
-            log.info(successMsg);
-            XxlJobHelper.handleSuccess(successMsg);
+            // 上传文件到SFTP服务器
+            String remoteFilePath = "/upload/" + prefix + ".txt";
+            try {
+                sftpUtil.uploadFile(tempFile.getAbsolutePath(), remoteFilePath);
+                String successMsg = String.format("订单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
+                log.info(successMsg);
+                XxlJobHelper.handleSuccess(successMsg);
+            } catch (Exception e) {
+                String errorMsg = "文件上传到SFTP服务器失败: " + e.getMessage();
+                log.error(errorMsg, e);
+                XxlJobHelper.handleFail(errorMsg);
+            } finally {
+                // 删除临时文件
+                tempFile.delete();
+            }
 
         } catch (Exception e) {
             String errorMsg = "订单信息导出任务执行失败: " + e.getMessage();
