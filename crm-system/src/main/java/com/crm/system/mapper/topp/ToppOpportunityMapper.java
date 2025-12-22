@@ -6,6 +6,7 @@ import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -24,5 +25,5 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      * @param createTime 创建时间下限
      * @return 满足条件的商机数据列表
      */
-    List<ToppOpportunityDo> selectFilteredOpportunities(LocalDateTime createTime);
+    List<ToppOpportunityDo> selectFilteredOpportunities(Date createTime);
 }
