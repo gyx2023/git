@@ -538,7 +538,7 @@
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
-        WHERE a.is_sign = '0'
+        WHERE a.is_sign = '1'
         and e.dept_id in(
         select dept_id from zqzt_sys_dept where dept_id = #{deptId}
         union
