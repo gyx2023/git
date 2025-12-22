@@ -202,11 +202,15 @@ public class ZqGrpGroupInfoController extends BaseController {
             managerBo.setCountyManagerName(bo.getCountyManagerName());
         }
 
-        boolean result = iZqGrpGroupInfoService.updateByBo1(managerBo);
-        if (result) {
-            return R.ok("更新成功");
-        } else {
-            return R.fail("更新失败，未找到对应的集团信息");
+        try {
+            boolean result = iZqGrpGroupInfoService.updateByBo1(managerBo);
+            if (result) {
+                return R.ok("更新成功");
+            } else {
+                return R.fail("更新失败，未找到对应的集团信息");
+            }
+        } catch (Exception e) {
+            return R.fail(e.getMessage());
         }
     }
 
