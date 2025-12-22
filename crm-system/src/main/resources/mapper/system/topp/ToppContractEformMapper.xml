@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppContractEformMapper">
+
+    <resultMap type="com.crm.system.domain.topp.ToppContractEformDo" id="ToppContractEformResult">
+        <result property="id" column="id_"/>
+        <result property="projectId" column="project_id"/>
+        <result property="eformNo" column="eform_no"/>
+        <result property="eformName" column="eform_name"/>
+        <result property="custName" column="cust_name"/>
+        <result property="ourCompany" column="our_company"/>
+        <result property="agentPersonOa" column="agent_person_oa"/>
+        <result property="agentPersonName" column="agent_person_name"/>
+        <result property="totalMoney" column="total_money"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="textType" column="text_type"/>
+        <result property="busiType" column="busi_type"/>
+        <result property="createTime" column="create_time"/>
+        <result property="creator" column="creator"/>
+        <result property="isValid" column="is_valid"/>
+    </resultMap>
+
+
+</mapper>
