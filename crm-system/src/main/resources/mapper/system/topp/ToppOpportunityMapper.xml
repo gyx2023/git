@@ -141,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="preDecision" column="pre_decision"/>
     </resultMap>
 
-    <select id="selectFilteredOpportunities" parameterType="java.time.LocalDateTime" resultMap="ToppOpportunityResult">
+    <select id="selectFilteredOpportunities" parameterType="java.util.Date" resultMap="ToppOpportunityResult">
         SELECT *
         FROM topp_opportunity
         WHERE create_time > #{createTime}

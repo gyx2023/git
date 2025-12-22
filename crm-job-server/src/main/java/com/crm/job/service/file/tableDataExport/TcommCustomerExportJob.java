@@ -14,7 +14,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -49,7 +48,7 @@ public class TcommCustomerExportJob {
             // 查询满足条件的数据：
             // 1. 创建时间在2024年1月1日之后
             // 2. 在tcomm_customer表中存在对应的客户记录
-            List<ToppOpportunityDo> dataList = toppOpportunityService.selectFilteredOpportunities(LocalDateTime.of(2024, 1, 1, 0, 0, 0));
+            List<ToppOpportunityDo> dataList = toppOpportunityService.selectFilteredOpportunities(new Date(124, 0, 1)); // 2024年1月1日
 
             // 检查数据是否为空
             if (dataList == null || dataList.isEmpty()) {
