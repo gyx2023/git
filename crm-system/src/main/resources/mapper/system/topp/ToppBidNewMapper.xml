@@ -869,7 +869,7 @@
 
 
 
-    <select id="selectContractStatisticsUserRespDTO" resultMap="UserResult">
+    <select id="selectContractStatisticsUserRespDTO" resultMap="UserContractResult">
         select
         a.nick_name as user_name,
         count_qy ,
@@ -904,7 +904,7 @@
         left JOIN zqzt_sys_user d ON b.designer = d.user_id
         left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE e.dept_id =#{deptId}
-        and a.is_sign='0' and a.result='match_bid'
+        and a.is_sign='1' and a.result='match_bid'
         and c.name=d.nick_name
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
