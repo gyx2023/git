@@ -94,7 +94,7 @@ public class StatisticsContractController {
                 vo.setYbwqQy(ObjectUtil.isEmpty(vo.getYbwqQy()) ? "0" : vo.getYbwqQy());
                 vo.setWqQy(ObjectUtil.isEmpty(vo.getWqQy()) ? "0" : vo.getWqQy());
                 vo.setMoneyQy(ObjectUtil.isEmpty(vo.getMoneyQy()) ? "0" : vo.getMoneyQy());
-                vo.setGxedQy(ObjectUtil.isEmpty(vo.getGxedQy()) ? "0" : vo.getGxedQy());
+                vo.setGxedMoney(ObjectUtil.isEmpty(vo.getGxedMoney()) ? "0" : vo.getGxedMoney());
             }
         }
         ExcelUtil.exportExcel(listVo, "签约统计按支撑人员", SignContractUserExportVo.class, response);

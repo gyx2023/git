@@ -30,5 +30,4 @@ public class SignContractOrgExportVo implements Serializable {
     private String wqQy;
     @ExcelProperty(value = "预计签约金额(万元）")
     private String moneyQy;
-
 }

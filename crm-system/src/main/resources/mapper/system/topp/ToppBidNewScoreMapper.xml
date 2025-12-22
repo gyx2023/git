@@ -37,14 +37,11 @@
     <resultMap type="com.crm.common.core.domain.dto.ContractUserRespDTO" id="resultContractMap">
         <result property="projectName" column="project_name"/>
         <result property="buyUserName" column="buy_user_name"/>
-        <result property="buyBudgetMoney" column="buy_budget_money"/>
-        <result property="openBidTime" column="open_bid_time"/>
+        <result property="signTime" column="sign_time"/>
         <result property="unicomType" column="unicom_type"/>
-        <result property="competitionCondition" column="competition_condition"/>
-        <result property="bidResult" column="bid_result"/>
         <result property="bidBody" column="bid_body"/>
         <result property="projectType" column="project_type"/>
-        <result property="matchBidMoney" column="match_bid_money"/>
+        <result property="signMoney" column="sign_money"/>
         <result property="expectedMainOperatingAmount" column="expected_main_operating_amount"/>
         <result property="ictProfit" column="ict_profit"/>
         <result property="isFrameworkContract" column="is_framework_contract"/>
@@ -348,14 +345,11 @@
         SELECT
         t.project_name,
         t.buy_user_name,
-        t.buy_budget_money,
-        t.open_bid_time,
+        t.sign_time,
         t.unicom_type,
-        t.competition_condition,
-        t.bid_result,
         t.bid_body,
         t.project_type,
-        t.match_bid_money,
+        t.sign_money,
         t.expected_main_operating_amount,
         t.ict_profit,
         t.is_framework_contract,
@@ -374,18 +368,13 @@
         SELECT
         a.project_name,
         a.buy_user AS buy_user_name,
-        CASE WHEN a.buy_budget_money IS NOT NULL
-        THEN ROUND(a.buy_budget_money, 2)
-        ELSE NULL END AS buy_budget_money,
-        DATE_FORMAT(a.open_bid_time, '%Y-%m-%d') AS open_bid_time,
+        DATE_FORMAT(a.sign_time, '%Y-%m-%d') AS sign_time,
         c.unicom_type,
-        a.competition_condition,
-        a.result AS bid_result,
         a.bid_body,
         a.project_type,
-        CASE WHEN a.match_bid_money IS NOT NULL
-        THEN ROUND(a.match_bid_money, 2)
-        ELSE NULL END AS match_bid_money,
+        CASE WHEN a.sign_money IS NOT NULL
+        THEN ROUND(a.sign_money, 2)
+        ELSE NULL END AS sign_money,
         CASE WHEN a.expected_main_operating_amount IS NOT NULL
         THEN ROUND(a.expected_main_operating_amount, 2)
         ELSE NULL END AS expected_main_operating_amount,
@@ -431,7 +420,7 @@
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = h.name_
-        WHERE a.is_sign = '0'
+        WHERE a.is_sign = '1'
         and e.dept_id in(
         select dept_id from zqzt_sys_dept where dept_id = #{deptId}
         union
@@ -447,10 +436,10 @@
             and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
         <if test="minYjAmount != null">
-            and a.match_bid_money &gt;= #{minYjAmount}
+            and a.sign_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.match_bid_money &lt; #{maxYjAmount}
+            and a.sign_money &lt; #{maxYjAmount}
         </if>
         <if test="minSjAmount != null">
             and c.expect_contract_money &gt;= #{minSjAmount}
@@ -501,18 +490,13 @@
         SELECT
         a.project_name,
         a.buy_user AS buy_user_name,
-        CASE WHEN a.buy_budget_money IS NOT NULL
-        THEN ROUND(a.buy_budget_money, 2)
-        ELSE NULL END AS buy_budget_money,
-        DATE_FORMAT(a.open_bid_time, '%Y-%m-%d') AS open_bid_time,
+        DATE_FORMAT(a.sign_time, '%Y-%m-%d') AS sign_time,
         c.unicom_type,
-        a.competition_condition,
-        a.result AS bid_result,
         a.bid_body,
         a.project_type,
-        CASE WHEN a.match_bid_money IS NOT NULL
-        THEN ROUND(a.match_bid_money, 2)
-        ELSE NULL END AS match_bid_money,
+        CASE WHEN a.sign_money IS NOT NULL
+        THEN ROUND(a.sign_money, 2)
+        ELSE NULL END AS sign_money,
         CASE WHEN a.expected_main_operating_amount IS NOT NULL
         THEN ROUND(a.expected_main_operating_amount, 2)
         ELSE NULL END AS expected_main_operating_amount,
@@ -570,10 +554,10 @@
             and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
         <if test="minYjAmount != null">
-            and a.match_bid_money &gt;= #{minYjAmount}
+            and a.sign_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.match_bid_money &lt; #{maxYjAmount}
+            and a.sign_money &lt; #{maxYjAmount}
         </if>
         <if test="minSjAmount != null">
             and c.expect_contract_money &gt;= #{minSjAmount}

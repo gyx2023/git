@@ -18,23 +18,11 @@ public class ContractUserRespDTO {
     /**
      * 采购预算
      */
-    private String buyBudgetMoney;
-    /**
-     * 开标时间
-     */
-    private String openBidTime;
+    private String signTime;
     /**
      * 客户行业
      */
     private String unicomType;
-    /**
-     * 竞争情况
-     */
-    private String competitionCondition;
-    /**
-     * 投标结果
-     */
-    private String bidResult;
     /**
      * 投标主体
      */
@@ -46,7 +34,7 @@ public class ContractUserRespDTO {
     /**
      * 预计签约金额（万元）
      */
-    private String matchBidMoney;
+    private String signMoney;
     /**
      * 预计主营金额（万元）
      */
@@ -115,5 +103,6 @@ public class ContractUserRespDTO {
      * 贡献度情况
      */
     private String contributionSituation;
+
 
 }
