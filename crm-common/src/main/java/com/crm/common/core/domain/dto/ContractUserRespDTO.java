@@ -16,7 +16,7 @@ public class ContractUserRespDTO {
      */
     private String buyUserName;
     /**
-     * 采购预算
+     * 签约时间
      */
     private String signTime;
     /**

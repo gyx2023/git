@@ -9,7 +9,7 @@ import com.crm.common.core.domain.dto.ContractUserRespDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.topp.BiddingListExportVo;
+import com.crm.system.domain.vo.topp.ContractUserListExportVo;
 import com.crm.system.service.statistics.ContractUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+
 /**
  * @author pengjun
  */
@@ -51,7 +52,7 @@ public class ContractUserListController {
     @PostMapping("/export")
     public void export(ContractUserReqDTO reqDTO, HttpServletResponse response) {
         List<ContractUserRespDTO> list = contractUserService.getContractUserRespDTOS(reqDTO);
-        List<BiddingListExportVo> listVo = BeanUtil.copyToList(list, BiddingListExportVo.class);
-        ExcelUtil.exportExcel(listVo, "投标清单文件", BiddingListExportVo.class, response);
+        List<ContractUserListExportVo> listVo = BeanUtil.copyToList(list, ContractUserListExportVo.class);
+        ExcelUtil.exportExcel(listVo, "投标清单文件", ContractUserListExportVo.class, response);
     }
 }
