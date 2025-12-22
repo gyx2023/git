@@ -10,13 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -93,134 +89,81 @@ public class ToppBidExport {
                 return;
             }
 
-            // 构造文件内容
-            StringBuilder fileContent = new StringBuilder();
+            // 创建临时文件
+            String dateStr = new SimpleDateFormat("yyyyMMdd").format(targetDate);
+            String prefix = "topp_bid_" + dateStr;
+            File tempFile = File.createTempFile(prefix, ".txt");
 
-            // 添加表头（可选）
-            fileContent.append("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|creator" +
-                "|memo|borrower|reportUser|auditTaskId|auditPerson|auditStatus|auditResult|auditTime|matchBidMoney" +
-                "|bidMoney|endTime|contractType|projectId|projectName|contractTime|ictProfit|softProfit|isSign" +
-                "|isFrameworkContract|isSelfReserch|notSelfReserchReason|selfReserchName|selfReserchMoney|bidResultText" +
-                "|bidProjectResume|contractMoney\n");
+            // 写入数据到txt文件
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+                // 添加表头（可选）
+                writer.write("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|creator|" +
+                    "memo|borrower|reportUser|auditTaskId|auditPerson|auditStatus|auditResult|auditTime|matchBidMoney|" +
+                    "bidMoney|endTime|contractType|projectId|projectName|contractTime|ictProfit|softProfit|isSign|" +
+                    "isFrameworkContract|isSelfReserch|notSelfReserchReason|selfReserchName|selfReserchMoney|" +
+                    "bidResultText|bidProjectResume|contractMoney");
+                writer.newLine();
 
-            // 添加数据行
-            for (ToppBidDo toppBid : toppBidList) {
-                fileContent.append(formatField(toppBid.getId()))
-                    .append("|")
-                    .append(formatField(toppBid.getOpportunityCode()))
-                    .append("|")
-                    .append(formatField(toppBid.getBidCode()))
-                    .append("|")
-                    .append(formatField(toppBid.getBidBody()))
-                    .append("|")
-                    .append(formatField(toppBid.getResultTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getResult()))
-                    .append("|")
-                    .append(formatField(toppBid.getMoney()))
-                    .append("|")
-                    .append(formatField(toppBid.getGetTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getReturnTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getCreator()))
-                    .append("|")
-                    .append(formatField(toppBid.getMemo()))
-                    .append("|")
-                    .append(formatField(toppBid.getBorrower()))
-                    .append("|")
-                    .append(formatField(toppBid.getReportUser()))
-                    .append("|")
-                    .append(formatField(toppBid.getAuditTaskId()))
-                    .append("|")
-                    .append(formatField(toppBid.getAuditPerson()))
-                    .append("|")
-                    .append(formatField(toppBid.getAuditStatus()))
-                    .append("|")
-                    .append(formatField(toppBid.getAuditResult()))
-                    .append("|")
-                    .append(formatField(toppBid.getAuditTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getMatchBidMoney()))
-                    .append("|")
-                    .append(formatField(toppBid.getBidMoney()))
-                    .append("|")
-                    .append(formatField(toppBid.getEndTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getContractType()))
-                    .append("|")
-                    .append(formatField(toppBid.getProjectId()))
-                    .append("|")
-                    .append(formatField(toppBid.getProjectName()))
-                    .append("|")
-                    .append(formatField(toppBid.getContractTime()))
-                    .append("|")
-                    .append(formatField(toppBid.getIctProfit()))
-                    .append("|")
-                    .append(formatField(toppBid.getSoftProfit()))
-                    .append("|")
-                    .append(formatField(toppBid.getIsSign()))
-                    .append("|")
-                    .append(formatField(toppBid.getIsFrameworkContract()))
-                    .append("|")
-                    .append(formatField(toppBid.getIsSelfReserch()))
-                    .append("|")
-                    .append(formatField(toppBid.getNotSelfReserchReason()))
-                    .append("|")
-                    .append(formatField(toppBid.getSelfReserchName()))
-                    .append("|")
-                    .append(formatField(toppBid.getSelfReserchMoney()))
-                    .append("|")
-                    .append(formatField(toppBid.getBidResultText()))
-                    .append("|")
-                    .append(formatField(toppBid.getBidProjectResume()))
-                    .append("|")
-                    .append(formatField(toppBid.getContractMoney()))
-                    .append("\n");
+                // 添加数据行
+                for (ToppBidDo toppBid : toppBidList) {
+                    StringBuilder line = new StringBuilder();
+                    line.append(formatField(toppBid.getId())).append("|");
+                    line.append(formatField(toppBid.getOpportunityCode())).append("|");
+                    line.append(formatField(toppBid.getBidCode())).append("|");
+                    line.append(formatField(toppBid.getBidBody())).append("|");
+                    line.append(formatField(toppBid.getResultTime())).append("|");
+                    line.append(formatField(toppBid.getResult())).append("|");
+                    line.append(formatField(toppBid.getMoney())).append("|");
+                    line.append(formatField(toppBid.getGetTime())).append("|");
+                    line.append(formatField(toppBid.getReturnTime())).append("|");
+                    line.append(formatField(toppBid.getCreator())).append("|");
+                    line.append(formatField(toppBid.getMemo())).append("|");
+                    line.append(formatField(toppBid.getBorrower())).append("|");
+                    line.append(formatField(toppBid.getReportUser())).append("|");
+                    line.append(formatField(toppBid.getAuditTaskId())).append("|");
+                    line.append(formatField(toppBid.getAuditPerson())).append("|");
+                    line.append(formatField(toppBid.getAuditStatus())).append("|");
+                    line.append(formatField(toppBid.getAuditResult())).append("|");
+                    line.append(formatField(toppBid.getAuditTime())).append("|");
+                    line.append(formatField(toppBid.getMatchBidMoney())).append("|");
+                    line.append(formatField(toppBid.getBidMoney())).append("|");
+                    line.append(formatField(toppBid.getEndTime())).append("|");
+                    line.append(formatField(toppBid.getContractType())).append("|");
+                    line.append(formatField(toppBid.getProjectId())).append("|");
+                    line.append(formatField(toppBid.getProjectName())).append("|");
+                    line.append(formatField(toppBid.getContractTime())).append("|");
+                    line.append(formatField(toppBid.getIctProfit())).append("|");
+                    line.append(formatField(toppBid.getSoftProfit())).append("|");
+                    line.append(formatField(toppBid.getIsSign())).append("|");
+                    line.append(formatField(toppBid.getIsFrameworkContract())).append("|");
+                    line.append(formatField(toppBid.getIsSelfReserch())).append("|");
+                    line.append(formatField(toppBid.getNotSelfReserchReason())).append("|");
+                    line.append(formatField(toppBid.getSelfReserchName())).append("|");
+                    line.append(formatField(toppBid.getSelfReserchMoney())).append("|");
+                    line.append(formatField(toppBid.getBidResultText())).append("|");
+                    line.append(formatField(toppBid.getBidProjectResume())).append("|");
+                    line.append(formatField(toppBid.getContractMoney()));
+
+                    writer.write(line.toString());
+                    writer.newLine();
+                }
             }
 
-            // 构建文件路径
-            String filePath = buildToppBidFilePath(sftpConfigType, targetDate);
-            log.info("生成的文件路径: {}", filePath);
-
-            // 创建临时文件
-            Path tempFile = Files.createTempFile("topp_bid_", ".txt");
+            // 上传文件到SFTP服务器
+            String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                // 将内容写入临时文件
-                Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
-
-                // 检查是否是本地路径（以local_test开头）
-                if (sftpConfigType.equals("local_test")) {
-                    // 保存到本地文件系统
-                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
-                    File localFile = new File(localPath);
-
-                    // 确保目录存在
-                    localFile.getParentFile().mkdirs();
-
-                    // 写入文件内容
-                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
-                        writer.write(fileContent.toString());
-                    }
-
-                    log.info("文件已保存到本地路径: {}", localPath);
-                } else {
-                    // 上传文件到SFTP服务器
-                    // 确保目录存在
-                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
-
-                    // 上传文件
-                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
-                }
-
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("topp_bid表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
-                    toppBidList.size(), filePath);
+                    toppBidList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
+            } catch (Exception e) {
+                String errorMsg = "文件上传到SFTP服务器失败: " + e.getMessage();
+                log.error(errorMsg, e);
+                XxlJobHelper.handleFail(errorMsg);
             } finally {
                 // 删除临时文件
-                Files.deleteIfExists(tempFile);
+                tempFile.delete();
             }
 
         } catch (Exception e) {
@@ -229,37 +172,6 @@ public class ToppBidExport {
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
         }
-    }
-
-    /**
-     * 根据目标日期构建topp_bid文件的完整路径
-     *
-     * @param configType 配置类型
-     * @param targetDate 目标日期
-     * @return 完整的文件路径
-     */
-    private String buildToppBidFilePath(String configType, Date targetDate) {
-        // 获取基础路径
-        String basePath = sftpUtil.getDataRootPath(configType);
-
-        SimpleDateFormat folderSdf = new SimpleDateFormat("yyyyMMdd");
-        String dateStr = folderSdf.format(targetDate);
-
-        // 构建文件夹路径：basePath/YYYY/MM/DD/
-        SimpleDateFormat yearSdf = new SimpleDateFormat("yyyy");
-        SimpleDateFormat monthSdf = new SimpleDateFormat("MM");
-        SimpleDateFormat daySdf = new SimpleDateFormat("dd");
-
-        String year = yearSdf.format(targetDate);
-        String month = monthSdf.format(targetDate);
-        String day = daySdf.format(targetDate);
-
-        String folderPath = basePath + "/" + year + "/" + month + "/" + day + "/";
-
-        // 构建文件名：topp_bid_yyyyMMdd.txt
-        String fileName = "topp_bid_" + dateStr + ".txt";
-
-        return folderPath + fileName;
     }
 
     /**

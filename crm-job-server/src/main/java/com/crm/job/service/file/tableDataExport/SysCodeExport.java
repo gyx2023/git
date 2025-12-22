@@ -10,13 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -93,83 +89,53 @@ public class SysCodeExport {
                 return;
             }
 
-            // 构造文件内容
-            StringBuilder fileContent = new StringBuilder();
+            // 创建临时文件
+            String dateStr = new SimpleDateFormat("yyyyMMdd").format(targetDate);
+            String prefix = "sys_code_" + dateStr;
+            File tempFile = File.createTempFile(prefix, ".txt");
+            
+            // 写入数据到txt文件
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+                // 添加表头（可选）
+                writer.write("id|name|type|code|order|remark|isSystem|settingInt1|settingInt2|settingStr1|settingStr2|settingStr3");
+                writer.newLine();
 
-            // 添加表头（可选）
-            fileContent.append("id|name|type|code|order|remark|isSystem|settingInt1|settingInt2|settingStr1" +
-                "|settingStr2|settingStr3\n");
-
-            // 添加数据行
-            for (SysCode sysCode : sysCodeList) {
-                fileContent.append(formatField(sysCode.getId()))
-                    .append("|")
-                    .append(formatField(sysCode.getName()))
-                    .append("|")
-                    .append(formatField(sysCode.getType()))
-                    .append("|")
-                    .append(formatField(sysCode.getCode()))
-                    .append("|")
-                    .append(formatField(sysCode.getOrder()))
-                    .append("|")
-                    .append(formatField(sysCode.getRemark()))
-                    .append("|")
-                    .append(formatField(sysCode.getIsSystem()))
-                    .append("|")
-                    .append(formatField(sysCode.getSettingInt1()))
-                    .append("|")
-                    .append(formatField(sysCode.getSettingInt2()))
-                    .append("|")
-                    .append(formatField(sysCode.getSettingStr1()))
-                    .append("|")
-                    .append(formatField(sysCode.getSettingStr2()))
-                    .append("|")
-                    .append(formatField(sysCode.getSettingStr3()))
-                    .append("\n");
+                // 添加数据行
+                for (SysCode sysCode : sysCodeList) {
+                    StringBuilder line = new StringBuilder();
+                    line.append(formatField(sysCode.getId())).append("|");
+                    line.append(formatField(sysCode.getName())).append("|");
+                    line.append(formatField(sysCode.getType())).append("|");
+                    line.append(formatField(sysCode.getCode())).append("|");
+                    line.append(formatField(sysCode.getOrder())).append("|");
+                    line.append(formatField(sysCode.getRemark())).append("|");
+                    line.append(formatField(sysCode.getIsSystem())).append("|");
+                    line.append(formatField(sysCode.getSettingInt1())).append("|");
+                    line.append(formatField(sysCode.getSettingInt2())).append("|");
+                    line.append(formatField(sysCode.getSettingStr1())).append("|");
+                    line.append(formatField(sysCode.getSettingStr2())).append("|");
+                    line.append(formatField(sysCode.getSettingStr3()));
+                    
+                    writer.write(line.toString());
+                    writer.newLine();
+                }
             }
 
-            // 构建文件路径
-            String filePath = buildSysCodeFilePath(sftpConfigType, targetDate);
-            log.info("生成的文件路径: {}", filePath);
-
-            // 创建临时文件
-            Path tempFile = Files.createTempFile("sys_code_", ".txt");
+            // 上传文件到SFTP服务器
+            String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                // 将内容写入临时文件
-                Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
-
-                // 检查是否是本地路径（以local_test开头）
-                if (sftpConfigType.equals("local_test")) {
-                    // 保存到本地文件系统
-                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
-                    File localFile = new File(localPath);
-
-                    // 确保目录存在
-                    localFile.getParentFile().mkdirs();
-
-                    // 写入文件内容
-                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
-                        writer.write(fileContent.toString());
-                    }
-
-                    log.info("文件已保存到本地路径: {}", localPath);
-                } else {
-                    // 上传文件到SFTP服务器
-                    // 确保目录存在
-                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
-
-                    // 上传文件
-                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
-                }
-
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("sys_code表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
-                    sysCodeList.size(), filePath);
+                    sysCodeList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
+            } catch (Exception e) {
+                String errorMsg = "文件上传到SFTP服务器失败: " + e.getMessage();
+                log.error(errorMsg, e);
+                XxlJobHelper.handleFail(errorMsg);
             } finally {
                 // 删除临时文件
-                Files.deleteIfExists(tempFile);
+                tempFile.delete();
             }
 
         } catch (Exception e) {
@@ -178,37 +144,6 @@ public class SysCodeExport {
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
         }
-    }
-
-    /**
-     * 根据目标日期构建sys_code文件的完整路径
-     *
-     * @param configType 配置类型
-     * @param targetDate 目标日期
-     * @return 完整的文件路径
-     */
-    private String buildSysCodeFilePath(String configType, Date targetDate) {
-        // 获取基础路径
-        String basePath = sftpUtil.getDataRootPath(configType);
-
-        SimpleDateFormat folderSdf = new SimpleDateFormat("yyyyMMdd");
-        String dateStr = folderSdf.format(targetDate);
-
-        // 构建文件夹路径：basePath/YYYY/MM/DD/
-        SimpleDateFormat yearSdf = new SimpleDateFormat("yyyy");
-        SimpleDateFormat monthSdf = new SimpleDateFormat("MM");
-        SimpleDateFormat daySdf = new SimpleDateFormat("dd");
-
-        String year = yearSdf.format(targetDate);
-        String month = monthSdf.format(targetDate);
-        String day = daySdf.format(targetDate);
-
-        String folderPath = basePath + "/" + year + "/" + month + "/" + day + "/";
-
-        // 构建文件名：sys_code_yyyyMMdd.txt
-        String fileName = "sys_code_" + dateStr + ".txt";
-
-        return folderPath + fileName;
     }
 
     /**
