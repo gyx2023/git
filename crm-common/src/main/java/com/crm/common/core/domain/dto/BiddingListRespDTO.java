@@ -19,7 +19,7 @@ public class BiddingListRespDTO {
     /**
      * 采购预算
      */
-    private String buyBudgetMoney;
+    private Double buyBudgetMoney;
     /**
      * 开标时间
      */
