@@ -12,7 +12,7 @@ import com.crm.system.domain.vo.zbzq.SalesupCollOppoPoolsVo;
 import com.crm.system.domain.vo.zbzq.SalesupCollOppoSignVo;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
-import com.crm.system.service.topp.ToppOpportunityService;
+import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.zbzq.ISalesupCollOppoPoolsService;
 import com.crm.system.service.zbzq.ISalesupCollOppoSignService;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -43,7 +43,7 @@ public class OppoContractSyncJob {
     private ISalesupCollOppoPoolsService oppoPoolsService;
 
     @Autowired
-    private ToppOpportunityService toppOpportunityService;
+    private IToppOpportunityService toppOpportunityService;
 
     @Autowired
     private IToppContractService toppContractService;

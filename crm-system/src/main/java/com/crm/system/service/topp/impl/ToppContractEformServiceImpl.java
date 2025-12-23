@@ -69,9 +69,9 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
         lqw.eq(StringUtils.isNotBlank(bo.getAgentPersonOa()), ToppContractEform::getAgentPersonOa, bo.getAgentPersonOa());
         lqw.like(StringUtils.isNotBlank(bo.getAgentPersonName()), ToppContractEform::getAgentPersonName, bo.getAgentPersonName());
         lqw.eq(bo.getTotalMoney() != null, ToppContractEform::getTotalMoney, bo.getTotalMoney());
-        lqw.eq(StringUtils.isNotBlank(bo.getSignTime()), ToppContractEform::getSignTime, bo.getSignTime());
-        lqw.eq(StringUtils.isNotBlank(bo.getStartDate()), ToppContractEform::getStartDate, bo.getStartDate());
-        lqw.eq(StringUtils.isNotBlank(bo.getEndDate()), ToppContractEform::getEndDate, bo.getEndDate());
+        lqw.eq(bo.getSignTime() != null, ToppContractEform::getSignTime, bo.getSignTime());  // 修改这里
+        lqw.eq(bo.getStartDate() != null, ToppContractEform::getStartDate, bo.getStartDate());  // 修改这里
+        lqw.eq(bo.getEndDate() != null, ToppContractEform::getEndDate, bo.getEndDate());  // 修改这里
         lqw.eq(StringUtils.isNotBlank(bo.getTextType()), ToppContractEform::getTextType, bo.getTextType());
         lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ToppContractEform::getBusiType, bo.getBusiType());
         lqw.eq(bo.getCreator() != null, ToppContractEform::getCreator, bo.getCreator());
