@@ -5,7 +5,9 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.domain.dto.*;
+import com.crm.common.core.domain.dto.ContractStatisticsReqDTO;
+import com.crm.common.core.domain.dto.ContractStatisticsRespDTO;
+import com.crm.common.core.domain.dto.ContractStatisticsUserRespDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
@@ -145,34 +147,34 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
             respDTO.setDeptName(dept.getDeptName());
             // 累加统计数据
             if (ObjectUtil.isNotEmpty(respDTO.getCountQy())) {
-                totalCountQy += Integer.parseInt(respDTO.getCountQy());
+                totalCountQy += respDTO.getCountQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getMoneyQy())) {
-                totalMoneyQy += Double.parseDouble(respDTO.getMoneyQy());
+                totalMoneyQy += respDTO.getMoneyQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getYbwQy())) {
-                totalYbwQy +=  Integer.parseInt(respDTO.getYbwQy());
+                totalYbwQy += respDTO.getYbwQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getYbyqQy())) {
-                totalYbyqQy +=  Integer.parseInt(respDTO.getYbyqQy());
+                totalYbyqQy += respDTO.getYbyqQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getYbwqQy())) {
-                totalYbwqQy +=  Integer.parseInt(respDTO.getYbwqQy());
+                totalYbwqQy += respDTO.getYbwqQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getWqQy())) {
-                totalWqQy +=  Integer.parseInt(respDTO.getWqQy());
+                totalWqQy += respDTO.getWqQy();
             }
 
             allList.add(respDTO);
         }
         // 设置合计行数据
         totalDTO.setDeptId(reqDTO.getDeptId());
-        totalDTO.setCountQy(String.valueOf(totalCountQy));
-        totalDTO.setMoneyQy(String.valueOf(totalMoneyQy));
-        totalDTO.setYbwQy(String.valueOf(totalYbwQy));
-        totalDTO.setYbyqQy(String.valueOf(totalYbyqQy));
-        totalDTO.setYbwqQy(String.valueOf(totalYbwqQy));
-        totalDTO.setWqQy(String.valueOf(totalWqQy));
+        totalDTO.setCountQy(totalCountQy);
+        totalDTO.setMoneyQy(totalMoneyQy);
+        totalDTO.setYbwQy(totalYbwQy);
+        totalDTO.setYbyqQy(totalYbyqQy);
+        totalDTO.setYbwqQy(totalYbwqQy);
+        totalDTO.setWqQy(totalWqQy);
         allList.add(totalDTO);
 
         // 再进行分页处理
@@ -220,35 +222,35 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
         for (ContractStatisticsUserRespDTO respDTO : list) {
             // 累加统计数据
             if (ObjectUtil.isNotEmpty(respDTO.getCountQy())) {
-                totalCountQy += Integer.parseInt(respDTO.getCountQy());
+                totalCountQy += respDTO.getCountQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getMoneyQy())) {
-                totalMoneyQy += Double.parseDouble(respDTO.getMoneyQy());
+                totalMoneyQy += respDTO.getMoneyQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getYbwQy())) {
-                totalYbwQy +=  Integer.parseInt(respDTO.getYbwQy());
+                totalYbwQy += respDTO.getYbwQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getYbyqQy())) {
-                totalYbyqQy +=  Integer.parseInt(respDTO.getYbyqQy());
+                totalYbyqQy += respDTO.getYbyqQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getYbwqQy())) {
-                totalYbwqQy +=  Integer.parseInt(respDTO.getYbwqQy());
+                totalYbwqQy += respDTO.getYbwqQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getWqQy())) {
-                totalWqQy +=  Integer.parseInt(respDTO.getWqQy());
+                totalWqQy += respDTO.getWqQy();
             }
             if (ObjectUtil.isNotEmpty(respDTO.getGxedMoney())) {
-                totalGxedZb += Double.parseDouble(respDTO.getGxedMoney());
+                totalGxedZb += respDTO.getGxedMoney();
             }
         }
         // 设置合计行数据
-        totalDTO.setCountQy(String.valueOf(totalCountQy));
-        totalDTO.setMoneyQy(String.valueOf(totalMoneyQy));
-        totalDTO.setYbwQy(String.valueOf(totalYbwQy));
-        totalDTO.setYbyqQy(String.valueOf(totalYbyqQy));
-        totalDTO.setYbwqQy(String.valueOf(totalYbwqQy));
-        totalDTO.setWqQy(String.valueOf(totalWqQy));
-        totalDTO.setGxedMoney(String.valueOf(totalGxedZb));
+        totalDTO.setCountQy(totalCountQy);
+        totalDTO.setMoneyQy(totalMoneyQy);
+        totalDTO.setYbwQy(totalYbwQy);
+        totalDTO.setYbyqQy(totalYbyqQy);
+        totalDTO.setYbwqQy(totalYbwqQy);
+        totalDTO.setWqQy(totalWqQy);
+        totalDTO.setGxedMoney(totalGxedZb);
         list.add(totalDTO);
 
         // 创建分页对象并设置分页参数

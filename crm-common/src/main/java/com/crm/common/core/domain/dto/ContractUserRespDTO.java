@@ -2,6 +2,7 @@ package com.crm.common.core.domain.dto;
 
 import lombok.Data;
 
+
 /**
  * 投标列表响应数据传输对象
  */
@@ -34,11 +35,11 @@ public class ContractUserRespDTO {
     /**
      * 预计签约金额（万元）
      */
-    private String signMoney;
+    private Double signMoney;
     /**
      * 预计主营金额（万元）
      */
-    private String expectedMainOperatingAmount;
+    private Double expectedMainOperatingAmount;
     /**
      * 毛利率
      */
@@ -98,7 +99,7 @@ public class ContractUserRespDTO {
     /**
      * 个人贡献度金额（万元）
      */
-    private String personalContributionAmount;
+    private Double personalContributionAmount;
     /**
      * 贡献度情况
      */
