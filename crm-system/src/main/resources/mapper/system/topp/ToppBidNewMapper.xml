@@ -225,7 +225,7 @@
         (select @parent_id := #{tempDeptId}) pd
         where FIND_IN_SET(parent_id,@parent_id) > 0
         and @parent_id := CONCAT(@parent_id,',',dept_id)
-        ) and a.is_sign='0' and result='match_bid'
+        ) and a.is_sign='0'
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -405,7 +405,7 @@
         on a.opportunity_code =b.id_ inner join zqzt_sys_user c
         on b.designer =c.user_id
         inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where d.dept_id = #{areaCode} and a.is_sign='0' and result='match_bid'
+        where d.dept_id = #{areaCode} and a.is_sign='0'
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -599,7 +599,7 @@
         left JOIN zqzt_sys_user d ON b.designer = d.user_id
         left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE e.dept_id =#{deptId}
-        and a.is_sign='0' and a.result='match_bid'
+        and a.is_sign='0'
         and c.name=d.nick_name
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
@@ -904,7 +904,7 @@
         left JOIN zqzt_sys_user d ON b.designer = d.user_id
         left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE e.dept_id =#{deptId}
-        and a.is_sign='1' and a.result='match_bid'
+        and a.is_sign='1'
         and c.name=d.nick_name
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}

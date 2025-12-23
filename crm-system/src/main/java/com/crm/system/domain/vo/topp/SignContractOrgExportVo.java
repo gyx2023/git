@@ -25,9 +25,9 @@ public class SignContractOrgExportVo implements Serializable {
     @ExcelProperty(value = "100-1000")
     private Integer ybyqQy;
     @ExcelProperty(value = "1000-5000")
-    private String ybwqQy;
+    private Integer ybwqQy;
     @ExcelProperty(value = "5000以上")
-    private String wqQy;
+    private Integer wqQy;
     @ExcelProperty(value = "预计签约金额(万元）")
     private Double moneyQy;
 }
