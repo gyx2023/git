@@ -361,8 +361,6 @@ public class ToppOpportunityDo extends BaseEntity{
      */
     private String endOppTypeMemo;
 
-
-    private Date createTime;
     /**
      *
      */

@@ -10,13 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -93,79 +89,52 @@ public class ToppOppPreEstimateExport {
                 return;
             }
 
-            // 构造文件内容
-            StringBuilder fileContent = new StringBuilder();
+            // 创建临时文件
+            String dateStr = new SimpleDateFormat("yyyyMMdd").format(targetDate);
+            String prefix = "topp_opp_pre_estimate_" + dateStr;
+            File tempFile = File.createTempFile(prefix, ".txt");
 
-            // 添加表头（可选）
-            fileContent.append("id|oppoId|oppDesigner|projectNumber|projectName|evaluationResult|fiveFusion" +
-                "|fiveFusionType|natureCustId|natureCustName\n");
+            // 写入数据到txt文件
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+                // 添加表头（可选）
+                writer.write("id|oppoId|oppDesigner|projectNumber|projectName|evaluationResult|fiveFusion|" +
+                    "fiveFusionType|natureCustId|natureCustName");
+                writer.newLine();
 
-            // 添加数据行
-            for (ToppOppPreEstimateDo toppOppPreEstimate : toppOppPreEstimateList) {
-                fileContent.append(formatField(toppOppPreEstimate.getId()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getOppoId()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getOppDesigner()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getProjectNumber()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getProjectName()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getEvaluationResult()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getFiveFusion()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getFiveFusionType()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getNatureCustId()))
-                    .append("|")
-                    .append(formatField(toppOppPreEstimate.getNatureCustName()))
-                    .append("\n");
+                // 添加数据行
+                for (ToppOppPreEstimateDo toppOppPreEstimate : toppOppPreEstimateList) {
+                    StringBuilder line = new StringBuilder();
+                    line.append(formatField(toppOppPreEstimate.getId())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getOppoId())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getOppDesigner())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getProjectNumber())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getProjectName())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getEvaluationResult())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getFiveFusion())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getFiveFusionType())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getNatureCustId())).append("|");
+                    line.append(formatField(toppOppPreEstimate.getNatureCustName()));
+
+                    writer.write(line.toString());
+                    writer.newLine();
+                }
             }
 
-            // 构建文件路径
-            String filePath = buildToppOppPreEstimateFilePath(sftpConfigType, targetDate);
-            log.info("生成的文件路径: {}", filePath);
-
-            // 创建临时文件
-            Path tempFile = Files.createTempFile("topp_opp_pre_estimate_", ".txt");
+            // 上传文件到SFTP服务器
+            String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                // 将内容写入临时文件
-                Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
-
-                // 检查是否是本地路径（以local_test开头）
-                if (sftpConfigType.equals("local_test")) {
-                    // 保存到本地文件系统
-                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
-                    File localFile = new File(localPath);
-
-                    // 确保目录存在
-                    localFile.getParentFile().mkdirs();
-
-                    // 写入文件内容
-                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
-                        writer.write(fileContent.toString());
-                    }
-
-                    log.info("文件已保存到本地路径: {}", localPath);
-                } else {
-                    // 上传文件到SFTP服务器
-                    // 确保目录存在
-                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
-
-                    // 上传文件
-                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
-                }
-
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("topp_opp_pre_estimate表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
-                    toppOppPreEstimateList.size(), filePath);
+                    toppOppPreEstimateList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
+            } catch (Exception e) {
+                String errorMsg = "文件上传到SFTP服务器失败: " + e.getMessage();
+                log.error(errorMsg, e);
+                XxlJobHelper.handleFail(errorMsg);
             } finally {
                 // 删除临时文件
-                Files.deleteIfExists(tempFile);
+                tempFile.delete();
             }
 
         } catch (Exception e) {
@@ -174,37 +143,6 @@ public class ToppOppPreEstimateExport {
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
         }
-    }
-
-    /**
-     * 根据目标日期构建topp_opp_pre_estimate文件的完整路径
-     *
-     * @param configType 配置类型
-     * @param targetDate 目标日期
-     * @return 完整的文件路径
-     */
-    private String buildToppOppPreEstimateFilePath(String configType, Date targetDate) {
-        // 获取基础路径
-        String basePath = sftpUtil.getDataRootPath(configType);
-
-        SimpleDateFormat folderSdf = new SimpleDateFormat("yyyyMMdd");
-        String dateStr = folderSdf.format(targetDate);
-
-        // 构建文件夹路径：basePath/YYYY/MM/DD/
-        SimpleDateFormat yearSdf = new SimpleDateFormat("yyyy");
-        SimpleDateFormat monthSdf = new SimpleDateFormat("MM");
-        SimpleDateFormat daySdf = new SimpleDateFormat("dd");
-
-        String year = yearSdf.format(targetDate);
-        String month = monthSdf.format(targetDate);
-        String day = daySdf.format(targetDate);
-
-        String folderPath = basePath + "/" + year + "/" + month + "/" + day + "/";
-
-        // 构建文件名：topp_opp_pre_estimate_yyyyMMdd.txt
-        String fileName = "topp_opp_pre_estimate_" + dateStr + ".txt";
-
-        return folderPath + fileName;
     }
 
     /**
