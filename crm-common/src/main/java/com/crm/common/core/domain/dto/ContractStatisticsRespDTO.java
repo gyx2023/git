@@ -2,14 +2,16 @@ package com.crm.common.core.domain.dto;
 
 import lombok.Data;
 
+import java.lang.Double;
+
 @Data
 public class ContractStatisticsRespDTO {
     private String deptId;
     private String deptName;
-    private String countQy;
-    private String moneyQy;
-    private String ybwQy;
-    private String ybyqQy;
-    private String ybwqQy;
-    private String wqQy;
+    private Integer countQy;
+    private Double moneyQy;
+    private Integer ybwQy;
+    private Integer ybyqQy;
+    private Integer ybwqQy;
+    private Integer wqQy;
 }

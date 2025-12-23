@@ -65,12 +65,12 @@ public class StatisticsContractController {
         List<SignContractOrgExportVo> listVo = BeanUtil.copyToList(list, SignContractOrgExportVo.class);
         if (ObjectUtil.isNotEmpty(listVo)) {
             for (SignContractOrgExportVo vo : listVo) {
-                vo.setCountQy(ObjectUtil.isEmpty(vo.getCountQy()) ? "0" : vo.getCountQy());
-                vo.setYbwQy(ObjectUtil.isEmpty(vo.getYbwQy()) ? "0" : vo.getYbwQy());
-                vo.setYbyqQy(ObjectUtil.isEmpty(vo.getYbyqQy()) ? "0" : vo.getYbyqQy());
-                vo.setYbwqQy(ObjectUtil.isEmpty(vo.getYbwqQy()) ? "0" : vo.getYbwqQy());
-                vo.setWqQy(ObjectUtil.isEmpty(vo.getWqQy()) ? "0" : vo.getWqQy());
-                vo.setMoneyQy(ObjectUtil.isEmpty(vo.getMoneyQy()) ? "0" : vo.getMoneyQy());
+                vo.setCountQy(ObjectUtil.isEmpty(vo.getCountQy()) ? 0 : vo.getCountQy());
+                vo.setYbwQy(ObjectUtil.isEmpty(vo.getYbwQy()) ? 0 : vo.getYbwQy());
+                vo.setYbyqQy(ObjectUtil.isEmpty(vo.getYbyqQy()) ? 0 : vo.getYbyqQy());
+                vo.setYbwqQy(ObjectUtil.isEmpty(vo.getYbwqQy()) ? 0 : vo.getYbwqQy());
+                vo.setWqQy(ObjectUtil.isEmpty(vo.getWqQy()) ? 0 : vo.getWqQy());
+                vo.setMoneyQy(ObjectUtil.isEmpty(vo.getMoneyQy()) ? 0 : vo.getMoneyQy());
             }
         }
 
@@ -88,13 +88,13 @@ public class StatisticsContractController {
         List<SignContractUserExportVo> listVo = BeanUtil.copyToList(list, SignContractUserExportVo.class);
         if (ObjectUtil.isNotEmpty(listVo)) {
             for (SignContractUserExportVo vo : listVo) {
-                vo.setCountQy(ObjectUtil.isEmpty(vo.getCountQy()) ? "0" : vo.getCountQy());
-                vo.setYbwQy(ObjectUtil.isEmpty(vo.getYbwQy()) ? "0" : vo.getYbwQy());
-                vo.setYbyqQy(ObjectUtil.isEmpty(vo.getYbyqQy()) ? "0" : vo.getYbyqQy());
-                vo.setYbwqQy(ObjectUtil.isEmpty(vo.getYbwqQy()) ? "0" : vo.getYbwqQy());
-                vo.setWqQy(ObjectUtil.isEmpty(vo.getWqQy()) ? "0" : vo.getWqQy());
-                vo.setMoneyQy(ObjectUtil.isEmpty(vo.getMoneyQy()) ? "0" : vo.getMoneyQy());
-                vo.setGxedMoney(ObjectUtil.isEmpty(vo.getGxedMoney()) ? "0" : vo.getGxedMoney());
+                vo.setCountQy(ObjectUtil.isEmpty(vo.getCountQy()) ? 0 : vo.getCountQy());
+                vo.setYbwQy(ObjectUtil.isEmpty(vo.getYbwQy()) ? 0 : vo.getYbwQy());
+                vo.setYbyqQy(ObjectUtil.isEmpty(vo.getYbyqQy()) ? 0 : vo.getYbyqQy());
+                vo.setYbwqQy(ObjectUtil.isEmpty(vo.getYbwqQy()) ? 0 : vo.getYbwqQy());
+                vo.setWqQy(ObjectUtil.isEmpty(vo.getWqQy()) ? 0 : vo.getWqQy());
+                vo.setMoneyQy(ObjectUtil.isEmpty(vo.getMoneyQy()) ? 0 : vo.getMoneyQy());
+                vo.setGxedMoney(ObjectUtil.isEmpty(vo.getGxedMoney()) ? 0 : vo.getGxedMoney());
             }
         }
         ExcelUtil.exportExcel(listVo, "签约统计按支撑人员", SignContractUserExportVo.class, response);
