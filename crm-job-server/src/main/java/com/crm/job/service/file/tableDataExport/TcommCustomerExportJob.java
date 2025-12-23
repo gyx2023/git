@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.crm.system.domain.topp.ToppOpportunityDo;
-import com.crm.system.service.topp.ToppOpportunityService;
+import com.crm.system.service.topp.IToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ import java.util.List;
 public class TcommCustomerExportJob {
 
     @Resource
-    private ToppOpportunityService toppOpportunityService;
+    private IToppOpportunityService toppOpportunityService;
 
     @Resource
     private SftpUtil sftpUtil;

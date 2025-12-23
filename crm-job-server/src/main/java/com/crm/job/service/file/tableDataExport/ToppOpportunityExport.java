@@ -2,7 +2,7 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppOpportunityDo;
-import com.crm.system.service.topp.ToppOpportunityService;
+import com.crm.system.service.topp.IToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class ToppOpportunityExport {
  private SftpUtil sftpUtil;
 
     @Resource
- private ToppOpportunityService toppOpportunityService;
+ private IToppOpportunityService toppOpportunityService;
 
     /**
      * topp_opportunity表数据导出任务
@@ -59,6 +59,7 @@ public class ToppOpportunityExport {
         Date targetDate = new Date();
         // SFTP配置类型
         String sftpConfigType = "topp_tcomm_sys_import";
+
 
         // 处理任务参数
         if (param != null && !param.isEmpty()) {
