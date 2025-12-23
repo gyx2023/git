@@ -392,11 +392,9 @@ public class ToppContractVo {
     private String ictRat;
 
     /**
-     *  合同标签：
-        1：5G合同
-        2：非5G合同
+     * 合同标签：\r\n1：5G合同\r\n2：非5G合同
      */
-    @ExcelProperty(value = "合同标签： 1：5G合同 2：非5G合同")
+    @ExcelProperty(value = "合同标签：\r\n1：5G合同\r\n2：非5G合同")
     private String contractLabel;
 
     /**

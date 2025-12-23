@@ -11,7 +11,7 @@ import com.crm.system.domain.bo.topp.ToppBidNewScoreBo;
 import com.crm.system.domain.topp.ToppBidNewScoreDo;
 import com.crm.system.domain.vo.topp.ToppBidNewScoreVo;
 import com.crm.system.mapper.topp.ToppBidNewScoreMapper;
-import com.crm.system.service.topp.ToppBidNewScoreService;
+import com.crm.system.service.topp.IToppBidNewScoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
-public class ToppBidNewScoreServiceImpl implements ToppBidNewScoreService {
+public class IToppBidNewScoreServiceImpl implements IToppBidNewScoreService {
 
     @Resource
     private ToppBidNewScoreMapper baseMapper;

@@ -391,11 +391,9 @@ public class ToppContractBo extends BaseEntity {
     private String ictRat;
 
     /**
-     *  合同标签：
-        1：5G合同
-        2：非5G合同
+     * 合同标签：\r\n1：5G合同\r\n2：非5G合同
      */
-    @NotBlank(message = "合同标签： 1：5G合同 2：非5G合同不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "合同标签：\r\n1：5G合同\r\n2：非5G合同不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractLabel;
 
     /**

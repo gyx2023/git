@@ -16,7 +16,7 @@ import java.util.List;
  * @author crm
  * @date 2025-12-02
  */
-public interface ToppOpportunityService {
+public interface IToppOpportunityService {
 
     /**
      * 查询【请填写功能名称】
