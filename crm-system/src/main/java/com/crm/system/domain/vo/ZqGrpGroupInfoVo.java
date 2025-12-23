@@ -1,6 +1,8 @@
 package com.crm.system.domain.vo;
 
 import java.util.Date;
+
+import com.alibaba.excel.annotation.ExcelIgnore;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
@@ -57,12 +59,14 @@ public class ZqGrpGroupInfoVo {
      * 集团级别:A-B-C-D-E-F-G-H-I-Y-Z
      */
     @ExcelProperty(value = "集团级别")
+    @ExcelIgnore
     private String grpLevel;
 
     /**
      * 集团状态:01-目标,02-潜在,03-正式,04-注销
      */
     @ExcelProperty(value = "集团状态")
+    @ExcelIgnore
     private String grpStatus;
 
     /**

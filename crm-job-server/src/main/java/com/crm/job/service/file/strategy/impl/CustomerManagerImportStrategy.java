@@ -112,6 +112,6 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
         task.setResultFileUrl(upload.getUrl());
         task.setRemark("集团客户经理批量导入完成,成功: " + successRows + "条; 失败: " + failRows + "条");
 
-        return successRows > 0; // 只要有成功记录就认为导入成功
+        return true; // 只要有成功记录就认为导入成功
     }
 }

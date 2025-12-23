@@ -9,15 +9,13 @@ import javax.validation.constraints.*;
 import java.util.Date;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 【请填写功能名称】业务对象 topp_contract_eform
  *
  * @author crm
- * @date 2025-12-16
+ * @date 2025-12-18
  */
 
 @Data
@@ -81,20 +79,20 @@ public class ToppContractEformBo extends BaseEntity {
     /**
      * 签订日期时间
      */
-    @NotNull(message = "签订日期时间不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Date signTime;
+    @NotBlank(message = "签订日期时间不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String signTime;
 
     /**
      * 合同开始日期
      */
-    @NotNull(message = "合同开始日期不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Date startDate;
+    @NotBlank(message = "合同开始日期不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String startDate;
 
     /**
      * 合同结束日期
      */
-    @NotNull(message = "合同结束日期不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Date endDate;
+    @NotBlank(message = "合同结束日期不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String endDate;
 
     /**
      * 标准文本类型

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppOrderMapper">
+
+    <resultMap type="com.crm.system.domain.topp.ToppOrder" id="ToppOrderResult">
+        <result property="id" column="id_"/>
+        <result property="oppoId" column="oppo_id"/>
+        <result property="custId" column="cust_id"/>
+        <result property="creator" column="creator_"/>
+        <result property="createTime" column="create_time"/>
+        <result property="sysFormId" column="sys_form_id"/>
+        <result property="areaId" column="area_id"/>
+        <result property="orgId" column="org_id"/>
+        <result property="orderNumber" column="order_number"/>
+        <result property="orderName" column="order_name"/>
+        <result property="orderType" column="order_type"/>
+        <result property="piId" column="pi_id"/>
+        <result property="contractId" column="contract_id"/>
+        <result property="phase" column="phase_"/>
+        <result property="custManagerId" column="cust_manager_id"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="actors" column="actors_"/>
+        <result property="status" column="status_"/>
+        <result property="actorsInfo" column="actors_info"/>
+        <result property="phaseName" column="phase_name"/>
+        <result property="whiteList" column="white_list"/>
+        <result property="oppPhase" column="opp_phase"/>
+        <result property="clueId" column="clue_id"/>
+        <result property="infoSendId" column="info_send_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="custName" column="cust_name"/>
+        <result property="accNbr" column="acc_nbr"/>
+        <result property="infoId" column="info_id"/>
+        <result property="businessAcceptanceId" column="business_acceptance_id"/>
+        <result property="phaseOrderId" column="phase_order_id"/>
+        <result property="endReason" column="end_reason"/>
+        <result property="warningLevel" column="warning_level"/>
+        <result property="curInnetFlag" column="cur_innet_flag"/>
+        <result property="xwyOrderNo" column="xwy_order_no"/>
+        <result property="batchFlag" column="batch_flag"/>
+        <result property="xwyOrderResult" column="xwy_order_Result"/>
+        <result property="xwyCount" column="xwy_count"/>
+        <result property="businessDep" column="business_dep"/>
+        <result property="buildingNum" column="building_num"/>
+        <result property="adoptDays" column="adopt_days"/>
+        <result property="businessType" column="business_type"/>
+        <result property="businessTwoType" column="business_two_type"/>
+        <result property="orderSource" column="order_source"/>
+        <result property="wideResult" column="wide_result"/>
+        <result property="orderCategory" column="order_category"/>
+        <result property="thirdCheckResult" column="third_check_result"/>
+    </resultMap>
+
+    <select id="selectSupportOrders" resultMap="ToppOrderResult">
+        SELECT o.*
+        FROM topp_order o
+        JOIN tcomm_task t ON t.id_ = o.task_id
+        WHERE o.order_type = 'support_order'
+    </select>
+
+</mapper>

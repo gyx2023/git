@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.math.BigDecimal;
 
@@ -20,7 +21,7 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("topp_opportunity")
-public class ToppOpportunityDo {
+public class ToppOpportunityDo extends BaseEntity{
 
     private static final long serialVersionUID=1L;
 
@@ -359,6 +360,9 @@ public class ToppOpportunityDo {
      * 商机终结描述
      */
     private String endOppTypeMemo;
+
+
+    private Date createTime;
     /**
      *
      */
@@ -561,5 +565,23 @@ public class ToppOpportunityDo {
      *
      */
     private String preDecision;
+
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 
 }

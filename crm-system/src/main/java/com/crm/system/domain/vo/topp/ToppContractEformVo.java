@@ -1,8 +1,6 @@
 package com.crm.system.domain.vo.topp;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.crm.common.annotation.ExcelDictFormat;
@@ -16,7 +14,7 @@ import java.util.Date;
  * 【请填写功能名称】视图对象 topp_contract_eform
  *
  * @author crm
- * @date 2025-12-16
+ * @date 2025-12-18
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -83,19 +81,19 @@ public class ToppContractEformVo {
      * 签订日期时间
      */
     @ExcelProperty(value = "签订日期时间")
-    private Date signTime;
+    private String signTime;
 
     /**
      * 合同开始日期
      */
     @ExcelProperty(value = "合同开始日期")
-    private Date startDate;
+    private String startDate;
 
     /**
      * 合同结束日期
      */
     @ExcelProperty(value = "合同结束日期")
-    private Date endDate;
+    private String endDate;
 
     /**
      * 标准文本类型

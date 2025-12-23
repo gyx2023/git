@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.vo.topp.ToppContractEformVo;
-import com.crm.system.domain.topp.ToppContractEformDo;
+import com.crm.system.domain.topp.ToppContractEform;
 import com.crm.system.mapper.topp.ToppContractEformMapper;
 import com.crm.system.service.topp.IToppContractEformService;
 
@@ -23,7 +23,7 @@ import java.util.Collection;
  * 【请填写功能名称】Service业务层处理
  *
  * @author crm
- * @date 2025-12-16
+ * @date 2025-12-18
  */
 @RequiredArgsConstructor
 @Service
@@ -44,7 +44,7 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
      */
     @Override
     public TableDataInfo<ToppContractEformVo> queryPageList(ToppContractEformBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<ToppContractEformDo> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppContractEform> lqw = buildQueryWrapper(bo);
         Page<ToppContractEformVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -54,28 +54,28 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
      */
     @Override
     public List<ToppContractEformVo> queryList(ToppContractEformBo bo) {
-        LambdaQueryWrapper<ToppContractEformDo> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<ToppContractEform> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
-    private LambdaQueryWrapper<ToppContractEformDo> buildQueryWrapper(ToppContractEformBo bo) {
+    private LambdaQueryWrapper<ToppContractEform> buildQueryWrapper(ToppContractEformBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<ToppContractEformDo> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getProjectId() != null, ToppContractEformDo::getProjectId, bo.getProjectId());
-        lqw.eq(StringUtils.isNotBlank(bo.getEformNo()), ToppContractEformDo::getEformNo, bo.getEformNo());
-        lqw.like(StringUtils.isNotBlank(bo.getEformName()), ToppContractEformDo::getEformName, bo.getEformName());
-        lqw.like(StringUtils.isNotBlank(bo.getCustName()), ToppContractEformDo::getCustName, bo.getCustName());
-        lqw.eq(StringUtils.isNotBlank(bo.getOurCompany()), ToppContractEformDo::getOurCompany, bo.getOurCompany());
-        lqw.eq(StringUtils.isNotBlank(bo.getAgentPersonOa()), ToppContractEformDo::getAgentPersonOa, bo.getAgentPersonOa());
-        lqw.like(StringUtils.isNotBlank(bo.getAgentPersonName()), ToppContractEformDo::getAgentPersonName, bo.getAgentPersonName());
-        lqw.eq(bo.getTotalMoney() != null, ToppContractEformDo::getTotalMoney, bo.getTotalMoney());
-        lqw.eq(bo.getSignTime() != null, ToppContractEformDo::getSignTime, bo.getSignTime());
-        lqw.eq(bo.getStartDate() != null, ToppContractEformDo::getStartDate, bo.getStartDate());
-        lqw.eq(bo.getEndDate() != null, ToppContractEformDo::getEndDate, bo.getEndDate());
-        lqw.eq(StringUtils.isNotBlank(bo.getTextType()), ToppContractEformDo::getTextType, bo.getTextType());
-        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ToppContractEformDo::getBusiType, bo.getBusiType());
-        lqw.eq(bo.getCreator() != null, ToppContractEformDo::getCreator, bo.getCreator());
-        lqw.eq(bo.getIsValid() != null, ToppContractEformDo::getIsValid, bo.getIsValid());
+        LambdaQueryWrapper<ToppContractEform> lqw = Wrappers.lambdaQuery();
+        lqw.eq(bo.getProjectId() != null, ToppContractEform::getProjectId, bo.getProjectId());
+        lqw.eq(StringUtils.isNotBlank(bo.getEformNo()), ToppContractEform::getEformNo, bo.getEformNo());
+        lqw.like(StringUtils.isNotBlank(bo.getEformName()), ToppContractEform::getEformName, bo.getEformName());
+        lqw.like(StringUtils.isNotBlank(bo.getCustName()), ToppContractEform::getCustName, bo.getCustName());
+        lqw.eq(StringUtils.isNotBlank(bo.getOurCompany()), ToppContractEform::getOurCompany, bo.getOurCompany());
+        lqw.eq(StringUtils.isNotBlank(bo.getAgentPersonOa()), ToppContractEform::getAgentPersonOa, bo.getAgentPersonOa());
+        lqw.like(StringUtils.isNotBlank(bo.getAgentPersonName()), ToppContractEform::getAgentPersonName, bo.getAgentPersonName());
+        lqw.eq(bo.getTotalMoney() != null, ToppContractEform::getTotalMoney, bo.getTotalMoney());
+        lqw.eq(StringUtils.isNotBlank(bo.getSignTime()), ToppContractEform::getSignTime, bo.getSignTime());
+        lqw.eq(StringUtils.isNotBlank(bo.getStartDate()), ToppContractEform::getStartDate, bo.getStartDate());
+        lqw.eq(StringUtils.isNotBlank(bo.getEndDate()), ToppContractEform::getEndDate, bo.getEndDate());
+        lqw.eq(StringUtils.isNotBlank(bo.getTextType()), ToppContractEform::getTextType, bo.getTextType());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ToppContractEform::getBusiType, bo.getBusiType());
+        lqw.eq(bo.getCreator() != null, ToppContractEform::getCreator, bo.getCreator());
+        lqw.eq(bo.getIsValid() != null, ToppContractEform::getIsValid, bo.getIsValid());
         return lqw;
     }
 
@@ -84,7 +84,7 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
      */
     @Override
     public Boolean insertByBo(ToppContractEformBo bo) {
-        ToppContractEformDo add = BeanUtil.toBean(bo, ToppContractEformDo.class);
+        ToppContractEform add = BeanUtil.toBean(bo, ToppContractEform.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -98,7 +98,7 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
      */
     @Override
     public Boolean updateByBo(ToppContractEformBo bo) {
-        ToppContractEformDo update = BeanUtil.toBean(bo, ToppContractEformDo.class);
+        ToppContractEform update = BeanUtil.toBean(bo, ToppContractEform.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -106,7 +106,7 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppContractEformDo entity){
+    private void validEntityBeforeSave(ToppContractEform entity){
         //TODO 做一些数据校验,如唯一约束
     }
 

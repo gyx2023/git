@@ -747,4 +747,31 @@ public class SftpUtil implements InitializingBean {
         return getDataRootPath(configType) + "/" + dateStr;
     }
 
+
+
+    /**
+     * 上传文件到SFTP服务器
+     *
+     * @param configType 配置类型，如果为null或空字符串则使用默认配置
+     * @param localFilePath 本地文件路径
+     * @param remoteFilePath 远程文件路径
+     */
+    public void uploadFile(String configType, String localFilePath, String remoteFilePath) {
+        Sftp sftp = null;
+        try {
+            // 如果configType为null或空字符串，则使用默认配置类型
+            String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
+            sftp = getSftp(actualConfigType);
+            sftp.getClient().put(localFilePath, remoteFilePath);
+            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteFilePath);
+        } catch (Exception e) {
+            String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
+            log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);
+            throw new RuntimeException("文件上传失败", e);
+        } finally {
+            close(sftp);
+        }
+    }
+
+
 }
