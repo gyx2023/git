@@ -22,31 +22,31 @@ public class StatisticsUserExportVo implements Serializable {
     @ExcelProperty(value = "姓名")
     private String userName;
     @ExcelProperty(value = "（投标商机）数量")
-    private String countTb;
+    private Integer countTb;
     @ExcelProperty(value = "（投标商机）100万以下")
-    private String ybwTb;
+    private Integer ybwTb;
     @ExcelProperty(value = "（投标商机）100-1000")
-    private String ybyqTb;
+    private Integer ybyqTb;
     @ExcelProperty(value = "（投标商机）1000-5000")
-    private String ybwqTb;
+    private Integer ybwqTb;
     @ExcelProperty(value = "（投标商机）5000以上")
-    private String wqTb;
+    private Integer wqTb;
     @ExcelProperty(value = "（投标商机）预算金额(万元）")
-    private String moneyTb;
+    private Double moneyTb;
     @ExcelProperty(value = "（中标商机）数量")
-    private String countZb;
+    private Integer countZb;
     @ExcelProperty(value = "（中标商机）100万以下")
-    private String ybwZb;
+    private Integer ybwZb;
     @ExcelProperty(value = "（中标商机）100-1000")
-    private String ybyqZb;
+    private Integer ybyqZb;
     @ExcelProperty(value = "（中标商机）1000-5000")
-    private String ybwqZb;
+    private Integer ybwqZb;
     @ExcelProperty(value = "（中标商机）5000以上")
-    private String wqZb;
+    private Integer wqZb;
     @ExcelProperty(value = "（中标商机）项目金额（万元）")
-    private String moneyZb;
+    private Double moneyZb;
     @ExcelProperty(value = "（中标商机）中标贡献度金额")
-    private String gxedZb;
+    private Double gxedZb;
 
 
 }

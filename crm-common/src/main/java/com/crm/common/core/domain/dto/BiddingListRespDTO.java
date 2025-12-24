@@ -2,7 +2,6 @@ package com.crm.common.core.domain.dto;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
 
 /**
  * 投标列表响应数据传输对象
@@ -20,7 +19,7 @@ public class BiddingListRespDTO {
     /**
      * 采购预算
      */
-    private String buyBudgetMoney;
+    private Double buyBudgetMoney;
     /**
      * 开标时间
      */
@@ -48,11 +47,11 @@ public class BiddingListRespDTO {
     /**
      * 预计签约金额（万元）
      */
-    private String matchBidMoney;
+    private Double matchBidMoney;
     /**
      * 预计主营金额（万元）
      */
-    private String expectedMainOperatingAmount;
+    private Double expectedMainOperatingAmount;
     /**
      * 毛利率
      */
@@ -112,7 +111,7 @@ public class BiddingListRespDTO {
     /**
      * 个人贡献度金额（万元）
      */
-    private String personalContributionAmount;
+    private Double personalContributionAmount;
     /**
      * 贡献度情况
      */

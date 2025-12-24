@@ -2,8 +2,6 @@ package com.crm.web.controller.statistics;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.BiddingListReqDTO;
@@ -22,8 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -55,7 +51,7 @@ public class BiddingListController {
     @PostMapping("/export")
     public void export(BiddingListReqDTO reqDTO, HttpServletResponse response) {
         List<BiddingListRespDTO> list = biddingListService.getBiddingListRespDTOS(reqDTO);
-        List<BiddingListExportVo> listVo =BeanUtil.copyToList(list, BiddingListExportVo.class);
+        List<BiddingListExportVo> listVo = BeanUtil.copyToList(list, BiddingListExportVo.class);
         ExcelUtil.exportExcel(listVo, "投标清单文件", BiddingListExportVo.class, response);
     }
 
