@@ -169,8 +169,3 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
-
-logging:
-  level:
-    # 配置自己写的 MyBatis Mapper 打印日志
-    com.crm.system.mapper: debug
