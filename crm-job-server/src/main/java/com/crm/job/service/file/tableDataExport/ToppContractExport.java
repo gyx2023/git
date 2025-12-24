@@ -192,9 +192,9 @@ public class ToppContractExport {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt";
+            String remoteFilePath = prefix + ".txt";
             try {
-                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath, dateStr);
                 String successMsg = String.format("topp_contract表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
                     toppContractList.size(), remoteFilePath);
                 log.info(successMsg);
