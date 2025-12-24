@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppContractMapper">
+
+    <resultMap type="com.crm.system.domain.topp.ToppContractDo" id="ToppContractResult">
+        <result property="id" column="id_"/>
+        <result property="projectId" column="project_id"/>
+        <result property="ourCompany" column="our_company"/>
+        <result property="otherCompany" column="other_company"/>
+        <result property="finalCustName" column="final_cust_name"/>
+        <result property="contractNo" column="contract_no"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="contractCurrency" column="contract_currency"/>
+        <result property="totalMoney" column="total_money"/>
+        <result property="contractStatus" column="contract_status"/>
+        <result property="agentPerson" column="agent_person"/>
+        <result property="agentDepartment" column="agent_department"/>
+        <result property="performNo" column="perform_no"/>
+        <result property="performName" column="perform_name"/>
+        <result property="performTel" column="perform_tel"/>
+        <result property="isNeedPerformMoney" column="is_need_perform_money"/>
+        <result property="performMoney" column="perform_money"/>
+        <result property="memo" column="memo_"/>
+        <result property="signDate" column="sign_date"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="validityTime" column="validity_time"/>
+        <result property="isAutoDelay" column="is_auto_delay"/>
+        <result property="delayTo" column="delay_to"/>
+        <result property="createTime" column="create_time"/>
+        <result property="creator" column="creator"/>
+        <result property="isExpire" column="is_expire"/>
+        <result property="isRemind" column="is_remind"/>
+        <result property="performMoneyNum" column="perform_money_num"/>
+        <result property="incomeType" column="income_type"/>
+        <result property="operationType" column="operation_type"/>
+        <result property="relationId" column="relation_id"/>
+        <result property="status" column="status_"/>
+        <result property="wfZt" column="wf_zt"/>
+        <result property="dfName" column="df_name"/>
+        <result property="contState" column="cont_state"/>
+        <result property="cbDepartment" column="cb_department"/>
+        <result property="cbUser" column="cb_user"/>
+        <result property="ssDate" column="ss_date"/>
+        <result property="sptgDate" column="sptg_date"/>
+        <result property="contXingzhi" column="cont_xingzhi"/>
+        <result property="lastSpUser" column="last_sp_user"/>
+        <result property="contractAddType" column="contract_add_type"/>
+        <result property="zzsSl" column="zzs_sl"/>
+        <result property="bhZzsMoney" column="bh_zzs_money"/>
+        <result property="lxDepartment" column="lx_department"/>
+        <result property="htSmQdyj" column="ht_sm_qdyj"/>
+        <result property="qdgzDate" column="qdgz_date"/>
+        <result property="allInMoney" column="all_in_money"/>
+        <result property="lxUser" column="lx_user"/>
+        <result property="serviceInMoney" column="service_in_money"/>
+        <result property="grossProfitMargin" column="gross_profit_margin"/>
+        <result property="expectIncome" column="expect_income"/>
+        <result property="includeType" column="include_type"/>
+        <result property="contractCategory" column="contract_category"/>
+        <result property="contractType2" column="contract_type2"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditUser" column="audit_user"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="isValid" column="is_valid"/>
+        <result property="ictRat" column="ict_rat"/>
+        <result property="contractLabel" column="contract_label"/>
+        <result property="normPlanIncome" column="norm_plan_income"/>
+        <result property="ictPlanIncome" column="ict_plan_income"/>
+        <result property="normDate" column="norm_date"/>
+        <result property="contractCateL1Code" column="contract_cate_l1_code"/>
+        <result property="contractCateL1Name" column="contract_cate_l1_name"/>
+        <result property="contractCateL2Code" column="contract_cate_l2_code"/>
+        <result property="contractCateL2Name" column="contract_cate_l2_name"/>
+        <result property="contractCateL3Code" column="contract_cate_l3_code"/>
+        <result property="contractCateL3Name" column="contract_cate_l3_name"/>
+        <result property="planCycle" column="plan_cycle"/>
+        <result property="payInfo" column="pay_info"/>
+    </resultMap>
+
+
+</mapper>
