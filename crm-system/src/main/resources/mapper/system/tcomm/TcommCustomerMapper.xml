@@ -64,4 +64,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
 
+    <select id="selectFilteredCustomers" parameterType="date" resultMap="TcommCustomerResult">
+        SELECT *
+        FROM tcomm_customer f
+        WHERE f.id_ IN (
+            SELECT cust_id
+            FROM topp_opportunity
+            WHERE DATE_FORMAT(CREATE_TIME, '%Y%m%d') >= DATE_FORMAT(#{createTime}, '%Y%m%d')
+        )
+    </select>
+
 </mapper>

@@ -147,6 +147,7 @@ public class SysUsers extends BaseEntity {
     /**
      *
      */
+    @TableField(value = "token_")
     private String token;
     /**
      * 营销单元

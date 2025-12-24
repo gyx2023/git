@@ -150,9 +150,9 @@ public class ToppBidExport {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt";
+            String remoteFilePath = prefix + ".txt";
             try {
-                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath, dateStr);
                 String successMsg = String.format("topp_bid表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
                     toppBidList.size(), remoteFilePath);
                 log.info(successMsg);

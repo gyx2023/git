@@ -7,6 +7,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -46,4 +47,13 @@ public interface ITcommCustomerService {
      * 校验并批量删除【请填写功能名称】信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 查询满足过滤条件的客户数据
+     * 条件：在tcomm_customer表中的id_存在于topp_opportunity表中创建时间在指定时间之后的cust_id列表中
+     *
+     * @param createTime 创建时间下限
+     * @return 满足条件的客户数据列表
+     */
+    List<TcommCustomer> selectFilteredCustomers(Date createTime);
 }
