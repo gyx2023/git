@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class ContractStatisticsUserRespDTO {
     private String userName;
+    private String userId;
     private Integer countQy;
     private Double moneyQy;
     private Integer ybwQy;

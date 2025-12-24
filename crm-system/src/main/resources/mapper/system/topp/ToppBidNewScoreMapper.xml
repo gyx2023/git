@@ -141,7 +141,7 @@
         b.topp_bid_new_id AS bid_id,
         b.name AS member_name,
         b.contribution,
-        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
+        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 4) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
@@ -155,6 +155,16 @@
         where FIND_IN_SET(parent_id,@parent_id) > 0
         and @parent_id := CONCAT(@parent_id,',',dept_id)
         )
+        <if test="deptId != null">
+            and e.dept_id in(
+            select dept_id from zqzt_sys_dept where dept_id = #{deptId}
+            union
+            select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+            (select @parent_id := #{deptId}) pd
+            where FIND_IN_SET(parent_id,@parent_id) > 0
+            and @parent_id := CONCAT(@parent_id,',',dept_id)
+            )
+        </if>
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -264,20 +274,25 @@
         b.topp_bid_new_id AS bid_id,
         b.name AS member_name,
         b.contribution,
-        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
+        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 4) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
         WHERE a.is_sign = '0'
-        and e.dept_id in(
-        select dept_id from zqzt_sys_dept where dept_id = #{deptId}
-        union
-        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
-        (select @parent_id := #{deptId}) pd
-        where FIND_IN_SET(parent_id,@parent_id) > 0
-        and @parent_id := CONCAT(@parent_id,',',dept_id)
-        )
+        <if test="deptId != null">
+            and e.dept_id in(
+            select dept_id from zqzt_sys_dept where dept_id = #{deptId}
+            union
+            select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+            (select @parent_id := #{deptId}) pd
+            where FIND_IN_SET(parent_id,@parent_id) > 0
+            and @parent_id := CONCAT(@parent_id,',',dept_id)
+            )
+        </if>
+        <if test="userId != null">
+            and e.user_id = #{userId}
+        </if>
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -415,20 +430,25 @@
         b.topp_bid_new_id AS bid_id,
         b.name AS member_name,
         b.contribution,
-        ROUND(IFNULL(a.sign_money, 0) * b.contribution / 100, 2) AS grgxed
+        ROUND(IFNULL(a.sign_money, 0) * b.contribution / 100, 4) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = h.name_
         WHERE a.is_sign = '1'
-        and e.dept_id in(
-        select dept_id from zqzt_sys_dept where dept_id = #{deptId}
-        union
-        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
-        (select @parent_id := #{deptId}) pd
-        where FIND_IN_SET(parent_id,@parent_id) > 0
-        and @parent_id := CONCAT(@parent_id,',',dept_id)
-        )
+        <if test="deptId != null">
+            and e.dept_id in(
+            select dept_id from zqzt_sys_dept where dept_id = #{deptId}
+            union
+            select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+            (select @parent_id := #{deptId}) pd
+            where FIND_IN_SET(parent_id,@parent_id) > 0
+            and @parent_id := CONCAT(@parent_id,',',dept_id)
+            )
+        </if>
+        <if test="userId != null">
+            and e.user_id = #{userId}
+        </if>
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -533,20 +553,26 @@
         b.topp_bid_new_id AS bid_id,
         b.name AS member_name,
         b.contribution,
-        ROUND(IFNULL(a.sign_money, 0) * b.contribution / 100, 2) AS grgxed
+        ROUND(IFNULL(a.sign_money, 0) * b.contribution / 100, 4) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
         WHERE a.is_sign = '1'
-        and e.dept_id in(
-        select dept_id from zqzt_sys_dept where dept_id = #{deptId}
-        union
-        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
-        (select @parent_id := #{deptId}) pd
-        where FIND_IN_SET(parent_id,@parent_id) > 0
-        and @parent_id := CONCAT(@parent_id,',',dept_id)
-        )
+        <if test="deptId != null">
+            and e.dept_id in(
+            select dept_id from zqzt_sys_dept where dept_id = #{deptId}
+            union
+            select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+            (select @parent_id := #{deptId}) pd
+            where FIND_IN_SET(parent_id,@parent_id) > 0
+            and @parent_id := CONCAT(@parent_id,',',dept_id)
+            )
+        </if>
+
+        <if test="userId != null">
+            and e.user_id = #{userId}
+        </if>
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
