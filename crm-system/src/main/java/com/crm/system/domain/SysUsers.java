@@ -27,6 +27,7 @@ public class SysUsers extends BaseEntity {
     /**
      *
      */
+    @TableId(value = "name_")
     private String name;
     /**
      *
@@ -39,6 +40,7 @@ public class SysUsers extends BaseEntity {
     /**
      * 用户类型，如：超管，普通用户
      */
+    @TableId(value = "type_")
     private String type;
     /**
      *
@@ -47,6 +49,7 @@ public class SysUsers extends BaseEntity {
     /**
      *
      */
+    @TableId(value = "password_")
     private String password;
     /**
      *
@@ -63,14 +66,17 @@ public class SysUsers extends BaseEntity {
     /**
      *
      */
+    @TableId(value = "remark_")
     private String remark;
     /**
      *
      */
+    @TableId(value = "creator_")
     private Long creator;
     /**
      *
      */
+    @TableId(value = "modifier_")
     private Long modifier;
     /**
      *
@@ -115,6 +121,7 @@ public class SysUsers extends BaseEntity {
     /**
      *
      */
+    @TableId(value = "email_")
     private String email;
     /**
      *
@@ -135,6 +142,7 @@ public class SysUsers extends BaseEntity {
     /**
      * 对市行业总监行业副总监的单独配置，增加是否可以查看县分数据项
      */
+    @TableId(value = "data_")
     private String data;
     /**
      *
