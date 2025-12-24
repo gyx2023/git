@@ -10,13 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -93,213 +88,124 @@ public class ToppContractExport {
                 return;
             }
 
-            // 构造文件内容
-            StringBuilder fileContent = new StringBuilder();
+            // 创建临时文件
+            String dateStr = new SimpleDateFormat("yyyyMMdd").format(targetDate);
+            String prefix = "topp_contract_" + dateStr;
+            File tempFile = File.createTempFile(prefix, ".txt");
 
-            // 添加表头（可选）
-            fileContent.append("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|contractType" +
-                "|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|performName|performTel" +
-                "|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|validityTime|isAutoDelay|delayTo" +
-                "|creator|isExpire|isRemind|performMoneyNum|incomeType|operationType|relationId|status|wfZt|dfName" +
-                "|contState|cbDepartment|cbUser|ssDate|sptgDate|contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney" +
-                "|lxDepartment|htSmQdyj|qdgzDate|allInMoney|lxUser|serviceInMoney|grossProfitMargin|expectIncome" +
-                "|includeType|contractCategory|contractType2|auditTime|auditUser|auditStatus|isValid|ictRat" +
-                "|contractLabel|normPlanIncome|ictPlanIncome|normDate|contractCateL1Code|contractCateL1Name" +
-                "|contractCateL2Code|contractCateL2Name|contractCateL3Code|contractCateL3Name|planCycle|payInfo\n");
+            // 写入数据到txt文件
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
+                // 添加表头（可选）
+                writer.write("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|" +
+                    "contractType|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|" +
+                    "performName|performTel|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|" +
+                    "validityTime|isAutoDelay|delayTo|creator|isExpire|isRemind|performMoneyNum|incomeType|" +
+                    "operationType|relationId|status|wfZt|dfName|contState|cbDepartment|cbUser|ssDate|sptgDate|" +
+                    "contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney|lxDepartment|htSmQdyj|qdgzDate|allInMoney|" +
+                    "lxUser|serviceInMoney|grossProfitMargin|expectIncome|includeType|contractCategory|contractType2|" +
+                    "auditTime|auditUser|auditStatus|isValid|ictRat|contractLabel|normPlanIncome|ictPlanIncome|normDate|" +
+                    "contractCateL1Code|contractCateL1Name|contractCateL2Code|contractCateL2Name|contractCateL3Code|" +
+                    "contractCateL3Name|planCycle|payInfo");
+                writer.newLine();
 
-            // 添加数据行
-            for (ToppContractDo toppContract : toppContractList) {
-                fileContent.append(formatField(toppContract.getId()))
-                    .append("|")
-                    .append(formatField(toppContract.getProjectId()))
-                    .append("|")
-                    .append(formatField(toppContract.getOurCompany()))
-                    .append("|")
-                    .append(formatField(toppContract.getOtherCompany()))
-                    .append("|")
-                    .append(formatField(toppContract.getFinalCustName()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractNo()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractName()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractType()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCurrency()))
-                    .append("|")
-                    .append(formatField(toppContract.getTotalMoney()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractStatus()))
-                    .append("|")
-                    .append(formatField(toppContract.getAgentPerson()))
-                    .append("|")
-                    .append(formatField(toppContract.getAgentDepartment()))
-                    .append("|")
-                    .append(formatField(toppContract.getPerformNo()))
-                    .append("|")
-                    .append(formatField(toppContract.getPerformName()))
-                    .append("|")
-                    .append(formatField(toppContract.getPerformTel()))
-                    .append("|")
-                    .append(formatField(toppContract.getIsNeedPerformMoney()))
-                    .append("|")
-                    .append(formatField(toppContract.getPerformMoney()))
-                    .append("|")
-                    .append(formatField(toppContract.getMemo()))
-                    .append("|")
-                    .append(formatField(toppContract.getSignDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getStartDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getEndDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getValidityTime()))
-                    .append("|")
-                    .append(formatField(toppContract.getIsAutoDelay()))
-                    .append("|")
-                    .append(formatField(toppContract.getDelayTo()))
-                    .append("|")
-                    .append(formatField(toppContract.getCreator()))
-                    .append("|")
-                    .append(formatField(toppContract.getIsExpire()))
-                    .append("|")
-                    .append(formatField(toppContract.getIsRemind()))
-                    .append("|")
-                    .append(formatField(toppContract.getPerformMoneyNum()))
-                    .append("|")
-                    .append(formatField(toppContract.getIncomeType()))
-                    .append("|")
-                    .append(formatField(toppContract.getOperationType()))
-                    .append("|")
-                    .append(formatField(toppContract.getRelationId()))
-                    .append("|")
-                    .append(formatField(toppContract.getStatus()))
-                    .append("|")
-                    .append(formatField(toppContract.getWfZt()))
-                    .append("|")
-                    .append(formatField(toppContract.getDfName()))
-                    .append("|")
-                    .append(formatField(toppContract.getContState()))
-                    .append("|")
-                    .append(formatField(toppContract.getCbDepartment()))
-                    .append("|")
-                    .append(formatField(toppContract.getCbUser()))
-                    .append("|")
-                    .append(formatField(toppContract.getSsDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getSptgDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getContXingzhi()))
-                    .append("|")
-                    .append(formatField(toppContract.getLastSpUser()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractAddType()))
-                    .append("|")
-                    .append(formatField(toppContract.getZzsSl()))
-                    .append("|")
-                    .append(formatField(toppContract.getBhZzsMoney()))
-                    .append("|")
-                    .append(formatField(toppContract.getLxDepartment()))
-                    .append("|")
-                    .append(formatField(toppContract.getHtSmQdyj()))
-                    .append("|")
-                    .append(formatField(toppContract.getQdgzDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getAllInMoney()))
-                    .append("|")
-                    .append(formatField(toppContract.getLxUser()))
-                    .append("|")
-                    .append(formatField(toppContract.getServiceInMoney()))
-                    .append("|")
-                    .append(formatField(toppContract.getGrossProfitMargin()))
-                    .append("|")
-                    .append(formatField(toppContract.getExpectIncome()))
-                    .append("|")
-                    .append(formatField(toppContract.getIncludeType()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCategory()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractType2()))
-                    .append("|")
-                    .append(formatField(toppContract.getAuditTime()))
-                    .append("|")
-                    .append(formatField(toppContract.getAuditUser()))
-                    .append("|")
-                    .append(formatField(toppContract.getAuditStatus()))
-                    .append("|")
-                    .append(formatField(toppContract.getIsValid()))
-                    .append("|")
-                    .append(formatField(toppContract.getIctRat()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractLabel()))
-                    .append("|")
-                    .append(formatField(toppContract.getNormPlanIncome()))
-                    .append("|")
-                    .append(formatField(toppContract.getIctPlanIncome()))
-                    .append("|")
-                    .append(formatField(toppContract.getNormDate()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCateL1Code()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCateL1Name()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCateL2Code()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCateL2Name()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCateL3Code()))
-                    .append("|")
-                    .append(formatField(toppContract.getContractCateL3Name()))
-                    .append("|")
-                    .append(formatField(toppContract.getPlanCycle()))
-                    .append("|")
-                    .append(formatField(toppContract.getPayInfo()))
-                    .append("|")
-                    .append("\n");
+                // 添加数据行
+                for (ToppContractDo toppContract : toppContractList) {
+                    StringBuilder line = new StringBuilder();
+                    line.append(formatField(toppContract.getId())).append("|");
+                    line.append(formatField(toppContract.getProjectId())).append("|");
+                    line.append(formatField(toppContract.getOurCompany())).append("|");
+                    line.append(formatField(toppContract.getOtherCompany())).append("|");
+                    line.append(formatField(toppContract.getFinalCustName())).append("|");
+                    line.append(formatField(toppContract.getContractNo())).append("|");
+                    line.append(formatField(toppContract.getContractName())).append("|");
+                    line.append(formatField(toppContract.getContractType())).append("|");
+                    line.append(formatField(toppContract.getContractCurrency())).append("|");
+                    line.append(formatField(toppContract.getTotalMoney())).append("|");
+                    line.append(formatField(toppContract.getContractStatus())).append("|");
+                    line.append(formatField(toppContract.getAgentPerson())).append("|");
+                    line.append(formatField(toppContract.getAgentDepartment())).append("|");
+                    line.append(formatField(toppContract.getPerformNo())).append("|");
+                    line.append(formatField(toppContract.getPerformName())).append("|");
+                    line.append(formatField(toppContract.getPerformTel())).append("|");
+                    line.append(formatField(toppContract.getIsNeedPerformMoney())).append("|");
+                    line.append(formatField(toppContract.getPerformMoney())).append("|");
+                    line.append(formatField(toppContract.getMemo())).append("|");
+                    line.append(formatField(toppContract.getSignDate())).append("|");
+                    line.append(formatField(toppContract.getStartDate())).append("|");
+                    line.append(formatField(toppContract.getEndDate())).append("|");
+                    line.append(formatField(toppContract.getValidityTime())).append("|");
+                    line.append(formatField(toppContract.getIsAutoDelay())).append("|");
+                    line.append(formatField(toppContract.getDelayTo())).append("|");
+                    line.append(formatField(toppContract.getCreator())).append("|");
+                    line.append(formatField(toppContract.getIsExpire())).append("|");
+                    line.append(formatField(toppContract.getIsRemind())).append("|");
+                    line.append(formatField(toppContract.getPerformMoneyNum())).append("|");
+                    line.append(formatField(toppContract.getIncomeType())).append("|");
+                    line.append(formatField(toppContract.getOperationType())).append("|");
+                    line.append(formatField(toppContract.getRelationId())).append("|");
+                    line.append(formatField(toppContract.getStatus())).append("|");
+                    line.append(formatField(toppContract.getWfZt())).append("|");
+                    line.append(formatField(toppContract.getDfName())).append("|");
+                    line.append(formatField(toppContract.getContState())).append("|");
+                    line.append(formatField(toppContract.getCbDepartment())).append("|");
+                    line.append(formatField(toppContract.getCbUser())).append("|");
+                    line.append(formatField(toppContract.getSsDate())).append("|");
+                    line.append(formatField(toppContract.getSptgDate())).append("|");
+                    line.append(formatField(toppContract.getContXingzhi())).append("|");
+                    line.append(formatField(toppContract.getLastSpUser())).append("|");
+                    line.append(formatField(toppContract.getContractAddType())).append("|");
+                    line.append(formatField(toppContract.getZzsSl())).append("|");
+                    line.append(formatField(toppContract.getBhZzsMoney())).append("|");
+                    line.append(formatField(toppContract.getLxDepartment())).append("|");
+                    line.append(formatField(toppContract.getHtSmQdyj())).append("|");
+                    line.append(formatField(toppContract.getQdgzDate())).append("|");
+                    line.append(formatField(toppContract.getAllInMoney())).append("|");
+                    line.append(formatField(toppContract.getLxUser())).append("|");
+                    line.append(formatField(toppContract.getServiceInMoney())).append("|");
+                    line.append(formatField(toppContract.getGrossProfitMargin())).append("|");
+                    line.append(formatField(toppContract.getExpectIncome())).append("|");
+                    line.append(formatField(toppContract.getIncludeType())).append("|");
+                    line.append(formatField(toppContract.getContractCategory())).append("|");
+                    line.append(formatField(toppContract.getContractType2())).append("|");
+                    line.append(formatField(toppContract.getAuditTime())).append("|");
+                    line.append(formatField(toppContract.getAuditUser())).append("|");
+                    line.append(formatField(toppContract.getAuditStatus())).append("|");
+                    line.append(formatField(toppContract.getIsValid())).append("|");
+                    line.append(formatField(toppContract.getIctRat())).append("|");
+                    line.append(formatField(toppContract.getContractLabel())).append("|");
+                    line.append(formatField(toppContract.getNormPlanIncome())).append("|");
+                    line.append(formatField(toppContract.getIctPlanIncome())).append("|");
+                    line.append(formatField(toppContract.getNormDate())).append("|");
+                    line.append(formatField(toppContract.getContractCateL1Code())).append("|");
+                    line.append(formatField(toppContract.getContractCateL1Name())).append("|");
+                    line.append(formatField(toppContract.getContractCateL2Code())).append("|");
+                    line.append(formatField(toppContract.getContractCateL2Name())).append("|");
+                    line.append(formatField(toppContract.getContractCateL3Code())).append("|");
+                    line.append(formatField(toppContract.getContractCateL3Name())).append("|");
+                    line.append(formatField(toppContract.getPlanCycle())).append("|");
+                    line.append(formatField(toppContract.getPayInfo()));
+
+                    writer.write(line.toString());
+                    writer.newLine();
+                }
             }
 
-            // 构建文件路径
-            String filePath = buildToppContractFilePath(sftpConfigType, targetDate);
-            log.info("生成的文件路径: {}", filePath);
-
-            // 创建临时文件
-            Path tempFile = Files.createTempFile("topp_contract_", ".txt");
+            // 上传文件到SFTP服务器
+            String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                // 将内容写入临时文件
-                Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
-
-                // 检查是否是本地路径（以local_test开头）
-                if (sftpConfigType.equals("local_test")) {
-                    // 保存到本地文件系统
-                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
-                    File localFile = new File(localPath);
-
-                    // 确保目录存在
-                    localFile.getParentFile().mkdirs();
-
-                    // 写入文件内容
-                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
-                        writer.write(fileContent.toString());
-                    }
-
-                    log.info("文件已保存到本地路径: {}", localPath);
-                } else {
-                    // 上传文件到SFTP服务器
-                    // 确保目录存在
-                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
-
-                    // 上传文件
-                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
-                }
-
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("topp_contract表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
-                    toppContractList.size(), filePath);
+                    toppContractList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
+            } catch (Exception e) {
+                String errorMsg = "文件上传到SFTP服务器失败: " + e.getMessage();
+                log.error(errorMsg, e);
+                XxlJobHelper.handleFail(errorMsg);
             } finally {
                 // 删除临时文件
-                Files.deleteIfExists(tempFile);
+                tempFile.delete();
             }
 
         } catch (Exception e) {
@@ -308,37 +214,6 @@ public class ToppContractExport {
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
         }
-    }
-
-    /**
-     * 根据目标日期构建topp_contract文件的完整路径
-     *
-     * @param configType 配置类型
-     * @param targetDate 目标日期
-     * @return 完整的文件路径
-     */
-    private String buildToppContractFilePath(String configType, Date targetDate) {
-        // 获取基础路径
-        String basePath = sftpUtil.getDataRootPath(configType);
-
-        SimpleDateFormat folderSdf = new SimpleDateFormat("yyyyMMdd");
-        String dateStr = folderSdf.format(targetDate);
-
-        // 构建文件夹路径：basePath/YYYY/MM/DD/
-        SimpleDateFormat yearSdf = new SimpleDateFormat("yyyy");
-        SimpleDateFormat monthSdf = new SimpleDateFormat("MM");
-        SimpleDateFormat daySdf = new SimpleDateFormat("dd");
-
-        String year = yearSdf.format(targetDate);
-        String month = monthSdf.format(targetDate);
-        String day = daySdf.format(targetDate);
-
-        String folderPath = basePath + "/" + year + "/" + month + "/" + day + "/";
-
-        // 构建文件名：topp_contract_yyyyMMdd.txt
-        String fileName = "topp_contract_" + dateStr + ".txt";
-
-        return folderPath + fileName;
     }
 
     /**

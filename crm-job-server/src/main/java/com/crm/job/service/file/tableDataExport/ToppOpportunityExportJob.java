@@ -11,9 +11,8 @@ import org.springframework.stereotype.Component;
 import com.crm.job.utils.SftpUtil;
 
 import javax.annotation.Resource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -64,7 +63,8 @@ public class ToppOpportunityExportJob {
             File tempFile = File.createTempFile(prefix, ".txt");
 
             // 写入数据到txt文件
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 for (ToppOpportunityDo record : dataList) {
                     StringBuilder line = new StringBuilder();
                     line.append(escapeNull(record.getId())).append("|");
@@ -217,7 +217,7 @@ public class ToppOpportunityExportJob {
             // 上传文件到SFTP服务器
             String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                sftpUtil.uploadFile("iob_gov2_table_export",tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("商机信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);

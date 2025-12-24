@@ -10,13 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -93,139 +88,85 @@ public class TcommTaskExport {
                 return;
             }
 
-            // 构造文件内容
-            StringBuilder fileContent = new StringBuilder();
+            // 创建临时文件
+            String dateStr = new SimpleDateFormat("yyyyMMdd").format(targetDate);
+            String prefix = "tcomm_task_" + dateStr;
+            File tempFile = File.createTempFile(prefix, ".txt");
 
-            // 添加表头（可选）
-            fileContent.append("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime" +
-                "|actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score" +
-                "|resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId" +
-                "|userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason\n");
+            // 写入数据到txt文件
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
+                // 添加表头（可选）
+                writer.write("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime|" +
+                    "actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score|" +
+                    "resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId|" +
+                    "userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason|createBy|createTime|updateBy|" +
+                    "updateTime");
+                writer.newLine();
 
-            // 添加数据行
-            for (TcommTaskDo tcommTask : tcommTaskList) {
-                fileContent.append(formatField(tcommTask.getId()))
-                    .append("|")
-                    .append(formatField(tcommTask.getTaskCode()))
-                    .append("|")
-                    .append(formatField(tcommTask.getTaskName()))
-                    .append("|")
-                    .append(formatField(tcommTask.getFlowNo()))
-                    .append("|")
-                    .append(formatField(tcommTask.getCustName()))
-                    .append("|")
-                    .append(formatField(tcommTask.getOppoName()))
-                    .append("|")
-                    .append(formatField(tcommTask.getInfoId()))
-                    .append("|")
-                    .append(formatField(tcommTask.getInfoType()))
-                    .append("|")
-                    .append(formatField(tcommTask.getDueLimit()))
-                    .append("|")
-                    .append(formatField(tcommTask.getDueTime()))
-                    .append("|")
-                    .append(formatField(tcommTask.getActorsWait()))
-                    .append("|")
-                    .append(formatField(tcommTask.getIsSended()))
-                    .append("|")
-                    .append(formatField(tcommTask.getActor()))
-                    .append("|")
-                    .append(formatField(tcommTask.getDealUrl()))
-                    .append("|")
-                    .append(formatField(tcommTask.getStartTime()))
-                    .append("|")
-                    .append(formatField(tcommTask.getResultCode()))
-                    .append("|")
-                    .append(formatField(tcommTask.getResult()))
-                    .append("|")
-                    .append(formatField(tcommTask.getResultMemo()))
-                    .append("|")
-                    .append(formatField(tcommTask.getEndTime()))
-                    .append("|")
-                    .append(formatField(tcommTask.getMemo()))
-                    .append("|")
-                    .append(formatField(tcommTask.getScore()))
-                    .append("|")
-                    .append(formatField(tcommTask.getResultScore()))
-                    .append("|")
-                    .append(formatField(tcommTask.getJson()))
-                    .append("|")
-                    .append(formatField(tcommTask.getScoreDetail()))
-                    .append("|")
-                    .append(formatField(tcommTask.getDefaultDafen()))
-                    .append("|")
-                    .append(formatField(tcommTask.getParent()))
-                    .append("|")
-                    .append(formatField(tcommTask.getCreate()))
-                    .append("|")
-                    .append(formatField(tcommTask.getTaskMemo()))
-                    .append("|")
-                    .append(formatField(tcommTask.getShortSend()))
-                    .append("|")
-                    .append(formatField(tcommTask.getShortSendTime()))
-                    .append("|")
-                    .append(formatField(tcommTask.getPiId()))
-                    .append("|")
-                    .append(formatField(tcommTask.getUserOwnerProduct()))
-                    .append("|")
-                    .append(formatField(tcommTask.getProductCode()))
-                    .append("|")
-                    .append(formatField(tcommTask.getTeamLeaderId()))
-                    .append("|")
-                    .append(formatField(tcommTask.getNotUseOwnerProductReason()))
-                    .append("|")
-                    .append(formatField(tcommTask.getCreateBy()))
-                    .append("|")
-                    .append(formatField(tcommTask.getCreateTime()))
-                    .append("|")
-                    .append(formatField(tcommTask.getUpdateBy()))
-                    .append("|")
-                    .append(formatField(tcommTask.getUpdateTime()))
-                    .append("\n");
+                // 添加数据行
+                for (TcommTaskDo tcommTask : tcommTaskList) {
+                    StringBuilder line = new StringBuilder();
+                    line.append(formatField(tcommTask.getId())).append("|");
+                    line.append(formatField(tcommTask.getTaskCode())).append("|");
+                    line.append(formatField(tcommTask.getTaskName())).append("|");
+                    line.append(formatField(tcommTask.getFlowNo())).append("|");
+                    line.append(formatField(tcommTask.getCustName())).append("|");
+                    line.append(formatField(tcommTask.getOppoName())).append("|");
+                    line.append(formatField(tcommTask.getInfoId())).append("|");
+                    line.append(formatField(tcommTask.getInfoType())).append("|");
+                    line.append(formatField(tcommTask.getDueLimit())).append("|");
+                    line.append(formatField(tcommTask.getDueTime())).append("|");
+                    line.append(formatField(tcommTask.getActorsWait())).append("|");
+                    line.append(formatField(tcommTask.getIsSended())).append("|");
+                    line.append(formatField(tcommTask.getActor())).append("|");
+                    line.append(formatField(tcommTask.getDealUrl())).append("|");
+                    line.append(formatField(tcommTask.getStartTime())).append("|");
+                    line.append(formatField(tcommTask.getResultCode())).append("|");
+                    line.append(formatField(tcommTask.getResult())).append("|");
+                    line.append(formatField(tcommTask.getResultMemo())).append("|");
+                    line.append(formatField(tcommTask.getEndTime())).append("|");
+                    line.append(formatField(tcommTask.getMemo())).append("|");
+                    line.append(formatField(tcommTask.getScore())).append("|");
+                    line.append(formatField(tcommTask.getResultScore())).append("|");
+                    line.append(formatField(tcommTask.getJson())).append("|");
+                    line.append(formatField(tcommTask.getScoreDetail())).append("|");
+                    line.append(formatField(tcommTask.getDefaultDafen())).append("|");
+                    line.append(formatField(tcommTask.getParent())).append("|");
+                    line.append(formatField(tcommTask.getCreate())).append("|");
+                    line.append(formatField(tcommTask.getTaskMemo())).append("|");
+                    line.append(formatField(tcommTask.getShortSend())).append("|");
+                    line.append(formatField(tcommTask.getShortSendTime())).append("|");
+                    line.append(formatField(tcommTask.getPiId())).append("|");
+                    line.append(formatField(tcommTask.getUserOwnerProduct())).append("|");
+                    line.append(formatField(tcommTask.getProductCode())).append("|");
+                    line.append(formatField(tcommTask.getTeamLeaderId())).append("|");
+                    line.append(formatField(tcommTask.getNotUseOwnerProductReason())).append("|");
+                    line.append(formatField(tcommTask.getCreateBy())).append("|");
+                    line.append(formatField(tcommTask.getCreateTime())).append("|");
+                    line.append(formatField(tcommTask.getUpdateBy())).append("|");
+                    line.append(formatField(tcommTask.getUpdateTime()));
+
+                    writer.write(line.toString());
+                    writer.newLine();
+                }
             }
 
-            // 构建文件路径
-            String filePath = buildTcommTaskFilePath(sftpConfigType, targetDate);
-            log.info("生成的文件路径: {}", filePath);
-
-            // 创建临时文件
-            Path tempFile = Files.createTempFile("tcomm_task_", ".txt");
+            // 上传文件到SFTP服务器
+            String remoteFilePath = "/upload/" + prefix + ".txt";
             try {
-                // 将内容写入临时文件
-                Files.write(tempFile, fileContent.toString().getBytes(StandardCharsets.UTF_8));
-
-                // 检查是否是本地路径（以local_test开头）
-                if (sftpConfigType.equals("local_test")) {
-                    // 保存到本地文件系统
-                    String localPath = "C:/sftp_test/" + filePath.replace("/", "\\");
-                    File localFile = new File(localPath);
-
-                    // 确保目录存在
-                    localFile.getParentFile().mkdirs();
-
-                    // 写入文件内容
-                    try (Writer writer = new OutputStreamWriter(new FileOutputStream(localFile), StandardCharsets.UTF_8)) {
-                        writer.write(fileContent.toString());
-                    }
-
-                    log.info("文件已保存到本地路径: {}", localPath);
-                } else {
-                    // 上传文件到SFTP服务器
-                    // 确保目录存在
-                    String folderPath = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                    sftpUtil.getSftp(sftpConfigType).mkDirs(folderPath);
-
-                    // 上传文件
-                    sftpUtil.getSftp(sftpConfigType).upload(filePath, tempFile.toFile());
-                }
-
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("tcomm_task表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
-                    tcommTaskList.size(), filePath);
+                    tcommTaskList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
+            } catch (Exception e) {
+                String errorMsg = "文件上传到SFTP服务器失败: " + e.getMessage();
+                log.error(errorMsg, e);
+                XxlJobHelper.handleFail(errorMsg);
             } finally {
                 // 删除临时文件
-                Files.deleteIfExists(tempFile);
+                tempFile.delete();
             }
 
         } catch (Exception e) {
@@ -234,37 +175,6 @@ public class TcommTaskExport {
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
         }
-    }
-
-    /**
-     * 根据目标日期构建tcomm_task文件的完整路径
-     *
-     * @param configType 配置类型
-     * @param targetDate 目标日期
-     * @return 完整的文件路径
-     */
-    private String buildTcommTaskFilePath(String configType, Date targetDate) {
-        // 获取基础路径
-        String basePath = sftpUtil.getDataRootPath(configType);
-
-        SimpleDateFormat folderSdf = new SimpleDateFormat("yyyyMMdd");
-        String dateStr = folderSdf.format(targetDate);
-
-        // 构建文件夹路径：basePath/YYYY/MM/DD/
-        SimpleDateFormat yearSdf = new SimpleDateFormat("yyyy");
-        SimpleDateFormat monthSdf = new SimpleDateFormat("MM");
-        SimpleDateFormat daySdf = new SimpleDateFormat("dd");
-
-        String year = yearSdf.format(targetDate);
-        String month = monthSdf.format(targetDate);
-        String day = daySdf.format(targetDate);
-
-        String folderPath = basePath + "/" + year + "/" + month + "/" + day + "/";
-
-        // 构建文件名：tcomm_task_yyyyMMdd.txt
-        String fileName = "tcomm_task_" + dateStr + ".txt";
-
-        return folderPath + fileName;
     }
 
     /**

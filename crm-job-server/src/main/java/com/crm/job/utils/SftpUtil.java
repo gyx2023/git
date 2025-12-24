@@ -235,17 +235,17 @@ public class SftpUtil implements InitializingBean {
         } else {
             log.warn("SFTP配置类型 '{}' 的缓存未初始化，回退到直接查询数据库", configType);
             // 缓存未初始化时，回退到直接查询数据库
-            String fullKey = SFTP_CONFIG_PREFIX + paramKey;
+        //    String fullKey = SFTP_CONFIG_PREFIX + paramKey;
             try {
                 SysParamDo param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
                         .eq(SysParamDo::getType, configType)
-                        .eq(SysParamDo::getCode, fullKey));
+                        .eq(SysParamDo::getCode, paramKey));
                 if (param != null && param.getValue() != null) {
                     return param.getValue();
                 }
             } catch (Exception e) {
                 log.error("获取SFTP配置类型 '{}' 的配置项 {} 失败: {}",
-                         configType, fullKey, e.getMessage());
+                         configType, paramKey, e.getMessage());
             }
         }
         return defaultValue;
@@ -762,7 +762,8 @@ public class SftpUtil implements InitializingBean {
             // 如果configType为null或空字符串，则使用默认配置类型
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             sftp = getSftp(actualConfigType);
-            sftp.getClient().put(localFilePath, remoteFilePath);
+            String remortDir = getSftpParam(configType,"sftp.directory","");
+            sftp.getClient().put(localFilePath, remortDir + remoteFilePath);
             log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteFilePath);
         } catch (Exception e) {
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
