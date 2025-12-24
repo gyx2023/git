@@ -139,6 +139,7 @@ security:
     - /actuator/**
     # SSO自动登录接口
     - /sso/autoLogin
+    - /zqzt_backend/health/**
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
