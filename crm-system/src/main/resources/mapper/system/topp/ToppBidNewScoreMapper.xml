@@ -415,7 +415,7 @@
         b.topp_bid_new_id AS bid_id,
         b.name AS member_name,
         b.contribution,
-        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
+        ROUND(IFNULL(a.sign_money, 0) * b.contribution / 100, 2) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
@@ -533,7 +533,7 @@
         b.topp_bid_new_id AS bid_id,
         b.name AS member_name,
         b.contribution,
-        ROUND(IFNULL(a.match_bid_money, 0) * b.contribution / 100, 2) AS grgxed
+        ROUND(IFNULL(a.sign_money, 0) * b.contribution / 100, 2) AS grgxed
         FROM topp_bid_new a
         INNER JOIN topp_bid_new_score b ON a.id = b.topp_bid_new_id
         GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
