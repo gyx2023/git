@@ -81,8 +81,8 @@ public class SysCodeExport {
         }
 
         try {
-            // 查询sys_code表所有数据
-            List<SysCode> sysCodeList = sysCodeMapper.selectList(new LambdaQueryWrapper<>());
+            // 查询sys_code表所有数据，清理特殊字符
+            List<SysCode> sysCodeList = sysCodeMapper.selectAllWithCleanedSpecialChars();
 
             if (sysCodeList.isEmpty()) {
                 String warnMsg = "sys_code表中没有数据需要导出";

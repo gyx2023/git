@@ -4,6 +4,8 @@ import com.crm.system.domain.SysCode;
 import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
+import java.util.List;
+
 /**
  * 统一编码Mapper接口
  *
@@ -12,4 +14,8 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  */
 public interface SysCodeMapper extends BaseMapperPlus<SysCodeMapper, SysCode, SysCodeVo> {
 
+    /**
+     * 查询所有编码数据，清理特殊字符
+     */
+    List<SysCode> selectAllWithCleanedSpecialChars();
 }
