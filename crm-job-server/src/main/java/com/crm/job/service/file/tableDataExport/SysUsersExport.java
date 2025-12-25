@@ -99,7 +99,7 @@ public class SysUsersExport {
                 // 添加表头（可选）
                 writer.write("id|name|nameCh|relationTel|type|orgId|password|passwordSalt|functionList|roleList|" +
                     "remark|creator|createTime|modifier|modifyTime|isValid|wxUserFlag|wxPhone|wxNo|wxEmail|wxFlag|stealth|customerNo|" +
-                    "oaAccount|email|firstLogin|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
+                    "oaAccount|email|firstLogin|updataTime|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
                     "cardNumber|staffType|userRoleYx|zqbusinessFlag|recSmsBeginTime|recSmsEndTime|associatedDeveloper|" +
                     "defaultDeveloper|checkDeveloper");
                 writer.newLine();
@@ -133,6 +133,7 @@ public class SysUsersExport {
                     line.append(formatField(sysUsers.getOaAccount())).append("|");
                     line.append(formatField(sysUsers.getEmail())).append("|");
                     line.append(formatField(sysUsers.getFirstLogin())).append("|");
+                    line.append(formatField(sysUsers.getUpdateTime())).append("|");
                     line.append(formatField(sysUsers.getIncludeType())).append("|");
                     line.append(formatField(sysUsers.getUnicomType())).append("|");
                     line.append(formatField(sysUsers.getUnicomType2())).append("|");
