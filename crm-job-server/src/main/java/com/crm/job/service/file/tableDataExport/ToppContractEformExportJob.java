@@ -122,11 +122,23 @@ public class ToppContractEformExportJob {
 
     /**
      * 处理null值，如果为null则返回空字符串
+     * 对Date类型进行特殊格式化处理
      *
      * @param value 对象值
      * @return 字符串表示
      */
     private String escapeNull(Object value) {
-        return value == null ? "" : value.toString();
+        if (value == null) {
+            return "";
+        }
+
+        // 如果是Date类型，格式化为指定格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
+        }
+
+        return value.toString();
     }
+
 }
