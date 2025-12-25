@@ -483,105 +483,208 @@
 
 
     <select id="selectSignStatisticsUserRespDTO" resultMap="UserResult">
+        select
+        a.nick_name as user_name,
+        a.user_id,
+        a.dept_id,
+        count_tb ,
+        money_tb ,
+        ybw_tb ,
+        ybyq_tb ,
+        ybwq_tb ,
+        wq_tb ,
+        count_zb ,
+        money_zb ,
+        ybw_zb ,
+        ybyq_zb ,
+        ybwq_zb,
+        wq_zb,
+        gxed_zb
+        from (
         SELECT
-        base.nick_name AS user_name,
-        base.user_id,
-        base.dept_id,
-        SUM(base.ybw_tb) AS ybw_tb,
-        SUM(base.ybyq_tb) AS ybyq_tb,
-        SUM(base.ybwq_tb) AS ybwq_tb,
-        SUM(base.wq_tb) AS wq_tb,
-        SUM(base.ybw_tb + base.ybyq_tb + base.ybwq_tb + base.wq_tb) AS count_tb,
-        ROUND(SUM(base.buy_budget_money), 2) AS money_tb,
-        SUM(base.ybw_zb) AS ybw_zb,
-        SUM(base.ybyq_zb) AS ybyq_zb,
-        SUM(base.ybwq_zb) AS ybwq_zb,
-        SUM(base.wq_zb) AS wq_zb,
-        SUM(base.ybw_zb + base.ybyq_zb + base.ybwq_zb + base.wq_zb) AS count_zb,
-        ROUND(SUM(base.match_bid_money), 2) AS money_zb,
-        ROUND(SUM(base.match_bid_money * base.contribution / 100), 2) AS gxed_zb
+        t1.nick_name,
+        t1.user_id,
+        t1.dept_id,
+        SUM(t1.ybw_tb + t1.ybyq_tb + t1.ybwq_tb + t1.wq_tb) AS count_tb,
+        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
+        SUM(t1.ybw_tb) AS ybw_tb,
+        SUM(t1.ybyq_tb) AS ybyq_tb,
+        SUM(t1.ybwq_tb) AS ybwq_tb,
+        SUM(t1.wq_tb) AS wq_tb
         FROM (
         SELECT
         d.nick_name,
         d.user_id,
         d.dept_id,
         a.buy_budget_money,
-        a.match_bid_money,
-        c.contribution,
         CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_tb,
         CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_tb,
         CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_tb,
-        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_tb,
-        CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_zb,
-        CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_zb,
-        CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_zb,
-        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_zb
+        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_tb
         FROM topp_bid_new a
-        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
-        LEFT JOIN zqzt_sys_user d ON b.designer = d.user_id
-        LEFT JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
-        LEFT JOIN topp_bid_new_score c ON a.id = c.topp_bid_new_id AND c.name = d.nick_name
+        left JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        left JOIN zqzt_sys_user d ON b.designer = d.user_id
+        left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
         WHERE e.dept_id = #{deptId}
-        AND a.is_sign = '0' and a.audit_status !=4
+        AND a.is_sign = '0' and  a.audit_status !=4
         <if test="minCgAmount != null">
-            AND a.buy_budget_money &gt;= #{minCgAmount}
+            and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
         <if test="maxCgAmount != null">
-            AND a.buy_budget_money &lt; #{maxCgAmount}
+            and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
+
         <if test="minYjAmount != null">
-            AND a.match_bid_money &gt;= #{minYjAmount}
+            and a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            AND a.match_bid_money &lt; #{maxYjAmount}
+            and a.match_bid_money &lt; #{maxYjAmount}
         </if>
+
         <if test="minSjAmount != null">
-            AND b.expect_contract_money &gt;= #{minSjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            AND b.expect_contract_money &lt; #{maxSjAmount}
+            and b.expect_contract_money &lt; #{maxSjAmount}
         </if>
+
         <if test="bidMainPersonnel != null">
-            AND a.bid_body IN
+            and a.bid_body in
             <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
         </if>
         <if test="jzqk != null">
-            AND a.competition_condition IN
+            and a.competition_condition in
             <foreach collection="jzqk" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
         </if>
         <if test="projectType != null">
-            AND a.project_type IN
+            and a.project_type in
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
         </if>
+
         <if test="bidResult != null">
-            AND a.result = #{bidResult}
+            and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            AND b.unicom_type IN
+            and b.unicom_type in
             <foreach collection="unicomType" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
         </if>
         <if test="minMll != null">
-            AND a.ict_profit &gt;= #{minMll}
+            and a.ict_profit>= #{minMll}
         </if>
         <if test="maxMll != null">
-            AND a.ict_profit &lt;= #{maxMll}
+            and a.ict_profit &lt;= #{maxMll}
         </if>
         <if test="startTime != null">
-            AND a.open_bid_time &gt;= #{startTime}
+            and a.open_bid_time &gt;= #{startTime}
         </if>
         <if test="endTime != null">
-            AND a.open_bid_time &lt;= #{endTime}
+            and a.open_bid_time &lt;= #{endTime}
         </if>
-        ) base
-        GROUP BY base.nick_name
+        ) t1
+        GROUP BY t1.nick_name )a
+        left join
+
+        ( SELECT
+        t1.nick_name,
+        t1.user_id,
+        t1.dept_id,
+        SUM(t1.ybw_zb + t1.ybyq_zb + t1.ybwq_zb + t1.wq_zb) AS count_zb,
+        ROUND(SUM(t1.match_bid_money), 2) AS money_zb,
+        SUM(t1.ybw_zb) AS ybw_zb,
+        SUM(t1.ybyq_zb) AS ybyq_zb,
+        SUM(t1.ybwq_zb) AS ybwq_zb,
+        SUM(t1.wq_zb) AS wq_zb,
+        sum(t1.match_bid_money * t1.contribution / 100) as gxed_zb
+        FROM (
+        SELECT
+        d.nick_name,
+        d.user_id,
+        d.dept_id,
+        a.match_bid_money,
+        CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_zb,
+        CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_zb,
+        CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_zb,
+        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_zb,
+        c.contribution
+        FROM topp_bid_new a
+        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        inner join topp_bid_new_score c on a.id=c.topp_bid_new_id
+        left JOIN zqzt_sys_user d ON b.designer = d.user_id
+        left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
+        WHERE e.dept_id =#{deptId}
+        and a.is_sign='0' and a.result='match_bid' and  a.audit_status !=4
+        and c.name=d.nick_name
+        <if test="minCgAmount != null">
+            and a.buy_budget_money &gt;= #{minCgAmount}
+        </if>
+        <if test="maxCgAmount != null">
+            and a.buy_budget_money &lt; #{maxCgAmount}
+        </if>
+
+        <if test="minYjAmount != null">
+            and a.match_bid_money &gt;= #{minYjAmount}
+        </if>
+        <if test="maxYjAmount != null">
+            and a.match_bid_money &lt; #{maxYjAmount}
+        </if>
+
+        <if test="minSjAmount != null">
+            and b.expect_contract_money &gt;= #{minSjAmount}
+        </if>
+        <if test="maxSjAmount != null">
+            and b.expect_contract_money &lt; #{maxSjAmount}
+        </if>
+
+
+        <if test="bidMainPersonnel != null">
+            and a.bid_body in
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="jzqk != null">
+            and a.competition_condition in
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="projectType != null">
+            and a.project_type in
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        <if test="bidResult != null">
+            and a.result = #{bidResult}
+        </if>
+        <if test="unicomType != null">
+            and b.unicom_type in
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="minMll != null">
+            and a.ict_profit>= #{minMll}
+        </if>
+        <if test="maxMll != null">
+            and a.ict_profit &lt;= #{maxMll}
+        </if>
+        <if test="startTime != null">
+            and a.open_bid_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            and a.open_bid_time &lt;= #{endTime}
+        </if>
+        )t1 GROUP BY t1.nick_name)b on a.nick_name=b.nick_name
     </select>
 
     <select id="selectContractStatisticsBj" resultMap="SignStatisticsContractResult">
