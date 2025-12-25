@@ -20,19 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <select id="selectAllWithCleanedSpecialChars" resultMap="SysCodeResult">
-        SELECT 
-            id_,
-            REPLACE(REPLACE(REPLACE(name_, '\n', ''), '\r', ''), '\t', '') AS name_,
-            type_,
-            code_,
-            order_,
-            REPLACE(REPLACE(REPLACE(remark_, '\n', ''), '\r', ''), '\t', '') AS remark_,
-            is_system,
-            setting_int1,
-            setting_int2,
-            REPLACE(REPLACE(REPLACE(setting_str1, '\n', ''), '\r', ''), '\t', '') AS setting_str1,
-            REPLACE(REPLACE(REPLACE(setting_str2, '\n', ''), '\r', ''), '\t', '') AS setting_str2,
-            REPLACE(REPLACE(REPLACE(setting_str3, '\n', ''), '\r', ''), '\t', '') AS setting_str3
+        SELECT *
         FROM sys_code
     </select>
 

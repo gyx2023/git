@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.SpecialCharacterHandler;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppContractDo;
 import com.crm.system.mapper.topp.ToppContractMapper;
@@ -221,7 +222,7 @@ public class ToppContractExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
@@ -243,6 +244,8 @@ public class ToppContractExport {
             return sdf.format(value);
         }
 
-        return value.toString();
+        // 清理特殊字符
+        String stringValue = value.toString();
+        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
     }
 }
