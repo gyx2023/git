@@ -103,7 +103,7 @@ public class ToppContractExport {
                 writer.write("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|" +
                     "contractType|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|" +
                     "performName|performTel|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|" +
-                    "validityTime|isAutoDelay|delayTo|creator|isExpire|isRemind|performMoneyNum|incomeType|" +
+                    "validityTime|isAutoDelay|delayTo|createTime|creator|isExpire|isRemind|performMoneyNum|incomeType|" +
                     "operationType|relationId|status|wfZt|dfName|contState|cbDepartment|cbUser|ssDate|sptgDate|" +
                     "contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney|lxDepartment|htSmQdyj|qdgzDate|allInMoney|" +
                     "lxUser|serviceInMoney|grossProfitMargin|expectIncome|includeType|contractCategory|contractType2|" +
@@ -140,6 +140,7 @@ public class ToppContractExport {
                     line.append(formatField(toppContract.getValidityTime())).append("|");
                     line.append(formatField(toppContract.getIsAutoDelay())).append("|");
                     line.append(formatField(toppContract.getDelayTo())).append("|");
+                    line.append(formatField(toppContract.getCreateTime())).append("|");
                     line.append(formatField(toppContract.getCreator())).append("|");
                     line.append(formatField(toppContract.getIsExpire())).append("|");
                     line.append(formatField(toppContract.getIsRemind())).append("|");
