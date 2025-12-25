@@ -259,7 +259,6 @@ public class SysUserController extends BaseController {
     /**
      * 获取部门树列表
      */
-    @SaCheckPermission("system:user:currentDeptTree")
     @GetMapping("/currentDeptTree")
     public R<List<Tree<Long>>> currentDeptTree() {
         return R.ok(deptService.querySysDeptTree());

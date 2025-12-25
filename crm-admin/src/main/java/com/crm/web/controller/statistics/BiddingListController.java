@@ -2,8 +2,10 @@ package com.crm.web.controller.statistics;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.tree.Tree;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.dto.BiddingListReqDTO;
 import com.crm.common.core.domain.dto.BiddingListRespDTO;
 import com.crm.common.core.page.TableDataInfo;
@@ -54,5 +56,14 @@ public class BiddingListController {
         List<BiddingListExportVo> listVo = BeanUtil.copyToList(list, BiddingListExportVo.class);
         ExcelUtil.exportExcel(listVo, "投标清单文件", BiddingListExportVo.class, response);
     }
+
+    /**
+     * 获取部门树列表
+     */
+    @GetMapping("/currentDeptTree")
+    public R<List<Tree<Long>>> currentDeptTree() {
+        return R.ok(biddingListService.querySysDeptTree());
+    }
+
 
 }
