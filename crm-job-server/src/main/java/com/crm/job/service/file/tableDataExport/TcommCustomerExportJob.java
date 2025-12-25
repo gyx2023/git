@@ -62,7 +62,8 @@ public class TcommCustomerExportJob {
             File tempFile = File.createTempFile(prefix, ".txt");
 
             // 写入数据到txt文件
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 for (TcommCustomer record : dataList) {
                     StringBuilder line = new StringBuilder();
                     line.append(escapeNull(record.getId())).append("|");
