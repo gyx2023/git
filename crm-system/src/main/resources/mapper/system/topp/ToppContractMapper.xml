@@ -81,5 +81,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="payInfo" column="pay_info"/>
     </resultMap>
 
+    <select id="selectAllWithCleanedSpecialChars" resultMap="ToppContractResult">
+        SELECT *
+        FROM topp_contract
+    </select>
 
 </mapper>

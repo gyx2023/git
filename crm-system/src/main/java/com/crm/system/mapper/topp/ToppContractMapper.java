@@ -4,6 +4,8 @@ import com.crm.system.domain.topp.ToppContractDo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
+import java.util.List;
+
 /**
  * 【请填写功能名称】Mapper接口
  *
@@ -12,4 +14,8 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  */
 public interface ToppContractMapper extends BaseMapperPlus<ToppContractMapper, ToppContractDo, ToppContractVo> {
 
+    /**
+     * 查询所有合同数据，清理特殊字符
+     */
+    List<ToppContractDo> selectAllWithCleanedSpecialChars();
 }
