@@ -191,19 +191,16 @@ public class TcommTaskExport {
             return "";
         }
 
-        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss.ffffff 格式
+        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
         if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-            // 由于Java Date只精确到毫秒，所以显示为000
-            return sdf.format(value) + ".000";
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
         } else if (value instanceof LocalDateTime) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-            String formatted = ((LocalDateTime) value).format(formatter);
-            return formatted.substring(0, formatted.length() - 3); // 移除毫秒后三位，保留6位微秒
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return ((LocalDateTime) value).format(formatter);
         } else if (value instanceof Timestamp) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-            String formatted = sdf.format(value);
-            return formatted + ".000"; // 假设微秒部分为0
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
         }
 
         return value.toString();
