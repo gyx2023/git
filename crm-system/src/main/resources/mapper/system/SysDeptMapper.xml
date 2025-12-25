@@ -47,4 +47,15 @@
           and @parent_id := CONCAT(@parent_id,',',dept_id)
     </select>
 
+
+    <select id="selectDeptQdList" resultMap="SysDeptResult">
+        select * from zqzt_sys_dept where dept_id = #{deptId}
+        union
+        select t.* from (select * from zqzt_sys_dept where parent_id is not null) t,
+                        (select @p_id := #{deptId}) pd
+        where FIND_IN_SET(parent_id,@p_id) > 0
+          and @p_id := CONCAT(@p_id,',',dept_id)
+    </select>
+
+
 </mapper>

@@ -87,6 +87,7 @@ public class TcommCustomerExportJob {
                     line.append(escapeNull(record.getContactTel())).append("|");
                     line.append(escapeNull(record.getContactAddr())).append("|");
                     line.append(escapeNull(record.getCustManager())).append("|");
+                    line.append(escapeNull(record.getCreateTime())).append("|");  // 创建时间
                     line.append(escapeNull(record.getCreator())).append("|");
                     line.append(escapeNull(record.getMemo())).append("|");
                     line.append(escapeNull(record.getStaffSize())).append("|");
@@ -160,11 +161,22 @@ public class TcommCustomerExportJob {
 
     /**
      * 处理null值，如果为null则返回空字符串
+     * 对Date类型进行特殊格式化处理
      *
      * @param value 对象值
      * @return 字符串表示
      */
     private String escapeNull(Object value) {
-        return value == null ? "" : value.toString();
+        if (value == null) {
+            return "";
+        }
+
+        // 如果是Date类型，格式化为指定格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
+        }
+
+        return value.toString();
     }
 }
