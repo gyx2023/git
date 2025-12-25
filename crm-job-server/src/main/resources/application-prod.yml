@@ -174,3 +174,8 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+--- # swagger
+springdoc:
+  api-docs:
+    # 是否开启接口文档
+    enabled: false

@@ -144,6 +144,7 @@ security:
     - /error
     # SSO自动登录接口
     - /sso/autoLogin
+    - /zqzt_backend/health/**
 # Swagger配置
 swagger:
   info:
