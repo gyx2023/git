@@ -251,6 +251,7 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
         totalDTO.setYbwqQy(totalYbwqQy);
         totalDTO.setWqQy(totalWqQy);
         totalDTO.setGxedMoney(totalGxedZb);
+        totalDTO.setDeptId(reqDTO.getDeptId());
         list.add(totalDTO);
 
         // 创建分页对象并设置分页参数
