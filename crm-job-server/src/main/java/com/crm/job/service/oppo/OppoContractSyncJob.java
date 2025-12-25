@@ -110,7 +110,7 @@ public class OppoContractSyncJob {
             // 设置合同币种
             toppContractBo.setContractCurrency("currency_rmb");
             // 设置合同总金额
-            toppContractBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(1000)) : null);
+            toppContractBo.setTotalMoney(signVo.getContractIncome());
             // 设置合同签订时间
             if (StringUtils.isNotBlank(signVo.getSignDate())) {
                 toppContractBo.setSignDate(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
@@ -161,7 +161,7 @@ public class OppoContractSyncJob {
             eformBo.setAgentPersonOa(signVo.getExecutorContractLogin());
             eformBo.setAgentPersonName(signVo.getExecutorContractName());
             //signVo表单位为万元，ToppContractEformBo为元
-            eformBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(1000)) : null);
+            eformBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(10000)) : null);
 
             if (StringUtils.isNotBlank(signVo.getSignDate())) {
                 eformBo.setSignTime(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
