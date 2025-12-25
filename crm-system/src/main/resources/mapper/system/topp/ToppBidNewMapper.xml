@@ -603,16 +603,20 @@
         INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
         INNER JOIN zqzt_sys_user c ON b.designer = c.user_id
         INNER JOIN zqzt_sys_dept d ON c.dept_id = d.dept_id
-        WHERE d.dept_id IN (
-        SELECT dept_id FROM zqzt_sys_dept WHERE dept_id = #{tempDeptId}
-        UNION
-        SELECT t.dept_id FROM (SELECT * FROM zqzt_sys_dept WHERE parent_id IS NOT NULL) t,
-        (SELECT @parent_id := #{tempDeptId}) pd
-        WHERE FIND_IN_SET(parent_id, @parent_id) &gt; 0
-        AND @parent_id := CONCAT(@parent_id, ',', dept_id)
-        )
+        WHERE
         AND a.is_sign = '1'
         and a.audit_status !=4
+        <if test="deptId != null">
+            and  d.dept_id in (
+            select dept_id from zqzt_sys_dept where dept_id = #{tempDeptId}
+            union
+            select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+            (select @parent_id := #{tempDeptId}) pd
+            where FIND_IN_SET(parent_id,@parent_id) > 0
+            and @parent_id := CONCAT(@parent_id,',',dept_id)
+            )
+        </if>
+
         <if test="minYjAmount != null">
             AND a.sign_money &gt;= #{minYjAmount}
         </if>
