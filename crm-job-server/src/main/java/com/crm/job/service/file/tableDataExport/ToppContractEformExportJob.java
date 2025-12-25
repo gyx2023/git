@@ -2,7 +2,7 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.topp.ToppContractEform;
+import com.crm.system.domain.topp.ToppContractEformDo;
 import com.crm.system.mapper.topp.ToppContractEformMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -10,9 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -44,8 +43,8 @@ public class ToppContractEformExportJob {
 
         try {
             // 查询所有数据
-            LambdaQueryWrapper<ToppContractEform> queryWrapper = new LambdaQueryWrapper<>();
-            List<ToppContractEform> dataList = toppContractEformMapper.selectList(queryWrapper);
+            LambdaQueryWrapper<ToppContractEformDo> queryWrapper = new LambdaQueryWrapper<>();
+            List<ToppContractEformDo> dataList = toppContractEformMapper.selectList(queryWrapper);
 
             // 检查数据是否为空
             if (dataList == null || dataList.isEmpty()) {
@@ -62,8 +61,9 @@ public class ToppContractEformExportJob {
             File tempFile = File.createTempFile(prefix, ".txt");
 
             // 写入数据到txt文件
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-                for (ToppContractEform record : dataList) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
+                for (ToppContractEformDo record : dataList) {
                     StringBuilder line = new StringBuilder();
                     line.append(escapeNull(record.getId())).append("|");
                     line.append(escapeNull(record.getProjectId())).append("|");
@@ -79,6 +79,7 @@ public class ToppContractEformExportJob {
                     line.append(escapeNull(record.getEndDate())).append("|");
                     line.append(escapeNull(record.getTextType())).append("|");
                     line.append(escapeNull(record.getBusiType())).append("|");
+                    line.append(escapeNull(record.getCreateTime())).append("|");  // 创建时间
                     line.append(escapeNull(record.getCreator())).append("|");
                     line.append(escapeNull(record.getIsValid()));
 
@@ -96,9 +97,9 @@ public class ToppContractEformExportJob {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt"; // 远程文件路径
+            String remoteFilePath = prefix + ".txt"; // 远程文件路径
             try {
-                sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath,dateStr);
                 String successMsg = String.format("合同电子表单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
@@ -121,11 +122,23 @@ public class ToppContractEformExportJob {
 
     /**
      * 处理null值，如果为null则返回空字符串
+     * 对Date类型进行特殊格式化处理
      *
      * @param value 对象值
      * @return 字符串表示
      */
     private String escapeNull(Object value) {
-        return value == null ? "" : value.toString();
+        if (value == null) {
+            return "";
+        }
+
+        // 如果是Date类型，格式化为指定格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
+        }
+
+        return value.toString();
     }
+
 }

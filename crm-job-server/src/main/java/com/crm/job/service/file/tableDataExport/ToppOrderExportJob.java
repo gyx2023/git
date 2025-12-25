@@ -10,9 +10,8 @@ import org.springframework.stereotype.Component;
 import com.crm.job.utils.SftpUtil;
 
 import javax.annotation.Resource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -65,13 +64,15 @@ public class ToppOrderExportJob {
             File tempFile = File.createTempFile(prefix, ".txt");
 
             // 写入数据到txt文件
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 for (ToppOrder record : dataList) {
                     StringBuilder line = new StringBuilder();
                     line.append(escapeNull(record.getId())).append("|");
                     line.append(escapeNull(record.getOppoId())).append("|");
                     line.append(escapeNull(record.getCustId())).append("|");
                     line.append(escapeNull(record.getCreator())).append("|");
+                    line.append(escapeNull(record.getCreateTime())).append("|");  // 创建时间
                     line.append(escapeNull(record.getSysFormId())).append("|");
                     line.append(escapeNull(record.getAreaId())).append("|");
                     line.append(escapeNull(record.getOrgId())).append("|");
@@ -82,6 +83,7 @@ public class ToppOrderExportJob {
                     line.append(escapeNull(record.getContractId())).append("|");
                     line.append(escapeNull(record.getPhase())).append("|");
                     line.append(escapeNull(record.getCustManagerId())).append("|");
+                    line.append(escapeNull(record.getUpdateTime())).append("|");  // 更新时间
                     line.append(escapeNull(record.getActors())).append("|");
                     line.append(escapeNull(record.getStatus())).append("|");
                     line.append(escapeNull(record.getActorsInfo())).append("|");
@@ -127,9 +129,9 @@ public class ToppOrderExportJob {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt";
+            String remoteFilePath = prefix + ".txt";
             try {
-                sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath,dateStr);
                 String successMsg = String.format("订单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
                 log.info(successMsg);
                 XxlJobHelper.handleSuccess(successMsg);
@@ -152,11 +154,22 @@ public class ToppOrderExportJob {
 
     /**
      * 处理null值，如果为null则返回空字符串
+     * 对Date类型进行特殊格式化处理
      *
      * @param value 对象值
      * @return 字符串表示
      */
     private String escapeNull(Object value) {
-        return value == null ? "" : value.toString();
+        if (value == null) {
+            return "";
+        }
+
+        // 如果是Date类型，格式化为指定格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
+        }
+
+        return value.toString();
     }
 }

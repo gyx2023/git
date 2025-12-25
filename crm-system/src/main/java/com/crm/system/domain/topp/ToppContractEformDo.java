@@ -3,30 +3,28 @@ package com.crm.system.domain.topp;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
+
 import java.util.Date;
 import java.math.BigDecimal;
 
-import java.math.BigDecimal;
 import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 【请填写功能名称】对象 topp_contract_eform
  *
  * @author crm
- * @date 2025-12-18
+ * @date 2025-12-16
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("topp_contract_eform")
-public class ToppContractEform extends BaseEntity {
+public class ToppContractEformDo {
 
     private static final long serialVersionUID=1L;
 
     /**
      * 主键
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_",type = IdType.AUTO)
     private Long id;
     /**
      * 关联商机
@@ -63,15 +61,15 @@ public class ToppContractEform extends BaseEntity {
     /**
      * 签订日期时间
      */
-    private String signTime;
+    private Date signTime;
     /**
      * 合同开始日期
      */
-    private String startDate;
+    private Date startDate;
     /**
      * 合同结束日期
      */
-    private String endDate;
+    private Date endDate;
     /**
      * 标准文本类型
      */
@@ -89,14 +87,5 @@ public class ToppContractEform extends BaseEntity {
      */
     private Integer isValid;
 
-
-
-    @TableField(exist = false)
-    private String createBy;
-    @TableField(exist = false)
     private Date createTime;
-    @TableField(exist = false)
-    private String updateBy;
-    @TableField(exist = false)
-    private Date updateTime;
 }

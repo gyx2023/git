@@ -15,6 +15,7 @@ import com.crm.system.domain.tcomm.TcommCustomer;
 import com.crm.system.mapper.tcomm.TcommCustomerMapper;
 import com.crm.system.service.tcomm.ITcommCustomerService;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -147,6 +148,11 @@ public class TcommCustomerServiceImpl implements ITcommCustomerService {
      */
     private void validEntityBeforeSave(TcommCustomer entity){
         //TODO 做一些数据校验,如唯一约束
+    }
+
+    @Override
+    public List<TcommCustomer> selectFilteredCustomers(Date createTime) {
+        return baseMapper.selectFilteredCustomers(createTime);
     }
 
     /**

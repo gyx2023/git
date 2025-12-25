@@ -2,20 +2,22 @@ package com.crm.common.core.domain.dto;
 
 import lombok.Data;
 
+
 @Data
 public class SignStatisticsUserRespDTO {
     private String userName;
-    private String countTb;
-    private String moneyTb;
-    private String ybwTb;
-    private String ybyqTb;
-    private String ybwqTb;
-    private String wqTb;
-    private String countZb;
-    private String ybwZb;
-    private String ybyqZb;
-    private String ybwqZb;
-    private String wqZb;
-    private String moneyZb;
-    private String gxedZb;
+    private String userId;
+    private Integer countTb;
+    private Double moneyTb;
+    private Integer ybwTb;
+    private Integer ybyqTb;
+    private Integer ybwqTb;
+    private Integer wqTb;
+    private Integer countZb;
+    private Integer ybwZb;
+    private Integer ybyqZb;
+    private Integer ybwqZb;
+    private Integer wqZb;
+    private Double moneyZb;
+    private Double gxedZb;
 }

@@ -1,6 +1,7 @@
 package com.crm.system.domain.vo.topp;
 
 import com.crm.common.annotation.ExcelDictFormat;
+import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.alibaba.excel.annotation.ExcelProperty;
@@ -21,8 +22,8 @@ public class BiddingListExportVo {
         /**
          * 采购预算
          */
-        @ExcelProperty("采购预算")
-        private String buyBudgetMoney;
+        @ExcelProperty("采购预算（万元）")
+        private Double buyBudgetMoney;
         /**
          * 开标时间
          */
@@ -31,58 +32,58 @@ public class BiddingListExportVo {
         /**
          * 客户行业
          */
-        @ExcelProperty("客户行业")
+        @ExcelProperty(value = "客户行业", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "unicom_type")
         private String unicomType;
         /**
          * 竞争情况
          */
-        @ExcelProperty("竞争情况")
+        @ExcelProperty(value ="竞争情况", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "competition_condition")
         private String competitionCondition;
         /**
          * 投标结果
          */
-        @ExcelProperty("投标结果")
+        @ExcelProperty(value ="投标结果", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "bid_result")
         private String bidResult;
         /**
          * 投标主体
          */
-        @ExcelProperty("投标主体")
+        @ExcelProperty(value ="投标主体",converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "bid_body")
         private String bidBody;
         /**
          * 项目类型
          */
-        @ExcelProperty("项目类型")
+        @ExcelProperty(value ="项目类型", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "project_type")
         private String projectType;
         /**
          * 预计签约金额（万元）
          */
         @ExcelProperty("预计签约金额（万元）")
-        private String signMoney;
+        private Double matchBidMoney;
         /**
          * 预计主营金额（万元）
          */
         @ExcelProperty("预计主营金额（万元）")
-        private String expectedMainOperatingAmount;
+        private Double expectedMainOperatingAmount;
         /**
          * 毛利率
          */
-        @ExcelProperty("毛利率")
+        @ExcelProperty("毛利率（%）")
         private String ictProfit;
         /**
          * 是否框架合同
          */
-        @ExcelProperty("是否框架合同")
+        @ExcelProperty(value ="是否框架合同", converter = ExcelDictConvert.class)
         @ExcelDictFormat(dictType = "is_framework_contract")
         private String isFrameworkContract;
         /**
          * 合同期
          */
-        @ExcelProperty("合同期")
+        @ExcelProperty("合同期（月）")
         private String contractTime;
         /**
          * 商机编码
@@ -137,13 +138,13 @@ public class BiddingListExportVo {
         /**
          * 个人贡献度占比
          */
-        @ExcelProperty("个人贡献度占比")
+        @ExcelProperty("个人贡献度占比（%）")
         private String contribution;
         /**
          * 个人贡献度金额（万元）
          */
         @ExcelProperty("个人贡献度金额（万元）")
-        private String personalContributionAmount;
+        private Double personalContributionAmount;
         /**
          * 贡献度情况
          */

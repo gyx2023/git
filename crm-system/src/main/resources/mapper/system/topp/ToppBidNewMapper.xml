@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppBidNewMapper">
 
     <resultMap type="com.crm.system.domain.topp.ToppBidNewDo" id="ToppBidNewResult">
@@ -69,210 +69,449 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="ybyqZb" column="ybyq_zb"/>
         <result property="ybwqZb" column="ybwq_zb"/>
         <result property="wqZb" column="wq_zb"/>
+        <result property="gxedZb" column="gxed_zb"/>
         <result property="userName" column="user_name"/>
+        <result property="userId" column="user_id"/>
+    </resultMap>
+
+
+    <resultMap id="SignStatisticsContractResult" type="com.crm.common.core.domain.dto.ContractStatisticsRespDTO">
+        <result property="countQy" column="count_qy"/>
+        <result property="moneyQy" column="money_qy"/>
+        <result property="ybwQy" column="ybw_qy"/>
+        <result property="ybyqQy" column="ybyq_qy"/>
+        <result property="ybwqQy" column="ybwq_qy"/>
+        <result property="wqQy" column="wq_qy"/>
     </resultMap>
 
 
 
-    <select id="selectSignStatisticsRespDTO" resultMap="SignStatisticsResult" >
-        select
-        count_tb  ,
-        money_tb ,
-        ybw_tb ,
-        ybyq_tb ,
-        ybwq_tb ,
-        wq_tb ,
-        count_zb ,
-        money_zb ,
-        ybw_zb ,
-        ybyq_zb ,
-        ybwq_zb,
-        wq_zb
+    <resultMap id="UserContractResult" type="com.crm.common.core.domain.dto.ContractStatisticsUserRespDTO">
+        <result property="countQy" column="count_qy"/>
+        <result property="moneyQy" column="money_qy"/>
+        <result property="ybwQy" column="ybw_qy"/>
+        <result property="ybyqQy" column="ybyq_qy"/>
+        <result property="ybwqQy" column="ybwq_qy"/>
+        <result property="wqQy" column="wq_Qy"/>
+        <result property="gxedMoney" column="gxed_money"/>
+        <result property="userName" column="user_name"/>
+        <result property="userId" column="user_id"/>
+    </resultMap>
 
-        from (
-        select sum(t1.ybw_tb+t1.ybyq_tb+t1.ybwq_tb+wq_tb) as count_tb,
-        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
-        sum(ybw_tb) as ybw_tb,
-        sum(ybyq_tb) as ybyq_tb,
-        sum(ybwq_tb) as ybwq_tb,
-        sum(wq_tb) as wq_tb from
-        (select
+
+    <select id="selectSignStatisticsRespDTO" resultMap="SignStatisticsResult">
+        SELECT
+        SUM(base.ybw_tb + base.ybyq_tb + base.ybwq_tb + base.wq_tb) AS count_tb,
+        ROUND(SUM(base.buy_budget_money), 2) AS money_tb,
+        SUM(base.ybw_tb) AS ybw_tb,
+        SUM(base.ybyq_tb) AS ybyq_tb,
+        SUM(base.ybwq_tb) AS ybwq_tb,
+        SUM(base.wq_tb) AS wq_tb,
+        SUM(base.ybw_zb + base.ybyq_zb + base.ybwq_zb + base.wq_zb) AS count_zb,
+        ROUND(SUM(base.match_bid_money), 2) AS money_zb,
+        SUM(base.ybw_zb) AS ybw_zb,
+        SUM(base.ybyq_zb) AS ybyq_zb,
+        SUM(base.ybwq_zb) AS ybwq_zb,
+        SUM(base.wq_zb) AS wq_zb
+        FROM (
+        SELECT
         a.buy_budget_money,
-        if(a.buy_budget_money&lt;100,1,0) as ybw_tb,
-        if(a.buy_budget_money>=100 and a.buy_budget_money &lt;1000 ,1,0) as ybyq_tb,
-        if(a.buy_budget_money>=1000 and a.buy_budget_money &lt;5000 ,1,0) as ybwq_tb,
-        if(a.buy_budget_money>=5000,1,0) as wq_tb
-        from  topp_bid_new a inner join  topp_opportunity b
-        on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
-        on b.designer =c.user_id
-        inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where d.dept_id  in (
-        select dept_id from zqzt_sys_dept where dept_id = #{tempDeptId}
-        union
-        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
-        (select @parent_id := #{tempDeptId}) pd
-        where FIND_IN_SET(parent_id,@parent_id) > 0
-        and @parent_id := CONCAT(@parent_id,',',dept_id)
-        )and a.is_sign='0'
+        a.match_bid_money,
+        IF(a.buy_budget_money &lt; 100, 1, 0) AS ybw_tb,
+        IF(a.buy_budget_money &gt;= 100 AND a.buy_budget_money &lt; 1000, 1, 0) AS ybyq_tb,
+        IF(a.buy_budget_money &gt;= 1000 AND a.buy_budget_money &lt; 5000, 1, 0) AS ybwq_tb,
+        IF(a.buy_budget_money &gt;= 5000, 1, 0) AS wq_tb,
+        IF(a.buy_budget_money &lt; 100, 1, 0) AS ybw_zb,
+        IF(a.buy_budget_money &gt;= 100 AND a.buy_budget_money &lt; 1000, 1, 0) AS ybyq_zb,
+        IF(a.buy_budget_money &gt;= 1000 AND a.buy_budget_money &lt; 5000, 1, 0) AS ybwq_zb,
+        IF(a.buy_budget_money &gt;= 5000, 1, 0) AS wq_zb
+        FROM topp_bid_new a
+        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        INNER JOIN zqzt_sys_user c ON b.designer = c.user_id
+        INNER JOIN zqzt_sys_dept d ON c.dept_id = d.dept_id
+        WHERE d.dept_id IN (
+        SELECT dept_id FROM zqzt_sys_dept WHERE dept_id = #{tempDeptId}
+        UNION
+        SELECT t.dept_id FROM (SELECT * FROM zqzt_sys_dept WHERE parent_id IS NOT NULL) t,
+        (SELECT @parent_id := #{tempDeptId}) pd
+        WHERE FIND_IN_SET(parent_id, @parent_id) &gt; 0
+        AND @parent_id := CONCAT(@parent_id, ',', dept_id)
+        )
+        AND a.is_sign = '0'
         <if test="minCgAmount != null">
-           and a.buy_budget_money &gt;= #{minCgAmount}
+            AND a.buy_budget_money &gt;= #{minCgAmount}
         </if>
         <if test="maxCgAmount != null">
-           and a.buy_budget_money &lt; #{maxCgAmount}
+            AND a.buy_budget_money &lt; #{maxCgAmount}
         </if>
-
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            AND a.match_bid_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            AND a.match_bid_money &lt; #{maxYjAmount}
         </if>
-
         <if test="minSjAmount != null">
-            and b.expect_count_money &gt;= #{minYjAmount}
+            AND b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_count_money &lt;  #{maxYjAmount}
+            AND b.expect_contract_money &lt; #{maxSjAmount}
         </if>
-
         <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+            AND a.bid_body IN
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+            AND a.competition_condition IN
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+            AND a.project_type IN
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="bidResult != null">
-            and a.result = #{bidResult}
+            AND a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+            AND b.unicom_type IN
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="minMll != null">
-            and a.ict_profit>= #{minMll}
+            AND a.ict_profit &gt;= #{minMll}
         </if>
         <if test="maxMll != null">
-            and a.ict_profit &lt;= #{maxMll}
-        </if>
-            <if test="startTime != null">
-                and a.open_bid_time &gt;= #{startTime}
-            </if>
-            <if test="endTime != null">
-                and a.open_bid_time &lt;= #{endTime}
-            </if>
-  )t1 )a
-        left join
-
-        (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        ROUND(SUM(t1.sign_money), 2) AS money_zb,
-        sum(ybw_zb) as ybw_zb,
-        sum(ybyq_zb) as ybyq_zb,
-        sum(ybwq_zb) as ybwq_zb,
-        sum(wq_zb) as wq_zb from
-        (select
-        a.sign_money,
-        if(a.sign_money &lt;100,1,0) as ybw_zb,
-        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_zb,
-        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_zb,
-        if(a.sign_money>=5000,1,0) as wq_zb
-        from  topp_bid_new a inner join  topp_opportunity b
-        on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
-        on b.designer =c.user_id
-        inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where d.dept_id  in  (
-        select dept_id from zqzt_sys_dept where dept_id = #{tempDeptId}
-        union
-        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
-        (select @parent_id := #{tempDeptId}) pd
-        where FIND_IN_SET(parent_id,@parent_id) > 0
-        and @parent_id := CONCAT(@parent_id,',',dept_id)
-        ) and a.is_sign='0' and result='match_bid'
-        <if test="minCgAmount != null">
-            and a.buy_budget_money &gt;= #{minCgAmount}
-        </if>
-        <if test="maxCgAmount != null">
-            and a.buy_budget_money &lt; #{maxCgAmount}
-        </if>
-
-        <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
-        </if>
-        <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
-        </if>
-
-        <if test="minSjAmount != null">
-            and b.expect_count_money &gt;= #{minYjAmount}
-        </if>
-        <if test="maxSjAmount != null">
-            and b.expect_count_money &lt; #{maxYjAmount}
-        </if>
-
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
-        </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
-        </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
-        </if>
-        <if test="bidResult != null">
-            and a.result = #{bidResult}
-        </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
-        </if>
-        <if test="minMll != null">
-            and a.ict_profit>= #{minMll}
-        </if>
-        <if test="maxMll != null">
-            and a.ict_profit &lt;= #{maxMll}
+            AND a.ict_profit &lt;= #{maxMll}
         </if>
         <if test="startTime != null">
-            and a.open_bid_time &gt;= #{startTime}
+            AND a.open_bid_time &gt;= #{startTime}
         </if>
         <if test="endTime != null">
-            and a.open_bid_time &lt;= #{endTime}
+            AND a.open_bid_time &lt;= #{endTime}
         </if>
-        )t1)b on 1=1
+        ) base
+    </select>
+
+    <select id="selectSignStatisticsBj" resultMap="SignStatisticsResult">
+        SELECT
+        SUM(base.ybw_tb + base.ybyq_tb + base.ybwq_tb + base.wq_tb) AS count_tb,
+        ROUND(SUM(base.buy_budget_money), 2) AS money_tb,
+        SUM(base.ybw_tb) AS ybw_tb,
+        SUM(base.ybyq_tb) AS ybyq_tb,
+        SUM(base.ybwq_tb) AS ybwq_tb,
+        SUM(base.wq_tb) AS wq_tb,
+        SUM(base.ybw_zb + base.ybyq_zb + base.ybwq_zb + base.wq_zb) AS count_zb,
+        ROUND(SUM(base.match_bid_money), 2) AS money_zb,
+        SUM(base.ybw_zb) AS ybw_zb,
+        SUM(base.ybyq_zb) AS ybyq_zb,
+        SUM(base.ybwq_zb) AS ybwq_zb,
+        SUM(base.wq_zb) AS wq_zb
+        FROM (
+        SELECT
+        a.buy_budget_money,
+        a.match_bid_money,
+        IF(a.buy_budget_money &lt; 100, 1, 0) AS ybw_tb,
+        IF(a.buy_budget_money &gt;= 100 AND a.buy_budget_money &lt; 1000, 1, 0) AS ybyq_tb,
+        IF(a.buy_budget_money &gt;= 1000 AND a.buy_budget_money &lt; 5000, 1, 0) AS ybwq_tb,
+        IF(a.buy_budget_money &gt;= 5000, 1, 0) AS wq_tb,
+        IF(a.buy_budget_money &lt; 100, 1, 0) AS ybw_zb,
+        IF(a.buy_budget_money &gt;= 100 AND a.buy_budget_money &lt; 1000, 1, 0) AS ybyq_zb,
+        IF(a.buy_budget_money &gt;= 1000 AND a.buy_budget_money &lt; 5000, 1, 0) AS ybwq_zb,
+        IF(a.buy_budget_money &gt;= 5000, 1, 0) AS wq_zb
+        FROM topp_bid_new a
+        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        INNER JOIN zqzt_sys_user c ON b.designer = c.user_id
+        INNER JOIN zqzt_sys_dept d ON c.dept_id = d.dept_id
+        WHERE d.dept_id = #{areaCode}
+        AND a.is_sign = '0'
+        <if test="minCgAmount != null">
+            AND a.buy_budget_money &gt;= #{minCgAmount}
+        </if>
+        <if test="maxCgAmount != null">
+            AND a.buy_budget_money &lt; #{maxCgAmount}
+        </if>
+        <if test="minYjAmount != null">
+            AND a.match_bid_money &gt;= #{minYjAmount}
+        </if>
+        <if test="maxYjAmount != null">
+            AND a.match_bid_money &lt; #{maxYjAmount}
+        </if>
+        <if test="minSjAmount != null">
+            AND b.expect_contract_money &gt;= #{minSjAmount}
+        </if>
+        <if test="maxSjAmount != null">
+            AND b.expect_contract_money &lt; #{maxSjAmount}
+        </if>
+        <if test="bidMainPersonnel != null">
+            AND a.bid_body IN
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="jzqk != null">
+            AND a.competition_condition IN
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="projectType != null">
+            AND a.project_type IN
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="bidResult != null">
+            AND a.result = #{bidResult}
+        </if>
+        <if test="unicomType != null">
+            AND b.unicom_type IN
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="minMll != null">
+            AND a.ict_profit &gt;= #{minMll}
+        </if>
+        <if test="maxMll != null">
+            AND a.ict_profit &lt;= #{maxMll}
+        </if>
+        <if test="startTime != null">
+            AND a.open_bid_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND a.open_bid_time &lt;= #{endTime}
+        </if>
+        ) base
+    </select>
+
+    <select id="selectSignStatisticsUserRespDTO" resultMap="UserResult">
+        SELECT
+        base.nick_name AS user_name,
+        base.user_id ,
+        SUM(base.ybw_tb) AS ybw_tb,
+        SUM(base.ybyq_tb) AS ybyq_tb,
+        SUM(base.ybwq_tb) AS ybwq_tb,
+        SUM(base.wq_tb) AS wq_tb,
+        SUM(base.ybw_tb + base.ybyq_tb + base.ybwq_tb + base.wq_tb) AS count_tb,
+        ROUND(SUM(base.buy_budget_money), 2) AS money_tb,
+        SUM(base.ybw_zb) AS ybw_zb,
+        SUM(base.ybyq_zb) AS ybyq_zb,
+        SUM(base.ybwq_zb) AS ybwq_zb,
+        SUM(base.wq_zb) AS wq_zb,
+        SUM(base.ybw_zb + base.ybyq_zb + base.ybwq_zb + base.wq_zb) AS count_zb,
+        ROUND(SUM(base.match_bid_money), 2) AS money_zb,
+        ROUND(SUM(base.match_bid_money * base.contribution / 100), 2) AS gxed_zb
+        FROM (
+        SELECT
+        d.nick_name,
+        d.user_id,
+        a.buy_budget_money,
+        a.match_bid_money,
+        c.contribution,
+        CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_tb,
+        CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_tb,
+        CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_tb,
+        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_tb,
+        CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_zb,
+        CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_zb,
+        CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_zb,
+        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_zb
+        FROM topp_bid_new a
+        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        LEFT JOIN zqzt_sys_user d ON b.designer = d.user_id
+        LEFT JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
+        LEFT JOIN topp_bid_new_score c ON a.id = c.topp_bid_new_id AND c.name = d.nick_name
+        WHERE e.dept_id = #{deptId}
+        AND a.is_sign = '0'
+        <if test="minCgAmount != null">
+            AND a.buy_budget_money &gt;= #{minCgAmount}
+        </if>
+        <if test="maxCgAmount != null">
+            AND a.buy_budget_money &lt; #{maxCgAmount}
+        </if>
+        <if test="minYjAmount != null">
+            AND a.match_bid_money &gt;= #{minYjAmount}
+        </if>
+        <if test="maxYjAmount != null">
+            AND a.match_bid_money &lt; #{maxYjAmount}
+        </if>
+        <if test="minSjAmount != null">
+            AND b.expect_contract_money &gt;= #{minSjAmount}
+        </if>
+        <if test="maxSjAmount != null">
+            AND b.expect_contract_money &lt; #{maxSjAmount}
+        </if>
+        <if test="bidMainPersonnel != null">
+            AND a.bid_body IN
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="jzqk != null">
+            AND a.competition_condition IN
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="projectType != null">
+            AND a.project_type IN
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="bidResult != null">
+            AND a.result = #{bidResult}
+        </if>
+        <if test="unicomType != null">
+            AND b.unicom_type IN
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="minMll != null">
+            AND a.ict_profit &gt;= #{minMll}
+        </if>
+        <if test="maxMll != null">
+            AND a.ict_profit &lt;= #{maxMll}
+        </if>
+        <if test="startTime != null">
+            AND a.open_bid_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND a.open_bid_time &lt;= #{endTime}
+        </if>
+        ) base
+        GROUP BY base.nick_name
+    </select>
+
+    <select id="selectContractStatisticsBj" resultMap="SignStatisticsContractResult">
+        SELECT
+        SUM(base.ybw_qy + base.ybyq_qy + base.ybwq_qy + base.wq_qy) AS count_qy,
+        ROUND(SUM(base.sign_money), 2) AS money_qy,
+        SUM(base.ybw_qy) AS ybw_qy,
+        SUM(base.ybyq_qy) AS ybyq_qy,
+        SUM(base.ybwq_qy) AS ybwq_qy,
+        SUM(base.wq_qy) AS wq_qy
+        FROM (
+        SELECT
+        a.sign_money,
+        IF(a.sign_money &lt; 100, 1, 0) AS ybw_qy,
+        IF(a.sign_money &gt;= 100 AND a.sign_money &lt; 1000, 1, 0) AS ybyq_qy,
+        IF(a.sign_money &gt;= 1000 AND a.sign_money &lt; 5000, 1, 0) AS ybwq_qy,
+        IF(a.sign_money &gt;= 5000, 1, 0) AS wq_qy
+        FROM topp_bid_new a
+        INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
+        INNER JOIN zqzt_sys_user c ON b.designer = c.user_id
+        INNER JOIN zqzt_sys_dept d ON c.dept_id = d.dept_id
+        WHERE d.dept_id IN (
+        SELECT dept_id FROM zqzt_sys_dept WHERE dept_id = #{tempDeptId}
+        UNION
+        SELECT t.dept_id FROM (SELECT * FROM zqzt_sys_dept WHERE parent_id IS NOT NULL) t,
+        (SELECT @parent_id := #{tempDeptId}) pd
+        WHERE FIND_IN_SET(parent_id, @parent_id) &gt; 0
+        AND @parent_id := CONCAT(@parent_id, ',', dept_id)
+        )
+        AND a.is_sign = '1'
+        <if test="minCgAmount != null">
+            AND a.buy_budget_money &gt;= #{minCgAmount}
+        </if>
+        <if test="maxCgAmount != null">
+            AND a.buy_budget_money &lt; #{maxCgAmount}
+        </if>
+        <if test="minYjAmount != null">
+            AND a.sign_money &gt;= #{minYjAmount}
+        </if>
+        <if test="maxYjAmount != null">
+            AND a.sign_money &lt; #{maxYjAmount}
+        </if>
+        <if test="minSjAmount != null">
+            AND b.expect_contract_money &gt;= #{minSjAmount}
+        </if>
+        <if test="maxSjAmount != null">
+            AND b.expect_contract_money &lt; #{maxSjAmount}
+        </if>
+        <if test="bidMainPersonnel != null">
+            AND a.bid_body IN
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="jzqk != null">
+            AND a.competition_condition IN
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="projectType != null">
+            AND a.project_type IN
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="bidResult != null">
+            AND a.result = #{bidResult}
+        </if>
+        <if test="unicomType != null">
+            AND b.unicom_type IN
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="minMll != null">
+            AND a.ict_profit &gt;= #{minMll}
+        </if>
+        <if test="maxMll != null">
+            AND a.ict_profit &lt;= #{maxMll}
+        </if>
+        <if test="startTime != null">
+            AND a.open_bid_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND a.open_bid_time &lt;= #{endTime}
+        </if>
+        ) base
     </select>
 
 
-    <select id="selectSignStatisticsBj" resultMap="SignStatisticsResult" >
+    <select id="selectContractStatisticsRespDTO" resultMap="SignStatisticsContractResult">
         select
-        count_tb  ,
-        money_tb ,
-        ybw_tb ,
-        ybyq_tb ,
-        ybwq_tb ,
-        wq_tb ,
-        count_zb ,
-        money_zb ,
-        ybw_zb ,
-        ybyq_zb ,
-        ybwq_zb,
-        wq_zb
+        count_qy ,
+        money_qy ,
+        ybw_qy ,
+        ybyq_qy ,
+        ybwq_qy ,
+        wq_qy
         from (
-        select sum(t1.ybw_tb+t1.ybyq_tb+t1.ybwq_tb+wq_tb) as count_tb,
-        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
-        sum(ybw_tb) as ybw_tb,
-        sum(ybyq_tb) as ybyq_tb,
-        sum(ybwq_tb) as ybwq_tb,
-        sum(wq_tb) as wq_tb from
+        select sum(t1.ybw_qy+t1.ybyq_qy+t1.ybwq_qy+wq_qy) as count_qy,
+        ROUND(SUM(t1.sign_money), 2) AS money_qy,
+        sum(ybw_qy) as ybw_qy,
+        sum(ybyq_qy) as ybyq_qy,
+        sum(ybwq_qy) as ybwq_qy,
+        sum(wq_qy) as wq_qy from
         (select
-        a.buy_budget_money,
-        if(a.buy_budget_money&lt;100,1,0) as ybw_tb,
-        if(a.buy_budget_money>=100 and a.buy_budget_money &lt;1000 ,1,0) as ybyq_tb,
-        if(a.buy_budget_money>=1000 and a.buy_budget_money &lt;5000 ,1,0) as ybwq_tb,
-        if(a.buy_budget_money>=5000,1,0) as wq_tb
-        from  topp_bid_new a inner join  topp_opportunity b
-        on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
+        a.sign_money,
+        if(a.sign_money&lt;100,1,0) as ybw_qy,
+        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_qy,
+        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_qy,
+        if(a.sign_money>=5000,1,0) as wq_qy
+        from topp_bid_new a inner join topp_opportunity b
+        on a.opportunity_code =b.id_ inner join zqzt_sys_user c
         on b.designer =c.user_id
         inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where d.dept_id = #{areaCode}  and a.is_sign='0'
+        where d.dept_id in (
+        select dept_id from zqzt_sys_dept where dept_id = #{tempDeptId}
+        union
+        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
+        (select @parent_id := #{tempDeptId}) pd
+        where FIND_IN_SET(parent_id,@parent_id) > 0
+        and @parent_id := CONCAT(@parent_id,',',dept_id)
+        )and a.is_sign='1'
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
         </if>
@@ -288,26 +527,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
 
         <if test="minSjAmount != null">
-            and b.expect_count_money &gt;= #{minYjAmount}
+            and b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_count_money &lt;  #{maxYjAmount}
+            and b.expect_contract_money &lt; #{maxSjAmount}
         </if>
 
         <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+            and a.bid_body in
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+            and a.competition_condition in
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+            and a.project_type in
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
+
+
         <if test="bidResult != null">
             and a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+            and b.unicom_type in
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -322,249 +575,101 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and a.open_bid_time &lt;= #{endTime}
         </if>
         )t1 )a
-        left join
-
-        (select sum(t1.ybw_zb+t1.ybyq_zb+t1.ybwq_zb+wq_zb) as count_zb,
-        ROUND(SUM(t1.sign_money), 2) AS money_zb,
-        sum(ybw_zb) as ybw_zb,
-        sum(ybyq_zb) as ybyq_zb,
-        sum(ybwq_zb) as ybwq_zb,
-        sum(wq_zb) as wq_zb from
-        (select
-        a.sign_money,
-        if(a.sign_money &lt;100,1,0) as ybw_zb,
-        if(a.sign_money>=100 and a.sign_money &lt;1000 ,1,0) as ybyq_zb,
-        if(a.sign_money>=1000 and a.sign_money &lt;5000 ,1,0) as ybwq_zb,
-        if(a.sign_money>=5000,1,0) as wq_zb
-        from  topp_bid_new a inner join  topp_opportunity b
-        on a.opportunity_code =b.id_ inner  join zqzt_sys_user c
-        on b.designer =c.user_id
-        inner join zqzt_sys_dept d on c.dept_id = d.dept_id
-        where  d.dept_id  = #{areaCode}  and a.is_sign='0' and result='match_bid'
-        <if test="minCgAmount != null">
-            and a.buy_budget_money &gt;= #{minCgAmount}
-        </if>
-        <if test="maxCgAmount != null">
-            and a.buy_budget_money &lt; #{maxCgAmount}
-        </if>
-
-        <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
-        </if>
-        <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
-        </if>
-
-        <if test="minSjAmount != null">
-            and b.expect_count_money &gt;= #{minYjAmount}
-        </if>
-        <if test="maxSjAmount != null">
-            and b.expect_count_money &lt; #{maxYjAmount}
-        </if>
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
-        </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
-        </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
-        </if>
-        <if test="bidResult != null">
-            and a.result = #{bidResult}
-        </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
-        </if>
-        <if test="minMll != null">
-            and a.ict_profit>= #{minMll}
-        </if>
-        <if test="maxMll != null">
-            and a.ict_profit &lt;= #{maxMll}
-        </if>
-        <if test="startTime != null">
-            and a.open_bid_time &gt;= #{startTime}
-        </if>
-        <if test="endTime != null">
-            and a.open_bid_time &lt;= #{endTime}
-        </if>
-        )t1)b on 1=1
     </select>
 
 
 
-    <select id="selectSignStatisticsUserRespDTO" resultMap="UserResult" >
-        select
-        a.nick_name as user_name,
-        count_tb  ,
-        money_tb ,
-        ybw_tb ,
-        ybyq_tb ,
-        ybwq_tb ,
-        wq_tb ,
-        count_zb ,
-        money_zb ,
-        ybw_zb ,
-        ybyq_zb ,
-        ybwq_zb,
-        wq_zb,
-        gxed_zb
-        from (
+
+    <select id="selectContractStatisticsUserRespDTO" resultMap="UserContractResult">
         SELECT
-        t1.nick_name,
-        SUM(t1.ybw_tb + t1.ybyq_tb + t1.ybwq_tb + t1.wq_tb) AS count_tb,
-        ROUND(SUM(t1.buy_budget_money), 2) AS money_tb,
-        SUM(t1.ybw_tb) AS ybw_tb,
-        SUM(t1.ybyq_tb) AS ybyq_tb,
-        SUM(t1.ybwq_tb) AS ybwq_tb,
-        SUM(t1.wq_tb) AS wq_tb
+        base.nick_name AS user_name,
+        base.user_id,
+        SUM(base.ybw_qy + base.ybyq_qy + base.ybwq_qy + base.wq_qy) AS count_qy,
+        ROUND(SUM(base.sign_money), 2) AS money_qy,
+        SUM(base.ybw_qy) AS ybw_qy,
+        SUM(base.ybyq_qy) AS ybyq_qy,
+        SUM(base.ybwq_qy) AS ybwq_qy,
+        SUM(base.wq_qy) AS wq_qy,
+        ROUND(SUM(base.sign_money * base.contribution / 100), 2) AS gxed_money
         FROM (
         SELECT
         d.nick_name,
-        a.buy_budget_money,
-        CASE WHEN a.buy_budget_money &lt; 100 THEN 1 ELSE 0 END AS ybw_tb,
-        CASE WHEN a.buy_budget_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_tb,
-        CASE WHEN a.buy_budget_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_tb,
-        CASE WHEN a.buy_budget_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_tb
-        FROM topp_bid_new a
-        left JOIN topp_opportunity b ON a.opportunity_code = b.id_
-        left JOIN zqzt_sys_user d ON b.designer = d.user_id
-        left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
-        WHERE e.dept_id = #{deptId}
-        AND a.is_sign = '0'
-        <if test="minCgAmount != null">
-            and a.buy_budget_money &gt;= #{minCgAmount}
-        </if>
-        <if test="maxCgAmount != null">
-            and a.buy_budget_money &lt; #{maxCgAmount}
-        </if>
-
-        <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
-        </if>
-        <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
-        </if>
-
-        <if test="minSjAmount != null">
-            and b.expect_count_money &gt;= #{minYjAmount}
-        </if>
-        <if test="maxSjAmount != null">
-            and b.expect_count_money &lt;  #{maxYjAmount}
-        </if>
-
-        <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
-        </if>
-        <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
-        </if>
-        <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
-        </if>
-        <if test="bidResult != null">
-            and a.result = #{bidResult}
-        </if>
-        <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
-        </if>
-        <if test="minMll != null">
-            and a.ict_profit>= #{minMll}
-        </if>
-        <if test="maxMll != null">
-            and a.ict_profit &lt;= #{maxMll}
-        </if>
-        <if test="startTime != null">
-            and a.open_bid_time &gt;= #{startTime}
-        </if>
-        <if test="endTime != null">
-            and a.open_bid_time &lt;= #{endTime}
-        </if>
-        ) t1
-        GROUP BY t1.nick_name )a
-        left join
-
-        ( SELECT
-        t1.nick_name,
-        SUM(t1.ybw_zb + t1.ybyq_zb + t1.ybwq_zb + t1.wq_zb) AS count_zb,
-        ROUND(SUM(t1.match_bid_money), 2) AS money_zb,
-        SUM(t1.ybw_zb) AS ybw_zb,
-        SUM(t1.ybyq_zb) AS ybyq_zb,
-        SUM(t1.ybwq_zb) AS ybwq_zb,
-        SUM(t1.wq_zb) AS wq_zb,
-        sum(t1.match_bid_money * t1.contribution) as gxed_zb
-        FROM (
-        SELECT
-        d.nick_name,
-        a.match_bid_money,
-        CASE WHEN a.match_bid_money &lt; 100 THEN 1 ELSE 0 END AS ybw_zb,
-        CASE WHEN a.match_bid_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_zb,
-        CASE WHEN a.match_bid_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_zb,
-        CASE WHEN a.match_bid_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_zb,
-        c.contribution
+        d.user_id,
+        a.sign_money,
+        c.contribution,
+        CASE WHEN a.sign_money &lt; 100 THEN 1 ELSE 0 END AS ybw_qy,
+        CASE WHEN a.sign_money BETWEEN 100 AND 999 THEN 1 ELSE 0 END AS ybyq_qy,
+        CASE WHEN a.sign_money BETWEEN 1000 AND 4999 THEN 1 ELSE 0 END AS ybwq_qy,
+        CASE WHEN a.sign_money &gt;= 5000 THEN 1 ELSE 0 END AS wq_qy
         FROM topp_bid_new a
         INNER JOIN topp_opportunity b ON a.opportunity_code = b.id_
-        inner join topp_bid_new_score c on a.id=c.topp_bid_new_id
-        left JOIN zqzt_sys_user d ON b.designer = d.user_id
-        left JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
-        WHERE  e.dept_id =#{deptId}
-        and a.is_sign='0' and a.result='match_bid'
+        INNER JOIN topp_bid_new_score c ON a.id = c.topp_bid_new_id
+        LEFT JOIN zqzt_sys_user d ON b.designer = d.user_id
+        LEFT JOIN zqzt_sys_dept e ON d.dept_id = e.dept_id
+        WHERE e.dept_id = #{deptId}
+        AND a.is_sign = '1'
+        AND c.name = d.nick_name
+
+
         <if test="minCgAmount != null">
-            and a.buy_budget_money &gt;= #{minCgAmount}
+            AND a.buy_budget_money &gt;= #{minCgAmount}
         </if>
         <if test="maxCgAmount != null">
-            and a.buy_budget_money &lt; #{maxCgAmount}
+            AND a.buy_budget_money &lt; #{maxCgAmount}
         </if>
-
         <if test="minYjAmount != null">
-            and a.sign_money &gt;= #{minYjAmount}
+            AND a.sign_money &gt;= #{minYjAmount}
         </if>
         <if test="maxYjAmount != null">
-            and a.sign_money &lt; #{maxYjAmount}
+            AND a.sign_money &lt; #{maxYjAmount}
         </if>
-
         <if test="minSjAmount != null">
-            and b.expect_count_money &gt;= #{minYjAmount}
+            AND b.expect_contract_money &gt;= #{minSjAmount}
         </if>
         <if test="maxSjAmount != null">
-            and b.expect_count_money &lt; #{maxYjAmount}
+            AND b.expect_contract_money &lt; #{maxSjAmount}
         </if>
-
         <if test="bidMainPersonnel != null">
-            and a.bid_body  like concat('%',#{bidMainPersonnel},'%')
+            AND a.bid_body IN
+            <foreach collection="bidMainPersonnel" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="jzqk != null">
-            and a.competition_condition like concat('%',#{jzqk},'%')
+            AND a.competition_condition IN
+            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="projectType != null">
-            and a.project_type like concat('%',#{projectType},'%')
+            AND a.project_type IN
+            <foreach collection="projectType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="bidResult != null">
-            and a.result = #{bidResult}
+            AND a.result = #{bidResult}
         </if>
         <if test="unicomType != null">
-            and b.unicom_type like concat('%',#{unicomType},'%')
+            AND b.unicom_type IN
+            <foreach collection="unicomType" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
         </if>
         <if test="minMll != null">
-            and a.ict_profit>= #{minMll}
+            AND a.ict_profit &gt;= #{minMll}
         </if>
         <if test="maxMll != null">
-            and a.ict_profit &lt;= #{maxMll}
+            AND a.ict_profit &lt;= #{maxMll}
         </if>
         <if test="startTime != null">
-            and a.open_bid_time &gt;= #{startTime}
+            AND a.open_bid_time &gt;= #{startTime}
         </if>
         <if test="endTime != null">
-            and a.open_bid_time &lt;= #{endTime}
+            AND a.open_bid_time &lt;= #{endTime}
         </if>
-        )t1 GROUP BY t1.nick_name)b on a.nick_name=b.nick_name
+        ) base
+        GROUP BY base.nick_name
     </select>
-
-
-
-
-
-
-
 
 </mapper>

@@ -10,9 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -95,7 +94,8 @@ public class ToppContractExport {
             File tempFile = File.createTempFile(prefix, ".txt");
 
             // 写入数据到txt文件
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 // 添加表头（可选）
                 writer.write("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|" +
                     "contractType|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|" +
@@ -192,9 +192,9 @@ public class ToppContractExport {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt";
+            String remoteFilePath = prefix + ".txt";
             try {
-                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath);
+                sftpUtil.uploadFile(sftpConfigType, tempFile.getAbsolutePath(), remoteFilePath, dateStr);
                 String successMsg = String.format("topp_contract表数据导出任务执行完成，共导出%d条记录，文件路径：%s",
                     toppContractList.size(), remoteFilePath);
                 log.info(successMsg);

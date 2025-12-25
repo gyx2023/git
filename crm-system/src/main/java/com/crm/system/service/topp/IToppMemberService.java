@@ -1,8 +1,8 @@
 package com.crm.system.service.topp;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.system.domain.bo.topp.ToppBidNewScoreBo;
-import com.crm.system.domain.vo.topp.ToppBidNewScoreVo;
+import com.crm.system.domain.bo.topp.ToppMemberBo;
+import com.crm.system.domain.vo.topp.ToppMemberVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,32 +13,32 @@ import java.util.List;
  * @author crm
  * @date 2025-12-02
  */
-public interface ToppBidNewScoreService {
+public interface IToppMemberService {
 
     /**
      * 查询【请填写功能名称】
      */
-    ToppBidNewScoreVo queryById(Long id);
+    ToppMemberVo queryById(Long id);
 
     /**
      * 查询【请填写功能名称】列表
      */
-    TableDataInfo<ToppBidNewScoreVo> queryPageList(ToppBidNewScoreBo bo, PageQuery pageQuery);
+    TableDataInfo<ToppMemberVo> queryPageList(ToppMemberBo bo, PageQuery pageQuery);
 
     /**
      * 查询【请填写功能名称】列表
      */
-    List<ToppBidNewScoreVo> queryList(ToppBidNewScoreBo bo);
+    List<ToppMemberVo> queryList(ToppMemberBo bo);
 
     /**
      * 新增【请填写功能名称】
      */
-    Boolean insertByBo(ToppBidNewScoreBo bo);
+    Boolean insertByBo(ToppMemberBo bo);
 
     /**
      * 修改【请填写功能名称】
      */
-    Boolean updateByBo(ToppBidNewScoreBo bo);
+    Boolean updateByBo(ToppMemberBo bo);
 
     /**
      * 校验并批量删除【请填写功能名称】信息

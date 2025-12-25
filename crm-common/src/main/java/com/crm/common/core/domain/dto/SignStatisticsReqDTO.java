@@ -67,4 +67,5 @@ public class SignStatisticsReqDTO {
 
     private Long areaCode;
 
+
 }

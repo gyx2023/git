@@ -18,12 +18,5 @@ import java.util.List;
 @Mapper
 public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMapper, ToppOpportunityDo, ToppOpportunityVo> {
 
-    /**
-     * 查询满足条件的商机数据
-     * 条件：创建时间在指定时间之后，并且在tcomm_customer表中存在对应的客户记录
-     *
-     * @param createTime 创建时间下限
-     * @return 满足条件的商机数据列表
-     */
-    List<ToppOpportunityDo> selectFilteredOpportunities(Date createTime);
+
 }

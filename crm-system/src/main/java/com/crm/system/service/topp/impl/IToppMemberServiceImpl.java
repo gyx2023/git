@@ -11,7 +11,7 @@ import com.crm.system.domain.bo.topp.ToppMemberBo;
 import com.crm.system.domain.topp.ToppMemberDo;
 import com.crm.system.domain.vo.topp.ToppMemberVo;
 import com.crm.system.mapper.topp.ToppMemberMapper;
-import com.crm.system.service.topp.ToppMemberService;
+import com.crm.system.service.topp.IToppMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
-public class ToppMemberServiceImpl implements ToppMemberService {
+public class IToppMemberServiceImpl implements IToppMemberService {
     @Resource
     private ToppMemberMapper baseMapper;
 

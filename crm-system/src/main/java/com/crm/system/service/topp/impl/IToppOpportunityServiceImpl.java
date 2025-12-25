@@ -11,7 +11,7 @@ import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
-import com.crm.system.service.topp.ToppOpportunityService;
+import com.crm.system.service.topp.IToppOpportunityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
-public class ToppOpportunityServiceImpl implements ToppOpportunityService {
+public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     @Resource
     private ToppOpportunityMapper baseMapper;
 
@@ -70,17 +70,7 @@ public class ToppOpportunityServiceImpl implements ToppOpportunityService {
         return baseMapper.selectList(lqw);
     }
 
-    /**
-     * 查询满足过滤条件的商机数据
-     * 条件：创建时间在指定时间之后，并且在tcomm_customer表中存在对应的客户记录
-     *
-     * @param createTime 创建时间下限
-     * @return 满足条件的商机数据列表
-     */
-    @Override
-    public List<ToppOpportunityDo> selectFilteredOpportunities(Date createTime) {
-        return baseMapper.selectFilteredOpportunities(createTime);
-    }
+
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
         Map<String, Object> params = bo.getParams();

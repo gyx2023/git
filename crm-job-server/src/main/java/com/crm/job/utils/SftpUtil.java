@@ -235,17 +235,17 @@ public class SftpUtil implements InitializingBean {
         } else {
             log.warn("SFTP配置类型 '{}' 的缓存未初始化，回退到直接查询数据库", configType);
             // 缓存未初始化时，回退到直接查询数据库
-            String fullKey = SFTP_CONFIG_PREFIX + paramKey;
+        //    String fullKey = SFTP_CONFIG_PREFIX + paramKey;
             try {
                 SysParamDo param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
                         .eq(SysParamDo::getType, configType)
-                        .eq(SysParamDo::getCode, fullKey));
+                        .eq(SysParamDo::getCode, paramKey));
                 if (param != null && param.getValue() != null) {
                     return param.getValue();
                 }
             } catch (Exception e) {
                 log.error("获取SFTP配置类型 '{}' 的配置项 {} 失败: {}",
-                         configType, fullKey, e.getMessage());
+                         configType, paramKey, e.getMessage());
             }
         }
         return defaultValue;
@@ -756,14 +756,26 @@ public class SftpUtil implements InitializingBean {
      * @param localFilePath 本地文件路径
      * @param remoteFilePath 远程文件路径
      */
-    public void uploadFile(String configType, String localFilePath, String remoteFilePath) {
+    public void uploadFile(String configType, String localFilePath, String remoteFilePath, String date) {
         Sftp sftp = null;
         try {
             // 如果configType为null或空字符串，则使用默认配置类型
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             sftp = getSftp(actualConfigType);
-            sftp.getClient().put(localFilePath, remoteFilePath);
-            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteFilePath);
+            String remortDir = getSftpParam(configType,"sftp.directory","");
+            String remotePath = remortDir.endsWith("/") ? remortDir + date + "/" + remoteFilePath : remortDir + "/" + date + "/" + remoteFilePath;
+
+            // 获取远程目录路径（不包含文件名）
+            String remoteDir = remotePath.substring(0, remotePath.lastIndexOf("/"));
+
+            // 检查远程目录是否存在，如果不存在则创建
+            if (!sftp.exist(remoteDir)) {
+                sftp.mkdir(remoteDir); // 创建目录
+                log.info("创建远程目录: {}", remoteDir);
+            }
+
+            sftp.getClient().put(localFilePath, remotePath);
+            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remotePath);
         } catch (Exception e) {
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);

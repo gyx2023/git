@@ -16,7 +16,7 @@ import java.util.List;
  * @author crm
  * @date 2025-12-02
  */
-public interface ToppOpportunityService {
+public interface IToppOpportunityService {
 
     /**
      * 查询【请填写功能名称】
@@ -41,14 +41,7 @@ public interface ToppOpportunityService {
      */
     List<ToppOpportunityDo> queryListByStartTime(Date startTime);
 
-    /**
-     * 查询满足过滤条件的商机数据
-     * 条件：创建时间在指定时间之后，并且在tcomm_customer表中存在对应的客户记录
-     *
-     * @param createTime 创建时间下限
-     * @return 满足条件的商机数据列表
-     */
-    List<ToppOpportunityDo> selectFilteredOpportunities(Date createTime);
+
 
     /**
      * 新增【请填写功能名称】

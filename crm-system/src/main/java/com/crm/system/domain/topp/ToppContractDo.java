@@ -16,18 +16,16 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2025-12-16
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("topp_contract")
-public class ToppContractDo extends BaseEntity {
+public class ToppContractDo {
 
     private static final long serialVersionUID=1L;
 
     /**
      * 主键
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_",type = IdType.AUTO)
     private Long id;
-
     /**
      * 关联商机
      */
@@ -99,7 +97,7 @@ public class ToppContractDo extends BaseEntity {
     /**
      * 备注
      */
-    @TableField(value = "memo_")
+    @TableField("memo_")
     private String memo;
     /**
      * 合同签订时间
@@ -156,7 +154,7 @@ public class ToppContractDo extends BaseEntity {
     /**
      * 处理状态 0：处理；1:已处理；
      */
-    @TableField(value = "status_")
+    @TableField("status_")
     private String status;
     /**
      *
@@ -271,9 +269,7 @@ public class ToppContractDo extends BaseEntity {
      */
     private String ictRat;
     /**
-     * 合同标签：
-1：5G合同
-2：非5G合同
+     * 合同标签：\r\n1：5G合同\r\n2：非5G合同
      */
     private String contractLabel;
     /**
@@ -320,21 +316,10 @@ public class ToppContractDo extends BaseEntity {
      * 合同付款条款信息
      */
     private String payInfo;
-    /**
-     * 创建者
-     */
-    @TableField(exist = false)
-    private String createBy;
 
     /**
-     * 更新者
+     * 创建时间
      */
-    @TableField(exist = false)
-    private String updateBy;
-
-    /**
-     * 更新时间
-     */
-    @TableField(exist = false)
-    private Date updateTime;
+    @TableField(fill = FieldFill.INSERT)
+    private Date createTime;
 }

@@ -202,8 +202,12 @@ public class SysUserSyncJob {
                 XxlJobHelper.log("批量插入最后{}条部门数据成功", batchInsertList.size());
                 log.info("批量插入最后{}条部门数据成功", batchInsertList.size());
             }
+
             XxlJobHelper.log("部门同步任务完成，成功同步{}条数据", successCount);
             log.info("部门同步任务完成，成功同步{}条数据", successCount);
+
+            // 更新部门表的ancestors和level字段
+            updateDeptAncestorsAndLevel();
 
         } catch (Exception e) {
             XxlJobHelper.log("部门同步任务执行失败：{}", e.getMessage());
@@ -263,5 +267,59 @@ public class SysUserSyncJob {
         newUser.setUpdateBy("system_sync");
 
         return newUser;
+    }
+
+    /**
+     * 更新部门表的ancestors和level字段
+     */
+    private void updateDeptAncestorsAndLevel() {
+        XxlJobHelper.log("开始更新部门表的ancestors和level字段");
+        log.info("开始更新部门表的ancestors和level字段");
+
+        try {
+            // 1. 清空ancestors字段
+            sysDeptMapper.updateAncestorsToEmpty();
+            XxlJobHelper.log("清空ancestors字段完成");
+            log.info("清空ancestors字段完成");
+
+            // 2. 更新根节点的ancestors（parent_id为0或NULL或等于自身dept_id的节点）
+            sysDeptMapper.updateRootAncestors();
+            XxlJobHelper.log("更新根节点ancestors完成");
+            log.info("更新根节点ancestors完成");
+
+            // 3. 循环更新非根节点的ancestors，直到没有需要更新的节点
+            int updatedCount;
+            do {
+                updatedCount = sysDeptMapper.updateChildAncestors();
+                XxlJobHelper.log("本次更新了{}个节点的ancestors", updatedCount);
+                log.info("本次更新了{}个节点的ancestors", updatedCount);
+
+                // 如果没有更新任何节点，跳出循环
+                if (updatedCount == 0) {
+                    break;
+                }
+
+                // 检查是否还有需要更新的节点
+                int pendingCount = sysDeptMapper.countPendingAncestorsUpdate();
+                XxlJobHelper.log("待更新ancestors的节点数量：{}", pendingCount);
+
+                if (pendingCount == 0) {
+                    break;
+                }
+            } while (updatedCount > 0);
+
+            XxlJobHelper.log("更新ancestors字段完成");
+            log.info("更新ancestors字段完成");
+
+            // 4. 更新level字段
+            sysDeptMapper.updateDeptLevel();
+            XxlJobHelper.log("更新level字段完成");
+            log.info("更新level字段完成");
+
+        } catch (Exception e) {
+            XxlJobHelper.log("更新部门表ancestors和level字段失败：{}", e.getMessage());
+            log.error("更新部门表ancestors和level字段失败：{}", e.getMessage(), e);
+            throw e;
+        }
     }
 }
