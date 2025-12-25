@@ -44,6 +44,30 @@ public interface SysDeptMapper extends BaseMapperPlus<SysDeptMapper, SysDept, Sy
     @org.apache.ibatis.annotations.Select("TRUNCATE TABLE zqzt_sys_dept")
     void executeTruncate();
 
+    /**
+     * 清空ancestors字段
+     */
+    void updateAncestorsToEmpty();
+
+    /**
+     * 更新根节点的ancestors（parent_id为0或NULL或等于自身dept_id的节点）
+     */
+    void updateRootAncestors();
+
+    /**
+     * 更新子节点的ancestors
+     */
+    int updateChildAncestors();
+
+    /**
+     * 计算待更新ancestors的节点数量
+     */
+    int countPendingAncestorsUpdate();
+
+    /**
+     * 更新部门的level字段
+     */
+    void updateDeptLevel();
 
     List<SysDept> selectDqDeptList(Long deptId);
 }
