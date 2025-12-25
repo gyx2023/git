@@ -7,6 +7,9 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.domain.topp.ToppContractDo;
+import com.crm.system.domain.topp.ToppContractEformDo;
+import com.crm.system.domain.vo.topp.ToppContractVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
@@ -15,6 +18,7 @@ import com.crm.system.domain.topp.ToppContractEform;
 import com.crm.system.mapper.topp.ToppContractEformMapper;
 import com.crm.system.service.topp.IToppContractEformService;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -119,5 +123,15 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public List<ToppContractEformVo> queryContractList(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<ToppContractEform> lqw = Wrappers.lambdaQuery();
+        lqw.in(ToppContractEform::getProjectId, ids);
+        return baseMapper.selectVoList(lqw);
     }
 }

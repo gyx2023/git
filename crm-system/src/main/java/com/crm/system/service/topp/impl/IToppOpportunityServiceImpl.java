@@ -16,10 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -250,5 +248,15 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<ToppOpportunityDo>() ;
+        lqw.ge(ToppOpportunityDo::getSignTime, startTime);
+        lqw.lt(ToppOpportunityDo::getSignTime, endTime.plusSeconds(1));
+            // 筛选有效状态
+        lqw.eq(ToppOpportunityDo::getIsValid, 1);
+        return baseMapper.selectVoList(lqw);
     }
 }

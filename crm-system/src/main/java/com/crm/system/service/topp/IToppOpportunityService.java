@@ -6,6 +6,7 @@ import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -58,5 +59,5 @@ public interface IToppOpportunityService {
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
-
+    List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime,LocalDateTime endTime);
 }
