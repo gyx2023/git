@@ -47,4 +47,49 @@
           and @parent_id := CONCAT(@parent_id,',',dept_id)
     </select>
 
+    <update id="updateAncestorsToEmpty" parameterType="java.lang.Void">
+        UPDATE zqzt_sys_dept SET ancestors = ''
+    </update>
+
+    <update id="updateRootAncestors" parameterType="java.lang.Void">
+        UPDATE zqzt_sys_dept SET ancestors = CAST(dept_id AS CHAR(500))
+        WHERE parent_id = 0 OR parent_id IS NULL OR parent_id = dept_id
+    </update>
+
+    <update id="updateChildAncestors" parameterType="java.lang.Void">
+        UPDATE zqzt_sys_dept t1
+        JOIN zqzt_sys_dept t2 ON t1.parent_id = t2.dept_id
+        SET t1.ancestors = CONCAT(t2.ancestors, ',', t1.dept_id)
+        WHERE t1.ancestors = '' AND t2.ancestors != '' AND t2.ancestors IS NOT NULL
+    </update>
+
+    <select id="countPendingAncestorsUpdate" resultType="int">
+        SELECT COUNT(*) FROM zqzt_sys_dept t1
+        LEFT JOIN zqzt_sys_dept t2 ON t1.parent_id = t2.dept_id
+        WHERE t1.ancestors = ''
+        AND t1.parent_id IS NOT NULL
+        AND t1.parent_id != t1.dept_id
+        AND t2.ancestors != ''
+        AND t2.ancestors IS NOT NULL
+    </select>
+
+    <update id="updateDeptLevel" parameterType="java.lang.Void">
+        UPDATE zqzt_sys_dept SET level = (
+            CASE
+                WHEN ancestors IS NULL OR ancestors = '' THEN 0
+                ELSE (LENGTH(ancestors) - LENGTH(REPLACE(ancestors, ',', '')) + 1)
+            END
+        )
+    </update>
+
+    <select id="selectDeptQdList" resultMap="SysDeptResult">
+        select * from zqzt_sys_dept where dept_id = #{deptId}
+        union
+        select t.* from (select * from zqzt_sys_dept where parent_id is not null) t,
+                        (select @p_id := #{deptId}) pd
+        where FIND_IN_SET(parent_id,@p_id) > 0
+          and @p_id := CONCAT(@p_id,',',dept_id)
+    </select>
+
+
 </mapper>

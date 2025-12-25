@@ -11,12 +11,11 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
-import com.crm.common.utils.spring.SpringUtils;
 import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.SysArea;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
-import com.crm.system.domain.param.SysParamDO;
+import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.SysAreaMapper;
@@ -62,7 +61,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public ZqGrpGroupInfoVo queryById(Long grpId){
         ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
 
-        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
         LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
@@ -85,7 +84,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
-        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
         LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
@@ -124,7 +123,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
-        SysParamDO sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDO>().eq(SysParamDO::getType, "SENSITIVE_ROLE"));
+        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
         LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
@@ -607,6 +606,25 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         if (originalInfo == null) {
             return false; // 如果找不到原始记录，直接返回失败} else {
+        }
+
+        // 根据集团客户拓展类型进行校验
+        String expandType = originalInfo.getGrpExpandType();
+        if ("01".equals(expandType)) {
+            // 省直拓 - 省级客户经理不能为空
+            if (bo.getProvManagerOauser() == null || bo.getProvManagerName() == null) {
+                throw new RuntimeException("集团客户拓展类型为省直拓，省级客户经理信息不能为空");
+            }
+        } else if ("02".equals(expandType)) {
+            // 市直拓 - 市级客户经理不能为空
+            if (bo.getCityManagerOauser() == null || bo.getCityManagerName() == null) {
+                throw new RuntimeException("集团客户拓展类型为市直拓，市级客户经理信息不能为空");
+            }
+        } else if ("03".equals(expandType)) {
+            // 县直拓 - 县级客户经理不能为空
+            if (bo.getCountyManagerOauser() == null || bo.getCountyManagerName() == null) {
+                throw new RuntimeException("集团客户拓展类型为县直拓，县级客户经理信息不能为空");
+            }
         }
 
         // 记录变更日志

@@ -80,4 +80,6 @@ public class SysDept extends TreeEntity<SysDept> {
 
     private String areaCode;
 
+    private String level;
+
 }

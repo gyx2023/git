@@ -23,7 +23,7 @@ public class BiddingListExportVo {
          * 采购预算
          */
         @ExcelProperty("采购预算（万元）")
-        private String buyBudgetMoney;
+        private Double buyBudgetMoney;
         /**
          * 开标时间
          */
@@ -63,12 +63,12 @@ public class BiddingListExportVo {
          * 预计签约金额（万元）
          */
         @ExcelProperty("预计签约金额（万元）")
-        private String matchBidMoney;
+        private Double matchBidMoney;
         /**
          * 预计主营金额（万元）
          */
         @ExcelProperty("预计主营金额（万元）")
-        private String expectedMainOperatingAmount;
+        private Double expectedMainOperatingAmount;
         /**
          * 毛利率
          */
@@ -144,7 +144,7 @@ public class BiddingListExportVo {
          * 个人贡献度金额（万元）
          */
         @ExcelProperty("个人贡献度金额（万元）")
-        private String personalContributionAmount;
+        private Double personalContributionAmount;
         /**
          * 贡献度情况
          */

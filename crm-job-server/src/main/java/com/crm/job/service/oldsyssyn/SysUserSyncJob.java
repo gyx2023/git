@@ -1,11 +1,10 @@
 package com.crm.job.service.oldsyssyn;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.enums.UserType;
-import com.crm.system.domain.oldsyssyn.OldSysOrgDO;
-import com.crm.system.domain.oldsyssyn.OldSysUserDO;
+import com.crm.system.domain.oldsyssyn.OldSysOrgDo;
+import com.crm.system.domain.oldsyssyn.OldSysUserDo;
 import com.crm.system.mapper.SysDeptMapper;
 import com.crm.system.mapper.SysUserMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -71,7 +69,7 @@ public class SysUserSyncJob {
             }
 
             // 查询所有sys_user数据
-            List<OldSysUserDO> oldSysUserList = oldSysUserMapper.selectList(null);
+            List<OldSysUserDo> oldSysUserList = oldSysUserMapper.selectList(null);
 
             XxlJobHelper.log("查询到{}条sys_user数据", oldSysUserList.size());
             log.info("查询到{}条sys_user数据", oldSysUserList.size());
@@ -81,7 +79,7 @@ public class SysUserSyncJob {
             int batchSize = 50; // 批处理大小
             List<SysUser> batchInsertList = new ArrayList<>();
 
-            for (OldSysUserDO oldUser : oldSysUserList) {
+            for (OldSysUserDo oldUser : oldSysUserList) {
                 try {
                     // 跳过无效用户
                     if (oldUser.getValid() != null && !oldUser.getValid()) {
@@ -162,7 +160,7 @@ public class SysUserSyncJob {
             }
 
             // 查询所有sys_orgd数据
-            List<OldSysOrgDO> oldSysOrgList = oldSysOrgMapper.selectList(null);
+            List<OldSysOrgDo> oldSysOrgList = oldSysOrgMapper.selectList(null);
 
             XxlJobHelper.log("查询到{}条sys_orgd数据", oldSysOrgList.size());
             log.info("查询到{}条sys_orgd数据", oldSysOrgList.size());
@@ -171,7 +169,7 @@ public class SysUserSyncJob {
             int batchSize = 50; // 批处理大小
             List<SysDept> batchInsertList = new ArrayList<>();
 
-            for (OldSysOrgDO oldOrg : oldSysOrgList) {
+            for (OldSysOrgDo oldOrg : oldSysOrgList) {
                 try {
                     // 由于已使用TRUNCATE清空表，不需要再检查是否存在
                     // 创建新部门对象
@@ -204,8 +202,12 @@ public class SysUserSyncJob {
                 XxlJobHelper.log("批量插入最后{}条部门数据成功", batchInsertList.size());
                 log.info("批量插入最后{}条部门数据成功", batchInsertList.size());
             }
+
             XxlJobHelper.log("部门同步任务完成，成功同步{}条数据", successCount);
             log.info("部门同步任务完成，成功同步{}条数据", successCount);
+
+            // 更新部门表的ancestors和level字段
+            updateDeptAncestorsAndLevel();
 
         } catch (Exception e) {
             XxlJobHelper.log("部门同步任务执行失败：{}", e.getMessage());
@@ -219,7 +221,7 @@ public class SysUserSyncJob {
      * @param oldOrg 旧系统组织对象
      * @return 新系统部门对象
      */
-    private SysDept buildSysDeptFromOldOrg(OldSysOrgDO oldOrg) {
+    private SysDept buildSysDeptFromOldOrg(OldSysOrgDo oldOrg) {
         SysDept newDept = new SysDept();
 
         // 基础信息映射
@@ -243,7 +245,7 @@ public class SysUserSyncJob {
      * @param oldUser 旧系统用户对象
      * @return 新系统用户对象
      */
-    private SysUser buildSysUserFromOldUser(OldSysUserDO oldUser) {
+    private SysUser buildSysUserFromOldUser(OldSysUserDo oldUser) {
         SysUser newUser = new SysUser();
 
         // 基础信息映射
@@ -265,5 +267,59 @@ public class SysUserSyncJob {
         newUser.setUpdateBy("system_sync");
 
         return newUser;
+    }
+
+    /**
+     * 更新部门表的ancestors和level字段
+     */
+    private void updateDeptAncestorsAndLevel() {
+        XxlJobHelper.log("开始更新部门表的ancestors和level字段");
+        log.info("开始更新部门表的ancestors和level字段");
+
+        try {
+            // 1. 清空ancestors字段
+            sysDeptMapper.updateAncestorsToEmpty();
+            XxlJobHelper.log("清空ancestors字段完成");
+            log.info("清空ancestors字段完成");
+
+            // 2. 更新根节点的ancestors（parent_id为0或NULL或等于自身dept_id的节点）
+            sysDeptMapper.updateRootAncestors();
+            XxlJobHelper.log("更新根节点ancestors完成");
+            log.info("更新根节点ancestors完成");
+
+            // 3. 循环更新非根节点的ancestors，直到没有需要更新的节点
+            int updatedCount;
+            do {
+                updatedCount = sysDeptMapper.updateChildAncestors();
+                XxlJobHelper.log("本次更新了{}个节点的ancestors", updatedCount);
+                log.info("本次更新了{}个节点的ancestors", updatedCount);
+
+                // 如果没有更新任何节点，跳出循环
+                if (updatedCount == 0) {
+                    break;
+                }
+
+                // 检查是否还有需要更新的节点
+                int pendingCount = sysDeptMapper.countPendingAncestorsUpdate();
+                XxlJobHelper.log("待更新ancestors的节点数量：{}", pendingCount);
+
+                if (pendingCount == 0) {
+                    break;
+                }
+            } while (updatedCount > 0);
+
+            XxlJobHelper.log("更新ancestors字段完成");
+            log.info("更新ancestors字段完成");
+
+            // 4. 更新level字段
+            sysDeptMapper.updateDeptLevel();
+            XxlJobHelper.log("更新level字段完成");
+            log.info("更新level字段完成");
+
+        } catch (Exception e) {
+            XxlJobHelper.log("更新部门表ancestors和level字段失败：{}", e.getMessage());
+            log.error("更新部门表ancestors和level字段失败：{}", e.getMessage(), e);
+            throw e;
+        }
     }
 }

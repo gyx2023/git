@@ -28,40 +28,36 @@ import java.util.Map;
 @Slf4j
 public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
 
-    private final String prodProfile = "prod";
-
     private final TransmittableThreadLocal<StopWatch> invokeTimeTL = new TransmittableThreadLocal<>();
     private final TransmittableThreadLocal<String> requestParamTL = new TransmittableThreadLocal<>();
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
-            // 收集请求参数，暂不打印
-            String paramInfo;
-            if (isJsonRequest(request)) {
-                String jsonParam = "";
-                if (request instanceof RepeatedlyRequestWrapper) {
-                    BufferedReader reader = request.getReader();
-                    jsonParam = IoUtil.read(reader);
-                }
-                paramInfo = "参数类型[json],参数:[" + jsonParam + "]";
-            } else {
-                Map<String, String[]> parameterMap = request.getParameterMap();
-                if (MapUtil.isNotEmpty(parameterMap)) {
-                    String parameters = JsonUtils.toJsonString(parameterMap);
-                    paramInfo = "参数类型[param],参数:[" + parameters + "]";
-                } else {
-                    paramInfo = "无参数";
-                }
+        // 收集请求参数，暂不打印
+        String paramInfo;
+        if (isJsonRequest(request)) {
+            String jsonParam = "";
+            if (request instanceof RepeatedlyRequestWrapper) {
+                BufferedReader reader = request.getReader();
+                jsonParam = IoUtil.read(reader);
             }
-            
-            // 保存参数信息到 ThreadLocal
-            requestParamTL.set(paramInfo);
-
-            StopWatch stopWatch = new StopWatch();
-            invokeTimeTL.set(stopWatch);
-            stopWatch.start();
+            paramInfo = "参数类型[json],参数:[" + jsonParam + "]";
+        } else {
+            Map<String, String[]> parameterMap = request.getParameterMap();
+            if (MapUtil.isNotEmpty(parameterMap)) {
+                String parameters = JsonUtils.toJsonString(parameterMap);
+                paramInfo = "参数类型[param],参数:[" + parameters + "]";
+            } else {
+                paramInfo = "无参数";
+            }
         }
+
+        // 保存参数信息到 ThreadLocal
+        requestParamTL.set(paramInfo);
+
+        StopWatch stopWatch = new StopWatch();
+        invokeTimeTL.set(stopWatch);
+        stopWatch.start();
         return true;
     }
 
@@ -72,18 +68,15 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
-            StopWatch stopWatch = invokeTimeTL.get();
-            stopWatch.stop();
-            String url = request.getMethod() + " " + request.getRequestURI();
-            String paramInfo = requestParamTL.get();
-            
-            // 一行日志打印：URL + 参数 + 耗时
-            log.debug("[PLUS]请求完成 => URL[{}],{},耗时:[{}]毫秒", url, paramInfo, stopWatch.getTime());
-            
-            invokeTimeTL.remove();
-            requestParamTL.remove();
-        }
+        StopWatch stopWatch = invokeTimeTL.get();
+        stopWatch.stop();
+        String url = request.getMethod() + " " + request.getRequestURI();
+        String paramInfo = requestParamTL.get();
+
+        // 一行日志打印：URL + 参数 + 耗时
+        log.debug("[PLUS]请求完成 => URL[{}],{},耗时:[{}]毫秒", url, paramInfo, stopWatch.getTime());
+        invokeTimeTL.remove();
+        requestParamTL.remove();
     }
 
     /**

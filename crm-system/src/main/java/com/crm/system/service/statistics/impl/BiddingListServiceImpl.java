@@ -1,6 +1,7 @@
 package com.crm.system.service.statistics.impl;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
@@ -38,6 +39,11 @@ public class BiddingListServiceImpl implements BiddingListService {
     private SysDeptMapper sysDeptMapper;
     @Resource
     private ISysDeptService sysDeptService;
+    @Resource
+    private SysDeptMapper baseMapper;
+
+    @Resource
+    private ISysDeptService iSysDeptService;
 
     /**
      * 分页查询投标列表数据
@@ -92,7 +98,7 @@ public class BiddingListServiceImpl implements BiddingListService {
         }
 
         // 如果未指定部门ID，则使用登录用户所属部门的父级部门ID
-        if (ObjectUtil.isEmpty(reqDTO.getDeptId())) {
+        if (ObjectUtil.isEmpty(reqDTO.getDeptId()) && ObjectUtil.isEmpty(reqDTO.getUserId())) {
             LoginUser loginUser = LoginHelper.getLoginUser();
             SysDept loginDept = sysDeptMapper.selectById(loginUser.getDeptId());
             SysDept parentDept = sysDeptService.getParentDept(loginDept);
@@ -173,4 +179,19 @@ public class BiddingListServiceImpl implements BiddingListService {
             }
         }
     }
+
+    /**
+     * 查询部门树结构信息
+     *
+     * @return 部门树信息集合
+     */
+    @Override
+    public List<Tree<Long>> querySysDeptTree() {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
+        SysDept sysDept = iSysDeptService.getParentDept(loginDept);
+        List<SysDept> depts = baseMapper.selectDeptQdList(sysDept.getDeptId());
+        return iSysDeptService.buildDeptTreeSelect(depts);
+    }
+
 }
