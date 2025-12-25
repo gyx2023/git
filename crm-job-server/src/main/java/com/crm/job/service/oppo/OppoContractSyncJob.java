@@ -176,7 +176,7 @@ public class OppoContractSyncJob {
             }
             eformBo.setBusiType("订购");
             eformBo.setCreateTime(new Date());
-
+            eformBo.setIsValid(1);
             toppContractEformService.insertByBo(eformBo);
             log.info("新增电子表单数据成功");
         }
