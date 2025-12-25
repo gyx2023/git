@@ -12,7 +12,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -226,6 +229,22 @@ public class ToppContractExport {
         if (value == null) {
             return "";
         }
+
+        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss.ffffff 格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            // 由于Java Date只精确到毫秒，所以显示为000
+            return sdf.format(value) + ".000";
+        } else if (value instanceof LocalDateTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+            String formatted = ((LocalDateTime) value).format(formatter);
+            return formatted.substring(0, formatted.length() - 3); // 移除毫秒后三位，保留6位微秒
+        } else if (value instanceof Timestamp) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            String formatted = sdf.format(value);
+            return formatted + ".000"; // 假设微秒部分为0
+        }
+
         return value.toString();
     }
 }
