@@ -80,7 +80,7 @@ public class OppoContractSyncJob {
                         syncContractEformData(signVo, toppOpportunity);
                     }
                 }catch (Exception e){
-                    log.error("ContractId为：" + signVo.getContractId() + "的合同或电子表单保存失败");
+                    log.error("ContractId为：" + signVo.getContractId() + "的合同或电子表单保存失败:" + e.getMessage());
                 }
             }
         }
