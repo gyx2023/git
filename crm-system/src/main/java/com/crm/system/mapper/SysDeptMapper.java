@@ -45,5 +45,8 @@ public interface SysDeptMapper extends BaseMapperPlus<SysDeptMapper, SysDept, Sy
     void executeTruncate();
 
 
-    List<SysDept> selectDqDeptList(Long deptId);
+    List<SysDept> selectDqDeptList(@Param("deptId") Long deptId);
+
+    List<SysDept> selectDeptQdList(@Param("deptId") Long deptId);
+
 }
