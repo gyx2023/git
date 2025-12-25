@@ -1,5 +1,6 @@
 package com.crm.system.service.topp;
 
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
@@ -9,6 +10,7 @@ import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 【请填写功能名称】Service接口
@@ -58,5 +60,6 @@ public interface IToppOpportunityService {
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
+    List<SignOppoFileExportDTO> selectToppOpportunity();
 
 }
