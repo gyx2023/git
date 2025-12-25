@@ -7,6 +7,7 @@ import lombok.Data;
 public class ContractStatisticsUserRespDTO {
     private String userName;
     private String userId;
+    private String deptId;
     private Integer countQy;
     private Double moneyQy;
     private Integer ybwQy;

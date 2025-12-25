@@ -147,14 +147,8 @@
         GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = h.name_
         WHERE a.is_sign = '0'
-        and e.dept_id in(
-        select dept_id from zqzt_sys_dept where dept_id = #{deptId}
-        union
-        select t.dept_id from (select * from zqzt_sys_dept where parent_id is not null) t,
-        (select @parent_id := #{deptId}) pd
-        where FIND_IN_SET(parent_id,@parent_id) > 0
-        and @parent_id := CONCAT(@parent_id,',',dept_id)
-        )
+        and a.audit_status !=4
+
         <if test="deptId != null">
             and e.dept_id in(
             select dept_id from zqzt_sys_dept where dept_id = #{deptId}
@@ -167,6 +161,9 @@
         </if>
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
+        </if>
+        <if test="isZb != null">
+            and result='match_bid'
         </if>
         <if test="maxCgAmount != null">
             and a.buy_budget_money &lt; #{maxCgAmount}
@@ -280,6 +277,7 @@
         GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
         WHERE a.is_sign = '0'
+        and a.audit_status !=4
         <if test="deptId != null">
             and e.dept_id in(
             select dept_id from zqzt_sys_dept where dept_id = #{deptId}
@@ -292,6 +290,9 @@
         </if>
         <if test="userId != null">
             and e.user_id = #{userId}
+        </if>
+        <if test="isZb != null">
+            and a.result='match_bid'
         </if>
         <if test="minCgAmount != null">
             and a.buy_budget_money &gt;= #{minCgAmount}
@@ -353,7 +354,6 @@
         ) t
         ORDER BY t.project_name;
     </select>
-
 
 
     <select id="queryContractUserList" resultMap="resultContractMap">
@@ -436,6 +436,7 @@
         GROUP BY a.id, b.name, b.contribution  <!-- 新增GROUP BY，补充b.contribution -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = h.name_
         WHERE a.is_sign = '1'
+        and a.audit_status !=4
         <if test="deptId != null">
             and e.dept_id in(
             select dept_id from zqzt_sys_dept where dept_id = #{deptId}
@@ -448,12 +449,6 @@
         </if>
         <if test="userId != null">
             and e.user_id = #{userId}
-        </if>
-        <if test="minCgAmount != null">
-            and a.buy_budget_money &gt;= #{minCgAmount}
-        </if>
-        <if test="maxCgAmount != null">
-            and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
         <if test="minYjAmount != null">
             and a.sign_money &gt;= #{minYjAmount}
@@ -473,20 +468,11 @@
                 #{item}
             </foreach>
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
-        </if>
         <if test="projectType != null">
             and a.project_type in
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
-        </if>
-        <if test="bidResult != null">
-            and a.result = #{bidResult}
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -495,10 +481,10 @@
             and a.ict_profit &lt;= #{maxMll}
         </if>
         <if test="startTime != null">
-            and a.open_bid_time &gt;= #{startTime}
+            and a.sign_time &gt;= #{startTime}
         </if>
         <if test="endTime != null">
-            and a.open_bid_time &lt;= #{endTime}
+            and a.sign_time &lt;= #{endTime}
         </if>
         <if test="unicomType != null">
             and c.unicom_type in
@@ -559,6 +545,7 @@
         GROUP BY a.id, b.name, b.contribution  <!-- 补充b.contribution到GROUP BY -->
         ) ci ON ci.bid_id = a.id AND ci.member_name = e.nick_name
         WHERE a.is_sign = '1'
+        and a.audit_status !=4
         <if test="deptId != null">
             and e.dept_id in(
             select dept_id from zqzt_sys_dept where dept_id = #{deptId}
@@ -572,12 +559,6 @@
 
         <if test="userId != null">
             and e.user_id = #{userId}
-        </if>
-        <if test="minCgAmount != null">
-            and a.buy_budget_money &gt;= #{minCgAmount}
-        </if>
-        <if test="maxCgAmount != null">
-            and a.buy_budget_money &lt; #{maxCgAmount}
         </if>
         <if test="minYjAmount != null">
             and a.sign_money &gt;= #{minYjAmount}
@@ -597,20 +578,11 @@
                 #{item}
             </foreach>
         </if>
-        <if test="jzqk != null">
-            and a.competition_condition in
-            <foreach collection="jzqk" item="item" open="(" separator="," close=")">
-                #{item}
-            </foreach>
-        </if>
         <if test="projectType != null">
             and a.project_type in
             <foreach collection="projectType" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
-        </if>
-        <if test="bidResult != null">
-            and a.result = #{bidResult}
         </if>
         <if test="minMll != null">
             and a.ict_profit>= #{minMll}
@@ -619,10 +591,10 @@
             and a.ict_profit &lt;= #{maxMll}
         </if>
         <if test="startTime != null">
-            and a.open_bid_time &gt;= #{startTime}
+            and a.sign_time &gt;= #{startTime}
         </if>
         <if test="endTime != null">
-            and a.open_bid_time &lt;= #{endTime}
+            and a.sign_time &lt;= #{endTime}
         </if>
         <if test="unicomType != null">
             and c.unicom_type in
