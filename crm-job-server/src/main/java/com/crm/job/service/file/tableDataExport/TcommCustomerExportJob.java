@@ -87,6 +87,7 @@ public class TcommCustomerExportJob {
                     line.append(escapeNull(record.getContactTel())).append("|");
                     line.append(escapeNull(record.getContactAddr())).append("|");
                     line.append(escapeNull(record.getCustManager())).append("|");
+                    line.append(escapeNull(record.getCreateTime())).append("|");  // 创建时间
                     line.append(escapeNull(record.getCreator())).append("|");
                     line.append(escapeNull(record.getMemo())).append("|");
                     line.append(escapeNull(record.getStaffSize())).append("|");
@@ -135,7 +136,7 @@ public class TcommCustomerExportJob {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt";
+            String remoteFilePath = "/" + prefix + ".txt";
             try {
                 sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("带过滤条件的客户信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);

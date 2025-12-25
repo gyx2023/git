@@ -72,6 +72,7 @@ public class ToppOrderExportJob {
                     line.append(escapeNull(record.getOppoId())).append("|");
                     line.append(escapeNull(record.getCustId())).append("|");
                     line.append(escapeNull(record.getCreator())).append("|");
+                    line.append(escapeNull(record.getCreateTime())).append("|");  // 创建时间
                     line.append(escapeNull(record.getSysFormId())).append("|");
                     line.append(escapeNull(record.getAreaId())).append("|");
                     line.append(escapeNull(record.getOrgId())).append("|");
@@ -82,6 +83,7 @@ public class ToppOrderExportJob {
                     line.append(escapeNull(record.getContractId())).append("|");
                     line.append(escapeNull(record.getPhase())).append("|");
                     line.append(escapeNull(record.getCustManagerId())).append("|");
+                    line.append(escapeNull(record.getUpdateTime())).append("|");  // 更新时间
                     line.append(escapeNull(record.getActors())).append("|");
                     line.append(escapeNull(record.getStatus())).append("|");
                     line.append(escapeNull(record.getActorsInfo())).append("|");
@@ -127,7 +129,7 @@ public class ToppOrderExportJob {
             }
 
             // 上传文件到SFTP服务器
-            String remoteFilePath = "/upload/" + prefix + ".txt";
+            String remoteFilePath = "/" + prefix + ".txt";
             try {
                 sftpUtil.uploadFile("topp_tcomm_sys_import",tempFile.getAbsolutePath(), remoteFilePath);
                 String successMsg = String.format("订单信息导出任务执行成功，导出记录数：%d，文件路径：%s", dataList.size(), remoteFilePath);
