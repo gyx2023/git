@@ -763,8 +763,19 @@ public class SftpUtil implements InitializingBean {
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             sftp = getSftp(actualConfigType);
             String remortDir = getSftpParam(configType,"sftp.directory","");
-            sftp.getClient().put(localFilePath, remortDir.endsWith("/") ? remortDir + date + "/" + remoteFilePath : remortDir + "/" + date + "/" + remoteFilePath);
-            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteFilePath);
+            String remotePath = remortDir.endsWith("/") ? remortDir + date + "/" + remoteFilePath : remortDir + "/" + date + "/" + remoteFilePath;
+
+            // 获取远程目录路径（不包含文件名）
+            String remoteDir = remotePath.substring(0, remotePath.lastIndexOf("/"));
+
+            // 检查远程目录是否存在，如果不存在则创建
+            if (!sftp.exist(remoteDir)) {
+                sftp.mkdir(remoteDir); // 创建目录
+                log.info("创建远程目录: {}", remoteDir);
+            }
+
+            sftp.getClient().put(localFilePath, remotePath);
+            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteDir + remotePath);
         } catch (Exception e) {
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);
