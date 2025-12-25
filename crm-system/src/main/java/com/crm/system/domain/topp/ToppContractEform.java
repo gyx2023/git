@@ -93,8 +93,8 @@ public class ToppContractEform extends BaseEntity {
 
     @TableField(exist = false)
     private String createBy;
-    @TableField(exist = false)
-    private Date createTime;
+//    @TableField(exist = false)
+//    private Date createTime;
     @TableField(exist = false)
     private String updateBy;
     @TableField(exist = false)
