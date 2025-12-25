@@ -71,6 +71,7 @@
         <result property="wqZb" column="wq_zb"/>
         <result property="gxedZb" column="gxed_zb"/>
         <result property="userName" column="user_name"/>
+        <result property="userId" column="user_id"/>
     </resultMap>
 
 
@@ -94,6 +95,7 @@
         <result property="wqQy" column="wq_Qy"/>
         <result property="gxedMoney" column="gxed_money"/>
         <result property="userName" column="user_name"/>
+        <result property="userId" column="user_id"/>
     </resultMap>
 
 
@@ -291,6 +293,7 @@
     <select id="selectSignStatisticsUserRespDTO" resultMap="UserResult">
         SELECT
         base.nick_name AS user_name,
+        base.user_id ,
         SUM(base.ybw_tb) AS ybw_tb,
         SUM(base.ybyq_tb) AS ybyq_tb,
         SUM(base.ybwq_tb) AS ybwq_tb,
@@ -307,6 +310,7 @@
         FROM (
         SELECT
         d.nick_name,
+        d.user_id,
         a.buy_budget_money,
         a.match_bid_money,
         c.contribution,
@@ -579,6 +583,7 @@
     <select id="selectContractStatisticsUserRespDTO" resultMap="UserContractResult">
         SELECT
         base.nick_name AS user_name,
+        base.user_id,
         SUM(base.ybw_qy + base.ybyq_qy + base.ybwq_qy + base.wq_qy) AS count_qy,
         ROUND(SUM(base.sign_money), 2) AS money_qy,
         SUM(base.ybw_qy) AS ybw_qy,
@@ -589,6 +594,7 @@
         FROM (
         SELECT
         d.nick_name,
+        d.user_id,
         a.sign_money,
         c.contribution,
         CASE WHEN a.sign_money &lt; 100 THEN 1 ELSE 0 END AS ybw_qy,
@@ -603,6 +609,8 @@
         WHERE e.dept_id = #{deptId}
         AND a.is_sign = '1'
         AND c.name = d.nick_name
+
+
         <if test="minCgAmount != null">
             AND a.buy_budget_money &gt;= #{minCgAmount}
         </if>

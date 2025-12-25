@@ -64,6 +64,6 @@ public class ContractUserReqDTO {
     private  String startTime;
 
     private  String endTime;
-
+    private String userId;
 
 }

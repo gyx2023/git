@@ -61,6 +61,18 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 查询创建时间大于等于指定时间的商机列表
+     */
+    @Override
+    public List<ToppOpportunityDo> queryListByStartTime(Date startTime) {
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
+        lqw.ge(ToppOpportunityDo::getCreateTime, startTime);
+        return baseMapper.selectList(lqw);
+    }
+
+
+
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();

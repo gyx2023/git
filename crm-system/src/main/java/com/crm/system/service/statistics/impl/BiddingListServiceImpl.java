@@ -92,7 +92,7 @@ public class BiddingListServiceImpl implements BiddingListService {
         }
 
         // 如果未指定部门ID，则使用登录用户所属部门的父级部门ID
-        if (ObjectUtil.isEmpty(reqDTO.getDeptId())) {
+        if (ObjectUtil.isEmpty(reqDTO.getDeptId())&&ObjectUtil.isEmpty(reqDTO.getUserId())) {
             LoginUser loginUser = LoginHelper.getLoginUser();
             SysDept loginDept = sysDeptMapper.selectById(loginUser.getDeptId());
             SysDept parentDept = sysDeptService.getParentDept(loginDept);

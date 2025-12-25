@@ -608,6 +608,25 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             return false; // 如果找不到原始记录，直接返回失败} else {
         }
 
+        // 根据集团客户拓展类型进行校验
+        String expandType = originalInfo.getGrpExpandType();
+        if ("01".equals(expandType)) {
+            // 省直拓 - 省级客户经理不能为空
+            if (bo.getProvManagerOauser() == null || bo.getProvManagerName() == null) {
+                throw new RuntimeException("集团客户拓展类型为省直拓，省级客户经理信息不能为空");
+            }
+        } else if ("02".equals(expandType)) {
+            // 市直拓 - 市级客户经理不能为空
+            if (bo.getCityManagerOauser() == null || bo.getCityManagerName() == null) {
+                throw new RuntimeException("集团客户拓展类型为市直拓，市级客户经理信息不能为空");
+            }
+        } else if ("03".equals(expandType)) {
+            // 县直拓 - 县级客户经理不能为空
+            if (bo.getCountyManagerOauser() == null || bo.getCountyManagerName() == null) {
+                throw new RuntimeException("集团客户拓展类型为县直拓，县级客户经理信息不能为空");
+            }
+        }
+
         // 记录变更日志
         zqGrpGroupLogService.recordChangeLog(originalInfo, "T2");
 
