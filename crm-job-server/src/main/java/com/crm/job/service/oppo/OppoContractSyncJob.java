@@ -136,6 +136,9 @@ public class OppoContractSyncJob {
             // 设置合同类别 2合同
             toppContractBo.setContractAddType("2");
             toppContractBo.setCreateTime(new Date());
+            toppContractBo.setPayInfo("后台自动同步总部商机关联合同信息");
+            toppContractBo.setIsValid("1");
+            toppContractBo.setAuditStatus("2");
             toppContractService.insertByBo(toppContractBo);
             log.info("新增合同数据成功");
             if(toppOpportunity.getContractId() == null){
@@ -177,6 +180,7 @@ public class OppoContractSyncJob {
             eformBo.setBusiType("订购");
             eformBo.setCreateTime(new Date());
             eformBo.setIsValid(1);
+            eformBo.setTextType("后台自动同步总部商机关联电子表单");
             toppContractEformService.insertByBo(eformBo);
             log.info("新增电子表单数据成功");
         }
