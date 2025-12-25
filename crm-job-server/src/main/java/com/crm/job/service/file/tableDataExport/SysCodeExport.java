@@ -19,6 +19,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
+import com.crm.common.utils.SpecialCharacterHandler;
+
 /**
  * sys_code表数据导出定时任务
  * 将sys_code表中所有数据导出到文件，文件名为sys_code_yyyyMMdd.txt
@@ -81,8 +83,8 @@ public class SysCodeExport {
         }
 
         try {
-            // 查询sys_code表所有数据
-            List<SysCode> sysCodeList = sysCodeMapper.selectList(new LambdaQueryWrapper<>());
+            // 查询sys_code表所有数据，清理特殊字符
+            List<SysCode> sysCodeList = sysCodeMapper.selectAllWithCleanedSpecialChars();
 
             if (sysCodeList.isEmpty()) {
                 String warnMsg = "sys_code表中没有数据需要导出";
@@ -150,7 +152,7 @@ public class SysCodeExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
@@ -172,6 +174,8 @@ public class SysCodeExport {
             return sdf.format(value);
         }
 
-        return value.toString();
+        // 清理特殊字符
+        String stringValue = value.toString();
+        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
     }
 }
