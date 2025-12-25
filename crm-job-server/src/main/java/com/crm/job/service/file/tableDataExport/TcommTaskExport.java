@@ -97,11 +97,10 @@ public class TcommTaskExport {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 // 添加表头（可选）
-                writer.write("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime|" +
+                writer.write("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|createTime|dueLimit|dueTime|" +
                     "actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score|" +
                     "resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId|" +
-                    "userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason|createBy|createTime|updateBy|" +
-                    "updateTime");
+                    "userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason");
                 writer.newLine();
 
                 // 添加数据行
@@ -115,6 +114,7 @@ public class TcommTaskExport {
                     line.append(formatField(tcommTask.getOppoName())).append("|");
                     line.append(formatField(tcommTask.getInfoId())).append("|");
                     line.append(formatField(tcommTask.getInfoType())).append("|");
+                    line.append(formatField(tcommTask.getCreateTime())).append("|");
                     line.append(formatField(tcommTask.getDueLimit())).append("|");
                     line.append(formatField(tcommTask.getDueTime())).append("|");
                     line.append(formatField(tcommTask.getActorsWait())).append("|");

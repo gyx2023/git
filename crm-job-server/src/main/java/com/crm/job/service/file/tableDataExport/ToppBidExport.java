@@ -97,7 +97,7 @@ public class ToppBidExport {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 // 添加表头（可选）
-                writer.write("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|creator|" +
+                writer.write("id|opportunityCode|bidCode|bidBody|resultTime|result|money|getTime|returnTime|createTime|creator|" +
                     "memo|borrower|reportUser|auditTaskId|auditPerson|auditStatus|auditResult|auditTime|matchBidMoney|" +
                     "bidMoney|endTime|contractType|projectId|projectName|contractTime|ictProfit|softProfit|isSign|" +
                     "isFrameworkContract|isSelfReserch|notSelfReserchReason|selfReserchName|selfReserchMoney|" +
@@ -116,6 +116,7 @@ public class ToppBidExport {
                     line.append(formatField(toppBid.getMoney())).append("|");
                     line.append(formatField(toppBid.getGetTime())).append("|");
                     line.append(formatField(toppBid.getReturnTime())).append("|");
+                    line.append(formatField(toppBid.getCreateTime())).append("|");
                     line.append(formatField(toppBid.getCreator())).append("|");
                     line.append(formatField(toppBid.getMemo())).append("|");
                     line.append(formatField(toppBid.getBorrower())).append("|");
