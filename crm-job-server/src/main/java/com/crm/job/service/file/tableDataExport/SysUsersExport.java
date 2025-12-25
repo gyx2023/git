@@ -98,7 +98,7 @@ public class SysUsersExport {
                 new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 // 添加表头（可选）
                 writer.write("id|name|nameCh|relationTel|type|orgId|password|passwordSalt|functionList|roleList|" +
-                    "remark|creator|modifier|modifyTime|isValid|wxUserFlag|wxPhone|wxNo|wxEmail|wxFlag|stealth|customerNo|" +
+                    "remark|creator|createTime|modifier|modifyTime|isValid|wxUserFlag|wxPhone|wxNo|wxEmail|wxFlag|stealth|customerNo|" +
                     "oaAccount|email|firstLogin|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
                     "cardNumber|staffType|userRoleYx|zqbusinessFlag|recSmsBeginTime|recSmsEndTime|associatedDeveloper|" +
                     "defaultDeveloper|checkDeveloper");
@@ -119,6 +119,7 @@ public class SysUsersExport {
                     line.append(formatField(sysUsers.getRoleList())).append("|");
                     line.append(formatField(sysUsers.getRemark())).append("|");
                     line.append(formatField(sysUsers.getCreator())).append("|");
+                    line.append(formatField(sysUsers.getCreateTime())).append("|");
                     line.append(formatField(sysUsers.getModifier())).append("|");
                     line.append(formatField(sysUsers.getModifyTime())).append("|");
                     line.append(formatField(sysUsers.getIsValid())).append("|");
