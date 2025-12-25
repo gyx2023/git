@@ -12,7 +12,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -99,7 +102,7 @@ public class SysUsersExport {
                 // 添加表头（可选）
                 writer.write("id|name|nameCh|relationTel|type|orgId|password|passwordSalt|functionList|roleList|" +
                     "remark|creator|createTime|modifier|modifyTime|isValid|wxUserFlag|wxPhone|wxNo|wxEmail|wxFlag|stealth|customerNo|" +
-                    "oaAccount|email|firstLogin|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
+                    "oaAccount|email|firstLogin|updataTime|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
                     "cardNumber|staffType|userRoleYx|zqbusinessFlag|recSmsBeginTime|recSmsEndTime|associatedDeveloper|" +
                     "defaultDeveloper|checkDeveloper");
                 writer.newLine();
@@ -133,6 +136,7 @@ public class SysUsersExport {
                     line.append(formatField(sysUsers.getOaAccount())).append("|");
                     line.append(formatField(sysUsers.getEmail())).append("|");
                     line.append(formatField(sysUsers.getFirstLogin())).append("|");
+                    line.append(formatField(sysUsers.getUpdateTime())).append("|");
                     line.append(formatField(sysUsers.getIncludeType())).append("|");
                     line.append(formatField(sysUsers.getUnicomType())).append("|");
                     line.append(formatField(sysUsers.getUnicomType2())).append("|");
@@ -190,6 +194,19 @@ public class SysUsersExport {
         if (value == null) {
             return "";
         }
+
+        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
+        } else if (value instanceof LocalDateTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return ((LocalDateTime) value).format(formatter);
+        } else if (value instanceof Timestamp) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format(value);
+        }
+
         return value.toString();
     }
 }
