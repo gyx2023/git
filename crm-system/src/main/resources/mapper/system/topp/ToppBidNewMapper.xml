@@ -604,7 +604,7 @@
         INNER JOIN zqzt_sys_user c ON b.designer = c.user_id
         INNER JOIN zqzt_sys_dept d ON c.dept_id = d.dept_id
         WHERE
-        AND a.is_sign = '1'
+         a.is_sign = '1'
         and a.audit_status !=4
         <if test="deptId != null">
             and  d.dept_id in (
