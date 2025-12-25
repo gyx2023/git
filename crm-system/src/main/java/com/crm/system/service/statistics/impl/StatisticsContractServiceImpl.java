@@ -116,7 +116,6 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
             new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, reqDTO.getDeptId()));
         deptList.add(sysDept);
-        reqDTO.setAreaCode(sysDept.getDeptId());
 
         // 合计数据
         ContractStatisticsRespDTO totalDTO = new ContractStatisticsRespDTO();
@@ -294,7 +293,6 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
         if (!sysDept.getDeptId().equals(1L)) {
             deptList.add(sysDept);
         }
-        reqDTO.setAreaCode(sysDept.getDeptId());
 
         // 遍历部门列表，获取各部门统计数据
         for (SysDept dept : deptList) {
