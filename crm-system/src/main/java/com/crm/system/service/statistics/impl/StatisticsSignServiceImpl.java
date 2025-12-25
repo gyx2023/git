@@ -358,6 +358,7 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         totalDTO.setYbwqZb(totalYbwqZb);
         totalDTO.setWqZb(totalWqZb);
         totalDTO.setGxedZb(totalGxedZb);
+        totalDTO.setDeptId(reqDTO.getDeptId());
         list.add(totalDTO);
 
         // 创建分页对象并设置分页参数

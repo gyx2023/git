@@ -7,6 +7,7 @@ import lombok.Data;
 public class SignStatisticsUserRespDTO {
     private String userName;
     private String userId;
+    private String deptId;
     private Integer countTb;
     private Double moneyTb;
     private Integer ybwTb;
