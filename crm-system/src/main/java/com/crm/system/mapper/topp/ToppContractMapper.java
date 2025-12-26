@@ -14,8 +14,5 @@ import java.util.List;
  */
 public interface ToppContractMapper extends BaseMapperPlus<ToppContractMapper, ToppContractDo, ToppContractVo> {
 
-    /**
-     * 查询所有合同数据，清理特殊字符
-     */
-    List<ToppContractDo> selectAllWithCleanedSpecialChars();
+
 }
