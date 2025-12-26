@@ -17,7 +17,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -67,7 +70,6 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         lqw.ge(ToppOpportunityDo::getCreateTime, startTime);
         return baseMapper.selectList(lqw);
     }
-
 
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
@@ -252,11 +254,45 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
     @Override
     public List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
-        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<ToppOpportunityDo>() ;
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<ToppOpportunityDo>();
         lqw.ge(ToppOpportunityDo::getSignTime, startTime);
         lqw.lt(ToppOpportunityDo::getSignTime, endTime.plusSeconds(1));
-            // 筛选有效状态
+        // 筛选有效状态
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
         return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public Boolean upppUnbound(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return false;
+        }
+        Date date = new Date();
+        ToppOpportunityDo updateEntity = getToppOpportunityDo(date);
+
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
+        lqw.in(ToppOpportunityDo::getId, ids);
+
+        int updateCount = baseMapper.update(updateEntity, lqw);
+        return updateCount > 0;
+    }
+
+    private static ToppOpportunityDo getToppOpportunityDo(Date date) {
+        ToppOpportunityDo updateEntity = new ToppOpportunityDo();
+        //商机终止时修改为opp_end_link 废弃、更新时间
+        updateEntity.setNewOppPhase("opp_end_link");
+        updateEntity.setNewOppPhaseTime(date);
+
+        //修改为ppo_end终结、更新时间
+        updateEntity.setOppPhase("opp_end");
+        updateEntity.setOppPhaseTime(date);
+
+        //像改为0无效、更新时间
+        updateEntity.setIsValid("0");
+        updateEntity.setUpdateTime(date);
+
+        //修改为oppo_status_end商机终止;
+        updateEntity.setOppoState("oppo_status_end");
+        return updateEntity;
     }
 }

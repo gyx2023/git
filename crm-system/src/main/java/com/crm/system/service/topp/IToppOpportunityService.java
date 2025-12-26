@@ -60,4 +60,6 @@ public interface IToppOpportunityService {
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
     List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime,LocalDateTime endTime);
+
+    Boolean upppUnbound(List<Long> ids);
 }
