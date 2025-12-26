@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.SpecialCharacterHandler;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppOppPreEstimateDo;
 import com.crm.system.mapper.topp.ToppOppPreEstimateMapper;
@@ -171,6 +172,8 @@ public class ToppOppPreEstimateExport {
             return sdf.format(value);
         }
 
-        return value.toString();
+        // 清理特殊字符
+        String stringValue = value.toString();
+        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
     }
 }

@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.SpecialCharacterHandler;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.tcomm.TcommTaskDo;
 import com.crm.system.mapper.tcomm.TcommTaskMapper;
@@ -203,6 +204,8 @@ public class TcommTaskExport {
             return sdf.format(value);
         }
 
-        return value.toString();
+        // 清理特殊字符
+        String stringValue = value.toString();
+        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
     }
 }
