@@ -1,5 +1,6 @@
 package com.crm.job.service.file.tableDataExport;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.SpecialCharacterHandler;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysCode;
@@ -85,7 +86,7 @@ public class SysCodeExport {
 
         try {
             // 查询sys_code表所有数据
-            List<SysCode> sysCodeList = sysCodeMapper.selectList(null);
+            List<SysCode> sysCodeList = sysCodeMapper.selectList(new LambdaQueryWrapper<>());
 
             if (sysCodeList.isEmpty()) {
                 String warnMsg = "sys_code表中没有数据需要导出";

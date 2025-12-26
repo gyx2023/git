@@ -4,8 +4,6 @@ import com.crm.system.domain.SysCode;
 import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
-import java.util.List;
-
 /**
  * 统一编码Mapper接口
  *
