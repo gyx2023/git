@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.common.utils.SpecialCharacterHandler;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppBidDo;
 import com.crm.system.mapper.topp.ToppBidMapper;
@@ -204,6 +204,6 @@ public class ToppBidExport {
 
         // 清理特殊字符
         String stringValue = value.toString();
-        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
+        return ExportToolsUtils.cleanSpecialCharacters(stringValue);
     }
 }

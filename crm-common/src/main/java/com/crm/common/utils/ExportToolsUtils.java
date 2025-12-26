@@ -2,13 +2,19 @@ package com.crm.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+
 /**
  * 特殊字符处理工具类
  *
  * @author 万超凡
  */
 @Slf4j
-public class SpecialCharacterHandler {
+public class ExportToolsUtils {
 
     /**
      * 清理字符串中的特殊字符（换行符、回车符、制表符、引号等）
@@ -42,5 +48,32 @@ public class SpecialCharacterHandler {
 
         // 不包含特殊字符，直接返回并trim
         return value.trim();
+    }
+
+    /**
+     * 格式化字段值，处理null值和特殊字符
+     *
+     * @param value 字段值
+     * @return 格式化后的字符串
+     */
+    public static String formatField(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
+        if (value instanceof Date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return cleanSpecialCharacters(sdf.format(value));
+        } else if (value instanceof LocalDateTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return cleanSpecialCharacters(((LocalDateTime) value).format(formatter));
+        } else if (value instanceof Timestamp) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return cleanSpecialCharacters(sdf.format(value));
+        }
+
+        // 对于其他类型，先转换为字符串，然后清理特殊字符
+        return cleanSpecialCharacters(value.toString());
     }
 }
