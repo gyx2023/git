@@ -82,8 +82,8 @@ public class ToppContractExport {
         }
 
         try {
-            // 查询topp_contract表所有数据，清理特殊字符
-            List<ToppContractDo> toppContractList = toppContractMapper.selectAllWithCleanedSpecialChars();
+            // 查询topp_contract表所有数据
+            List<ToppContractDo> toppContractList = toppContractMapper.selectList(null);
 
             if (toppContractList.isEmpty()) {
                 String warnMsg = "topp_contract表中没有数据需要导出";

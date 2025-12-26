@@ -19,9 +19,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="settingStr3" column="setting_str3"/>
     </resultMap>
 
-    <select id="selectAllWithCleanedSpecialChars" resultMap="SysCodeResult">
-        SELECT *
-        FROM sys_code
-    </select>
+
 
 </mapper>
