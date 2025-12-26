@@ -1,5 +1,6 @@
 package com.crm.job.service.file.tableDataExport;
 
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.system.domain.tcomm.TcommCustomer;
 import com.crm.system.service.tcomm.ITcommCustomerService;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -168,16 +169,6 @@ public class TcommCustomerExportJob {
      * @return 字符串表示
      */
     private String escapeNull(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        // 如果是Date类型，格式化为指定格式
-        if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        }
-
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
 }
