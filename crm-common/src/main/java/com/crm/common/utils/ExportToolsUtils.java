@@ -32,7 +32,10 @@ public class ExportToolsUtils {
     // 4. 匹配导出文件分隔符「|」（英文竖线），避免客户输入该字符导致字段错位
     private static final Pattern EXPORT_SEPARATOR_PATTERN = Pattern.compile("\\|");
 
-    // 5. 字段最大长度限制（可根据业务需求调整，默认2000字符，避免超大文本导致文件异常）
+    // 5. 匹配零宽字符等不可见字符
+    private static final Pattern INVISIBLE_UNICODE_PATTERN = Pattern.compile("[\\u200B-\\u200D\\uFEFF]");
+
+    // 6. 字段最大长度限制（可根据业务需求调整，默认2000字符，避免超大文本导致文件异常）
     private static final int MAX_FIELD_LENGTH = 2000;
 
     /**
@@ -59,10 +62,13 @@ public class ExportToolsUtils {
         // 第四步：移除所有不可见的危险控制字符（避免隐形错乱，如空字符、删节符等）
         cleanedValue = DANGEROUS_CONTROL_PATTERN.matcher(cleanedValue).replaceAll("");
 
-        // 第五步：规范化空格（多个连续空格合并为一个，首尾去除多余空格）
+        // 第五步：移除零宽字符等不可见Unicode字符
+        cleanedValue = INVISIBLE_UNICODE_PATTERN.matcher(cleanedValue).replaceAll("");
+        
+        // 第六步：规范化空格（多个连续空格合并为一个，首尾去除多余空格）
         cleanedValue = MULTI_SPACES_PATTERN.matcher(cleanedValue).replaceAll(" ").trim();
 
-        // 第六步：字段长度超限处理（避免超大文本导致文件过大或读取异常，添加截断标识）
+        // 第七步：字段长度超限处理（避免超大文本导致文件过大或读取异常，添加截断标识）
         if (cleanedValue.length() > MAX_FIELD_LENGTH) {
             String truncateTip = "...[文本过长，已截断]";
             // 预留截断标识长度，避免总长度超出限制
