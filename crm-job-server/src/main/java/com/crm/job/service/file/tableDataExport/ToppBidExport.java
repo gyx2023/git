@@ -180,30 +180,12 @@ public class ToppBidExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
-        if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        } else if (value instanceof LocalDateTime) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            return ((LocalDateTime) value).format(formatter);
-        } else if (value instanceof Timestamp) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        }
-
-        // 清理特殊字符
-        String stringValue = value.toString();
-        return ExportToolsUtils.cleanSpecialCharacters(stringValue);
+        return ExportToolsUtils.formatField(value);
     }
 }
