@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.common.utils.SpecialCharacterHandler;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppContractDo;
 import com.crm.system.mapper.topp.ToppContractMapper;
@@ -13,10 +13,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -82,8 +79,8 @@ public class ToppContractExport {
         }
 
         try {
-            // 查询topp_contract表所有数据，清理特殊字符
-            List<ToppContractDo> toppContractList = toppContractMapper.selectAllWithCleanedSpecialChars();
+            // 查询topp_contract表所有数据
+            List<ToppContractDo> toppContractList = toppContractMapper.selectList(new LambdaQueryWrapper<>());
 
             if (toppContractList.isEmpty()) {
                 String warnMsg = "topp_contract表中没有数据需要导出";
@@ -228,24 +225,6 @@ public class ToppContractExport {
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
-        if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        } else if (value instanceof LocalDateTime) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            return ((LocalDateTime) value).format(formatter);
-        } else if (value instanceof Timestamp) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        }
-
-        // 清理特殊字符
-        String stringValue = value.toString();
-        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
+        return ExportToolsUtils.formatField(value);
     }
 }

@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysCode;
 import com.crm.system.mapper.SysCodeMapper;
@@ -10,16 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
-
-import com.crm.common.utils.SpecialCharacterHandler;
 
 /**
  * sys_code表数据导出定时任务
@@ -83,8 +82,8 @@ public class SysCodeExport {
         }
 
         try {
-            // 查询sys_code表所有数据，清理特殊字符
-            List<SysCode> sysCodeList = sysCodeMapper.selectAllWithCleanedSpecialChars();
+            // 查询sys_code表所有数据
+            List<SysCode> sysCodeList = sysCodeMapper.selectList(new LambdaQueryWrapper<>());
 
             if (sysCodeList.isEmpty()) {
                 String warnMsg = "sys_code表中没有数据需要导出";
@@ -158,24 +157,6 @@ public class SysCodeExport {
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
-        if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        } else if (value instanceof LocalDateTime) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            return ((LocalDateTime) value).format(formatter);
-        } else if (value instanceof Timestamp) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        }
-
-        // 清理特殊字符
-        String stringValue = value.toString();
-        return SpecialCharacterHandler.cleanSpecialCharacters(stringValue);
+        return ExportToolsUtils.formatField(value);
     }
 }

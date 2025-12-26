@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppOppPreEstimateDo;
 import com.crm.system.mapper.topp.ToppOppPreEstimateMapper;
@@ -149,28 +150,12 @@ public class ToppOppPreEstimateExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        // 如果是日期时间类型，格式化为 yyyy-MM-dd HH:mm:ss 格式
-        if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        } else if (value instanceof LocalDateTime) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            return ((LocalDateTime) value).format(formatter);
-        } else if (value instanceof Timestamp) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        }
-
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
 }
