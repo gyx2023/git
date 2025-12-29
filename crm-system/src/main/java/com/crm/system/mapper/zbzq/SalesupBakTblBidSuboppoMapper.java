@@ -12,5 +12,5 @@ import java.util.List;
 public interface SalesupBakTblBidSuboppoMapper extends BaseMapperPlus<SalesupBakTblBidSuboppoMapper, SalesupBakTblBidSuboppoDo, SalesupBakTblBidSuboppoVo> {
 
 
-    List<Long> selectSignedOppoData(@Param("ids") List<String> ids);
+    List<String> selectSignedOppoData(@Param("oppCodes") List<String> oppCodes);
 }

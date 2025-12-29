@@ -87,10 +87,28 @@ public class OppoUnboundSyncJob {
         log.info("已关联表单的商机数量：{}", eformRelatedOpportunityIds.size());
         opportunityIds.removeAll(eformRelatedOpportunityIds);
 
+
+
+        List<ToppOpportunityVo> list = opportunityList.stream()
+            .filter(opportunity -> opportunityIds.contains(opportunity.getId()))
+            .collect(Collectors.toList());
+
+        List<String> oppCodes = list.stream()
+            .map(ToppOpportunityVo::getOppCode)
+            .collect(Collectors.toList());
+
         // 4. 查询商机ID列表中已有关联销售数据的商机，从待处理列表中移除
-        List<Long> signedOppoIds = salesupBakTblBidSuboppoService.selectSignedOppoData(opportunityIds);
-        log.info("已关联销售数据的商机数量：{}", signedOppoIds.size());
-        opportunityIds.removeAll(signedOppoIds);
+        List<String> signedOppoCodes = salesupBakTblBidSuboppoService.selectSignedOppoData(oppCodes);
+        log.info("已关联销售数据的商机数量：{}", signedOppoCodes.size());
+
+        List<ToppOpportunityVo> signedOppoIdList = list.stream()
+            .filter(opportunity -> signedOppoCodes.contains(opportunity.getOppCode()))
+            .collect(Collectors.toList());
+
+        List<Long> lastSignedOppoIds = signedOppoIdList.stream()
+            .map(ToppOpportunityVo::getId)
+            .collect(Collectors.toList());
+        opportunityIds.removeAll(lastSignedOppoIds);
 
         log.info("最终需要更新状态的商机数量：{}", opportunityIds.size());
 

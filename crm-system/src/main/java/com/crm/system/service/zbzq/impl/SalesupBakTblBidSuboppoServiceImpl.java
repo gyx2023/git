@@ -19,11 +19,10 @@ public class SalesupBakTblBidSuboppoServiceImpl implements ISalesupBakTblBidSubo
 
 
     @Override
-    public List<Long> selectSignedOppoData(List<Long> ids) {
-        if (ObjectUtil.isEmpty(ids)) {
+    public List<String> selectSignedOppoData(List<String> oppoCodes) {
+        if (ObjectUtil.isEmpty(oppoCodes)) {
             return new ArrayList<>();
         }
-        List<String> oppoIds = ids.stream().map(String::valueOf).collect(Collectors.toList());
-        return salesupBakTblBidSuboppoMapper.selectSignedOppoData(oppoIds);
+        return salesupBakTblBidSuboppoMapper.selectSignedOppoData(oppoCodes);
     }
 }

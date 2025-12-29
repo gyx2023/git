@@ -259,6 +259,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         lqw.lt(ToppOpportunityDo::getSignTime, endTime.plusSeconds(1));
         // 筛选有效状态
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
+        lqw.isNull(ToppOpportunityDo::getContractId);
         return baseMapper.selectVoList(lqw);
     }
 
