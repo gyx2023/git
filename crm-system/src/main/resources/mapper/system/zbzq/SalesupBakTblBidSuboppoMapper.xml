@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.zbzq.SalesupBakTblBidSuboppoMapper">
+
+    <select id="selectSignedOppoData" resultType="java.lang.Long">
+        SELECT a.oppo_id
+        FROM salesup_bak_tbl_bid_suboppo a
+        LEFT JOIN salesup_bak_tbl_bid_task b ON a.info_id = b.info_id
+        WHERE a.status = 1
+        AND a.deleted = 0
+        AND a.oppo_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

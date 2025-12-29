@@ -60,26 +60,30 @@ public class OppoUnboundSyncJob {
         // 1. 查询未关联商机的商机数据
         List<ToppOpportunityVo> opportunityList = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
         log.info("查询到未关联商机的商机数量：{}", opportunityList.size());
+        if (opportunityList.isEmpty()) {
+            log.info("没有需要处理的数据");
+            return;
+        }
 
         // 提取商机ID列表
         List<Long> opportunityIds = opportunityList.stream()
-                .map(ToppOpportunityVo::getId)
-                .collect(Collectors.toList());
+            .map(ToppOpportunityVo::getId)
+            .collect(Collectors.toList());
         log.info("商机ID列表大小：{}", opportunityIds.size());
 
         // 2. 查询商机ID列表中已有关联合同的商机，从待处理列表中移除
         List<ToppContractVo> contractList = toppContractService.queryContractList(opportunityIds);
         List<Long> contractRelatedOpportunityIds = contractList.stream()
-                .map(ToppContractVo::getProjectId)
-                .collect(Collectors.toList());
+            .map(ToppContractVo::getProjectId)
+            .collect(Collectors.toList());
         log.info("已关联合同的商机数量：{}", contractRelatedOpportunityIds.size());
         opportunityIds.removeAll(contractRelatedOpportunityIds);
 
         // 3. 查询商机ID列表中已有关联表单的商机，从待处理列表中移除
         List<ToppContractEformVo> contractEformList = toppContractEformService.queryContractList(opportunityIds);
         List<Long> eformRelatedOpportunityIds = contractEformList.stream()
-                .map(ToppContractEformVo::getProjectId)
-                .collect(Collectors.toList());
+            .map(ToppContractEformVo::getProjectId)
+            .collect(Collectors.toList());
         log.info("已关联表单的商机数量：{}", eformRelatedOpportunityIds.size());
         opportunityIds.removeAll(eformRelatedOpportunityIds);
 
