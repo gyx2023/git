@@ -1,5 +1,5 @@
 package com.crm.system.mapper.grp;
-import com.crm.system.domain.grp.TfFCustGroupMDO;
+import com.crm.system.domain.grp.TfFCustGroupMDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**
@@ -8,6 +8,6 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  * @author crm
  * @date 2025-12-08
  */
-public interface TfFCustGroupMMapper extends BaseMapperPlus<TfFCustGroupMMapper, TfFCustGroupMDO, TfFCustGroupMDO> {
+public interface TfFCustGroupMMapper extends BaseMapperPlus<TfFCustGroupMMapper, TfFCustGroupMDo, TfFCustGroupMDo> {
 
 }

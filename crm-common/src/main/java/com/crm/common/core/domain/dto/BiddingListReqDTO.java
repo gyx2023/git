@@ -65,19 +65,7 @@ public class BiddingListReqDTO {
 
     private  String endTime;
 
+    private String userId;
 
-    private String unicomTypeT;
-    /**
-     * 投标主体
-     */
-    private String bidMainPersonnelT;
-    /**
-     * 竞争情况
-     */
-    private String jzqkT;
-    /**
-     * 项目类型
-     */
-    private String projectTypeT;
 
 }

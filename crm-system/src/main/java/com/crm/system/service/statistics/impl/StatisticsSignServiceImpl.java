@@ -102,7 +102,7 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
     private void calculateProportion(SignStatisticsRespDTO respDTO) {
         // 计算中标数量占投标数量的比例
         if (ObjectUtil.isNotEmpty(respDTO.getCountTb()) && ObjectUtil.isNotEmpty(respDTO.getCountZb())) {
-            respDTO.setZbl(String.valueOf(Double.parseDouble(respDTO.getCountTb()) / Double.parseDouble(respDTO.getCountZb()) * 100));
+            respDTO.setZbl(String.valueOf(respDTO.getCountTb() / respDTO.getCountZb() * 100));
         }
     }
 
@@ -115,56 +115,40 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
      */
     @Override
     public TableDataInfo<SignStatisticsRespDTO> selectPageList(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
-        // 处理多个联通类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理多个项目类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理多个主要人员参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String mainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(mainPersonnelStr);
-        }
-
-        // 处理多个进展状态参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
 
         // 设置查询时间和部门条件
         setDateRange(reqDTO);
         setDeptCondition(reqDTO);
 
-        List<SignStatisticsRespDTO> list = new ArrayList<>();
         SysDept sysDept = sysDeptMapper.selectById(reqDTO.getDeptId());
 
         // 获取所有子部门
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, reqDTO.getDeptId()));
-        if(!sysDept.getDeptId().equals(1L)){
-            deptList.add(sysDept);
-        }
+        deptList.add(sysDept);
         reqDTO.setAreaCode(sysDept.getDeptId());
 
-        // 计算分页参数
-        int total = deptList.size();
-        int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
-        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
+        // 合计数据
+        SignStatisticsRespDTO totalDTO = new SignStatisticsRespDTO();
+        totalDTO.setDeptName("合计");
+        int totalCountTb = 0;
+        double totalMoneyTb = 0;
+        int totalYbwTb = 0;
+        int totalYbyqTb = 0;
+        int totalYbwqTb = 0;
+        int totalWqTb = 0;
 
-        // 分页处理
-        List<SysDept> pagedDeptList = deptList.subList(startIndex, endIndex);
+        int totalCountZb = 0;
+        double totalMoneyZb = 0;
+        int totalYbwZb = 0;
+        int totalYbyqZb = 0;
+        int totalYbwqZb = 0;
+        int totalWqZb = 0;
 
-        // 遍历部门列表，获取各部门统计数据
-        for (SysDept dept : pagedDeptList) {
+        // 先查询出所有数据
+        List<SignStatisticsRespDTO> allList = new ArrayList<>();
+        for (SysDept dept : deptList) {
             SignStatisticsRespDTO respDTO = new SignStatisticsRespDTO();
 
             // 判断是否为当前查询的根部门
@@ -182,8 +166,8 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
 
             // 计算中标比例
             if (ObjectUtil.isNotEmpty(respDTO.getCountTb()) && ObjectUtil.isNotEmpty(respDTO.getCountZb())) {
-                double tb = Double.parseDouble(respDTO.getCountTb());
-                double zb = Double.parseDouble(respDTO.getCountZb());
+                double tb = respDTO.getCountTb();
+                double zb = respDTO.getCountZb();
                 if (tb != 0) {
                     double proportion = zb / tb * 100;
                     respDTO.setZbl(String.format("%.2f", proportion));
@@ -191,10 +175,81 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
                     respDTO.setZbl("0.00");
                 }
             }
-            list.add(respDTO);
+            // 累加统计数据
+            if (ObjectUtil.isNotEmpty(respDTO.getCountTb())) {
+                totalCountTb += respDTO.getCountTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getMoneyTb())) {
+                totalMoneyTb += respDTO.getMoneyTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwTb())) {
+                totalYbwTb += respDTO.getYbwTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbyqTb())) {
+                totalYbyqTb += respDTO.getYbyqTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwqTb())) {
+                totalYbwqTb += respDTO.getYbwqTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getWqTb())) {
+                totalWqTb += respDTO.getWqTb();
+            }
+
+            if (ObjectUtil.isNotEmpty(respDTO.getCountZb())) {
+                totalCountZb += respDTO.getCountZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getMoneyZb())) {
+                totalMoneyZb += respDTO.getMoneyZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwZb())) {
+                totalYbwZb += respDTO.getYbwZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbyqZb())) {
+                totalYbyqZb += respDTO.getYbyqZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwqZb())) {
+                totalYbwqZb += respDTO.getYbwqZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getWqZb())) {
+                totalWqZb += respDTO.getWqZb();
+            }
+            allList.add(respDTO);
+        }
+        // 设置合计行数据
+        totalDTO.setDeptId(reqDTO.getDeptId());
+        totalDTO.setCountTb(totalCountTb);
+        totalDTO.setMoneyTb(totalMoneyTb);
+        totalDTO.setYbwTb(totalYbwTb);
+        totalDTO.setYbyqTb(totalYbyqTb);
+        totalDTO.setYbwqTb(totalYbwqTb);
+        totalDTO.setWqTb(totalWqTb);
+        totalDTO.setCountZb(totalCountZb);
+        totalDTO.setMoneyZb(totalMoneyZb);
+        totalDTO.setYbwZb(totalYbwZb);
+        totalDTO.setYbyqZb(totalYbyqZb);
+        totalDTO.setYbwqZb(totalYbwqZb);
+        totalDTO.setWqZb(totalWqZb);
+        // 计算合计中标比例
+        if (totalCountTb != 0) {
+            double totalProportion = (double) totalCountZb / totalCountTb * 100;
+            totalDTO.setZbl(String.format("%.2f", totalProportion));
+        } else {
+            totalDTO.setZbl("0.00");
+        }
+        allList.add(totalDTO);
+
+        // 再进行分页处理
+        int total = allList.size();
+        int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
+        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
+
+        // 分页数据
+        List<SignStatisticsRespDTO> pagedList = new ArrayList<>();
+        if (startIndex < total) {
+            pagedList = allList.subList(startIndex, endIndex);
         }
 
-        TableDataInfo<SignStatisticsRespDTO> tableDataInfo = TableDataInfo.build(list);
+        TableDataInfo<SignStatisticsRespDTO> tableDataInfo = TableDataInfo.build(pagedList);
         tableDataInfo.setTotal(total);
         return tableDataInfo;
     }
@@ -222,36 +277,88 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
      */
     @Override
     public TableDataInfo<SignStatisticsUserRespDTO> selectUserPageList(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
-        // 处理多个联通类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getUnicomType())) {
-            String unicomTypeStr = String.join(",", reqDTO.getUnicomType());
-            reqDTO.setUnicomTypeT(unicomTypeStr);
-        }
-
-        // 处理多个项目类型参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getProjectType())) {
-            String projectTypeStr = String.join(",", reqDTO.getProjectType());
-            reqDTO.setProjectTypeT(projectTypeStr);
-        }
-
-        // 处理多个主要人员参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getBidMainPersonnel())) {
-            String mainPersonnelStr = String.join(",", reqDTO.getBidMainPersonnel());
-            reqDTO.setBidMainPersonnelT(mainPersonnelStr);
-        }
-
-        // 处理多个进展状态参数
-        if (ObjectUtil.isNotEmpty(reqDTO.getJzqk())) {
-            String jzqkStr = String.join(",", reqDTO.getJzqk());
-            reqDTO.setJzqkT(jzqkStr);
-        }
 
         // 设置查询时间和部门条件
         setDateRange(reqDTO);
         setDeptCondition(reqDTO);
+        // 设置合计行数据
 
+        SignStatisticsUserRespDTO totalDTO = new SignStatisticsUserRespDTO();
+        totalDTO.setUserName("合计");
+        int totalCountTb = 0;
+        double totalMoneyTb = 0;
+        int totalYbwTb = 0;
+        int totalYbyqTb = 0;
+        int totalYbwqTb = 0;
+        int totalWqTb = 0;
+
+        int totalCountZb = 0;
+        double totalMoneyZb = 0;
+        int totalYbwZb = 0;
+        int totalYbyqZb = 0;
+        int totalYbwqZb = 0;
+        int totalWqZb = 0;
+        double totalGxedZb = 0;
         // 查询所有用户统计数据
         List<SignStatisticsUserRespDTO> list = topBidNewMapper.selectSignStatisticsUserRespDTO(reqDTO);
+        for (SignStatisticsUserRespDTO respDTO : list) {
+            // 累加统计数据
+            if (ObjectUtil.isNotEmpty(respDTO.getCountTb())) {
+                totalCountTb += respDTO.getCountTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getMoneyTb())) {
+                totalMoneyTb += respDTO.getMoneyTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwTb())) {
+                totalYbwTb += respDTO.getYbwTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbyqTb())) {
+                totalYbyqTb += respDTO.getYbyqTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwqTb())) {
+                totalYbwqTb += respDTO.getYbwqTb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getWqTb())) {
+                totalWqTb += respDTO.getWqTb();
+            }
+
+            if (ObjectUtil.isNotEmpty(respDTO.getCountZb())) {
+                totalCountZb += respDTO.getCountZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getMoneyZb())) {
+                totalMoneyZb += respDTO.getMoneyZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwZb())) {
+                totalYbwZb += respDTO.getYbwZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbyqZb())) {
+                totalYbyqZb += respDTO.getYbyqZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getYbwqZb())) {
+                totalYbwqZb += respDTO.getYbwqZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getWqZb())) {
+                totalWqZb += respDTO.getWqZb();
+            }
+            if (ObjectUtil.isNotEmpty(respDTO.getGxedZb())) {
+                totalGxedZb += respDTO.getGxedZb();
+            }
+        }
+        // 设置合计行数据
+        totalDTO.setCountTb(totalCountTb);
+        totalDTO.setMoneyTb(totalMoneyTb);
+        totalDTO.setYbwTb(totalYbwTb);
+        totalDTO.setYbyqTb(totalYbyqTb);
+        totalDTO.setYbwqTb(totalYbwqTb);
+        totalDTO.setWqTb(totalWqTb);
+        totalDTO.setCountZb(totalCountZb);
+        totalDTO.setMoneyZb(totalMoneyZb);
+        totalDTO.setYbwZb(totalYbwZb);
+        totalDTO.setYbyqZb(totalYbyqZb);
+        totalDTO.setYbwqZb(totalYbwqZb);
+        totalDTO.setWqZb(totalWqZb);
+        totalDTO.setGxedZb(totalGxedZb);
+        list.add(totalDTO);
 
         // 创建分页对象并设置分页参数
         Page<SignStatisticsUserRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
@@ -290,9 +397,8 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, reqDTO.getDeptId()));
-        if(!sysDept.getDeptId().equals(1L)){
-            deptList.add(sysDept);
-        }
+        deptList.add(sysDept);
+
         reqDTO.setAreaCode(sysDept.getDeptId());
 
         // 遍历部门列表，获取各部门统计数据
@@ -314,11 +420,11 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
 
             // 计算中标比例
             if (ObjectUtil.isNotEmpty(respDTO.getCountTb()) && ObjectUtil.isNotEmpty(respDTO.getCountZb())) {
-                double tb = Double.parseDouble(respDTO.getCountTb());
-                double zb = Double.parseDouble(respDTO.getCountZb());
+                double tb = respDTO.getCountTb();
+                double zb = respDTO.getCountZb();
                 if (tb != 0) {
                     double proportion = zb / tb * 100;
-                    respDTO.setZbl(String.format("%.2f", proportion));
+                    respDTO.setZbl(String.valueOf(Double.valueOf(String.format("%.2f", proportion))));
                 } else {
                     respDTO.setZbl("0.00");
                 }

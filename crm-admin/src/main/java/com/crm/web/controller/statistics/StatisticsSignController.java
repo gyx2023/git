@@ -79,18 +79,18 @@ public class StatisticsSignController extends BaseController {
         List<StatisticsOrgExportVo> listVo = BeanUtil.copyToList(list, StatisticsOrgExportVo.class);
         if (ObjectUtil.isNotEmpty( listVo)) {
             for (StatisticsOrgExportVo vo : listVo) {
-                vo.setCountTb(ObjectUtil.isEmpty(vo.getCountTb()) ? "0": vo.getCountTb());
-                vo.setCountZb(ObjectUtil.isEmpty(vo.getCountZb()) ? "0": vo.getCountZb());
-                vo.setYbwTb(ObjectUtil.isEmpty(vo.getYbwTb()) ? "0" : vo.getYbwTb());
-                vo.setYbyqTb(ObjectUtil.isEmpty(vo.getYbyqTb()) ? "0" : vo.getYbyqTb());
-                vo.setYbwqTb(ObjectUtil.isEmpty(vo.getYbwqTb()) ? "0" : vo.getYbwqTb());
-                vo.setWqTb(ObjectUtil.isEmpty(vo.getWqTb()) ? "0" : vo.getWqTb());
-                vo.setMoneyTb(ObjectUtil.isEmpty(vo.getMoneyTb()) ? "0" : vo.getMoneyTb());
-                vo.setYbwZb(ObjectUtil.isEmpty(vo.getYbwZb()) ? "0" : vo.getYbwZb());
-                vo.setYbyqZb(ObjectUtil.isEmpty(vo.getYbyqZb()) ? "0" : vo.getYbyqZb());
-                vo.setYbwqZb(ObjectUtil.isEmpty(vo.getYbwqZb()) ? "0" : vo.getYbwqZb());
-                vo.setWqZb(ObjectUtil.isEmpty(vo.getWqZb()) ? "0" : vo.getWqZb());
-                vo.setMoneyZb(ObjectUtil.isEmpty(vo.getMoneyZb()) ? "0" : vo.getMoneyZb());
+                vo.setCountTb(ObjectUtil.isEmpty(vo.getCountTb()) ? 0: vo.getCountTb());
+                vo.setCountZb(ObjectUtil.isEmpty(vo.getCountZb()) ? 0: vo.getCountZb());
+                vo.setYbwTb(ObjectUtil.isEmpty(vo.getYbwTb()) ? 0 : vo.getYbwTb());
+                vo.setYbyqTb(ObjectUtil.isEmpty(vo.getYbyqTb()) ? 0 : vo.getYbyqTb());
+                vo.setYbwqTb(ObjectUtil.isEmpty(vo.getYbwqTb()) ? 0 : vo.getYbwqTb());
+                vo.setWqTb(ObjectUtil.isEmpty(vo.getWqTb()) ? 0 : vo.getWqTb());
+                vo.setMoneyTb(ObjectUtil.isEmpty(vo.getMoneyTb()) ? 0 : vo.getMoneyTb());
+                vo.setYbwZb(ObjectUtil.isEmpty(vo.getYbwZb()) ? 0 : vo.getYbwZb());
+                vo.setYbyqZb(ObjectUtil.isEmpty(vo.getYbyqZb()) ? 0 : vo.getYbyqZb());
+                vo.setYbwqZb(ObjectUtil.isEmpty(vo.getYbwqZb()) ? 0 : vo.getYbwqZb());
+                vo.setWqZb(ObjectUtil.isEmpty(vo.getWqZb()) ? 0 : vo.getWqZb());
+                vo.setMoneyZb(ObjectUtil.isEmpty(vo.getMoneyZb()) ? 0 : vo.getMoneyZb());
                 vo.setZbl(ObjectUtil.isEmpty(vo.getZbl()) ? "0" : vo.getZbl());
             }
         }
@@ -109,19 +109,19 @@ public class StatisticsSignController extends BaseController {
         List<StatisticsUserExportVo> listVo = BeanUtil.copyToList(list, StatisticsUserExportVo.class);
         if (ObjectUtil.isNotEmpty( listVo)) {
             for (StatisticsUserExportVo vo : listVo) {
-                vo.setCountTb(ObjectUtil.isEmpty(vo.getCountTb()) ? "0": vo.getCountTb());
-                vo.setCountZb(ObjectUtil.isEmpty(vo.getCountZb()) ? "0": vo.getCountZb());
-                vo.setYbwTb(ObjectUtil.isEmpty(vo.getYbwTb()) ? "0" : vo.getYbwTb());
-                vo.setYbyqTb(ObjectUtil.isEmpty(vo.getYbyqTb()) ? "0" : vo.getYbyqTb());
-                vo.setYbwqTb(ObjectUtil.isEmpty(vo.getYbwqTb()) ? "0" : vo.getYbwqTb());
-                vo.setWqTb(ObjectUtil.isEmpty(vo.getWqTb()) ? "0" : vo.getWqTb());
-                vo.setMoneyTb(ObjectUtil.isEmpty(vo.getMoneyTb()) ? "0" : vo.getMoneyTb());
-                vo.setYbwZb(ObjectUtil.isEmpty(vo.getYbwZb()) ? "0" : vo.getYbwZb());
-                vo.setYbyqZb(ObjectUtil.isEmpty(vo.getYbyqZb()) ? "0" : vo.getYbyqZb());
-                vo.setYbwqZb(ObjectUtil.isEmpty(vo.getYbwqZb()) ? "0" : vo.getYbwqZb());
-                vo.setWqZb(ObjectUtil.isEmpty(vo.getWqZb()) ? "0" : vo.getWqZb());
-                vo.setMoneyZb(ObjectUtil.isEmpty(vo.getMoneyZb()) ? "0" : vo.getMoneyZb());
-                vo.setGxedZb(ObjectUtil.isEmpty(vo.getGxedZb()) ? "0" : vo.getGxedZb());
+                vo.setCountTb(ObjectUtil.isEmpty(vo.getCountTb()) ? 0: vo.getCountTb());
+                vo.setCountZb(ObjectUtil.isEmpty(vo.getCountZb()) ? 0: vo.getCountZb());
+                vo.setYbwTb(ObjectUtil.isEmpty(vo.getYbwTb()) ? 0 : vo.getYbwTb());
+                vo.setYbyqTb(ObjectUtil.isEmpty(vo.getYbyqTb()) ? 0 : vo.getYbyqTb());
+                vo.setYbwqTb(ObjectUtil.isEmpty(vo.getYbwqTb()) ? 0 : vo.getYbwqTb());
+                vo.setWqTb(ObjectUtil.isEmpty(vo.getWqTb()) ? 0 : vo.getWqTb());
+                vo.setMoneyTb(ObjectUtil.isEmpty(vo.getMoneyTb()) ? 0 : vo.getMoneyTb());
+                vo.setYbwZb(ObjectUtil.isEmpty(vo.getYbwZb()) ? 0 : vo.getYbwZb());
+                vo.setYbyqZb(ObjectUtil.isEmpty(vo.getYbyqZb()) ? 0 : vo.getYbyqZb());
+                vo.setYbwqZb(ObjectUtil.isEmpty(vo.getYbwqZb()) ? 0 : vo.getYbwqZb());
+                vo.setWqZb(ObjectUtil.isEmpty(vo.getWqZb()) ? 0 : vo.getWqZb());
+                vo.setMoneyZb(ObjectUtil.isEmpty(vo.getMoneyZb()) ? 0 : vo.getMoneyZb());
+                vo.setGxedZb(ObjectUtil.isEmpty(vo.getGxedZb()) ? 0 : vo.getGxedZb());
             }
         }
         ExcelUtil.exportExcel(listVo, "投标统计按支撑人员", StatisticsUserExportVo.class, response);

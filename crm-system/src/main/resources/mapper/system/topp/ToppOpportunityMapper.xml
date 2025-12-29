@@ -4,7 +4,7 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppOpportunityMapper">
 
-    <resultMap type="com.crm.system.domain.entity.topp.ToppOpportunityDO" id="ToppOpportunityResult">
+    <resultMap type="com.crm.system.domain.topp.ToppOpportunityDo" id="ToppOpportunityResult">
         <result property="id" column="id_"/>
         <result property="custId" column="cust_id"/>
         <result property="custName" column="cust_name"/>

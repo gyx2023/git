@@ -51,7 +51,8 @@ logging:
   level:
     com.crm: @logging.level@
     org.springframework: warn
-  config: classpath:logback-plus.xml
+    com.crm.framework.interceptor.PlusDataPermissionInterceptor: info
+  config: classpath:logback-spring.xml
 
 # 用户配置
 user:
@@ -139,6 +140,7 @@ security:
     - /actuator/**
     # SSO自动登录接口
     - /sso/autoLogin
+    - /zqzt_backend/health/**
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -164,7 +166,7 @@ mybatis-plus:
     # 更详细的日志输出 会有性能损耗 org.apache.ibatis.logging.stdout.StdOutImpl
     # 关闭日志记录 (可单纯使用 p6spy 分析) org.apache.ibatis.logging.nologging.NoLoggingImpl
     # 默认日志输出 org.apache.ibatis.logging.slf4j.Slf4jImpl
-    logImpl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    logImpl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     # 是否打印 Logo banner
     banner: true
@@ -261,17 +263,17 @@ lock4j:
   # 分布式锁的超时时间，默认为 30 秒
   expire: 30000
 
---- # Actuator 监控端点的配置项
-management:
-  endpoints:
-    web:
-      exposure:
-        include: '*'
-  endpoint:
-    health:
-      show-details: ALWAYS
-    logfile:
-      external-file: ./logs/sys-console.log
+#--- # Actuator 监控端点的配置项
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: '*'
+#  endpoint:
+#    health:
+#      show-details: ALWAYS
+#    logfile:
+#      external-file: ./logs/sys-console.log
 
 --- # Flowable 配置
 flowable:

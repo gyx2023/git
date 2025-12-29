@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppBidMapper">
+
+    <resultMap type="com.crm.system.domain.topp.ToppBidDo" id="ToppBidResult">
+        <result property="id" column="id_"/>
+        <result property="opportunityCode" column="opportunity_code"/>
+        <result property="bidCode" column="bid_code"/>
+        <result property="bidBody" column="bid_body"/>
+        <result property="resultTime" column="result_time"/>
+        <result property="result" column="result"/>
+        <result property="money" column="money"/>
+        <result property="getTime" column="get_time"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="creator" column="creator"/>
+        <result property="memo" column="memo_"/>
+        <result property="borrower" column="borrower"/>
+        <result property="reportUser" column="report_user"/>
+        <result property="auditTaskId" column="audit_task_id"/>
+        <result property="auditPerson" column="audit_person"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditResult" column="audit_result"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="matchBidMoney" column="match_bid_money"/>
+        <result property="bidMoney" column="bid_money"/>
+        <result property="endTime" column="end_time"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="projectId" column="project_id"/>
+        <result property="projectName" column="project_name"/>
+        <result property="contractTime" column="contract_time"/>
+        <result property="ictProfit" column="ict_profit"/>
+        <result property="softProfit" column="soft_profit"/>
+        <result property="isSign" column="is_sign"/>
+        <result property="isFrameworkContract" column="is_framework_contract"/>
+        <result property="isSelfReserch" column="is_self_reserch"/>
+        <result property="notSelfReserchReason" column="not_self_reserch_reason"/>
+        <result property="selfReserchName" column="self_reserch_name"/>
+        <result property="selfReserchMoney" column="self_reserch_money"/>
+        <result property="bidResultText" column="bid_result_text"/>
+        <result property="bidProjectResume" column="bid_project_resume"/>
+        <result property="contractMoney" column="contract_money"/>
+    </resultMap>
+
+
+</mapper>

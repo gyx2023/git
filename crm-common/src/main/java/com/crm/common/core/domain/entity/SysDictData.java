@@ -2,6 +2,7 @@ package com.crm.common.core.domain.entity;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.crm.common.annotation.ExcelDictFormat;
@@ -30,7 +31,7 @@ public class SysDictData extends BaseEntity {
      * 字典编码
      */
     @ExcelProperty(value = "字典编码")
-    @TableId(value = "dict_code")
+    @TableId(value = "dict_code", type = IdType.AUTO)
     private Long dictCode;
 
     /**

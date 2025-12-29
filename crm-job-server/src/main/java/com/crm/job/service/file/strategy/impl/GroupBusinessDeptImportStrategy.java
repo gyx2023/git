@@ -5,7 +5,7 @@ import com.crm.common.excel.ExcelResult;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractImportStrategy;
 import com.crm.system.domain.SysOss;
-import com.crm.system.domain.file.FileAsyncTaskDO;
+import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserImportVo;
 import com.crm.system.listener.SysUserExImportListener;
@@ -44,7 +44,7 @@ public class GroupBusinessDeptImportStrategy extends AbstractImportStrategy {
     }
 
     @Override
-    protected boolean doImportTask(FileAsyncTaskDO task) throws Exception {
+    protected boolean doImportTask(FileAsyncTaskDo task) throws Exception {
         //根据FileAsyncTaskDO获取上传到cos的ossId
         SysOss sysOss = sysOssMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
 
