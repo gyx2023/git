@@ -2,6 +2,7 @@ package com.crm.web.controller.system;
 
 import java.util.*;
 
+import com.crm.system.domain.vo.*;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
@@ -19,12 +20,8 @@ import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.service.IZqGrpGroupInfoService;
-import com.crm.system.domain.vo.CustomerManagerTemplateVo;
-import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
-import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
 import com.crm.system.utils.ExcelDropdownHandler;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.entity.SysDictData;
@@ -283,6 +280,29 @@ public class ZqGrpGroupInfoController extends BaseController {
                     .build();
 
             WriteSheet writeSheet = EasyExcel.writerSheet("集团客户拓展类型维护模板").build();
+            excelWriter.write(new ArrayList<>(), writeSheet);
+            excelWriter.finish();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 下载客户存增量维护模板
+     */
+    @GetMapping("/downloadStockTemplate")
+    public void downloadStockTemplate(HttpServletResponse response) {
+        try {
+            // 设置响应头
+            FileUtils.setAttachmentResponseHeader(response, "客户存增量维护模板.xlsx");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+
+            // 创建Excel写入器并注册下拉框处理器
+            ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), CustomerExistingStockTemplateVo.class)
+                .registerWriteHandler(new ExcelDropdownHandler(1, "sys_province_newold_type")) // 第二列(索引1)是客户归属部门
+                .build();
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("客户存增量维护模板").build();
             excelWriter.write(new ArrayList<>(), writeSheet);
             excelWriter.finish();
         } catch (Exception e) {
