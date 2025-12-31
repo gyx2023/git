@@ -775,7 +775,7 @@ public class SftpUtil implements InitializingBean {
             }
 
             sftp.getClient().put(localFilePath, remotePath);
-            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remoteDir + remotePath);
+            log.info("文件上传成功，配置类型: {}, 本地文件: {}, 远程文件: {}", actualConfigType, localFilePath, remotePath);
         } catch (Exception e) {
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);
