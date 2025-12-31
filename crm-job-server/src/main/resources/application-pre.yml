@@ -64,22 +64,29 @@ spring:
           username: ZQ_USER_36@zqzx_mysql#zqmdb
           password: g#40Gu$IG3HuJ
       hikari:
+        pool-name: HikariCP-Pool
         # 最大连接池数量
         maxPoolSize: 20
         # 最小空闲线程数量
-        minIdle: 10
+        minIdle: 5
         # 配置获取连接等待超时的时间
         connectionTimeout: 30000
         # 校验超时时间
-        validationTimeout: 5000
+        validationTimeout: 3000
         # 空闲连接存活最大时间，默认10分钟
-        idleTimeout: 600000
+        idleTimeout: 300000
         # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
-        maxLifetime: 1800000
+        maxLifetime: 600000
         # 连接测试query（配置检测连接是否有效）
         connectionTestQuery: SELECT 1
         # 多久检查一次连接的活性
         keepaliveTime: 30000
+        # 从池中获取连接时验证
+        connection-init-sql: SELECT 1
+        # 连接泄漏检测阈值（60秒）
+        leak-detection-threshold: 60000
+        # 连接验证（推荐开启）
+        connection-init-sql-callable: false
 
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring:
