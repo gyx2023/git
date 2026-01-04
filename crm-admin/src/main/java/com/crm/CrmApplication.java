@@ -11,7 +11,6 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
  * @author crm
  */
 @SpringBootApplication
-@EnableRabbit
 public class CrmApplication {
 
     public static void main(String[] args) {
