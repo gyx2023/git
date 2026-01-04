@@ -27,7 +27,6 @@ import com.crm.flowable.core.domain.ProcessQuery;
 import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.flowable.flow.FlowableUtils;
 import com.crm.flowable.utils.ModelUtils;
-import com.crm.flowable.utils.ProcessFormUtils;
 import com.crm.flowable.utils.ProcessUtils;
 import com.crm.flowable.utils.TaskUtils;
 import com.crm.system.service.ISysDeptService;
@@ -126,10 +125,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     public List<WfDefinitionVo> selectStartProcessList(ProcessQuery processQuery) {
         // 流程定义列表数据查询
         ProcessDefinitionQuery processDefinitionQuery = repositoryService.createProcessDefinitionQuery()
-                .latestVersion()
-                .active()
-                .orderByProcessDefinitionKey()
-                .asc();
+            .latestVersion()
+            .active()
+            .orderByProcessDefinitionKey()
+            .asc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(processDefinitionQuery, processQuery);
 
@@ -216,9 +215,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Override
     public List<WfTaskVo> selectOwnProcessList(ProcessQuery processQuery) {
         HistoricProcessInstanceQuery historicProcessInstanceQuery = historyService.createHistoricProcessInstanceQuery()
-                .startedBy(TaskUtils.getUserId())
-                .orderByProcessInstanceStartTime()
-                .desc();
+            .startedBy(TaskUtils.getUserId())
+            .orderByProcessInstanceStartTime()
+            .desc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(historicProcessInstanceQuery, processQuery);
         List<HistoricProcessInstance> historicProcessInstances = historicProcessInstanceQuery.list();
@@ -237,7 +236,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
             // 流程部署实例信息
             Deployment deployment = repositoryService.createDeploymentQuery()
-                    .deploymentId(hisIns.getDeploymentId()).singleResult();
+                .deploymentId(hisIns.getDeploymentId()).singleResult();
             taskVo.setDeployId(hisIns.getDeploymentId());
             taskVo.setProcDefId(hisIns.getProcessDefinitionId());
             taskVo.setProcDefName(hisIns.getProcessDefinitionName());
@@ -306,11 +305,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Override
     public List<WfTaskVo> selectTodoProcessList(ProcessQuery processQuery) {
         TaskQuery taskQuery = taskService.createTaskQuery()
-                .active()
-                .includeProcessVariables()
-                .taskCandidateOrAssigned(TaskUtils.getUserId())
-                .taskCandidateGroupIn(TaskUtils.getCandidateGroup())
-                .orderByTaskCreateTime().desc();
+            .active()
+            .includeProcessVariables()
+            .taskCandidateOrAssigned(TaskUtils.getUserId())
+            .taskCandidateGroupIn(TaskUtils.getCandidateGroup())
+            .orderByTaskCreateTime().desc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(taskQuery, processQuery);
         List<Task> taskList = taskQuery.list();
@@ -325,8 +324,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             taskVo.setTaskName(task.getName());
             // 流程定义信息
             ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(task.getProcessDefinitionId())
-                    .singleResult();
+                .processDefinitionId(task.getProcessDefinitionId())
+                .singleResult();
             taskVo.setDeployId(pd.getDeploymentId());
             taskVo.setProcDefName(pd.getName());
             taskVo.setProcDefVersion(pd.getVersion());
@@ -334,8 +333,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
             // 流程发起人信息
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                    .processInstanceId(task.getProcessInstanceId())
-                    .singleResult();
+                .processInstanceId(task.getProcessInstanceId())
+                .singleResult();
             Long userId = Long.parseLong(historicProcessInstance.getStartUserId());
             String nickName = userService.selectNickNameById(userId);
             taskVo.setStartUserId(userId);
@@ -396,11 +395,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Override
     public List<WfTaskVo> selectClaimProcessList(ProcessQuery processQuery) {
         TaskQuery taskQuery = taskService.createTaskQuery()
-                .active()
-                .includeProcessVariables()
-                .taskCandidateUser(TaskUtils.getUserId())
-                .taskCandidateGroupIn(TaskUtils.getCandidateGroup())
-                .orderByTaskCreateTime().desc();
+            .active()
+            .includeProcessVariables()
+            .taskCandidateUser(TaskUtils.getUserId())
+            .taskCandidateGroupIn(TaskUtils.getCandidateGroup())
+            .orderByTaskCreateTime().desc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(taskQuery, processQuery);
         List<Task> taskList = taskQuery.list();
@@ -415,8 +414,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setTaskName(task.getName());
             // 流程定义信息
             ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(task.getProcessDefinitionId())
-                    .singleResult();
+                .processDefinitionId(task.getProcessDefinitionId())
+                .singleResult();
             flowTask.setDeployId(pd.getDeploymentId());
             flowTask.setProcDefName(pd.getName());
             flowTask.setProcDefVersion(pd.getVersion());
@@ -424,8 +423,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
             // 流程发起人信息
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                    .processInstanceId(task.getProcessInstanceId())
-                    .singleResult();
+                .processInstanceId(task.getProcessInstanceId())
+                .singleResult();
             Long userId = Long.parseLong(historicProcessInstance.getStartUserId());
             String nickName = userService.selectNickNameById(userId);
             flowTask.setStartUserId(userId);
@@ -497,11 +496,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Override
     public List<WfTaskVo> selectFinishedProcessList(ProcessQuery processQuery) {
         HistoricTaskInstanceQuery taskInstanceQuery = historyService.createHistoricTaskInstanceQuery()
-                .includeProcessVariables()
-                .finished()
-                .taskAssignee(TaskUtils.getUserId())
-                .orderByHistoricTaskInstanceEndTime()
-                .desc();
+            .includeProcessVariables()
+            .finished()
+            .taskAssignee(TaskUtils.getUserId())
+            .orderByHistoricTaskInstanceEndTime()
+            .desc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(taskInstanceQuery, processQuery);
         List<HistoricTaskInstance> historicTaskInstanceList = taskInstanceQuery.list();
@@ -520,8 +519,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
             // 流程定义信息
             ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(histTask.getProcessDefinitionId())
-                    .singleResult();
+                .processDefinitionId(histTask.getProcessDefinitionId())
+                .singleResult();
             flowTask.setDeployId(pd.getDeploymentId());
             flowTask.setProcDefName(pd.getName());
             flowTask.setProcDefVersion(pd.getVersion());
@@ -530,8 +529,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
             // 流程发起人信息
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                    .processInstanceId(histTask.getProcessInstanceId())
-                    .singleResult();
+                .processInstanceId(histTask.getProcessInstanceId())
+                .singleResult();
             Long userId = Long.parseLong(historicProcessInstance.getStartUserId());
             String nickName = userService.selectNickNameById(userId);
             flowTask.setStartUserId(userId);
@@ -556,18 +555,20 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .eq(WfDeployForm::getDeployId, deployId)
             .eq(WfDeployForm::getFormKey, startEvent.getFormKey())
             .eq(WfDeployForm::getNodeKey, startEvent.getId()));
-        FormConf formConf = JsonUtils.parseObject(deployForm.getContent(), FormConf.class);
-        if (ObjectUtil.isNull(formConf)) {
+        Map<String, Object> formModel = JsonUtils.parseObject(deployForm.getContent(), Map.class);
+        if (null == formModel || formModel.isEmpty()) {
             throw new RuntimeException("获取流程表单失败！");
         }
+        FormConf formConf = new FormConf();
+        formConf.setFormBtns(false);
+        formConf.setFormModel(formModel);
         if (ObjectUtil.isNotEmpty(procInsId)) {
             // 获取流程实例
             HistoricProcessInstance historicProcIns = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(procInsId)
                 .includeProcessVariables()
                 .singleResult();
-            // 填充表单信息
-            ProcessFormUtils.fillFormData(formConf, historicProcIns.getProcessVariables());
+            formConf.setFormData(historicProcIns.getProcessVariables());
         }
         return formConf;
     }
@@ -723,10 +724,12 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .eq(WfDeployForm::getFormKey, taskIns.getFormKey())
             .eq(WfDeployForm::getNodeKey, taskIns.getTaskDefinitionKey()));
         if (ObjectUtil.isNotEmpty(deployFormVo)) {
-            FormConf currTaskFormData = JsonUtils.parseObject(deployFormVo.getContent(), FormConf.class);
-            if (null != currTaskFormData) {
+            FormConf currTaskFormData = new FormConf();
+            Map<String, Object> formModel = JsonUtils.parseObject(deployFormVo.getContent(), Map.class);
+            if (null != formModel && !formModel.isEmpty()) {
                 currTaskFormData.setFormBtns(false);
-                ProcessFormUtils.fillFormData(currTaskFormData, taskIns.getTaskLocalVariables());
+                currTaskFormData.setFormModel(formModel);
+                currTaskFormData.setFormData(taskIns.getTaskLocalVariables());
                 return currTaskFormData;
             }
         }
@@ -783,12 +786,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 // 旧数据 formInfo.getFormName() 为 null
                 String formName = Optional.ofNullable(formInfo.getFormName()).orElse(StringUtils.EMPTY);
                 String title = localScope ? formName.concat("(" + flowElement.getName() + ")") : formName;
-                FormConf formConf = JsonUtils.parseObject(formInfo.getContent(), FormConf.class);
-                if (null != formConf) {
+                FormConf formConf = new FormConf();
+                Map<String, Object> formModel = JsonUtils.parseObject(formInfo.getContent(), Map.class);
+                if (null != formModel && !formModel.isEmpty()) {
                     formConf.setTitle(title);
                     formConf.setDisabled(true);
                     formConf.setFormBtns(false);
-                    ProcessFormUtils.fillFormData(formConf, variables);
+                    formConf.setFormModel(formModel);
+                    formConf.setFormData(variables);
                     procFormList.add(formConf);
                 }
             }
@@ -809,12 +814,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .eq(WfDeployForm::getFormKey, startEvent.getFormKey())
             .eq(WfDeployForm::getNodeKey, startEvent.getId()));
         if (ObjectUtil.isNotNull(startFormInfo)) {
-            FormConf formConf = JsonUtils.parseObject(startFormInfo.getContent(), FormConf.class);
-            if (null != formConf) {
+            FormConf formConf = new FormConf();
+            Map<String, Object> formModel = JsonUtils.parseObject(startFormInfo.getContent(), Map.class);
+            if (null != formModel && !formModel.isEmpty()) {
                 formConf.setTitle(startEvent.getName());
                 formConf.setDisabled(true);
                 formConf.setFormBtns(false);
-                ProcessFormUtils.fillFormData(formConf, historicProcIns.getProcessVariables());
+                formConf.setFormModel(formModel);
+                formConf.setFormData(historicProcIns.getProcessVariables());
                 procFormList.add(formConf);
             }
         }
@@ -846,12 +853,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 .eq(WfDeployForm::getFormKey, formKey)
                 .eq(WfDeployForm::getNodeKey, userTask.getId()));
             if (ObjectUtil.isNotNull(deployFormVo)) {
-                FormConf formConf = JsonUtils.parseObject(deployFormVo.getContent(), FormConf.class);
-                if (null != formConf) {
+                FormConf formConf = new FormConf();
+                Map<String, Object> formModel = JsonUtils.parseObject(deployFormVo.getContent(), Map.class);
+                if (null != formModel && !formModel.isEmpty()) {
                     formConf.setTitle(userTask.getName());
                     formConf.setDisabled(true);
                     formConf.setFormBtns(false);
-                    ProcessFormUtils.fillFormData(formConf, variables);
+                    formConf.setFormModel(formModel);
+                    formConf.setFormData(variables);
                     procFormList.add(formConf);
                 }
             }
