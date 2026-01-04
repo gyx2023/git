@@ -19,17 +19,18 @@ public class Desensitization {
         int length = trimmedName.length();
 
         // 2. 如果名称长度小于等于2，直接返回原名称（无需脱敏）
-        if (length <= 2) {
+        if (length <= 4) {
             return trimmedName;
         }
 
         // 3. 计算需要脱敏的字符数量，并生成相应数量的 '*'
-        int starsCount = length - 2;
+        int starsCount = length - 4;
         String stars = generateAsterisks(starsCount);
 
         // 4. 获取最后两位字符，并与 '*' 拼接
         String lastTwoChars = trimmedName.substring(length - 2);
-        return stars + lastTwoChars;
+        String startTwoChars = trimmedName.substring(0, 2);
+        return startTwoChars + stars + lastTwoChars;
     }
 
     /**
