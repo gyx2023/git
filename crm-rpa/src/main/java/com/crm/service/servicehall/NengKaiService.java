@@ -1,4 +1,4 @@
-package com.crm.system.service.servicehall;
+package com.crm.service.servicehall;
 
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;

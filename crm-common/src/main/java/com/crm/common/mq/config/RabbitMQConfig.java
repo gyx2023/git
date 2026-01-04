@@ -15,13 +15,7 @@ import java.util.Map;
  * @author crm
  */
 @Configuration
-// 核心注解：只有当配置文件中存在 "mq.enabled=true" 时，这个配置类才会被加载
-@ConditionalOnProperty(
-    prefix = "mq",          // 配置前缀
-    name = "enabled",      // 配置项名称
-    havingValue = "true",  // 配置项值为true时生效
-    matchIfMissing = false // 配置缺失时不生效（关键）
-)
+@ConditionalOnProperty(name = "crm.mq.enabled", havingValue = "true", matchIfMissing = false)
 public class RabbitMQConfig {
 
     // ======================== 公共组件配置 ========================

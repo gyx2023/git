@@ -2,15 +2,17 @@ package com.crm;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
-import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 
 /**
  * 启动程序
  *
  * @author crm
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        RabbitAutoConfiguration.class
+})
 public class CrmApplication {
 
     public static void main(String[] args) {

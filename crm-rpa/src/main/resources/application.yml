@@ -12,6 +12,9 @@ crm:
   addressEnabled: true
   # 缓存懒加载
   cacheLazy: false
+  # MQ启用开关
+  mq:
+    enabled: true
 
 captcha:
   # 页面 <参数设置> 可开启关闭 验证码校验
@@ -287,6 +290,3 @@ flowable:
   check-process-definitions: false
   # 关闭历史任务定时任务job
   async-history-executor-activate: false
-# 启用MQ配置（触发common模块的MQ配置类加载）
-mq:
-  enabled: true

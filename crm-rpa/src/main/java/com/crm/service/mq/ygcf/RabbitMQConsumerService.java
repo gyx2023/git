@@ -1,4 +1,4 @@
-package com.crm.system.service.mq.ygcf;
+package com.crm.service.mq.ygcf;
 
 import com.crm.common.mq.config.RabbitMQConfig;
 import com.crm.common.utils.StringUtils;
