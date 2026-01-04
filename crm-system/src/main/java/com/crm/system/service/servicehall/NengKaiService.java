@@ -1,0 +1,12 @@
+package com.crm.system.service.servicehall;
+
+import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
+import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
+
+public interface NengKaiService {
+
+    /**
+     * 集团能力开发平台任务前置通知接口
+     */
+    NengKaiResponseVo nengKaiNotice(NengKaiRequestVo requestVo);
+}
