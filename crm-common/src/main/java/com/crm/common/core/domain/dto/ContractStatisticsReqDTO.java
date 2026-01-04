@@ -65,7 +65,6 @@ public class ContractStatisticsReqDTO {
 
     private  String endTime;
 
-    private Long areaCode;
 
 
     private String unicomTypeT;

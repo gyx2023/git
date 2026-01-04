@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.tcomm.TcommTaskDo;
 import com.crm.system.mapper.tcomm.TcommTaskMapper;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -97,11 +101,10 @@ public class TcommTaskExport {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 // 添加表头（可选）
-                writer.write("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|dueLimit|dueTime|" +
+                writer.write("id|taskCode|taskName|flowNo|custName|oppoName|infoId|infoType|createTime|dueLimit|dueTime|" +
                     "actorsWait|isSended|actor|dealUrl|startTime|resultCode|result|resultMemo|endTime|memo|score|" +
                     "resultScore|json|scoreDetail|defaultDafen|parent|create|taskMemo|shortSend|shortSendTime|piId|" +
-                    "userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason|createBy|createTime|updateBy|" +
-                    "updateTime");
+                    "userOwnerProduct|productCode|teamLeaderId|notUseOwnerProductReason");
                 writer.newLine();
 
                 // 添加数据行
@@ -115,6 +118,7 @@ public class TcommTaskExport {
                     line.append(formatField(tcommTask.getOppoName())).append("|");
                     line.append(formatField(tcommTask.getInfoId())).append("|");
                     line.append(formatField(tcommTask.getInfoType())).append("|");
+                    line.append(formatField(tcommTask.getCreateTime())).append("|");
                     line.append(formatField(tcommTask.getDueLimit())).append("|");
                     line.append(formatField(tcommTask.getDueTime())).append("|");
                     line.append(formatField(tcommTask.getActorsWait())).append("|");
@@ -178,15 +182,12 @@ public class TcommTaskExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
 }

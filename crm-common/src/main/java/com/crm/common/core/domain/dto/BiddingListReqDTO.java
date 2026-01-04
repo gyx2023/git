@@ -67,5 +67,7 @@ public class BiddingListReqDTO {
 
     private String userId;
 
+    private String isZb;
+
 
 }

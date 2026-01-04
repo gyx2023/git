@@ -1,8 +1,9 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.topp.ToppContractEform;
+import com.crm.system.domain.topp.ToppContractEformDo;
 import com.crm.system.mapper.topp.ToppContractEformMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -43,8 +44,8 @@ public class ToppContractEformExportJob {
 
         try {
             // 查询所有数据
-            LambdaQueryWrapper<ToppContractEform> queryWrapper = new LambdaQueryWrapper<>();
-            List<ToppContractEform> dataList = toppContractEformMapper.selectList(queryWrapper);
+            LambdaQueryWrapper<ToppContractEformDo> queryWrapper = new LambdaQueryWrapper<>();
+            List<ToppContractEformDo> dataList = toppContractEformMapper.selectList(queryWrapper);
 
             // 检查数据是否为空
             if (dataList == null || dataList.isEmpty()) {
@@ -63,7 +64,7 @@ public class ToppContractEformExportJob {
             // 写入数据到txt文件
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
-                for (ToppContractEform record : dataList) {
+                for (ToppContractEformDo record : dataList) {
                     StringBuilder line = new StringBuilder();
                     line.append(escapeNull(record.getId())).append("|");
                     line.append(escapeNull(record.getProjectId())).append("|");
@@ -128,17 +129,6 @@ public class ToppContractEformExportJob {
      * @return 字符串表示
      */
     private String escapeNull(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        // 如果是Date类型，格式化为指定格式
-        if (value instanceof Date) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return sdf.format(value);
-        }
-
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
-
 }

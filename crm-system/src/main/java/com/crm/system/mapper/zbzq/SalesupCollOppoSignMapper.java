@@ -20,7 +20,7 @@ public interface SalesupCollOppoSignMapper extends BaseMapperPlus<SalesupCollOpp
 
     @Select("SELECT s.*,p.oppo_number FROM salesup_coll_oppo_sign s  " +
         "inner join salesup_coll_oppo_pools p on s.oppo_id =p.oppo_id " +
-        "WHERE p.oppo_createtime >= DATE_SUB(NOW(), INTERVAL #{days} DAY) " +
+        "WHERE s.create_date >= DATE_SUB(NOW(), INTERVAL #{days} DAY) " +
         "AND p.oppo_number LIKE CONCAT('%', #{prefix}, '%')")
     List<SalesupCollOppoSignVo> selectContractSignData(@Param("days") int days, @Param("prefix") String prefix);
 
