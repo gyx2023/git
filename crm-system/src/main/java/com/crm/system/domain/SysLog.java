@@ -27,25 +27,25 @@ public class SysLog implements Serializable {
     /**
      * 日志类型
      */
-    @TableId(value = "type_")
+    @TableField(value = "type_")
     private String type;
 
     /**
      * 日志内容
      */
-    @TableId(value = "content_")
+    @TableField(value = "content_")
     private String content;
 
     /**
      * 日志级别
      */
-    @TableId(value = "level_")
+    @TableField(value = "level_")
     private String level;
 
     /**
      * 操作的IP地址
      */
-    @TableId(value = "computer_ip")
+    @TableField(value = "computer_ip")
     private String computerIp;
 
 
@@ -63,26 +63,26 @@ public class SysLog implements Serializable {
     /**
      * 所属组织
      */
-    @TableId(value = "org_id")
+    @TableField(value = "org_id")
     private Long orgId;
 
     /**
      * 备注
      */
-    @TableId(value = "remark_")
+    @TableField(value = "remark_")
     private String remark;
 
 
     /**
      * 登陆类型
      */
-    @TableId(value = "login_type")
+    @TableField(value = "login_type")
     private String loginType;
 
     /**
      * 登陆应用
      */
-    @TableId(value = "login_app")
+    @TableField(value = "login_app")
     private String loginApp;
 
 

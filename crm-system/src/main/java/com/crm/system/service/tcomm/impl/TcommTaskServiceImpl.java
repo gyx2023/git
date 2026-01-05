@@ -28,6 +28,7 @@ import java.util.Map;
  * @date 2025-12-02
  */
 @RequiredArgsConstructor
+@Service
 public class TcommTaskServiceImpl implements TcommTaskService {
     @Resource
     private TcommTaskMapper baseMapper;
