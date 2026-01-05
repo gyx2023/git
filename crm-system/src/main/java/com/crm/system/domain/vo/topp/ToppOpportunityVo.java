@@ -2,7 +2,6 @@ package com.crm.system.domain.vo.topp;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
@@ -827,9 +826,5 @@ public class ToppOpportunityVo {
     private LocalDateTime createTime;
 
 
-    /**
-     * 更新时间
-     */
-    @TableField(exist = false)
-    private LocalDateTime updateTime;
+
 }

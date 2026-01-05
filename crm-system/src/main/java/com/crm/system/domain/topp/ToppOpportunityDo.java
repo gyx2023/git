@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 【请填写功能名称】对象 topp_opportunity
@@ -572,5 +573,10 @@ public class ToppOpportunityDo extends BaseEntity {
     @TableField(exist = false)
     private String updateBy;
 
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 
 }

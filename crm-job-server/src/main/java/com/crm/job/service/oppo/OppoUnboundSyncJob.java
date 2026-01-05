@@ -76,94 +76,95 @@ public class OppoUnboundSyncJob {
             // 默认取7天内数据
             param = "7";
         }
-        // 计算查询时间范围
-        LocalDate targetDate = LocalDate.now().minusDays(Integer.parseInt(param));
-        // 构造指定日期的时间范围：00:00:00 到 23:59:59
-        LocalDateTime startTime = LocalDateTime.of(targetDate, LocalTime.MIN);
-        LocalDateTime endTime = LocalDateTime.of(targetDate, LocalTime.MAX);
+        try {
+            // 计算查询时间范围
+            LocalDate targetDate = LocalDate.now().minusDays(Integer.parseInt(param));
+            // 构造指定日期的时间范围：00:00:00 到 23:59:59
+            LocalDateTime startTime = LocalDateTime.of(targetDate, LocalTime.MIN);
+            LocalDateTime endTime = LocalDateTime.of(targetDate, LocalTime.MAX);
 
-        log.info("查询时间范围：{} 到 {}", startTime, endTime);
+            log.info("查询时间范围：{} 到 {}", startTime, endTime);
 
-        // 1. 查询未关联商机的商机数据
-        List<ToppOpportunityVo> opportunityList = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
-        log.info("查询到未关联商机的商机数量：{}", opportunityList.size());
-        if (opportunityList.isEmpty()) {
-            log.info("没有需要处理的数据");
-            return;
-        }
+            // 1. 查询未关联商机的商机数据
+            List<ToppOpportunityVo> opportunityList = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
+            log.info("查询到未关联商机的商机数量：{}", opportunityList.size());
+            if (opportunityList.isEmpty()) {
+                log.info("没有需要处理的数据");
+                return;
+            }
 
-        // 提取商机ID列表
-        List<Long> opportunityIds = opportunityList.stream()
-            .map(ToppOpportunityVo::getId)
-            .collect(Collectors.toList());
-        log.info("商机ID列表大小：{}", opportunityIds.size());
+            // 提取商机ID列表
+            List<Long> opportunityIds = opportunityList.stream()
+                    .map(ToppOpportunityVo::getId)
+                    .collect(Collectors.toList());
+            log.info("商机ID列表大小：{}", opportunityIds.size());
 
-        // 2. 查询商机ID列表中已有关联合同的商机，从待处理列表中移除
-        List<ToppContractVo> contractList = toppContractService.queryContractList(opportunityIds);
-        List<Long> contractRelatedOpportunityIds = contractList.stream()
-            .map(ToppContractVo::getProjectId)
-            .collect(Collectors.toList());
-        log.info("已关联合同的商机数量：{}", contractRelatedOpportunityIds.size());
-        opportunityIds.removeAll(contractRelatedOpportunityIds);
+            // 2. 查询商机ID列表中已有关联合同的商机，从待处理列表中移除
+            List<ToppContractVo> contractList = toppContractService.queryContractList(opportunityIds);
+            List<Long> contractRelatedOpportunityIds = contractList.stream()
+                    .map(ToppContractVo::getProjectId)
+                    .collect(Collectors.toList());
+            log.info("已关联合同的商机数量：{}", contractRelatedOpportunityIds.size());
+            opportunityIds.removeAll(contractRelatedOpportunityIds);
 
-        // 3. 查询商机ID列表中已有关联表单的商机，从待处理列表中移除
-        List<ToppContractEformVo> contractEformList = toppContractEformService.queryContractList(opportunityIds);
-        List<Long> eformRelatedOpportunityIds = contractEformList.stream()
-            .map(ToppContractEformVo::getProjectId)
-            .collect(Collectors.toList());
-        log.info("已关联表单的商机数量：{}", eformRelatedOpportunityIds.size());
-        opportunityIds.removeAll(eformRelatedOpportunityIds);
+            // 3. 查询商机ID列表中已有关联表单的商机，从待处理列表中移除
+            List<ToppContractEformVo> contractEformList = toppContractEformService.queryContractList(opportunityIds);
+            List<Long> eformRelatedOpportunityIds = contractEformList.stream()
+                    .map(ToppContractEformVo::getProjectId)
+                    .collect(Collectors.toList());
+            log.info("已关联表单的商机数量：{}", eformRelatedOpportunityIds.size());
+            opportunityIds.removeAll(eformRelatedOpportunityIds);
 
 
-        List<ToppOpportunityVo> list = opportunityList.stream()
-            .filter(opportunity -> opportunityIds.contains(opportunity.getId()))
-            .collect(Collectors.toList());
+            List<ToppOpportunityVo> list = opportunityList.stream()
+                    .filter(opportunity -> opportunityIds.contains(opportunity.getId()))
+                    .collect(Collectors.toList());
 
-        List<String> oppCodes = list.stream()
-            .map(ToppOpportunityVo::getOppCode)
-            .collect(Collectors.toList());
+            List<String> oppCodes = list.stream()
+                    .map(ToppOpportunityVo::getOppCode)
+                    .collect(Collectors.toList());
 
-        // 4. 查询商机ID列表中已有关联销售数据的商机，从待处理列表中移除
-        List<String> signedOppoCodes = salesupBakTblBidSuboppoService.selectSignedOppoData(oppCodes);
-        log.info("已关联销售数据的商机数量：{}", signedOppoCodes.size());
+            // 4. 查询商机ID列表中已有关联销售数据的商机，从待处理列表中移除
+            List<String> signedOppoCodes = salesupBakTblBidSuboppoService.selectSignedOppoData(oppCodes);
+            log.info("已关联销售数据的商机数量：{}", signedOppoCodes.size());
 
-        List<ToppOpportunityVo> signedOppoIdList = list.stream()
-            .filter(opportunity -> signedOppoCodes.contains(opportunity.getOppCode()))
-            .collect(Collectors.toList());
+            List<ToppOpportunityVo> signedOppoIdList = list.stream()
+                    .filter(opportunity -> signedOppoCodes.contains(opportunity.getOppCode()))
+                    .collect(Collectors.toList());
 
-        List<Long> lastSignedOppoIds = signedOppoIdList.stream()
-            .map(ToppOpportunityVo::getId)
-            .collect(Collectors.toList());
+            List<Long> lastSignedOppoIds = signedOppoIdList.stream()
+                    .map(ToppOpportunityVo::getId)
+                    .collect(Collectors.toList());
 
-        opportunityIds.removeAll(lastSignedOppoIds);
+            opportunityIds.removeAll(lastSignedOppoIds);
 
-        signedOppoIdList = opportunityList.stream()
-            .filter(opportunity -> opportunityIds.contains(opportunity.getId()))
-            .collect(Collectors.toList());
+            signedOppoIdList = opportunityList.stream()
+                    .filter(opportunity -> opportunityIds.contains(opportunity.getId()))
+                    .collect(Collectors.toList());
 
-        log.info("最终需要更新状态的商机数量：{}", opportunityIds.size());
+            log.info("最终需要更新状态的商机数量：{}", opportunityIds.size());
 
-        if (ObjectUtil.isEmpty(opportunityIds)) {
-            log.info("没有需要更新状态的商机");
-            return;
-        }
-        log.info("开始更新商机状态，商机ID列表：{}", opportunityIds);
-        // 5. 批量更新未关联任何数据的商机状态为终止
-        signedOppoIdList.forEach(toppOpportunityVo -> {
-            log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
-            Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId());
-            if (flag) {
-                log.info("成功更新 {} 个商机的状态为终止", opportunityIds.size());
+            if (ObjectUtil.isEmpty(opportunityIds)) {
+                log.info("没有需要更新状态的商机");
+                return;
+            }
+            log.info("开始更新商机状态，商机ID列表：{}", opportunityIds);
+            // 5. 批量更新未关联任何数据的商机状态为终止
+            signedOppoIdList.forEach(toppOpportunityVo -> {
+                log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
+                String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
+                log.info("同步商机状态结果：{}", result);
                 Boolean orderFlag = saveOrder(toppOpportunityVo);
                 if (orderFlag) {
-                    String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
-                    log.info("同步商机状态结果：{}", result);
+                    Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId());
+                    log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
                 }
-            } else {
-                log.error("更新商机状态失败，商机ID列表：{}", opportunityIds);
-            }
-        });
-        log.info("同步未关联商机的合同数据完成");
+            });
+            log.info("同步未关联商机的合同数据完成");
+        }catch (Exception e) {
+            log.error("同步未关联商机的合同数据异常", e);
+        }
+
     }
 
     private Boolean saveOrder(ToppOpportunityVo oppotunity) {

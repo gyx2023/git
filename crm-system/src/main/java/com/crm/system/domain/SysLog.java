@@ -52,12 +52,14 @@ public class SysLog implements Serializable {
     /**
      * 操作人员
      */
+    @TableField(value = "creator_")
     private Long creator;
 
 
     /**
      * 操作时间
      */
+    @TableField(value = "create_time")
     private LocalDateTime createTime;
 
     /**
