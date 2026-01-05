@@ -1,6 +1,7 @@
 package com.crm.system.domain.vo.topp;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
@@ -463,5 +464,6 @@ public class ToppContractVo {
     @ExcelProperty(value = "合同付款条款信息")
     private String payInfo;
 
+    private LocalDateTime createTime;
 
 }

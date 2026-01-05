@@ -1,6 +1,7 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -262,29 +263,27 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
     @Override
-    public Boolean upppUnbound(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return false;
-        }
-        Date date = new Date();
-        ToppOpportunityDo updateEntity = getToppOpportunityDo(date);
+    public Boolean upppUnbound(Long id) {
+        ToppOpportunityDo updateEntity = getToppOpportunityDo(new Date());
 
         LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
-        lqw.in(ToppOpportunityDo::getId, ids);
+        lqw.eq(ToppOpportunityDo::getId, id);
 
         int updateCount = baseMapper.update(updateEntity, lqw);
         return updateCount > 0;
     }
 
+
     private static ToppOpportunityDo getToppOpportunityDo(Date date) {
         ToppOpportunityDo updateEntity = new ToppOpportunityDo();
+        LocalDateTime localDateTime = DateUtil.toLocalDateTime(date);
         //商机终止时修改为opp_end_link 废弃、更新时间
         updateEntity.setNewOppPhase("opp_end_link");
-        updateEntity.setNewOppPhaseTime(date);
+        updateEntity.setNewOppPhaseTime(localDateTime);
 
         //修改为ppo_end终结、更新时间
         updateEntity.setOppPhase("opp_end");
-        updateEntity.setOppPhaseTime(date);
+        updateEntity.setOppPhaseTime(localDateTime);
 
         //像改为0无效、更新时间
         updateEntity.setIsValid("0");
@@ -300,4 +299,14 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return baseMapper.selectToppOpportunity();
     }
 
+
+    @Override
+    public String updateOppoState(Long oppId) {
+        ToppOpportunityDo opportunity = baseMapper.selectById(oppId);
+        String oppoState = baseMapper.callGetOppoState(oppId);
+        opportunity.setOppoState(oppoState);
+        System.out.println("更新商机"+oppId+"状态为:"+oppoState);
+        baseMapper.updateById(opportunity);
+        return oppoState;
+    }
 }

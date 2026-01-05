@@ -1,17 +1,13 @@
 package com.crm.system.domain.topp;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.math.BigDecimal;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.crm.common.core.domain.BaseEntity;
+import java.time.LocalDateTime;
 
 /**
  * 【请填写功能名称】对象 topp_opportunity
@@ -21,9 +17,9 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("topp_opportunity")
-public class ToppOpportunityDo extends BaseEntity{
+public class ToppOpportunityDo extends BaseEntity {
 
-    private static final long serialVersionUID=1L;
+    private static final long serialVersionUID = 1L;
 
     /**
      *
@@ -47,7 +43,7 @@ public class ToppOpportunityDo extends BaseEntity{
      */
     private String custNeed;
     /**
-     * 	客户联系人
+     * 客户联系人
      */
     private String custContact;
     /**
@@ -109,7 +105,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      * 商机阶段变化时间
      */
-    private Date oppPhaseTime;
+    private LocalDateTime oppPhaseTime;
     /**
      *
      */
@@ -306,7 +302,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      * 审核时间
      */
-    private Date auditTime;
+    private LocalDateTime auditTime;
     /**
      *
      */
@@ -334,7 +330,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      * 确定支撑经理时间
      */
-    private Date designerTime;
+    private LocalDateTime designerTime;
     /**
      *
      */
@@ -378,7 +374,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      * 转实施时间
      */
-    private Date zssTime;
+    private LocalDateTime zssTime;
     /**
      * 合同id
      */
@@ -410,7 +406,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      *
      */
-    private Date syncTime;
+    private LocalDateTime syncTime;
     /**
      *
      */
@@ -418,7 +414,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      *
      */
-    private Date newOppPhaseTime;
+    private LocalDateTime newOppPhaseTime;
     /**
      *
      */
@@ -450,11 +446,11 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      *
      */
-    private Date dabiaoCreateTime;
+    private LocalDateTime dabiaoCreateTime;
     /**
      *
      */
-    private Date dabiaoUpdateTime;
+    private LocalDateTime dabiaoUpdateTime;
     /**
      *
      */
@@ -482,7 +478,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      * é¢„è®¡ç­¾çº¦æ—¶é—´
      */
-    private Date signTime;
+    private LocalDateTime signTime;
     /**
      *
      */
@@ -558,7 +554,7 @@ public class ToppOpportunityDo extends BaseEntity{
     /**
      * 支撑阶段变更时间
      */
-    private Date supportStageTime;
+    private LocalDateTime supportStageTime;
     /**
      *
      */
@@ -576,10 +572,5 @@ public class ToppOpportunityDo extends BaseEntity{
     @TableField(exist = false)
     private String updateBy;
 
-    /**
-     * 更新时间
-     */
-    @TableField(exist = false)
-    private Date updateTime;
 
 }

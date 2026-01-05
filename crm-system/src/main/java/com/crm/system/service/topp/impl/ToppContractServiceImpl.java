@@ -188,4 +188,12 @@ public class ToppContractServiceImpl implements IToppContractService {
         lqw.in(ToppContractDo::getProjectId, ids);
         return baseMapper.selectVoList(lqw);
     }
+
+    @Override
+    public List<ToppContractVo>  findContractDetailById(Long oppoId) {
+        LambdaQueryWrapper<ToppContractDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(ToppContractDo::getProjectId, oppoId);
+        lqw.and(wrapper -> wrapper.eq(ToppContractDo::getIsValid, "1").or().isNull(ToppContractDo::getIsValid));
+        return baseMapper.selectVoList(lqw);
+    }
 }

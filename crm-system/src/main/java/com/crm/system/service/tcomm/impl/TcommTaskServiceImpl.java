@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -138,5 +139,14 @@ public class TcommTaskServiceImpl implements TcommTaskService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public List<TcommTaskVo> getTasksByInfoId(Long infoId) {
+        LambdaQueryWrapper<TcommTaskDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq( TcommTaskDo::getInfoId, infoId);
+        lqw.isNotNull(TcommTaskDo::getScore);
+        lqw.orderByDesc(TcommTaskDo::getCreateTime);
+        return BeanUtil.copyToList(baseMapper.selectList(lqw), TcommTaskVo.class);
     }
 }

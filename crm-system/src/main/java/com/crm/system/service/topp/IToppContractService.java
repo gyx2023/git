@@ -47,4 +47,6 @@ public interface IToppContractService {
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
     List<ToppContractVo> queryContractList(List<Long> ids);
+
+    List<ToppContractVo>  findContractDetailById(Long oppoId);
 }

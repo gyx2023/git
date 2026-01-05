@@ -1,15 +1,14 @@
 package com.crm.system.domain.vo.topp;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
-import java.util.Date;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 
 /**
@@ -55,7 +54,7 @@ public class ToppOpportunityVo {
     private String custNeed;
 
     /**
-     * 	客户联系人
+     * 客户联系人
      */
     @ExcelProperty(value = "	客户联系人	")
     private String custContact;
@@ -148,7 +147,7 @@ public class ToppOpportunityVo {
      * 商机阶段变化时间
      */
     @ExcelProperty(value = "商机阶段变化时间")
-    private Date oppPhaseTime;
+    private LocalDateTime oppPhaseTime;
 
     /**
      *
@@ -443,7 +442,7 @@ public class ToppOpportunityVo {
      * 审核时间
      */
     @ExcelProperty(value = "审核时间")
-    private Date auditTime;
+    private LocalDateTime auditTime;
 
     /**
      *
@@ -485,7 +484,7 @@ public class ToppOpportunityVo {
      * 确定支撑经理时间
      */
     @ExcelProperty(value = "确定支撑经理时间")
-    private Date designerTime;
+    private LocalDateTime designerTime;
 
     /**
      *
@@ -545,7 +544,7 @@ public class ToppOpportunityVo {
      * 转实施时间
      */
     @ExcelProperty(value = "转实施时间")
-    private Date zssTime;
+    private LocalDateTime zssTime;
 
     /**
      * 合同id
@@ -593,7 +592,7 @@ public class ToppOpportunityVo {
      *
      */
     @ExcelProperty(value = "")
-    private Date syncTime;
+    private LocalDateTime syncTime;
 
     /**
      *
@@ -605,7 +604,7 @@ public class ToppOpportunityVo {
      *
      */
     @ExcelProperty(value = "")
-    private Date newOppPhaseTime;
+    private LocalDateTime newOppPhaseTime;
 
     /**
      *
@@ -653,13 +652,13 @@ public class ToppOpportunityVo {
      *
      */
     @ExcelProperty(value = "")
-    private Date dabiaoCreateTime;
+    private LocalDateTime dabiaoCreateTime;
 
     /**
      *
      */
     @ExcelProperty(value = "")
-    private Date dabiaoUpdateTime;
+    private LocalDateTime dabiaoUpdateTime;
 
     /**
      *
@@ -701,7 +700,7 @@ public class ToppOpportunityVo {
      * é¢„è®¡ç­¾çº¦æ—¶é—´
      */
     @ExcelProperty(value = "é¢„è®¡ç­¾çº¦æ—¶é—´")
-    private Date signTime;
+    private LocalDateTime signTime;
 
     /**
      *
@@ -816,7 +815,7 @@ public class ToppOpportunityVo {
      * 支撑阶段变更时间
      */
     @ExcelProperty(value = "支撑阶段变更时间")
-    private Date supportStageTime;
+    private LocalDateTime supportStageTime;
 
     /**
      *
@@ -824,5 +823,13 @@ public class ToppOpportunityVo {
     @ExcelProperty(value = "")
     private String preDecision;
 
+    @ExcelProperty(value = "创建时间")
+    private LocalDateTime createTime;
 
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private LocalDateTime updateTime;
 }
