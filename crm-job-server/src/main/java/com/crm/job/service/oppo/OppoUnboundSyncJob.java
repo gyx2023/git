@@ -152,6 +152,7 @@ public class OppoUnboundSyncJob {
             // 5. 批量更新未关联任何数据的商机状态为终止
             signedOppoIdList.forEach(toppOpportunityVo -> {
                 log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
+                toppOpportunityVo.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
                 String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
                 if (StringUtils.contains(result, "\"code\":10000")) {
                     log.info("同步商机状态结果：{}", result);

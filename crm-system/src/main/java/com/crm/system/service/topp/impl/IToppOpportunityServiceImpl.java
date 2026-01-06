@@ -14,6 +14,7 @@ import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;
+import com.crm.system.utils.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -278,7 +279,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         ToppOpportunityDo updateEntity = new ToppOpportunityDo();
         LocalDateTime localDateTime = DateUtil.toLocalDateTime(date);
         //商机终止时修改为opp_end_link 废弃、更新时间
-        updateEntity.setNewOppPhase("opp_end_link");
+        updateEntity.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
         updateEntity.setNewOppPhaseTime(localDateTime);
 
         //修改为ppo_end终结、更新时间
