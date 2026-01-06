@@ -153,15 +153,17 @@ public class OppoUnboundSyncJob {
             signedOppoIdList.forEach(toppOpportunityVo -> {
                 log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
                 String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
-                log.info("同步商机状态结果：{}", result);
-                Boolean orderFlag = saveOrder(toppOpportunityVo);
-                if (orderFlag) {
-                    Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId());
-                    log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
+                if (StringUtils.contains(result, "\"code\":10000")) {
+                    log.info("同步商机状态结果：{}", result);
+                    Boolean orderFlag = saveOrder(toppOpportunityVo);
+                    if (orderFlag) {
+                        Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId());
+                        log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
+                    }
                 }
             });
             log.info("同步未关联商机的合同数据完成");
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("同步未关联商机的合同数据异常", e);
         }
 
