@@ -24,20 +24,23 @@ public class SequenceServiceImpl implements ISequenceService {
     public String getCode(String seqName) {
         String searchDate = DateUtil.formatDate(new Date()).replaceAll("-", "");
         mapper.update(null, new LambdaUpdateWrapper<Sequence>()
-            .set(Sequence::getIncrementVal, 1)
-            .eq(Sequence::getSeqName, seqName));
+                .set(Sequence::getIncrementVal, 1)
+                .eq(Sequence::getSeqName, seqName));
         Sequence seq = mapper.selectOne(new LambdaUpdateWrapper<Sequence>()
-            .eq(Sequence::getSeqName, seqName));
+                .eq(Sequence::getSeqName, seqName));
         int currentVal = seq.getCurrentVal();
         if (searchDate.equals(seq.getSearchDate())) {
             currentVal = currentVal + 1;
-            seq.setCurrentVal(currentVal);
+            mapper.update(null, new LambdaUpdateWrapper<Sequence>()
+                    .set(Sequence::getCurrentVal, currentVal)
+                    .eq(Sequence::getSeqName, seqName));
         } else {
             currentVal = 1;
-            seq.setCurrentVal(currentVal);
-            seq.setSearchDate(searchDate);
+            mapper.update(null, new LambdaUpdateWrapper<Sequence>()
+                    .set(Sequence::getCurrentVal, currentVal)
+                    .set(Sequence::getSearchDate, searchDate)
+                    .eq(Sequence::getSeqName, seqName));
         }
-        mapper.updateById(seq);
         String str = String.format("%04d", currentVal);
         return seqName + "-" + searchDate + "-" + str;
     }

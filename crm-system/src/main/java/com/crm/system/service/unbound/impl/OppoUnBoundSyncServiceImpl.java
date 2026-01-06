@@ -690,7 +690,6 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
     private void setOppoStatusInfo(Map reqMap, ToppOpportunityVo oppo, String status) throws Exception {
         try {
-            Map<String, Object> oppoMap = new HashMap<String, Object>();
             reqMap.put("oppoState", status);
             // 当前环节到达时间
             LocalDateTime arriveTime = LocalDateTime.now();

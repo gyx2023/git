@@ -23,7 +23,7 @@ public class SysLog implements Serializable {
      * 主键
      */
     @TableId(value = "id_")
-    private Long id;
+    private Integer id;
     /**
      * 日志类型
      */
