@@ -2,6 +2,7 @@ package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,6 +10,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.ClueStateEnum;
+import com.crm.common.enums.OppoConversionStateEnum;
 import com.crm.common.enums.OppoStateEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
@@ -266,19 +268,16 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
     @Override
-    public Boolean upppUnbound(Long id) {
-        ToppOpportunityDo updateEntity = getToppOpportunityDo(new Date());
-
-        LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
-        lqw.eq(ToppOpportunityDo::getId, id);
-
-        int updateCount = baseMapper.update(updateEntity, lqw);
+    public Boolean upppUnbound(ToppOpportunityVo toppOpportunityVo) {
+        ToppOpportunityDo update = BeanUtil.toBean(toppOpportunityVo, ToppOpportunityDo.class);
+         getToppOpportunityDo(update);
+        int updateCount = baseMapper.updateById(update);
         return updateCount > 0;
     }
 
 
-    private static ToppOpportunityDo getToppOpportunityDo(Date date) {
-        ToppOpportunityDo updateEntity = new ToppOpportunityDo();
+    private static ToppOpportunityDo getToppOpportunityDo(ToppOpportunityDo updateEntity) {
+        Date date = new Date();
         //商机终止时修改为opp_end_link 废弃、更新时间
         updateEntity.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
         updateEntity.setNewOppPhaseTime(date);
@@ -294,6 +293,14 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         //修改为oppo_status_end商机终止;
         updateEntity.setOppoState(OppoStateEnum.TERMINATED.getCode());
         updateEntity.setEndOppTypeMemo("预计签约时间到期后7天，系统自动关闭！");
+        if(ObjectUtil.isEmpty(updateEntity.getOppoConversionState())){
+            updateEntity.setOppoConversionState(OppoConversionStateEnum.AUTO_CLOSE.getCode());
+        }
+
+        if(!StringUtils.contains(updateEntity.getOppoConversionState(), OppoConversionStateEnum.AUTO_CLOSE.getCode())){
+            updateEntity.setOppoConversionState(updateEntity.getOppoConversionState() + "," +OppoConversionStateEnum.AUTO_CLOSE.getCode());
+        }
+
         return updateEntity;
     }
 
