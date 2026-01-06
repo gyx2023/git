@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.enums.ClueStateEnum;
+import com.crm.common.enums.OppoStateEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
@@ -277,21 +279,20 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
     private static ToppOpportunityDo getToppOpportunityDo(Date date) {
         ToppOpportunityDo updateEntity = new ToppOpportunityDo();
-        LocalDateTime localDateTime = DateUtil.toLocalDateTime(date);
         //商机终止时修改为opp_end_link 废弃、更新时间
         updateEntity.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
-        updateEntity.setNewOppPhaseTime(localDateTime);
+        updateEntity.setNewOppPhaseTime(date);
 
         //修改为ppo_end终结、更新时间
-        updateEntity.setOppPhase("opp_end");
-        updateEntity.setOppPhaseTime(localDateTime);
+        updateEntity.setOppPhase(ClueStateEnum.END.getCode());
+        updateEntity.setOppPhaseTime(date);
 
         //像改为0无效、更新时间
         updateEntity.setIsValid("0");
         updateEntity.setUpdateTime(date);
 
         //修改为oppo_status_end商机终止;
-        updateEntity.setOppoState("oppo_status_end");
+        updateEntity.setOppoState(OppoStateEnum.TERMINATED.getCode());
         return updateEntity;
     }
 

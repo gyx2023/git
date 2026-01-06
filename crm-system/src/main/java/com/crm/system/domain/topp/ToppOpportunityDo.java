@@ -7,7 +7,6 @@ import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -106,7 +105,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      * 商机阶段变化时间
      */
-    private LocalDateTime oppPhaseTime;
+    private Date oppPhaseTime;
     /**
      *
      */
@@ -303,7 +302,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      * 审核时间
      */
-    private LocalDateTime auditTime;
+    private Date auditTime;
     /**
      *
      */
@@ -331,7 +330,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      * 确定支撑经理时间
      */
-    private LocalDateTime designerTime;
+    private Date designerTime;
     /**
      *
      */
@@ -375,7 +374,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      * 转实施时间
      */
-    private LocalDateTime zssTime;
+    private Date zssTime;
     /**
      * 合同id
      */
@@ -407,7 +406,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      *
      */
-    private LocalDateTime syncTime;
+    private Date syncTime;
     /**
      *
      */
@@ -415,7 +414,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      *
      */
-    private LocalDateTime newOppPhaseTime;
+    private Date newOppPhaseTime;
     /**
      *
      */
@@ -447,11 +446,11 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      *
      */
-    private LocalDateTime dabiaoCreateTime;
+    private Date dabiaoCreateTime;
     /**
      *
      */
-    private LocalDateTime dabiaoUpdateTime;
+    private Date dabiaoUpdateTime;
     /**
      *
      */
@@ -479,7 +478,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      * é¢„è®¡ç­¾çº¦æ—¶é—´
      */
-    private LocalDateTime signTime;
+    private Date signTime;
     /**
      *
      */
@@ -555,7 +554,7 @@ public class ToppOpportunityDo extends BaseEntity {
     /**
      * 支撑阶段变更时间
      */
-    private LocalDateTime supportStageTime;
+    private Date supportStageTime;
     /**
      *
      */

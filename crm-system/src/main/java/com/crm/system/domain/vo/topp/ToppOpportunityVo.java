@@ -7,7 +7,7 @@ import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 
 /**
@@ -146,7 +146,7 @@ public class ToppOpportunityVo {
      * 商机阶段变化时间
      */
     @ExcelProperty(value = "商机阶段变化时间")
-    private LocalDateTime oppPhaseTime;
+    private Date oppPhaseTime;
 
     /**
      *
@@ -441,7 +441,7 @@ public class ToppOpportunityVo {
      * 审核时间
      */
     @ExcelProperty(value = "审核时间")
-    private LocalDateTime auditTime;
+    private Date auditTime;
 
     /**
      *
@@ -483,7 +483,7 @@ public class ToppOpportunityVo {
      * 确定支撑经理时间
      */
     @ExcelProperty(value = "确定支撑经理时间")
-    private LocalDateTime designerTime;
+    private Date designerTime;
 
     /**
      *
@@ -543,7 +543,7 @@ public class ToppOpportunityVo {
      * 转实施时间
      */
     @ExcelProperty(value = "转实施时间")
-    private LocalDateTime zssTime;
+    private Date zssTime;
 
     /**
      * 合同id
@@ -591,7 +591,7 @@ public class ToppOpportunityVo {
      *
      */
     @ExcelProperty(value = "")
-    private LocalDateTime syncTime;
+    private Date syncTime;
 
     /**
      *
@@ -603,7 +603,7 @@ public class ToppOpportunityVo {
      *
      */
     @ExcelProperty(value = "")
-    private LocalDateTime newOppPhaseTime;
+    private Date newOppPhaseTime;
 
     /**
      *
@@ -651,13 +651,13 @@ public class ToppOpportunityVo {
      *
      */
     @ExcelProperty(value = "")
-    private LocalDateTime dabiaoCreateTime;
+    private Date dabiaoCreateTime;
 
     /**
      *
      */
     @ExcelProperty(value = "")
-    private LocalDateTime dabiaoUpdateTime;
+    private Date dabiaoUpdateTime;
 
     /**
      *
@@ -699,7 +699,7 @@ public class ToppOpportunityVo {
      * é¢„è®¡ç­¾çº¦æ—¶é—´
      */
     @ExcelProperty(value = "é¢„è®¡ç­¾çº¦æ—¶é—´")
-    private LocalDateTime signTime;
+    private Date signTime;
 
     /**
      *
@@ -814,7 +814,7 @@ public class ToppOpportunityVo {
      * 支撑阶段变更时间
      */
     @ExcelProperty(value = "支撑阶段变更时间")
-    private LocalDateTime supportStageTime;
+    private Date supportStageTime;
 
     /**
      *
@@ -823,7 +823,7 @@ public class ToppOpportunityVo {
     private String preDecision;
 
     @ExcelProperty(value = "创建时间")
-    private LocalDateTime createTime;
+    private Date createTime;
 
 
 
