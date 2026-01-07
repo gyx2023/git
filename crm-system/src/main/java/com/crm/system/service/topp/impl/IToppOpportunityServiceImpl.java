@@ -293,6 +293,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
         //修改为oppo_status_end商机终止;
         updateEntity.setOppoState(OppoStateEnum.TERMINATED.getCode());
+        updateEntity.setEndOppTypeMemo("预计签约时间到期后7天，系统自动关闭！");
         return updateEntity;
     }
 

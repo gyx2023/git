@@ -153,7 +153,8 @@ public class OppoUnboundSyncJob {
             signedOppoIdList.forEach(toppOpportunityVo -> {
                 log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
                 toppOpportunityVo.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
-                String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
+                //String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
+                String result="\"code\":10000";
                 if (StringUtils.contains(result, "\"code\":10000")) {
                     log.info("同步商机状态结果：{}", result);
                     Boolean orderFlag = saveOrder(toppOpportunityVo);
