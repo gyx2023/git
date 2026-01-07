@@ -1,5 +1,7 @@
 package com.crm.job.service.oppo;
 
+import cn.hutool.core.util.ObjectUtil;
+import com.crm.common.enums.OppoConversionStateEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppContractBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
@@ -145,6 +147,13 @@ public class OppoContractSyncJob {
                 ToppOpportunityBo toppOpportunityBo = new ToppOpportunityBo();
                 toppOpportunityBo.setId(toppOpportunity.getId());
                 toppOpportunityBo.setContractId(toppContractBo.getId());
+                if(ObjectUtil.isEmpty(toppOpportunity.getOppoConversionState())){
+                    toppOpportunityBo.setOppoConversionState(OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode());
+                }
+
+                if(!StringUtils.contains(toppOpportunity.getOppoConversionState(), OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode())){
+                    toppOpportunityBo.setOppoConversionState(toppOpportunity.getOppoConversionState() + "," +OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode());
+                }
                 toppOpportunityService.updateByBo(toppOpportunityBo);
             }
         }
@@ -182,6 +191,17 @@ public class OppoContractSyncJob {
             eformBo.setIsValid(1);
             eformBo.setTextType("后台自动同步总部商机关联电子表单");
             toppContractEformService.insertByBo(eformBo);
+
+            ToppOpportunityBo toppOpportunityBo = new ToppOpportunityBo();
+            toppOpportunityBo.setId(toppOpportunity.getId());
+            if(ObjectUtil.isEmpty(toppOpportunity.getOppoConversionState())){
+                toppOpportunityBo.setOppoConversionState(OppoConversionStateEnum.FORM_ASSOCIATION.getCode());
+            }
+
+            if(!StringUtils.contains(toppOpportunity.getOppoConversionState(), OppoConversionStateEnum.FORM_ASSOCIATION.getCode())){
+                toppOpportunityBo.setOppoConversionState(toppOpportunity.getOppoConversionState() + "," +OppoConversionStateEnum.FORM_ASSOCIATION.getCode());
+            }
+            toppOpportunityService.updateByBo(toppOpportunityBo);
             log.info("新增电子表单数据成功");
         }
     }
