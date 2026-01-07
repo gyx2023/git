@@ -139,7 +139,10 @@
         <result property="supportStage" column="support_stage"/>
         <result property="supportStageTime" column="support_stage_time"/>
         <result property="preDecision" column="pre_decision"/>
+        <result property="visitCnt" column="visit_cnt"/>
+        <result property="lastVisitTime" column="last_visit_time"/>
     </resultMap>
+
     <resultMap id="resultOpp" type="com.crm.common.core.domain.dto.SignOppoFileExportDTO">
         <result property="oppCode" column="opp_code"/>
         <result property="oppName" column="opp_name"/>
