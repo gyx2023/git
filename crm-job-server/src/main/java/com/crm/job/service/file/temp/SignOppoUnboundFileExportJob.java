@@ -50,15 +50,7 @@ public class SignOppoUnboundFileExportJob {
         log.info("查询时间范围：{} 到 {}", startTime, endTime);
 
         try {
-            if(ObjectUtil.equals(param, "1")){
-                List<ToppOpportunityVo> opportunityList = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
-            }else{
-
-            }
-
-
-            // 2. 查询数据并转换
-            List<SignOppoFileExportDTO> list = toppOpportunityService.selectToppOpportunity();
+            List<ToppOpportunityVo> list = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
             // 空数据判断：避免空指针，且不生成空文件
             if (list == null || list.isEmpty()) {
                 String emptyMsg = "未查询到商机数据，无需导出Excel";
