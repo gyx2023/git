@@ -1,5 +1,6 @@
 package com.crm.system.domain;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -22,8 +23,8 @@ public class SysLog implements Serializable {
     /**
      * 主键
      */
-    @TableId(value = "id_")
-    private Integer id;
+    @TableId(value = "id_",type = IdType.AUTO)
+    private Long id;
     /**
      * 日志类型
      */
