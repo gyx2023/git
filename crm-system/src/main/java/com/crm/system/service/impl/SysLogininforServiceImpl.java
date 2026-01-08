@@ -20,6 +20,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Date;
@@ -36,7 +37,8 @@ import java.util.Map;
 @Service
 public class SysLogininforServiceImpl implements ISysLogininforService {
 
-    private final SysLogininforMapper baseMapper;
+    @Resource
+    private  SysLogininforMapper baseMapper;
 
     /**
      * 记录登录信息

@@ -12,4 +12,5 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  */
 public interface SysCodeMapper extends BaseMapperPlus<SysCodeMapper, SysCode, SysCodeVo> {
 
+
 }

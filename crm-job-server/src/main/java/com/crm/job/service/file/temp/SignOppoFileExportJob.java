@@ -6,7 +6,7 @@ import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
 import com.crm.system.service.ISysOssService;
-import com.crm.system.service.topp.ToppOpportunityService;
+import com.crm.system.service.topp.IToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.List;
 @Component
 public class SignOppoFileExportJob {
     @Resource
-    private ToppOpportunityService service;
+    private IToppOpportunityService service;
     @Resource
     private ISysOssService iSysOssService;
 

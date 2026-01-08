@@ -127,7 +127,6 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
             new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, reqDTO.getDeptId()));
         deptList.add(sysDept);
-        reqDTO.setAreaCode(sysDept.getDeptId());
 
         // 合计数据
         SignStatisticsRespDTO totalDTO = new SignStatisticsRespDTO();
@@ -358,6 +357,7 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         totalDTO.setYbwqZb(totalYbwqZb);
         totalDTO.setWqZb(totalWqZb);
         totalDTO.setGxedZb(totalGxedZb);
+        totalDTO.setDeptId(reqDTO.getDeptId());
         list.add(totalDTO);
 
         // 创建分页对象并设置分页参数
@@ -398,8 +398,6 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
             new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, reqDTO.getDeptId()));
         deptList.add(sysDept);
-
-        reqDTO.setAreaCode(sysDept.getDeptId());
 
         // 遍历部门列表，获取各部门统计数据
         for (SysDept dept : deptList) {

@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppContractEformMapper">
 
-    <resultMap type="com.crm.system.domain.topp.ToppContractEform" id="ToppContractEformResult">
+    <resultMap type="com.crm.system.domain.topp.ToppContractEformDo" id="ToppContractEformResult">
         <result property="id" column="id_"/>
         <result property="projectId" column="project_id"/>
         <result property="eformNo" column="eform_no"/>

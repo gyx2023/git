@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppOppPreEstimateDo;
 import com.crm.system.mapper.topp.ToppOppPreEstimateMapper;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -146,15 +150,12 @@ public class ToppOppPreEstimateExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
 }

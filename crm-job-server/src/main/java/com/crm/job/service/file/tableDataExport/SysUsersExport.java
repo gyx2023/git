@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysUsers;
 import com.crm.system.mapper.SysUsersMapper;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -98,8 +102,8 @@ public class SysUsersExport {
                 new FileOutputStream(tempFile), StandardCharsets.UTF_8))) {
                 // 添加表头（可选）
                 writer.write("id|name|nameCh|relationTel|type|orgId|password|passwordSalt|functionList|roleList|" +
-                    "remark|creator|modifier|modifyTime|isValid|wxUserFlag|wxPhone|wxNo|wxEmail|wxFlag|stealth|customerNo|" +
-                    "oaAccount|email|firstLogin|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
+                    "remark|creator|createTime|modifier|modifyTime|isValid|wxUserFlag|wxPhone|wxNo|wxEmail|wxFlag|stealth|customerNo|" +
+                    "oaAccount|email|firstLogin|updataTime|includeType|unicomType|unicomType2|data|token|markunits|developerCodes|" +
                     "cardNumber|staffType|userRoleYx|zqbusinessFlag|recSmsBeginTime|recSmsEndTime|associatedDeveloper|" +
                     "defaultDeveloper|checkDeveloper");
                 writer.newLine();
@@ -119,6 +123,7 @@ public class SysUsersExport {
                     line.append(formatField(sysUsers.getRoleList())).append("|");
                     line.append(formatField(sysUsers.getRemark())).append("|");
                     line.append(formatField(sysUsers.getCreator())).append("|");
+                    line.append(formatField(sysUsers.getCreateTime())).append("|");
                     line.append(formatField(sysUsers.getModifier())).append("|");
                     line.append(formatField(sysUsers.getModifyTime())).append("|");
                     line.append(formatField(sysUsers.getIsValid())).append("|");
@@ -132,6 +137,7 @@ public class SysUsersExport {
                     line.append(formatField(sysUsers.getOaAccount())).append("|");
                     line.append(formatField(sysUsers.getEmail())).append("|");
                     line.append(formatField(sysUsers.getFirstLogin())).append("|");
+                    line.append(formatField(sysUsers.getUpdateTime())).append("|");
                     line.append(formatField(sysUsers.getIncludeType())).append("|");
                     line.append(formatField(sysUsers.getUnicomType())).append("|");
                     line.append(formatField(sysUsers.getUnicomType2())).append("|");
@@ -185,10 +191,13 @@ public class SysUsersExport {
      * @param value 字段值
      * @return 格式化后的字符串
      */
+    /**
+     * 格式化字段值，处理null值和特殊字符
+     *
+     * @param value 字段值
+     * @return 格式化后的字符串
+     */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
 }

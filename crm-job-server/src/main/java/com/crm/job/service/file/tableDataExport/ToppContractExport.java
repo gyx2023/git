@@ -1,6 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.topp.ToppContractDo;
 import com.crm.system.mapper.topp.ToppContractMapper;
@@ -100,7 +101,7 @@ public class ToppContractExport {
                 writer.write("id|projectId|ourCompany|otherCompany|finalCustName|contractNo|contractName|" +
                     "contractType|contractCurrency|totalMoney|contractStatus|agentPerson|agentDepartment|performNo|" +
                     "performName|performTel|isNeedPerformMoney|performMoney|memo|signDate|startDate|endDate|" +
-                    "validityTime|isAutoDelay|delayTo|creator|isExpire|isRemind|performMoneyNum|incomeType|" +
+                    "validityTime|isAutoDelay|delayTo|createTime|creator|isExpire|isRemind|performMoneyNum|incomeType|" +
                     "operationType|relationId|status|wfZt|dfName|contState|cbDepartment|cbUser|ssDate|sptgDate|" +
                     "contXingzhi|lastSpUser|contractAddType|zzsSl|bhZzsMoney|lxDepartment|htSmQdyj|qdgzDate|allInMoney|" +
                     "lxUser|serviceInMoney|grossProfitMargin|expectIncome|includeType|contractCategory|contractType2|" +
@@ -137,6 +138,7 @@ public class ToppContractExport {
                     line.append(formatField(toppContract.getValidityTime())).append("|");
                     line.append(formatField(toppContract.getIsAutoDelay())).append("|");
                     line.append(formatField(toppContract.getDelayTo())).append("|");
+                    line.append(formatField(toppContract.getCreateTime())).append("|");
                     line.append(formatField(toppContract.getCreator())).append("|");
                     line.append(formatField(toppContract.getIsExpire())).append("|");
                     line.append(formatField(toppContract.getIsRemind())).append("|");
@@ -217,15 +219,12 @@ public class ToppContractExport {
     }
 
     /**
-     * 格式化字段值，处理null值
+     * 格式化字段值，处理null值和特殊字符
      *
      * @param value 字段值
      * @return 格式化后的字符串
      */
     private String formatField(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return value.toString();
+        return ExportToolsUtils.formatField(value);
     }
 }

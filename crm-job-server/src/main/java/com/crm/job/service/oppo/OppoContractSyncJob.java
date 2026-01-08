@@ -80,7 +80,7 @@ public class OppoContractSyncJob {
                         syncContractEformData(signVo, toppOpportunity);
                     }
                 }catch (Exception e){
-                    log.error("ContractId为：" + signVo.getContractId() + "的合同或电子表单保存失败");
+                    log.error("ContractId为：" + signVo.getContractId() + "的合同或电子表单保存失败:" + e.getMessage());
                 }
             }
         }
@@ -110,7 +110,7 @@ public class OppoContractSyncJob {
             // 设置合同币种
             toppContractBo.setContractCurrency("currency_rmb");
             // 设置合同总金额
-            toppContractBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(1000)) : null);
+            toppContractBo.setTotalMoney(signVo.getContractIncome());
             // 设置合同签订时间
             if (StringUtils.isNotBlank(signVo.getSignDate())) {
                 toppContractBo.setSignDate(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
@@ -136,6 +136,9 @@ public class OppoContractSyncJob {
             // 设置合同类别 2合同
             toppContractBo.setContractAddType("2");
             toppContractBo.setCreateTime(new Date());
+            toppContractBo.setPayInfo("后台自动同步总部商机关联合同信息");
+            toppContractBo.setIsValid("1");
+            toppContractBo.setAuditStatus("2");
             toppContractService.insertByBo(toppContractBo);
             log.info("新增合同数据成功");
             if(toppOpportunity.getContractId() == null){
@@ -161,7 +164,7 @@ public class OppoContractSyncJob {
             eformBo.setAgentPersonOa(signVo.getExecutorContractLogin());
             eformBo.setAgentPersonName(signVo.getExecutorContractName());
             //signVo表单位为万元，ToppContractEformBo为元
-            eformBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(1000)) : null);
+            eformBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(10000)) : null);
 
             if (StringUtils.isNotBlank(signVo.getSignDate())) {
                 eformBo.setSignTime(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
@@ -176,7 +179,8 @@ public class OppoContractSyncJob {
             }
             eformBo.setBusiType("订购");
             eformBo.setCreateTime(new Date());
-
+            eformBo.setIsValid(1);
+            eformBo.setTextType("后台自动同步总部商机关联电子表单");
             toppContractEformService.insertByBo(eformBo);
             log.info("新增电子表单数据成功");
         }
