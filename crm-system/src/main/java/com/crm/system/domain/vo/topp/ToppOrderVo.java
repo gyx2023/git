@@ -25,7 +25,7 @@ public class ToppOrderVo {
      *
      */
     @ExcelProperty(value = "")
-    private Long id;
+    private Integer id;
 
     /**
      * 关联商机，可以为空

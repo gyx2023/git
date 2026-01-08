@@ -45,4 +45,7 @@ public interface IToppOppPreEstimateService {
      * 校验并批量删除商机前评估信息信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    ToppOppPreEstimateVo getPreEstimateByOppId(Long oppId);
+
 }

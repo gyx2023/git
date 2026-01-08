@@ -45,4 +45,6 @@ public interface TcommTaskService {
      * 校验并批量删除待办任务信息
      */
     Boolean deleteWithValidByIds(Collection<Integer> ids, Boolean isValid);
+
+    List<TcommTaskVo> getTasksByInfoId(Long infoId);
 }

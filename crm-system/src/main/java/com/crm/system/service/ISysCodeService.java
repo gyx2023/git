@@ -46,4 +46,6 @@ public interface ISysCodeService {
      * 校验并批量删除统一编码信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    SysCodeVo findCode(String type, String code);
 }

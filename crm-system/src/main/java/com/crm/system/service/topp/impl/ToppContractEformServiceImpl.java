@@ -1,23 +1,24 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.utils.StringUtils;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.core.domain.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
-import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.domain.topp.ToppContractEformDo;
+import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.mapper.topp.ToppContractEformMapper;
 import com.crm.system.service.topp.IToppContractEformService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -35,7 +36,7 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
      * 查询【请填写功能名称】
      */
     @Override
-    public ToppContractEformVo queryById(Long id){
+    public ToppContractEformVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
@@ -106,7 +107,7 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ToppContractEformDo entity){
+    private void validEntityBeforeSave(ToppContractEformDo entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 
@@ -115,9 +116,19 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public List<ToppContractEformVo> queryContractList(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<ToppContractEformDo> lqw = Wrappers.lambdaQuery();
+        lqw.in(ToppContractEformDo::getProjectId, ids);
+        return baseMapper.selectVoList(lqw);
     }
 }

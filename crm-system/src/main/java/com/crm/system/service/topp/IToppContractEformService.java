@@ -4,6 +4,7 @@ import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.system.domain.vo.topp.ToppContractVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -45,4 +46,7 @@ public interface IToppContractEformService {
      * 校验并批量删除【请填写功能名称】信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    List<ToppContractEformVo> queryContractList(List<Long> ids);
+
 }
