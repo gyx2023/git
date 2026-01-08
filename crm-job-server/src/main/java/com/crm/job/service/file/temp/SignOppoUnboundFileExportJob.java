@@ -58,7 +58,7 @@ public class SignOppoUnboundFileExportJob {
 
 
             // 2. 查询数据并转换
-            List<SignOppoFileExportDTO> list = service.selectToppOpportunity();
+            List<SignOppoFileExportDTO> list = toppOpportunityService.selectToppOpportunity();
             // 空数据判断：避免空指针，且不生成空文件
             if (list == null || list.isEmpty()) {
                 String emptyMsg = "未查询到商机数据，无需导出Excel";
