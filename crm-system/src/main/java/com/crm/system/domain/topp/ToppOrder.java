@@ -1,13 +1,12 @@
 package com.crm.system.domain.topp;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
-import java.util.Date;
-import java.math.BigDecimal;
-
-import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 【请填写功能名称】对象 topp_order
@@ -20,13 +19,13 @@ import com.crm.common.core.domain.BaseEntity;
 @TableName("topp_order")
 public class ToppOrder extends BaseEntity {
 
-    private static final long serialVersionUID=1L;
+    private static final long serialVersionUID = 1L;
 
     /**
      *
      */
-    @TableId(value = "id_")
-    private Integer id;
+    @TableId(value = "id_", type = IdType.AUTO)
+    private Long id;
     /**
      * 关联商机，可以为空
      */
