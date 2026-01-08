@@ -1,17 +1,13 @@
 package com.crm.system.domain.topp;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.math.BigDecimal;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 【请填写功能名称】对象 topp_opportunity
@@ -21,9 +17,9 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("topp_opportunity")
-public class ToppOpportunityDo extends BaseEntity{
+public class ToppOpportunityDo extends BaseEntity {
 
-    private static final long serialVersionUID=1L;
+    private static final long serialVersionUID = 1L;
 
     /**
      *
@@ -47,7 +43,7 @@ public class ToppOpportunityDo extends BaseEntity{
      */
     private String custNeed;
     /**
-     * 	客户联系人
+     * 客户联系人
      */
     private String custContact;
     /**

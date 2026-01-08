@@ -1,23 +1,24 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.utils.StringUtils;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.core.domain.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.utils.StringUtils;
+import com.crm.system.domain.SysCode;
 import com.crm.system.domain.bo.SysCodeBo;
 import com.crm.system.domain.vo.SysCodeVo;
-import com.crm.system.domain.SysCode;
 import com.crm.system.mapper.SysCodeMapper;
 import com.crm.system.service.ISysCodeService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * 统一编码Service业务层处理
@@ -35,7 +36,7 @@ public class SysCodeServiceImpl implements ISysCodeService {
      * 查询统一编码
      */
     @Override
-    public SysCodeVo queryById(Long id){
+    public SysCodeVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
@@ -102,7 +103,7 @@ public class SysCodeServiceImpl implements ISysCodeService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(SysCode entity){
+    private void validEntityBeforeSave(SysCode entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 
@@ -111,9 +112,22 @@ public class SysCodeServiceImpl implements ISysCodeService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public SysCodeVo findCode(String type, String code) {
+        SysCodeVo sysCodeVo = new SysCodeVo();
+        LambdaQueryWrapper<SysCode> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(type), SysCode::getType, type);
+        lqw.eq(StringUtils.isNotBlank(code), SysCode::getCode, code);
+        List<SysCodeVo> list = baseMapper.selectVoList(lqw);
+        if (ObjectUtil.isNotEmpty(list)) {
+            sysCodeVo = list.get(0);
+        }
+        return sysCodeVo;
     }
 }

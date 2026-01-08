@@ -25,7 +25,7 @@ public class ToppOrderBo extends BaseEntity {
      *
      */
     @NotNull(message = "不能为空", groups = { EditGroup.class })
-    private Long id;
+    private Integer id;
 
     /**
      * 关联商机，可以为空

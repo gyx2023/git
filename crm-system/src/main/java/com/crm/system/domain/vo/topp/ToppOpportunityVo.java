@@ -1,15 +1,13 @@
 package com.crm.system.domain.vo.topp;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
-import java.util.Date;
 
+import java.math.BigDecimal;
+import java.util.Date;
 
 
 /**
@@ -55,7 +53,7 @@ public class ToppOpportunityVo {
     private String custNeed;
 
     /**
-     * 	客户联系人
+     * 客户联系人
      */
     @ExcelProperty(value = "	客户联系人	")
     private String custContact;
@@ -823,6 +821,10 @@ public class ToppOpportunityVo {
      */
     @ExcelProperty(value = "")
     private String preDecision;
+
+    @ExcelProperty(value = "创建时间")
+    private Date createTime;
+
 
 
 }

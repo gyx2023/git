@@ -15,6 +15,7 @@ import com.crm.system.service.topp.IToppContractService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -176,5 +177,23 @@ public class ToppContractServiceImpl implements IToppContractService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public List<ToppContractVo> queryContractList(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<ToppContractDo> lqw = Wrappers.lambdaQuery();
+        lqw.in(ToppContractDo::getProjectId, ids);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public List<ToppContractVo>  findContractDetailById(Long oppoId) {
+        LambdaQueryWrapper<ToppContractDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(ToppContractDo::getProjectId, oppoId);
+        lqw.and(wrapper -> wrapper.eq(ToppContractDo::getIsValid, "1").or().isNull(ToppContractDo::getIsValid));
+        return baseMapper.selectVoList(lqw);
     }
 }
