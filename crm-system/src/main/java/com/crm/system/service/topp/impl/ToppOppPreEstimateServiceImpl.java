@@ -1,6 +1,7 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -113,5 +114,16 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public ToppOppPreEstimateVo getPreEstimateByOppId(Long oppId) {
+        LambdaQueryWrapper<ToppOppPreEstimateDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(oppId != null, ToppOppPreEstimateDo::getOppoId, oppId);
+        List<ToppOppPreEstimateVo> list = baseMapper.selectVoList(lqw);
+        if(ObjectUtil.isNotEmpty(list)){
+            return list.get(0);
+        }
+        return null;
     }
 }

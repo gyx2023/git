@@ -1,18 +1,22 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.enums.ClueStateEnum;
+import com.crm.common.enums.OppoStateEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;
+import com.crm.system.utils.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +26,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -72,7 +77,6 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         lqw.ge(ToppOpportunityDo::getCreateTime, startTime);
         return baseMapper.selectList(lqw);
     }
-
 
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
@@ -256,8 +260,61 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
     @Override
+    public List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<ToppOpportunityDo>();
+        lqw.ge(ToppOpportunityDo::getSignTime, startTime);
+        lqw.lt(ToppOpportunityDo::getSignTime, endTime.plusSeconds(1));
+        // 筛选有效状态
+        lqw.eq(ToppOpportunityDo::getIsValid, 1);
+        lqw.isNull(ToppOpportunityDo::getContractId);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public Boolean upppUnbound(Long id) {
+        ToppOpportunityDo updateEntity = getToppOpportunityDo(new Date());
+
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(ToppOpportunityDo::getId, id);
+
+        int updateCount = baseMapper.update(updateEntity, lqw);
+        return updateCount > 0;
+    }
+
+
+    private static ToppOpportunityDo getToppOpportunityDo(Date date) {
+        ToppOpportunityDo updateEntity = new ToppOpportunityDo();
+        //商机终止时修改为opp_end_link 废弃、更新时间
+        updateEntity.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
+        updateEntity.setNewOppPhaseTime(date);
+
+        //修改为ppo_end终结、更新时间
+        updateEntity.setOppPhase(ClueStateEnum.END.getCode());
+        updateEntity.setOppPhaseTime(date);
+
+        //像改为0无效、更新时间
+        updateEntity.setIsValid("0");
+        updateEntity.setUpdateTime(date);
+
+        //修改为oppo_status_end商机终止;
+        updateEntity.setOppoState(OppoStateEnum.TERMINATED.getCode());
+        updateEntity.setEndOppTypeMemo("预计签约时间到期后7天，系统自动关闭！");
+        return updateEntity;
+    }
+
+    @Override
     public List<SignOppoFileExportDTO> selectToppOpportunity() {
         return baseMapper.selectToppOpportunity();
     }
 
+
+    @Override
+    public String updateOppoState(Long oppId) {
+        ToppOpportunityDo opportunity = baseMapper.selectById(oppId);
+        String oppoState = baseMapper.callGetOppoState(oppId);
+        opportunity.setOppoState(oppoState);
+        System.out.println("更新商机"+oppId+"状态为:"+oppoState);
+        baseMapper.updateById(opportunity);
+        return oppoState;
+    }
 }

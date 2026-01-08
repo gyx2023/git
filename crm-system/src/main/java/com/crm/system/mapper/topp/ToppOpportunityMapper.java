@@ -6,7 +6,8 @@ import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.entity.topp.ToppOpportunityDO;
 import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
-import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.mapping.StatementType;
 
 import java.util.List;
 
@@ -24,4 +25,11 @@ import java.util.List;
 public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMapper, ToppOpportunityDo, ToppOpportunityVo> {
     @InterceptorIgnore(dataPermission = "true")
     List<SignOppoFileExportDTO> selectToppOpportunity();
+
+    @Select("{call oppo_state_life_cycle(#{oppId, mode=IN})}")
+    @Options(statementType = StatementType.CALLABLE)
+    @Results({ // 若实体属性与数据库列名一致，可省略 @Results 映射
+        @Result(property = "oppoState", column = "oppoState")
+    })
+    String callGetOppoState(@Param("oppId") Long oppId);
 }
