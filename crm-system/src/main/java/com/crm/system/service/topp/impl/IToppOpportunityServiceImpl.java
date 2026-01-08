@@ -257,10 +257,11 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     @Override
     public List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
         LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<ToppOpportunityDo>();
-        lqw.ge(ToppOpportunityDo::getSignTime, startTime);
-        lqw.le(ToppOpportunityDo::getSignTime, endTime);
+//        lqw.ge(ToppOpportunityDo::getSignTime, startTime);
+//        lqw.le(ToppOpportunityDo::getSignTime, endTime);
         // 筛选有效状态
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
+        lqw.eq(ToppOpportunityDo::getOppCode, "SJ-20180606-5");
         lqw.isNull(ToppOpportunityDo::getContractId);
         return baseMapper.selectVoList(lqw);
     }
