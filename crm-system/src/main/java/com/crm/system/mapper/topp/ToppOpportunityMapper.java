@@ -32,4 +32,8 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
         @Result(property = "oppoState", column = "oppoState")
     })
     String callGetOppoState(@Param("oppId") Long oppId);
+
+
+
+   List<ToppOpportunityDo> selectOpportunityUnbound(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 }

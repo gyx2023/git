@@ -317,4 +317,10 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         baseMapper.updateById(opportunity);
         return oppoState;
     }
+
+    @Override
+    public List<ToppOpportunityVo> selectOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
+        List<ToppOpportunityDo> list =  baseMapper.selectOpportunityUnbound( startTime,  endTime);
+        return Collections.emptyList();
+    }
 }

@@ -70,4 +70,7 @@ public interface IToppOpportunityService {
     Boolean upppUnbound(Long id);
 
     String updateOppoState(Long oppId);
+
+    List<ToppOpportunityVo> selectOpportunityUnbound(LocalDateTime startTime,LocalDateTime endTime);
+
 }
