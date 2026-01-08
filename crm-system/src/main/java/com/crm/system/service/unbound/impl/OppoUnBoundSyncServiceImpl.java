@@ -707,41 +707,46 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                 if (ObjectUtil.isEmpty(oppo.getAuditTime())) {
                     reqMap.put("time", 0);
                 } else {
-                    Duration duration = Duration.between(oppo.getCreateTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
-                            .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
-                            .toLocalDateTime(), arriveTime);
-                    reqMap.put("time", duration.toString());
+                    Duration duration = Duration.between(oppo.getCreateTime().toInstant()
+                            .atZone(ZoneId.systemDefault()), arriveTime);
+                    long durationResult = duration.toMillis();
+                    reqMap.put("time", String.valueOf(durationResult));
                 }
             } else if (OppoSyncConstants.OPP_STATUS_SUPPORT_ORDER_ARRIVED.equals(status)) { // 支撑负责人收到工单时间
                 Duration duration = Duration.between(oppo.getAuditTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
                         .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
                         .toLocalDateTime(), arriveTime);
                 // 当前时间减去商机审核时间
-                reqMap.put("time", duration.toString());
+                long durationResult = duration.toMillis();
+                reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_SUPPORT_FIRST_DEAL.equals(status)) { // 支撑负责人首次处理时间
                 // 当前时间减去支撑负责人收到工单时间
                 Duration duration = Duration.between(oppo.getAuditTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
                         .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
                         .toLocalDateTime(), arriveTime);
-                reqMap.put("time", duration.toString());
+                long durationResult = duration.toMillis();
+                reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_SUPPORT_COMPLETE.equals(status)) { // 支撑完成(oppo_support_complete) - 第一次添加合同发起时间
                 // 当前时间减去客户经理提交合同开启审核流程时间
                 Duration duration = Duration.between(oppo.getAuditTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
                         .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
                         .toLocalDateTime(), arriveTime);
-                reqMap.put("time", duration.toString());
+                long durationResult = duration.toMillis();
+                reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_SIGN.equals(status)) { // 签约(oppo_sign) - 第一次合同审核通过时间
                 // 当前时间减去第一条合同创建时间
                 ToppContractVo contract = contractService.findContractDetailById(oppo.getId()).get(0);
-                Duration duration = Duration.between(contract.getCreateTime(), arriveTime);
-                reqMap.put("time", duration.toString());
+                Duration duration = Duration.between(contract.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() , arriveTime);
+                long durationResult = duration.toMillis();
+                reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_ABANDON.equals(status)) { // 废弃(oppo_abandon) - 商机终止审核通过时间
                 // 当前时间减去商机创建时间
                 if (Constants.NEW_OPP_PHASE_OPP_END_LINK.equals(oppo.getOppoState())) {
-                    Duration duration = Duration.between(oppo.getCreateTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
-                            .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
+                    Duration duration = Duration.between(oppo.getCreateTime().toInstant()
+                            .atZone(ZoneId.systemDefault())
                             .toLocalDateTime(), arriveTime);
-                    reqMap.put("time", duration.toString());
+                    long durationResult = duration.toMillis();
+                    reqMap.put("time", String.valueOf(durationResult));
                 }
             }
             if (ObjectUtil.isNotEmpty(MapUtils.getLong(reqMap, "time")) && MapUtils.getLong(reqMap, "time") < 0) {
