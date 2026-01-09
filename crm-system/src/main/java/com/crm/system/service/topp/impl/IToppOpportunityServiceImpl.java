@@ -319,8 +319,8 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
     @Override
-    public List<ToppOpportunityVo> selectOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
-        List<ToppOpportunityDo> list =  baseMapper.selectOpportunityUnbound( startTime,  endTime);
-        return Collections.emptyList();
+    public List<SignOppoFileExportDTO> selectOpportunityUnbound() {
+        List<SignOppoFileExportDTO> list =  baseMapper.selectOpportunityUnbound( );
+        return list;
     }
 }

@@ -226,50 +226,37 @@
         where op.is_valid=1 and year (sign_time)>=2025
     </select>
 
-    <select id="selectOpportunityUnbound" resultMap="ToppOpportunityResult">
-        SELECT op.opp_code,
-               op.opp_name,
-               op.cust_name,
-               op.cust_no,
-               CONCAT(CASE
-                          WHEN a.type_ = '二级' THEN a.name_
-                          WHEN a.type_ = '一级' THEN a.name_
-                          ELSE IFNULL(ap.name_, a.name_) END, '--', a.name_) AS area_county,
-               manage.name_ch                                                AS customer_manager,
-               org.name_                                                     AS org_name,
-               COALESCE(NULLIF(manage.relation_tel, ''), manage.name_)       AS mobile_phone,
-               cs.name_ch                                                    AS support_manager,
-               cc.name_                                                      AS main_business,
-               ch.name_                                                      as include_business,
-               CASE
-                   WHEN customer.develop_flag = '01' THEN '省直拓'
-                   WHEN customer.develop_flag = '02' THEN '市直拓'
-                   WHEN customer.develop_flag = '03' THEN '县直拓'
-                   ELSE customer.develop_flag END                            AS develop_property,
-               DATE_FORMAT(op.create_time, '%Y-%m-%d %H:%i:%s')              AS create_time,
-               ce.name_                                                      AS opp_status,
-               cf.name_                                                      AS phase,
-               db.name_ch                                                    AS marker,
-               op.level_area_id                                              AS area_level,
-               DATE_FORMAT(op.sign_time, '%Y-%m-%d %H:%i:%s')                AS sign_time,
-               case when op.is_valid = 1 then '有效' else '无效' end         AS is_valid
+    <select id="selectOpportunityUnbound" resultMap="resultOpp">
+        SELECT        op.opp_code,
+                      op.opp_name,
+                      op.cust_name,
+                      op.cust_no,
+                      CONCAT(CASE
+                                 WHEN a.type_ = '二级' THEN a.name_
+                                 WHEN a.type_ = '一级' THEN a.name_
+                                 ELSE IFNULL(ap.name_, a.name_) END, '--', a.name_) AS area_county,
+                      manage.name_ch                                                AS customer_manager,
+                      org.name_                                                     AS org_name,
+                      DATE_FORMAT(op.create_time, '%Y-%m-%d %H:%i:%s')              AS create_time,
+                      ch.name_                                                      as marker,
+                      ce.name_                                                      AS opp_status,
+                      cf.name_                                                      AS phase,
+                      DATE_FORMAT(op.sign_time, '%Y-%m-%d %H:%i:%s')                AS sign_time,
+                      case when op.is_valid = 1 then '有效' else '无效' end         AS is_valid
         FROM topp_opportunity op
-                 LEFT JOIN sys_user cs ON cs.id_ = op.designer
                  LEFT JOIN sys_user manage ON manage.id_ = op.cust_manager_id
                  LEFT JOIN sys_org org ON org.id_ = manage.org_id
-                 LEFT JOIN sys_code cc ON cc.code_ = op.opp_type AND cc.type_ = 'opp_type'
                  LEFT JOIN sys_code ce ON ce.code_ = op.oppo_state AND ce.type_ = 'oppo_state'
                  LEFT JOIN sys_code cf ON cf.code_ = op.new_opp_phase AND cf.type_ = 'new_opp_phase'
-                 LEFT JOIN sys_user db ON db.id_ = op.dabiao_creator
-                 left join sys_code ch on ch.code_ = TRIM(TRAILING ',' FROM
-                                                          IF(op.opp_include_type IS NULL OR op.opp_include_type = '',
-                                                             '',
-                                                             SUBSTRING(op.opp_include_type, 2, LENGTH(op.opp_include_type) - 2))) and
-                                          ch.type_ = 'opp_type'
-                 left join tcomm_customer customer on customer.id_ = op.cust_id
-                 LEFT JOIN sys_area a ON a.id_ = op.opp_area_id and a.id_!='100000' LEFT JOIN sys_area ap
-        ON ap.id_=a.parent_ and ap.id_!='100000' LEFT JOIN sys_area le ON le.id_=op.level_area_id and le.id_!='100000' LEFT JOIN sys_area lev ON lev.id_=a.parent_ and lev.id_!='100000'
-        where op.is_valid=1 and year (sign_time)>=2025
+                 left join sys_code ch on ch.code_=op.opp_phase   and ch.type_='clue_state'
+                 LEFT JOIN sys_area a ON a.id_ = op.opp_area_id and a.id_!='100000'
+                  LEFT JOIN sys_area ap
+        ON ap.id_=a.parent_ and ap.id_!='100000'
+        where op.is_valid=1 and  (op.opp_phase='oppo_end' or op.new_opp_phase='opp_end_link' or  oppo_state ='oppo_status_end')
+          and op.id_ not in (select project_id from topp_contract)
+          and op.id_ not in (select project_id from topp_contract_eform)
+          and date_sub(curdate(),interval 7 day) >= sign_time
+
     </select>
 
 
