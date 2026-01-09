@@ -22,6 +22,12 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.crm.common.constant.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+
+import java.util.Collections;
+
 /**
  * 【请填写功能名称】Service业务层处理
  *
@@ -39,6 +45,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
      * 查询【请填写功能名称】
      */
     @Override
+    @Cacheable(cacheNames = CacheNames.SYS_AREA, key = "#id")
     public SysAreaVo queryById(Long id){
         return baseMapper.selectVoById(id);
     }
@@ -77,6 +84,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
      * 根据地级市ID查询其下辖的区县列表
      */
     @Override
+    @Cacheable(cacheNames = CacheNames.SYS_AREA_COUNTY, key = "#areaId")
     public List<SysAreaVo> queryCountyListByCityId(String areaId) {
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
         lqw.eq(SysArea::getParent, areaId);
@@ -106,6 +114,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
      * 新增【请填写功能名称】
      */
     @Override
+    @CacheEvict(cacheNames = {CacheNames.SYS_AREA, CacheNames.SYS_AREA_COUNTY}, allEntries = true)
     public Boolean insertByBo(SysAreaBo bo) {
         SysArea add = BeanUtil.toBean(bo, SysArea.class);
         validEntityBeforeSave(add);
@@ -120,6 +129,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
      * 修改【请填写功能名称】
      */
     @Override
+    @CacheEvict(cacheNames = {CacheNames.SYS_AREA, CacheNames.SYS_AREA_COUNTY}, allEntries = true)
     public Boolean updateByBo(SysAreaBo bo) {
         SysArea update = BeanUtil.toBean(bo, SysArea.class);
         validEntityBeforeSave(update);
@@ -137,6 +147,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
      * 批量删除【请填写功能名称】
      */
     @Override
+    @CacheEvict(cacheNames = {CacheNames.SYS_AREA, CacheNames.SYS_AREA_COUNTY}, allEntries = true)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if(isValid){
             //TODO 做一些业务上的校验,判断是否需要校验

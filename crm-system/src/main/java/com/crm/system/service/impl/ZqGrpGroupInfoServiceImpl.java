@@ -13,9 +13,11 @@ import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.SysArea;
+import com.crm.system.domain.SysCategory;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.SysAreaMapper;
@@ -30,6 +32,10 @@ import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.crm.common.constant.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 /**
  * 政企集团客户信息Service业务层处理
@@ -199,76 +205,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     private void translateDictLabels(List<ZqGrpGroupInfoVo> list) {
         list.forEach(vo -> {
-            // 集团级别翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getGrpLevel())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_grp_level", vo.getGrpLevel());
-                    vo.setGrpLevel(label);
-                } catch (Exception e) {
-                    log.warn("集团级别翻译失败: {}", e.getMessage());
-                }
-            }
-
-            // 集团状态翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getGrpStatus())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_grp_status", vo.getGrpStatus());
-                    vo.setGrpStatus(label);
-                } catch (Exception e) {
-                    log.warn("集团状态翻译失败: {}", e.getMessage());
-                }
-            }
-
-            // 集团业务分类翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getBusiType())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_busi_type", vo.getBusiType());
-                    vo.setBusiType(label);
-                } catch (Exception e) {
-                    log.warn("集团业务分类翻译失败: {}", e.getMessage());
-                }
-            }
-
-            // 集团客户类别翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getGrpCustType())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_cust_type", vo.getGrpCustType());
-                    vo.setGrpCustType(label);
-                } catch (Exception e) {
-                    log.warn("集团客户类别翻译失败: {}", e.getMessage());
-                }
-            }
-
-            // 集团客户拓展类型翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getGrpExpandType())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_expand_type", vo.getGrpExpandType());
-                    vo.setGrpExpandType(label);
-                } catch (Exception e) {
-                    log.warn("集团客户拓展类型翻译失败: {}", e.getMessage());
-                }
-            }
-
-            // 集团客户业务部门分类翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getGrpBusiDeptType())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_busi_dept_type", vo.getGrpBusiDeptType());
-                    vo.setGrpBusiDeptType(label);
-                } catch (Exception e) {
-                    log.warn("集团客户业务部门分类翻译失败: {}", e.getMessage());
-                }
-            }
-
-            // 集团客户省市名单制存增量标识翻译，直接替换原始值
-            if (StringUtils.isNotBlank(vo.getProvinceNewoldType())) {
-                try {
-                    String label = dictService.selectDictLabel("sys_province_newold_type", vo.getProvinceNewoldType());
-                    vo.setProvinceNewoldType(label);
-                } catch (Exception e) {
-                    log.warn("集团客户省市名单制存增量标识翻译失败: {}", e.getMessage());
-                }
-            }
-
             // 地市翻译，将数字ID转换为中文名称
             if (StringUtils.isNotBlank(vo.getAreaId())) {
                 try {
