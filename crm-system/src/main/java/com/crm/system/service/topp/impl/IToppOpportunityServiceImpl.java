@@ -12,6 +12,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.ClueStateEnum;
 import com.crm.common.enums.OppoConversionStateEnum;
 import com.crm.common.enums.OppoStateEnum;
+import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
@@ -318,5 +319,17 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         System.out.println("更新商机"+oppId+"状态为:"+oppoState);
         baseMapper.updateById(opportunity);
         return oppoState;
+    }
+
+    @Override
+    public List<ToppOpportunityVo> queryListByOppoCodes(Set<String> oppoCodes) {
+        return baseMapper.selectVoList(new LambdaQueryWrapper<ToppOpportunityDo>().in(ToppOpportunityDo::getOppCode, oppoCodes)
+            .eq(ToppOpportunityDo::getIsValid, 1));
+    }
+
+    @Override
+    public void batchUpdateByBo(List<ToppOpportunityBo> toUpdateOpportunityList) {
+        List<ToppOpportunityDo> toUpdateOpportunityDoList = BeanCopyUtils.copyList(toUpdateOpportunityList, ToppOpportunityDo.class);
+        baseMapper.updateBatchById(toUpdateOpportunityDoList);
     }
 }
