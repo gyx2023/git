@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * 集团合同信息表导入定时任务
+ * 集团合同信息表导入定时任务<br>
  * 从经分侧获取全量数据并导入到zqzt_grp_contract_info表
  *
  * @author 万超凡
@@ -24,7 +24,7 @@ public class ZqztGrpContractInfoImportJob {
     private IZqztGrpContractInfoService zqztGrpContractInfoService;
 
     /**
-     * 集团合同信息导入任务
+     * 集团合同信息导入任务<br>
      * 在xxl-job调度中心配置JobHandler为：zqztGrpContractInfoImportJobHandler
      */
     @XxlJob("zqztGrpContractInfoImportJobHandler")
@@ -64,7 +64,7 @@ public class ZqztGrpContractInfoImportJob {
     }
 
     /**
-     * 从经分侧获取集团合同信息全量数据
+     * 从经分侧获取集团合同信息全量数据<br>
      * TODO: 等待经分提供详细接口规范后实现此方法
      *
      * @return 集团合同信息列表

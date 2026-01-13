@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * 集团合同扩展信息Service业务层处理
  *
- * @author crm
+ * @author 万超凡
  * @date 2026-01-13
  */
 @RequiredArgsConstructor
@@ -128,13 +128,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
-        
+
         // 清空现有数据，进行全量更新
         baseMapper.delete(null);
-        
+
         // 使用批量插入方法提高性能
         baseMapper.insertBatch(dataList);
-        
+
         return dataList.size();
     }
 
@@ -176,7 +176,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
     /**
      * 处理业务逻辑：根据user_id查询验证并设置相应状态
-     * 
+     *
      * @param dataList 原始数据列表
      * @return 处理后的数据列表
      */
@@ -221,7 +221,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
     /**
      * 从infoVal中提取user_id信息
-     * 
+     *
      * @param infoVal 信息值
      * @return user_id
      */

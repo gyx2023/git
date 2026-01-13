@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 集团合同扩展信息Service接口
  *
- * @author crm
+ * @author 万超凡
  * @date 2026-01-13
  */
 public interface IZqztGrpContractOtherInfoService {

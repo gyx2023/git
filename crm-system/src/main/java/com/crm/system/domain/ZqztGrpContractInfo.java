@@ -15,7 +15,7 @@ import com.crm.common.core.domain.BaseEntity;
 /**
  * 集团合同信息对象 zqzt_grp_contract_info
  *
- * @author crm
+ * @author 万超凡
  * @date 2026-01-12
  */
 @Data
