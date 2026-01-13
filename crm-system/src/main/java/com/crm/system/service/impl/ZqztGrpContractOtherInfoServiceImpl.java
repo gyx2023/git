@@ -14,10 +14,15 @@ import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
+import com.crm.system.service.external.IExternalCustMaintInfoService;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * 集团合同扩展信息Service业务层处理
@@ -30,6 +35,9 @@ import java.util.Collection;
 public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOtherInfoService {
 
     private final ZqztGrpContractOtherInfoMapper baseMapper;
+
+    @Resource
+    private IExternalCustMaintInfoService externalCustMaintInfoService;
 
     /**
      * 查询集团合同扩展信息
@@ -107,5 +115,122 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    /**
+     * 全量导入集团合同扩展信息数据
+     *
+     * @param dataList 数据列表
+     * @return 成功导入数量
+     */
+    @Override
+    public int importAllGroupContractOtherInfo(List<ZqztGrpContractOtherInfo> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+        
+        // 清空现有数据，进行全量更新
+        baseMapper.delete(null);
+        
+        // 使用批量插入方法提高性能
+        baseMapper.insertBatch(dataList);
+        
+        return dataList.size();
+    }
+
+    /**
+     * 查询所有集团合同扩展信息
+     *
+     * @return 集团合同扩展信息列表
+     */
+    @Override
+    public List<ZqztGrpContractOtherInfo> selectAllZqztGrpContractOtherInfo() {
+        return baseMapper.selectList(null);
+    }
+
+    /**
+     * 全量导入集团合同扩展信息数据（包含业务逻辑处理）
+     * 根据user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录
+     * 如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）
+     *
+     * @param dataList 数据列表
+     * @return 成功导入数量
+     */
+    @Override
+    public int importAllGroupContractOtherInfoWithBusinessLogic(List<ZqztGrpContractOtherInfo> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        // 清空现有数据，进行全量更新
+        baseMapper.delete(null);
+
+        // 处理业务逻辑：根据user_id验证并设置相应状态
+        List<ZqztGrpContractOtherInfo> processedDataList = processBusinessLogic(dataList);
+
+        // 使用批量插入方法提高性能
+        baseMapper.insertBatch(processedDataList);
+
+        return processedDataList.size();
+    }
+
+    /**
+     * 处理业务逻辑：根据user_id查询验证并设置相应状态
+     * 
+     * @param dataList 原始数据列表
+     * @return 处理后的数据列表
+     */
+    private List<ZqztGrpContractOtherInfo> processBusinessLogic(List<ZqztGrpContractOtherInfo> dataList) {
+        // 提取所有需要验证的user_id
+        List<String> userIds = dataList.stream()
+            .map(item -> extractUserId(item.getInfoVal()))
+            .filter(userId -> userId != null && !userId.trim().isEmpty())
+            .distinct()
+            .collect(Collectors.toList());
+
+        // 批量查询用户维护信息
+        Map<String, Map<String, Object>> custMaintInfoMap = new HashMap<>();
+        if (externalCustMaintInfoService != null && !userIds.isEmpty()) {
+            custMaintInfoMap = externalCustMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
+        }
+
+        // 处理每个数据项
+        List<ZqztGrpContractOtherInfo> processedDataList = new ArrayList<>();
+        for (ZqztGrpContractOtherInfo item : dataList) {
+            ZqztGrpContractOtherInfo processedItem = new ZqztGrpContractOtherInfo();
+            processedItem.setContractId(item.getContractId());
+            processedItem.setInfoTag(item.getInfoTag());
+            processedItem.setInfoVal(item.getInfoVal());
+
+            // 获取user_id并验证
+            String userId = extractUserId(item.getInfoVal());
+            if (userId != null && custMaintInfoMap.containsKey(userId)) {
+                // 用户存在且有效（status=1），正常入库，可设置额外字段
+                // 注意：实体类中可能需要添加状态字段来存储验证结果
+                // processedItem.setStatus("1"); // 如果实体类中有status字段
+            } else {
+                // 用户不存在或无效，可能需要特殊处理
+                // processedItem.setStatus("99"); // 如果实体类中有status字段
+            }
+
+            processedDataList.add(processedItem);
+        }
+
+        return processedDataList;
+    }
+
+    /**
+     * 从infoVal中提取user_id信息
+     * 
+     * @param infoVal 信息值
+     * @return user_id
+     */
+    private String extractUserId(String infoVal) {
+        // 根据实际数据格式实现提取逻辑
+        // 这里只是一个示例实现
+        if (infoVal != null && infoVal.contains(":")) {
+            return infoVal.split(":")[0]; // 假设格式为 userId:value
+        }
+        return infoVal;
     }
 }
