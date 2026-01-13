@@ -43,7 +43,7 @@ public class OppoSynchronousJob {
      * 同步未关联商机的合同数据
      * XXL-Job任务标识：oppoUnboundSyncJob
      */
-    @XxlJob("oppoUnboundSyncJob")
+    @XxlJob("oppoSynchronousJob")
     public void excute() {
         log.info("开始同步未关联商机的合同数据，任务参数：{}", XxlJobHelper.getJobParam());
         // 定义返回结果，便于XXL-Job查看执行状态
