@@ -149,9 +149,7 @@ public class OppoContractSyncJob {
                 toppOpportunityBo.setContractId(toppContractBo.getId());
                 if(ObjectUtil.isEmpty(toppOpportunity.getOppoConversionState())){
                     toppOpportunityBo.setOppoConversionState(OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode());
-                }
-
-                if(!StringUtils.contains(toppOpportunity.getOppoConversionState(), OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode())){
+                }else if(!StringUtils.contains(toppOpportunity.getOppoConversionState(), OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode())){
                     toppOpportunityBo.setOppoConversionState(toppOpportunity.getOppoConversionState() + "," +OppoConversionStateEnum.CONTRACT_ASSOCIATION.getCode());
                 }
                 toppOpportunityService.updateByBo(toppOpportunityBo);
@@ -196,9 +194,7 @@ public class OppoContractSyncJob {
             toppOpportunityBo.setId(toppOpportunity.getId());
             if(ObjectUtil.isEmpty(toppOpportunity.getOppoConversionState())){
                 toppOpportunityBo.setOppoConversionState(OppoConversionStateEnum.FORM_ASSOCIATION.getCode());
-            }
-
-            if(!StringUtils.contains(toppOpportunity.getOppoConversionState(), OppoConversionStateEnum.FORM_ASSOCIATION.getCode())){
+            }else if(!StringUtils.contains(toppOpportunity.getOppoConversionState(), OppoConversionStateEnum.FORM_ASSOCIATION.getCode())){
                 toppOpportunityBo.setOppoConversionState(toppOpportunity.getOppoConversionState() + "," +OppoConversionStateEnum.FORM_ASSOCIATION.getCode());
             }
             toppOpportunityService.updateByBo(toppOpportunityBo);

@@ -296,9 +296,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         updateEntity.setEndOppTypeMemo("预计签约时间到期后7天，系统自动关闭！");
         if(ObjectUtil.isEmpty(updateEntity.getOppoConversionState())){
             updateEntity.setOppoConversionState(OppoConversionStateEnum.AUTO_CLOSE.getCode());
-        }
-
-        if(!StringUtils.contains(updateEntity.getOppoConversionState(), OppoConversionStateEnum.AUTO_CLOSE.getCode())){
+        }else if(!StringUtils.contains(updateEntity.getOppoConversionState(), OppoConversionStateEnum.AUTO_CLOSE.getCode())){
             updateEntity.setOppoConversionState(updateEntity.getOppoConversionState() + "," +OppoConversionStateEnum.AUTO_CLOSE.getCode());
         }
 
