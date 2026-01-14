@@ -56,6 +56,12 @@ public class ToppBidSuboppoDo extends BaseEntity {
      * 预算金额
      */
 
-    private BigDecimal budgetAmount;
+    private String budgetAmount;
 
+
+    @TableField(exist = false)
+    private String createBy;
+
+    @TableField(exist = false)
+    private String updateBy;
 }

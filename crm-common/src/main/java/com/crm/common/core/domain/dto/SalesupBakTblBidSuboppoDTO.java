@@ -35,5 +35,5 @@ public class SalesupBakTblBidSuboppoDTO {
      * 预算金额
      */
 
-    private BigDecimal budgetAmount;
+    private String budgetAmount;
 }
