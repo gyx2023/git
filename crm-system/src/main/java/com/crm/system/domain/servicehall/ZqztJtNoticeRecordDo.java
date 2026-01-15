@@ -91,6 +91,8 @@ public class ZqztJtNoticeRecordDo implements Serializable {
      */
     private String resBody;
 
+    private String failReason;
+
     /**
      * 创建时间
      */

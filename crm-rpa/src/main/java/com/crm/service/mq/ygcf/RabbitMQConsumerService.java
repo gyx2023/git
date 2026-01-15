@@ -1,7 +1,9 @@
 package com.crm.service.mq.ygcf;
 
+import cn.hutool.json.JSONUtil;
 import com.crm.common.mq.config.RabbitMQConfig;
 import com.crm.common.utils.StringUtils;
+import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -148,8 +150,18 @@ public class RabbitMQConsumerService {
      * @throws Exception 处理异常
      */
     private void processMessage(String messageBody) throws Exception {
+        ZqztJtNoticeRecordDo recordDo = JSONUtil.toBean(messageBody, ZqztJtNoticeRecordDo.class);
+        String bizCode = recordDo.getBizCode();
+        String taskCode = recordDo.getTaskCode();
+        String body = recordDo.getBody();
+
+        Boolean checkResult = this.checekData(recordDo);
+
+
+
         // 模拟处理时间
-        Thread.sleep(100);
+        Map<String, Object> messageMap = JSONUtil.toBean(body, Map.class);
+
         // 模拟业务逻辑错误，用于测试重试和死信机制
         // 故意抛出除以零异常，模拟处理失败
         log.info("消息处理成功：{}", messageBody);
@@ -170,5 +182,12 @@ public class RabbitMQConsumerService {
         }
 
         return messageId;
+    }
+
+    private Boolean checekData(ZqztJtNoticeRecordDo recordDo){
+        //合同金额校验
+
+        //合同到期时间校验
+        return true;
     }
 }

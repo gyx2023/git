@@ -46,8 +46,6 @@ public class RabbitMQProducerService{
         rabbitTemplate.convertAndSend(exchange, routingKey, message, msg -> {
             msg.getMessageProperties().setMessageId(messageId);
             msg.getMessageProperties().setTimestamp(new Date());
-            msg.getMessageProperties().setContentType("text/plain");
-            msg.getMessageProperties().setContentEncoding(StandardCharsets.UTF_8.name());
             return msg;
         }, correlationData);
 
