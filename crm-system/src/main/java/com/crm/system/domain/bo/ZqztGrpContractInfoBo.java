@@ -1,5 +1,6 @@
 package com.crm.system.domain.bo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import lombok.Data;
@@ -277,18 +278,21 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      * 备用
      */
     @NotNull(message = "备用", groups = { AddGroup.class, EditGroup.class })
+    @TableField(value = "`int8`")
     private Long int8;
 
     /**
      * 备用
      */
     @NotNull(message = "备用", groups = { AddGroup.class, EditGroup.class })
+    @TableField(value = "`int9`")
     private Long int9;
 
     /**
      * 备用
      */
     @NotNull(message = "备用", groups = { AddGroup.class, EditGroup.class })
+    @TableField(value = "`int10`")
     private Long int10;
 
     /**

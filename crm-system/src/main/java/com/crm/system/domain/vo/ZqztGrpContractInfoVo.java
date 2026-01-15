@@ -2,6 +2,8 @@ package com.crm.system.domain.vo;
 
 import java.math.BigDecimal;
 import java.util.Date;
+
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
@@ -280,18 +282,21 @@ public class ZqztGrpContractInfoVo {
      * 备用
      */
     @ExcelProperty(value = "备用")
+    @TableField(value = "`int8`")
     private Long int8;
 
     /**
      * 备用
      */
     @ExcelProperty(value = "备用")
+    @TableField(value = "`int9`")
     private Long int9;
 
     /**
      * 备用
      */
     @ExcelProperty(value = "备用")
+    @TableField(value = "`int10`")
     private Long int10;
 
     /**

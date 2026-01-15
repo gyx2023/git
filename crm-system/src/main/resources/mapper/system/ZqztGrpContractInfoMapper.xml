@@ -41,9 +41,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contractOldnum" column="contract_oldnum"/>
         <result property="yearIncome" column="year_income"/>
         <result property="servAmount" column="serv_amount"/>
-        <result property="int8" column="int8"/>
-        <result property="int9" column="int9"/>
-        <result property="int10" column="int10"/>
+        <result property="int8" column="`int8`"/>
+        <result property="int9" column="`int9`"/>
+        <result property="int10" column="`int10`"/>
         <result property="busiType" column="busi_type"/>
         <result property="contractMoney" column="contract_money"/>
         <result property="contractSigndate" column="contract_signdate"/>
@@ -55,6 +55,4 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contractCateL3Code" column="contract_cate_l3_code"/>
         <result property="contractCateL3Name" column="contract_cate_l3_name"/>
     </resultMap>
-
-
 </mapper>

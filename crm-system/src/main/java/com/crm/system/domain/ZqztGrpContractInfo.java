@@ -208,14 +208,17 @@ public class ZqztGrpContractInfo extends BaseEntity {
     /**
      * 备用
      */
+    @TableField(value = "`int8`")
     private Long int8;
     /**
      * 备用
      */
+    @TableField(value = "`int9`")
     private Long int9;
     /**
      * 备用
      */
+    @TableField(value = "`int10`")
     private Long int10;
     /**
      * 业务类型
@@ -274,4 +277,16 @@ public class ZqztGrpContractInfo extends BaseEntity {
      */
     private String contractCateL3Name;
 
+
+    /**
+     * 数据库不查询的字段
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    @TableField(exist = false)
+    private String updateBy;
+
+    @TableField(exist = false)
+    private Date updateTime;
 }
