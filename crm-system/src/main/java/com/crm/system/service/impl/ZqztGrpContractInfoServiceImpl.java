@@ -152,4 +152,35 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    /**
+     * 全量导入集团合同信息数据
+     *
+     * @param dataList 数据列表
+     * @return 成功导入数量
+     */
+    @Override
+    public int importAllGroupContractInfo(List<ZqztGrpContractInfo> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        // 清空现有数据，进行全量更新
+        baseMapper.delete(null);
+
+        // 使用批量插入方法提高性能
+        baseMapper.insertBatch(dataList);
+
+        return dataList.size();
+    }
+
+    /**
+     * 查询所有集团合同信息
+     *
+     * @return 集团合同信息列表
+     */
+    @Override
+    public List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo() {
+        return baseMapper.selectList(null);
+    }
 }
