@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * 集团合同扩展信息视图对象 zqzt_grp_contract_other_info
  *
- * @author crm
+ * @author 万超凡
  * @date 2026-01-13
  */
 @Data

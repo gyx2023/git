@@ -13,7 +13,7 @@ import java.util.List;
  * 集团合同信息Service接口
  *
  * @author 万超凡
- * @date 2026-01-12
+ * @date 2026-01-15
  */
 public interface IZqztGrpContractInfoService {
 
@@ -46,19 +46,4 @@ public interface IZqztGrpContractInfoService {
      * 校验并批量删除集团合同信息信息
      */
     Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid);
-
-    /**
-     * 全量导入集团合同信息数据
-     *
-     * @param dataList 数据列表
-     * @return 成功导入数量
-     */
-    int importAllGroupContractInfo(List<ZqztGrpContractInfo> dataList);
-
-    /**
-     * 查询所有集团合同信息
-     *
-     * @return 集团合同信息列表
-     */
-    List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo();
 }

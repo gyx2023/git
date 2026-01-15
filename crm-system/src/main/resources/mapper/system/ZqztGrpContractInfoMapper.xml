@@ -7,8 +7,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="com.crm.system.domain.ZqztGrpContractInfo" id="ZqztGrpContractInfoResult">
         <result property="contractId" column="contract_id"/>
         <result property="grpId" column="grp_id"/>
-        <result property="erpContractId" column="erp_contract_id"/>
-        <result property="inuseContractId" column="inuse_contract_id"/>
         <result property="contractType" column="contract_type"/>
         <result property="contractName" column="contract_name"/>
         <result property="contractEffdate" column="contract_effdate"/>
@@ -16,13 +14,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="paytype" column="paytype"/>
         <result property="contractNote" column="contract_note"/>
         <result property="creator" column="creator"/>
+        <result property="createTime" column="create_time"/>
         <result property="files" column="files"/>
-        <result property="contractProperty" column="contract_property"/>
+        <result property="contractStat" column="contract_stat"/>
+        <result property="auditSn" column="audit_sn"/>
+        <result property="remark" column="remark"/>
+        <result property="string1" column="string1"/>
+        <result property="string2" column="string2"/>
+        <result property="string3" column="string3"/>
+        <result property="busiOppNo" column="busi_opp_no"/>
+        <result property="busiOppSecLvl" column="busi_opp_sec_lvl"/>
+        <result property="busiOppName" column="busi_opp_name"/>
+        <result property="custDemandDesc" column="cust_demand_desc"/>
+        <result property="solvePlanDesc" column="solve_plan_desc"/>
         <result property="isBidding" column="is_bidding"/>
         <result property="contractMain" column="contract_main"/>
         <result property="contractParty" column="contract_party"/>
         <result property="contractDept" column="contract_dept"/>
         <result property="contractMan" column="contract_man"/>
+        <result property="string14" column="string14"/>
+        <result property="string15" column="string15"/>
         <result property="contractMoney2" column="contract_money2"/>
         <result property="isFix" column="is_fix"/>
         <result property="auditDate" column="audit_date"/>
@@ -30,6 +41,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contractOldnum" column="contract_oldnum"/>
         <result property="yearIncome" column="year_income"/>
         <result property="servAmount" column="serv_amount"/>
+        <result property="int8" column="int8"/>
+        <result property="int9" column="int9"/>
+        <result property="int10" column="int10"/>
+        <result property="busiType" column="busi_type"/>
         <result property="contractMoney" column="contract_money"/>
         <result property="contractSigndate" column="contract_signdate"/>
         <result property="contractStatus" column="contract_status"/>
@@ -39,9 +54,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contractCateL2Name" column="contract_cate_l2_name"/>
         <result property="contractCateL3Code" column="contract_cate_l3_code"/>
         <result property="contractCateL3Name" column="contract_cate_l3_name"/>
-        <result property="remark" column="remark"/>
-        <result property="createTime" column="create_time"/>
-        <result property="updateTime" column="update_time"/>
     </resultMap>
 
 

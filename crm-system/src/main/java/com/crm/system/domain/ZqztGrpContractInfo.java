@@ -16,7 +16,7 @@ import com.crm.common.core.domain.BaseEntity;
  * 集团合同信息对象 zqzt_grp_contract_info
  *
  * @author 万超凡
- * @date 2026-01-12
+ * @date 2026-01-15
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -26,24 +26,23 @@ public class ZqztGrpContractInfo extends BaseEntity {
     private static final long serialVersionUID=1L;
 
     /**
-     * 合同ID，序列号
+     * 合同编号,由操作员根据合同文本上的合同编号手工录入
      */
-    @TableId(value = "contract_id")
     private String contractId;
     /**
-     * 对应于省分集团客户信息表zqzt_grp_group_info中的GRP_ID
+     * 对应于集团表中的grp_id
      */
     private Long grpId;
     /**
-     * 合同ERP编码
-     */
-    private String erpContractId;
-    /**
-     * 合同编号等于grp_cust_inuse.CONTRACT_ID
-     */
-    private String inuseContractId;
-    /**
-     * 合同类型（于sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义）0普通合同 00ERP主体合同 01ERP其它合同 02格式化合同 03关联客户专用 1营销合同 2整体转网协议 3战略合作协议
+     * 合同类型（于sys_param_detail.param_name='grp_contract_type_new'定义）
+0	普通合同
+00	erp主体合同
+01	erp其它合同
+02	格式化合同
+03	关联客户专用
+1	营销合同
+2	整体转网协议
+3	战略合作协议
      */
     private String contractType;
     /**
@@ -59,7 +58,20 @@ public class ZqztGrpContractInfo extends BaseEntity {
      */
     private Date contractExpdate;
     /**
-     * 缴费方式 10后付费 12转账支票 13信用卡 14缴费卡 15银行托收 17其他 18轻松如意通 19营业厅话费预缴 20预付费 21银行代扣 22一户通 23银行托收(固网业务) 25原固网营业厅话费预缴
+     * 缴费方式
+10	后付费
+12	转账支票
+13	信用卡
+14	缴费卡
+15	银行托收
+17	其他
+18	轻松如意通
+19	营业厅话费预缴
+20	预付费
+21	银行代扣
+22	一户通
+23	银行托收(固网业务)
+25	原固网营业厅话费预缴
      */
     private String paytype;
     /**
@@ -71,15 +83,73 @@ public class ZqztGrpContractInfo extends BaseEntity {
      */
     private String creator;
     /**
-     * 合同带的合同文本，多个合同文本的话用逗号分割，存放ocs地址
+     * 合同带的合同文本，多个合同文本的话用逗号分割
      */
     private String files;
     /**
-     * 合同是首次合同，还是续约合同。在SYS_PARAM_DETAIL.PARAM_NAME='GRP_CONTRACT_PROPERTY_NEW'定义 00新签合同 01续签合同 03补充合同
+     * 合同状态，在sys_param_detail.param_name='contract_stat'定义
+00	待审核
+01	未审核
+02	生效
+03	注销
+10	一审通过
+11	一审不通过
+20	二审通过
+21	二审不通过
+30	三审通过
+31	三审不通过
      */
-    private String contractProperty;
+    private String contractStat;
     /**
-     * 是否为招投标项目，选择"是""否"，系统默认"否"，在SYS_PARAM_DETAIL.PARAM_NAME='LOGIC_STATUS'定义 0否 1是
+     * 审核流水
+     */
+    private String auditSn;
+    /**
+     * 备注
+     */
+    private String remark;
+    /**
+     * 合同是首次合同，还是续约合同。在sys_param_detail.param_name='grp_contract_property_new'定义
+00	新签合同
+01	续签合同
+03	补充合同
+     */
+    private String string1;
+    /**
+     * 合同erp编码
+     */
+    private String string2;
+    /**
+     * 备用
+     */
+    private String string3;
+    /**
+     * 本地商机编号
+     */
+    private String busiOppNo;
+    /**
+     * 合同商机密级，系统默认"3级"，在sys_param_detail.param_name='busi_opp_sec_lvl'定义
+01	一级
+02	二级
+03	三级
+     */
+    private String busiOppSecLvl;
+    /**
+     * 商机名称，系统控制字符不少于５个字
+     */
+    private String busiOppName;
+    /**
+     * 客户需求简述，系统控制字符不少于１０个字
+     */
+    private String custDemandDesc;
+    /**
+     * 解决方案简述，系统控制字符不少于１０个字
+     */
+    private String solvePlanDesc;
+    /**
+     * 是否为招投标项目，选择"是""否"，系统默认"否"，在sys_param_detail.param_name='logic_status'定义
+0	否
+1	是
      */
     private String isBidding;
     /**
@@ -98,6 +168,15 @@ public class ZqztGrpContractInfo extends BaseEntity {
      * 承办人
      */
     private String contractMan;
+    /**
+     * 合同审核意见
+     */
+    private String string14;
+    /**
+     * 合同编号
+等于grp_cust_inuse.contract_id
+     */
+    private String string15;
     /**
      * 不含增值税合同额(元)
      */
@@ -127,6 +206,22 @@ public class ZqztGrpContractInfo extends BaseEntity {
      */
     private BigDecimal servAmount;
     /**
+     * 备用
+     */
+    private Long int8;
+    /**
+     * 备用
+     */
+    private Long int9;
+    /**
+     * 备用
+     */
+    private Long int10;
+    /**
+     * 业务类型
+     */
+    private String busiType;
+    /**
      * 含增值税合同额(元)
      */
     private BigDecimal contractMoney;
@@ -135,7 +230,23 @@ public class ZqztGrpContractInfo extends BaseEntity {
      */
     private Date contractSigndate;
     /**
-     * 合同状态：0其他 1已审批 10取消 11起草 12终止解除 13作废申请中 14删除 15已定稿 16签订中 2审签中 3暂停履行 4终止履行 5办结 6变更补充 7作废 9履行中
+     * 合同状态：
+0	其他
+1	已审批
+10	取消
+11	起草
+12	终止解除
+13	作废申请中
+14	删除
+15	已定稿
+16	签订中
+2	审签中
+3	暂停履行
+4	终止履行
+5	办结
+6	变更补充
+7	作废
+9	履行中
      */
     private String contractStatus;
     /**
@@ -162,9 +273,5 @@ public class ZqztGrpContractInfo extends BaseEntity {
      * 合同分类三级名称
      */
     private String contractCateL3Name;
-    /**
-     * 备注
-     */
-    private String remark;
 
 }
