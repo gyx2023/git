@@ -578,4 +578,6 @@ public class ToppOpportunityDo extends BaseEntity {
     @TableField(exist = false)
     private Date updateTime;
 
+    private Date lastVisitTime;
+
 }

@@ -311,4 +311,24 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         baseMapper.updateById(opportunity);
         return oppoState;
     }
+
+    /**
+     * 查询最后拜访时间超过3个月+7天的商机
+     * @return
+     */
+    @Override
+    public List<ToppOpportunityVo> queryOpportunityByLastVisitTime() {
+        // 计算3个月+7天前的时间
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MONTH, -3); // 减去3个月
+        calendar.add(Calendar.DAY_OF_MONTH, -7); // 再减去7天
+        Date threeMonthsPlusSevenDaysAgo = calendar.getTime();
+
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<>();
+        // 查询lastVisitTime小于3个月+7天前的时间，即最后拜访时间超过3个月+7天的商机
+        lqw.le(ToppOpportunityDo::getLastVisitTime, threeMonthsPlusSevenDaysAgo);
+        lqw.eq(ToppOpportunityDo::getIsValid, 1);
+
+        return baseMapper.selectVoList(lqw);
+    }
 }
