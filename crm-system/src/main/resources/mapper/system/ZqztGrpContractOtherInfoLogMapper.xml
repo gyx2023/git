@@ -5,10 +5,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper">
 
     <resultMap type="com.crm.system.domain.ZqztGrpContractOtherInfoLog" id="ZqztGrpContractOtherInfoLogResult">
+        <result property="id" column="id"/>
         <result property="contractId" column="contract_id"/>
         <result property="infoTag" column="info_tag"/>
+        <result property="grpContractBusiType" column="grp_contract_busi_type"/>
+        <result property="grpContractUserList" column="grp_contract_user_list"/>
         <result property="infoVal" column="info_val"/>
+        <result property="infoVal2" column="info_val2"/>
+        <result property="isValid" column="is_valid"/>
         <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
     </resultMap>
 
 

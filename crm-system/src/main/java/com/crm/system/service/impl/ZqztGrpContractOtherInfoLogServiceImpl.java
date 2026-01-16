@@ -63,9 +63,14 @@ public class ZqztGrpContractOtherInfoLogServiceImpl implements IZqztGrpContractO
         LambdaQueryWrapper<ZqztGrpContractOtherInfoLog> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getContractId()), ZqztGrpContractOtherInfoLog::getContractId, bo.getContractId());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoTag()), ZqztGrpContractOtherInfoLog::getInfoTag, bo.getInfoTag());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpContractBusiType()), ZqztGrpContractOtherInfoLog::getGrpContractBusiType, bo.getGrpContractBusiType());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpContractUserList()), ZqztGrpContractOtherInfoLog::getGrpContractUserList, bo.getGrpContractUserList());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoVal()), ZqztGrpContractOtherInfoLog::getInfoVal, bo.getInfoVal());
+        lqw.eq(StringUtils.isNotBlank(bo.getInfoVal2()), ZqztGrpContractOtherInfoLog::getInfoVal2, bo.getInfoVal2());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), ZqztGrpContractOtherInfoLog::getIsValid, bo.getIsValid());
         return lqw;
     }
+
 
     /**
      * 新增集团合同扩展信息日志

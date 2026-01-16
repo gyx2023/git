@@ -61,8 +61,9 @@ public class ZqztGrpContractInfoLogServiceImpl implements IZqztGrpContractInfoLo
     private LambdaQueryWrapper<ZqztGrpContractInfoLog> buildQueryWrapper(ZqztGrpContractInfoLogBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ZqztGrpContractInfoLog> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getContractId()), ZqztGrpContractInfoLog::getContractId, bo.getContractId());
         lqw.eq(bo.getGrpId() != null, ZqztGrpContractInfoLog::getGrpId, bo.getGrpId());
+        lqw.eq(StringUtils.isNotBlank(bo.getErpContractId()), ZqztGrpContractInfoLog::getErpContractId, bo.getErpContractId());
+        lqw.eq(StringUtils.isNotBlank(bo.getInuseContractId()), ZqztGrpContractInfoLog::getInuseContractId, bo.getInuseContractId());
         lqw.eq(StringUtils.isNotBlank(bo.getContractType()), ZqztGrpContractInfoLog::getContractType, bo.getContractType());
         lqw.like(StringUtils.isNotBlank(bo.getContractName()), ZqztGrpContractInfoLog::getContractName, bo.getContractName());
         lqw.eq(bo.getContractEffdate() != null, ZqztGrpContractInfoLog::getContractEffdate, bo.getContractEffdate());
@@ -71,23 +72,12 @@ public class ZqztGrpContractInfoLogServiceImpl implements IZqztGrpContractInfoLo
         lqw.eq(StringUtils.isNotBlank(bo.getContractNote()), ZqztGrpContractInfoLog::getContractNote, bo.getContractNote());
         lqw.eq(StringUtils.isNotBlank(bo.getCreator()), ZqztGrpContractInfoLog::getCreator, bo.getCreator());
         lqw.eq(StringUtils.isNotBlank(bo.getFiles()), ZqztGrpContractInfoLog::getFiles, bo.getFiles());
-        lqw.eq(StringUtils.isNotBlank(bo.getContractStat()), ZqztGrpContractInfoLog::getContractStat, bo.getContractStat());
-        lqw.eq(StringUtils.isNotBlank(bo.getAuditSn()), ZqztGrpContractInfoLog::getAuditSn, bo.getAuditSn());
-        lqw.eq(StringUtils.isNotBlank(bo.getString1()), ZqztGrpContractInfoLog::getString1, bo.getString1());
-        lqw.eq(StringUtils.isNotBlank(bo.getString2()), ZqztGrpContractInfoLog::getString2, bo.getString2());
-        lqw.eq(StringUtils.isNotBlank(bo.getString3()), ZqztGrpContractInfoLog::getString3, bo.getString3());
-        lqw.eq(StringUtils.isNotBlank(bo.getBusiOppNo()), ZqztGrpContractInfoLog::getBusiOppNo, bo.getBusiOppNo());
-        lqw.eq(StringUtils.isNotBlank(bo.getBusiOppSecLvl()), ZqztGrpContractInfoLog::getBusiOppSecLvl, bo.getBusiOppSecLvl());
-        lqw.like(StringUtils.isNotBlank(bo.getBusiOppName()), ZqztGrpContractInfoLog::getBusiOppName, bo.getBusiOppName());
-        lqw.eq(StringUtils.isNotBlank(bo.getCustDemandDesc()), ZqztGrpContractInfoLog::getCustDemandDesc, bo.getCustDemandDesc());
-        lqw.eq(StringUtils.isNotBlank(bo.getSolvePlanDesc()), ZqztGrpContractInfoLog::getSolvePlanDesc, bo.getSolvePlanDesc());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractProperty()), ZqztGrpContractInfoLog::getContractProperty, bo.getContractProperty());
         lqw.eq(StringUtils.isNotBlank(bo.getIsBidding()), ZqztGrpContractInfoLog::getIsBidding, bo.getIsBidding());
         lqw.eq(StringUtils.isNotBlank(bo.getContractMain()), ZqztGrpContractInfoLog::getContractMain, bo.getContractMain());
         lqw.eq(StringUtils.isNotBlank(bo.getContractParty()), ZqztGrpContractInfoLog::getContractParty, bo.getContractParty());
         lqw.eq(StringUtils.isNotBlank(bo.getContractDept()), ZqztGrpContractInfoLog::getContractDept, bo.getContractDept());
         lqw.eq(StringUtils.isNotBlank(bo.getContractMan()), ZqztGrpContractInfoLog::getContractMan, bo.getContractMan());
-        lqw.eq(StringUtils.isNotBlank(bo.getString14()), ZqztGrpContractInfoLog::getString14, bo.getString14());
-        lqw.eq(StringUtils.isNotBlank(bo.getString15()), ZqztGrpContractInfoLog::getString15, bo.getString15());
         lqw.eq(bo.getContractMoney2() != null, ZqztGrpContractInfoLog::getContractMoney2, bo.getContractMoney2());
         lqw.eq(bo.getIsFix() != null, ZqztGrpContractInfoLog::getIsFix, bo.getIsFix());
         lqw.eq(bo.getAuditDate() != null, ZqztGrpContractInfoLog::getAuditDate, bo.getAuditDate());
@@ -95,10 +85,6 @@ public class ZqztGrpContractInfoLogServiceImpl implements IZqztGrpContractInfoLo
         lqw.eq(StringUtils.isNotBlank(bo.getContractOldnum()), ZqztGrpContractInfoLog::getContractOldnum, bo.getContractOldnum());
         lqw.eq(bo.getYearIncome() != null, ZqztGrpContractInfoLog::getYearIncome, bo.getYearIncome());
         lqw.eq(bo.getServAmount() != null, ZqztGrpContractInfoLog::getServAmount, bo.getServAmount());
-        lqw.eq(bo.getInt8() != null, ZqztGrpContractInfoLog::getInt8, bo.getInt8());
-        lqw.eq(bo.getInt9() != null, ZqztGrpContractInfoLog::getInt9, bo.getInt9());
-        lqw.eq(bo.getInt10() != null, ZqztGrpContractInfoLog::getInt10, bo.getInt10());
-        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), ZqztGrpContractInfoLog::getBusiType, bo.getBusiType());
         lqw.eq(bo.getContractMoney() != null, ZqztGrpContractInfoLog::getContractMoney, bo.getContractMoney());
         lqw.eq(bo.getContractSigndate() != null, ZqztGrpContractInfoLog::getContractSigndate, bo.getContractSigndate());
         lqw.eq(StringUtils.isNotBlank(bo.getContractStatus()), ZqztGrpContractInfoLog::getContractStatus, bo.getContractStatus());
@@ -110,6 +96,7 @@ public class ZqztGrpContractInfoLogServiceImpl implements IZqztGrpContractInfoLo
         lqw.like(StringUtils.isNotBlank(bo.getContractCateL3Name()), ZqztGrpContractInfoLog::getContractCateL3Name, bo.getContractCateL3Name());
         return lqw;
     }
+
 
     /**
      * 新增集团合同信息日志

@@ -13,7 +13,7 @@ import com.crm.common.core.domain.BaseEntity;
  * 集团合同扩展信息日志对象 zqzt_grp_contract_other_info_log
  *
  * @author 万超凡
- * @date 2026-01-15
+ * @date 2026-01-16
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -23,6 +23,11 @@ public class ZqztGrpContractOtherInfoLog extends BaseEntity {
     private static final long serialVersionUID=1L;
 
     /**
+     * 序号，自增
+     */
+    @TableId(value = "id")
+    private Long id;
+    /**
      * 集团合同序号，对应GRP_CONTRACT_INFO.CONTRACT_ID
      */
     private String contractId;
@@ -31,8 +36,25 @@ public class ZqztGrpContractOtherInfoLog extends BaseEntity {
      */
     private String infoTag;
     /**
+     * 合同业务类型
+     */
+    private String grpContractBusiType;
+    /**
+     * 合同相关用户
+     */
+    private String grpContractUserList;
+    /**
      * 信息值
      */
     private String infoVal;
+    /**
+     * 填写服务号码
+     */
+    private String infoVal2;
+    /**
+     * 是否有效：1有效，0无效，99迁移失效
+     */
+    private String isValid;
 
 }
+

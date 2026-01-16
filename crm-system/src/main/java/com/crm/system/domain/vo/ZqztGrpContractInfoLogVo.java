@@ -22,226 +22,257 @@ import java.util.Date;
 @ExcelIgnoreUnannotated
 public class ZqztGrpContractInfoLogVo {
 
+
     private static final long serialVersionUID = 1L;
 
     /**
-     * 集团标识
+     * 合同ID，序列号
      */
-    @ExcelProperty(value = "集团标识")
+    @ExcelProperty(value = "合同ID，序列号")
+    private String contractId;
+
+    /**
+     * 对应于省分集团客户信息表zqzt_grp_group_info中的GRP_ID
+     */
+    @ExcelProperty(value = "对应于省分集团客户信息表zqzt_grp_group_info中的GRP_ID")
     private Long grpId;
 
     /**
-     * 集团名称
+     * 合同ERP编码
      */
-    @ExcelProperty(value = "集团名称")
-    private String grpName;
+    @ExcelProperty(value = "合同ERP编码")
+    private String erpContractId;
 
     /**
-     * 正式集团编号（15位编码）
+     * 合同编号，等于grp_cust_inuse.CONTRACT_ID
      */
-    @ExcelProperty(value = "正式集团编号", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "1=5位编码")
-    private String grpCode;
+    @ExcelProperty(value = "合同编号，等于grp_cust_inuse.CONTRACT_ID")
+    private String inuseContractId;
 
     /**
-     * 总部集团编码
+     * 合同类型（于sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义）
+     0	普通合同
+     00	ERP主体合同
+     01	ERP其它合同
+     02	格式化合同
+     03	关联客户专用
+     1	营销合同
+     2	整体转网协议
+     3	战略合作协议
      */
-    @ExcelProperty(value = "总部集团编码")
-    private String hqGrpCode;
+    @ExcelProperty(value = "合同类型", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(readConverterExp = "于=sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义")
+    private String contractType;
 
     /**
-     * 客户id
+     * 合同名称
      */
-    @ExcelProperty(value = "客户id")
-    private String custId;
+    @ExcelProperty(value = "合同名称")
+    private String contractName;
 
     /**
-     * 变更类型：T1-集团基本信息变更,T2-集团客户经理变更
+     * 合同生效日期
      */
-    @ExcelProperty(value = "变更类型：T1-集团基本信息变更,T2-集团客户经理变更")
-    private String updateType;
+    @ExcelProperty(value = "合同生效日期")
+    private Date contractEffdate;
 
     /**
-     * 1-变更前,2-变更后
+     * 合同失效日期
      */
-    @ExcelProperty(value = "1-变更前,2-变更后")
-    private String dataType;
+    @ExcelProperty(value = "合同失效日期")
+    private Date contractExpdate;
 
     /**
-     * 集团级别:A-B-C-D-E-F-G-H-I-Y-Z
+     * 缴费方式
+     10	后付费
+     12	转账支票
+     13	信用卡
+     14	缴费卡
+     15	银行托收
+     17	其他
+     18	轻松如意通
+     19	营业厅话费预缴
+     20	预付费
+     21	银行代扣
+     22	一户通
+     23	银行托收(固网业务)
+     25	原固网营业厅话费预缴
      */
-    @ExcelProperty(value = "集团级别:A-B-C-D-E-F-G-H-I-Y-Z")
-    private String grpLevel;
+    @ExcelProperty(value = "缴费方式 ")
+    private String paytype;
 
     /**
-     * 集团状态:01-目标,02-潜在,03-正式,04-注销
+     * 合同备注
      */
-    @ExcelProperty(value = "集团状态:01-目标,02-潜在,03-正式,04-注销")
-    private String grpStatus;
+    @ExcelProperty(value = "合同备注")
+    private String contractNote;
 
     /**
-     * 地市
+     * 合同创建人
      */
-    @ExcelProperty(value = "地市")
-    private String areaId;
+    @ExcelProperty(value = "合同创建人")
+    private String creator;
 
     /**
-     * 县分
+     * 合同带的合同文本，多个合同文本的话用逗号分割，存放ocs地址
      */
-    @ExcelProperty(value = "县分")
-    private String countyId;
+    @ExcelProperty(value = "合同带的合同文本，多个合同文本的话用逗号分割，存放ocs地址")
+    private String files;
 
     /**
-     * 行政县
+     * 合同是首次合同，还是续约合同。在SYS_PARAM_DETAIL.PARAM_NAME='GRP_CONTRACT_PROPERTY_NEW'定义
+     00	新签合同
+     01	续签合同
+     03	补充合同
      */
-    @ExcelProperty(value = "行政县")
-    private String countyId2;
+    @ExcelProperty(value = "合同是首次合同，还是续约合同。在SYS_PARAM_DETAIL.PARAM_NAME='GRP_CONTRACT_PROPERTY_NEW'定义 ")
+    private String contractProperty;
 
     /**
-     * 所属网格编码
+     * 是否为招投标项目，选择"是""否"，系统默认"否"，在SYS_PARAM_DETAIL.PARAM_NAME='LOGIC_STATUS'定义
+     0	否
+     1	是
      */
-    @ExcelProperty(value = "所属网格编码")
-    private String gridId;
+    @ExcelProperty(value = "是否为招投标项目")
+    private String isBidding;
 
     /**
-     * 行业大类:01-金融业,02-党政军部门,03-科学教育文化体育卫生出版业,04-旅游饭店娱乐服务业,05-采掘业和加工制造业,06-公共服务业,07-交通运输仓储和邮政业,08-批发零售业,09-房地产业,10-建筑业,11-计算机信息业,12-农林牧副渔,99-其他
+     * 我方主体
      */
-    @ExcelProperty(value = "行业大类:01-金融业,02-党政军部门,03-科学教育文化体育卫生出版业,04-旅游饭店娱乐服务业,05-采掘业和加工制造业,06-公共服务业,07-交通运输仓储和邮政业,08-批发零售业,09-房地产业,10-建筑业,11-计算机信息业,12-农林牧副渔,99-其他")
-    private String industryMajorKind;
+    @ExcelProperty(value = "我方主体")
+    private String contractMain;
 
     /**
-     * 行业亚类
+     * 对方全称
      */
-    @ExcelProperty(value = "行业亚类")
-    private String industrySubKind;
+    @ExcelProperty(value = "对方全称")
+    private String contractParty;
 
     /**
-     * 行业细类
+     * 承办部门
      */
-    @ExcelProperty(value = "行业细类")
-    private String industryDetailKind;
+    @ExcelProperty(value = "承办部门")
+    private String contractDept;
 
     /**
-     * 集团业务分类:00-综合集团,10-移动集团,20-固网集团
+     * 承办人
      */
-    @ExcelProperty(value = "集团业务分类:00-综合集团,10-移动集团,20-固网集团")
-    private String busiType;
+    @ExcelProperty(value = "承办人")
+    private String contractMan;
 
     /**
-     * 集团客户类别:400-大客户,500-中小企业客户,600-普通客户
+     * 不含增值税合同额(元)
      */
-    @ExcelProperty(value = "集团客户类别:400-大客户,500-中小企业客户,600-普通客户")
-    private String grpCustType;
+    @ExcelProperty(value = "不含增值税合同额(元)")
+    private BigDecimal contractMoney2;
+    /**
+     * 是否固定金额 0-是；1-否
+     */
+    @ExcelProperty(value = "是否固定金额 0-是；1-否")
+    private Long isFix;
 
     /**
-     * 集团客户拓展类型:01-省直拓,02-市直拓,03-县直拓
+     * 审批通过日期
      */
-    @ExcelProperty(value = "集团客户拓展类型:01-省直拓,02-市直拓,03-县直拓")
-    private String grpExpandType;
+    @ExcelProperty(value = "审批通过日期")
+    private Date auditDate;
+    /**
+     * 承办人联系电话
+     */
+    @ExcelProperty(value = "承办人联系电话")
+    private String contractPhone;
+
+    /*
+     * 原合同编号
+     */
+    @ExcelProperty(value = "原合同编号")
+    private String contractOldnum;
 
     /**
-     * 集团客户业务部门分类:01-数字政府BU,02-军政（政法）,03-证券保险客户中心,04-银行客户中心,05-军政（军民融合）,06-智慧城市BU,07-智慧园区BU,08-教育行业BU,09-系统集成客户,10-生态环境（生态）,11-政法客户,12-军政客户,13-现代服务（交通）,14-智慧民生客户,15-健康文旅（医疗）,16-公共事业客户中心,17-智算营销中心（云数据）,18-工业互联网BU,19-健康文旅（文旅）,20-智慧制造客户,21-省行业客户部,22-商企客户,23-战略客户,24-生态环境（农业）,25-科创企业客户中心,26-政要客户,27-金融客户,28-阿里中心,29-网易中心,30-产业互联网客户,31-企业服务一部,32-企业服务二部,33-纺织服装行业服务部,34-现代服务（商贸）,35-健康文旅客户中心,36-吉利中心,98-公众客户,99-中小企业
+     * 预计本年完成收入（元）
      */
-    @ExcelProperty(value = "集团客户业务部门分类:01-数字政府BU,02-军政", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "政=法")
-    private String grpBusiDeptType;
+    @ExcelProperty(value = "预计本年完成收入", converter = ExcelDictConvert.class)
+    private BigDecimal yearIncome;
 
     /**
-     * 集团客户省市名单制存增量标识:01-存量,02-增量
+     * 服务性金额（元）
      */
-    @ExcelProperty(value = "集团客户省市名单制存增量标识:01-存量,02-增量")
-    private String provinceNewoldType;
+    @ExcelProperty(value = "服务性金额", converter = ExcelDictConvert.class)
+    private BigDecimal servAmount;
 
     /**
-     * 服务经理
+     * 含增值税合同额(元)
      */
-    @ExcelProperty(value = "服务经理")
-    private String managerId;
+    @ExcelProperty(value = "含增值税合同额(元)")
+    private BigDecimal contractMoney;
 
     /**
-     * 资料创建人
+     * 合同签约日期
      */
-    @ExcelProperty(value = "资料创建人")
-    private String grpCreator;
+    @ExcelProperty(value = "合同签约日期")
+    private Date contractSigndate;
 
     /**
-     * 资料录入时间
+     * 合同状态：
+     0	其他
+     1	已审批
+     10	取消
+     11	起草
+     12	终止解除
+     13	作废申请中
+     14	删除
+     15	已定稿
+     16	签订中
+     2	审签中
+     3	暂停履行
+     4	终止履行
+     5	办结
+     6	变更补充
+     7	作废
+     9	履行中
      */
-    @ExcelProperty(value = "资料录入时间")
-    private Date grpCreateTime;
+    @ExcelProperty(value = "合同状态")
+    private String contractStatus;
 
     /**
-     * 省级客户经理（省分字段）
+     * 合同分类一级代码
      */
-    @ExcelProperty(value = "省级客户经理", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String provManagerEmpId;
+    @ExcelProperty(value = "合同分类一级代码")
+    private Long contractCateL1Code;
 
     /**
-     * 省级客户经理OA账号（省分字段）
+     * 合同分类一级名称
      */
-    @ExcelProperty(value = "省级客户经理OA账号", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String provManagerOauser;
+    @ExcelProperty(value = "合同分类一级名称")
+    private String contractCateL1Name;
 
     /**
-     * 省级客户名字（省分字段）
+     * 合同分类二级代码
      */
-    @ExcelProperty(value = "省级客户名字", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String provManagerName;
+    @ExcelProperty(value = "合同分类二级代码")
+    private Long contractCateL2Code;
 
     /**
-     * 市级客户经理（省分字段）
+     * 合同分类二级名称
      */
-    @ExcelProperty(value = "市级客户经理", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String cityManagerEmpId;
+    @ExcelProperty(value = "合同分类二级名称")
+    private String contractCateL2Name;
 
     /**
-     * 市级客户经理OA账号（省分字段）
+     * 合同分类三级代码
      */
-    @ExcelProperty(value = "市级客户经理OA账号", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String cityManagerOauser;
+    @ExcelProperty(value = "合同分类三级代码")
+    private Long contractCateL3Code;
 
     /**
-     * 市级客户名字（省分字段）
+     * 合同分类三级名称
      */
-    @ExcelProperty(value = "市级客户名字", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String cityManagerName;
+    @ExcelProperty(value = "合同分类三级名称")
+    private String contractCateL3Name;
 
     /**
-     * 县级客户经理（省分字段）
+     * 备注
      */
-    @ExcelProperty(value = "县级客户经理", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String countyManagerEmpId;
-
-    /**
-     * 县级客户经理OA账号（省分字段）
-     */
-    @ExcelProperty(value = "县级客户经理OA账号", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String countyManagerOauser;
-
-    /**
-     * 县级客户名字（省分字段）
-     */
-    @ExcelProperty(value = "县级客户名字", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "省=分字段")
-    private String countyManagerName;
-
-    /**
-     * 创建时间
-     */
-    @ExcelProperty(value = "创建时间")
-    private Date createTime;
-
-    /**
-     * 更新时间
-     */
-    @ExcelProperty(value = "更新时间")
-    private Date updateTime;
+    @ExcelProperty(value = "备注")
+    private String remark;
 }
