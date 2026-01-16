@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.generator.util.Desensitization;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -18,6 +19,7 @@ import com.crm.system.service.IZqztGrpContractInfoService;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * 集团合同信息Service业务层处理
@@ -36,7 +38,14 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
      */
     @Override
     public ZqztGrpContractInfoVo queryById(String contractId){
-        return baseMapper.selectVoById(contractId);
+        ZqztGrpContractInfoVo vo = baseMapper.selectVoById(contractId);
+        
+        // 对合同名称进行脱敏
+        if (vo != null) {
+            vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
+        }
+        
+        return vo;
     }
 
     /**
@@ -46,6 +55,13 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     public TableDataInfo<ZqztGrpContractInfoVo> queryPageList(ZqztGrpContractInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = buildQueryWrapper(bo);
         Page<ZqztGrpContractInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        
+        // 对查询结果进行脱敏处理
+        List<ZqztGrpContractInfoVo> desensitizedList = result.getRecords().stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        result.setRecords(desensitizedList);
+        
         return TableDataInfo.build(result);
     }
 
@@ -55,7 +71,12 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     @Override
     public List<ZqztGrpContractInfoVo> queryList(ZqztGrpContractInfoBo bo) {
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = buildQueryWrapper(bo);
-        return baseMapper.selectVoList(lqw);
+        List<ZqztGrpContractInfoVo> list = baseMapper.selectVoList(lqw);
+        
+        // 对查询结果进行脱敏处理
+        return list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
     }
 
     private LambdaQueryWrapper<ZqztGrpContractInfo> buildQueryWrapper(ZqztGrpContractInfoBo bo) {
@@ -133,6 +154,22 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         ZqztGrpContractInfo update = BeanUtil.toBean(bo, ZqztGrpContractInfo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
+    }
+
+    /**
+     * 对ZqztGrpContractInfoVo对象进行脱敏处理
+     * @param vo 要脱敏的ZqztGrpContractInfoVo对象
+     * @return 脱敏后的ZqztGrpContractInfoVo对象
+     */
+    private ZqztGrpContractInfoVo desensitizeVo(ZqztGrpContractInfoVo vo) {
+        if (vo == null) {
+            return null;
+        }
+
+        // 对合同名称进行脱敏
+        vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
+
+        return vo;
     }
 
     /**

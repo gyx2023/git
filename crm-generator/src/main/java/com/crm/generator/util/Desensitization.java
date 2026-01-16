@@ -86,4 +86,37 @@ public class Desensitization {
         }
         return sb.toString();
     }
+
+    /**
+     * 脱敏合同名称
+     * 规则：保留前两位和后两位字符，中间的所有字符用 '*' 替换。
+     *
+     * @param contractName 合同的完整名称
+     * @return 脱敏后的名称，如果输入为 null 或空字符串则返回原输入
+     */
+    public static String desensitizeContractName(String contractName) {
+        // 1. 处理 null或空字符串的情况
+        if (contractName == null || contractName.trim().isEmpty()) {
+            return contractName;
+        }
+
+        String trimmedName = contractName.trim();
+        int length = trimmedName.length();
+
+        // 2. 如果名称长度小于等于4，直接返回原名称（无需脱敏）
+        if (length <= 4) {
+            return trimmedName;
+        }
+
+        // 3. 获取前两位和后两位字符
+        String startTwoChars = trimmedName.substring(0, 2);
+        String endTwoChars = trimmedName.substring(length - 2);
+
+        // 4. 计算需要脱敏的字符数量，并生成相应数量的 '*'
+        int starsCount = length - 4;
+        String stars = generateAsterisks(starsCount);
+
+        // 5. 拼接结果
+        return startTwoChars + stars + endTwoChars;
+    }
 }

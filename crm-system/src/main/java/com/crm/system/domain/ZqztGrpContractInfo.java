@@ -234,22 +234,22 @@ public class ZqztGrpContractInfo extends BaseEntity {
     private Date contractSigndate;
     /**
      * 合同状态：
-0	其他
-1	已审批
-10	取消
-11	起草
-12	终止解除
-13	作废申请中
-14	删除
-15	已定稿
-16	签订中
-2	审签中
-3	暂停履行
-4	终止履行
-5	办结
-6	变更补充
-7	作废
-9	履行中
+        0	其他
+        1	已审批
+        10	取消
+        11	起草
+        12	终止解除
+        13	作废申请中
+        14	删除
+        15	已定稿
+        16	签订中
+        2	审签中
+        3	暂停履行
+        4	终止履行
+        5	办结
+        6	变更补充
+        7	作废
+        9	履行中
      */
     private String contractStatus;
     /**
