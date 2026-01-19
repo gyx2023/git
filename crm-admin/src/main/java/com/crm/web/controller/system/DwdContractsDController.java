@@ -40,12 +40,12 @@ public class DwdContractsDController extends BaseController {
     }
 
     /**
-     * 获取DWD_CONTRACTS_D详细信息
+     * 根据合同编号获取DWD_CONTRACTS_D详细信息
      */
-    @GetMapping(value = "/{id}")
-    public R<DwdContractsDDoVo> getInfo(@PathVariable String id) {
-        // 注意：由于DWD_CONTRACTS_D表没有主键，这里使用业务流水号作为唯一标识
-        DwdContractsDDoVo dwdContractsDDoVo = dwdContractsDService.selectDwdContractsDById(id);
+    @GetMapping(value = "/{contractNoLocal}")
+    public R<DwdContractsDDoVo> getInfo(@PathVariable String contractNoLocal) {
+        // 通过合同编号查询数据
+        DwdContractsDDoVo dwdContractsDDoVo = dwdContractsDService.selectDwdContractsDById(contractNoLocal);
         return R.ok(dwdContractsDDoVo);
     }
 

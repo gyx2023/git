@@ -31,17 +31,17 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
     private final DwdContractsDMapper baseMapper;
 
     /**
-     * 查询DWD_CONTRACTS_D
+     * 根据合同编号查询DWD_CONTRACTS_D
      *
-     * @param id DWD_CONTRACTS_D主键
+     * @param contractNoLocal 合同编号
      * @return DWD_CONTRACTS_D
      */
     @DS("slave")  // 使用从数据库
     @Override
-    public DwdContractsDDoVo selectDwdContractsDById(String id) {
-        // 注意：DWD_CONTRACTS_D表没有主键，这里不能按主键查询
-        // 我们可以根据其他字段查询，比如业务流水号
-        return baseMapper.selectVoById(id);
+    public DwdContractsDDoVo selectDwdContractsDById(String contractNoLocal) {
+        // 使用合同编号作为查询条件，而不是按主键查询
+        DwdContractsDDo dwdContractsDDo = baseMapper.selectByContractNoLocal(contractNoLocal);
+        return BeanUtil.toBean(dwdContractsDDo, DwdContractsDDoVo.class);
     }
 
     /**

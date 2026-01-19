@@ -5,6 +5,7 @@ import com.crm.system.domain.DwdContractsDDo;
 import com.crm.system.domain.vo.DwdContractsDDoVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -18,6 +19,14 @@ import java.util.List;
 @Mapper
 @DS("slave")  // 指定使用从数据库
 public interface DwdContractsDMapper extends BaseMapperPlus<DwdContractsDMapper, DwdContractsDDo, DwdContractsDDoVo> {
+
+    /**
+     * 根据合同编号查询单条数据
+     *
+     * @param contractNoLocal 合同编号
+     * @return 合同数据
+     */
+    DwdContractsDDo selectByContractNoLocal(@Param("contractNoLocal") String contractNoLocal);
 
     /**
      * 查询所有合同数据
@@ -51,7 +60,7 @@ public interface DwdContractsDMapper extends BaseMapperPlus<DwdContractsDMapper,
     List<DwdContractsDDo> selectByAreaName(String areaName);
 
     /**
-     * 栥据合同类型查询
+     * 根据合同类型查询
      *
      * @param contractType 合同类型
      * @return 合同数据列表

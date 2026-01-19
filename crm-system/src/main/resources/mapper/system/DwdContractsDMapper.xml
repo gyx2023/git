@@ -61,5 +61,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="choseTxt" column="CHOSE_TXT"/>
         <result property="contractTypeCode" column="CONTRACT_TYPE_CODE"/>
     </resultMap>
+    
+    <select id="selectByContractNoLocal" resultMap="DwdContractsDDoResult">
+        SELECT * FROM DWD_CONTRACTS_D WHERE CONTRACT_NO_LOCAL = #{contractNoLocal}
+    </select>
 
 </mapper>

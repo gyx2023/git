@@ -16,12 +16,12 @@ import java.util.List;
 public interface IDwdContractsDService {
 
     /**
-     * 查询DWD_CONTRACTS_D
+     * 根据合同编号查询DWD_CONTRACTS_D
      *
-     * @param id DWD_CONTRACTS_D主键
+     * @param contractNoLocal 合同编号
      * @return DWD_CONTRACTS_D
      */
-    DwdContractsDDoVo selectDwdContractsDById(String id);
+    DwdContractsDDoVo selectDwdContractsDById(String contractNoLocal);
 
     /**
      * 查询DWD_CONTRACTS_D列表
