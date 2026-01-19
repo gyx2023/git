@@ -60,26 +60,34 @@ spring:
           url: jdbc:mysql://localhost:3306/ry-flowable-plus?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
           username:
           password:
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
+        # 达梦数据库数据源
+        dameng:
+          lazy: true
+          type: ${spring.datasource.type}
+          driverClassName: dm.jdbc.driver.DmDriver
+          url: jdbc:dm://192.168.124.160:5236?schema=IOB_GOV2&socketTimeout=60000&loginTimeout=60
+          username: IOB_GOV2
+          password: re.12aq,123l;06a!
+        #        oracle:
+        #          type: ${spring.datasource.type}
+        #          driverClassName: oracle.jdbc.OracleDriver
+        #          url: jdbc:oracle:thin:@//localhost:1521/XE
+        #          username: ROOT
+        #          password: root
+        #          hikari:
+        #            connectionTestQuery: SELECT 1 FROM DUAL
+        #        postgres:
+        #          type: ${spring.datasource.type}
+        #          driverClassName: org.postgresql.Driver
+        #          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
+        #          username: root
+        #          password: root
+        #        sqlserver:
+        #          type: ${spring.datasource.type}
+        #          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+        #          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
+        #          username: SA
+        #          password: root
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
