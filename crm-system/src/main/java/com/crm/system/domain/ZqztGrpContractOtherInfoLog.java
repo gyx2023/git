@@ -35,14 +35,7 @@ public class ZqztGrpContractOtherInfoLog extends BaseEntity {
      * 信息标识，详细看tab_column_config.module_name='GRP_CONTRACT_INFO'
      */
     private String infoTag;
-    /**
-     * 合同业务类型
-     */
-    private String grpContractBusiType;
-    /**
-     * 合同相关用户
-     */
-    private String grpContractUserList;
+
     /**
      * 信息值
      */

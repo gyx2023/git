@@ -71,8 +71,6 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getContractId()), ZqztGrpContractOtherInfo::getContractId, bo.getContractId());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoTag()), ZqztGrpContractOtherInfo::getInfoTag, bo.getInfoTag());
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpContractBusiType()), ZqztGrpContractOtherInfo::getGrpContractBusiType, bo.getGrpContractBusiType());
-        lqw.eq(StringUtils.isNotBlank(bo.getGrpContractUserList()), ZqztGrpContractOtherInfo::getGrpContractUserList, bo.getGrpContractUserList());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoVal()), ZqztGrpContractOtherInfo::getInfoVal, bo.getInfoVal());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoVal2()), ZqztGrpContractOtherInfo::getInfoVal2, bo.getInfoVal2());
         lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), ZqztGrpContractOtherInfo::getIsValid, bo.getIsValid());

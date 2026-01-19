@@ -40,18 +40,6 @@ public class ZqztGrpContractOtherInfoVo {
     private String infoTag;
 
     /**
-     * 合同业务类型
-     */
-    @ExcelProperty(value = "合同业务类型")
-    private String grpContractBusiType;
-
-    /**
-     * 合同相关用户
-     */
-    @ExcelProperty(value = "合同相关用户")
-    private String grpContractUserList;
-
-    /**
      * 信息值
      */
     @ExcelProperty(value = "信息值")

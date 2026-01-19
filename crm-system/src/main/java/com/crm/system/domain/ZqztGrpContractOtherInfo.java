@@ -36,14 +36,6 @@ public class ZqztGrpContractOtherInfo extends BaseEntity {
      */
     private String infoTag;
     /**
-     * 合同业务类型
-     */
-    private String grpContractBusiType;
-    /**
-     * 合同相关用户
-     */
-    private String grpContractUserList;
-    /**
      * 信息值
      */
     private String infoVal;

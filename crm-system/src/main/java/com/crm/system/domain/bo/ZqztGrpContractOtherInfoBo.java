@@ -40,18 +40,6 @@ public class ZqztGrpContractOtherInfoBo extends BaseEntity {
     private String infoTag;
 
     /**
-     * 合同业务类型
-     */
-    @NotBlank(message = "合同业务类型不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String grpContractBusiType;
-
-    /**
-     * 合同相关用户
-     */
-    @NotBlank(message = "合同相关用户不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String grpContractUserList;
-
-    /**
      * 信息值
      */
     @NotBlank(message = "信息值不能为空", groups = { AddGroup.class, EditGroup.class })
