@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.DwdContractsDMapper">
+
+    <resultMap type="com.crm.system.domain.DwdContractsDDo" id="DwdContractsDDoResult">
+        <result property="customerCode" column="CUSTUMER_CODE"/>
+        <result property="areaName" column="AREA_NAME"/>
+        <result property="countyCode" column="COUNTY_CODE"/>
+        <result property="countyName" column="COUNTY_NAME"/>
+        <result property="contractName" column="CONTRACT_NAME"/>
+        <result property="arrairNo" column="ARRAIR_NO"/>
+        <result property="contractNoLocal" column="CONTRACT_NO_LOCAL"/>
+        <result property="deptName" column="DEPT_NAME"/>
+        <result property="takerName" column="TAKER_NAME"/>
+        <result property="takerUserName" column="TAKER_USER_NAME"/>
+        <result property="takerPhone" column="TAKER_PHONE"/>
+        <result property="arrairAmount" column="ARRAIR_AMOUNT"/>
+        <result property="financeVatRate" column="FINANCE_VAT_RATE"/>
+        <result property="financeUnVatAmount" column="FINANCE_UN_VAT_AMOUNT"/>
+        <result property="repositoryNameUnicom" column="REPOSITORY_NAME_UNICOM"/>
+        <result property="repositoryNameVendor" column="REPOSITORY_NAME_VENDOR"/>
+        <result property="contractType" column="CONTRACT_TYPE"/>
+        <result property="approvalDate" column="APPROVAL_DATE"/>
+        <result property="enterperTime" column="ENTERPERTIME"/>
+        <result property="contractStartDate" column="CONTRACT_START_DATE"/>
+        <result property="contractEndDate" column="CONTRACT_END_DATE"/>
+        <result property="contractTimelimitName" column="CONTRACT_TIMELIMIT_NAME"/>
+        <result property="contractStatusName" column="CONTRACT_STATUS_NAME"/>
+        <result property="performDeptName" column="PERFORM_DEPT_NAME"/>
+        <result property="performer" column="PERFORMER"/>
+        <result property="performerUserName" column="PERFORMER_USER_NAME"/>
+        <result property="performerPhone" column="PERFORMER_PHONE"/>
+        <result property="mainPerformer" column="MAIN_PERFORMER"/>
+        <result property="mainPerformerUserName" column="MAIN_PERFORMER_USER_NAME"/>
+        <result property="mainPerformerPhone" column="MAIN_PERFORMER_PHONE"/>
+        <result property="recAmount" column="REC_AMOUNT"/>
+        <result property="actRecAmount" column="ACT_REC_AMOUNT"/>
+        <result property="projectNum" column="PROJECT_NUM"/>
+        <result property="projectName" column="PROJECT_NAME"/>
+        <result property="contractChangeTypeName" column="CONTRACT_CHANGETYPE_NAME"/>
+        <result property="enterperformTime" column="ENTERPERFORMTIME"/>
+        <result property="hisContract" column="HIS_CONTRACT"/>
+        <result property="signType" column="SIGN_TYPE"/>
+        <result property="contractPaymentTypeName" column="CONTRACT_PAYMENT_TYPE_NAME"/>
+        <result property="unitName" column="UNIT_NAME"/>
+        <result property="payPeriod" column="PAY_PERIOD"/>
+        <result property="industryProperty" column="INDUSTRY_PROPERTY"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="creationDate" column="CREATION_DATE"/>
+        <result property="lastUpdatedBy" column="LAST_UPDATED_BY"/>
+        <result property="lastUpdateDate" column="LAST_UPDATE_DATE"/>
+        <result property="etlDataCycle" column="ETL_DATA_CYCLE"/>
+        <result property="etlTime" column="ETL_TIME"/>
+        <result property="fixedAmount" column="FIXED_AMOUNT"/>
+        <result property="oldArriarNo" column="OLD_ARRAIR_NO"/>
+        <result property="finalApprover" column="FINAL_APPROVER"/>
+        <result property="processDefName" column="PROCESSDEFNAME"/>
+        <result property="oldSignDate" column="OLD_SIGN_DATE"/>
+        <result property="choseTxt" column="CHOSE_TXT"/>
+        <result property="contractTypeCode" column="CONTRACT_TYPE_CODE"/>
+    </resultMap>
+
+</mapper>
