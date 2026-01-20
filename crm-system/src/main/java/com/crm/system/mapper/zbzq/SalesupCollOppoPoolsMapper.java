@@ -12,7 +12,7 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  * @author crm
  * @date 2025-12-16
  */
-@DS("slave")
+@DS("slave_1")
 public interface SalesupCollOppoPoolsMapper extends BaseMapperPlus<SalesupCollOppoPoolsMapper, SalesupCollOppoPoolsDo, SalesupCollOppoPoolsVo> {
 
 

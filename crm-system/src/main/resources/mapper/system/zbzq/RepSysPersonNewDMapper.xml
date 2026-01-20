@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.zbzq.RepSysPersonNewDMapper">
+
+<select id="getDeptLevel" resultType="java.lang.String">
+
+    SELECT
+
+        nvl(AREA.AREA_NAME, STATIC_D.STATIC_DATA_NAME) AREA_NAME
+
+    FROM IOB_DATA.REP_SYS_PERSON_NEW_D PERSON
+             LEFT JOIN IOB_DATA.DIM_AREA_ID AREA ON AREA.EMP_AREA_ID = PERSON.AREA_ID
+             LEFT JOIN IOB_DATA.DIM_FND_STATIC_DATA_D STATIC_D
+                       ON STATIC_D.COLUMN_NAME = 'DEPT_TYPE'
+                           AND STATIC_D.static_data_code = PERSON.DEPT_TYPE_CODE
+    WHERE lower(PERSON.OA_USER_NAME) = #{oaUserName}
+</select>
+
+</mapper>
