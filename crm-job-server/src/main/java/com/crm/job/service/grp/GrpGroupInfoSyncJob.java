@@ -1,15 +1,24 @@
 package com.crm.job.service.grp;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.crm.common.enums.GrpExpandTypeenum;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysArea;
+import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.grp.GrpGroupInfoDo;
 import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.zbzq.AgentChannelDo;
+import com.crm.system.domain.zbzq.DwdRepFzPersonDDo;
+import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.mapper.zbzq.AgentChannelMapper;
+import com.crm.system.mapper.zbzq.DwdRepFzPersonDMapper;
+import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +27,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -47,6 +57,14 @@ public class GrpGroupInfoSyncJob {
 
     @Resource
     private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper;
+    @Resource
+    private AgentChannelMapper agentChannelMapper;
+
+    @Resource
+    private DwdRepFzPersonDMapper dwdRepFzPersonDMapper;
+
+    @Resource
+    private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
     private final Map<String,String> cityMap = new HashMap<>();
     private volatile boolean cityListInitialized = false;
@@ -184,6 +202,7 @@ public class GrpGroupInfoSyncJob {
                             if(StringUtils.isNotBlank(p.getCountyid2())){
                                 p.setCountyid2(cityMap.get(p.getCountyid2())==null?p.getCountyid2():cityMap.get(p.getCountyid2()));
                             }
+
                         });
                         // 批量插入数据库
                         int success = grpGroupInfoService.batchUpsert(groupInfoList);
@@ -299,8 +318,62 @@ public class GrpGroupInfoSyncJob {
             XxlJobHelper.log("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
 
             // 2. 从grp_group_info同步数据
-            int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
-            log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
+            //int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
+            List<GrpGroupInfoDo> grpGroupInfoList = grpGroupInfoService.selectAll();
+            List<ZqGrpGroupInfo> zqGrpGroupInfoList = new ArrayList<>();
+            Date now = new Date();
+            grpGroupInfoList.forEach(grpGroupInfoDo -> {
+                AgentChannelDo agentChannelDo = agentChannelMapper.selectList((new LambdaQueryWrapper<AgentChannelDo>()
+                    .eq(AgentChannelDo::getChannelId, grpGroupInfoDo.getManagerid()))).get(0);
+
+                DwdRepFzPersonDDo dwdRepFzPersonDDo = dwdRepFzPersonDMapper.selectList(new LambdaQueryWrapper<DwdRepFzPersonDDo>()
+                    .eq(DwdRepFzPersonDDo::getChannelHqCode, agentChannelDo.getChannelHqCode())).get(0);
+
+                RepSysPersonNewDDo repSysPersonNewDDo = repSysPersonNewDMapper.selectList(new LambdaQueryWrapper<RepSysPersonNewDDo>()
+                    .eq(RepSysPersonNewDDo::getEmpId, dwdRepFzPersonDDo.getEmpId())).get(0);
+                ZqGrpGroupInfo zqGrpGroupInfo = new ZqGrpGroupInfo();
+                zqGrpGroupInfo.setGrpId(grpGroupInfoDo.getGrpId());
+                zqGrpGroupInfo.setGrpName(grpGroupInfoDo.getGrpName());
+                zqGrpGroupInfo.setGrpCode(grpGroupInfoDo.getGrpCode());
+                zqGrpGroupInfo.setHqGrpCode(grpGroupInfoDo.getZbCustomerId());
+                zqGrpGroupInfo.setCustId(String.valueOf(grpGroupInfoDo.getCustid()));
+                zqGrpGroupInfo.setGrpLevel(grpGroupInfoDo.getGrpLevel());
+                zqGrpGroupInfo.setGrpStatus(grpGroupInfoDo.getGrpStat());
+                zqGrpGroupInfo.setAreaId(grpGroupInfoDo.getAreaid());
+                zqGrpGroupInfo.setCountyId(grpGroupInfoDo.getCountyid());
+                zqGrpGroupInfo.setCountyId2(grpGroupInfoDo.getCountyid2());
+                zqGrpGroupInfo.setGridId(grpGroupInfoDo.getGridId());
+                zqGrpGroupInfo.setIndustryMajorKind(grpGroupInfoDo.getIndustryMajorKind());
+                zqGrpGroupInfo.setIndustrySubKind(grpGroupInfoDo.getIndustrySubKind());
+                zqGrpGroupInfo.setIndustryDetailKind(grpGroupInfoDo.getIndustryDetailKind());
+                zqGrpGroupInfo.setBusiType(grpGroupInfoDo.getBusiType());
+                zqGrpGroupInfo.setGrpCustType(grpGroupInfoDo.getGrpCustType1());
+                zqGrpGroupInfo.setGrpExpandType(grpGroupInfoDo.getGrpExpandType());
+                zqGrpGroupInfo.setGrpBusiDeptType(grpGroupInfoDo.getGrpBusiDeptType());
+                zqGrpGroupInfo.setProvinceNewoldType(grpGroupInfoDo.getProvinceNewoldType());
+                zqGrpGroupInfo.setManagerId(grpGroupInfoDo.getManagerid());
+                zqGrpGroupInfo.setGrpCreator(grpGroupInfoDo.getCreator());
+                zqGrpGroupInfo.setGrpCreateTime(grpGroupInfoDo.getCreateTime());
+                zqGrpGroupInfo.setCreateTime(now);
+                zqGrpGroupInfo.setUpdateTime(now);
+                if(ObjectUtil.equals(GrpExpandTypeenum.PROVINCE_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
+                    zqGrpGroupInfo.setProvManagerOauser(repSysPersonNewDDo.getOaUserName());
+                    zqGrpGroupInfo.setProvManagerEmpId(repSysPersonNewDDo.getEmpId());
+                    zqGrpGroupInfo.setProvManagerName(repSysPersonNewDDo.getFullName());
+                }else if(ObjectUtil.equals(GrpExpandTypeenum.CITY_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
+                    zqGrpGroupInfo.setCityManagerEmpId(repSysPersonNewDDo.getEmpId());
+                    zqGrpGroupInfo.setCityManagerOauser(repSysPersonNewDDo.getOaUserName());
+                    zqGrpGroupInfo.setCityManagerName(repSysPersonNewDDo.getFullName());
+                }else{
+                    zqGrpGroupInfo.setCountyManagerEmpId(repSysPersonNewDDo.getEmpId());
+                    zqGrpGroupInfo.setCountyManagerOauser(repSysPersonNewDDo.getOaUserName());
+                    zqGrpGroupInfo.setCountyManagerName(repSysPersonNewDDo.getFullName());
+                }
+                zqGrpGroupInfoList.add(zqGrpGroupInfo);
+            });
+            boolean syncCount = zqGrpGroupInfoMapper.insertBatch(zqGrpGroupInfoList);
+
+            log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", zqGrpGroupInfoList.size());
             XxlJobHelper.log("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
 
         } catch (Exception e) {

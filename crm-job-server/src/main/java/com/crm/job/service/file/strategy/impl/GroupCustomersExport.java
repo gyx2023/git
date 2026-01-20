@@ -81,7 +81,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             }
 
             // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
-            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportList(queryParams, areaCode, needDesensitize);
+            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportListLevel(queryParams, areaCode, needDesensitize);
 
             // 检查数据是否为空
             if (dataList == null || dataList.isEmpty()) {
