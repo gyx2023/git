@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -8,17 +9,24 @@ import com.crm.generator.util.Desensitization;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.domain.ZqztGrpContractOtherInfo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.crm.common.utils.spring.SpringUtils;
 import com.crm.system.domain.bo.ZqztGrpContractInfoBo;
 import com.crm.system.domain.vo.ZqztGrpContractInfoVo;
 import com.crm.system.domain.ZqztGrpContractInfo;
 import com.crm.system.mapper.ZqztGrpContractInfoMapper;
 import com.crm.system.service.IZqztGrpContractInfoService;
+import com.crm.system.service.IZqztGrpContractOtherInfoService;
+import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
+import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +40,9 @@ import java.util.stream.Collectors;
 public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoService {
 
     private final ZqztGrpContractInfoMapper baseMapper;
+
+    @Autowired
+    private IZqztGrpContractOtherInfoService zqztGrpContractOtherInfoService;
 
     /**
      * 查询集团合同信息
@@ -124,10 +135,41 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     @Override
     public Boolean insertByBo(ZqztGrpContractInfoBo bo) {
         ZqztGrpContractInfo add = BeanUtil.toBean(bo, ZqztGrpContractInfo.class);
+        
+        // 自动设置创建人为当前登录用户
+        if (add.getCreator() == null || add.getCreator().isEmpty()) {
+            add.setCreator(LoginHelper.getNickName());
+        }
+        
+        // 设置默认缴费方式，如果未提供
+        if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
+            add.setPaytype("10"); // 默认设置为"后付费"
+        }
+        
+        // 设置默认合同状态，如果未提供
+        if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
+            add.setContractStatus("11"); // 默认设置为"起草"
+        }
+        
+        // 设置默认合同属性，如果未提供
+        if (add.getContractProperty() == null || add.getContractProperty().isEmpty()) {
+            add.setContractProperty("00"); // 默认设置为"新签合同"
+        }
+        
+        // 设置默认是否招投标项目，如果未提供
+        if (add.getIsBidding() == null || add.getIsBidding().isEmpty()) {
+            add.setIsBidding("0"); // 默认设置为"否"
+        }
+        
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setContractId(add.getContractId());
+
+            // 处理普通合同业务类型，如果有业务类型则存储到扩展表
+            if (bo.getBusinessTypes() != null && !bo.getBusinessTypes().trim().isEmpty()) {
+                handleContractBusinessTypes(add.getContractId(), bo.getBusinessTypes());
+            }
         }
         return flag;
     }
@@ -139,7 +181,16 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     public Boolean updateByBo(ZqztGrpContractInfoBo bo) {
         ZqztGrpContractInfo update = BeanUtil.toBean(bo, ZqztGrpContractInfo.class);
         validEntityBeforeSave(update);
-        return baseMapper.updateById(update) > 0;
+        boolean result = baseMapper.updateById(update) > 0;
+
+        if (result) {
+            // 处理普通合同业务类型，如果有业务类型则存储到扩展表
+            if (bo.getBusinessTypes() != null && !bo.getBusinessTypes().trim().isEmpty()) {
+                handleContractBusinessTypes(update.getContractId(), bo.getBusinessTypes());
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -205,5 +256,41 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     @Override
     public List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo() {
         return baseMapper.selectList(null);
+    }
+
+    /**
+     * 处理合同业务类型，将业务类型存储到扩展表中
+     *
+     * @param contractId 合同ID
+     * @param businessTypesStr 业务类型字符串，多个类型以逗号分隔
+     */
+    private void handleContractBusinessTypes(String contractId, String businessTypesStr) {
+        if (contractId == null || contractId.trim().isEmpty() || businessTypesStr == null || businessTypesStr.trim().isEmpty()) {
+            return;
+        }
+
+        // 删除该合同之前的业务类型记录
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> deleteWrapper = new LambdaQueryWrapper<>();
+        deleteWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
+                     .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE");
+
+        ZqztGrpContractOtherInfoMapper otherInfoMapper =
+            (ZqztGrpContractOtherInfoMapper) SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class);
+        otherInfoMapper.delete(deleteWrapper);
+
+        // 解析业务类型并逐条插入扩展表
+        String[] businessTypes = businessTypesStr.split(",");
+        for (String businessType : businessTypes) {
+            if (businessType != null && !businessType.trim().isEmpty()) {
+                ZqztGrpContractOtherInfoBo otherInfoBo = new ZqztGrpContractOtherInfoBo();
+                otherInfoBo.setContractId(contractId);
+                otherInfoBo.setInfoTag("GRP_CONTRACT_BUSI_TYPE");
+                otherInfoBo.setInfoVal(businessType.trim());
+                otherInfoBo.setInfoVal2(""); // 填写服务号码字段为空
+                otherInfoBo.setIsValid("1"); // 默认设置为有效
+
+                zqztGrpContractOtherInfoService.insertByBo(otherInfoBo);
+            }
+        }
     }
 }

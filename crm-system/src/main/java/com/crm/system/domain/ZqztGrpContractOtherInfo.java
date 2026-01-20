@@ -48,5 +48,24 @@ public class ZqztGrpContractOtherInfo extends BaseEntity {
      */
     private String isValid;
 
+    /**
+     * 数据库不查询的字段
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    @TableField(exist = false)
+    private String updateBy;
+
+    @Override
+    public void setCreateBy(String createBy) {
+        // 不执行任何操作，防止自动填充
+    }
+
+    @Override
+    public void setUpdateBy(String updateBy) {
+        // 不执行任何操作，防止自动填充
+    }
+
 }
 
