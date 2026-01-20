@@ -21,12 +21,12 @@ import java.util.List;
 public interface DwdContractsDMapper extends BaseMapperPlus<DwdContractsDMapper, DwdContractsDDo, DwdContractsDDoVo> {
 
     /**
-     * 根据合同编号查询单条数据
+     * 根据流水号查询单条数据
      *
-     * @param contractNoLocal 合同编号
+     * @param arrairNo 业务流水号
      * @return 合同数据
      */
-    DwdContractsDDo selectByContractNoLocal(@Param("contractNoLocal") String contractNoLocal);
+    DwdContractsDDo selectByArrairNo(@Param("arrairNo") String arrairNo);
 
     /**
      * 查询所有合同数据
