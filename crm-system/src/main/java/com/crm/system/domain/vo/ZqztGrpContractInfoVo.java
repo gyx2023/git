@@ -274,5 +274,10 @@ public class ZqztGrpContractInfoVo {
      */
     @ExcelProperty(value = "备注")
     private String remark;
+    
+    /**
+     * 业务类型（前端传递）
+     */
+    private String businessTypes;
 }
 

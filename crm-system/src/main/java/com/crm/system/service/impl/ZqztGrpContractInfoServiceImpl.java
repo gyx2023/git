@@ -54,6 +54,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         // 对合同名称进行脱敏
         if (vo != null) {
             vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
+            
+            // 获取业务类型
+            String businessTypes = getBusinessTypesByContractId(contractId);
+            vo.setBusinessTypes(businessTypes);
         }
 
         return vo;
@@ -70,6 +74,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         // 对查询结果进行脱敏处理
         List<ZqztGrpContractInfoVo> desensitizedList = result.getRecords().stream()
                 .map(this::desensitizeVo)
+                .map(this::addBusinessTypesToVo)
                 .collect(Collectors.toList());
         result.setRecords(desensitizedList);
 
@@ -87,6 +92,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         // 对查询结果进行脱敏处理
         return list.stream()
                 .map(this::desensitizeVo)
+                .map(this::addBusinessTypesToVo)
                 .collect(Collectors.toList());
     }
 
@@ -292,5 +298,48 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
                 zqztGrpContractOtherInfoService.insertByBo(otherInfoBo);
             }
         }
+    }
+    
+    /**
+     * 根据合同ID获取业务类型列表
+     *
+     * @param contractId 合同ID
+     * @return 业务类型字符串，多个类型以逗号分隔
+     */
+    private String getBusinessTypesByContractId(String contractId) {
+        if (contractId == null || contractId.trim().isEmpty()) {
+            return null;
+        }
+        
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
+                   .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE")
+                   .eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        
+        List<ZqztGrpContractOtherInfo> list = SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
+        
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        
+        // 将所有业务类型值用逗号连接
+        return list.stream()
+                  .map(ZqztGrpContractOtherInfo::getInfoVal)
+                  .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
+                  .collect(Collectors.joining(","));
+    }
+    
+    /**
+     * 为VO对象添加业务类型信息
+     * 
+     * @param vo VO对象
+     * @return 添加了业务类型信息的VO对象
+     */
+    private ZqztGrpContractInfoVo addBusinessTypesToVo(ZqztGrpContractInfoVo vo) {
+        if (vo != null && vo.getContractId() != null) {
+            String businessTypes = getBusinessTypesByContractId(vo.getContractId());
+            vo.setBusinessTypes(businessTypes);
+        }
+        return vo;
     }
 }
