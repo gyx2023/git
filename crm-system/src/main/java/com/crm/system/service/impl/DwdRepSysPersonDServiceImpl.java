@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -166,98 +167,118 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
             int empCountyId = sysAreaVo.getEmpCountyId();
             int empAreaId = sysAreaVo.getEmpAreaId();
 
-            // 3. 根据拓展客户类型执行不同的查询
-            if ("01".equals(expandCustType)) {
-                // 省级: 查询三次
-                Map<String, Object> level1 = new HashMap<>();
-                level1.put("category", "省级");
-                List<Map<String, Object>> list1 = new ArrayList<>();
-                // 第一次: 查询AREA_ID=3300的记录
-                LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
-                lqw1.eq(DwdRepSysPersonD::getAreaId, 3300L)
-                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
-                List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
-                addManagersToList(list1, dataList1);
-                level1.put("managers", list1);
-                if (!list1.isEmpty()) {
-                    result.add(level1);
+            if(ObjectUtil.equals("400", grpCustType)){
+                if(ObjectUtil.isEmpty(expandCustType)){
+                    throw new RuntimeException("拓展客户类型不能为空");
+                }else{
+                    // 3. 根据拓展客户类型执行不同的查询
+                    if ("01".equals(expandCustType)) {
+                        // 省级: 查询三次
+                        Map<String, Object> level1 = new HashMap<>();
+                        level1.put("category", "省级");
+                        List<Map<String, Object>> list1 = new ArrayList<>();
+                        // 第一次: 查询AREA_ID=3300的记录
+                        LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
+                        lqw1.eq(DwdRepSysPersonD::getAreaId, 3300L)
+                            .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                        List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
+                        addManagersToList(list1, dataList1);
+                        level1.put("managers", list1);
+                        if (!list1.isEmpty()) {
+                            result.add(level1);
+                        }
+
+                        Map<String, Object> level2 = new HashMap<>();
+                        level2.put("category", "市级");
+                        List<Map<String, Object>> list2 = new ArrayList<>();
+                        // 第二次: 查询AREA_ID=empAreaId的记录
+                        LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
+                        lqw2.eq(DwdRepSysPersonD::getAreaId, (long) empAreaId)
+                            .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                        List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
+
+                        // 过滤掉县名匹配的数据，只保留纯市级数据
+                        List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList2, String.valueOf(empAreaId));
+
+                        addManagersToList(list2, cityManagers);
+                        level2.put("managers", list2);
+                        if (!list2.isEmpty()) {
+                            result.add(level2);
+                        }
+
+                        Map<String, Object> level3 = new HashMap<>();
+                        level3.put("category", "县级");
+                        List<Map<String, Object>> list3 = new ArrayList<>();
+                        // 第三次: 查询COUNTY_ID=数据库的该id
+                        LambdaQueryWrapper<DwdRepSysPersonD> lqw3 = Wrappers.lambdaQuery();
+                        lqw3.eq(DwdRepSysPersonD::getCountyId, empCountyId)
+                            .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                        List<DwdRepSysPersonDVo> dataList3 = baseMapper.selectVoList(lqw3);
+                        addManagersToList(list3, dataList3);
+                        level3.put("managers", list3);
+                        if (!list3.isEmpty()) {
+                            result.add(level3);
+                        }
+
+                    } else if ("02".equals(expandCustType)) {
+                        // 市级: 返回两个结果
+                        // 先查询市级所有结果
+                        LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
+                        lqw1.eq(DwdRepSysPersonD::getAreaId, (long) empAreaId)
+                            .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                        List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
+
+                        // 过滤掉县名匹配的数据，只保留纯市级数据
+                        List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList1, String.valueOf(empAreaId));
+
+                        // 再查询县级结果
+                        LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
+                        lqw2.eq(DwdRepSysPersonD::getCountyId, empCountyId)
+                            .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                        List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
+
+                        Map<String, Object> level1 = new HashMap<>();
+                        level1.put("category", "市级");
+                        List<Map<String, Object>> list1 = new ArrayList<>();
+                        addManagersToList(list1, cityManagers);
+                        level1.put("managers", list1);
+                        if (!list1.isEmpty()) {
+                            result.add(level1);
+                        }
+
+                        Map<String, Object> level2 = new HashMap<>();
+                        level2.put("category", "县级");
+                        List<Map<String, Object>> list2 = new ArrayList<>();
+                        addManagersToList(list2, dataList2);
+                        level2.put("managers", list2);
+                        if (!list2.isEmpty()) {
+                            result.add(level2);
+                        }
+
+                    } else if("03".equals(expandCustType))  {
+                        // 县级: 返回COUNTY_ID=数据库的该id的结果
+                        Map<String, Object> level = new HashMap<>();
+                        level.put("category", "县级");
+                        List<Map<String, Object>> list = new ArrayList<>();
+                        LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
+                        lqw.eq(DwdRepSysPersonD::getCountyId, empCountyId)
+                            .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                        List<DwdRepSysPersonDVo> dataList = baseMapper.selectVoList(lqw);
+                        addManagersToList(list, dataList);
+                        level.put("managers", list);
+                        if (!list.isEmpty()) {
+                            result.add(level);
+                        }
+                    }
                 }
-
-                Map<String, Object> level2 = new HashMap<>();
-                level2.put("category", "市级");
-                List<Map<String, Object>> list2 = new ArrayList<>();
-                // 第二次: 查询AREA_ID=empAreaId的记录
-                LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
-                lqw2.eq(DwdRepSysPersonD::getAreaId, (long) empAreaId)
-                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
-                List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
-
-                // 过滤掉县名匹配的数据，只保留纯市级数据
-                List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList2, String.valueOf(empAreaId));
-
-                addManagersToList(list2, cityManagers);
-                level2.put("managers", list2);
-                if (!list2.isEmpty()) {
-                    result.add(level2);
-                }
-
-                Map<String, Object> level3 = new HashMap<>();
-                level3.put("category", "县级");
-                List<Map<String, Object>> list3 = new ArrayList<>();
-                // 第三次: 查询COUNTY_ID=数据库的该id
-                LambdaQueryWrapper<DwdRepSysPersonD> lqw3 = Wrappers.lambdaQuery();
-                lqw3.eq(DwdRepSysPersonD::getCountyId, empCountyId)
-                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
-                List<DwdRepSysPersonDVo> dataList3 = baseMapper.selectVoList(lqw3);
-                addManagersToList(list3, dataList3);
-                level3.put("managers", list3);
-                if (!list3.isEmpty()) {
-                    result.add(level3);
-                }
-
-            } else if ("02".equals(expandCustType)) {
-                // 市级: 返回两个结果
-                // 先查询市级所有结果
-                LambdaQueryWrapper<DwdRepSysPersonD> lqw1 = Wrappers.lambdaQuery();
-                lqw1.eq(DwdRepSysPersonD::getAreaId, (long) empAreaId)
-                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
-                List<DwdRepSysPersonDVo> dataList1 = baseMapper.selectVoList(lqw1);
-
-                // 过滤掉县名匹配的数据，只保留纯市级数据
-                List<DwdRepSysPersonDVo> cityManagers = filterCityManagers(dataList1, String.valueOf(empAreaId));
-
-                // 再查询县级结果
-                LambdaQueryWrapper<DwdRepSysPersonD> lqw2 = Wrappers.lambdaQuery();
-                lqw2.eq(DwdRepSysPersonD::getCountyId, empCountyId)
-                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
-                List<DwdRepSysPersonDVo> dataList2 = baseMapper.selectVoList(lqw2);
-
-                Map<String, Object> level1 = new HashMap<>();
-                level1.put("category", "市级");
-                List<Map<String, Object>> list1 = new ArrayList<>();
-                addManagersToList(list1, cityManagers);
-                level1.put("managers", list1);
-                if (!list1.isEmpty()) {
-                    result.add(level1);
-                }
-
-                Map<String, Object> level2 = new HashMap<>();
-                level2.put("category", "县级");
-                List<Map<String, Object>> list2 = new ArrayList<>();
-                addManagersToList(list2, dataList2);
-                level2.put("managers", list2);
-                if (!list2.isEmpty()) {
-                    result.add(level2);
-                }
-
-            } else  {
+            }else{
                 // 县级: 返回COUNTY_ID=数据库的该id的结果
                 Map<String, Object> level = new HashMap<>();
                 level.put("category", "县级");
                 List<Map<String, Object>> list = new ArrayList<>();
                 LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
                 lqw.eq(DwdRepSysPersonD::getCountyId, empCountyId)
-                   .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0); // 只查询在职的客户经理
                 List<DwdRepSysPersonDVo> dataList = baseMapper.selectVoList(lqw);
                 addManagersToList(list, dataList);
                 level.put("managers", list);
@@ -265,6 +286,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                     result.add(level);
                 }
             }
+
 
         } catch (Exception e) {
             e.printStackTrace();

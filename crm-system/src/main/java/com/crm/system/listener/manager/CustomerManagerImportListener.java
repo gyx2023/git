@@ -116,7 +116,7 @@ public class CustomerManagerImportListener {
                     return false;
                 }
                 List<Map<String, Object>> provManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                    groupInfo.getCountyId(), "01");
+                    groupInfo.getCountyId(), "01",groupInfo.getGrpCustType());
                 Map<String, Object> provManager = getManagerByOa(data.getProvManagerOauser(), provManagers);
                 if (provManager == null) {
                     resultVo.setErrorMessage("省级客户经理OA账号不存在或不在可选列表中");
@@ -131,7 +131,7 @@ public class CustomerManagerImportListener {
                     return false;
                 }
                 List<Map<String, Object>> cityManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                    groupInfo.getCountyId(), "02");
+                    groupInfo.getCountyId(), "02",groupInfo.getGrpCustType());
                 Map<String, Object> cityManager = getManagerByOa(data.getCityManagerOauser(), cityManagers);
                 if (cityManager == null) {
                     resultVo.setErrorMessage("市级客户经理OA账号不存在或不在可选列表中");
@@ -142,7 +142,7 @@ public class CustomerManagerImportListener {
             // 验证区县级客户经理 (01、02和03类型都可以修改区县级客户经理)
             if (isManagerInfoProvided(data.getCountyManagerOauser())) {
                 List<Map<String, Object>> countyManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                    groupInfo.getCountyId(), "03");
+                    groupInfo.getCountyId(), "03",groupInfo.getGrpCustType());
                 Map<String, Object> countyManager = getManagerByOa(data.getCountyManagerOauser(), countyManagers);
                 if (countyManager == null) {
                     resultVo.setErrorMessage("区县级客户经理OA账号不存在或不在可选列表中");
@@ -158,7 +158,7 @@ public class CustomerManagerImportListener {
             if (isManagerInfoProvided(data.getProvManagerOauser())) {
                 if ("01".equals(expandType)) { // 只有01类型可以修改省级客户经理
                     List<Map<String, Object>> provManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                        groupInfo.getCountyId(), "01");
+                        groupInfo.getCountyId(), "01",groupInfo.getGrpCustType());
                     Map<String, Object> provManager = getManagerByOa(data.getProvManagerOauser(), provManagers);
                     updateBo.setProvManagerName((String) provManager.get("name"));
                     updateBo.setProvManagerOauser(data.getProvManagerOauser());
@@ -169,7 +169,7 @@ public class CustomerManagerImportListener {
             if (isManagerInfoProvided(data.getCityManagerOauser())) {
                 if ("01".equals(expandType) || "02".equals(expandType)) { // 01和02类型可以修改市级客户经理
                     List<Map<String, Object>> cityManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                        groupInfo.getCountyId(), "02");
+                        groupInfo.getCountyId(), "02",groupInfo.getGrpCustType());
                     Map<String, Object> cityManager = getManagerByOa(data.getCityManagerOauser(), cityManagers);
                     updateBo.setCityManagerName((String) cityManager.get("name"));
                     updateBo.setCityManagerOauser(data.getCityManagerOauser());
@@ -180,7 +180,7 @@ public class CustomerManagerImportListener {
             if (isManagerInfoProvided(data.getCountyManagerOauser())) {
                 // 01、02和03类型都可以修改区县级客户经理
                 List<Map<String, Object>> countyManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
-                    groupInfo.getCountyId(), "03");
+                    groupInfo.getCountyId(), "03",groupInfo.getGrpCustType());
                 Map<String, Object> countyManager = getManagerByOa(data.getCountyManagerOauser(), countyManagers);
                 updateBo.setCountyManagerName((String) countyManager.get("name"));
                 updateBo.setCountyManagerOauser(data.getCountyManagerOauser());
