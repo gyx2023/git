@@ -3,6 +3,7 @@ package com.crm.job.service.oppo;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.enums.SwitchStatus;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
@@ -86,9 +87,9 @@ public class OppoUnboundSyncJob {
 
             // 从sys_param表获取开关的状态
             Map<String, String> unboundOpportunitySwitchMap = sysParamService.findValueMapsByType(Constants.UNBOUND_OPPORTUNITY_OFF_SWITCH);
-            if("on".equals(unboundOpportunitySwitchMap.get(Constants.UNBOUND_OPPORTUNITY_OFF_SWITCH))){
-                // 获取需要更新状态的商机列表
-                List<ToppOpportunityVo> signedOppoIdList = getDataToProcess(param);
+            if(SwitchStatus.ON.getValue().equals(unboundOpportunitySwitchMap.get(Constants.UNBOUND_OPPORTUNITY_OFF_SWITCH))){
+                // 获取需要更新状态的商机列表（不进行过滤）
+                List<ToppOpportunityVo> signedOppoIdList = getDataToProcessWithoutFilter(param);
                 // 添加原有查询的数据
                 if (signedOppoIdList != null && !signedOppoIdList.isEmpty()) {
                     resultOppoList.addAll(signedOppoIdList);
@@ -97,8 +98,8 @@ public class OppoUnboundSyncJob {
 
             // 查询超过3个月+7天未拜访的商机
             Map<String, String> lastVisitTimeSwitchMap = sysParamService.findValueMapsByType(Constants.VISIT_TIME_OFF_SWITCH);
-            if("on".equals(lastVisitTimeSwitchMap.get(Constants.VISIT_TIME_OFF_SWITCH))){
-                List<ToppOpportunityVo> longUnvisitedOppos = getDataOnLastVisitTime();
+            if(SwitchStatus.ON.getValue().equals(lastVisitTimeSwitchMap.get(Constants.VISIT_TIME_OFF_SWITCH))){
+                List<ToppOpportunityVo> longUnvisitedOppos = getDataOnLastVisitTimeWithoutFilter();
                 log.info("查询到超过3个月+7天未拜访的商机数量：{}", longUnvisitedOppos != null ? longUnvisitedOppos.size() : 0);
                 // 添加超过3个月+7天未拜访的商机
                 if (longUnvisitedOppos != null && !longUnvisitedOppos.isEmpty()) {
@@ -111,15 +112,23 @@ public class OppoUnboundSyncJob {
                 return;
             }
 
+            // 统一过滤所有获取的数据
+            List<ToppOpportunityVo> filteredResultList = filterUnboundData(resultOppoList);
+            
+            if (filteredResultList == null || filteredResultList.isEmpty()) {
+                log.info("经过统一过滤后，没有需要更新状态的商机");
+                return;
+            }
+
             //取出需要处理的数据的商机ID
-            List<Long> opportunityIds = resultOppoList.stream()
+            List<Long> opportunityIds = filteredResultList.stream()
                     .map(ToppOpportunityVo::getId)
                     .collect(Collectors.toList());
 
             log.info("开始更新商机状态，商机ID列表：{}", opportunityIds);
 
             // 处理查询出的数据
-            resultOppoList.forEach(toppOpportunityVo -> {
+            filteredResultList.forEach(toppOpportunityVo -> {
                 log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
                 toppOpportunityVo.setOppoState(Constants.NEW_OPP_PHASE_OPP_END_LINK);
                 String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
@@ -140,7 +149,7 @@ public class OppoUnboundSyncJob {
 
     }
 
-    private List<ToppOpportunityVo> getDataToProcess(String param) {
+    private List<ToppOpportunityVo> getDataToProcessWithoutFilter(String param) {
         // 计算查询时间范围
         LocalDate targetDate = LocalDate.now().minusDays(Integer.parseInt(param));
         // 构造指定日期的时间范围：00:00:00 到 23:59:59
@@ -153,15 +162,14 @@ public class OppoUnboundSyncJob {
         List<ToppOpportunityVo> opportunityList = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
         log.info("查询到未关联商机的商机数量：{}", opportunityList.size());
         
-        // 使用公共过滤方法处理数据
-        return filterUnboundData(opportunityList);
+        // 返回原始数据，不进行过滤
+        return opportunityList;
     }
 
-    private List<ToppOpportunityVo> getDataOnLastVisitTime() {
-        List<ToppOpportunityVo> resultOppoList = toppOpportunityService.queryOpportunityByLastVisitTime();
-        
-        // 使用公共过滤方法处理数据
-        return filterUnboundData(resultOppoList);
+    private List<ToppOpportunityVo> getDataOnLastVisitTimeWithoutFilter() {
+
+        // 返回原始数据，不进行过滤
+        return toppOpportunityService.queryOpportunityByLastVisitTime();
     }
 
     /**
