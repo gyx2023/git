@@ -84,4 +84,14 @@ public class GrpCustInuse extends BaseEntity {
      */
     private String remark;
 
+
+    @TableField(exist = false)
+    private Date createTime;
+    @TableField(exist = false)
+    private String updateBy;
+    @TableField(exist = false)
+    private Date updateTime;
+    @TableField(exist = false)
+    private String createBy;
+
 }
