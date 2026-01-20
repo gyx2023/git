@@ -1,7 +1,6 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -75,7 +74,6 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getCustId() != null, ToppOpportunityDo::getCustId, bo.getCustId());
         lqw.like(StringUtils.isNotBlank(bo.getCustName()), ToppOpportunityDo::getCustName, bo.getCustName());
@@ -262,6 +260,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         // 筛选有效状态
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
         lqw.isNull(ToppOpportunityDo::getContractId);
+        lqw.eq(ToppOpportunityDo::getOppPhase, Constants.OPP_PHASE_AUDIT_FINISH);
         return baseMapper.selectVoList(lqw);
     }
 
