@@ -29,7 +29,7 @@ public class GrpCustInuseUserlist extends BaseEntity {
     /**
      * 用户编号
      */
-    private Long SUBSCRBID;
+    private Long subscrbid;
     /**
      * 业务号码
      */
@@ -53,6 +53,13 @@ public class GrpCustInuseUserlist extends BaseEntity {
     /**
      * 备注
      */
-    private String REMARK;
+    private String remark;
+
+    @TableField(exist = false)
+    private String updateBy;
+    @TableField(exist = false)
+    private Date updateTime;
+    @TableField(exist = false)
+    private String createBy;
 
 }

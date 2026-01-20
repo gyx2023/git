@@ -29,7 +29,7 @@ public class ZqztGrpCustInuseUserlist extends BaseEntity {
     /**
      * 用户编号
      */
-    private Long SUBSCRBID;
+    private Long subscrbid;
     /**
      * 业务号码
      */
@@ -49,10 +49,16 @@ public class ZqztGrpCustInuseUserlist extends BaseEntity {
     /**
      * 备注
      */
-    private String REMARK;
+    private String remark;
     /**
      * 是否有效：1有效，0无效
      */
     private String isValid;
+
+
+    @TableField(exist = false)
+    private String updateBy;
+    @TableField(exist = false)
+    private String createBy;
 
 }

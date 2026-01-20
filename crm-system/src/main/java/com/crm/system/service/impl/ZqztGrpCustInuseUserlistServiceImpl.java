@@ -62,13 +62,13 @@ public class ZqztGrpCustInuseUserlistServiceImpl implements IZqztGrpCustInuseUse
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ZqztGrpCustInuseUserlist> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getInuseId()), ZqztGrpCustInuseUserlist::getInuseId, bo.getInuseId());
-        lqw.eq(bo.getSUBSCRBID() != null, ZqztGrpCustInuseUserlist::getSUBSCRBID, bo.getSUBSCRBID());
+        lqw.eq(bo.getSUBSCRBID() != null, ZqztGrpCustInuseUserlist::getSubscrbid, bo.getSUBSCRBID());
         lqw.eq(StringUtils.isNotBlank(bo.getSvcNum()), ZqztGrpCustInuseUserlist::getSvcNum, bo.getSvcNum());
         lqw.eq(bo.getCreateTime() != null, ZqztGrpCustInuseUserlist::getCreateTime, bo.getCreateTime());
         lqw.eq(StringUtils.isNotBlank(bo.getRegionId()), ZqztGrpCustInuseUserlist::getRegionId, bo.getRegionId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqztGrpCustInuseUserlist::getCountyId, bo.getCountyId());
         lqw.eq(StringUtils.isNotBlank(bo.getOperatorId()), ZqztGrpCustInuseUserlist::getOperatorId, bo.getOperatorId());
-        lqw.eq(StringUtils.isNotBlank(bo.getREMARK()), ZqztGrpCustInuseUserlist::getREMARK, bo.getREMARK());
+        lqw.eq(StringUtils.isNotBlank(bo.getREMARK()), ZqztGrpCustInuseUserlist::getRemark, bo.getREMARK());
         lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), ZqztGrpCustInuseUserlist::getIsValid, bo.getIsValid());
         lqw.eq(bo.getUpdateTime() != null, ZqztGrpCustInuseUserlist::getUpdateTime, bo.getUpdateTime());
         return lqw;

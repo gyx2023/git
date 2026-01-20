@@ -62,14 +62,14 @@ public class GrpCustInuseUserlistServiceImpl implements IGrpCustInuseUserlistSer
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<GrpCustInuseUserlist> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getInuseId()), GrpCustInuseUserlist::getInuseId, bo.getInuseId());
-        lqw.eq(bo.getSUBSCRBID() != null, GrpCustInuseUserlist::getSUBSCRBID, bo.getSUBSCRBID());
+        lqw.eq(bo.getSUBSCRBID() != null, GrpCustInuseUserlist::getSubscrbid, bo.getSUBSCRBID());
         lqw.eq(StringUtils.isNotBlank(bo.getSvcNum()), GrpCustInuseUserlist::getSvcNum, bo.getSvcNum());
         lqw.eq(bo.getCreateTime() != null, GrpCustInuseUserlist::getCreateTime, bo.getCreateTime());
         lqw.eq(StringUtils.isNotBlank(bo.getRegionId()), GrpCustInuseUserlist::getRegionId, bo.getRegionId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), GrpCustInuseUserlist::getCountyId, bo.getCountyId());
         lqw.eq(StringUtils.isNotBlank(bo.getOfficeId()), GrpCustInuseUserlist::getOfficeId, bo.getOfficeId());
         lqw.eq(StringUtils.isNotBlank(bo.getOperatorId()), GrpCustInuseUserlist::getOperatorId, bo.getOperatorId());
-        lqw.eq(StringUtils.isNotBlank(bo.getREMARK()), GrpCustInuseUserlist::getREMARK, bo.getREMARK());
+        lqw.eq(StringUtils.isNotBlank(bo.getREMARK()), GrpCustInuseUserlist::getRemark, bo.getREMARK());
         return lqw;
     }
 
