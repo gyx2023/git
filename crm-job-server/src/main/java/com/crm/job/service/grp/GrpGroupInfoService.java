@@ -41,4 +41,6 @@ public interface GrpGroupInfoService {
      * @return 处理成功的数量
      */
     int batchUpsert(List<GrpGroupInfoDo> groupInfoList);
+
+    List<GrpGroupInfoDo> selectAll();
 }

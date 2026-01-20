@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,6 +10,7 @@ import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.enums.GrpExpandTypeenum;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.generator.util.Desensitization;
@@ -17,10 +19,12 @@ import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysCategoryVo;
+import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.crm.system.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,14 +50,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final SysAreaMapper sysAreaMapper;
     private final IZqGrpGroupLogService zqGrpGroupLogService;
     private final ISysDictDataService dictService;
-    private final ISysAreaService sysAreaService;
-    private final IDwdRepSysPersonDService iDwdRepSysPersonDService;
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
     @Resource
     private SysParamMapper sysParamMapper;
+    @Resource
+    private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
-    private static final String SENSITIVE_ROLE = "SENSITIVE_ROLE";
+    @Resource
+    private ISysUsersService sysUsersService;
 
+
+    private static final String DEPT_LEVEL="省本部";
     /**
      * 查询政企集团客户信息
      */
@@ -107,7 +114,12 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        SysUsersVo sysUsersVo = sysUsersService.queryById(loginUser.getUserId());
+        String deptLevel =  repSysPersonNewDMapper.getDeptLevel(sysUsersVo.getOaAccount());
+        if(ObjectUtil.equals(deptLevel,DEPT_LEVEL)){
+            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+        }
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
             try {
@@ -125,7 +137,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
         boolean isSensitive = sensitiveRoles.stream()
             .anyMatch(roleStr -> roles.stream()
@@ -166,6 +177,24 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
         return exportList(bo, areaCode, true); // 默认需要脱敏
+    }
+     @Override
+    public List<ZqGrpGroupInfoVo> exportListLevel(ZqGrpGroupInfoBo bo, String areaCode, boolean needDesensitize) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
+        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+
+        // 字典翻译
+        translateDictLabels(list);
+
+        // 根据needDesensitize参数决定是否对查询结果进行脱敏处理
+        if (needDesensitize) {
+            list = list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        }
+
+        return list;
     }
 
     /**

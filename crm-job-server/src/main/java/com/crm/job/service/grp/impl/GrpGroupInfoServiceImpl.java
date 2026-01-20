@@ -82,4 +82,9 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
         log.info("批量处理集团信息完成，成功数量: {}", groupInfoList.size());
         return groupInfoList.size();
     }
+
+    @Override
+    public List<GrpGroupInfoDo> selectAll() {
+        return grpGroupInfoMapper.selectList();
+    }
 }
