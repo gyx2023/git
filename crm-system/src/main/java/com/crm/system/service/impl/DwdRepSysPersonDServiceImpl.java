@@ -151,7 +151,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
      * @return 返回管理人员列表，按省级、市级、县级分类
      */
     @Override
-    public List<Map<String, Object>> queryManagersByCityCodeAndType(String cityCode, String expandCustType) {
+    public List<Map<String, Object>> queryManagersByCityCodeAndType(String cityCode, String expandCustType,String grpCustType) {
         // 初始化结果集
         List<Map<String, Object>> result = new ArrayList<>();
 
@@ -250,7 +250,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
                     result.add(level2);
                 }
 
-            } else if ("03".equals(expandCustType)) {
+            } else  {
                 // 县级: 返回COUNTY_ID=数据库的该id的结果
                 Map<String, Object> level = new HashMap<>();
                 level.put("category", "县级");
