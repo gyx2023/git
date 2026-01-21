@@ -2,11 +2,9 @@ package com.crm.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.crm.system.domain.DwdContractsDDo;
 import lombok.Data;
 
 import java.util.Date;
-import java.util.List;
 
 /**
  * DWD_CONTRACTS_D 视图对象
@@ -16,7 +14,7 @@ import java.util.List;
  */
 @Data
 @ExcelIgnoreUnannotated
-public class DwdContractsDDoVo {
+public class DwdContractsDVo {
 
     /**
      * 客户编码
