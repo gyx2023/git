@@ -9,12 +9,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
+import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
+import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.external.IExternalCustMaintInfoService;
+import com.crm.common.utils.spring.SpringUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -35,6 +39,9 @@ import java.util.stream.Collectors;
 public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOtherInfoService {
 
     private final ZqztGrpContractOtherInfoMapper baseMapper;
+    
+    @Autowired
+    private ZqztGrpContractOtherInfoLogMapper logMapper;
 
     @Resource
     private IExternalCustMaintInfoService externalCustMaintInfoService;
@@ -94,12 +101,33 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
     /**
      * 修改集团合同扩展信息
+     * 实现逻辑：先将原有记录移动到日志表，然后删除原记录，再插入新记录
      */
     @Override
     public Boolean updateByBo(ZqztGrpContractOtherInfoBo bo) {
-        ZqztGrpContractOtherInfo update = BeanUtil.toBean(bo, ZqztGrpContractOtherInfo.class);
-        validEntityBeforeSave(update);
-        return baseMapper.updateById(update) > 0;
+        // 首先查询原有记录
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, bo.getContractId());
+        List<ZqztGrpContractOtherInfo> existingRecords = baseMapper.selectList(queryWrapper);
+        
+        // 将原有记录备份到日志表
+        if (!existingRecords.isEmpty()) {
+            for (ZqztGrpContractOtherInfo record : existingRecords) {
+                ZqztGrpContractOtherInfoLog logRecord = BeanUtil.toBean(record, ZqztGrpContractOtherInfoLog.class);
+                // 设置日志记录的ID为null，以便自动生成新ID
+                logRecord.setId(null);
+                logMapper.insert(logRecord);
+            }
+        }
+        
+        // 删除原有记录
+        baseMapper.delete(queryWrapper);
+        
+        // 插入新记录
+        ZqztGrpContractOtherInfo newRecord = BeanUtil.toBean(bo, ZqztGrpContractOtherInfo.class);
+        validEntityBeforeSave(newRecord);
+        boolean result = baseMapper.insert(newRecord) > 0;
+        return result;
     }
 
     /**
@@ -118,6 +146,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    /**
+     * 插入日志记录
+     */
+    public void insertLogRecord(ZqztGrpContractOtherInfoLog logRecord) {
+        logMapper.insert(logRecord);
     }
 
     /**

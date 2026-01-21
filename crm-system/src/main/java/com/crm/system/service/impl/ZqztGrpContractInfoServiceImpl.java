@@ -9,7 +9,11 @@ import com.crm.generator.util.Desensitization;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.domain.ZqztGrpContractInfoLog;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
+import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
+import com.crm.system.mapper.ZqztGrpContractInfoLogMapper;
+import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -54,7 +58,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         // 对合同名称进行脱敏
         if (vo != null) {
             vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
-            
+
             // 获取业务类型
             String businessTypes = getBusinessTypesByContractId(contractId);
             vo.setBusinessTypes(businessTypes);
@@ -141,32 +145,32 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     @Override
     public Boolean insertByBo(ZqztGrpContractInfoBo bo) {
         ZqztGrpContractInfo add = BeanUtil.toBean(bo, ZqztGrpContractInfo.class);
-        
+
         // 自动设置创建人为当前登录用户
         if (add.getCreator() == null || add.getCreator().isEmpty()) {
             add.setCreator(LoginHelper.getNickName());
         }
-        
+
         // 设置默认缴费方式，如果未提供
         if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
             add.setPaytype("10"); // 默认设置为"后付费"
         }
-        
+
         // 设置默认合同状态，如果未提供
         if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
             add.setContractStatus("11"); // 默认设置为"起草"
         }
-        
+
         // 设置默认合同属性，如果未提供
         if (add.getContractProperty() == null || add.getContractProperty().isEmpty()) {
             add.setContractProperty("00"); // 默认设置为"新签合同"
         }
-        
+
         // 设置默认是否招投标项目，如果未提供
         if (add.getIsBidding() == null || add.getIsBidding().isEmpty()) {
             add.setIsBidding("0"); // 默认设置为"否"
         }
-        
+
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -185,7 +189,40 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
      */
     @Override
     public Boolean updateByBo(ZqztGrpContractInfoBo bo) {
+        // 先将原有的扩展信息移动到日志表
+        if (bo.getContractId() != null) {
+            // 查询现有的扩展信息记录
+            LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, bo.getContractId());
+            List<ZqztGrpContractOtherInfo> existingRecords = SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
+
+            // 将现有记录备份到日志表
+            if (!existingRecords.isEmpty()) {
+                for (ZqztGrpContractOtherInfo record : existingRecords) {
+                    ZqztGrpContractOtherInfoLog logRecord = BeanUtil.toBean(record, ZqztGrpContractOtherInfoLog.class);
+                    // 设置日志记录的ID为null，以便自动生成新ID
+                    logRecord.setId(null);
+                    SpringUtils.getBean(ZqztGrpContractOtherInfoLogMapper.class).insert(logRecord);
+                }
+            }
+
+            // 查询现有的合同主表记录并备份到日志表
+            ZqztGrpContractInfo existingRecord = baseMapper.selectById(bo.getContractId());
+            if (existingRecord != null) {
+                ZqztGrpContractInfoLog logRecord = BeanUtil.toBean(existingRecord, ZqztGrpContractInfoLog.class);
+                // 设置日志记录的ID为null，以便自动生成新ID
+                //logRecord.setId(null);
+                SpringUtils.getBean(ZqztGrpContractInfoLogMapper.class).insert(logRecord);
+            }
+        }
+
         ZqztGrpContractInfo update = BeanUtil.toBean(bo, ZqztGrpContractInfo.class);
+
+        // 在编辑时，如果creator字段为空，则自动设置为当前登录用户
+        if (update.getCreator() == null || update.getCreator().isEmpty()) {
+            update.setCreator(LoginHelper.getNickName());
+        }
+
         validEntityBeforeSave(update);
         boolean result = baseMapper.updateById(update) > 0;
 
@@ -299,7 +336,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             }
         }
     }
-    
+
     /**
      * 根据合同ID获取业务类型列表
      *
@@ -310,28 +347,28 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         if (contractId == null || contractId.trim().isEmpty()) {
             return null;
         }
-        
+
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
                    .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE")
                    .eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
-        
+
         List<ZqztGrpContractOtherInfo> list = SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
-        
+
         if (list == null || list.isEmpty()) {
             return null;
         }
-        
+
         // 将所有业务类型值用逗号连接
         return list.stream()
                   .map(ZqztGrpContractOtherInfo::getInfoVal)
                   .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
                   .collect(Collectors.joining(","));
     }
-    
+
     /**
      * 为VO对象添加业务类型信息
-     * 
+     *
      * @param vo VO对象
      * @return 添加了业务类型信息的VO对象
      */

@@ -45,7 +45,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 合同编号，等于grp_cust_inuse.CONTRACT_ID
      */
-    @NotBlank(message = "合同编号", groups = { EditGroup.class })
+    @NotBlank(message = "合同编号")
     private String inuseContractId;
 
     /**
@@ -72,14 +72,14 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      * 合同生效日期
      * */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @NotNull(message = "合同生效日期不能为空", groups = {  EditGroup.class })
+    @NotNull(message = "合同生效日期不能为空")
     private Date contractEffdate;
 
     /**
      * 合同失效日期
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @NotNull(message = "合同失效日期不能为空", groups = { EditGroup.class })
+    @NotNull(message = "合同失效日期不能为空")
     private Date contractExpdate;
 
     /**
@@ -98,25 +98,25 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
         23	银行托收(固网业务)
         25	原固网营业厅话费预缴
      */
-    @NotBlank(message = "缴费方式不能为空", groups = {  EditGroup.class })
+    @NotBlank(message = "缴费方式不能为空")
     private String paytype;
 
     /**
      * 合同备注
      */
-    @NotBlank(message = "合同备注不能为空", groups = { EditGroup.class })
+    @NotBlank(message = "合同备注不能为空")
     private String contractNote;
 
     /**
      * 合同创建人
      */
-    @NotBlank(message = "合同创建人不能为空", groups = { EditGroup.class })
+    @NotBlank(message = "合同创建人不能为空")
     private String creator;
 
     /**
      * 合同带的合同文本，多个合同文本的话用逗号分割，存放ocs地址
      */
-    @NotBlank(message = "合同带的合同文本，多个合同文本的话用逗号分割，存放ocs地址不能为空", groups = { EditGroup.class })
+    @NotBlank(message = "合同带的合同文本，多个合同文本的话用逗号分割，存放ocs地址不能为空")
     private String files;
 
     /**
@@ -133,7 +133,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      0	否
      1	是
      */
-    @NotBlank(message = "是否为招投标项目不能为空", groups = { EditGroup.class })
+    @NotBlank(message = "是否为招投标项目不能为空")
     private String isBidding;
 
     /**
@@ -163,7 +163,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 不含增值税合同额(元)
      */
-    @NotNull(message = "不含增值税合同额(元)不能为空", groups = { EditGroup.class })
+    @NotNull(message = "不含增值税合同额(元)不能为空")
     private BigDecimal contractMoney2;
 
     /**
@@ -176,7 +176,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      * 审批通过日期
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @NotNull(message = "审批通过日期不能为空", groups = { EditGroup.class })
+    @NotNull(message = "审批通过日期不能为空")
     private Date auditDate;
 
     /**
@@ -188,32 +188,32 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 原合同编号
      */
-    @NotBlank(message = "原合同编号不能为空", groups = {  EditGroup.class })
+    @NotBlank(message = "原合同编号不能为空")
     private String contractOldnum;
 
     /**
      * 预计本年完成收入（元）
      */
-    @NotNull(message = "预计本年完成收入（元）不能为空", groups = {  EditGroup.class })
+    @NotNull(message = "预计本年完成收入（元）不能为空")
     private BigDecimal yearIncome;
 
     /**
      * 服务性金额（元）
      */
-    @NotNull(message = "服务性金额（元）不能为空", groups = { EditGroup.class })
+    @NotNull(message = "服务性金额（元）不能为空")
     private BigDecimal servAmount;
 
     /**
      * 含增值税合同额(元)
      */
-     @NotNull(message = "含增值税合同额(元)不能为空", groups = {  EditGroup.class })
+     @NotNull(message = "含增值税合同额(元)不能为空")
      private BigDecimal contractMoney;
 
      /**
       * 合同签约日期
       */
      @JsonFormat(pattern = "yyyy-MM-dd")
-     @NotNull(message = "合同签约日期不能为空", groups = {  EditGroup.class })
+     @NotNull(message = "合同签约日期不能为空")
      private Date contractSigndate;
      /**
       * 合同状态：
@@ -238,7 +238,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      /**
       * 合同分类一级代码
       */
-     @NotNull(message = "合同分类一级代码不能为空", groups = { EditGroup.class })
+     @NotNull(message = "合同分类一级代码不能为空")
      private Long contractCateL1Code;
      /**
       * 合同分类一级名称
@@ -249,7 +249,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      /**
       * 合同分类二级代码
       */
-     @NotNull(message = "合同分类二级代码不能为空", groups = { EditGroup.class })
+     @NotNull(message = "合同分类二级代码不能为空")
      private Long contractCateL2Code;
 
      /**
@@ -261,7 +261,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      /**
       * 合同分类三级代码
       */
-     @NotNull(message = "合同分类三级代码不能为空", groups = { EditGroup.class })
+     @NotNull(message = "合同分类三级代码不能为空")
      private Long contractCateL3Code;
 
      /**
@@ -273,7 +273,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
      /**
       * 备注
       */
-     @NotBlank(message = "备注不能为空", groups = {  EditGroup.class })
+     @NotBlank(message = "备注不能为空")
      private String remark;
 
      /**

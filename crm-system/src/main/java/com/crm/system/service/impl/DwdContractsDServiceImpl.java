@@ -38,9 +38,11 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      */
     @DS("dameng")  // 使用达梦数据库
     @Override
-    public DwdContractsDDoVo selectDwdContractsDById(String arrairNo) {
-        // 使用流水号作为查询条件，而不是按主键查询
-        DwdContractsDDo dwdContractsDDo = baseMapper.selectByArrairNo(arrairNo);
+    public DwdContractsDDoVo selectDwdContractsDById(String contractNoLocal) {
+        // 使用合同编号作为查询条件，而不是按主键查询
+        // 注意：这里使用contractNoLocal作为参数值去查询ARRAIR_NO字段，因为根据业务需求，
+        // 传入的合同编号实际上应该对应数据库中的ARRAIR_NO字段
+        DwdContractsDDo dwdContractsDDo = baseMapper.selectByArrairNo(contractNoLocal);
         return BeanUtil.toBean(dwdContractsDDo, DwdContractsDDoVo.class);
     }
 
