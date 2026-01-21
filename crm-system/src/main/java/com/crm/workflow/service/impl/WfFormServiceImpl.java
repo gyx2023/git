@@ -80,6 +80,8 @@ public class WfFormServiceImpl implements IWfFormService {
         wfForm.setFormName(bo.getFormName());
         wfForm.setContent(bo.getContent());
         wfForm.setRemark(bo.getRemark());
+        wfForm.setFormUrl(bo.getFormUrl());
+        wfForm.setFormType(bo.getFormType());
         return baseMapper.insert(wfForm);
     }
 
