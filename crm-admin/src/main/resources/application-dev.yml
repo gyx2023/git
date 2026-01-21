@@ -46,10 +46,10 @@ spring:
         #  主库数据源
         master:
           type: ${spring.datasource.type}
-          driverClassName: com.mysql.cj.jdbc.Driver
+          driverClassName: com.oceanbase.jdbc.Driver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://192.168.124.160:2883/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
+          url: jdbc:oceanbase:loadbalance://192.168.124.160:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
           username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
           password: PPpomns12123##
         # 从库数据源
@@ -169,3 +169,21 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+--- # p6spy
+# p6spy 配置
+spy:
+  appender:
+    class: com.p6spy.engine.spy.appender.Slf4JLogger
+  driverlist: com.mysql.cj.jdbc.Driver
+  logMessageFormat: com.p6spy.engine.spy.appender.CustomLineFormat
+  customLogMessageFormat: "%(currentTime) | %(executionTime)ms | %(category) | connection%(connectionId) | %(sqlSingleLine)"
+  # 开启 SQL 执行时间统计
+  executionThreshold: 1000  # 记录执行时间超过1秒的SQL
+  # 记录结果集信息
+  includeParameter: true
+  # 记录异常信息
+  logException: true
+
+--- # flowable
+flowable:
+  database-schema: zj_sj_test
