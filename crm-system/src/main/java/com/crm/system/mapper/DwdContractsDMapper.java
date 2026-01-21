@@ -11,13 +11,13 @@ import java.util.List;
 
 /**
  * DWD_CONTRACTS_D 表 Mapper 接口
- * 使用@DS("dameng")注解确保查询达梦数据库
+ * 使用@DS("slave_2")注解确保查询达梦数据库
  *
  * @author 万超凡
  * @date 2026-01-19
  */
 @Mapper
-@DS("dameng")  // 指定使用达梦数据库
+@DS("slave_2")  // 指定使用达梦数据库
 public interface DwdContractsDMapper extends BaseMapperPlus<DwdContractsDMapper, DwdContractsDDo, DwdContractsDDoVo> {
 
     /**

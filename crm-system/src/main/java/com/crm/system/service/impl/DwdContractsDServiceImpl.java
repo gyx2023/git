@@ -36,7 +36,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      * @param contractNoLocal 合同编号
      * @return DWD_CONTRACTS_D
      */
-    @DS("dameng")  // 使用达梦数据库
+    @DS("slave_2")  // 使用达梦数据库
     @Override
     public DwdContractsDDoVo selectDwdContractsDById(String contractNoLocal) {
         // 使用合同编号作为查询条件，而不是按主键查询
@@ -52,7 +52,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      * @param dwdContractsDBo DWD_CONTRACTS_D
      * @return DWD_CONTRACTS_D集合
      */
-    @DS("dameng")  // 使用达梦数据库
+    @DS("slave_2")  // 使用达梦数据库
     @Override
     public List<DwdContractsDDoVo> selectDwdContractsDList(DwdContractsDBo dwdContractsDBo) {
         LambdaQueryWrapper<DwdContractsDDo> lqw = buildQueryWrapper(dwdContractsDBo);
@@ -66,7 +66,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      * @param pageQuery 分页查询对象
      * @return DWD_CONTRACTS_D集合
      */
-    @DS("dameng")  // 使用达梦数据库
+    @DS("slave_2")  // 使用达梦数据库
     @Override
     public TableDataInfo<DwdContractsDDoVo> selectDwdContractsDPageList(DwdContractsDBo dwdContractsDBo, PageQuery pageQuery) {
         LambdaQueryWrapper<DwdContractsDDo> lqw = buildQueryWrapper(dwdContractsDBo);
@@ -102,7 +102,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      * @param dwdContractsDBo DWD_CONTRACTS_D
      * @return 结果
      */
-    @DS("dameng")  // 使用达梦数据库
+    @DS("slave_2")  // 使用达梦数据库
     @Override
     public Boolean insertByBo(DwdContractsDBo dwdContractsDBo) {
         // 达梦数据库通常只读，不允许新增
@@ -115,7 +115,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      * @param dwdContractsDBo DWD_CONTRACTS_D
      * @return 结果
      */
-    @DS("dameng")  // 使用达梦数据库
+    @DS("slave_2")  // 使用达梦数据库
     @Override
     public Boolean updateByBo(DwdContractsDBo dwdContractsDBo) {
         // 达梦数据库通常只读，不允许修改
@@ -129,7 +129,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      * @param isValid 是否验证
      * @return 结果
      */
-    @DS("dameng")  // 使用达梦数据库
+    @DS("slave_2")  // 使用达梦数据库
     @Override
     public Boolean deleteWithValidByIds(List<String> ids, Boolean isValid) {
         // 达梦数据库通常只读，不允许删除

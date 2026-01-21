@@ -8,7 +8,7 @@ import java.util.Date;
 
 /**
  * DWD_CONTRACTS_D 表实体类 - 用于查询达梦数据库
- * 注意：由于该表在达梦数据库中，使用@DS("dameng")注解切换数据源
+ * 注意：由于该表在达梦数据库中，使用@DS("slave_2")注解切换数据源
  *
  * @author 万超凡
  * @date 2026-01-19

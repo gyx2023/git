@@ -27,10 +27,10 @@ import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
-import java.util.Arrays;
+import com.crm.system.domain.ZqztGrpContractInfoLog;
+import com.crm.system.mapper.ZqztGrpContractInfoLogMapper;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -53,7 +53,12 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
      */
     @Override
     public ZqztGrpContractInfoVo queryById(String contractId){
-        ZqztGrpContractInfoVo vo = baseMapper.selectVoById(contractId);
+        // 构建查询条件，排除状态为7（作废）的合同
+        LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(ZqztGrpContractInfo::getContractId, contractId);
+        lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除作废的合同
+        
+        ZqztGrpContractInfoVo vo = baseMapper.selectVoOne(lqw);
 
         // 对合同名称进行脱敏
         if (vo != null) {
@@ -129,7 +134,12 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         lqw.eq(bo.getServAmount() != null, ZqztGrpContractInfo::getServAmount, bo.getServAmount());
         lqw.eq(bo.getContractMoney() != null, ZqztGrpContractInfo::getContractMoney, bo.getContractMoney());
         lqw.eq(bo.getContractSigndate() != null, ZqztGrpContractInfo::getContractSigndate, bo.getContractSigndate());
-        lqw.eq(StringUtils.isNotBlank(bo.getContractStatus()), ZqztGrpContractInfo::getContractStatus, bo.getContractStatus());
+        // 如果用户没有特别指定合同状态为7（作废），则排除作废的合同
+        if (StringUtils.isBlank(bo.getContractStatus()) || !"7".equals(bo.getContractStatus())) {
+            lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除状态为7（作废）的合同
+        } else {
+            lqw.eq(ZqztGrpContractInfo::getContractStatus, bo.getContractStatus());
+        }
         lqw.eq(bo.getContractCateL1Code() != null, ZqztGrpContractInfo::getContractCateL1Code, bo.getContractCateL1Code());
         lqw.like(StringUtils.isNotBlank(bo.getContractCateL1Name()), ZqztGrpContractInfo::getContractCateL1Name, bo.getContractCateL1Name());
         lqw.eq(bo.getContractCateL2Code() != null, ZqztGrpContractInfo::getContractCateL2Code, bo.getContractCateL2Code());
@@ -260,14 +270,34 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     }
 
     /**
-     * 批量删除集团合同信息
+     * 批量删除集团合同信息（逻辑删除，将合同状态改为7作废）
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
-        if(isValid){
-            //TODO 做一些业务上的校验,判断是否需要校验
+        // 获取当前登录用户
+        String currentUser = LoginHelper.getLoginUser().getUsername();
+
+        for (String contractId : ids) {
+            // 查询现有记录并备份到日志表
+            ZqztGrpContractInfo existingRecord = baseMapper.selectById(contractId);
+            if (existingRecord != null) {
+                // 备份到日志表
+                ZqztGrpContractInfoLog logRecord = BeanUtil.toBean(existingRecord, ZqztGrpContractInfoLog.class);
+                SpringUtils.getBean(ZqztGrpContractInfoLogMapper.class).insert(logRecord);
+            }
+
+            // 更新合同状态为7（作废）
+            ZqztGrpContractInfo updateRecord = new ZqztGrpContractInfo();
+            updateRecord.setContractId(contractId);
+            updateRecord.setContractStatus("7"); // 7代表作废
+            updateRecord.setUpdateBy(currentUser); // 记录操作人
+            updateRecord.setUpdateTime(new Date()); // 记录操作时间
+
+            // 执行更新操作
+            baseMapper.updateById(updateRecord);
         }
-        return baseMapper.deleteBatchIds(ids) > 0;
+
+        return true; // 返回成功
     }
 
     /**
@@ -298,7 +328,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
      */
     @Override
     public List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo() {
-        return baseMapper.selectList(null);
+        // 排除状态为7（作废）的合同
+        LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
+        lqw.ne(ZqztGrpContractInfo::getContractStatus, "7");
+        return baseMapper.selectList(lqw);
     }
 
     /**
