@@ -13,8 +13,7 @@ import java.util.List;
 /**
  * 集团合同扩展信息表导入定时任务<br>
  * 从经分侧获取全量数据并导入到zqzt_grp_contract_other_info表<br>
- * 入库逻辑：根据user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录，<br>
- * 如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）<br>
+ * 入库逻辑：根据user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录，如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）<br>
  *
  * @author 万超凡
  */

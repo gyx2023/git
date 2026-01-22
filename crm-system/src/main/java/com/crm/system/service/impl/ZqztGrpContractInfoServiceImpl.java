@@ -383,7 +383,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
-                   .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE")
+                   .ne(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE") // 排除旧的固定标签，查询实际业务类型标签
                    .eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
 
         List<ZqztGrpContractOtherInfo> list = SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
@@ -392,10 +392,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             return null;
         }
 
-        // 将所有业务类型值用逗号连接
+        // 将所有业务类型标签用逗号连接
         return list.stream()
-                  .map(ZqztGrpContractOtherInfo::getInfoVal)
-                  .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
+                  .map(ZqztGrpContractOtherInfo::getInfoTag) // 从infoTag获取业务类型
+                  .filter(infoTag -> infoTag != null && !infoTag.trim().isEmpty())
                   .collect(Collectors.joining(","));
     }
 
