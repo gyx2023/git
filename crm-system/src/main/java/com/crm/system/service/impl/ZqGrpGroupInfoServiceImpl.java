@@ -60,7 +60,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private ISysUsersService sysUsersService;
 
 
-    private static final String DEPT_LEVEL="省本部";
     /**
      * 查询政企集团客户信息
      */
@@ -116,8 +115,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         LoginUser loginUser = LoginHelper.getLoginUser();
         SysUsersVo sysUsersVo = sysUsersService.queryById(loginUser.getUserId());
-        String deptLevel =  repSysPersonNewDMapper.getDeptLevel(sysUsersVo.getOaAccount());
-        if(ObjectUtil.equals(deptLevel,DEPT_LEVEL)){
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(sysUsersVo.getOaAccount());
+        if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
         // 处理时间范围参数
