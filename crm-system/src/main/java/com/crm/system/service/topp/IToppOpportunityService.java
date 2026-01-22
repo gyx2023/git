@@ -62,7 +62,7 @@ public interface IToppOpportunityService {
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
     List<SignOppoFileExportDTO> selectToppOpportunity();
-    List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime,LocalDateTime endTime);
+    List<ToppOpportunityVo> queryOpportunityUnbound(String startTime,String endTime);
 
     Boolean upppUnbound(Long id);
 

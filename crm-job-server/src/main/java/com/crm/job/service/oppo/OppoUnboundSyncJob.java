@@ -79,9 +79,10 @@ public class OppoUnboundSyncJob {
         try {
             // 计算查询时间范围
             LocalDate targetDate = LocalDate.now().minusDays(Integer.parseInt(param));
+            String startTimeStr = DateUtil.format(targetDate.atStartOfDay(), "yyyy-MM-dd");
             // 构造指定日期的时间范围：00:00:00 到 23:59:59
-            LocalDateTime startTime = LocalDateTime.of(targetDate, LocalTime.MIN);
-            LocalDateTime endTime = LocalDateTime.of(targetDate, LocalTime.MAX);
+            String startTime = startTimeStr + " 00:00:00";
+            String endTime = startTimeStr + " 23:59:59";
 
             log.info("查询时间范围：{} 到 {}", startTime, endTime);
 

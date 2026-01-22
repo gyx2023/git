@@ -253,7 +253,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
     @Override
-    public List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime, LocalDateTime endTime) {
+    public List<ToppOpportunityVo> queryOpportunityUnbound(String startTime, String endTime) {
         LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<ToppOpportunityDo>();
         lqw.ge(ToppOpportunityDo::getSignTime, startTime);
         lqw.le(ToppOpportunityDo::getSignTime, endTime);
