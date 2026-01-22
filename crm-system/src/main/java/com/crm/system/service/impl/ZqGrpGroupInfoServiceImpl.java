@@ -208,7 +208,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             // 地市翻译，将数字ID转换为中文名称
             if (StringUtils.isNotBlank(vo.getAreaId())) {
                 try {
-                    SysArea area = sysAreaMapper.selectById(Long.valueOf(vo.getAreaId()));
+                    SysAreaVo area = sysAreaService.queryById(Long.valueOf(vo.getAreaId()));
                     if (area != null) {
                         vo.setAreaId(area.getName());
                     }
@@ -220,7 +220,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             // 县分翻译，将数字ID转换为中文名称
             if (StringUtils.isNotBlank(vo.getCountyId())) {
                 try {
-                    SysArea county = sysAreaMapper.selectById(Long.valueOf(vo.getCountyId()));
+                    SysAreaVo county = sysAreaService.queryById(Long.valueOf(vo.getCountyId()));
                     if (county != null) {
                         vo.setCountyId(county.getName());
                     }
