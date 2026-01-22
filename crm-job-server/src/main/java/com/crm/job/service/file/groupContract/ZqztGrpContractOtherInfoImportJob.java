@@ -27,9 +27,9 @@ public class ZqztGrpContractOtherInfoImportJob {
 
     /**
      * 集团合同扩展信息导入任务<br>
-     * 在xxl-job调度中心配置JobHandler为：zqztGrpContractOtherInfoImportJobHandler
+     * 在xxl-job调度中心配置Job为：zqztGrpContractOtherInfoImportJob
      */
-    @XxlJob("zqztGrpContractOtherInfoImportJobHandler")
+    @XxlJob("zqztGrpContractOtherInfoImportJob")
     public void execute() {
         log.info("开始执行集团合同扩展信息导入任务");
         XxlJobHelper.log("开始执行集团合同扩展信息导入任务");
