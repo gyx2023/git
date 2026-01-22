@@ -184,19 +184,38 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode, boolean needDesensitize) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
-
-        // 字典翻译
-        translateDictLabels(list);
-
-        // 根据needDesensitize参数决定是否对查询结果进行脱敏处理
-        if (needDesensitize) {
-            list = list.stream()
-                    .map(this::desensitizeVo)
-                    .collect(Collectors.toList());
+        
+        // 获取总数量
+        long totalCount = baseMapper.selectCount(lqw);
+        
+        if (totalCount == 0) {
+            return new ArrayList<>();
         }
-
-        return list;
+        
+        // 分批处理，每批5000条
+        int batchSize = 5000;
+        List<ZqGrpGroupInfoVo> allResults = new ArrayList<>();
+        
+        for (int offset = 0; offset < totalCount; offset += batchSize) {
+            // 使用分页查询获取当前批次的数据
+            Page<ZqGrpGroupInfo> page = new Page<>((offset / batchSize) + 1, batchSize, false);
+            Page<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
+            List<ZqGrpGroupInfoVo> batchList = resultPage.getRecords();
+            
+            // 对当前批次数据进行字典翻译
+            translateDictLabels(batchList);
+            
+            // 根据needDesensitize参数决定是否对当前批次数据进行脱敏处理
+            if (needDesensitize) {
+                batchList = batchList.stream()
+                        .map(this::desensitizeVo)
+                        .collect(Collectors.toList());
+            }
+            
+            allResults.addAll(batchList);
+        }
+        
+        return allResults;
     }
 
     /**
@@ -204,67 +223,154 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * @param list 集团客户信息列表
      */
     private void translateDictLabels(List<ZqGrpGroupInfoVo> list) {
-        list.forEach(vo -> {
-            // 地市翻译，将数字ID转换为中文名称
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        
+        // 批量处理字典翻译，提高性能
+        Set<Long> areaIds = new HashSet<>();
+        Set<Long> countyIds = new HashSet<>();
+        Set<String> industryMajorIds = new HashSet<>();
+        Set<String> industrySubIds = new HashSet<>();
+        Set<String> industryDetailIds = new HashSet<>();
+        
+        // 收集需要翻译的ID
+        for (ZqGrpGroupInfoVo vo : list) {
             if (StringUtils.isNotBlank(vo.getAreaId())) {
                 try {
-                    SysAreaVo area = sysAreaService.queryById(Long.valueOf(vo.getAreaId()));
-                    if (area != null) {
-                        vo.setAreaId(area.getName());
-                    }
-                } catch (Exception e) {
-                    log.warn("地市翻译失败: {}", e.getMessage());
+                    areaIds.add(Long.valueOf(vo.getAreaId()));
+                } catch (NumberFormatException e) {
+                    log.warn("地市ID格式错误: {}", vo.getAreaId());
                 }
             }
-
-            // 县分翻译，将数字ID转换为中文名称
+            
             if (StringUtils.isNotBlank(vo.getCountyId())) {
                 try {
-                    SysAreaVo county = sysAreaService.queryById(Long.valueOf(vo.getCountyId()));
-                    if (county != null) {
-                        vo.setCountyId(county.getName());
-                    }
-                } catch (Exception e) {
-                    log.warn("县分翻译失败: {}", e.getMessage());
+                    countyIds.add(Long.valueOf(vo.getCountyId()));
+                } catch (NumberFormatException e) {
+                    log.warn("县分ID格式错误: {}", vo.getCountyId());
                 }
             }
-
-            // 行业大类翻译，将编码转换为中文名称
+            
             if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
-                try {
-                    SysCategoryVo category = sysCategoryService.queryById(vo.getIndustryMajorKind());
-                    if (category != null) {
-                        vo.setIndustryMajorKind(category.getName());
-                    }
-                } catch (Exception e) {
-                    log.warn("行业大类翻译失败: {}", e.getMessage());
-                }
+                industryMajorIds.add(vo.getIndustryMajorKind());
             }
-
-            // 行业亚类翻译，将编码转换为中文名称
+            
             if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
-                try {
-                    SysCategoryVo category = sysCategoryService.queryById(vo.getIndustrySubKind());
-                    if (category != null) {
-                        vo.setIndustrySubKind(category.getName());
-                    }
-                } catch (Exception e) {
-                    log.warn("行业亚类翻译失败: {}", e.getMessage());
-                }
+                industrySubIds.add(vo.getIndustrySubKind());
             }
-
-            // 行业细类翻译，将编码转换为中文名称
+            
             if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
+                industryDetailIds.add(vo.getIndustryDetailKind());
+            }
+        }
+        
+        // 批量查询并建立映射关系
+        Map<Long, String> areaMap = new HashMap<>();
+        for (Long areaId : areaIds) {
+            try {
+                SysAreaVo area = sysAreaService.queryById(areaId);
+                if (area != null) {
+                    areaMap.put(areaId, area.getName());
+                }
+            } catch (Exception e) {
+                log.warn("地市翻译失败: {}", e.getMessage());
+            }
+        }
+        
+        Map<Long, String> countyMap = new HashMap<>();
+        for (Long countyId : countyIds) {
+            try {
+                SysAreaVo county = sysAreaService.queryById(countyId);
+                if (county != null) {
+                    countyMap.put(countyId, county.getName());
+                }
+            } catch (Exception e) {
+                log.warn("县分翻译失败: {}", e.getMessage());
+            }
+        }
+        
+        Map<String, String> industryMajorMap = new HashMap<>();
+        for (String id : industryMajorIds) {
+            try {
+                SysCategoryVo category = sysCategoryService.queryById(id);
+                if (category != null) {
+                    industryMajorMap.put(id, category.getName());
+                }
+            } catch (Exception e) {
+                log.warn("行业大类翻译失败: {}", e.getMessage());
+            }
+        }
+        
+        Map<String, String> industrySubMap = new HashMap<>();
+        for (String id : industrySubIds) {
+            try {
+                SysCategoryVo category = sysCategoryService.queryById(id);
+                if (category != null) {
+                    industrySubMap.put(id, category.getName());
+                }
+            } catch (Exception e) {
+                log.warn("行业亚类翻译失败: {}", e.getMessage());
+            }
+        }
+        
+        Map<String, String> industryDetailMap = new HashMap<>();
+        for (String id : industryDetailIds) {
+            try {
+                SysCategoryVo category = sysCategoryService.queryById(id);
+                if (category != null) {
+                    industryDetailMap.put(id, category.getName());
+                }
+            } catch (Exception e) {
+                log.warn("行业细类翻译失败: {}", e.getMessage());
+            }
+        }
+        
+        // 应用翻译结果
+        for (ZqGrpGroupInfoVo vo : list) {
+            if (StringUtils.isNotBlank(vo.getAreaId())) {
                 try {
-                    SysCategoryVo category = sysCategoryService.queryById(vo.getIndustryDetailKind());
-                    if (category != null) {
-                        vo.setIndustryDetailKind(category.getName());
+                    String areaName = areaMap.get(Long.valueOf(vo.getAreaId()));
+                    if (areaName != null) {
+                        vo.setAreaId(areaName);
                     }
-                } catch (Exception e) {
-                    log.warn("行业细类翻译失败: {}", e.getMessage());
+                } catch (NumberFormatException e) {
+                    log.warn("地市ID格式错误: {}", vo.getAreaId());
                 }
             }
-        });
+            
+            if (StringUtils.isNotBlank(vo.getCountyId())) {
+                try {
+                    String countyName = countyMap.get(Long.valueOf(vo.getCountyId()));
+                    if (countyName != null) {
+                        vo.setCountyId(countyName);
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("县分ID格式错误: {}", vo.getCountyId());
+                }
+            }
+            
+            if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
+                String industryName = industryMajorMap.get(vo.getIndustryMajorKind());
+                if (industryName != null) {
+                    vo.setIndustryMajorKind(industryName);
+                }
+            }
+            
+            if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
+                String industryName = industrySubMap.get(vo.getIndustrySubKind());
+                if (industryName != null) {
+                    vo.setIndustrySubKind(industryName);
+                }
+            }
+            
+            if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
+                String industryName = industryDetailMap.get(vo.getIndustryDetailKind());
+                if (industryName != null) {
+                    vo.setIndustryDetailKind(industryName);
+                }
+            }
+        }
     }
 
     /**
