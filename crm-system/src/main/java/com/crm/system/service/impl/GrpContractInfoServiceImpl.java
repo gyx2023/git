@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.GrpContractInfoBo;
@@ -34,6 +35,7 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     /**
      * 查询Oracle库合同信息
      */
+    @DS("oracle")  // 使用Oracle数据库
     @Override
     public GrpContractInfoVo queryById(String contractId) {
         return baseMapper.selectVoById(contractId);
@@ -42,6 +44,7 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     /**
      * 查询Oracle库合同信息列表
      */
+    @DS("oracle")  // 使用Oracle数据库
     @Override
     public TableDataInfo<GrpContractInfoVo> queryPageList(GrpContractInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<GrpContractInfo> lqw = buildQueryWrapper(bo);
@@ -52,6 +55,7 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     /**
      * 查询Oracle库合同信息列表
      */
+    @DS("oracle")  // 使用Oracle数据库
     @Override
     public List<GrpContractInfoVo> queryList(GrpContractInfoBo bo) {
         LambdaQueryWrapper<GrpContractInfo> lqw = buildQueryWrapper(bo);
@@ -116,6 +120,7 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     /**
      * 新增Oracle库合同信息
      */
+    @DS("oracle")  // 使用Oracle数据库
     @Override
     public Boolean insertByBo(GrpContractInfoBo bo) {
         GrpContractInfo add = BeanUtil.toBean(bo, GrpContractInfo.class);
@@ -130,6 +135,7 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     /**
      * 修改Oracle库合同信息
      */
+    @DS("oracle")  // 使用Oracle数据库
     @Override
     public Boolean updateByBo(GrpContractInfoBo bo) {
         GrpContractInfo update = BeanUtil.toBean(bo, GrpContractInfo.class);
@@ -147,46 +153,12 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     /**
      * 批量删除Oracle库合同信息
      */
+    @DS("oracle")  // 使用Oracle数据库
     @Override
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
-    }
-
-    @Override
-    public GrpContractInfo selectByContractId(String contractId) {
-        return baseMapper.selectByContractId(contractId);
-    }
-
-    @Override
-    public List<GrpContractInfo> selectAll() {
-        return baseMapper.selectAll();
-    }
-
-    @Override
-    public List<GrpContractInfo> selectByGrpId(Long grpId) {
-        return baseMapper.selectByGrpId(grpId);
-    }
-
-    @Override
-    public GrpContractInfo selectByErpContractId(String erpContractId) {
-        return baseMapper.selectByErpContractId(erpContractId);
-    }
-
-    @Override
-    public List<GrpContractInfo> selectByContractName(String contractName) {
-        return baseMapper.selectByContractName(contractName);
-    }
-
-    @Override
-    public List<GrpContractInfo> selectByContractType(String contractType) {
-        return baseMapper.selectByContractType(contractType);
-    }
-
-    @Override
-    public List<GrpContractInfo> selectByContractStatus(String contractStatus) {
-        return baseMapper.selectByContractStatus(contractStatus);
     }
 }

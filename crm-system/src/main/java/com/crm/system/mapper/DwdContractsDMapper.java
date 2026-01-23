@@ -27,43 +27,4 @@ public interface DwdContractsDMapper extends BaseMapperPlus<DwdContractsDMapper,
      * @return 合同数据
      */
     DwdContractsDDo selectByArrairNo(@Param("arrairNo") String arrairNo);
-
-    /**
-     * 查询所有合同数据
-     *
-     * @return 合同数据列表
-     */
-    List<DwdContractsDDo> selectAll();
-
-    /**
-     * 根据合同名称查询
-     *
-     * @param contractName 合同名称
-     * @return 合同数据
-     */
-    DwdContractsDDo selectByContractName(String contractName);
-
-    /**
-     * 根据客户编码模糊查询
-     *
-     * @param customerCode 客户编码
-     * @return 合同数据列表
-     */
-    List<DwdContractsDDo> selectByCustomerCode(String customerCode);
-
-    /**
-     * 根据地区名称查询
-     *
-     * @param areaName 地区名称
-     * @return 合同数据列表
-     */
-    List<DwdContractsDDo> selectByAreaName(String areaName);
-
-    /**
-     * 根据合同类型查询
-     *
-     * @param contractType 合同类型
-     * @return 合同数据列表
-     */
-    List<DwdContractsDDo> selectByContractType(String contractType);
 }

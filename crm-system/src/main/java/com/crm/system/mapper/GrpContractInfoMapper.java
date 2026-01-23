@@ -51,27 +51,4 @@ public interface GrpContractInfoMapper extends BaseMapperPlus<GrpContractInfoMap
      */
     GrpContractInfo selectByErpContractId(@Param("erpContractId") String erpContractId);
 
-    /**
-     * 根据合同名称查询
-     *
-     * @param contractName 合同名称
-     * @return 合同数据列表
-     */
-    List<GrpContractInfo> selectByContractName(@Param("contractName") String contractName);
-
-    /**
-     * 根据合同类型查询
-     *
-     * @param contractType 合同类型
-     * @return 合同数据列表
-     */
-    List<GrpContractInfo> selectByContractType(@Param("contractType") String contractType);
-
-    /**
-     * 根据合同状态查询
-     *
-     * @param contractStatus 合同状态
-     * @return 合同数据列表
-     */
-    List<GrpContractInfo> selectByContractStatus(@Param("contractStatus") String contractStatus);
 }
