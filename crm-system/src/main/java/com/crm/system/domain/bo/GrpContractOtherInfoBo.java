@@ -21,12 +21,6 @@ import javax.validation.constraints.NotNull;
 public class GrpContractOtherInfoBo extends BaseEntity {
 
     /**
-     * 序号，自增
-     */
-    @NotNull(message = "序号，自增不能为空", groups = { EditGroup.class })
-    private Long id;
-
-    /**
      * 集团合同序号，对应GRP_CONTRACT_INFO.CONTRACT_ID
      */
     @NotBlank(message = "集团合同序号，对应GRP_CONTRACT_INFO.CONTRACT_ID不能为空", groups = { AddGroup.class, EditGroup.class })
@@ -49,11 +43,5 @@ public class GrpContractOtherInfoBo extends BaseEntity {
      */
     @NotBlank(message = "填写服务号码不能为空", groups = { AddGroup.class, EditGroup.class })
     private String infoVal2;
-
-    /**
-     * 是否有效：1有效，0无效，99迁移失效
-     */
-    @NotBlank(message = "是否有效：1有效，0无效，99迁移失效不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String isValid;
 }
 

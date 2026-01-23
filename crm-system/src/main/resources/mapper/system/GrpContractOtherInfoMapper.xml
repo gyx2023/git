@@ -3,12 +3,10 @@
 <mapper namespace="com.crm.system.mapper.GrpContractOtherInfoMapper">
 
     <resultMap type="com.crm.system.domain.GrpContractOtherInfo" id="GrpContractOtherInfoResult">
-        <result property="id" column="id"/>
         <result property="contractId" column="contract_id"/>
         <result property="infoTag" column="info_tag"/>
         <result property="infoVal" column="info_val"/>
         <result property="infoVal2" column="info_val2"/>
-        <result property="isValid" column="is_valid"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
@@ -38,11 +36,5 @@
     <select id="selectByInfoTag" parameterType="string" resultMap="GrpContractOtherInfoResult">
         <include refid="selectGrpContractOtherInfoVo"/>
         where info_tag = #{infoTag}
-    </select>
-
-    <!-- 根据是否有效查询 -->
-    <select id="selectByIsValid" parameterType="string" resultMap="GrpContractOtherInfoResult">
-        <include refid="selectGrpContractOtherInfoVo"/>
-        where is_valid = #{isValid}
     </select>
 </mapper>

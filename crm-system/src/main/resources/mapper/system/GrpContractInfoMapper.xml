@@ -5,8 +5,8 @@
     <resultMap type="com.crm.system.domain.GrpContractInfo" id="GrpContractInfoResult">
         <result property="contractId" column="contract_id"/>
         <result property="grpId" column="grp_id"/>
-        <result property="erpContractId" column="erp_contract_id"/>
-        <result property="inuseContractId" column="inuse_contract_id"/>
+        <result property="string2" column="string2"/>
+        <result property="string15" column="string15"/>
         <result property="contractType" column="contract_type"/>
         <result property="contractName" column="contract_name"/>
         <result property="contractEffdate" column="contract_effdate"/>
@@ -42,11 +42,11 @@
 
     <!-- 通用查询结果列 -->
     <sql id="selectGrpContractInfoVo">
-        select contract_id, grp_id, erp_contract_id, inuse_contract_id, contract_type, contract_name, contract_effdate, 
-               contract_expdate, paytype, contract_note, creator, files, contract_property, is_bidding, contract_main, 
-               contract_party, contract_dept, contract_man, contract_money2, is_fix, audit_date, contract_phone, 
-               contract_oldnum, year_income, serv_amount, contract_money, contract_signdate, contract_status, 
-               contract_cate_l1_code, contract_cate_l1_name, contract_cate_l2_code, contract_cate_l2_name, 
+        select contract_id, grp_id, erp_contract_id, inuse_contract_id, contract_type, contract_name, contract_effdate,
+               contract_expdate, paytype, contract_note, creator, files, contract_property, is_bidding, contract_main,
+               contract_party, contract_dept, contract_man, contract_money2, is_fix, audit_date, contract_phone,
+               contract_oldnum, year_income, serv_amount, contract_money, contract_signdate, contract_status,
+               contract_cate_l1_code, contract_cate_l1_name, contract_cate_l2_code, contract_cate_l2_name,
                contract_cate_l3_code, contract_cate_l3_name, remark
         from zqzt_grp_contract_info
     </sql>
@@ -66,29 +66,5 @@
     <select id="selectByGrpId" parameterType="long" resultMap="GrpContractInfoResult">
         <include refid="selectGrpContractInfoVo"/>
         where grp_id = #{grpId}
-    </select>
-
-    <!-- 根据合同ERP编码查询 -->
-    <select id="selectByErpContractId" parameterType="string" resultMap="GrpContractInfoResult">
-        <include refid="selectGrpContractInfoVo"/>
-        where erp_contract_id = #{erpContractId}
-    </select>
-
-    <!-- 根据合同名称查询 -->
-    <select id="selectByContractName" parameterType="string" resultMap="GrpContractInfoResult">
-        <include refid="selectGrpContractInfoVo"/>
-        where contract_name like CONCAT('%', #{contractName}, '%')
-    </select>
-
-    <!-- 根据合同类型查询 -->
-    <select id="selectByContractType" parameterType="string" resultMap="GrpContractInfoResult">
-        <include refid="selectGrpContractInfoVo"/>
-        where contract_type = #{contractType}
-    </select>
-
-    <!-- 根据合同状态查询 -->
-    <select id="selectByContractStatus" parameterType="string" resultMap="GrpContractInfoResult">
-        <include refid="selectGrpContractInfoVo"/>
-        where contract_status = #{contractStatus}
     </select>
 </mapper>

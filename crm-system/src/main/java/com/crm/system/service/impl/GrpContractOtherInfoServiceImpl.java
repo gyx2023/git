@@ -65,12 +65,10 @@ public class GrpContractOtherInfoServiceImpl implements IGrpContractOtherInfoSer
     private LambdaQueryWrapper<GrpContractOtherInfo> buildQueryWrapper(GrpContractOtherInfoBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<GrpContractOtherInfo> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getId() != null, GrpContractOtherInfo::getId, bo.getId());
         lqw.eq(StringUtils.isNotBlank(bo.getContractId()), GrpContractOtherInfo::getContractId, bo.getContractId());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoTag()), GrpContractOtherInfo::getInfoTag, bo.getInfoTag());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoVal()), GrpContractOtherInfo::getInfoVal, bo.getInfoVal());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoVal2()), GrpContractOtherInfo::getInfoVal2, bo.getInfoVal2());
-        lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), GrpContractOtherInfo::getIsValid, bo.getIsValid());
 
         return lqw;
     }
@@ -85,7 +83,7 @@ public class GrpContractOtherInfoServiceImpl implements IGrpContractOtherInfoSer
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
-            bo.setId(add.getId());
+
         }
         return flag;
     }

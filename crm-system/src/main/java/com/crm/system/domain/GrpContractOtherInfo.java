@@ -7,6 +7,8 @@ import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.Date;
+
 /**
  * 集团合同扩展信息对象 grp_contract_other_info
  *
@@ -20,11 +22,6 @@ public class GrpContractOtherInfo extends BaseEntity {
 
     private static final long serialVersionUID=1L;
 
-    /**
-     * 序号，自增
-     */
-    @TableId(value = "id")
-    private Long id;
     /**
      * 集团合同序号，对应GRP_CONTRACT_INFO.CONTRACT_ID
      */
@@ -41,10 +38,6 @@ public class GrpContractOtherInfo extends BaseEntity {
      * 填写服务号码
      */
     private String infoVal2;
-    /**
-     * 是否有效：1有效，0无效，99迁移失效
-     */
-    private String isValid;
 
     /**
      * 数据库不查询的字段
@@ -54,6 +47,14 @@ public class GrpContractOtherInfo extends BaseEntity {
 
     @TableField(exist = false)
     private String updateBy;
+
+    @TableField(exist = false)
+    private Date updateTime;
+
+    @Override
+    public void setUpdateTime(Date updateTime) {
+        // 不执行任何操作，防止自动填充
+    }
 
     @Override
     public void setCreateBy(String createBy) {

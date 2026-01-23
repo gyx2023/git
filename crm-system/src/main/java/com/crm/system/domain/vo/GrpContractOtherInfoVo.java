@@ -18,12 +18,6 @@ public class GrpContractOtherInfoVo {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 序号，自增
-     */
-    @ExcelProperty(value = "序号，自增")
-    private Long id;
-
-    /**
      * 集团合同序号，对应GRP_CONTRACT_INFO.CONTRACT_ID
      */
     @ExcelProperty(value = "集团合同序号，对应GRP_CONTRACT_INFO.CONTRACT_ID")
@@ -46,11 +40,5 @@ public class GrpContractOtherInfoVo {
      */
     @ExcelProperty(value = "填写服务号码")
     private String infoVal2;
-
-    /**
-     * 是否有效：1有效，0无效，99迁移失效
-     */
-    @ExcelProperty(value = "是否有效：1有效，0无效，99迁移失效")
-    private String isValid;
 }
 

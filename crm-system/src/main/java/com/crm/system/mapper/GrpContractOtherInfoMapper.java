@@ -50,12 +50,4 @@ public interface GrpContractOtherInfoMapper extends BaseMapperPlus<GrpContractOt
      * @return 扩展信息数据列表
      */
     List<GrpContractOtherInfo> selectByInfoTag(@Param("infoTag") String infoTag);
-
-    /**
-     * 根据是否有效查询
-     *
-     * @param isValid 是否有效
-     * @return 扩展信息数据列表
-     */
-    List<GrpContractOtherInfo> selectByIsValid(@Param("isValid") String isValid);
 }
