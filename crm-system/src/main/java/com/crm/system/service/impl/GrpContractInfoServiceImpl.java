@@ -18,7 +18,6 @@ import com.crm.system.service.IGrpContractInfoService;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
-import java.util.ArrayList;
 
 /**
  * Oracle库合同信息Service业务层处理
@@ -157,37 +156,37 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
     }
 
     @Override
-    public GrpContractInfoVo selectByContractId(String contractId) {
+    public GrpContractInfo selectByContractId(String contractId) {
         return baseMapper.selectByContractId(contractId);
     }
 
     @Override
-    public List<GrpContractInfoVo> selectAll() {
+    public List<GrpContractInfo> selectAll() {
         return baseMapper.selectAll();
     }
 
     @Override
-    public List<GrpContractInfoVo> selectByGrpId(Long grpId) {
+    public List<GrpContractInfo> selectByGrpId(Long grpId) {
         return baseMapper.selectByGrpId(grpId);
     }
 
     @Override
-    public GrpContractInfoVo selectByErpContractId(String erpContractId) {
+    public GrpContractInfo selectByErpContractId(String erpContractId) {
         return baseMapper.selectByErpContractId(erpContractId);
     }
 
     @Override
-    public List<GrpContractInfoVo> selectByContractName(String contractName) {
+    public List<GrpContractInfo> selectByContractName(String contractName) {
         return baseMapper.selectByContractName(contractName);
     }
 
     @Override
-    public List<GrpContractInfoVo> selectByContractType(String contractType) {
+    public List<GrpContractInfo> selectByContractType(String contractType) {
         return baseMapper.selectByContractType(contractType);
     }
 
     @Override
-    public List<GrpContractInfoVo> selectByContractStatus(String contractStatus) {
+    public List<GrpContractInfo> selectByContractStatus(String contractStatus) {
         return baseMapper.selectByContractStatus(contractStatus);
     }
 }

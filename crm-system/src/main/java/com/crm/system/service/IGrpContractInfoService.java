@@ -53,14 +53,14 @@ public interface IGrpContractInfoService {
      * @param contractId 合同ID
      * @return 合同数据
      */
-    GrpContractInfoVo selectByContractId(String contractId);
+    GrpContractInfo selectByContractId(String contractId);
 
     /**
      * 查询所有合同数据
      *
      * @return 合同数据列表
      */
-    List<GrpContractInfoVo> selectAll();
+    List<GrpContractInfo> selectAll();
 
     /**
      * 根据集团ID查询
@@ -68,7 +68,7 @@ public interface IGrpContractInfoService {
      * @param grpId 集团ID
      * @return 合同数据列表
      */
-    List<GrpContractInfoVo> selectByGrpId(Long grpId);
+    List<GrpContractInfo> selectByGrpId(Long grpId);
 
     /**
      * 根据合同ERP编码查询
@@ -76,7 +76,7 @@ public interface IGrpContractInfoService {
      * @param erpContractId ERP合同编码
      * @return 合同数据
      */
-    GrpContractInfoVo selectByErpContractId(String erpContractId);
+    GrpContractInfo selectByErpContractId(String erpContractId);
 
     /**
      * 根据合同名称查询
@@ -84,7 +84,7 @@ public interface IGrpContractInfoService {
      * @param contractName 合同名称
      * @return 合同数据列表
      */
-    List<GrpContractInfoVo> selectByContractName(String contractName);
+    List<GrpContractInfo> selectByContractName(String contractName);
 
     /**
      * 根据合同类型查询
@@ -92,7 +92,7 @@ public interface IGrpContractInfoService {
      * @param contractType 合同类型
      * @return 合同数据列表
      */
-    List<GrpContractInfoVo> selectByContractType(String contractType);
+    List<GrpContractInfo> selectByContractType(String contractType);
 
     /**
      * 根据合同状态查询
@@ -100,5 +100,5 @@ public interface IGrpContractInfoService {
      * @param contractStatus 合同状态
      * @return 合同数据列表
      */
-    List<GrpContractInfoVo> selectByContractStatus(String contractStatus);
+    List<GrpContractInfo> selectByContractStatus(String contractStatus);
 }
