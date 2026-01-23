@@ -854,6 +854,18 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         return result;
     }
 
+    @Override
+    public String getUserByStt() {
+        String stt = "";
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        SysUsersVo sysUsersVo = sysUsersService.queryById(loginUser.getUserId());
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(sysUsersVo.getOaAccount());
+        if(deptLevel>=1){
+            stt= GrpExpandTypeenum.PROVINCE_ZT.getCode();
+        }
+        return stt;
+    }
+
     /**
      * 添加去重值到Map中
      */

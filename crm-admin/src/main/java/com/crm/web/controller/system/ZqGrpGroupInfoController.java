@@ -333,5 +333,11 @@ public class ZqGrpGroupInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/queryStt")
+    public String queryStt() {
+        // 从zq_grp_group_info表中获取字典数据
+        String result = iZqGrpGroupInfoService.getUserByStt();
+        return result;
+    }
 
 }
