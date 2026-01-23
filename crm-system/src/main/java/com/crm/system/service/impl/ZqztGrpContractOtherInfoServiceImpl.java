@@ -272,6 +272,22 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
     /**
+     * 根据合同ID和服务号码查询集团合同扩展信息列表
+     *
+     * @param contractId 合同ID
+     * @param infoVal2 服务号码
+     * @return 集团合同扩展信息列表
+     */
+    @Override
+    public List<ZqztGrpContractOtherInfoVo> selectByContractIdAndInfoVal2(String contractId, String infoVal2) {
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
+        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        lqw.like(infoVal2 != null && !infoVal2.isEmpty(), ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 按服务号码模糊查询
+        return baseMapper.selectVoList(lqw);
+    }
+
+    /**
      * 从infoVal中提取user_id信息
      *
      * @param infoVal 信息值
