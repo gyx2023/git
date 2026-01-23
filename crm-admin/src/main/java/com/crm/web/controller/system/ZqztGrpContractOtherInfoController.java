@@ -105,4 +105,17 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
                           @PathVariable String[] contractIds) {
         return toAjax(iZqztGrpContractOtherInfoService.deleteWithValidByIds(Arrays.asList(contractIds), true));
     }
+
+    /**
+     * 根据合同ID查询集团合同扩展信息列表
+     *
+     * @param contractId 合同ID
+     * @return 集团合同扩展信息列表
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:list")
+    @GetMapping("/contract/{contractId}")
+    public R<List<ZqztGrpContractOtherInfoVo>> listByContractId(@PathVariable String contractId) {
+        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractId(contractId);
+        return R.ok(list);
+    }
 }

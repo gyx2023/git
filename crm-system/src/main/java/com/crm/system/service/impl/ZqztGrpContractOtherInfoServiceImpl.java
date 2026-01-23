@@ -258,6 +258,20 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
     /**
+     * 根据合同ID查询集团合同扩展信息列表
+     *
+     * @param contractId 合同ID
+     * @return 集团合同扩展信息列表
+     */
+    @Override
+    public List<ZqztGrpContractOtherInfoVo> selectByContractId(String contractId) {
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
+        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        return baseMapper.selectVoList(lqw);
+    }
+
+    /**
      * 从infoVal中提取user_id信息
      *
      * @param infoVal 信息值
