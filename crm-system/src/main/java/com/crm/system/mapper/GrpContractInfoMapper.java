@@ -42,13 +42,4 @@ public interface GrpContractInfoMapper extends BaseMapperPlus<GrpContractInfoMap
      * @return 合同数据列表
      */
     List<GrpContractInfo> selectByGrpId(@Param("grpId") Long grpId);
-
-    /**
-     * 根据合同ERP编码查询
-     *
-     * @param erpContractId ERP合同编码
-     * @return 合同数据
-     */
-    GrpContractInfo selectByErpContractId(@Param("erpContractId") String erpContractId);
-
 }

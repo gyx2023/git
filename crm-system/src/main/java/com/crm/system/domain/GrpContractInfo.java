@@ -35,11 +35,11 @@ public class GrpContractInfo extends BaseEntity {
     /**
      * 合同ERP编码
      */
-    private String erpContractId;
+    private String string2;
     /**
      * 合同编号，等于grp_cust_inuse.CONTRACT_ID
      */
-    private String inuseContractId;
+    private String string15;
     /**
      * 合同类型（于sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义）
         0	普通合同
@@ -216,6 +216,9 @@ public class GrpContractInfo extends BaseEntity {
     @TableField(exist = false)
     private String updateBy;
 
+    @TableField(exist = false)
+    private Date updateTime;
+
     @Override
     public void setCreateBy(String createBy) {
         // 不执行任何操作，防止自动填充
@@ -223,6 +226,11 @@ public class GrpContractInfo extends BaseEntity {
 
     @Override
     public void setUpdateBy(String updateBy) {
+        // 不执行任何操作，防止自动填充
+    }
+
+    @Override
+    public void setUpdateTime(Date updateTime) {
         // 不执行任何操作，防止自动填充
     }
 

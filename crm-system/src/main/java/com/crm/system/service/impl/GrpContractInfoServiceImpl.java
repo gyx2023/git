@@ -67,8 +67,8 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
         LambdaQueryWrapper<GrpContractInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getContractId()), GrpContractInfo::getContractId, bo.getContractId());
         lqw.eq(bo.getGrpId() != null, GrpContractInfo::getGrpId, bo.getGrpId());
-        lqw.eq(StringUtils.isNotBlank(bo.getErpContractId()), GrpContractInfo::getErpContractId, bo.getErpContractId());
-        lqw.eq(StringUtils.isNotBlank(bo.getInuseContractId()), GrpContractInfo::getInuseContractId, bo.getInuseContractId());
+        lqw.eq(StringUtils.isNotBlank(bo.getString2()), GrpContractInfo::getString2, bo.getString2());
+        lqw.eq(StringUtils.isNotBlank(bo.getString15()), GrpContractInfo::getString15, bo.getString15());
         lqw.eq(StringUtils.isNotBlank(bo.getContractType()), GrpContractInfo::getContractType, bo.getContractType());
         lqw.like(StringUtils.isNotBlank(bo.getContractName()), GrpContractInfo::getContractName, bo.getContractName());
         lqw.eq(bo.getContractEffdate() != null, GrpContractInfo::getContractEffdate, bo.getContractEffdate());

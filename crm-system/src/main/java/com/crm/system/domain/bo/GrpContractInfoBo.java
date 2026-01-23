@@ -39,13 +39,13 @@ public class GrpContractInfoBo extends BaseEntity {
      * 合同ERP编码
      */
     @NotBlank(message = "合同ERP编码不能为空", groups = { EditGroup.class })
-    private String erpContractId;
+    private String string2;
 
     /**
      * 合同编号，等于grp_cust_inuse.CONTRACT_ID
      */
     @NotBlank(message = "合同编号")
-    private String inuseContractId;
+    private String string15;
 
     /**
      * 合同类型（于sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义）
@@ -274,10 +274,5 @@ public class GrpContractInfoBo extends BaseEntity {
       */
      @NotBlank(message = "备注不能为空")
      private String remark;
-
-     /**
-      * 业务类型（前端传递）
-      */
-     private String businessTypes;
 }
 

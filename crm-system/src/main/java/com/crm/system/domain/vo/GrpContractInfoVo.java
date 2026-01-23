@@ -38,13 +38,13 @@ public class GrpContractInfoVo {
      * 合同ERP编码
      */
     @ExcelProperty(value = "合同ERP编码")
-    private String erpContractId;
+    private String string2;
 
     /**
      * 合同编号，等于grp_cust_inuse.CONTRACT_ID
      */
     @ExcelProperty(value = "合同编号，等于grp_cust_inuse.CONTRACT_ID")
-    private String inuseContractId;
+    private String string15;
 
     /**
      * 合同类型（于sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义）
@@ -273,9 +273,5 @@ public class GrpContractInfoVo {
     @ExcelProperty(value = "备注")
     private String remark;
 
-    /**
-     * 业务类型（前端传递）
-     */
-    private String businessTypes;
 }
 
