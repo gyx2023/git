@@ -184,37 +184,37 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode, boolean needDesensitize) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        
+
         // 获取总数量
         long totalCount = baseMapper.selectCount(lqw);
-        
+
         if (totalCount == 0) {
             return new ArrayList<>();
         }
-        
+
         // 分批处理，每批5000条
         int batchSize = 5000;
         List<ZqGrpGroupInfoVo> allResults = new ArrayList<>();
-        
+
         for (int offset = 0; offset < totalCount; offset += batchSize) {
             // 使用分页查询获取当前批次的数据
             Page<ZqGrpGroupInfo> page = new Page<>((offset / batchSize) + 1, batchSize, false);
             Page<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
             List<ZqGrpGroupInfoVo> batchList = resultPage.getRecords();
-            
+
             // 对当前批次数据进行字典翻译
             translateDictLabels(batchList);
-            
+
             // 根据needDesensitize参数决定是否对当前批次数据进行脱敏处理
             if (needDesensitize) {
                 batchList = batchList.stream()
                         .map(this::desensitizeVo)
                         .collect(Collectors.toList());
             }
-            
+
             allResults.addAll(batchList);
         }
-        
+
         return allResults;
     }
 
@@ -226,14 +226,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if (list == null || list.isEmpty()) {
             return;
         }
-        
+
         // 批量处理字典翻译，提高性能
         Set<Long> areaIds = new HashSet<>();
         Set<Long> countyIds = new HashSet<>();
         Set<String> industryMajorIds = new HashSet<>();
         Set<String> industrySubIds = new HashSet<>();
         Set<String> industryDetailIds = new HashSet<>();
-        
+
         // 收集需要翻译的ID
         for (ZqGrpGroupInfoVo vo : list) {
             if (StringUtils.isNotBlank(vo.getAreaId())) {
@@ -243,7 +243,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("地市ID格式错误: {}", vo.getAreaId());
                 }
             }
-            
+
             if (StringUtils.isNotBlank(vo.getCountyId())) {
                 try {
                     countyIds.add(Long.valueOf(vo.getCountyId()));
@@ -251,20 +251,20 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("县分ID格式错误: {}", vo.getCountyId());
                 }
             }
-            
+
             if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
                 industryMajorIds.add(vo.getIndustryMajorKind());
             }
-            
+
             if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
                 industrySubIds.add(vo.getIndustrySubKind());
             }
-            
+
             if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
                 industryDetailIds.add(vo.getIndustryDetailKind());
             }
         }
-        
+
         // 批量查询并建立映射关系
         Map<Long, String> areaMap = new HashMap<>();
         for (Long areaId : areaIds) {
@@ -277,7 +277,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 log.warn("地市翻译失败: {}", e.getMessage());
             }
         }
-        
+
         Map<Long, String> countyMap = new HashMap<>();
         for (Long countyId : countyIds) {
             try {
@@ -285,11 +285,31 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 if (county != null) {
                     countyMap.put(countyId, county.getName());
                 }
+            } catch (ClassCastException e) {
+                log.warn("县分翻译失败: {}", e.getMessage());
+                // 如果出现类型转换错误，直接从数据库查询
+                try {
+                    SysArea county = sysAreaMapper.selectById(countyId);
+                    if (county != null) {
+                        countyMap.put(countyId, county.getName());
+                    }
+                } catch (Exception ex) {
+                    log.error("直接查询县分信息也失败: {}", ex.getMessage());
+                }
             } catch (Exception e) {
                 log.warn("县分翻译失败: {}", e.getMessage());
+                // 其他异常，尝试直接从数据库查询
+                try {
+                    SysArea county = sysAreaMapper.selectById(countyId);
+                    if (county != null) {
+                        countyMap.put(countyId, county.getName());
+                    }
+                } catch (Exception ex) {
+                    log.error("直接查询县分信息也失败: {}", ex.getMessage());
+                }
             }
         }
-        
+
         Map<String, String> industryMajorMap = new HashMap<>();
         for (String id : industryMajorIds) {
             try {
@@ -301,7 +321,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 log.warn("行业大类翻译失败: {}", e.getMessage());
             }
         }
-        
+
         Map<String, String> industrySubMap = new HashMap<>();
         for (String id : industrySubIds) {
             try {
@@ -313,7 +333,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 log.warn("行业亚类翻译失败: {}", e.getMessage());
             }
         }
-        
+
         Map<String, String> industryDetailMap = new HashMap<>();
         for (String id : industryDetailIds) {
             try {
@@ -325,7 +345,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 log.warn("行业细类翻译失败: {}", e.getMessage());
             }
         }
-        
+
         // 应用翻译结果
         for (ZqGrpGroupInfoVo vo : list) {
             if (StringUtils.isNotBlank(vo.getAreaId())) {
@@ -338,7 +358,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("地市ID格式错误: {}", vo.getAreaId());
                 }
             }
-            
+
             if (StringUtils.isNotBlank(vo.getCountyId())) {
                 try {
                     String countyName = countyMap.get(Long.valueOf(vo.getCountyId()));
@@ -349,21 +369,21 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     log.warn("县分ID格式错误: {}", vo.getCountyId());
                 }
             }
-            
+
             if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
                 String industryName = industryMajorMap.get(vo.getIndustryMajorKind());
                 if (industryName != null) {
                     vo.setIndustryMajorKind(industryName);
                 }
             }
-            
+
             if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
                 String industryName = industrySubMap.get(vo.getIndustrySubKind());
                 if (industryName != null) {
                     vo.setIndustrySubKind(industryName);
                 }
             }
-            
+
             if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
                 String industryName = industryDetailMap.get(vo.getIndustryDetailKind());
                 if (industryName != null) {
