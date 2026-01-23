@@ -98,4 +98,6 @@ public interface IZqGrpGroupInfoService {
      * 获取政企集团客户信息相关字典数据
      */
     Map<String, List<SysDictData>> getDictData();
+
+    String getUserByStt();
 }
