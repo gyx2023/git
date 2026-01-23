@@ -69,4 +69,21 @@ public interface IZqztGrpContractOtherInfoService {
      * @return 集团合同扩展信息列表
      */
     List<ZqztGrpContractOtherInfo> selectAllZqztGrpContractOtherInfo();
+
+    /**
+     * 根据合同ID查询集团合同扩展信息列表
+     *
+     * @param contractId 合同ID
+     * @return 集团合同扩展信息列表
+     */
+    List<ZqztGrpContractOtherInfoVo> selectByContractId(String contractId);
+
+    /**
+     * 根据合同ID和服务号码查询集团合同扩展信息列表
+     *
+     * @param contractId 合同ID
+     * @param infoVal2 服务号码
+     * @return 集团合同扩展信息列表
+     */
+    List<ZqztGrpContractOtherInfoVo> selectByContractIdAndInfoVal2(String contractId, String infoVal2);
 }
