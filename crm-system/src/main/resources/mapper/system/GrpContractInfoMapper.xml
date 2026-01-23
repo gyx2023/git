@@ -42,7 +42,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="selectGrpContractInfoVo">
-        select contract_id, grp_id, erp_contract_id, inuse_contract_id, contract_type, contract_name, contract_effdate,
+        select contract_id, grp_id, string2, string15, contract_type, contract_name, contract_effdate,
                contract_expdate, paytype, contract_note, creator, files, contract_property, is_bidding, contract_main,
                contract_party, contract_dept, contract_man, contract_money2, is_fix, audit_date, contract_phone,
                contract_oldnum, year_income, serv_amount, contract_money, contract_signdate, contract_status,

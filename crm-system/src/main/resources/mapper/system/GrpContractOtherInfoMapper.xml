@@ -11,7 +11,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="selectGrpContractOtherInfoVo">
-        select id, contract_id, info_tag, info_val, info_val2, is_valid
+        select  contract_id, info_tag, info_val, info_val2
         from zqzt_grp_contract_other_info
     </sql>
 

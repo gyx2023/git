@@ -100,6 +100,10 @@ public class ZqztGrpContractInfoImportJob {
         // 复制基础字段
         BeanUtils.copyProperties(oracleData, targetData);
 
+        // 特殊字段映射
+        targetData.setErpContractId(oracleData.getString2());
+        targetData.setInuseContractId(oracleData.getString15());
+
         // 设置更新时间字段
         targetData.setUpdateTime(new Date());
 
