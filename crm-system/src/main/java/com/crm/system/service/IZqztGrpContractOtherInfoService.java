@@ -64,13 +64,6 @@ public interface IZqztGrpContractOtherInfoService {
     int importAllGroupContractOtherInfo(List<ZqztGrpContractOtherInfo> dataList);
 
     /**
-     * 查询所有集团合同扩展信息
-     *
-     * @return 集团合同扩展信息列表
-     */
-    List<ZqztGrpContractOtherInfo> selectAllZqztGrpContractOtherInfo();
-
-    /**
      * 根据合同ID查询集团合同扩展信息列表
      *
      * @param contractId 合同ID

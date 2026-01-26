@@ -55,4 +55,10 @@ public interface IGrpContractOtherInfoService {
      */
     GrpContractOtherInfoVo selectById(Long id);
 
+    /**
+     * 查询全部集团合同扩展信息数据
+     *
+     * @return 集团合同扩展信息列表
+     */
+    List<GrpContractOtherInfo> selectAllGrpContractOtherInfo();
 }

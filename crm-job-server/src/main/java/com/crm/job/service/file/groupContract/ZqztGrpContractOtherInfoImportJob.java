@@ -1,6 +1,8 @@
 package com.crm.job.service.file.groupContract;
 
+import com.crm.system.domain.GrpContractOtherInfo;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
+import com.crm.system.service.IGrpContractOtherInfoService;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -12,8 +14,8 @@ import java.util.List;
 
 /**
  * 集团合同扩展信息表导入定时任务<br>
- * 从经分侧获取全量数据并导入到zqzt_grp_contract_other_info表<br>
- * 入库逻辑：根据user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录，如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）<br>
+ * 从Oracle库的grp_contract_other_info表查询数据，然后添加到MySQL主数据源的zqzt_grp_contract_other_info表<br>
+ * 入库逻辑：根据infoVal作为user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录，如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）<br>
  *
  * @author 万超凡
  */
@@ -23,6 +25,9 @@ public class ZqztGrpContractOtherInfoImportJob {
 
     @Resource
     private IZqztGrpContractOtherInfoService zqztGrpContractOtherInfoService;
+
+    @Resource
+    private IGrpContractOtherInfoService grpContractOtherInfoService; // Oracle数据源的服务
 
     /**
      * 集团合同扩展信息导入任务<br>
@@ -34,25 +39,40 @@ public class ZqztGrpContractOtherInfoImportJob {
         XxlJobHelper.log("开始执行集团合同扩展信息导入任务");
 
         try {
-            // 从经分侧获取全量集团合同扩展信息数据
-            // TODO: 等待经分提供详细接口规范后实现此方法
-            List<ZqztGrpContractOtherInfo> dataList = getGroupContractOtherInfoFromJf();
+            // 1. 清空目标表数据
+            XxlJobHelper.log("清空目标表zqzt_grp_contract_other_info数据");
+            zqztGrpContractOtherInfoService.importAllGroupContractOtherInfo(null);
 
-            // 检查数据是否为空
-            if (dataList == null || dataList.isEmpty()) {
-                String warnMsg = "集团合同扩展信息导入数据为空";
+            // 2. 查询grp_contract_other_info表的所有数据
+            XxlJobHelper.log("查询grp_contract_other_info表数据");
+            List<GrpContractOtherInfo> oracleDataList = grpContractOtherInfoService.selectAllGrpContractOtherInfo();
+            XxlJobHelper.log("查询到数据条数：" + oracleDataList.size());
+
+            if (oracleDataList == null || oracleDataList.isEmpty()) {
+                String warnMsg = "数据源数据为空";
                 log.warn(warnMsg);
                 XxlJobHelper.log(warnMsg);
                 XxlJobHelper.handleSuccess(warnMsg);
                 return;
             }
 
-            log.info("开始批量导入集团合同扩展信息，数据量: {}", dataList.size());
+            // 3. 遍历数据，转换并插入到主数据源的zqzt_grp_contract_other_info表
+            int successCount = 0;
+            int totalCount = oracleDataList.size();
 
-            // 执行全量数据入库操作（包含业务逻辑处理）
-            int insertCount = zqztGrpContractOtherInfoService.importAllGroupContractOtherInfoWithBusinessLogic(dataList);
+            // 转换数据列表
+            List<ZqztGrpContractOtherInfo> targetDataList = convertToTargetDataList(oracleDataList);
 
-            String successMsg = String.format("集团合同扩展信息导入任务执行成功，导入记录数：%d", insertCount);
+            // 批量插入数据
+            if (!targetDataList.isEmpty()) {
+                XxlJobHelper.log("开始批量插入数据，数量：" + targetDataList.size());
+                successCount = zqztGrpContractOtherInfoService.importAllGroupContractOtherInfoWithBusinessLogic(targetDataList);
+            }
+
+            XxlJobHelper.log("数据同步完成，总计处理: " + totalCount + " 条，成功: " + successCount + " 条");
+            log.info("数据同步完成，总计处理: {} 条，成功: {} 条", totalCount, successCount);
+
+            String successMsg = String.format("集团合同扩展信息导入任务执行成功，导入记录数：%d", successCount);
             log.info(successMsg);
             XxlJobHelper.handleSuccess(successMsg);
 
@@ -65,19 +85,26 @@ public class ZqztGrpContractOtherInfoImportJob {
     }
 
     /**
-     * 从经分侧获取集团合同扩展信息全量数据
-     * TODO: 等待经分提供详细接口规范后实现此方法
-     *
-     * @return 集团合同扩展信息列表
+     * 将Oracle数据转换为目标数据列表，并应用业务逻辑
      */
-    private List<ZqztGrpContractOtherInfo> getGroupContractOtherInfoFromJf() {
-        // TODO: 实现调用经分接口获取数据的逻辑
-        // 这里暂时返回空列表，等待经分接口提供后完善
-        log.info("调用经分接口获取集团合同扩展信息数据");
+    private List<ZqztGrpContractOtherInfo> convertToTargetDataList(List<GrpContractOtherInfo> oracleDataList) {
+        return oracleDataList.stream()
+            .map(this::convertSingleRecord)
+            .collect(java.util.stream.Collectors.toList());
+    }
 
-        // 示例：调用经分接口的伪代码，等待实际接口后替换
-        // return jfApiService.getFullGroupContractOtherInfo();
+    /**
+     * 转换单条记录
+     */
+    private ZqztGrpContractOtherInfo convertSingleRecord(GrpContractOtherInfo oracleData) {
+        ZqztGrpContractOtherInfo targetData = new ZqztGrpContractOtherInfo();
 
-        return null; // 暂时返回null，实际实现时返回从经分获取的数据
+        // 复制基础字段
+        targetData.setContractId(oracleData.getContractId());
+        targetData.setInfoTag(oracleData.getInfoTag());
+        targetData.setInfoVal(oracleData.getInfoVal());
+        targetData.setInfoVal2(oracleData.getInfoVal2());
+
+        return targetData;
     }
 }

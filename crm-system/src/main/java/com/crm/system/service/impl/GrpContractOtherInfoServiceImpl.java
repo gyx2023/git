@@ -123,4 +123,10 @@ public class GrpContractOtherInfoServiceImpl implements IGrpContractOtherInfoSer
     public GrpContractOtherInfoVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
+
+    @DS("oracle")  // 使用Oracle数据库
+    @Override
+    public List<GrpContractOtherInfo> selectAllGrpContractOtherInfo() {
+        return baseMapper.selectList(null);
+    }
 }

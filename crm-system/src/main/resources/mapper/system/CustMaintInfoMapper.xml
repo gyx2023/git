@@ -92,4 +92,14 @@
         <result property="custExpansionType" column="CUST_EXPANSION_TYPE"/>
         <result property="custIndustry" column="CUST_INDUSTRY"/>
     </resultMap>
+
+    <!-- 批量根据用户ID查询有效的客户维护信息及服务号码 -->
+    <select id="selectValidSvcNumByUserIds" parameterType="list" resultType="map">
+        SELECT USER_ID as "key", SVC_NUM as "value"
+        FROM CUST_MAINT_INFO
+        WHERE STATUS = '1' AND USER_ID IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </select>
 </mapper>
