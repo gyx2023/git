@@ -32,21 +32,8 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
     @Override
     @DS("slave_2")  // 使用达梦数据库
     public Map<String, String> selectValidSvcNumByUserIds(List<String> userIds) {
-        // 添加日志来跟踪输入参数
-        System.out.println("查询的userIds数量: " + (userIds != null ? userIds.size() : 0));
-        if (userIds != null) {
-            userIds.forEach(id -> System.out.println("查询的userId: [" + id + "]"));
-        }
 
         List<Map<String, Object>> results = custMaintInfoMapper.selectValidSvcNumByUserIds(userIds);
-
-        // 添加日志来跟踪查询结果
-        System.out.println("查询结果数量: " + (results != null ? results.size() : 0));
-        if (results != null) {
-            results.forEach(result ->
-                System.out.println("查询结果 - key: [" + result.get("key") + "], value: [" + result.get("value") + "]")
-            );
-        }
 
         Map<String, String> resultMap = new HashMap<>();
         if (results != null) {

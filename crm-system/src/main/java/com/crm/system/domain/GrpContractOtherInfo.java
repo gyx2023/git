@@ -51,20 +51,5 @@ public class GrpContractOtherInfo extends BaseEntity {
     @TableField(exist = false)
     private Date updateTime;
 
-    @Override
-    public void setUpdateTime(Date updateTime) {
-        // 不执行任何操作，防止自动填充
-    }
-
-    @Override
-    public void setCreateBy(String createBy) {
-        // 不执行任何操作，防止自动填充
-    }
-
-    @Override
-    public void setUpdateBy(String updateBy) {
-        // 不执行任何操作，防止自动填充
-    }
-
 }
 

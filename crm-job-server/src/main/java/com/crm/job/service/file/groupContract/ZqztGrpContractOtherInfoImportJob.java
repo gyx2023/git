@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 集团合同扩展信息表导入定时任务<br>
@@ -90,7 +91,7 @@ public class ZqztGrpContractOtherInfoImportJob {
     private List<ZqztGrpContractOtherInfo> convertToTargetDataList(List<GrpContractOtherInfo> oracleDataList) {
         return oracleDataList.stream()
             .map(this::convertSingleRecord)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     /**

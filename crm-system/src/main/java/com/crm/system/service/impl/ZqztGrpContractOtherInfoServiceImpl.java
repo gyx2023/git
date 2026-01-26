@@ -232,15 +232,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             // 获取user_id并验证
             String userId = item.getInfoVal();
             if (userId != null && svcNumMap.containsKey(userId) && svcNumMap.get(userId) != null) {
-                // 用户存在且有效（status=1），正常入库，状态=1有效，同时写入服务号码
                 processedItem.setIsValid("1");
-                // 获取服务号码
-                String svcNum = svcNumMap.get(userId);
-                processedItem.setInfoVal2(svcNum);
+                processedItem.setInfoVal2(svcNumMap.get(userId));
             } else {
                 // 用户不存在或无效，入库时状态默认=99（迁移失效）
                 processedItem.setIsValid("99");
-                processedItem.setInfoVal2(item.getInfoVal2()); // 保持原始值或为null
+                // 保留原始服务号码
+                processedItem.setInfoVal2(item.getInfoVal2());
             }
 
             processedDataList.add(processedItem);
@@ -259,7 +257,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     public List<ZqztGrpContractOtherInfoVo> selectByContractId(String contractId) {
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
-        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1");
         return baseMapper.selectVoList(lqw);
     }
 
