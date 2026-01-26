@@ -104,4 +104,12 @@ public interface IZqztGrpContractOtherInfoService {
      * @return 关联的客户信息列表
      */
     List<Map<String, Object>> selectContractRelatedUserInfoByContractIdAndInfoVal2(String contractId, String infoVal2);
+
+    /**
+     * 批量使合同关联用户信息失效
+     *
+     * @param ids 合同关联信息ID列表
+     * @return 操作结果
+     */
+    Boolean batchInvalidateContractUserRelation(List<Long> ids);
 }

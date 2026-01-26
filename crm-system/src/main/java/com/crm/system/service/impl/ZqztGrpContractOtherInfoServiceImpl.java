@@ -319,6 +319,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
             Map<String, Object> mergedInfo = new HashMap<>();
             // 添加合同扩展信息字段
+            mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
             mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
             mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
             mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
@@ -390,6 +391,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
             Map<String, Object> mergedInfo = new HashMap<>();
             // 添加合同扩展信息字段
+            mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
             mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
             mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
             mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
@@ -439,4 +441,30 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         }
         return infoVal;
     }
+
+    /**
+     * 批量使合同关联用户信息失效
+     *
+     * @param ids 合同关联信息ID列表
+     * @return 操作结果
+     */
+    @Override
+    public Boolean batchInvalidateContractUserRelation(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return false;
+        }
+
+        // 创建更新条件
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ZqztGrpContractOtherInfo::getId, ids);
+
+        // 创建更新对象，将isValid设置为"0"
+        ZqztGrpContractOtherInfo updateEntity = new ZqztGrpContractOtherInfo();
+        updateEntity.setIsValid("0");
+
+        // 执行更新操作
+        int updateCount = baseMapper.update(updateEntity, queryWrapper);
+        return updateCount > 0;
+    }
+
 }

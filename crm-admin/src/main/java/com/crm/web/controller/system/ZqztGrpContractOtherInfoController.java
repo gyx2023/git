@@ -160,4 +160,17 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
         List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfoByContractIdAndInfoVal2(contractId, infoVal2);
         return R.ok(list);
     }
+
+    /**
+     * 批量使合同关联用户信息失效
+     *
+     * @param ids 合同关联信息ID列表
+     * @return 操作结果
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:edit")
+    @Log(title = "合同关联用户", businessType = BusinessType.UPDATE)
+    @PutMapping("/batchInvalidate")
+    public R<Void> batchInvalidateContractUserRelation(@RequestBody List<Long> ids) {
+        return toAjax(iZqztGrpContractOtherInfoService.batchInvalidateContractUserRelation(ids));
+    }
 }
