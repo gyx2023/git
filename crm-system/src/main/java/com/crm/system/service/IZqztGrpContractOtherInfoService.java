@@ -48,12 +48,12 @@ public interface IZqztGrpContractOtherInfoService {
     Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid);
 
     /**
-     * 全量导入集团合同扩展信息数据（包含业务逻辑处理）
+     * 全量导入集团合同扩展信息数据
      *
      * @param dataList 数据列表
      * @return 成功导入数量
      */
-    int importAllGroupContractOtherInfoWithBusinessLogic(List<ZqztGrpContractOtherInfo> dataList);
+    int importAll(List<ZqztGrpContractOtherInfo> dataList);
 
     /**
      * 全量导入集团合同扩展信息数据
@@ -61,7 +61,7 @@ public interface IZqztGrpContractOtherInfoService {
      * @param dataList 数据列表
      * @return 成功导入数量
      */
-    int importAllGroupContractOtherInfo(List<ZqztGrpContractOtherInfo> dataList);
+    int importAllClear(List<ZqztGrpContractOtherInfo> dataList);
 
     /**
      * 根据合同ID查询集团合同扩展信息列表

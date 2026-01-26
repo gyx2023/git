@@ -29,10 +29,10 @@ public class ZqztGrpContractInfoImportJob {
     private IZqztGrpContractInfoService zqztGrpContractInfoService;
 
     @Resource
-    private GrpContractInfoMapper grpContractInfoMapper; // Oracle数据源的Mapper
+    private GrpContractInfoMapper grpContractInfoMapper;
 
     @Resource
-    private ZqztGrpContractInfoMapper zqztGrpContractInfoMapper; // MySQL数据源的Mapper
+    private ZqztGrpContractInfoMapper zqztGrpContractInfoMapper;
 
     /**
      * 集团合同信息导入任务<br>
@@ -103,9 +103,6 @@ public class ZqztGrpContractInfoImportJob {
         // 特殊字段映射
         targetData.setErpContractId(oracleData.getString2());
         targetData.setInuseContractId(oracleData.getString15());
-
-        // 设置更新时间字段
-        targetData.setUpdateTime(new Date());
 
         return targetData;
     }

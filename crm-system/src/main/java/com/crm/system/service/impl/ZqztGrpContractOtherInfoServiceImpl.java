@@ -160,7 +160,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
      * @return 成功导入数量
      */
     @Override
-    public int importAllGroupContractOtherInfo(List<ZqztGrpContractOtherInfo> dataList) {
+    public int importAllClear(List<ZqztGrpContractOtherInfo> dataList) {
         // 清空现有数据，进行全量更新
         baseMapper.delete(null);
 
@@ -183,7 +183,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
      * @return 成功导入数量
      */
     @Override
-    public int importAllGroupContractOtherInfoWithBusinessLogic(List<ZqztGrpContractOtherInfo> dataList) {
+    public int importAll(List<ZqztGrpContractOtherInfo> dataList) {
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }

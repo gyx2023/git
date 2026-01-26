@@ -42,7 +42,7 @@ public class ZqztGrpContractOtherInfoImportJob {
         try {
             // 1. 清空目标表数据
             XxlJobHelper.log("清空目标表zqzt_grp_contract_other_info数据");
-            zqztGrpContractOtherInfoService.importAllGroupContractOtherInfo(null);
+            zqztGrpContractOtherInfoService.importAllClear(null);
 
             // 2. 查询grp_contract_other_info表的所有数据
             XxlJobHelper.log("查询grp_contract_other_info表数据");
@@ -67,7 +67,7 @@ public class ZqztGrpContractOtherInfoImportJob {
             // 批量插入数据
             if (!targetDataList.isEmpty()) {
                 XxlJobHelper.log("开始批量插入数据，数量：" + targetDataList.size());
-                successCount = zqztGrpContractOtherInfoService.importAllGroupContractOtherInfoWithBusinessLogic(targetDataList);
+                successCount = zqztGrpContractOtherInfoService.importAll(targetDataList);
             }
 
             XxlJobHelper.log("数据同步完成，总计处理: " + totalCount + " 条，成功: " + successCount + " 条");
