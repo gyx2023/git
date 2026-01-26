@@ -8,6 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 集团合同扩展信息Service接口
@@ -86,4 +87,21 @@ public interface IZqztGrpContractOtherInfoService {
      * @return 集团合同扩展信息列表
      */
     List<ZqztGrpContractOtherInfoVo> selectByContractIdAndInfoVal2(String contractId, String infoVal2);
+
+    /**
+     * 根据合同ID查询合同关联的客户信息，将合同扩展信息与客户维护信息关联
+     *
+     * @param contractId 合同ID
+     * @return 关联的客户信息列表
+     */
+    List<Map<String, Object>> selectContractRelatedUserInfo(String contractId);
+
+    /**
+     * 根据合同ID和服务号码查询合同关联的客户信息
+     *
+     * @param contractId 合同ID
+     * @param infoVal2 服务号码
+     * @return 关联的客户信息列表
+     */
+    List<Map<String, Object>> selectContractRelatedUserInfoByContractIdAndInfoVal2(String contractId, String infoVal2);
 }

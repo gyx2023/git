@@ -2,6 +2,7 @@ package com.crm.web.controller.system;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
@@ -130,6 +131,33 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     @GetMapping("/contract/{contractId}/infoVal2/{infoVal2}")
     public R<List<ZqztGrpContractOtherInfoVo>> listByContractIdAndInfoVal2(@PathVariable String contractId, @PathVariable String infoVal2) {
         List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractIdAndInfoVal2(contractId, infoVal2);
+        return R.ok(list);
+    }
+
+    /**
+     * 根据合同ID查询合同关联的客户信息，将合同扩展信息与客户维护信息关联
+     *
+     * @param contractId 合同ID
+     * @return 关联的客户信息列表
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:list")
+    @GetMapping("/contract/{contractId}/userInfo")
+    public R<List<Map<String, Object>>> listContractRelatedUserInfo(@PathVariable String contractId) {
+        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId);
+        return R.ok(list);
+    }
+
+    /**
+     * 根据合同ID和服务号码查询合同关联的客户信息
+     *
+     * @param contractId 合同ID
+     * @param infoVal2 服务号码
+     * @return 关联的客户信息列表
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:list")
+    @GetMapping("/contract/{contractId}/infoVal2/{infoVal2}/userInfo")
+    public R<List<Map<String, Object>>> listContractRelatedUserInfoByContractIdAndInfoVal2(@PathVariable String contractId, @PathVariable String infoVal2) {
+        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfoByContractIdAndInfoVal2(contractId, infoVal2);
         return R.ok(list);
     }
 }

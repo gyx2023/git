@@ -17,7 +17,7 @@ import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
-import com.crm.system.service.external.IExternalCustMaintInfoService;
+import com.crm.system.service.ICustMaintInfoService;
 import com.crm.common.utils.spring.SpringUtils;
 
 import javax.annotation.Resource;
@@ -44,7 +44,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     private ZqztGrpContractOtherInfoLogMapper logMapper;
 
     @Resource
-    private IExternalCustMaintInfoService externalCustMaintInfoService;
+    private ICustMaintInfoService custMaintInfoService;
 
     /**
      * 查询集团合同扩展信息
@@ -228,8 +228,8 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
         // 批量查询用户维护信息
         Map<String, Map<String, Object>> custMaintInfoMap = new HashMap<>();
-        if (externalCustMaintInfoService != null && !userIds.isEmpty()) {
-            custMaintInfoMap = externalCustMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
+        if (custMaintInfoService != null && !userIds.isEmpty()) {
+            custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
         }
 
         // 处理每个数据项
@@ -285,6 +285,125 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
         lqw.like(infoVal2 != null && !infoVal2.isEmpty(), ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 按服务号码模糊查询
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 根据合同ID查询合同关联的客户信息，将合同扩展信息与客户维护信息关联
+     *
+     * @param contractId 合同ID
+     * @return 关联的客户信息列表
+     */
+    public List<Map<String, Object>> selectContractRelatedUserInfo(String contractId) {
+        // 第一步：根据合同ID查询集团合同扩展信息
+        List<ZqztGrpContractOtherInfoVo> contractOtherInfos = selectByContractId(contractId);
+        if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 提取所有infoVal作为user_id用于查询客户维护信息
+        List<String> userIds = contractOtherInfos.stream()
+            .map(ZqztGrpContractOtherInfoVo::getInfoVal)
+            .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
+            .distinct()
+            .collect(Collectors.toList());
+
+        // 第二步：批量查询客户维护信息
+        Map<String, Map<String, Object>> custMaintInfoMap = new HashMap<>();
+        if (custMaintInfoService != null && !userIds.isEmpty()) {
+            custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
+        }
+
+        // 第三步：合并数据，构建结果列表
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
+            Map<String, Object> mergedInfo = new HashMap<>();
+            // 添加合同扩展信息字段
+            mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
+            mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
+            mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
+            mergedInfo.put("isValid", contractOtherInfo.getIsValid());
+            
+            // 添加从客户维护信息查询到的字段
+            String userId = contractOtherInfo.getInfoVal();
+            if (userId != null && custMaintInfoMap.containsKey(userId)) {
+                Map<String, Object> custInfo = custMaintInfoMap.get(userId);
+                mergedInfo.put("svcNum", custInfo.get("svcNum"));
+                mergedInfo.put("userId", custInfo.get("userId"));
+                mergedInfo.put("custName", custInfo.get("custName"));
+                mergedInfo.put("custGrpName", custInfo.get("custGrpName"));
+            } else {
+                // 如果没有找到对应的客户信息，设置为空值
+                mergedInfo.put("svcNum", "");
+                mergedInfo.put("userId", "");
+                mergedInfo.put("custName", "");
+                mergedInfo.put("custGrpName", "");
+            }
+            result.add(mergedInfo);
+        }
+
+        return result;
+    }
+
+    /**
+     * 根据合同ID和服务号码查询合同关联的客户信息
+     *
+     * @param contractId 合同ID
+     * @param infoVal2 服务号码
+     * @return 关联的客户信息列表
+     */
+    public List<Map<String, Object>> selectContractRelatedUserInfoByContractIdAndInfoVal2(String contractId, String infoVal2) {
+        // 第一步：根据合同ID和服务号码查询集团合同扩展信息
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
+        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        lqw.like(infoVal2 != null && !infoVal2.isEmpty(), ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 按服务号码模糊查询
+        List<ZqztGrpContractOtherInfoVo> contractOtherInfos = baseMapper.selectVoList(lqw);
+        if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 提取所有infoVal作为user_id用于查询客户维护信息
+        List<String> userIds = contractOtherInfos.stream()
+            .map(ZqztGrpContractOtherInfoVo::getInfoVal)
+            .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
+            .distinct()
+            .collect(Collectors.toList());
+
+        // 第二步：批量查询客户维护信息
+        Map<String, Map<String, Object>> custMaintInfoMap = new HashMap<>();
+        if (custMaintInfoService != null && !userIds.isEmpty()) {
+            custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
+        }
+
+        // 第三步：合并数据，构建结果列表
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
+            Map<String, Object> mergedInfo = new HashMap<>();
+            // 添加合同扩展信息字段
+            mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
+            mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
+            mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
+            mergedInfo.put("isValid", contractOtherInfo.getIsValid());
+            
+            // 添加从客户维护信息查询到的字段
+            String userId = contractOtherInfo.getInfoVal();
+            if (userId != null && custMaintInfoMap.containsKey(userId)) {
+                Map<String, Object> custInfo = custMaintInfoMap.get(userId);
+                mergedInfo.put("svcNum", custInfo.get("svcNum"));
+                mergedInfo.put("userId", custInfo.get("userId"));
+                mergedInfo.put("custName", custInfo.get("custName"));
+                mergedInfo.put("custGrpName", custInfo.get("custGrpName"));
+            } else {
+                // 如果没有找到对应的客户信息，设置为空值
+                mergedInfo.put("svcNum", "");
+                mergedInfo.put("userId", "");
+                mergedInfo.put("custName", "");
+                mergedInfo.put("custGrpName", "");
+            }
+            result.add(mergedInfo);
+        }
+
+        return result;
     }
 
     /**
