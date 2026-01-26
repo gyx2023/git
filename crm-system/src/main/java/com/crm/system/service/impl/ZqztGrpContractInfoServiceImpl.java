@@ -57,7 +57,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(ZqztGrpContractInfo::getContractId, contractId);
         lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除作废的合同
-        
+
         ZqztGrpContractInfoVo vo = baseMapper.selectVoOne(lqw);
 
         // 对合同名称进行脱敏
@@ -286,6 +286,22 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
                 SpringUtils.getBean(ZqztGrpContractInfoLogMapper.class).insert(logRecord);
             }
 
+            // 查询并备份扩展表中与该合同ID关联的记录到日志表
+            LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
+            List<ZqztGrpContractOtherInfo> existingOtherRecords = 
+                SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
+            
+            // 将扩展表的现有记录备份到日志表
+            for (ZqztGrpContractOtherInfo otherRecord : existingOtherRecords) {
+                ZqztGrpContractOtherInfoLog logRecord = BeanUtil.toBean(otherRecord, ZqztGrpContractOtherInfoLog.class);
+                logRecord.setId(null); // 设置日志记录的ID为null，以便自动生成新ID
+                SpringUtils.getBean(ZqztGrpContractOtherInfoLogMapper.class).insert(logRecord);
+            }
+            
+            // 删除扩展表中与该合同ID关联的记录
+            SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).delete(queryWrapper);
+
             // 更新合同状态为7（作废）
             ZqztGrpContractInfo updateRecord = new ZqztGrpContractInfo();
             updateRecord.setContractId(contractId);
@@ -347,8 +363,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         // 删除该合同之前的业务类型记录
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> deleteWrapper = new LambdaQueryWrapper<>();
-        deleteWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
-                     .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE");
+        deleteWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
 
         ZqztGrpContractOtherInfoMapper otherInfoMapper =
             (ZqztGrpContractOtherInfoMapper) SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class);
@@ -360,10 +375,9 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             if (businessType != null && !businessType.trim().isEmpty()) {
                 ZqztGrpContractOtherInfoBo otherInfoBo = new ZqztGrpContractOtherInfoBo();
                 otherInfoBo.setContractId(contractId);
-                otherInfoBo.setInfoTag("GRP_CONTRACT_BUSI_TYPE");
-                otherInfoBo.setInfoVal(businessType.trim());
-                otherInfoBo.setInfoVal2(""); // 填写服务号码字段为空
-                otherInfoBo.setIsValid("1"); // 默认设置为有效
+                otherInfoBo.setInfoTag(businessType.trim());
+                // 默认有效
+                otherInfoBo.setIsValid("1");
 
                 zqztGrpContractOtherInfoService.insertByBo(otherInfoBo);
             }
