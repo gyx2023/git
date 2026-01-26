@@ -64,7 +64,7 @@ spring:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: dm.jdbc.driver.DmDriver
-          url: jdbc:dm://192.168.124.160:5236/IOB_GOV2?columnNameUpperCase=false
+          url: jdbc:dm://132.151.27.11:5236/IOB_GOV2?columnNameUpperCase=false
           username: IOB_GOV2
           password: re.12aq,123l;06a!
         oracle:
