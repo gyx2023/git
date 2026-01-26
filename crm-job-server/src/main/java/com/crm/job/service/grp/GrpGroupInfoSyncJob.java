@@ -356,22 +356,37 @@ public class GrpGroupInfoSyncJob {
                 zqGrpGroupInfo.setGrpCreateTime(grpGroupInfoDo.getCreateTime());
                 zqGrpGroupInfo.setCreateTime(now);
                 zqGrpGroupInfo.setUpdateTime(now);
+
+                // 根据扩展类型设置经理信息
+                String empId = repSysPersonNewDDo.getEmpId();
+                String oaUserName = repSysPersonNewDDo.getOaUserName();
+                String fullName = repSysPersonNewDDo.getFullName();
+
                 if(ObjectUtil.equals(GrpExpandTypeenum.PROVINCE_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
-                    zqGrpGroupInfo.setProvManagerOauser(repSysPersonNewDDo.getOaUserName());
-                    zqGrpGroupInfo.setProvManagerEmpId(repSysPersonNewDDo.getEmpId());
-                    zqGrpGroupInfo.setProvManagerName(repSysPersonNewDDo.getFullName());
+                    zqGrpGroupInfo.setProvManagerOauser(oaUserName);
+                    zqGrpGroupInfo.setProvManagerEmpId(empId);
+                    zqGrpGroupInfo.setProvManagerName(fullName);
                 }else if(ObjectUtil.equals(GrpExpandTypeenum.CITY_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
-                    zqGrpGroupInfo.setCityManagerEmpId(repSysPersonNewDDo.getEmpId());
-                    zqGrpGroupInfo.setCityManagerOauser(repSysPersonNewDDo.getOaUserName());
-                    zqGrpGroupInfo.setCityManagerName(repSysPersonNewDDo.getFullName());
+                    zqGrpGroupInfo.setCityManagerEmpId(empId);
+                    zqGrpGroupInfo.setCityManagerOauser(oaUserName);
+                    zqGrpGroupInfo.setCityManagerName(fullName);
                 }else{
-                    zqGrpGroupInfo.setCountyManagerEmpId(repSysPersonNewDDo.getEmpId());
-                    zqGrpGroupInfo.setCountyManagerOauser(repSysPersonNewDDo.getOaUserName());
-                    zqGrpGroupInfo.setCountyManagerName(repSysPersonNewDDo.getFullName());
+                    zqGrpGroupInfo.setCountyManagerEmpId(empId);
+                    zqGrpGroupInfo.setCountyManagerOauser(oaUserName);
+                    zqGrpGroupInfo.setCountyManagerName(fullName);
                 }
                 zqGrpGroupInfoList.add(zqGrpGroupInfo);
             });
-            boolean syncCount = zqGrpGroupInfoMapper.insertBatch(zqGrpGroupInfoList);
+
+            // 分批插入以提高性能
+            int batchSize = 1000;
+            for (int i = 0; i < zqGrpGroupInfoList.size(); i += batchSize) {
+                int endIndex = Math.min(i + batchSize, zqGrpGroupInfoList.size());
+                List<ZqGrpGroupInfo> batchList = zqGrpGroupInfoList.subList(i, endIndex);
+                zqGrpGroupInfoMapper.insertBatch(batchList);
+                log.info("已批量插入 {} 到 {} 条记录", i + 1, endIndex);
+            }
+            int syncCount = zqGrpGroupInfoList.size();
 
             log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", zqGrpGroupInfoList.size());
             XxlJobHelper.log("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
