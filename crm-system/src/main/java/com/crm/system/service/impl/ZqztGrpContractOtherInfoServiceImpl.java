@@ -147,13 +147,6 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
     /**
-     * 插入日志记录
-     */
-    public void insertLogRecord(ZqztGrpContractOtherInfoLog logRecord) {
-        logMapper.insert(logRecord);
-    }
-
-    /**
      * 全量导入集团合同扩展信息数据
      *
      * @param dataList 数据列表
