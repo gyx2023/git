@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.generator.util.Desensitization;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOtherInfoService {
 
     private final ZqztGrpContractOtherInfoMapper baseMapper;
-    
+
     @Autowired
     private ZqztGrpContractOtherInfoLogMapper logMapper;
 
@@ -109,7 +110,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, bo.getContractId());
         List<ZqztGrpContractOtherInfo> existingRecords = baseMapper.selectList(queryWrapper);
-        
+
         // 将原有记录备份到日志表
         if (!existingRecords.isEmpty()) {
             for (ZqztGrpContractOtherInfo record : existingRecords) {
@@ -119,10 +120,10 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 logMapper.insert(logRecord);
             }
         }
-        
+
         // 删除原有记录
         baseMapper.delete(queryWrapper);
-        
+
         // 插入新记录
         ZqztGrpContractOtherInfo newRecord = BeanUtil.toBean(bo, ZqztGrpContractOtherInfo.class);
         validEntityBeforeSave(newRecord);
@@ -322,15 +323,24 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
             mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
             mergedInfo.put("isValid", contractOtherInfo.getIsValid());
-            
+
             // 添加从客户维护信息查询到的字段
             String userId = contractOtherInfo.getInfoVal();
             if (userId != null && custMaintInfoMap.containsKey(userId)) {
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
-                mergedInfo.put("svcNum", custInfo.get("svcNum"));
+                // 对手机号码进行脱敏处理
+                String svcNum = (String) custInfo.get("svcNum");
+                String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                mergedInfo.put("svcNum", desensitizedSvcNum);
                 mergedInfo.put("userId", custInfo.get("userId"));
-                mergedInfo.put("custName", custInfo.get("custName"));
-                mergedInfo.put("custGrpName", custInfo.get("custGrpName"));
+                // 对归属客户名称进行脱敏
+                String custName = (String) custInfo.get("custName");
+                String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
+                mergedInfo.put("custName", desensitizedCustName);
+                // 对收入归集集团名称进行脱敏
+                String custGrpName = (String) custInfo.get("custGrpName");
+                String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
+                mergedInfo.put("custGrpName", desensitizedCustGrpName);
             } else {
                 // 如果没有找到对应的客户信息，设置为空值
                 mergedInfo.put("svcNum", "");
@@ -384,15 +394,24 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
             mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
             mergedInfo.put("isValid", contractOtherInfo.getIsValid());
-            
+
             // 添加从客户维护信息查询到的字段
             String userId = contractOtherInfo.getInfoVal();
             if (userId != null && custMaintInfoMap.containsKey(userId)) {
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
-                mergedInfo.put("svcNum", custInfo.get("svcNum"));
+                // 对手机号码进行脱敏处理
+                String svcNum = (String) custInfo.get("svcNum");
+                String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                mergedInfo.put("svcNum", desensitizedSvcNum);
                 mergedInfo.put("userId", custInfo.get("userId"));
-                mergedInfo.put("custName", custInfo.get("custName"));
-                mergedInfo.put("custGrpName", custInfo.get("custGrpName"));
+                // 对归属客户名称进行脱敏
+                String custName = (String) custInfo.get("custName");
+                String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
+                mergedInfo.put("custName", desensitizedCustName);
+                // 对收入归集集团名称进行脱敏
+                String custGrpName = (String) custInfo.get("custGrpName");
+                String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
+                mergedInfo.put("custGrpName", desensitizedCustGrpName);
             } else {
                 // 如果没有找到对应的客户信息，设置为空值
                 mergedInfo.put("svcNum", "");

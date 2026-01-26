@@ -119,4 +119,33 @@ public class Desensitization {
         // 5. 拼接结果
         return startTwoChars + stars + endTwoChars;
     }
+
+    /**
+     * 脱敏手机号码
+     * 规则：保留前3位和后4位，中间4位用 '*' 替换。
+     *
+     * @param phoneNumber 完整的手机号码
+     * @return 脱敏后的手机号码，如果输入为 null 或空字符串则返回原输入
+     */
+    public static String desensitizePhoneNumber(String phoneNumber) {
+        // 1. 处理 null 或空字符串的情况
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            return phoneNumber;
+        }
+
+        String trimmedPhone = phoneNumber.trim();
+        
+        // 2. 检查手机号码长度是否符合标准（通常为11位）
+        if (trimmedPhone.length() < 7) {
+            // 如果长度小于7，直接返回原号码（不做脱敏处理）
+            return trimmedPhone;
+        }
+
+        // 3. 提取前3位和后4位
+        String startThreeDigits = trimmedPhone.substring(0, 3);
+        String endFourDigits = trimmedPhone.substring(trimmedPhone.length() - 4);
+
+        // 4. 中间部分用4个星号替换
+        return startThreeDigits + "****" + endFourDigits;
+    }
 }
