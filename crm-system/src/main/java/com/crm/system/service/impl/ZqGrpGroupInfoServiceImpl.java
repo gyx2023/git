@@ -56,8 +56,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
-    @Resource
-    private ISysUsersService sysUsersService;
 
 
     /**
@@ -114,8 +112,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         LoginUser loginUser = LoginHelper.getLoginUser();
-        SysUsersVo sysUsersVo = sysUsersService.queryById(loginUser.getUserId());
-        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(sysUsersVo.getOaAccount());
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
@@ -858,8 +855,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public String getUserByStt() {
         String stt = "";
         LoginUser loginUser = LoginHelper.getLoginUser();
-        SysUsersVo sysUsersVo = sysUsersService.queryById(loginUser.getUserId());
-        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(sysUsersVo.getOaAccount());
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
         if(deptLevel>=1){
             stt= GrpExpandTypeenum.PROVINCE_ZT.getCode();
         }
