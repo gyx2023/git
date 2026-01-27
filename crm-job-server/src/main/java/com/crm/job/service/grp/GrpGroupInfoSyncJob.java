@@ -171,6 +171,8 @@ public class GrpGroupInfoSyncJob {
             final int[] totalSuccess = {0};
             final int[] totalRows = {0};
 
+            List<GrpGroupInfoDo> grpGroupInfoDos = new ArrayList<>();
+
             // 使用指定的SFTP配置类型和批处理器处理文件，配置更大的缓冲区
             sftpUtil.processFileInBatches(sftpConfigType, filePath, BATCH_SIZE, batchData -> {
 
@@ -214,7 +216,7 @@ public class GrpGroupInfoSyncJob {
                         XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
                             totalRows[0], totalSuccess[0]);
                     }
-
+                    grpGroupInfoDos.addAll(groupInfoList);
                     // 显式清空中间变量，释放内存
                     groupInfoList.clear();
                     return true; // 继续处理下一批数据
@@ -232,9 +234,9 @@ public class GrpGroupInfoSyncJob {
                 XxlJobHelper.handleSuccess("文件中没有有效数据需要导入");
                 return;
             }
-            //通过开关控制是否要插入
-            syncToZqGrpGroupInfo();
 
+            //通过开关控制是否要插入
+            syncToZqGrpGroupInfo(grpGroupInfoDos);
             // 4. 任务完成，记录结果
             String successMsg = String.format("集团信息同步任务执行完成，成功导入: %d 条，失败: %d 条",
                 totalSuccess[0], totalRows[0] - totalSuccess[0]);
@@ -288,7 +290,8 @@ public class GrpGroupInfoSyncJob {
      * 根据sys_param表中的开关配置决定是否同步
      */
     @Transactional(rollbackFor = Exception.class)
-    public void syncToZqGrpGroupInfo() {
+    public void syncToZqGrpGroupInfo(List<GrpGroupInfoDo> groupInfoList) {
+        log.info("grpGroupInfoList size: {}", groupInfoList.size());
         try {
             // 查询同步开关配置
             SysParamDo syncSwitchParam = sysParamMapper.selectOne(
@@ -321,10 +324,9 @@ public class GrpGroupInfoSyncJob {
 
             // 2. 从grp_group_info同步数据
             //int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
-            List<GrpGroupInfoDo> grpGroupInfoList = grpGroupInfoService.selectAll();
             List<ZqGrpGroupInfo> zqGrpGroupInfoList = new ArrayList<>();
             Date now = new Date();
-            grpGroupInfoList.forEach(grpGroupInfoDo -> {
+            groupInfoList.forEach(grpGroupInfoDo -> {
                 AgentChannelDo agentChannelDo = agentChannelMapper.selectList((new LambdaQueryWrapper<AgentChannelDo>()
                     .eq(AgentChannelDo::getChannelId, grpGroupInfoDo.getManagerid()))).get(0);
 
@@ -379,12 +381,10 @@ public class GrpGroupInfoSyncJob {
                 }
                 zqGrpGroupInfoList.add(zqGrpGroupInfo);
             });
-
             // 分批插入以提高性能
-            this.insertBatch(zqGrpGroupInfoList);
+            int syncCount = this.insertBatch(zqGrpGroupInfoList);
             log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", zqGrpGroupInfoList.size());
-            XxlJobHelper.log("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", zqGrpGroupInfoList.size());
-
+            XxlJobHelper.log("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
         } catch (Exception e) {
             log.error("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage(), e);
             XxlJobHelper.log("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage());
@@ -395,14 +395,15 @@ public class GrpGroupInfoSyncJob {
 
     @Transactional(rollbackFor = Exception.class)
     public int insertBatch(List<ZqGrpGroupInfo> zqGrpGroupInfoList) {
-        if (zqGrpGroupInfoList == null || zqGrpGroupInfoList.isEmpty()) {
-            return 0;
+        // 分批插入以提高性能
+        int batchSize = 200;
+        for (int i = 0; i < zqGrpGroupInfoList.size(); i += batchSize) {
+            int endIndex = Math.min(i + batchSize, zqGrpGroupInfoList.size());
+            List<ZqGrpGroupInfo> batchList = zqGrpGroupInfoList.subList(i, endIndex);
+            zqGrpGroupInfoMapper.insertBatch(batchList);
+            log.info("已批量插入 {} 到 {} 条记录", i + 1, endIndex);
         }
-        log.info("开始批量处理集团信息，数量: {}", zqGrpGroupInfoList.size());
-
-        // 使用真正的批量插入：一条SQL插入多条数据，性能提升10倍以上
-        zqGrpGroupInfoMapper.insertBatch(zqGrpGroupInfoList,200);
-        log.info("批量处理集团信息完成，成功数量: {}", zqGrpGroupInfoList.size());
         return zqGrpGroupInfoList.size();
     }
+
 }
