@@ -1,8 +1,11 @@
 package com.crm.job.service.file.strategy.impl;
 
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
@@ -11,12 +14,7 @@ import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.service.ISysOssService;
 import com.crm.system.service.IZqGrpGroupInfoService;
-import com.infoSecure.common.annotation.Excel;
-import groovyjarjarpicocli.CommandLine;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.stereotype.Component;
@@ -125,16 +123,15 @@ public class GroupCustomersExport extends AbstractExportStrategy {
      */
     private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode,
                                         boolean needDesensitize, File outputFile) throws Exception {
-        try (SXSSFWorkbook workbook = new SXSSFWorkbook(100); // 内存中只保留100行
-             FileOutputStream fos = new FileOutputStream(outputFile)) {
+        // 使用 EasyExcel 分批写入数据
+        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo.class)
+            .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+            .build()) {
 
-            Sheet sheet = workbook.createSheet("集团客户信息");
+            WriteSheet writeSheet = EasyExcel.writerSheet("集团客户信息").build();
 
-            // 创建表头
-            createHeaderRow(sheet);
-
-            // 分批查询并写入
-            int pageSize = 1000; // 每批1000条
+            // 分批读取并写入数据
+            int pageSize = 1000;
             int currentPage = 1;
             boolean hasMoreData = true;
 
@@ -149,85 +146,11 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 }
 
                 // 写入当前批次数据
-                writeBatchToSheet(sheet, batchData, (currentPage - 1) * pageSize);
-
-                // 触发行刷新，释放内存
-                ((SXSSFSheet) sheet).flushRows();
-
+                excelWriter.write(batchData, writeSheet);
                 currentPage++;
-
-                // 可选：定期触发GC
-                if (currentPage % 10 == 0) {
-                    System.gc();
-                }
-            }
-
-            workbook.write(fos);
-            workbook.dispose();
-            return true;
-        }
-    }
-
-    /**
-     * 创建表头行
-     */
-    private void createHeaderRow(Sheet sheet) {
-        Row headerRow = sheet.createRow(0);
-        // 根据ZqGrpGroupInfoVo的字段创建表头
-        Field[] fields = ZqGrpGroupInfoVo.class.getDeclaredFields();
-        int colIndex = 0;
-        for (Field field : fields) {
-            Excel excelAnnotation = field.getAnnotation(Excel.class);
-            if (excelAnnotation != null) {
-                Cell cell = headerRow.createCell(colIndex++);
-                cell.setCellValue(excelAnnotation.name());
             }
         }
-    }
-
-    /**
-     * 写入批次数据到工作表
-     */
-    private void writeBatchToSheet(Sheet sheet, List<ZqGrpGroupInfoVo> batchData, int startRowIndex) {
-        for (int i = 0; i < batchData.size(); i++) {
-            Row row = sheet.createRow(startRowIndex + i + 1); // +1 是跳过表头
-            ZqGrpGroupInfoVo vo = batchData.get(i);
-
-            // 使用反射或手动映射将VO字段写入Excel行
-            writeVoToRow(row, vo);
-        }
-    }
-
-    /**
-     * 将VO对象写入Excel行
-     */
-    private void writeVoToRow(Row row, ZqGrpGroupInfoVo vo) {
-        // 根据Excel注解动态写入单元格
-        Field[] fields = ZqGrpGroupInfoVo.class.getDeclaredFields();
-        int colIndex = 0;
-
-        for (Field field : fields) {
-            Excel excelAnnotation = field.getAnnotation(Excel.class);
-            if (excelAnnotation != null) {
-                try {
-                    field.setAccessible(true);
-                    Object value = field.get(vo);
-                    Cell cell = row.createCell(colIndex++);
-
-                    if (value instanceof String) {
-                        cell.setCellValue((String) value);
-                    } else if (value instanceof Integer) {
-                        cell.setCellValue((Integer) value);
-                    } else if (value instanceof Date) {
-                        cell.setCellValue(((Date) value).toString());
-                    } else {
-                        cell.setCellValue(value != null ? value.toString() : "");
-                    }
-                } catch (IllegalAccessException e) {
-                    log.warn("设置单元格值失败: {}", e.getMessage());
-                }
-            }
-        }
+        return true;
     }
 
     /**
