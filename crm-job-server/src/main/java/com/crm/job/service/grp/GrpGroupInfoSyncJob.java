@@ -330,14 +330,41 @@ public class GrpGroupInfoSyncJob {
             List<ZqGrpGroupInfo> zqGrpGroupInfoList = new ArrayList<>();
             Date now = new Date();
             groupInfoList.forEach(grpGroupInfoDo -> {
-                AgentChannelDo agentChannelDo = agentChannelMapper.selectList((new LambdaQueryWrapper<AgentChannelDo>()
-                    .eq(AgentChannelDo::getChannelId, grpGroupInfoDo.getManagerid()))).get(0);
+                // 根据扩展类型设置经理信息
+                String empId = "";
+                String oaUserName = "";
+                String fullName = "";
+                // 通过managerid查询相关的员工信息，使用selectList替代selectOne
+                List<AgentChannelDo> agentChannelList = agentChannelMapper.selectList(
+                    new LambdaQueryWrapper<AgentChannelDo>()
+                        .eq(AgentChannelDo::getChannelId, grpGroupInfoDo.getManagerid())
+                );
 
-                DwdRepFzPersonDDo dwdRepFzPersonDDo = dwdRepFzPersonDMapper.selectList(new LambdaQueryWrapper<DwdRepFzPersonDDo>()
-                    .eq(DwdRepFzPersonDDo::getChannelHqCode, agentChannelDo.getChannelHqCode())).get(0);
+                if (!agentChannelList.isEmpty()) {
+                    AgentChannelDo agentChannelDo = agentChannelList.get(0);
+                    List<DwdRepFzPersonDDo> dwdRepFzPersonList = dwdRepFzPersonDMapper.selectList(
+                        new LambdaQueryWrapper<DwdRepFzPersonDDo>()
+                            .eq(DwdRepFzPersonDDo::getChannelHqCode, agentChannelDo.getChannelHqCode())
+                    );
 
-                RepSysPersonNewDDo repSysPersonNewDDo = repSysPersonNewDMapper.selectList(new LambdaQueryWrapper<RepSysPersonNewDDo>()
-                    .eq(RepSysPersonNewDDo::getEmpId, dwdRepFzPersonDDo.getEmpId())).get(0);
+                    if (!dwdRepFzPersonList.isEmpty()) {
+                        DwdRepFzPersonDDo dwdRepFzPersonDDo = dwdRepFzPersonList.get(0);
+                        List<RepSysPersonNewDDo> repSysPersonList = repSysPersonNewDMapper.selectList(
+                            new LambdaQueryWrapper<RepSysPersonNewDDo>()
+                                .eq(RepSysPersonNewDDo::getEmpId, dwdRepFzPersonDDo.getEmpId())
+                        );
+
+                        if (!repSysPersonList.isEmpty()) {
+                            RepSysPersonNewDDo repSysPersonNewDDo = repSysPersonList.get(0);
+                            empId = repSysPersonNewDDo.getEmpId();
+                            oaUserName = repSysPersonNewDDo.getOaUserName();
+                            fullName = repSysPersonNewDDo.getFullName();
+                        }
+                    }
+                }
+
+
+
                 ZqGrpGroupInfo zqGrpGroupInfo = new ZqGrpGroupInfo();
                 zqGrpGroupInfo.setGrpId(grpGroupInfoDo.getGrpId());
                 zqGrpGroupInfo.setGrpName(grpGroupInfoDo.getGrpName());
@@ -364,10 +391,7 @@ public class GrpGroupInfoSyncJob {
                 zqGrpGroupInfo.setCreateTime(now);
                 zqGrpGroupInfo.setUpdateTime(now);
 
-                // 根据扩展类型设置经理信息
-                String empId = repSysPersonNewDDo.getEmpId();
-                String oaUserName = repSysPersonNewDDo.getOaUserName();
-                String fullName = repSysPersonNewDDo.getFullName();
+
 
                 if(ObjectUtil.equals(GrpExpandTypeenum.PROVINCE_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
                     zqGrpGroupInfo.setProvManagerOauser(oaUserName);

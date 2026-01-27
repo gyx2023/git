@@ -247,7 +247,6 @@ public class FieldAnnotaionUtil {
 //            System.out.println("error---------------字段数与values个数不一致");
 //            return false;
 //        }
-        log.info("开始赋值==============");
         for (int i = 0; i < values.length; i++) {
             Field f = fields[i];
             if (!setFieldValueFromObject(obj, f, values[i])) {
@@ -255,7 +254,6 @@ public class FieldAnnotaionUtil {
                 return false;
             }
         }
-        log.info("赋值完毕==============");
         return flag;
     }
 

@@ -190,8 +190,4 @@ public class RepSysPersonNewDDo implements Serializable {
      */
     private String bakColumn10;
 
-    /**
-     * 人员归属主岗组织名称
-     */
-    private String bakColumn11;
 }
