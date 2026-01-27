@@ -260,14 +260,14 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         // 筛选有效状态
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
         lqw.isNull(ToppOpportunityDo::getContractId);
-        lqw.eq(ToppOpportunityDo::getOppPhase, Constants.OPP_PHASE_AUDIT_FINISH);
+        lqw.ne(ToppOpportunityDo::getOppPhase, Constants.OPP_PHASE_NEW_CREATE);
         return baseMapper.selectVoList(lqw);
     }
 
     @Override
-    public Boolean upppUnbound(Long id) {
+    public Boolean upppUnbound(Long id,String endOppTypeMemo ) {
         ToppOpportunityDo updateEntity = getToppOpportunityDo(new Date());
-
+        updateEntity.setEndOppTypeMemo(endOppTypeMemo);
         LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
         lqw.eq(ToppOpportunityDo::getId, id);
 
@@ -292,7 +292,6 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
         //修改为oppo_status_end商机终止;
         updateEntity.setOppoState(OppoStateEnum.TERMINATED.getCode());
-        updateEntity.setEndOppTypeMemo("预计签约时间到期后7天，系统自动关闭！");
         return updateEntity;
     }
 
@@ -324,6 +323,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
         lqw.ge(ToppOpportunityDo::getLastVisitTime, bfStartTime);
         lqw.le(ToppOpportunityDo::getLastVisitTime, bfEndTime);
+        lqw.ne(ToppOpportunityDo::getOppPhase, Constants.OPP_PHASE_NEW_CREATE);
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
 
         return baseMapper.selectVoList(lqw);

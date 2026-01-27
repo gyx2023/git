@@ -75,6 +75,7 @@ public class OppoUnboundSyncJob {
 
     @XxlJob("oppoUnboundSyncJob")
     public void syncOppoUnbound() {
+        String endOppTypeMemo="";
         log.info("开始同步未关联商机的合同数据");
         String startTime = "";
         String endTime = "";
@@ -123,6 +124,7 @@ public class OppoUnboundSyncJob {
                 if (signedOppoIdList != null && !signedOppoIdList.isEmpty()) {
                     resultOppoList.addAll(signedOppoIdList);
                 }
+                endOppTypeMemo="预计签约时间到期后7天，系统自动关闭！";
             }
 
             // 查询超过3个月+7天未拜访的商机
@@ -134,6 +136,7 @@ public class OppoUnboundSyncJob {
                 if (longUnvisitedOppos != null && !longUnvisitedOppos.isEmpty()) {
                     resultOppoList.addAll(longUnvisitedOppos);
                 }
+                endOppTypeMemo="超过三个月未拜访未转化商机，系统自动关闭!";
             }
 
             if (resultOppoList.isEmpty()) {
@@ -157,6 +160,7 @@ public class OppoUnboundSyncJob {
             log.info("开始更新商机状态，商机ID列表：{}", opportunityIds);
 
             // 处理查询出的数据
+            String finalEndOppTypeMemo = endOppTypeMemo;
             filteredResultList.forEach(toppOpportunityVo -> {
                 log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
                 toppOpportunityVo.setOppoState(Constants.NEW_OPP_PHASE_OPP_END_LINK);
@@ -165,7 +169,7 @@ public class OppoUnboundSyncJob {
                 if (StringUtils.contains(result, "\"code\":10000")) {
                     Boolean orderFlag = saveOrder(toppOpportunityVo);
                     if (orderFlag) {
-                        Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId());
+                        Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId(), finalEndOppTypeMemo);
                         log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
                     }
                 }
