@@ -61,7 +61,7 @@ public interface IToppOpportunityService {
     List<SignOppoFileExportDTO> selectToppOpportunity();
     List<ToppOpportunityVo> queryOpportunityUnbound(String startTime,String endTime);
 
-    Boolean upppUnbound(ToppOpportunityVo toppOpportunityVo);
+    Boolean upppUnbound(Long id,String endOppTypeMemo);
 
     String updateOppoState(Long oppId);
 
