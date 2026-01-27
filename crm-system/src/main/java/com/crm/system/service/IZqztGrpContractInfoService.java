@@ -62,19 +62,13 @@ public interface IZqztGrpContractInfoService {
      */
     List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo();
 
-    /**
-     * 判断合同状态是否是履行中9或办结5
-     *
-     * @param contractId 合同ID
-     * @return 是否为履行中或办结合同
-     */
-    Boolean isContractInExecutionOrCompleted(String contractId);
+
 
     /**
-     * 判断合同失效时间是否小于当前时间
+     * 判断合同是否可以关联用户(合同状态为履行中9或办结5且合同失效时间大于当前时间，才能关联用户)
      *
      * @param contractId 合同ID
-     * @return 合同是否已失效
+     * @return 合同是否可以关联用户
      */
-    Boolean isContractExpired(String contractId);
+    Boolean contractCanAssociateUser(String contractId);
 }
