@@ -7,12 +7,14 @@ import com.crm.common.enums.SwitchStatus;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
-import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
-import com.crm.system.service.*;
+import com.crm.system.service.ISequenceService;
+import com.crm.system.service.ISysDeptService;
+import com.crm.system.service.ISysParamService;
+import com.crm.system.service.ISysUsersService;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
 import com.crm.system.service.topp.IToppOpportunityService;
@@ -28,8 +30,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -76,20 +76,49 @@ public class OppoUnboundSyncJob {
     @XxlJob("oppoUnboundSyncJob")
     public void syncOppoUnbound() {
         log.info("开始同步未关联商机的合同数据");
+        String startTime = "";
+        String endTime = "";
+
+        String bfStartTime = "";
+        String bfEndTime = "";
+
         String param = XxlJobHelper.getJobParam();
-        if (StringUtils.isBlank(param)) {
+        if (ObjectUtil.isEmpty(param)) {
             // 默认取7天内数据
-            param = "7";
+            LocalDate targetDate = LocalDate.now().minusDays(7);
+            String startTimeStr = DateUtil.format(targetDate.atStartOfDay(), "yyyy-MM-dd");
+            startTime = startTimeStr + " 00:00:00";
+            endTime = startTimeStr + " 23:59:59";
+
+            LocalDate bfTargetDate = LocalDate.now().minusMonths(3).minusDays(7);
+            String bfStartTimeStr = DateUtil.format(bfTargetDate.atStartOfDay(), "yyyy-MM-dd");
+            bfStartTime = bfStartTimeStr + " 00:00:00";
+            bfEndTime = bfStartTimeStr + " 23:59:59";
+
+        } else if (ObjectUtil.contains(param, "|")) {
+            startTime = param.split("\\|")[0] + " 00:00:00";
+            endTime = param.split("\\|")[1] + " 23:59:59";
+
+            bfStartTime = param.split("\\|")[0] + " 00:00:00";
+            bfEndTime = param.split("\\|")[1] + " 23:59:59";
+
+        } else {
+            startTime = param + " 00:00:00";
+            endTime = param + " 23:59:59";
+            bfStartTime = param + " 00:00:00";
+            bfEndTime = param + " 23:59:59";
         }
+        // 构造指定日期的时间范围：00:00:00 到 23:59:59
+
         try {
             // 初始化结果列表
             List<ToppOpportunityVo> resultOppoList = new ArrayList<>();
 
             // 从sys_param表获取开关的状态
             Map<String, String> unboundOpportunitySwitchMap = sysParamService.findValueMapsByType(Constants.UNBOUND_OPPORTUNITY_OFF_SWITCH);
-            if(SwitchStatus.ON.getValue().equals(unboundOpportunitySwitchMap.get(Constants.UNBOUND_OPPORTUNITY_OFF_SWITCH))){
+            if (SwitchStatus.ON.getValue().equals(unboundOpportunitySwitchMap.get(Constants.UNBOUND_OPPORTUNITY_OFF_SWITCH))) {
                 // 获取需要更新状态的商机列表（不进行过滤）
-                List<ToppOpportunityVo> signedOppoIdList = getDataToProcessWithoutFilter(param);
+                List<ToppOpportunityVo> signedOppoIdList = getDataToProcessWithoutFilter(startTime, endTime);
                 // 添加原有查询的数据
                 if (signedOppoIdList != null && !signedOppoIdList.isEmpty()) {
                     resultOppoList.addAll(signedOppoIdList);
@@ -98,8 +127,8 @@ public class OppoUnboundSyncJob {
 
             // 查询超过3个月+7天未拜访的商机
             Map<String, String> lastVisitTimeSwitchMap = sysParamService.findValueMapsByType(Constants.VISIT_TIME_OFF_SWITCH);
-            if(SwitchStatus.ON.getValue().equals(lastVisitTimeSwitchMap.get(Constants.VISIT_TIME_OFF_SWITCH))){
-                List<ToppOpportunityVo> longUnvisitedOppos = getDataOnLastVisitTimeWithoutFilter();
+            if (SwitchStatus.ON.getValue().equals(lastVisitTimeSwitchMap.get(Constants.VISIT_TIME_OFF_SWITCH))) {
+                List<ToppOpportunityVo> longUnvisitedOppos = getDataOnLastVisitTimeWithoutFilter(bfStartTime, bfEndTime);
                 log.info("查询到超过3个月+7天未拜访的商机数量：{}", longUnvisitedOppos != null ? longUnvisitedOppos.size() : 0);
                 // 添加超过3个月+7天未拜访的商机
                 if (longUnvisitedOppos != null && !longUnvisitedOppos.isEmpty()) {
@@ -122,8 +151,8 @@ public class OppoUnboundSyncJob {
 
             //取出需要处理的数据的商机ID
             List<Long> opportunityIds = filteredResultList.stream()
-                    .map(ToppOpportunityVo::getId)
-                    .collect(Collectors.toList());
+                .map(ToppOpportunityVo::getId)
+                .collect(Collectors.toList());
 
             log.info("开始更新商机状态，商机ID列表：{}", opportunityIds);
 
@@ -149,28 +178,20 @@ public class OppoUnboundSyncJob {
 
     }
 
-    private List<ToppOpportunityVo> getDataToProcessWithoutFilter(String param) {
+    private List<ToppOpportunityVo> getDataToProcessWithoutFilter(String startTime, String endTime) {
         // 计算查询时间范围
-        LocalDate targetDate = LocalDate.now().minusDays(Integer.parseInt(param));
-        String startTimeStr = DateUtil.format(targetDate.atStartOfDay(), "yyyy-MM-dd");
-            // 构造指定日期的时间范围：00:00:00 到 23:59:59
-            String startTime = startTimeStr + " 00:00:00";
-        String endTime = startTimeStr + " 23:59:59";
-
-        log.info("查询时间范围：{} 到 {}", startTime, endTime);
-
+        log.info("查询商机未关闭时间范围：{} 到 {}", startTime, endTime);
         // 1. 查询未关联商机的商机数据
         List<ToppOpportunityVo> opportunityList = toppOpportunityService.queryOpportunityUnbound(startTime, endTime);
         log.info("查询到未关联商机的商机数量：{}", opportunityList.size());
-
         // 返回原始数据，不进行过滤
         return opportunityList;
     }
 
-    private List<ToppOpportunityVo> getDataOnLastVisitTimeWithoutFilter() {
-
+    private List<ToppOpportunityVo> getDataOnLastVisitTimeWithoutFilter(String bfStartTime, String bfEndTime) {
+        log.info("查询商机超过3个月+7天未拜访时间范围：{} 到 {}", bfStartTime, bfEndTime);
         // 返回原始数据，不进行过滤
-        return toppOpportunityService.queryOpportunityByLastVisitTime();
+        return toppOpportunityService.queryOpportunityByLastVisitTime(bfStartTime, bfEndTime);
     }
 
     /**
