@@ -105,4 +105,17 @@ public class ZqztGrpContractInfoController extends BaseController {
                           @PathVariable String[] contractIds) {
         return toAjax(iZqztGrpContractInfoService.deleteWithValidByIds(Arrays.asList(contractIds), true));
     }
+
+    /**
+     * 校验合同是否可以关联用户
+     *
+     * @param contractId 合同ID
+     * @return 是否可以关联用户
+     */
+    @SaCheckPermission("system:grpContractInfo:validateUserAssociation")
+    @GetMapping("/validateCanAssociateUser")
+    public R<Boolean> validateContractCanAssociateUser(@RequestParam String contractId) {
+        Boolean canAssociate = iZqztGrpContractInfoService.contractCanAssociateUser(contractId);
+        return R.ok( "校验成功",canAssociate);
+    }
 }
