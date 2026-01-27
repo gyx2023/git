@@ -1,6 +1,8 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -8,7 +10,9 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.ClueStateEnum;
+import com.crm.common.enums.OppoConversionStateEnum;
 import com.crm.common.enums.OppoStateEnum;
+import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.topp.ToppOpportunityDo;
@@ -276,8 +280,8 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
 
-    private static ToppOpportunityDo getToppOpportunityDo(Date date) {
-        ToppOpportunityDo updateEntity = new ToppOpportunityDo();
+    private static ToppOpportunityDo getToppOpportunityDo(ToppOpportunityDo updateEntity) {
+        Date date = new Date();
         //商机终止时修改为opp_end_link 废弃、更新时间
         updateEntity.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
         updateEntity.setNewOppPhaseTime(date);
@@ -292,6 +296,12 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
         //修改为oppo_status_end商机终止;
         updateEntity.setOppoState(OppoStateEnum.TERMINATED.getCode());
+        if(ObjectUtil.isEmpty(updateEntity.getOppoConversionState())){
+            updateEntity.setOppoConversionState(OppoConversionStateEnum.AUTO_CLOSE.getCode());
+        }else if(!StringUtils.contains(updateEntity.getOppoConversionState(), OppoConversionStateEnum.AUTO_CLOSE.getCode())){
+            updateEntity.setOppoConversionState(updateEntity.getOppoConversionState() + "," +OppoConversionStateEnum.AUTO_CLOSE.getCode());
+        }
+
         return updateEntity;
     }
 
@@ -309,6 +319,18 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         System.out.println("更新商机"+oppId+"状态为:"+oppoState);
         baseMapper.updateById(opportunity);
         return oppoState;
+    }
+
+    @Override
+    public List<ToppOpportunityVo> queryListByOppoCodes(Set<String> oppoCodes) {
+        return baseMapper.selectVoList(new LambdaQueryWrapper<ToppOpportunityDo>().in(ToppOpportunityDo::getOppCode, oppoCodes)
+            .eq(ToppOpportunityDo::getIsValid, 1));
+    }
+
+    @Override
+    public void batchUpdateByBo(List<ToppOpportunityBo> toUpdateOpportunityList) {
+        List<ToppOpportunityDo> toUpdateOpportunityDoList = BeanCopyUtils.copyList(toUpdateOpportunityList, ToppOpportunityDo.class);
+        baseMapper.updateBatchById(toUpdateOpportunityDoList);
     }
 
     /**
