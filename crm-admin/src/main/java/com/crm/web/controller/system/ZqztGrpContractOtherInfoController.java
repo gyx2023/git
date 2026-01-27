@@ -136,28 +136,16 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
 
     /**
      * 根据合同ID查询合同关联的客户信息，将合同扩展信息与客户维护信息关联
+     * 支持按服务号码(infoVal2)进行可选筛选
      *
      * @param contractId 合同ID
+     * @param infoVal2 服务号码（可选）
      * @return 关联的客户信息列表
      */
     @SaCheckPermission("system:grpContractOtherInfo:list")
-    @GetMapping("/contract/{contractId}/userInfo")
-    public R<List<Map<String, Object>>> listContractRelatedUserInfo(@PathVariable String contractId) {
-        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId);
-        return R.ok(list);
-    }
-
-    /**
-     * 根据合同ID和服务号码查询合同关联的客户信息
-     *
-     * @param contractId 合同ID
-     * @param infoVal2 服务号码
-     * @return 关联的客户信息列表
-     */
-    @SaCheckPermission("system:grpContractOtherInfo:list")
-    @GetMapping("/contract/{contractId}/infoVal2/{infoVal2}/userInfo")
-    public R<List<Map<String, Object>>> listContractRelatedUserInfoByContractIdAndInfoVal2(@PathVariable String contractId, @PathVariable String infoVal2) {
-        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfoByContractIdAndInfoVal2(contractId, infoVal2);
+    @GetMapping({"/contract/{contractId}/userInfo", "/contract/{contractId}/infoVal2/{infoVal2}/userInfo"})
+    public R<List<Map<String, Object>>> listContractRelatedUserInfo(@PathVariable String contractId, @PathVariable(required = false) String infoVal2) {
+        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2);
         return R.ok(list);
     }
 

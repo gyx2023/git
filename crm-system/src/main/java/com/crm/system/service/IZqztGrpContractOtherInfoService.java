@@ -89,21 +89,14 @@ public interface IZqztGrpContractOtherInfoService {
     List<ZqztGrpContractOtherInfoVo> selectByContractIdAndInfoVal2(String contractId, String infoVal2);
 
     /**
-     * 根据合同ID查询合同关联的客户信息，将合同扩展信息与客户维护信息关联
-     *
-     * @param contractId 合同ID
-     * @return 关联的客户信息列表
-     */
-    List<Map<String, Object>> selectContractRelatedUserInfo(String contractId);
-
-    /**
      * 根据合同ID和服务号码查询合同关联的客户信息
+     * 当infoVal2为null或空时，仅按合同ID查询
      *
      * @param contractId 合同ID
-     * @param infoVal2 服务号码
+     * @param infoVal2 服务号码（可选）
      * @return 关联的客户信息列表
      */
-    List<Map<String, Object>> selectContractRelatedUserInfoByContractIdAndInfoVal2(String contractId, String infoVal2);
+    List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2);
 
     /**
      * 批量使合同关联用户信息失效

@@ -288,81 +288,8 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         return baseMapper.selectVoList(lqw);
     }
 
-    /**
-     * 根据合同ID查询合同关联的客户信息，将合同扩展信息与客户维护信息关联
-     *
-     * @param contractId 合同ID
-     * @return 关联的客户信息列表
-     */
-    public List<Map<String, Object>> selectContractRelatedUserInfo(String contractId) {
-        // 第一步：根据合同ID查询集团合同扩展信息
-        List<ZqztGrpContractOtherInfoVo> contractOtherInfos = selectByContractId(contractId);
-        if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 提取所有infoVal作为user_id用于查询客户维护信息
-        List<String> userIds = contractOtherInfos.stream()
-            .map(ZqztGrpContractOtherInfoVo::getInfoVal)
-            .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
-            .distinct()
-            .collect(Collectors.toList());
-
-        // 第二步：批量查询客户维护信息
-        Map<String, Map<String, Object>> custMaintInfoMap = new HashMap<>();
-        if (custMaintInfoService != null && !userIds.isEmpty()) {
-            custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
-        }
-
-        // 第三步：合并数据，构建结果列表
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
-            Map<String, Object> mergedInfo = new HashMap<>();
-            // 添加合同扩展信息字段
-            mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
-            mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
-            mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
-            mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
-            mergedInfo.put("isValid", contractOtherInfo.getIsValid());
-
-            // 添加从客户维护信息查询到的字段
-            String userId = contractOtherInfo.getInfoVal();
-            if (userId != null && custMaintInfoMap.containsKey(userId)) {
-                Map<String, Object> custInfo = custMaintInfoMap.get(userId);
-                // 对手机号码进行脱敏处理
-                String svcNum = (String) custInfo.get("svcNum");
-                String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
-                mergedInfo.put("svcNum", desensitizedSvcNum);
-                mergedInfo.put("userId", custInfo.get("userId"));
-                // 对归属客户名称进行脱敏
-                String custName = (String) custInfo.get("custName");
-                String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
-                mergedInfo.put("custName", desensitizedCustName);
-                // 对收入归集集团名称进行脱敏
-                String custGrpName = (String) custInfo.get("custGrpName");
-                String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
-                mergedInfo.put("custGrpName", desensitizedCustGrpName);
-            } else {
-                // 如果没有找到对应的客户信息，设置为空值
-                mergedInfo.put("svcNum", "");
-                mergedInfo.put("userId", "");
-                mergedInfo.put("custName", "");
-                mergedInfo.put("custGrpName", "");
-            }
-            result.add(mergedInfo);
-        }
-
-        return result;
-    }
-
-    /**
-     * 根据合同ID和服务号码查询合同关联的客户信息
-     *
-     * @param contractId 合同ID
-     * @param infoVal2 服务号码
-     * @return 关联的客户信息列表
-     */
-    public List<Map<String, Object>> selectContractRelatedUserInfoByContractIdAndInfoVal2(String contractId, String infoVal2) {
+    @Override
+    public List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2) {
         // 第一步：根据合同ID和服务号码查询集团合同扩展信息
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
