@@ -15,7 +15,7 @@ import java.util.List;
  * @author crm
  * @date 2025-12-16
  */
-@DS("slave")
+@DS("slave_1")
 public interface SalesupCollOppoSignMapper extends BaseMapperPlus<SalesupCollOppoSignMapper, SalesupCollOppoSignDo, SalesupCollOppoSignVo> {
 
     @Select("SELECT s.*,p.oppo_number FROM salesup_coll_oppo_sign s  " +

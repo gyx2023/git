@@ -2,6 +2,7 @@ package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.crm.common.annotation.ExcelDictFormat;
+import com.crm.common.constant.CacheNames;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.SysCategoryBo;
@@ -37,6 +39,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
      * 查询行业大类-亚类-细类分类
      */
     @Override
+    @Cacheable(cacheNames = CacheNames.SYS_CATEGORY, key = "#id")
     public SysCategoryVo queryById(String id){
         return baseMapper.selectVoById(id);
     }
@@ -103,6 +106,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
      * 新增行业大类-亚类-细类分类
      */
     @Override
+    @CacheEvict(cacheNames = CacheNames.SYS_CATEGORY, allEntries = true)
     public Boolean insertByBo(SysCategoryBo bo) {
         SysCategory add = BeanUtil.toBean(bo, SysCategory.class);
         validEntityBeforeSave(add);
@@ -117,6 +121,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
      * 修改行业大类-亚类-细类分类
      */
     @Override
+    @CacheEvict(cacheNames = CacheNames.SYS_CATEGORY, allEntries = true)
     public Boolean updateByBo(SysCategoryBo bo) {
         SysCategory update = BeanUtil.toBean(bo, SysCategory.class);
         validEntityBeforeSave(update);
@@ -154,6 +159,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
      * 批量删除行业大类-亚类-细类分类
      */
     @Override
+    @CacheEvict(cacheNames = CacheNames.SYS_CATEGORY, allEntries = true)
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
         if(isValid){
             //TODO 做一些业务上的校验,判断是否需要校验
