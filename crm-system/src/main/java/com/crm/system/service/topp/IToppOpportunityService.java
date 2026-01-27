@@ -67,4 +67,6 @@ public interface IToppOpportunityService {
     Boolean upppUnbound(Long id);
 
     String updateOppoState(Long oppId);
+    
+    List<ToppOpportunityVo> queryOpportunityByLastVisitTime();
 }
