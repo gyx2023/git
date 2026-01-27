@@ -18,6 +18,7 @@ public class FlowableConfig implements EngineConfigurationConfigurer<SpringProce
         engineConfiguration.setLabelFontName("宋体");
         engineConfiguration.setAnnotationFontName("宋体");
         engineConfiguration.setDatabaseTablePrefix("FLO_");
+        engineConfiguration.setDatabaseType("mysql");
     }
 }
 
