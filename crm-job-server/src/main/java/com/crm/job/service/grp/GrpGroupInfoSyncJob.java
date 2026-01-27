@@ -325,8 +325,6 @@ public class GrpGroupInfoSyncJob {
         try {
             log.info("开始同步数据到zqzt_grp_group_info表");
             XxlJobHelper.log("开始同步数据到zqzt_grp_group_info表");
-
-
             // 2. 从grp_group_info同步数据
             //int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
             List<ZqGrpGroupInfo> zqGrpGroupInfoList = new ArrayList<>();
@@ -389,6 +387,7 @@ public class GrpGroupInfoSyncJob {
             // 分批插入以提高性能
             this.insertBatch(zqGrpGroupInfoList);
             log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", zqGrpGroupInfoList.size());
+            zqGrpGroupInfoList.clear();
         } catch (Exception e) {
             log.error("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage(), e);
             XxlJobHelper.log("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage());
