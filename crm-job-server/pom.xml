@@ -35,7 +35,11 @@
             <groupId>com.crm</groupId>
             <artifactId>crm-framework</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.dameng</groupId>
+            <artifactId>DmJdbcDriver18</artifactId>
+            <version>8.1.1.193</version>
+        </dependency>
         <dependency>
             <groupId>com.crm</groupId>
             <artifactId>crm-system</artifactId>
