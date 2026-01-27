@@ -1,5 +1,6 @@
 package com.crm.system.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
@@ -52,7 +53,6 @@ public interface IZqGrpGroupInfoService {
      */
     List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode);
 
-
     /**
      * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
      *
@@ -74,6 +74,16 @@ public interface IZqGrpGroupInfoService {
         // 默认实现保持向后兼容
         return exportList(bo, areaCode);
     }
+    /**
+     * 根据areaCode分页查询政企集团客户信息列表（用于流式导出）
+     *
+     * @param bo 查询条件
+     * @param page 分页参数
+     * @param areaCode 区域代码
+     * @param needDesensitize 是否需要脱敏
+     * @return 政企集团客户信息列表
+     */
+    List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode, boolean needDesensitize);
 
     /**
      * 新增政企集团客户信息
