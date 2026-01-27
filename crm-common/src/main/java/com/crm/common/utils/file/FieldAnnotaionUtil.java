@@ -249,7 +249,6 @@ public class FieldAnnotaionUtil {
 //        }
         log.info("开始赋值==============");
         for (int i = 0; i < values.length; i++) {
-            log.info("第" + i + " 个字段赋值:" +values[i]);
             Field f = fields[i];
             if (!setFieldValueFromObject(obj, f, values[i])) {
                 log.info("error---------------value在插入属性时因类型不一致导致异常");

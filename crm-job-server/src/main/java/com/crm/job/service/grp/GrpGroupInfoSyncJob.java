@@ -23,6 +23,7 @@ import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.text.ParseException;
@@ -286,7 +287,8 @@ public class GrpGroupInfoSyncJob {
      * 同步数据到zqzt_grp_group_info表
      * 根据sys_param表中的开关配置决定是否同步
      */
-    private void syncToZqGrpGroupInfo() {
+    @Transactional(rollbackFor = Exception.class)
+    public void syncToZqGrpGroupInfo() {
         try {
             // 查询同步开关配置
             SysParamDo syncSwitchParam = sysParamMapper.selectOne(
