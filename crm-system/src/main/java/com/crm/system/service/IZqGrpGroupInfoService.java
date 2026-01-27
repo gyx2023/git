@@ -40,11 +40,6 @@ public interface IZqGrpGroupInfoService {
     TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
 
     /**
-     * 查询政企集团客户信息列表
-     */
-    List<ZqGrpGroupInfoVo> queryList(ZqGrpGroupInfoBo bo);
-
-    /**
      * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
      *
      * @param bo 查询条件

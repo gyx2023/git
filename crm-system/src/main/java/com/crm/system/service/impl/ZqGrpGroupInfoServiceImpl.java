@@ -58,6 +58,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final SysAreaMapper sysAreaMapper;
     private final IZqGrpGroupLogService zqGrpGroupLogService;
     private final ISysDictDataService dictService;
+    private final ISysAreaService sysAreaService;
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
     private final SysCategoryMapper sysCategoryMapper; // 添加行业分类Mapper
     @Resource
