@@ -412,4 +412,53 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         }
         return vo;
     }
+
+    @Override
+    public Boolean isContractInExecutionOrCompleted(String contractId) {
+        if (contractId == null || contractId.trim().isEmpty()) {
+            return false;
+        }
+
+        // 查询合同信息
+        LambdaQueryWrapper<ZqztGrpContractInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ZqztGrpContractInfo::getContractId, contractId);
+        
+        ZqztGrpContractInfo contractInfo = baseMapper.selectOne(queryWrapper);
+        
+        if (contractInfo == null) {
+            return false;
+        }
+
+        // 判断合同状态是否为履行中（字符9）或办结（字符5）
+        String contractStatus = contractInfo.getContractStatus();
+        return "9".equals(contractStatus) || "5".equals(contractStatus);
+    }
+
+    @Override
+    public Boolean isContractExpired(String contractId) {
+        if (contractId == null || contractId.trim().isEmpty()) {
+            return false;
+        }
+
+        // 查询合同信息
+        LambdaQueryWrapper<ZqztGrpContractInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ZqztGrpContractInfo::getContractId, contractId);
+        
+        ZqztGrpContractInfo contractInfo = baseMapper.selectOne(queryWrapper);
+        
+        if (contractInfo == null) {
+            return false;
+        }
+
+        // 获取合同失效时间（合同到期日期）
+        Date contractExpdate = contractInfo.getContractExpdate();
+        
+        if (contractExpdate == null) {
+            return false; // 如果没有设置失效时间，则认为未失效
+        }
+
+        // 比较合同失效时间是否小于当前时间
+        Date currentTime = new Date();
+        return contractExpdate.before(currentTime);
+    }
 }
