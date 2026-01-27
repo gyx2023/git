@@ -60,11 +60,6 @@
             <groupId>com.xuxueli</groupId>
             <artifactId>xxl-job-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.infoSecure</groupId>
-            <artifactId>infoSecure-common</artifactId>
-            <version>3.8.3</version>
-        </dependency>
 
         <!-- skywalking 整合 logback -->
         <!--        <dependency>-->
