@@ -9,7 +9,6 @@ import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.mapping.StatementType;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,4 +28,7 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
         @Result(property = "oppoState", column = "oppoState")
     })
     String callGetOppoState(@Param("oppId") Long oppId);
+
+
+    List<SignOppoFileExportDTO> selectOpportunityUnbound();
 }

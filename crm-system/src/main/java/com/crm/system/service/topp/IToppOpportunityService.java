@@ -1,4 +1,5 @@
 package com.crm.system.service.topp;
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
@@ -61,10 +62,15 @@ public interface IToppOpportunityService {
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
+
+
     List<SignOppoFileExportDTO> selectToppOpportunity();
     List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime,LocalDateTime endTime);
 
     Boolean upppUnbound(Long id);
 
     String updateOppoState(Long oppId);
+
+    List<SignOppoFileExportDTO> selectOpportunityUnbound();
+
 }
