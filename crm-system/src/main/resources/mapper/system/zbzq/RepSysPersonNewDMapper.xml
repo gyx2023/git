@@ -12,4 +12,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
       and  (UCASE(a.OA_USER_NAME) = #{oaUserName} or LOWER(a.OA_USER_NAME)= #{oaUserName})
 </select>
 
+    <select id="selectGrpDto" resultType="com.crm.common.core.domain.dto.GrpGroupImportDTO">
+        select  c.CHANNEL_ID as managerid,
+                a.EMP_ID as empId,
+                a.OA_USER_NAME as oaUserName,
+                a.FULL_NAME as fullName from rep_sys_person_new_d a
+            inner join dwd_rep_fz_person_d b on a.EMP_ID=b.EMP_ID inner join AGENT_CHANNEL c
+          on b.CHANNEL_HQ_CODE=c.CHANNEL_HQ_CODE
+
+    </select>
+
 </mapper>

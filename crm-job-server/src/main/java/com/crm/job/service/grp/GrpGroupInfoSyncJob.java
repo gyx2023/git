@@ -3,6 +3,9 @@ package com.crm.job.service.grp;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.crm.common.convert.EntityListToMapConverter;
+import com.crm.common.core.domain.dto.GrpGroupImportDTO;
+import com.crm.common.core.domain.dto.ThreeFieldDTO;
 import com.crm.common.enums.GrpExpandTypeenum;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
@@ -10,14 +13,9 @@ import com.crm.system.domain.SysArea;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.grp.GrpGroupInfoDo;
 import com.crm.system.domain.param.SysParamDo;
-import com.crm.system.domain.zbzq.AgentChannelDo;
-import com.crm.system.domain.zbzq.DwdRepFzPersonDDo;
-import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
-import com.crm.system.mapper.zbzq.AgentChannelMapper;
-import com.crm.system.mapper.zbzq.DwdRepFzPersonDMapper;
 import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -28,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -58,16 +55,11 @@ public class GrpGroupInfoSyncJob {
 
     @Resource
     private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper;
-    @Resource
-    private AgentChannelMapper agentChannelMapper;
-
-    @Resource
-    private DwdRepFzPersonDMapper dwdRepFzPersonDMapper;
 
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
-    private final Map<String,String> cityMap = new HashMap<>();
+    private final Map<String, String> cityMap = new HashMap<>();
     private volatile boolean cityListInitialized = false;
 
     /**
@@ -162,33 +154,6 @@ public class GrpGroupInfoSyncJob {
             // 2. 清空表数据（可选，根据业务需求决定）
             grpGroupInfoService.truncateTable();
 
-            // 查询同步开关配置
-            SysParamDo syncSwitchParam = sysParamMapper.selectOne(
-                new LambdaQueryWrapper<SysParamDo>()
-                    .eq(SysParamDo::getType, "insert_grp_group_info")
-                    .eq(SysParamDo::getCode, "zqzt.switch")
-            );
-             boolean isTblSwitch = true;
-            // 检查开关是否为开启状态（值为"1"或"true"表示开启）
-            if (syncSwitchParam == null || syncSwitchParam.getValue() == null) {
-                log.info("未配置同步到zqzt_grp_group_info的开关，跳过同步");
-                XxlJobHelper.log("未配置同步到zqzt_grp_group_info的开关，跳过同步");
-                isTblSwitch=false;
-            }
-
-            String switchValue = syncSwitchParam.getValue().trim();
-            if (!"1".equals(switchValue) && !"true".equalsIgnoreCase(switchValue)) {
-                log.info("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
-                XxlJobHelper.log("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
-                isTblSwitch=false;
-            }
-            // 1. 全表删除zqzt_grp_group_info表数据
-            if(isTblSwitch){
-                int deleteCount = zqGrpGroupInfoMapper.truncateZqGrpGroupInfo();
-                log.info("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
-                XxlJobHelper.log("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
-            }
-
 
             // 3. 使用批处理器处理大文件，每批处理100行数据以优化内存使用
             final int BATCH_SIZE = 500;
@@ -198,10 +163,9 @@ public class GrpGroupInfoSyncJob {
             // 统计变量
             final int[] totalSuccess = {0};
             final int[] totalRows = {0};
-
+            List<GrpGroupInfoDo> grpGroupInfoDos = new ArrayList<>();
 
             // 使用指定的SFTP配置类型和批处理器处理文件，配置更大的缓冲区
-            boolean finalIsTblSwitch = isTblSwitch;
             sftpUtil.processFileInBatches(sftpConfigType, filePath, BATCH_SIZE, batchData -> {
 
                 try {
@@ -221,19 +185,17 @@ public class GrpGroupInfoSyncJob {
 
                     // 解析文本数据
                     List<GrpGroupInfoDo> groupInfoList = groupFileParser.parseFile(txtContent.toString(), GrpGroupInfoDo.class, "\\x1b");
-
                     if (!groupInfoList.isEmpty()) {
-                        groupInfoList.forEach(p->{
-                            if(StringUtils.isNotBlank(p.getAreaid())){
-                                p.setAreaid(cityMap.get(p.getAreaid())==null?p.getAreaid():cityMap.get(p.getAreaid()));
+                        groupInfoList.forEach(p -> {
+                            if (StringUtils.isNotBlank(p.getAreaid())) {
+                                p.setAreaid(cityMap.get(p.getAreaid()) == null ? p.getAreaid() : cityMap.get(p.getAreaid()));
                             }
-                            if(StringUtils.isNotBlank(p.getCountyid())){
-                                p.setCountyid(cityMap.get(p.getCountyid())==null?p.getCountyid():cityMap.get(p.getCountyid()));
+                            if (StringUtils.isNotBlank(p.getCountyid())) {
+                                p.setCountyid(cityMap.get(p.getCountyid()) == null ? p.getCountyid() : cityMap.get(p.getCountyid()));
                             }
-                            if(StringUtils.isNotBlank(p.getCountyid2())){
-                                p.setCountyid2(cityMap.get(p.getCountyid2())==null?p.getCountyid2():cityMap.get(p.getCountyid2()));
+                            if (StringUtils.isNotBlank(p.getCountyid2())) {
+                                p.setCountyid2(cityMap.get(p.getCountyid2()) == null ? p.getCountyid2() : cityMap.get(p.getCountyid2()));
                             }
-
                         });
                         // 批量插入数据库
                         int success = grpGroupInfoService.batchUpsert(groupInfoList);
@@ -244,10 +206,7 @@ public class GrpGroupInfoSyncJob {
                         XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
                             totalRows[0], totalSuccess[0]);
                     }
-                    //通过开关控制是否要插入
-                    if(finalIsTblSwitch) {
-                        syncToZqGrpGroupInfo(groupInfoList);
-                    }
+                    grpGroupInfoDos.addAll(groupInfoList);
                     // 显式清空中间变量，释放内存
                     groupInfoList.clear();
                     return true; // 继续处理下一批数据
@@ -266,6 +225,7 @@ public class GrpGroupInfoSyncJob {
                 return;
             }
 
+            syncToZqGrpGroupInfo(grpGroupInfoDos);
 
             // 4. 任务完成，记录结果
             String successMsg = String.format("集团信息同步任务执行完成，成功导入: %d 条，失败: %d 条",
@@ -283,10 +243,10 @@ public class GrpGroupInfoSyncJob {
     }
 
 
-    private void initJobData(){
+    private void initJobData() {
         for (SysArea sysArea : sysAreaMapper.selectList()) {
-            if(StringUtils.isNotBlank(sysArea.getBssCode())){
-                cityMap.put(sysArea.getBssCode(),String.valueOf(sysArea.getId()));
+            if (StringUtils.isNotBlank(sysArea.getBssCode())) {
+                cityMap.put(sysArea.getBssCode(), String.valueOf(sysArea.getId()));
             }
         }
     }
@@ -323,47 +283,44 @@ public class GrpGroupInfoSyncJob {
     public void syncToZqGrpGroupInfo(List<GrpGroupInfoDo> groupInfoList) {
         log.info("grpGroupInfoList size: {}", groupInfoList.size());
         try {
+            // 查询同步开关配置
+            SysParamDo syncSwitchParam = sysParamMapper.selectOne(
+                new LambdaQueryWrapper<SysParamDo>()
+                    .eq(SysParamDo::getType, "insert_grp_group_info")
+                    .eq(SysParamDo::getCode, "zqzt.switch")
+            );
+            // 检查开关是否为开启状态（值为"1"或"true"表示开启）
+            if (syncSwitchParam == null || syncSwitchParam.getValue() == null) {
+                log.info("未配置同步到zqzt_grp_group_info的开关，跳过同步");
+                XxlJobHelper.log("未配置同步到zqzt_grp_group_info的开关，跳过同步");
+                return;
+            }
+
+            String switchValue = syncSwitchParam.getValue().trim();
+            if (!"1".equals(switchValue) && !"true".equalsIgnoreCase(switchValue)) {
+                log.info("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
+                XxlJobHelper.log("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
+                return;
+            }
+            // 1. 全表删除zqzt_grp_group_info表数据
+            int deleteCount = zqGrpGroupInfoMapper.truncateZqGrpGroupInfo();
+            log.info("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
+            XxlJobHelper.log("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
+
             log.info("开始同步数据到zqzt_grp_group_info表");
             XxlJobHelper.log("开始同步数据到zqzt_grp_group_info表");
             // 2. 从grp_group_info同步数据
-            //int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
             List<ZqGrpGroupInfo> zqGrpGroupInfoList = new ArrayList<>();
             Date now = new Date();
-            groupInfoList.forEach(grpGroupInfoDo -> {
+            List<GrpGroupImportDTO> grpGroupImportDTOS = repSysPersonNewDMapper.selectGrpDto();
+
+            Map<String, ThreeFieldDTO> resultMap = EntityListToMapConverter.convertToMap(grpGroupImportDTOS);
+            for (GrpGroupInfoDo grpGroupInfoDo : groupInfoList) {
+                ThreeFieldDTO threeFieldDTO = resultMap.get(grpGroupInfoDo.getManagerid());
                 // 根据扩展类型设置经理信息
-                String empId = "";
-                String oaUserName = "";
-                String fullName = "";
-                // 通过managerid查询相关的员工信息，使用selectList替代selectOne
-                List<AgentChannelDo> agentChannelList = agentChannelMapper.selectList(
-                    new LambdaQueryWrapper<AgentChannelDo>()
-                        .eq(AgentChannelDo::getChannelId, grpGroupInfoDo.getManagerid())
-                );
-
-                if (!agentChannelList.isEmpty()) {
-                    AgentChannelDo agentChannelDo = agentChannelList.get(0);
-                    List<DwdRepFzPersonDDo> dwdRepFzPersonList = dwdRepFzPersonDMapper.selectList(
-                        new LambdaQueryWrapper<DwdRepFzPersonDDo>()
-                            .eq(DwdRepFzPersonDDo::getChannelHqCode, agentChannelDo.getChannelHqCode())
-                    );
-
-                    if (!dwdRepFzPersonList.isEmpty()) {
-                        DwdRepFzPersonDDo dwdRepFzPersonDDo = dwdRepFzPersonList.get(0);
-                        List<RepSysPersonNewDDo> repSysPersonList = repSysPersonNewDMapper.selectList(
-                            new LambdaQueryWrapper<RepSysPersonNewDDo>()
-                                .eq(RepSysPersonNewDDo::getEmpId, dwdRepFzPersonDDo.getEmpId())
-                        );
-
-                        if (!repSysPersonList.isEmpty()) {
-                            RepSysPersonNewDDo repSysPersonNewDDo = repSysPersonList.get(0);
-                            empId = repSysPersonNewDDo.getEmpId();
-                            oaUserName = repSysPersonNewDDo.getOaUserName();
-                            fullName = repSysPersonNewDDo.getFullName();
-                        }
-                    }
-                }
-
-
+                String empId = ObjectUtil.isEmpty(threeFieldDTO)? null : threeFieldDTO.getEmpId();
+                String oaUserName = ObjectUtil.isEmpty(threeFieldDTO)? null : threeFieldDTO.getOaUserName().toLowerCase();
+                String fullName = ObjectUtil.isEmpty(threeFieldDTO)? null :  threeFieldDTO.getFullName();
 
                 ZqGrpGroupInfo zqGrpGroupInfo = new ZqGrpGroupInfo();
                 zqGrpGroupInfo.setGrpId(grpGroupInfoDo.getGrpId());
@@ -391,23 +348,21 @@ public class GrpGroupInfoSyncJob {
                 zqGrpGroupInfo.setCreateTime(now);
                 zqGrpGroupInfo.setUpdateTime(now);
 
-
-
-                if(ObjectUtil.equals(GrpExpandTypeenum.PROVINCE_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
+                if (ObjectUtil.equals(GrpExpandTypeenum.PROVINCE_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())) {
                     zqGrpGroupInfo.setProvManagerOauser(oaUserName);
                     zqGrpGroupInfo.setProvManagerEmpId(empId);
                     zqGrpGroupInfo.setProvManagerName(fullName);
-                }else if(ObjectUtil.equals(GrpExpandTypeenum.CITY_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())){
+                } else if (ObjectUtil.equals(GrpExpandTypeenum.CITY_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())) {
                     zqGrpGroupInfo.setCityManagerEmpId(empId);
                     zqGrpGroupInfo.setCityManagerOauser(oaUserName);
                     zqGrpGroupInfo.setCityManagerName(fullName);
-                }else{
+                } else {
                     zqGrpGroupInfo.setCountyManagerEmpId(empId);
                     zqGrpGroupInfo.setCountyManagerOauser(oaUserName);
                     zqGrpGroupInfo.setCountyManagerName(fullName);
                 }
                 zqGrpGroupInfoList.add(zqGrpGroupInfo);
-            });
+            }
             // 分批插入以提高性能
             this.insertBatch(zqGrpGroupInfoList);
             log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", zqGrpGroupInfoList.size());
@@ -422,7 +377,7 @@ public class GrpGroupInfoSyncJob {
 
     @Transactional(rollbackFor = Exception.class)
     public void insertBatch(List<ZqGrpGroupInfo> zqGrpGroupInfoList) {
-            zqGrpGroupInfoMapper.insertBatch(zqGrpGroupInfoList);
-        }
+        zqGrpGroupInfoMapper.insertBatch(zqGrpGroupInfoList, 1000);
+    }
 
 }
