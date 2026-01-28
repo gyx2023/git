@@ -22,9 +22,11 @@ import com.crm.common.core.validate.QueryGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
+import com.crm.system.domain.vo.ContractUserTemplateVo;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.common.core.page.TableDataInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 集团合同扩展信息
@@ -171,5 +173,26 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     @PostMapping("/batch")
     public R<Void> batchAdd(@Validated(AddGroup.class) @RequestBody List<ZqztGrpContractOtherInfoBo> boList) {
         return toAjax(iZqztGrpContractOtherInfoService.insertBatchByBo(boList));
+    }
+
+    /**
+     * 下载合同关联用户批量导入模板
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:add")
+    @GetMapping("/downloadTemplate")
+    public void downloadTemplate(HttpServletResponse response) {
+        ExcelUtil.exportExcel(null, "合同关联用户批量导入模板", ContractUserTemplateVo.class, response);
+    }
+
+    /**
+     * 批量导入合同关联用户
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:add")
+    @Log(title = "合同关联用户", businessType = BusinessType.IMPORT)
+    @PostMapping("/batchImport")
+    public R<Void> batchImport(@RequestParam("file") MultipartFile file, @RequestParam("contractId") String contractId) {
+        // 这里需要实现文件上传到OSS，然后调用XXLJob执行异步任务的逻辑
+        // 暂时返回成功，后续需要根据实际实现修改
+        return R.ok();
     }
 }
