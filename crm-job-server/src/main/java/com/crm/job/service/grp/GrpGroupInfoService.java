@@ -42,5 +42,5 @@ public interface GrpGroupInfoService {
      */
     int batchUpsert(List<GrpGroupInfoDo> groupInfoList);
 
-    List<GrpGroupInfoDo> selectAll();
+    Long selectTotalCount ();
 }
