@@ -497,9 +497,11 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             })
             .map(custMaintInfo -> {
                 Map<String, Object> userMap = new HashMap<>();
+                String svcNum = custMaintInfo.getSvcNum();
+                userMap.put("svcNum", svcNum); // 脱敏前的号码
                 // 对SVC_NUM进行脱敏处理
-                String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(custMaintInfo.getSvcNum());
-                userMap.put("svcNum", desensitizationSvcNum); // 脱敏后的号码
+                String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
                 userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
                 userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
                 return userMap;
