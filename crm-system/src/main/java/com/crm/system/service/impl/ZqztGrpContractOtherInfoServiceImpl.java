@@ -23,6 +23,7 @@ import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.ICustMaintInfoService;
+import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.utils.spring.SpringUtils;
 
 import javax.annotation.Resource;
@@ -52,7 +53,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     private ICustMaintInfoService custMaintInfoService;
 
     @Autowired
-    private TfFCustGroupMService tfFCustGroupMService;
+    private ITfFCustGroupMService tfFCustGroupMService;
 
     /**
      * 查询集团合同扩展信息
@@ -103,6 +104,32 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setContractId(add.getContractId());
+        }
+        return flag;
+    }
+
+    /**
+     * 批量新增集团合同扩展信息
+     */
+    @Override
+    public Boolean insertBatchByBo(List<ZqztGrpContractOtherInfoBo> boList) {
+        if (boList == null || boList.isEmpty()) {
+            return false;
+        }
+
+        List<ZqztGrpContractOtherInfo> entities = boList.stream()
+            .map(bo -> {
+                ZqztGrpContractOtherInfo entity = BeanUtil.toBean(bo, ZqztGrpContractOtherInfo.class);
+                validEntityBeforeSave(entity);
+                return entity;
+            })
+            .collect(Collectors.toList());
+
+        boolean flag = baseMapper.insertBatch(entities);
+        if (flag) {
+            for (int i = 0; i < boList.size(); i++) {
+                boList.get(i).setContractId(entities.get(i).getContractId());
+            }
         }
         return flag;
     }
