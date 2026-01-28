@@ -936,7 +936,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode, boolean needDesensitize) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-
+        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
         // 执行分页查询
         IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
         List<ZqGrpGroupInfoVo> resultList = resultPage.getRecords();
