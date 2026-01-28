@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -8,6 +9,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.generator.util.Desensitization;
+import com.crm.system.domain.CustMaintInfo;
+import com.crm.system.domain.grp.TfFCustGroupMDo;
+import com.crm.system.mapper.CustMaintInfoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +50,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
     @Resource
     private ICustMaintInfoService custMaintInfoService;
+
+    @Autowired
+    private TfFCustGroupMService tfFCustGroupMService;
 
     /**
      * 查询集团合同扩展信息
@@ -394,4 +401,84 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         return updateCount > 0;
     }
 
+    @Override
+    public List<ZqztGrpContractOtherInfo> selectByInfoValAndContractId(List<String> infoVal, String contractId) {
+        LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
+                   .in(ZqztGrpContractOtherInfo::getInfoVal, infoVal)
+                   .eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        return baseMapper.selectList(queryWrapper);
+    }
+
+
+
+    @Override
+    public List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId) {
+        // 1. 根据总部集团编码(hqGrpCode)在tf_f_cust_group_m表中查询GROUP_ID，获取CUST_ID
+        TfFCustGroupMDo custGroup = tfFCustGroupMService.selectByGroupId(hqGrpCode);
+        List<String> custIds = new ArrayList<>();
+        if (custGroup != null) {
+            custIds.add(custGroup.getCustId());
+        }
+
+        if (custIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 2. 根据 HQ_GRP_CODE(CUST_GRP_ID) 和查询到的 CUST_ID 查询 CustMaintInfo 表的 USER_ID
+        // 核心修改：实现 STATUS=1 且 (CUST_GRP_ID=hqGrpCode OR CUST_ID in custIds) 的逻辑
+        List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
+        QueryWrapper<CustMaintInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("STATUS", "1")
+            // 用and包裹OR逻辑，确保条件优先级正确
+            .and(wrapper -> wrapper
+                .eq("CUST_GRP_ID", hqGrpCode) // 匹配入参的总部编码
+                .or() // 或 匹配第一步查询到的cust_id
+                .in("CUST_ID", custIds)
+            );
+        // 一次查询替代原循环查询，提升性能
+        List<CustMaintInfo> records = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper);
+        allCustMaintInfosFromDb.addAll(records);
+
+        // 提取userIds
+        List<String> userIds = allCustMaintInfosFromDb.stream()
+            .map(CustMaintInfo::getUserId)
+            .filter(userId -> userId != null && !userId.isEmpty())
+            .collect(Collectors.toList());
+
+        if (userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 3. 查询zqzt_grp_contract_other_info表中已经存在的info_val（即user_id）
+        List<ZqztGrpContractOtherInfo> existingContracts = new ArrayList<>();
+        if (!userIds.isEmpty()) {
+            existingContracts = selectByInfoValAndContractId(userIds, contractId);
+        }
+
+        // 提取已经有关联合同的user_id
+        List<String> contractedUserIds = existingContracts.stream()
+            .map(ZqztGrpContractOtherInfo::getInfoVal)
+            .filter(infoVal -> infoVal != null && !infoVal.isEmpty())
+            .collect(Collectors.toList());
+
+        // 4. 过滤掉已经有合同的用户，只返回未签约的用户
+        List<Map<String, Object>> uncontractedUsers = allCustMaintInfosFromDb.stream()
+            .filter(custMaintInfo -> {
+                String userId = custMaintInfo.getUserId();
+                return userId != null && !contractedUserIds.contains(userId);
+            })
+            .map(custMaintInfo -> {
+                Map<String, Object> userMap = new HashMap<>();
+                // 对SVC_NUM进行脱敏处理
+                String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(custMaintInfo.getSvcNum());
+                userMap.put("svcNum", desensitizationSvcNum); // 脱敏后的号码
+                userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
+                userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
+                return userMap;
+            })
+            .collect(Collectors.toList());
+
+        return uncontractedUsers;
+    }
 }

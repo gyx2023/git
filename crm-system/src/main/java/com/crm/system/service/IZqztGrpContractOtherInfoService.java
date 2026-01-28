@@ -105,4 +105,15 @@ public interface IZqztGrpContractOtherInfoService {
      * @return 操作结果
      */
     Boolean batchInvalidateContractUserRelation(List<Long> ids);
+
+    List<ZqztGrpContractOtherInfo> selectByInfoValAndContractId(List<String> infoVal, String contractId);
+
+    /**
+     * 根据总部集团编码查询未签约的客户
+     * 
+     * @param hqGrpCode 总部集团编码
+     * @param contractId 合同ID
+     * @return 未签约的客户列表
+     */
+    List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId);
 }

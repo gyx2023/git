@@ -81,4 +81,13 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
 
         return resultMap;
     }
+
+    @Override
+    public List<CustMaintInfo> queryByCustGrpIdAndCustId(String custGrpId, String custId) {
+        QueryWrapper<CustMaintInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("CUST_GRP_ID", custGrpId)
+                    .eq("CUST_ID", custId)
+                    .eq("STATUS", "1");
+        return custMaintInfoMapper.selectList(queryWrapper);
+    }
 }

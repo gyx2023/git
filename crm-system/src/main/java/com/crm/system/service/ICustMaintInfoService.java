@@ -1,5 +1,7 @@
 package com.crm.system.service;
 
+import com.crm.system.domain.CustMaintInfo;
+
 import java.util.Map;
 import java.util.List;
 
@@ -26,4 +28,13 @@ public interface ICustMaintInfoService {
      * @return key为userId，value为包含scv_num等信息的Map
      */
     Map<String, Map<String, Object>> batchGetCustMaintInfoByUserIds(List<String> userIds);
+
+    /**
+     * 根据客户组ID和客户ID查询客户维护信息
+     *
+     * @param custGrpId 客户组ID
+     * @param custId 客户ID
+     * @return 匹配的客户维护信息列表
+     */
+    List<CustMaintInfo> queryByCustGrpIdAndCustId(String custGrpId, String custId);
 }
