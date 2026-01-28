@@ -334,7 +334,7 @@ public class GrpGroupInfoSyncJob {
                     ThreeFieldDTO threeFieldDTO = resultMap.get(grpGroupInfoDo.getManagerid());
                     // 根据扩展类型设置经理信息
                     String empId = ObjectUtil.isEmpty(threeFieldDTO) ? null : threeFieldDTO.getEmpId();
-                    String oaUserName = ObjectUtil.isEmpty(threeFieldDTO) ? null : threeFieldDTO.getOaUserName().toLowerCase();
+                    String oaUserName = ObjectUtil.isEmpty(threeFieldDTO) ? null : ObjectUtil.isNotNull(threeFieldDTO.getOaUserName()) ? threeFieldDTO.getOaUserName().toLowerCase(): null;
                     String fullName = ObjectUtil.isEmpty(threeFieldDTO) ? null : threeFieldDTO.getFullName();
 
                     ZqGrpGroupInfo zqGrpGroupInfo = new ZqGrpGroupInfo();
