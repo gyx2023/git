@@ -161,4 +161,15 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     public R<Void> batchInvalidateContractUserRelation(@RequestBody List<Long> ids) {
         return toAjax(iZqztGrpContractOtherInfoService.batchInvalidateContractUserRelation(ids));
     }
+
+    /**
+     * 批量新增集团合同扩展信息
+     */
+    @SaCheckPermission("system:grpContractOtherInfo:add")
+    @Log(title = "集团合同扩展信息", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
+    @PostMapping("/batch")
+    public R<Void> batchAdd(@Validated(AddGroup.class) @RequestBody List<ZqztGrpContractOtherInfoBo> boList) {
+        return toAjax(iZqztGrpContractOtherInfoService.insertBatchByBo(boList));
+    }
 }

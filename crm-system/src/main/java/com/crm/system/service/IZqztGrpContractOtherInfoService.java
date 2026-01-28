@@ -39,6 +39,11 @@ public interface IZqztGrpContractOtherInfoService {
     Boolean insertByBo(ZqztGrpContractOtherInfoBo bo);
 
     /**
+     * 批量新增集团合同扩展信息
+     */
+    Boolean insertBatchByBo(List<ZqztGrpContractOtherInfoBo> boList);
+
+    /**
      * 修改集团合同扩展信息
      */
     Boolean updateByBo(ZqztGrpContractOtherInfoBo bo);
