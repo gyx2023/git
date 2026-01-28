@@ -1,4 +1,5 @@
 package com.crm.system.service.topp;
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
@@ -70,4 +71,7 @@ public interface IToppOpportunityService {
     List<ToppOpportunityVo>   queryListByOppoCodes(Set<String> oppoCodes);
 
    void batchUpdateByBo( List<ToppOpportunityBo> toUpdateOpportunityList );
+
+    List<SignOppoFileExportDTO> selectOpportunityUnbound();
+
 }

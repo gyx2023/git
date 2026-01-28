@@ -23,6 +23,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -319,6 +324,12 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         System.out.println("更新商机"+oppId+"状态为:"+oppoState);
         baseMapper.updateById(opportunity);
         return oppoState;
+    }
+
+    @Override
+    public List<SignOppoFileExportDTO> selectOpportunityUnbound() {
+        List<SignOppoFileExportDTO> list =  baseMapper.selectOpportunityUnbound( );
+        return list;
     }
 
     @Override

@@ -562,6 +562,16 @@ public class ToppOpportunityDo extends BaseEntity {
     private String preDecision;
 
     /**
+     * 访问次数
+     */
+    private Integer visitCnt;
+
+    /**
+     * 最后访问时间
+     */
+    private Date lastVisitTime;
+
+    /**
      * 创建者
      */
     @TableField(exist = false)
