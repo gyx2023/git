@@ -361,4 +361,10 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
         return baseMapper.selectVoList(lqw);
     }
+
+    @Override
+    public List<SignOppoFileExportDTO> selectOpportunityUnbound() {
+        List<SignOppoFileExportDTO> list =  baseMapper.selectOpportunityUnbound( );
+        return list;
+    }
 }
