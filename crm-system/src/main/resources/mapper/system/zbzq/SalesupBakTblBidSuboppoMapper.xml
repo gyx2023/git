@@ -3,16 +3,43 @@
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.zbzq.SalesupBakTblBidSuboppoMapper">
+    <resultMap id="resultMap" type="com.crm.common.core.domain.dto.SalesupBakTblBidSuboppoDTO">
+        <result property="projectId" column="project_id"/>
+        <result property="oppoCode" column="oppo_code"/>
+        <result property="infoId" column="info_id"/>
+        <result property="bidTaskManagerId" column="bid_task_manager_id"/>
+        <result property="colorBrand" column="color_brand"/>
+        <result property="projectName" column="project_name"/>
+        <result property="budgetAmount" column="budget_amount"/>
+    </resultMap>
 
     <select id="selectSignedOppoData" resultType="java.lang.String">
         SELECT replace(oppo_number,'36-','') as oppo_number
         FROM salesup_bak_tbl_bid_suboppo a
         WHERE a.status = '1'
         AND a.deleted = '0'
-        AND a.oppo_number  IN
+        AND a.oppo_number IN
         <foreach collection="oppCodes" item="oppCode" open="(" separator="," close=")">
             CONCAT('36-', #{oppCode})
         </foreach>
     </select>
+
+    <select id="querySalesupBidList" resultMap="resultMap">
+        select replace(a.oppo_number,'36-','')  as oppo_code
+              , a.info_id as info_id
+              ,a.bid_task_manager_id as bid_task_manager_id
+              ,a.color_brand as color_brand
+             ,b.project_name as project_name
+             ,b.budget_amount as budget_amount
+           from salesup_bak_tbl_bid_suboppo a
+                 left join salesup_bak_tbl_bid_task b on a.info_id = b.info_id
+        where a.oppo_number like '36-SJ-%'
+          AND a.status = 1
+          and a.deleted = 0
+        <if test="dateTime != null">
+            and a.update_time >= #{dateTime}
+        </if>
+    </select>
+
 
 </mapper>

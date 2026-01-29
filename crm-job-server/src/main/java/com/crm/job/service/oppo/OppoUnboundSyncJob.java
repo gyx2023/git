@@ -158,7 +158,7 @@ public class OppoUnboundSyncJob {
                 if (StringUtils.contains(result, "\"code\":10000")) {
                     Boolean orderFlag = saveOrder(toppOpportunityVo);
                     if (orderFlag) {
-                        Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId());
+                        Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo);
                         log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
                     }
                 }

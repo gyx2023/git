@@ -9,10 +9,7 @@ import com.crm.system.domain.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 【请填写功能名称】Service接口
@@ -67,9 +64,13 @@ public interface IToppOpportunityService {
     List<SignOppoFileExportDTO> selectToppOpportunity();
     List<ToppOpportunityVo> queryOpportunityUnbound(LocalDateTime startTime,LocalDateTime endTime);
 
-    Boolean upppUnbound(Long id);
+    Boolean upppUnbound(ToppOpportunityVo toppOpportunityVo);
 
     String updateOppoState(Long oppId);
+
+    List<ToppOpportunityVo>   queryListByOppoCodes(Set<String> oppoCodes);
+
+   void batchUpdateByBo( List<ToppOpportunityBo> toUpdateOpportunityList );
 
     List<SignOppoFileExportDTO> selectOpportunityUnbound();
 
