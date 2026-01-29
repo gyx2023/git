@@ -247,16 +247,13 @@ public class FieldAnnotaionUtil {
 //            System.out.println("error---------------字段数与values个数不一致");
 //            return false;
 //        }
-        log.info("开始赋值==============");
         for (int i = 0; i < values.length; i++) {
-            log.info("第" + i + " 个字段赋值:" +values[i]);
             Field f = fields[i];
             if (!setFieldValueFromObject(obj, f, values[i])) {
                 log.info("error---------------value在插入属性时因类型不一致导致异常");
                 return false;
             }
         }
-        log.info("赋值完毕==============");
         return flag;
     }
 

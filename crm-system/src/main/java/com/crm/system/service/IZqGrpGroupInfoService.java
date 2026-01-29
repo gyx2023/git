@@ -53,6 +53,15 @@ public interface IZqGrpGroupInfoService {
      *
      * @param bo 查询条件
      * @param areaCode 区域代码
+     * @return 政企集团客户信息列表
+     */
+    List<ZqGrpGroupInfoVo> exportListLevel(ZqGrpGroupInfoBo bo, String areaCode,boolean needDesensitize);
+
+    /**
+     * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
+     *
+     * @param bo 查询条件
+     * @param areaCode 区域代码
      * @param needDesensitize 是否需要脱敏
      * @return 政企集团客户信息列表
      */
@@ -94,4 +103,6 @@ public interface IZqGrpGroupInfoService {
      * 获取政企集团客户信息相关字典数据
      */
     Map<String, List<SysDictData>> getDictData();
+
+    String getUserByStt();
 }

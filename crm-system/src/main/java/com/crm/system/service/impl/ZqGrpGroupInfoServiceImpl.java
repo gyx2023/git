@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -10,6 +11,7 @@ import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.enums.GrpExpandTypeenum;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.generator.util.Desensitization;
@@ -20,11 +22,13 @@ import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
+import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.SysCategoryMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.crm.system.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,13 +59,14 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final IZqGrpGroupLogService zqGrpGroupLogService;
     private final ISysDictDataService dictService;
     private final ISysAreaService sysAreaService;
-    private final IDwdRepSysPersonDService iDwdRepSysPersonDService;
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
     private final SysCategoryMapper sysCategoryMapper; // 添加行业分类Mapper
     @Resource
     private SysParamMapper sysParamMapper;
+    @Resource
+    private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
-    private static final String SENSITIVE_ROLE = "SENSITIVE_ROLE";
+
 
     /**
      * 查询政企集团客户信息
@@ -90,12 +95,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel>=1){
+            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+        }
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
         SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
         boolean isSensitive = sensitiveRoles.stream()
                 .anyMatch(roleStr -> roles.stream()
@@ -116,7 +124,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel>=1){
+            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+        }
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
             try {
@@ -124,7 +136,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date beginDate = sdf.parse(grpCreateTimeBegin);
                 Date endDate = sdf.parse(grpCreateTimeEnd);
-                lqw.between(ZqGrpGroupInfo::getCreateTime, beginDate, endDate);
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
             } catch (Exception e) {
                 log.warn("时间参数解析失败: {}", e.getMessage());
             }
@@ -134,7 +146,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
         boolean isSensitive = sensitiveRoles.stream()
             .anyMatch(roleStr -> roles.stream()
@@ -161,6 +172,24 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
         return exportList(bo, areaCode, true); // 默认需要脱敏
+    }
+     @Override
+    public List<ZqGrpGroupInfoVo> exportListLevel(ZqGrpGroupInfoBo bo, String areaCode, boolean needDesensitize) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
+        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+
+        // 字典翻译
+        translateDictLabels(list);
+
+        // 根据needDesensitize参数决定是否对查询结果进行脱敏处理
+        if (needDesensitize) {
+            list = list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        }
+
+        return list;
     }
 
     /**
@@ -470,11 +499,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 处理创建时间范围查询
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+            lqw.between(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         } else if (bo.getCreateTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
+            lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeStart());
         } else if (bo.getCreateTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
+            lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeEnd());
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
@@ -873,6 +902,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         return result;
     }
 
+    @Override
+    public String getUserByStt() {
+        String stt = "";
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel>=1){
+            stt= GrpExpandTypeenum.PROVINCE_ZT.getCode();
+        }
+        return stt;
+    }
+
     /**
      * 添加去重值到Map中
      */
@@ -899,7 +939,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode, boolean needDesensitize) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-
+        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
         // 执行分页查询
         IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
         List<ZqGrpGroupInfoVo> resultList = resultPage.getRecords();
