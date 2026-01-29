@@ -62,7 +62,6 @@ public class ToppBidSuboppoServiceImpl implements IToppBidSuboppoService {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ToppBidSuboppoDo> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getProjectId() != null, ToppBidSuboppoDo::getProjectId, bo.getProjectId());
-        lqw.eq(StringUtils.isNotBlank(bo.getOppoCode()), ToppBidSuboppoDo::getOppoCode, bo.getOppoCode());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoId()), ToppBidSuboppoDo::getInfoId, bo.getInfoId());
         lqw.eq(StringUtils.isNotBlank(bo.getBidTaskManagerId()), ToppBidSuboppoDo::getBidTaskManagerId, bo.getBidTaskManagerId());
         lqw.eq(StringUtils.isNotBlank(bo.getColorBrand()), ToppBidSuboppoDo::getColorBrand, bo.getColorBrand());
@@ -110,17 +109,6 @@ public class ToppBidSuboppoServiceImpl implements IToppBidSuboppoService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
-    }
-
-    @Override
-    public List<String> selectBidSuboppoList(List<String> oppCodes) {
-        List<String> codes = new ArrayList<>();
-        List<ToppBidSuboppoDo>  list =  baseMapper.selectList(new LambdaQueryWrapper<ToppBidSuboppoDo>()
-            .in(ToppBidSuboppoDo::getOppoCode, oppCodes));
-        if(ObjectUtil.isNotEmpty(list)){
-            codes=list.stream().map(ToppBidSuboppoDo::getOppoCode).collect(Collectors.toList());
-        }
-        return codes;
     }
 
     @Override

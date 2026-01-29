@@ -36,4 +36,9 @@ public class SalesupBakTblBidSuboppoDTO {
      */
 
     private String budgetAmount;
+
+    /**
+     * 是否有效
+     */
+    private boolean valid;
 }

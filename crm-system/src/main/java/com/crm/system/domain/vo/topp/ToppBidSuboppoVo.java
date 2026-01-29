@@ -34,12 +34,6 @@ public class ToppBidSuboppoVo {
     private Long projectId;
 
     /**
-     * 商机编码
-     */
-    @ExcelProperty(value = "商机编码")
-    private String oppoCode;
-
-    /**
      * 标讯ID
      */
     @ExcelProperty(value = "标讯ID")

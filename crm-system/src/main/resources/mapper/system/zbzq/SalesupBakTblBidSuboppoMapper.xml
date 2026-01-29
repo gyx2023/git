@@ -31,13 +31,14 @@
               ,a.color_brand as color_brand
              ,b.project_name as project_name
              ,b.budget_amount as budget_amount
+            ,case when a.status = '1' and a.deleted = '0' then '1'
+                   else '0'
+             end as valid
            from salesup_bak_tbl_bid_suboppo a
                  left join salesup_bak_tbl_bid_task b on a.info_id = b.info_id
         where a.oppo_number like '36-SJ-%'
-          AND a.status = 1
-          and a.deleted = 0
         <if test="dateTime != null">
-            and a.update_time >= #{dateTime}
+            and (a.update_time >= #{dateTime} or a.create_time >= #{dateTime})
         </if>
     </select>
 

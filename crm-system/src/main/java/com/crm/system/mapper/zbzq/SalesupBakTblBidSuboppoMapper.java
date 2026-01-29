@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@DS("slave")
+@DS("slave_1")
 public interface SalesupBakTblBidSuboppoMapper extends BaseMapperPlus<SalesupBakTblBidSuboppoMapper, SalesupBakTblBidSuboppoDo, SalesupBakTblBidSuboppoVo> {
 
 

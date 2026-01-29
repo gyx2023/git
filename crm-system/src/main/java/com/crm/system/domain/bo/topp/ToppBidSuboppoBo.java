@@ -34,12 +34,6 @@ public class ToppBidSuboppoBo extends BaseEntity {
     private Long projectId;
 
     /**
-     * 商机编码
-     */
-    @NotBlank(message = "商机编码不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String oppoCode;
-
-    /**
      * 标讯ID
      */
     @NotBlank(message = "标讯ID不能为空", groups = { AddGroup.class, EditGroup.class })
@@ -63,5 +57,8 @@ public class ToppBidSuboppoBo extends BaseEntity {
     @NotBlank(message = "项目名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String projectName;
 
-
+    /**
+     *  是否有效
+     */
+    private boolean valid;
 }
