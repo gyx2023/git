@@ -203,7 +203,8 @@ public class ToppOpportunityExportJob {
                     line.append(escapeNull(record.getSupportStageTime())).append("|");
                     line.append(escapeNull(record.getPreDecision())).append("|");
                     line.append(escapeNull(record.getVisitCnt())).append("|");
-                    line.append(escapeNull(record.getLastVisitTime()));
+                    line.append(escapeNull(record.getLastVisitTime())).append("|");
+                    line.append(escapeNull(record.getOppoConversionState()));
 
                     writer.write(line.toString());
                     writer.newLine();
