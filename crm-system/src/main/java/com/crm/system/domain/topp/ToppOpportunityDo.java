@@ -562,6 +562,16 @@ public class ToppOpportunityDo extends BaseEntity {
     private String preDecision;
 
     /**
+     * 访问次数
+     */
+    private Integer visitCnt;
+
+    /**
+     * 最后访问时间
+     */
+    private Date lastVisitTime;
+
+    /**
      * 创建者
      */
     @TableField(exist = false)
@@ -583,6 +593,5 @@ public class ToppOpportunityDo extends BaseEntity {
      * 1-自动关闭、2-发起关闭、3-关联合同、4-关联电子表单、5-关联标讯、6-其他，该字段存在多个状态，当为多个值时用英文逗号分隔，例如：,1,2,3,4;
      */
     private String oppoConversionState;
-    private Date lastVisitTime;
 
 }

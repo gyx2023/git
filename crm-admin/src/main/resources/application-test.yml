@@ -46,10 +46,10 @@ spring:
         # 主库数据源
         master:
           type: ${spring.datasource.type}
-          driverClassName: com.mysql.cj.jdbc.Driver
+          driverClassName: com.oceanbase.jdbc.Driver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://10.130.27.41:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
+          url: jdbc:oceanbase:loadbalance://10.130.27.41:2883,10.130.27.45:2883,10.130.27.59:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
           username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
           password: PPpomns12123##
         # 从库数据源

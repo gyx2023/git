@@ -201,7 +201,9 @@ public class ToppOpportunityExportJob {
                     line.append(escapeNull(record.getReferTerminal())).append("|");
                     line.append(escapeNull(record.getSupportStage())).append("|");
                     line.append(escapeNull(record.getSupportStageTime())).append("|");
-                    line.append(escapeNull(record.getPreDecision()));
+                    line.append(escapeNull(record.getPreDecision())).append("|");
+                    line.append(escapeNull(record.getVisitCnt())).append("|");
+                    line.append(escapeNull(record.getLastVisitTime()));
 
                     writer.write(line.toString());
                     writer.newLine();
