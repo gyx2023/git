@@ -1,5 +1,6 @@
 package com.crm.web.controller.system;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
@@ -27,6 +28,12 @@ import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.common.core.page.TableDataInfo;
 import org.springframework.web.multipart.MultipartFile;
+import com.crm.system.service.ISysOssService;
+import com.crm.system.domain.vo.SysOssVo;
+import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.service.file.IFileAsyncTaskService;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 集团合同扩展信息
@@ -35,12 +42,15 @@ import org.springframework.web.multipart.MultipartFile;
  * @date 2026-01-13
  */
 @Validated
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/system/grpContractOtherInfo")
 public class ZqztGrpContractOtherInfoController extends BaseController {
 
     private final IZqztGrpContractOtherInfoService iZqztGrpContractOtherInfoService;
+    private final ISysOssService sysOssService;
+    private final IFileAsyncTaskService fileAsyncTaskService;
 
     /**
      * 查询集团合同扩展信息列表
@@ -190,9 +200,23 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     @SaCheckPermission("system:grpContractOtherInfo:add")
     @Log(title = "合同关联用户", businessType = BusinessType.IMPORT)
     @PostMapping("/batchImport")
-    public R<Void> batchImport(@RequestParam("file") MultipartFile file, @RequestParam("contractId") String contractId) {
-        // 这里需要实现文件上传到OSS，然后调用XXLJob执行异步任务的逻辑
-        // 暂时返回成功，后续需要根据实际实现修改
-        return R.ok();
+    public R<Long> batchImport(@RequestParam("file") MultipartFile file, @RequestParam("contractId") String contractId, @RequestParam("hqGrpCode") String hqGrpCode) {
+        try {
+            // 构建请求参数
+            Map<String, Object> params = new HashMap<>();
+            params.put("contractId", contractId);
+            params.put("hqGrpCode", hqGrpCode);
+            String requestParams = JSONUtil.toJsonStr(params);
+
+            // 申请导入任务
+            String businessType = "contract_user_import";
+            String taskName = "合同关联用户导入任务";
+            Long taskId = fileAsyncTaskService.applyImport(file, businessType, taskName, requestParams);
+
+            return R.ok("批量导入任务已提交，请等待处理完成",taskId );
+        } catch (Exception e) {
+            log.error("批量导入失败", e);
+            return R.fail("批量导入失败：" + e.getMessage());
+        }
     }
 }
