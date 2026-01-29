@@ -47,7 +47,5 @@ public interface IToppBidSuboppoService {
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
-    List<String>  selectBidSuboppoList(List< String> oppCodes);
-
     void  insertDoBatch(List<ToppBidSuboppoDo> list);
 }

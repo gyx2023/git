@@ -32,10 +32,6 @@ public class ToppBidSuboppoDo extends BaseEntity {
      */
     private Long projectId;
     /**
-     * 商机编码
-     */
-    private String oppoCode;
-    /**
      * 标讯ID
      */
     private String infoId;
@@ -64,4 +60,10 @@ public class ToppBidSuboppoDo extends BaseEntity {
 
     @TableField(exist = false)
     private String updateBy;
+
+    /**
+     *  是否有效
+     */
+    @TableField("is_valid")
+    private Boolean valid;
 }
