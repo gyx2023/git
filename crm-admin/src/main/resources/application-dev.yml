@@ -158,3 +158,6 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+--- # flowable
+flowable:
+  database-schema: zj_sj_test
