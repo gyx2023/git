@@ -217,15 +217,15 @@ public class OppoSynchronousJob {
         String currentState = updateBo.getOppoConversionState();
 
         // 状态处理逻辑：空值则直接设置，非空则追加（避免重复追加）
-        if(!valid && opportunityVo.getOppoConversionState().contains(BID_INFO_ASSOCIATION_CODE)) {
-            //移除状态,如果是5则要换成空，如果是5,4要换成4，如果是4,5则要变成4
-            updateBo.setOppoConversionState(removeBidInfoAssociationCode(currentState));
-        }else if (valid && StringUtils.isEmpty(currentState)) {
+        if (valid && StringUtils.isEmpty(currentState)) {
             updateBo.setOppoConversionState(BID_INFO_ASSOCIATION_CODE);
         } else if (valid && !currentState.contains(BID_INFO_ASSOCIATION_CODE)) {
             updateBo.setOppoConversionState(currentState + "," + BID_INFO_ASSOCIATION_CODE);
+        } else if(!valid && currentState.contains(BID_INFO_ASSOCIATION_CODE)) {
+            //移除状态,如果是5则要换成空，如果是5,4要换成4，如果是4,5则要变成4
+            updateBo.setOppoConversionState(removeBidInfoAssociationCode(currentState));
         }
-        // 可扩展：补充更新人/更新时间等公共字段
+            // 可扩展：补充更新人/更新时间等公共字段
         updateBo.setUpdateTime(new Date());
         opportunityService.updateByBo(updateBo);
     }
