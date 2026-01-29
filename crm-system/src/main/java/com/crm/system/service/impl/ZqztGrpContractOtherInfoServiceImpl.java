@@ -454,21 +454,23 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
         // 2. 分别执行两个SQL查询并合并结果
         List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
-        
-        // SQL 1: SELECT user_id,svc_num FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
+
+        // SQL 1: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
         if (!custIds.isEmpty()) {
             for (String custIdValue : custIds) {
                 QueryWrapper<CustMaintInfo> queryWrapper1 = new QueryWrapper<>();
-                queryWrapper1.eq("STATUS", "1")
+                queryWrapper1.select("USER_ID", "SVC_NUM", "TYPE_LVL2_NAME")
+                    .eq("STATUS", "1")
                     .eq("CUST_ID", custIdValue);
                 List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
                 allCustMaintInfosFromDb.addAll(records1);
             }
         }
-        
-        // SQL 2: SELECT user_id,svc_num FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
+
+        // SQL 2: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
         QueryWrapper<CustMaintInfo> queryWrapper2 = new QueryWrapper<>();
-        queryWrapper2.eq("STATUS", "1")
+        queryWrapper2.select("USER_ID", "SVC_NUM", "TYPE_LVL2_NAME")
+            .eq("STATUS", "1")
             .eq("CUST_GRP_ID", hqGrpCode);
         List<CustMaintInfo> records2 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper2);
         allCustMaintInfosFromDb.addAll(records2);
