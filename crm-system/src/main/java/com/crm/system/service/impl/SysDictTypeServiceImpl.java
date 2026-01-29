@@ -251,10 +251,21 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
     @Override
     public String getDictLabel(String dictType, String dictValue, String separator) {
         // 优先从本地缓存获取
-        List<SysDictData> datas = (List<SysDictData>) SaHolder.getStorage().get(CacheConstants.SYS_DICT_KEY + dictType);
+        List<SysDictData> datas = null;
+        try {
+            datas = (List<SysDictData>) SaHolder.getStorage().get(CacheConstants.SYS_DICT_KEY + dictType);
+        } catch (Exception e) {
+            // 在非Web上下文时，直接查询数据库
+            datas = null;
+        }
+        
         if (ObjectUtil.isNull(datas)) {
             datas = SpringUtils.getAopProxy(this).selectDictDataByType(dictType);
-            SaHolder.getStorage().set(CacheConstants.SYS_DICT_KEY + dictType, datas);
+            try {
+                SaHolder.getStorage().set(CacheConstants.SYS_DICT_KEY + dictType, datas);
+            } catch (Exception e) {
+                // 在非Web上下文时，忽略存储操作
+            }
         }
 
         Map<String, String> map = StreamUtils.toMap(datas, SysDictData::getDictValue, SysDictData::getDictLabel);
