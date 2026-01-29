@@ -452,20 +452,26 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             return new ArrayList<>();
         }
 
-        // 2. 根据 HQ_GRP_CODE(CUST_GRP_ID) 和查询到的 CUST_ID 查询 CustMaintInfo 表的 USER_ID
-        // 核心修改：实现 STATUS=1 且 (CUST_GRP_ID=hqGrpCode OR CUST_ID in custIds) 的逻辑
+        // 2. 分别执行两个SQL查询并合并结果
         List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
-        QueryWrapper<CustMaintInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("STATUS", "1")
-            // 用and包裹OR逻辑，确保条件优先级正确
-            .and(wrapper -> wrapper
-                .eq("CUST_GRP_ID", hqGrpCode) // 匹配入参的总部编码
-                .or() // 或 匹配第一步查询到的cust_id
-                .in("CUST_ID", custIds)
-            );
-        // 一次查询替代原循环查询，提升性能
-        List<CustMaintInfo> records = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper);
-        allCustMaintInfosFromDb.addAll(records);
+        
+        // SQL 1: SELECT user_id,svc_num FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
+        if (!custIds.isEmpty()) {
+            for (String custIdValue : custIds) {
+                QueryWrapper<CustMaintInfo> queryWrapper1 = new QueryWrapper<>();
+                queryWrapper1.eq("STATUS", "1")
+                    .eq("CUST_ID", custIdValue);
+                List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
+                allCustMaintInfosFromDb.addAll(records1);
+            }
+        }
+        
+        // SQL 2: SELECT user_id,svc_num FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
+        QueryWrapper<CustMaintInfo> queryWrapper2 = new QueryWrapper<>();
+        queryWrapper2.eq("STATUS", "1")
+            .eq("CUST_GRP_ID", hqGrpCode);
+        List<CustMaintInfo> records2 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper2);
+        allCustMaintInfosFromDb.addAll(records2);
 
         // 提取userIds
         List<String> userIds = allCustMaintInfosFromDb.stream()
