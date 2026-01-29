@@ -133,7 +133,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date beginDate = sdf.parse(grpCreateTimeBegin);
                 Date endDate = sdf.parse(grpCreateTimeEnd);
-                lqw.between(ZqGrpGroupInfo::getCreateTime, beginDate, endDate);
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
             } catch (Exception e) {
                 log.warn("时间参数解析失败: {}", e.getMessage());
             }
@@ -496,11 +496,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 处理创建时间范围查询
         if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+            lqw.between(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
         } else if (bo.getCreateTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
+            lqw.ge(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeStart());
         } else if (bo.getCreateTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
+            lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeEnd());
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤

@@ -152,6 +152,15 @@ public class CustomerManagerImportListener {
                     }
                 }
             }else{
+                if (isManagerInfoProvided(data.getProvManagerOauser())) {
+                    resultVo.setErrorMessage("当前集团客户类别(" + groupInfo.getGrpCustType() + ")不允许修改省级客户经理信息");
+                    return false;
+                }
+                // 验证市级客户经理 (01和02类型可以修改市级客户经理)
+                if (isManagerInfoProvided(data.getCityManagerOauser())) {
+                    resultVo.setErrorMessage("当前集团客户类别(" + groupInfo.getGrpCustType() + ")不允许修改市级客户经理信息");
+                    return false;
+                }
                 if (isManagerInfoProvided(data.getCountyManagerOauser())) {
                     List<Map<String, Object>> countyManagers = dwdRepSysPersonDService.queryManagersByCityCodeAndType(
                         groupInfo.getCountyId(), "03",groupInfo.getGrpCustType());
