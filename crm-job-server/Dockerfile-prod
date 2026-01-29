@@ -23,4 +23,5 @@ ENTRYPOINT ["java", \
             # 应用名称 如果想区分集群节点监控 改成不同的名称即可
 #            "-Dskywalking.agent.service_name=crm-server", \
 #            "-javaagent:/crm/skywalking/agent/skywalking-agent.jar", \
+            "-Duser.timezone=Asia/Shanghai -Xms1g -Xmx4g -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:+PrintGCDateStamps  -XX:+PrintGCDetails -XX:NewRatio=1 -XX:SurvivorRatio=30 -XX:+UseParallelGC -XX:+UseParallelOldGC", \
             "-jar", "app.jar"]
