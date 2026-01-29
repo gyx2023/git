@@ -95,12 +95,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
-
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel>=1){
+            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+        }
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
         SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
         List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
         List<RoleDTO> roles = loginUser.getRoles();
         boolean isSensitive = sensitiveRoles.stream()
                 .anyMatch(roleStr -> roles.stream()
