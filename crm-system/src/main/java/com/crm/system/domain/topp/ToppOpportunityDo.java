@@ -571,6 +571,11 @@ public class ToppOpportunityDo extends BaseEntity {
     private Date lastVisitTime;
 
     /**
+     * 商机终结状态
+     */
+    private String oppoConversionState;
+
+    /**
      * 创建者
      */
     @TableField(exist = false)
