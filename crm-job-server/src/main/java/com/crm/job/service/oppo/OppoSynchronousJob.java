@@ -217,6 +217,10 @@ public class OppoSynchronousJob {
         String currentState = updateBo.getOppoConversionState();
 
         // 状态处理逻辑：空值则直接设置，非空则追加（避免重复追加）
+        if(!valid && StringUtils.isEmpty(currentState)){
+            log.warn("【商机标讯同步任务】商机编码{}无投标信息关联状态码，跳过更新", opportunityVo.getOppCode());
+            return;
+        }
         if (valid && StringUtils.isEmpty(currentState)) {
             updateBo.setOppoConversionState(BID_INFO_ASSOCIATION_CODE);
         } else if (valid && !currentState.contains(BID_INFO_ASSOCIATION_CODE)) {
