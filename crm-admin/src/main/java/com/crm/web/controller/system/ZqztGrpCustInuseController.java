@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import com.crm.common.core.domain.dto.ZqztGrpCustAddUserListReqDTO;
+import com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO;
+import com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO;
+import com.crm.common.core.domain.dto.ZqztGrpCustReqDTO;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
@@ -47,7 +51,14 @@ public class ZqztGrpCustInuseController extends BaseController {
     public TableDataInfo<ZqztGrpCustInuseVo> list(ZqztGrpCustInuseBo bo, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(bo, pageQuery);
     }
-
+    /**
+     * 查询关联客户列表
+     */
+    @SaCheckPermission("system:grpCustInuse:list")
+    @GetMapping("/grpList")
+    public TableDataInfo<ZqztGrpCustInuseRespDTO> grpList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
+        return iZqztGrpCustInuseService.queryPageGrpList(reqDTO, pageQuery);
+    }
     /**
      * 导出政企主体-实际使用客户（zqzt_grp_cust_inuse）列表
      */
@@ -104,5 +115,74 @@ public class ZqztGrpCustInuseController extends BaseController {
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable String[] inuseIds) {
         return toAjax(iZqztGrpCustInuseService.deleteWithValidByIds(Arrays.asList(inuseIds), true));
+    }
+    /**
+     * 查询待添加关联客户用户列表
+     */
+    @SaCheckPermission("system:grpCustInuse:userList")
+    @GetMapping("/getAddUserList")
+    public TableDataInfo<ZqztGrpCustInuseUserListRespDTO> getAddUserList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
+        return iZqztGrpCustInuseService.getAddUserList(reqDTO, pageQuery);
+    }
+    /**
+     * 添加关联客户用户
+     */
+    @SaCheckPermission("system:grpCustInuse:addUserList")
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
+    @PostMapping("/addUserList")
+    public R<Void> addUserList(@Validated(EditGroup.class) @RequestBody ZqztGrpCustAddUserListReqDTO reqDTO) {
+        return toAjax(iZqztGrpCustInuseService.addUserList(reqDTO));
+    }
+    /**
+     * 查询关联客户用户列表
+     */
+    @SaCheckPermission("system:grpCustInuse:userList")
+    @GetMapping("/userList")
+    public TableDataInfo<ZqztGrpCustInuseUserListRespDTO> userList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
+        return iZqztGrpCustInuseService.queryPageUserList(reqDTO, pageQuery);
+    }
+    /**
+     * 更新关联客户
+     */
+    @SaCheckPermission("system:grpCustInuse:add")
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PostMapping("/addInuse")
+    public R<Void> addInuse(@Validated(EditGroup.class) @RequestBody ZqztGrpCustReqDTO reqDTO) {
+        return toAjax(iZqztGrpCustInuseService.addInuse(reqDTO));
+    }
+
+    /**
+     * 删除关联客户用户
+     *
+     * @param subscrbids 主键串
+     */
+    @SaCheckPermission("system:grpCustInuse:removeUserList")
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
+    @DeleteMapping("/userList/{subscrbids}")
+    public R<Void> removeUserList(@NotEmpty(message = "主键不能为空") @PathVariable String[] subscrbids) {
+        return toAjax(iZqztGrpCustInuseService.deleteUserListWithValidByIds(subscrbids, true));
+    }
+
+    /**
+     * 查询合同和关联客户ID列表
+     */
+    @SaCheckPermission("system:grpCustInuse:listAll")
+    @GetMapping("/listAll")
+    public TableDataInfo<ZqztGrpCustInuseRespDTO> listAll(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
+        return iZqztGrpCustInuseService.queryPageList(reqDTO, pageQuery);
+    }
+
+    /**
+     * 删除合同和关联客户ID
+     *
+     * @param inuseIds 主键串
+     */
+    @SaCheckPermission("system:grpCustInuse:remove")
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
+    @DeleteMapping("/list/{inuseIds}")
+    public R<Void> removeList(@NotEmpty(message = "主键不能为空") @PathVariable String[] inuseIds) {
+        return toAjax(iZqztGrpCustInuseService.deleteWithValidByIds(inuseIds, true));
     }
 }

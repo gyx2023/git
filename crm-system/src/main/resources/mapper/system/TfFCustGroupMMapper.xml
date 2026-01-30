@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.grp.TfFCustGroupMMapper">
+
+    <select id="selectCustIdsByGroupId" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT DISTINCT cust_id
+        FROM tf_f_cust_group_m
+        WHERE group_id = #{groupId}
+    </select>
+
+</mapper>
