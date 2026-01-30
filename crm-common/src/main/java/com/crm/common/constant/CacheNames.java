@@ -60,4 +60,19 @@ public interface CacheNames {
      */
     String ONLINE_TOKEN = "online_tokens";
 
+    /**
+     * 地区信息
+     */
+    String SYS_AREA = "sys_area";
+
+    /**
+     * 地区县市信息
+     */
+    String SYS_AREA_COUNTY = "sys_area_county";
+
+    /**
+     * 行业分类
+     */
+    String SYS_CATEGORY = "sys_category";
+
 }

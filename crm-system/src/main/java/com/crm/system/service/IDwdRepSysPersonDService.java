@@ -55,5 +55,5 @@ public interface IDwdRepSysPersonDService {
      * @param expandCustType 拓展客户类型(01:省级,02:市级,03:县级)
      * @return 客户经理信息列表
      */
-    List<Map<String, Object>> queryManagersByCityCodeAndType(String cityCode,@RequestParam(required = false) String expandCustType);
+    List<Map<String, Object>> queryManagersByCityCodeAndType(String cityCode,@RequestParam(required = false) String expandCustType,@RequestParam(required = false) String grpCustType);
 }
