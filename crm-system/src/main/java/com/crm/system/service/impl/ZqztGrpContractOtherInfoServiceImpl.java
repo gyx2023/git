@@ -184,26 +184,19 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
     /**
-     * 插入日志记录
-     */
-    public void insertLogRecord(ZqztGrpContractOtherInfoLog logRecord) {
-        logMapper.insert(logRecord);
-    }
-
-    /**
      * 全量导入集团合同扩展信息数据
      *
      * @param dataList 数据列表
      * @return 成功导入数量
      */
     @Override
-    public int importAllGroupContractOtherInfo(List<ZqztGrpContractOtherInfo> dataList) {
+    public int importAllClear(List<ZqztGrpContractOtherInfo> dataList) {
+        // 清空现有数据，进行全量更新
+        baseMapper.delete(null);
+
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
-
-        // 清空现有数据，进行全量更新
-        baseMapper.delete(null);
 
         // 使用批量插入方法提高性能
         baseMapper.insertBatch(dataList);
@@ -212,36 +205,24 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
     /**
-     * 查询所有集团合同扩展信息
-     *
-     * @return 集团合同扩展信息列表
-     */
-    @Override
-    public List<ZqztGrpContractOtherInfo> selectAllZqztGrpContractOtherInfo() {
-        return baseMapper.selectList(null);
-    }
-
-    /**
-     * 全量导入集团合同扩展信息数据（包含业务逻辑处理）
      * 根据user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录
-     * 如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）
+     * 如存在则正常入库（状态=1有效），同时写入服务号码；
+     * 否则入库时状态默认=99（迁移失效）
      *
      * @param dataList 数据列表
      * @return 成功导入数量
      */
     @Override
-    public int importAllGroupContractOtherInfoWithBusinessLogic(List<ZqztGrpContractOtherInfo> dataList) {
+    public int importAll(List<ZqztGrpContractOtherInfo> dataList) {
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
 
-        // 清空现有数据，进行全量更新
         baseMapper.delete(null);
 
-        // 处理业务逻辑：根据user_id验证并设置相应状态
+        // 根据user_id验证并设置相应状态
         List<ZqztGrpContractOtherInfo> processedDataList = processBusinessLogic(dataList);
 
-        // 使用批量插入方法提高性能
         baseMapper.insertBatch(processedDataList);
 
         return processedDataList.size();
@@ -249,6 +230,8 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
     /**
      * 处理业务逻辑：根据user_id查询验证并设置相应状态
+     * 根据infoVal作为user_id查询iob_gov2.CUST_MAINT_INFO表中status=1的记录
+     * 如存在则正常入库（状态=1有效），同时写入服务号码；否则入库时状态默认=99（迁移失效）
      *
      * @param dataList 原始数据列表
      * @return 处理后的数据列表
@@ -256,15 +239,15 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     private List<ZqztGrpContractOtherInfo> processBusinessLogic(List<ZqztGrpContractOtherInfo> dataList) {
         // 提取所有需要验证的user_id
         List<String> userIds = dataList.stream()
-            .map(item -> extractUserId(item.getInfoVal()))
+            .map(item -> item.getInfoVal()) // 使用infoVal作为user_id
             .filter(userId -> userId != null && !userId.trim().isEmpty())
             .distinct()
-            .collect(Collectors.toList());
+            .collect(java.util.stream.Collectors.toList());
 
         // 批量查询用户维护信息
-        Map<String, Map<String, Object>> custMaintInfoMap = new HashMap<>();
+        Map<String, String> svcNumMap = new HashMap<>();
         if (custMaintInfoService != null && !userIds.isEmpty()) {
-            custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
+            svcNumMap = custMaintInfoService.selectValidSvcNumByUserIds(userIds);
         }
 
         // 处理每个数据项
@@ -274,16 +257,18 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             processedItem.setContractId(item.getContractId());
             processedItem.setInfoTag(item.getInfoTag());
             processedItem.setInfoVal(item.getInfoVal());
+            processedItem.setCreateTime(item.getCreateTime());
 
             // 获取user_id并验证
-            String userId = extractUserId(item.getInfoVal());
-            if (userId != null && custMaintInfoMap.containsKey(userId)) {
-                // 用户存在且有效（status=1），正常入库，可设置额外字段
-                // 注意：实体类中可能需要添加状态字段来存储验证结果
-                // processedItem.setStatus("1"); // 如果实体类中有status字段
+            String userId = item.getInfoVal();
+            if (userId != null && svcNumMap.containsKey(userId) && svcNumMap.get(userId) != null) {
+                processedItem.setIsValid("1");
+                processedItem.setInfoVal2(svcNumMap.get(userId));
             } else {
-                // 用户不存在或无效，可能需要特殊处理
-                // processedItem.setStatus("99"); // 如果实体类中有status字段
+                // 用户不存在或无效，入库时状态默认=99（迁移失效）
+                processedItem.setIsValid("99");
+                // 保留原始服务号码
+                processedItem.setInfoVal2(item.getInfoVal2());
             }
 
             processedDataList.add(processedItem);
@@ -302,7 +287,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     public List<ZqztGrpContractOtherInfoVo> selectByContractId(String contractId) {
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
-        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+        lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1");
         return baseMapper.selectVoList(lqw);
     }
 

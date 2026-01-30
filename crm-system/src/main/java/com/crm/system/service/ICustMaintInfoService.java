@@ -37,4 +37,12 @@ public interface ICustMaintInfoService {
      * @return 匹配的客户维护信息列表
      */
     List<CustMaintInfo> queryByCustGrpIdAndCustId(String custGrpId, String custId);
+
+    /**
+     * 批量根据用户ID查询有效的客户维护信息及服务号码
+     *
+     * @param userIds 用户ID列表
+     * @return key为userId，value为服务号码的Map
+     */
+    Map<String, String> selectValidSvcNumByUserIds(List<String> userIds);
 }
