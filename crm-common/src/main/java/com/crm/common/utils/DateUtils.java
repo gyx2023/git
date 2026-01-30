@@ -165,4 +165,10 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         ZonedDateTime zdt = localDateTime.atZone(ZoneId.systemDefault());
         return Date.from(zdt.toInstant());
     }
+    /**
+     * 获取前N天的日期
+     */
+    public static String getBeforeNDays(int n) {
+        return DateUtils.dateTime(DateUtils.addDays(new Date(), -n));
+    }
 }

@@ -1,5 +1,6 @@
 package com.crm.job.service.grp.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.system.domain.grp.GrpGroupInfoDo;
 import com.crm.system.mapper.grp.GrpGroupInfoMapper;
@@ -81,5 +82,10 @@ public class GrpGroupInfoServiceImpl implements GrpGroupInfoService {
         grpGroupInfoMapper.insertBatch(groupInfoList, 200);
         log.info("批量处理集团信息完成，成功数量: {}", groupInfoList.size());
         return groupInfoList.size();
+    }
+
+    @Override
+    public Long selectTotalCount() {
+        return grpGroupInfoMapper.selectCount(new QueryWrapper<GrpGroupInfoDo>());
     }
 }

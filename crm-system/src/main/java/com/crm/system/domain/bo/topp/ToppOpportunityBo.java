@@ -822,5 +822,9 @@ public class ToppOpportunityBo extends BaseEntity {
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String preDecision;
 
+    /**
+     * 1-自动关闭、2-发起关闭、3-关联合同、4-关联电子表单、5-关联标讯、6-其他，该字段存在多个状态，当为多个值时用英文逗号分隔，例如：,1,2,3,4;
+     */
+    private String oppoConversionState;
 
 }
