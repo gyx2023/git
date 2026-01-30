@@ -5,6 +5,6 @@ import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.zbzq.SalesupBakTblBidTaskVo;
 import com.crm.system.domain.zbzq.SalesupBakTblBidTaskDo;
 
-@DS("slave")
+@DS("slave_1")
 public interface SalesupBakTblBidTaskMapper extends BaseMapperPlus<SalesupBakTblBidTaskMapper, SalesupBakTblBidTaskDo, SalesupBakTblBidTaskVo> {
 }

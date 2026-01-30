@@ -1851,4 +1851,9 @@ public class Constants {
     public static final String ACT_PHASE_ICT_ARREARS_WARN_CITY_ADMIN_NAME = "地市欠费管理员处理";
     public static final String ACT_PHASE_ICT_ARREARS_LEADER = "leader_audit";
     public static final String ACT_PHASE_ICT_ARREARS_LEADER_NAME = "领导审核";
+
+    //未关联合同商机关闭开关
+    public static final String UNBOUND_OPPORTUNITY_OFF_SWITCH = "unbound_opportunity_off_switch";
+    //拜访时间到期商机关闭开关
+    public static final String VISIT_TIME_OFF_SWITCH = "visit_time_off_switch";
 }

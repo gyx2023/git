@@ -1,19 +1,30 @@
 package com.crm.job.service.grp;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.convert.EntityListToMapConverter;
+import com.crm.common.core.domain.dto.GrpGroupImportDTO;
+import com.crm.common.core.domain.dto.ThreeFieldDTO;
+import com.crm.common.enums.GrpExpandTypeenum;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysArea;
+import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.grp.GrpGroupInfoDo;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
+import com.crm.system.mapper.grp.GrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.text.ParseException;
@@ -48,7 +59,13 @@ public class GrpGroupInfoSyncJob {
     @Resource
     private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper;
 
-    private final Map<String,String> cityMap = new HashMap<>();
+    @Resource
+    private GrpGroupInfoMapper grpGroupInfoMapper;
+
+    @Resource
+    private RepSysPersonNewDMapper repSysPersonNewDMapper;
+
+    private final Map<String, String> cityMap = new HashMap<>();
     private volatile boolean cityListInitialized = false;
 
     /**
@@ -143,6 +160,7 @@ public class GrpGroupInfoSyncJob {
             // 2. 清空表数据（可选，根据业务需求决定）
             grpGroupInfoService.truncateTable();
 
+
             // 3. 使用批处理器处理大文件，每批处理100行数据以优化内存使用
             final int BATCH_SIZE = 500;
             log.info("开始使用批处理器处理大文件，每批处理 {} 行数据", BATCH_SIZE);
@@ -172,17 +190,16 @@ public class GrpGroupInfoSyncJob {
 
                     // 解析文本数据
                     List<GrpGroupInfoDo> groupInfoList = groupFileParser.parseFile(txtContent.toString(), GrpGroupInfoDo.class, "\\x1b");
-
                     if (!groupInfoList.isEmpty()) {
-                        groupInfoList.forEach(p->{
-                            if(StringUtils.isNotBlank(p.getAreaid())){
-                                p.setAreaid(cityMap.get(p.getAreaid())==null?p.getAreaid():cityMap.get(p.getAreaid()));
+                        groupInfoList.forEach(p -> {
+                            if (StringUtils.isNotBlank(p.getAreaid())) {
+                                p.setAreaid(cityMap.get(p.getAreaid()) == null ? p.getAreaid() : cityMap.get(p.getAreaid()));
                             }
-                            if(StringUtils.isNotBlank(p.getCountyid())){
-                                p.setCountyid(cityMap.get(p.getCountyid())==null?p.getCountyid():cityMap.get(p.getCountyid()));
+                            if (StringUtils.isNotBlank(p.getCountyid())) {
+                                p.setCountyid(cityMap.get(p.getCountyid()) == null ? p.getCountyid() : cityMap.get(p.getCountyid()));
                             }
-                            if(StringUtils.isNotBlank(p.getCountyid2())){
-                                p.setCountyid2(cityMap.get(p.getCountyid2())==null?p.getCountyid2():cityMap.get(p.getCountyid2()));
+                            if (StringUtils.isNotBlank(p.getCountyid2())) {
+                                p.setCountyid2(cityMap.get(p.getCountyid2()) == null ? p.getCountyid2() : cityMap.get(p.getCountyid2()));
                             }
                         });
                         // 批量插入数据库
@@ -194,7 +211,6 @@ public class GrpGroupInfoSyncJob {
                         XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
                             totalRows[0], totalSuccess[0]);
                     }
-
                     // 显式清空中间变量，释放内存
                     groupInfoList.clear();
                     return true; // 继续处理下一批数据
@@ -212,7 +228,7 @@ public class GrpGroupInfoSyncJob {
                 XxlJobHelper.handleSuccess("文件中没有有效数据需要导入");
                 return;
             }
-            //通过开关控制是否要插入
+
             syncToZqGrpGroupInfo();
 
             // 4. 任务完成，记录结果
@@ -231,10 +247,10 @@ public class GrpGroupInfoSyncJob {
     }
 
 
-    private void initJobData(){
+    private void initJobData() {
         for (SysArea sysArea : sysAreaMapper.selectList()) {
-            if(StringUtils.isNotBlank(sysArea.getBssCode())){
-                cityMap.put(sysArea.getBssCode(),String.valueOf(sysArea.getId()));
+            if (StringUtils.isNotBlank(sysArea.getBssCode())) {
+                cityMap.put(sysArea.getBssCode(), String.valueOf(sysArea.getId()));
             }
         }
     }
@@ -267,7 +283,8 @@ public class GrpGroupInfoSyncJob {
      * 同步数据到zqzt_grp_group_info表
      * 根据sys_param表中的开关配置决定是否同步
      */
-    private void syncToZqGrpGroupInfo() {
+    @Transactional(rollbackFor = Exception.class)
+    public void syncToZqGrpGroupInfo() {
         try {
             // 查询同步开关配置
             SysParamDo syncSwitchParam = sysParamMapper.selectOne(
@@ -275,7 +292,6 @@ public class GrpGroupInfoSyncJob {
                     .eq(SysParamDo::getType, "insert_grp_group_info")
                     .eq(SysParamDo::getCode, "zqzt.switch")
             );
-
             // 检查开关是否为开启状态（值为"1"或"true"表示开启）
             if (syncSwitchParam == null || syncSwitchParam.getValue() == null) {
                 log.info("未配置同步到zqzt_grp_group_info的开关，跳过同步");
@@ -289,24 +305,96 @@ public class GrpGroupInfoSyncJob {
                 XxlJobHelper.log("同步到zqzt_grp_group_info的开关已关闭，跳过同步。当前开关值: {}", switchValue);
                 return;
             }
-
-            log.info("开始同步数据到zqzt_grp_group_info表");
-            XxlJobHelper.log("开始同步数据到zqzt_grp_group_info表");
-
             // 1. 全表删除zqzt_grp_group_info表数据
             int deleteCount = zqGrpGroupInfoMapper.truncateZqGrpGroupInfo();
             log.info("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
             XxlJobHelper.log("清空zqzt_grp_group_info表完成，删除记录数: {}", deleteCount);
 
+            log.info("开始同步数据到zqzt_grp_group_info表");
+            XxlJobHelper.log("开始同步数据到zqzt_grp_group_info表");
             // 2. 从grp_group_info同步数据
-            int syncCount = zqGrpGroupInfoMapper.syncFromGrpGroupInfo();
-            log.info("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
-            XxlJobHelper.log("同步数据到zqzt_grp_group_info表完成，同步记录数: {}", syncCount);
+            Date now = new Date();
+            List<GrpGroupImportDTO> grpGroupImportDTOS = repSysPersonNewDMapper.selectGrpDto();
+            Map<String, ThreeFieldDTO> resultMap = EntityListToMapConverter.convertToMap(grpGroupImportDTOS);
+            Long totalRows = grpGroupInfoService.selectTotalCount();
+            if (totalRows == null || totalRows == 0) {
+                log.info("无待查询数据，直接返回空Map");
+                return;
+            }
+            // 分批处理
+            int batchSize = 800;
+            LambdaQueryWrapper<GrpGroupInfoDo> lqw = Wrappers.lambdaQuery();
+            for (int offset = 0; offset < totalRows; offset += batchSize) {
+                List<ZqGrpGroupInfo> zqGrpGroupInfoList = new ArrayList<>();
+                // 使用分页查询获取当前批次的数据
+                Page<GrpGroupInfoDo> page = new Page<>((offset / batchSize) + 1, batchSize, false);
+                Page<GrpGroupInfoDo> resultPage = grpGroupInfoMapper.selectVoPage(page, lqw);
+                List<GrpGroupInfoDo> batchList = resultPage.getRecords();
+                for (GrpGroupInfoDo grpGroupInfoDo : batchList) {
+                    ThreeFieldDTO threeFieldDTO = resultMap.get(grpGroupInfoDo.getManagerid());
+                    // 根据扩展类型设置经理信息
+                    String empId = ObjectUtil.isEmpty(threeFieldDTO) ? null : threeFieldDTO.getEmpId();
+                    String oaUserName = ObjectUtil.isEmpty(threeFieldDTO) ? null : ObjectUtil.isNotNull(threeFieldDTO.getOaUserName()) ? threeFieldDTO.getOaUserName().toLowerCase(): null;
+                    String fullName = ObjectUtil.isEmpty(threeFieldDTO) ? null : threeFieldDTO.getFullName();
 
+                    ZqGrpGroupInfo zqGrpGroupInfo = new ZqGrpGroupInfo();
+                    zqGrpGroupInfo.setGrpId(grpGroupInfoDo.getGrpId());
+                    zqGrpGroupInfo.setGrpName(grpGroupInfoDo.getGrpName());
+                    zqGrpGroupInfo.setGrpCode(grpGroupInfoDo.getGrpCode());
+                    zqGrpGroupInfo.setHqGrpCode(grpGroupInfoDo.getZbCustomerId());
+                    zqGrpGroupInfo.setCustId(String.valueOf(grpGroupInfoDo.getCustid()));
+                    zqGrpGroupInfo.setGrpLevel(grpGroupInfoDo.getGrpLevel());
+                    zqGrpGroupInfo.setGrpStatus(grpGroupInfoDo.getGrpStat());
+                    zqGrpGroupInfo.setAreaId(grpGroupInfoDo.getAreaid());
+                    zqGrpGroupInfo.setCountyId(grpGroupInfoDo.getCountyid());
+                    zqGrpGroupInfo.setCountyId2(grpGroupInfoDo.getCountyid2());
+                    zqGrpGroupInfo.setGridId(grpGroupInfoDo.getGridId());
+                    zqGrpGroupInfo.setIndustryMajorKind(grpGroupInfoDo.getIndustryMajorKind());
+                    zqGrpGroupInfo.setIndustrySubKind(grpGroupInfoDo.getIndustrySubKind());
+                    zqGrpGroupInfo.setIndustryDetailKind(grpGroupInfoDo.getIndustryDetailKind());
+                    zqGrpGroupInfo.setBusiType(grpGroupInfoDo.getBusiType());
+                    zqGrpGroupInfo.setGrpCustType(grpGroupInfoDo.getGrpCustType1());
+                    zqGrpGroupInfo.setGrpExpandType(grpGroupInfoDo.getGrpExpandType());
+                    zqGrpGroupInfo.setGrpBusiDeptType(grpGroupInfoDo.getGrpBusiDeptType());
+                    zqGrpGroupInfo.setProvinceNewoldType(grpGroupInfoDo.getProvinceNewoldType());
+                    zqGrpGroupInfo.setManagerId(grpGroupInfoDo.getManagerid());
+                    zqGrpGroupInfo.setGrpCreator(grpGroupInfoDo.getCreator());
+                    zqGrpGroupInfo.setGrpCreateTime(grpGroupInfoDo.getCreateTime());
+                    zqGrpGroupInfo.setCreateTime(now);
+                    zqGrpGroupInfo.setUpdateTime(now);
+
+                    if (ObjectUtil.equals(GrpExpandTypeenum.PROVINCE_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())) {
+                        zqGrpGroupInfo.setProvManagerOauser(oaUserName);
+                        zqGrpGroupInfo.setProvManagerEmpId(empId);
+                        zqGrpGroupInfo.setProvManagerName(fullName);
+                    } else if (ObjectUtil.equals(GrpExpandTypeenum.CITY_ZT.getCode(), grpGroupInfoDo.getGrpExpandType())) {
+                        zqGrpGroupInfo.setCityManagerEmpId(empId);
+                        zqGrpGroupInfo.setCityManagerOauser(oaUserName);
+                        zqGrpGroupInfo.setCityManagerName(fullName);
+                    } else {
+                        zqGrpGroupInfo.setCountyManagerEmpId(empId);
+                        zqGrpGroupInfo.setCountyManagerOauser(oaUserName);
+                        zqGrpGroupInfo.setCountyManagerName(fullName);
+                    }
+                    zqGrpGroupInfoList.add(zqGrpGroupInfo);
+                }
+                // 分批插入以提高性能
+                this.insertBatch(zqGrpGroupInfoList);
+                zqGrpGroupInfoList.clear();
+            }
+            log.info("同步数据到zqzt_grp_group_info表，同步记录数: {}", totalRows);
+            XxlJobHelper.log("同步数据到zqzt_grp_group_info表结束");
         } catch (Exception e) {
             log.error("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage(), e);
             XxlJobHelper.log("同步数据到zqzt_grp_group_info表失败: {}", e.getMessage());
             // 注意：这里不抛出异常，避免影响主任务的成功状态
         }
     }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    public void insertBatch(List<ZqGrpGroupInfo> zqGrpGroupInfoList) {
+        zqGrpGroupInfoMapper.insertBatch(zqGrpGroupInfoList);
+    }
+
 }

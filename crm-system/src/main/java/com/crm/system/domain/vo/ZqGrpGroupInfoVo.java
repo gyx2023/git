@@ -58,15 +58,15 @@ public class ZqGrpGroupInfoVo {
     /**
      * 集团级别:A-B-C-D-E-F-G-H-I-Y-Z
      */
-    @ExcelProperty(value = "集团级别")
-    @ExcelIgnore
+    @ExcelProperty(value = "集团级别", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_grp_level")
     private String grpLevel;
 
     /**
      * 集团状态:01-目标,02-潜在,03-正式,04-注销
      */
-    @ExcelProperty(value = "集团状态")
-    @ExcelIgnore
+    @ExcelProperty(value = "集团状态", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_grp_status")
     private String grpStatus;
 
     /**
@@ -114,31 +114,36 @@ public class ZqGrpGroupInfoVo {
     /**
      * 集团业务分类:00-综合集团,10-移动集团,20-固网集团
      */
-    @ExcelProperty(value = "集团业务分类")
+    @ExcelProperty(value = "集团业务分类", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_busi_type")
     private String busiType;
 
     /**
      * 集团客户类别:400-大客户,500-中小企业客户,600-普通客户
      */
-    @ExcelProperty(value = "集团客户类别")
+    @ExcelProperty(value = "集团客户类别", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_cust_type")
     private String grpCustType;
 
     /**
      * 集团客户拓展类型:01-省直拓,02-市直拓,03-县直拓
      */
-    @ExcelProperty(value = "集团客户拓展类型")
+    @ExcelProperty(value = "集团客户拓展类型", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_expand_type")
     private String grpExpandType;
 
     /**
      * 集团客户业务部门分类:01-数字政府BU,02-军政（政法）,03-证券保险客户中心,04-银行客户中心,05-军政（军民融合）,06-智慧城市BU,07-智慧园区BU,08-教育行业BU,09-系统集成客户,10-生态环境（生态）,11-政法客户,12-军政客户,13-现代服务（交通）,14-智慧民生客户,15-健康文旅（医疗）,16-公共事业客户中心,17-智算营销中心（云数据）,18-工业互联网BU,19-健康文旅（文旅）,20-智慧制造客户,21-省行业客户部,22-商企客户,23-战略客户,24-生态环境（农业）,25-科创企业客户中心,26-政要客户,27-金融客户,28-阿里中心,29-网易中心,30-产业互联网客户,31-企业服务一部,32-企业服务二部,33-纺织服装行业服务部,34-现代服务（商贸）,35-健康文旅客户中心,36-吉利中心,98-公众客户,99-中小企业
      */
-    @ExcelProperty(value = "集团客户业务部门分类")
+    @ExcelProperty(value = "集团客户业务部门分类", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_busi_dept_type")
     private String grpBusiDeptType;
 
     /**
      * 集团客户省市名单制存增量标识:01-存量,02-增量
      */
-    @ExcelProperty(value = "集团客户省市名单制存增量标识")
+    @ExcelProperty(value = "集团客户省市名单制存增量标识", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_province_newold_type")
     private String provinceNewoldType;
 
     /**
