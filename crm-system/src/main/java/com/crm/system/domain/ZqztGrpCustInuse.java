@@ -10,10 +10,10 @@ import java.math.BigDecimal;
 import com.crm.common.core.domain.BaseEntity;
 
 /**
- * 合同和关联客户ID对象 zqzt_grp_cust_inuse
+ * 政企主体-实际使用客户（zqzt_grp_cust_inuse）对象 zqzt_grp_cust_inuse
  *
  * @author crm
- * @date 2026-01-19
+ * @date 2026-01-20
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -23,11 +23,12 @@ public class ZqztGrpCustInuse extends BaseEntity {
     private static final long serialVersionUID=1L;
 
     /**
-     * 关系编码ZQ1904150001
+     * 关系编码（主键）
      */
+    @TableId(value = "inuse_id")
     private String inuseId;
     /**
-     * 合同编号，对应GRP_CONTRACT_INFO.INUSE_CONTRACT_ID
+     * 合同编号，关联zqzt_grp_contract_info.INUSE_CONTRACT_ID
      */
     private String contractId;
     /**
@@ -35,35 +36,39 @@ public class ZqztGrpCustInuse extends BaseEntity {
      */
     private String contractName;
     /**
-     * 合同签约的集团ID
+     * 合同签约集团ID
      */
-    private Long grpIdA;
+    private Integer grpIdA;
     /**
-     * 合同签约的15位集团编码
+     * 客户类型：1000=非收入划转使用客户、1001=收入划转使用客户、1002=收入归集客户
      */
-    private String grpCodeA;
-    /**
-     * 合同签约的总部集团编码
-     */
-    private String hqGrpCodeA;
-    /**
-     * 合同签约的集团名称
-     */
-    private String grpNameA;
-    /**
-     * 关联客户类型：1000：使用客户（非收入划转）1001：使用客户（收入划转）1002：收入归集客户
-     */
-    private Long relation;
+    private Integer relation;
     /**
      * 关联客户集团ID
      */
-    private Long grpIdB;
+    private Integer grpIdB;
     /**
-     * 关联客户集团15位编码
+     * 是否有效：1=有效、0=无效
+     */
+    private String isValid;
+    /**
+     * 签约集团15位编码
+     */
+    private String grpCodeA;
+    /**
+     * 签约集团总部编码（关联grp_group_info）
+     */
+    private String hqGrpCodeA;
+    /**
+     * 签约集团名称
+     */
+    private String grpNameA;
+    /**
+     * 关联客户15位编码
      */
     private String grpCodeB;
     /**
-     * 关联客户的总部集团编码
+     * 关联客户总部编码（关联grp_group_info）
      */
     private String hqGrpCodeB;
     /**
@@ -71,24 +76,26 @@ public class ZqztGrpCustInuse extends BaseEntity {
      */
     private String grpNameB;
     /**
-     * 地市
+     * 地市标识（如Z）
      */
     private String regionId;
     /**
-     * 所属业务市县
+     * 所属业务市县编码
      */
     private String countyId;
     /**
-     * 受理操作员
+     * 受理操作员ID
      */
     private String operatorId;
     /**
-     * 备注
+     * 备注信息
      */
     private String remark;
-    /**
-     * 是否有效：1有效，0无效
-     */
-    private String isValid;
 
+    @TableField(exist = false)
+    private Date createTime;
+    @TableField(exist = false)
+    private String updateBy;
+    @TableField(exist = false)
+    private String createBy;
 }

@@ -11,10 +11,10 @@ import java.util.Date;
 import com.crm.common.core.domain.BaseEntity;
 
 /**
- * 合同和关联客户ID业务对象 zqzt_grp_cust_inuse
+ * 政企主体-实际使用客户（zqzt_grp_cust_inuse）业务对象 zqzt_grp_cust_inuse
  *
  * @author crm
- * @date 2026-01-19
+ * @date 2026-01-20
  */
 
 @Data
@@ -22,15 +22,15 @@ import com.crm.common.core.domain.BaseEntity;
 public class ZqztGrpCustInuseBo extends BaseEntity {
 
     /**
-     * 关系编码ZQ1904150001
+     * 关系编码（主键）
      */
-    @NotBlank(message = "关系编码ZQ1904150001不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "关系编码（主键）不能为空", groups = { EditGroup.class })
     private String inuseId;
 
     /**
-     * 合同编号，对应GRP_CONTRACT_INFO.INUSE_CONTRACT_ID
+     * 合同编号，关联zqzt_grp_contract_info.INUSE_CONTRACT_ID
      */
-    @NotBlank(message = "合同编号，对应GRP_CONTRACT_INFO.INUSE_CONTRACT_ID不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "合同编号，关联zqzt_grp_contract_info.INUSE_CONTRACT_ID不能为空", groups = { AddGroup.class, EditGroup.class })
     private String contractId;
 
     /**
@@ -40,51 +40,57 @@ public class ZqztGrpCustInuseBo extends BaseEntity {
     private String contractName;
 
     /**
-     * 合同签约的集团ID
+     * 合同签约集团ID
      */
-    @NotNull(message = "合同签约的集团ID不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long grpIdA;
+    @NotNull(message = "合同签约集团ID不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Integer grpIdA;
 
     /**
-     * 合同签约的15位集团编码
+     * 客户类型：1000=非收入划转使用客户、1001=收入划转使用客户、1002=收入归集客户
      */
-    @NotBlank(message = "合同签约的15位集团编码不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String grpCodeA;
-
-    /**
-     * 合同签约的总部集团编码
-     */
-    @NotBlank(message = "合同签约的总部集团编码不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String hqGrpCodeA;
-
-    /**
-     * 合同签约的集团名称
-     */
-    @NotBlank(message = "合同签约的集团名称不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String grpNameA;
-
-    /**
-     * 关联客户类型：1000：使用客户（非收入划转）1001：使用客户（收入划转）1002：收入归集客户
-     */
-    @NotNull(message = "关联客户类型：1000：使用客户（非收入划转）1001：使用客户（收入划转）1002：收入归集客户不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long relation;
+    @NotNull(message = "客户类型：1000=非收入划转使用客户、1001=收入划转使用客户、1002=收入归集客户不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Integer relation;
 
     /**
      * 关联客户集团ID
      */
     @NotNull(message = "关联客户集团ID不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long grpIdB;
+    private Integer grpIdB;
 
     /**
-     * 关联客户集团15位编码
+     * 是否有效：1=有效、0=无效
      */
-    @NotBlank(message = "关联客户集团15位编码不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "是否有效：1=有效、0=无效不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String isValid;
+
+    /**
+     * 签约集团15位编码
+     */
+    @NotBlank(message = "签约集团15位编码不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String grpCodeA;
+
+    /**
+     * 签约集团总部编码（关联grp_group_info）
+     */
+    @NotBlank(message = "签约集团总部编码（关联grp_group_info）不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String hqGrpCodeA;
+
+    /**
+     * 签约集团名称
+     */
+    @NotBlank(message = "签约集团名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String grpNameA;
+
+    /**
+     * 关联客户15位编码
+     */
+    @NotBlank(message = "关联客户15位编码不能为空", groups = { AddGroup.class, EditGroup.class })
     private String grpCodeB;
 
     /**
-     * 关联客户的总部集团编码
+     * 关联客户总部编码（关联grp_group_info）
      */
-    @NotBlank(message = "关联客户的总部集团编码不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "关联客户总部编码（关联grp_group_info）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String hqGrpCodeB;
 
     /**
@@ -94,27 +100,27 @@ public class ZqztGrpCustInuseBo extends BaseEntity {
     private String grpNameB;
 
     /**
-     * 地市
+     * 地市标识（如Z）
      */
-    @NotBlank(message = "地市不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "地市标识（如Z）不能为空", groups = { AddGroup.class, EditGroup.class })
     private String regionId;
 
     /**
-     * 所属业务市县
+     * 所属业务市县编码
      */
-    @NotBlank(message = "所属业务市县不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "所属业务市县编码不能为空", groups = { AddGroup.class, EditGroup.class })
     private String countyId;
 
     /**
-     * 受理操作员
+     * 受理操作员ID
      */
-    @NotBlank(message = "受理操作员不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "受理操作员ID不能为空", groups = { AddGroup.class, EditGroup.class })
     private String operatorId;
 
     /**
-     * 备注
+     * 备注信息
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "备注信息不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
 
     /**
@@ -122,6 +128,5 @@ public class ZqztGrpCustInuseBo extends BaseEntity {
      */
     @NotBlank(message = "是否有效：1有效，0无效不能为空", groups = { AddGroup.class, EditGroup.class })
     private String isValid;
-
 
 }
