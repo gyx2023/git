@@ -298,6 +298,13 @@
                 <version>${flowable.version}</version>
             </dependency>
 
+            <!-- 达梦数据库驱动 -->
+            <dependency>
+                <groupId>com.dameng</groupId>
+                <artifactId>Dm8JdbcDriver18</artifactId>
+                <version>8.1.3.66</version>
+            </dependency>
+
             <!-- 定时任务模块已移除 -->
 
             <!-- 代码生成-->

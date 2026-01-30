@@ -1,15 +1,15 @@
-package com.crm.job.service.grp;
+package com.crm.system.service;
 
 import com.crm.system.domain.grp.TfFCustGroupMDo;
+
 import java.util.List;
 
 /**
- * 客户集团信息服务接口
- * 用于处理tf_f_cust_group_m表的相关操作
- *
- * @author crm
+ * tf_f_cust_group_m服务接口
  */
-public interface TfFCustGroupMService {
+public interface ITfFCustGroupMService {
+    // 根据groupId查询tf_f_cust_group_m表的数据
+    TfFCustGroupMDo selectByGroupId(String groupId);
 
     /**
      * 批量插入客户集团信息
