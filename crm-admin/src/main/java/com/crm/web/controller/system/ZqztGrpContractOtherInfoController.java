@@ -1,39 +1,36 @@
 package com.crm.web.controller.system;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import lombok.RequiredArgsConstructor;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
-import com.crm.common.annotation.RepeatSubmit;
+import cn.hutool.json.JSONUtil;
 import com.crm.common.annotation.Log;
+import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
+import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
-import com.crm.common.core.validate.QueryGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
-import com.crm.system.domain.vo.ContractUserTemplateVo;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
-import com.crm.system.service.IZqztGrpContractOtherInfoService;
-import com.crm.common.core.page.TableDataInfo;
-import org.springframework.web.multipart.MultipartFile;
+import com.crm.system.domain.vo.ContractUserTemplateVo;
+import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
 import com.crm.system.service.ISysOssService;
-import com.crm.system.domain.vo.SysOssVo;
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.file.IFileAsyncTaskService;
-import cn.hutool.json.JSONUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 集团合同扩展信息

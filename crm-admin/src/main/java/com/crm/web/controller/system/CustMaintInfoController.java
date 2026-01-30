@@ -2,11 +2,6 @@ package com.crm.web.controller.system;
 
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
-import com.crm.system.domain.CustMaintInfo;
-import com.crm.system.domain.ZqztGrpContractOtherInfo;
-import com.crm.system.domain.grp.TfFCustGroupMDo;
-import com.crm.system.service.ICustMaintInfoService;
-import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -14,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Validated
 @RequiredArgsConstructor
