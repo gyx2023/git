@@ -18,19 +18,19 @@ public class Desensitization {
         String trimmedName = companyName.trim();
         int length = trimmedName.length();
 
-        // 2. 如果名称长度小于等于2，直接返回原名称（无需脱敏）
-        if (length <= 4) {
+        // 2. 如果名称长度小于等于3，直接返回原名称（无需脱敏）
+        if (length <= 3) {
             return trimmedName;
         }
 
         // 3. 计算需要脱敏的字符数量，并生成相应数量的 '*'
-        int starsCount = length - 4;
+        int starsCount = length - 3;
         String stars = generateAsterisks(starsCount);
 
         // 4. 获取最后两位字符，并与 '*' 拼接
         String lastTwoChars = trimmedName.substring(length - 2);
-        String startTwoChars = trimmedName.substring(0, 2);
-        return startTwoChars + stars + lastTwoChars;
+        String startOneChar = trimmedName.substring(0, 1);
+        return startOneChar + stars + lastTwoChars;
     }
 
     /**
@@ -51,23 +51,16 @@ public class Desensitization {
         String trimmedName = fullName.trim();
         int length = trimmedName.length();
 
-        // 2. 处理2个字的姓名
-        if (length == 2) {
-            String firstChar = trimmedName.substring(0, 1);
-            return firstChar + "*";
+        // 2. 如果名称长度小于等于1，直接返回原名称
+        if (length == 1) {
+            return trimmedName;
         }
 
-        // 3. 处理3个字及以上的姓名
-        if (length > 2) {
-            String firstChar = trimmedName.substring(0, 1);
-            String lastChar = trimmedName.substring(length - 1);
-            int starsCount = length - 2;
-            String stars = generateAsterisks(starsCount);
-            return firstChar + stars + lastChar;
-        }
-
-        // 对于长度为1的姓名，直接返回
-        return trimmedName;
+        // 3. 获取第一个字符并添加相应数量的星号
+        String firstChar = trimmedName.substring(0, 1);
+        int starsCount = length - 1;
+        String stars = generateAsterisks(starsCount);
+        return firstChar + stars;
     }
 
     /**
