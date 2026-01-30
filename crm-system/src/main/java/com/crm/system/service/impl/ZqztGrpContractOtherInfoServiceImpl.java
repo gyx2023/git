@@ -443,28 +443,22 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     public List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId) {
         // 1. 根据总部集团编码(hqGrpCode)在tf_f_cust_group_m表中查询GROUP_ID，获取CUST_ID
         TfFCustGroupMDo custGroup = tfFCustGroupMService.selectByGroupId(hqGrpCode);
-        List<String> custIds = new ArrayList<>();
-        if (custGroup != null) {
-            custIds.add(custGroup.getCustId());
-        }
-
-        if (custIds.isEmpty()) {
-            return new ArrayList<>();
+        String custId = null;
+        if (custGroup != null && custGroup.getCustId() != null && !custGroup.getCustId().isEmpty()) {
+            custId = custGroup.getCustId();
         }
 
         // 2. 分别执行两个SQL查询并合并结果
         List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
 
         // SQL 1: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
-        if (!custIds.isEmpty()) {
-            for (String custIdValue : custIds) {
-                QueryWrapper<CustMaintInfo> queryWrapper1 = new QueryWrapper<>();
-                queryWrapper1.select("USER_ID", "SVC_NUM", "TYPE_LVL2_NAME")
-                    .eq("STATUS", "1")
-                    .eq("CUST_ID", custIdValue);
-                List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
-                allCustMaintInfosFromDb.addAll(records1);
-            }
+        if (custId != null && !custId.isEmpty()) {
+            QueryWrapper<CustMaintInfo> queryWrapper1 = new QueryWrapper<>();
+            queryWrapper1.select("USER_ID", "SVC_NUM", "TYPE_LVL2_NAME")
+                .eq("STATUS", "1")
+                .eq("CUST_ID", custId);
+            List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
+            allCustMaintInfosFromDb.addAll(records1);
         }
 
         // SQL 2: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
