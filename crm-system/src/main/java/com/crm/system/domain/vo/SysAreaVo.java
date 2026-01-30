@@ -91,7 +91,7 @@ public class SysAreaVo {
      * 映射集团区域代码
      */
     @ExcelProperty(value = "映射集团区域代码")
-    private Long zbArea;
+    private String zbArea;
 
     /**
      * 集团 县市编码

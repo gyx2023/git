@@ -104,25 +104,6 @@ public class ZqGrpGroupInfoController extends BaseController {
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
 
-
-    /**
-     * 导出政企集团客户信息列表
-     */
-    @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
-    @PostMapping("/export")
-    public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response,
-                       @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
-                       @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
-        // 处理时间范围参数
-        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
-            bo.setGrpCreateTimeBegin(grpCreateTimeBegin);
-            bo.setGrpCreateTimeEnd(grpCreateTimeEnd);
-        }
-
-        List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
-        ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
-    }
-
     /**
      * 获取政企集团客户信息详细信息
      *
@@ -333,5 +314,11 @@ public class ZqGrpGroupInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/queryStt")
+    public String queryStt() {
+        // 从zq_grp_group_info表中获取字典数据
+        String result = iZqGrpGroupInfoService.getUserByStt();
+        return result;
+    }
 
 }

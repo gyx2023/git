@@ -119,9 +119,10 @@ public class DwdRepSysPersonDController extends BaseController {
     @GetMapping("/queryManagersByCityCodeAndType")
     public R<List<Map<String, Object>>> queryManagersByCityCodeAndType(
             @RequestParam String cityCode,
-            @RequestParam(name = "expandType", required = false) String expandCustType) {
+            @RequestParam(name = "expandType", required = false) String expandCustType,
+            @RequestParam(name = "grpCustType", required = false) String grpCustType) {
         try {
-            List<Map<String, Object>> result = iDwdRepSysPersonDService.queryManagersByCityCodeAndType(cityCode, expandCustType);
+            List<Map<String, Object>> result = iDwdRepSysPersonDService.queryManagersByCityCodeAndType(cityCode, expandCustType,grpCustType);
             return R.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
