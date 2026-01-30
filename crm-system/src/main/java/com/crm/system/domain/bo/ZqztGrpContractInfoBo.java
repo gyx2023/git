@@ -1,17 +1,16 @@
 package com.crm.system.domain.bo;
 
+import com.crm.common.core.domain.BaseEntity;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import javax.validation.constraints.*;
 
-import java.util.Date;
-
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 集团合同信息业务对象 zqzt_grp_contract_info

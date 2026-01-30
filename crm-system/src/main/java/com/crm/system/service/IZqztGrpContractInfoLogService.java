@@ -1,10 +1,9 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.ZqztGrpContractInfoLog;
-import com.crm.system.domain.vo.ZqztGrpContractInfoLogVo;
-import com.crm.system.domain.bo.ZqztGrpContractInfoLogBo;
-import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.system.domain.bo.ZqztGrpContractInfoLogBo;
+import com.crm.system.domain.vo.ZqztGrpContractInfoLogVo;
 
 import java.util.Collection;
 import java.util.List;

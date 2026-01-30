@@ -1,10 +1,9 @@
 package com.crm.system.domain.bo;
 
+import com.crm.common.core.domain.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import com.crm.common.core.domain.BaseEntity;
-import com.crm.system.domain.DwdContractsDDo;
 
 import java.util.Date;
 

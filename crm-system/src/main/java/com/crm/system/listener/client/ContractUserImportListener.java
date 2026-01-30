@@ -1,6 +1,5 @@
 package com.crm.system.listener.client;
 
-import com.crm.system.domain.ZqztGrpContractOtherInfo;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.system.domain.vo.ContractUserTemplateResultVo;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;

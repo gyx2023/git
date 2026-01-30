@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import com.crm.system.service.ICustMaintInfoService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
