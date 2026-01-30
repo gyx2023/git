@@ -128,7 +128,7 @@ public class ZqztGrpCustInuseController extends BaseController {
      * 添加关联客户用户
      */
     @SaCheckPermission("system:grpCustInuse:addUserList")
-//    @Log(title = "集团用户关联客户管理", businessType = BusinessType.INSERT)
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping("/addUserList")
     public R<Void> addUserList(@Validated(EditGroup.class) @RequestBody ZqztGrpCustAddUserListReqDTO reqDTO) {
@@ -146,7 +146,7 @@ public class ZqztGrpCustInuseController extends BaseController {
      * 更新关联客户
      */
     @SaCheckPermission("system:grpCustInuse:add")
-//    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PostMapping("/addInuse")
     public R<Void> addInuse(@Validated(EditGroup.class) @RequestBody ZqztGrpCustReqDTO reqDTO) {
@@ -159,9 +159,30 @@ public class ZqztGrpCustInuseController extends BaseController {
      * @param subscrbids 主键串
      */
     @SaCheckPermission("system:grpCustInuse:removeUserList")
-//    @Log(title = "集团用户关联客户管理", businessType = BusinessType.DELETE)
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
     @DeleteMapping("/userList/{subscrbids}")
     public R<Void> removeUserList(@NotEmpty(message = "主键不能为空") @PathVariable String[] subscrbids) {
         return toAjax(iZqztGrpCustInuseService.deleteUserListWithValidByIds(subscrbids, true));
+    }
+
+    /**
+     * 查询合同和关联客户ID列表
+     */
+    @SaCheckPermission("system:grpCustInuse:listAll")
+    @GetMapping("/listAll")
+    public TableDataInfo<ZqztGrpCustInuseRespDTO> listAll(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
+        return iZqztGrpCustInuseService.queryPageList(reqDTO, pageQuery);
+    }
+
+    /**
+     * 删除合同和关联客户ID
+     *
+     * @param inuseIds 主键串
+     */
+    @SaCheckPermission("system:grpCustInuse:remove")
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.UPDATE)
+    @DeleteMapping("/list/{inuseIds}")
+    public R<Void> removeList(@NotEmpty(message = "主键不能为空") @PathVariable String[] inuseIds) {
+        return toAjax(iZqztGrpCustInuseService.deleteWithValidByIds(inuseIds, true));
     }
 }
