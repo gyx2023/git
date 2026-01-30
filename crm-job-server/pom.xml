@@ -30,11 +30,11 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <!-- OceanBase -->
+        <!-- 达梦数据库驱动 -->
         <dependency>
-            <groupId>com.oceanbase</groupId>
-            <artifactId>oceanbase-client</artifactId>
-            <version>2.4.12</version>
+            <groupId>com.dameng</groupId>
+            <artifactId>DmJdbcDriver18</artifactId>
+            <version>8.1.1.193</version>
         </dependency>
 
         <!--oracle-->
@@ -44,16 +44,20 @@
             <version>11.2.0.4</version>
         </dependency>
 
+
+        <!-- OceanBase -->
+        <dependency>
+            <groupId>com.oceanbase</groupId>
+            <artifactId>oceanbase-client</artifactId>
+            <version>2.4.12</version>
+        </dependency>
+
         <!-- 核心模块-->
         <dependency>
             <groupId>com.crm</groupId>
             <artifactId>crm-framework</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.dameng</groupId>
-            <artifactId>DmJdbcDriver18</artifactId>
-            <version>8.1.1.193</version>
-        </dependency>
+
         <dependency>
             <groupId>com.crm</groupId>
             <artifactId>crm-system</artifactId>
