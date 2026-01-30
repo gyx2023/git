@@ -123,10 +123,5 @@ public class ZqztGrpCustInuseBo extends BaseEntity {
     @NotBlank(message = "备注信息不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
 
-    /**
-     * 是否有效：1有效，0无效
-     */
-    @NotBlank(message = "是否有效：1有效，0无效不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String isValid;
 
 }

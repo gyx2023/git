@@ -1,5 +1,7 @@
 package com.crm.system.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.common.core.domain.dto.*;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.helper.LoginHelper;
@@ -8,7 +10,10 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.generator.util.Desensitization;
+import com.crm.system.domain.ZqztGrpCustInuse;
+import com.crm.system.domain.bo.ZqztGrpCustInuseBo;
 import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.vo.ZqztGrpCustInuseVo;
 import com.crm.system.mapper.param.SysParamMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,18 +38,106 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
 
-    private final ZqztGrpCustInuseMapper zqztGrpCustInuseMapper;
+    private final ZqztGrpCustInuseMapper baseMapper;
     @Resource
     private SysParamMapper sysParamMapper;
 
+    /**
+     * 查询政企主体-实际使用客户（zqzt_grp_cust_inuse）
+     */
+    @Override
+    public ZqztGrpCustInuseVo queryById(String inuseId){
+        return baseMapper.selectVoById(inuseId);
+    }
 
+    /**
+     * 查询政企主体-实际使用客户（zqzt_grp_cust_inuse）列表
+     */
+    @Override
+    public TableDataInfo<ZqztGrpCustInuseVo> queryPageList(ZqztGrpCustInuseBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<ZqztGrpCustInuse> lqw = buildQueryWrapper(bo);
+        Page<ZqztGrpCustInuseVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
+
+    /**
+     * 查询政企主体-实际使用客户（zqzt_grp_cust_inuse）列表
+     */
+    @Override
+    public List<ZqztGrpCustInuseVo> queryList(ZqztGrpCustInuseBo bo) {
+        LambdaQueryWrapper<ZqztGrpCustInuse> lqw = buildQueryWrapper(bo);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    private LambdaQueryWrapper<ZqztGrpCustInuse> buildQueryWrapper(ZqztGrpCustInuseBo bo) {
+        Map<String, Object> params = bo.getParams();
+        LambdaQueryWrapper<ZqztGrpCustInuse> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(bo.getContractId()), ZqztGrpCustInuse::getContractId, bo.getContractId());
+        lqw.like(StringUtils.isNotBlank(bo.getContractName()), ZqztGrpCustInuse::getContractName, bo.getContractName());
+        lqw.eq(bo.getGrpIdA() != null, ZqztGrpCustInuse::getGrpIdA, bo.getGrpIdA());
+        lqw.eq(bo.getRelation() != null, ZqztGrpCustInuse::getRelation, bo.getRelation());
+        lqw.eq(bo.getGrpIdB() != null, ZqztGrpCustInuse::getGrpIdB, bo.getGrpIdB());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsValid()), ZqztGrpCustInuse::getIsValid, bo.getIsValid());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCodeA()), ZqztGrpCustInuse::getGrpCodeA, bo.getGrpCodeA());
+        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCodeA()), ZqztGrpCustInuse::getHqGrpCodeA, bo.getHqGrpCodeA());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpNameA()), ZqztGrpCustInuse::getGrpNameA, bo.getGrpNameA());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpCodeB()), ZqztGrpCustInuse::getGrpCodeB, bo.getGrpCodeB());
+        lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCodeB()), ZqztGrpCustInuse::getHqGrpCodeB, bo.getHqGrpCodeB());
+        lqw.eq(StringUtils.isNotBlank(bo.getGrpNameB()), ZqztGrpCustInuse::getGrpNameB, bo.getGrpNameB());
+        lqw.eq(StringUtils.isNotBlank(bo.getRegionId()), ZqztGrpCustInuse::getRegionId, bo.getRegionId());
+        lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqztGrpCustInuse::getCountyId, bo.getCountyId());
+        lqw.eq(StringUtils.isNotBlank(bo.getOperatorId()), ZqztGrpCustInuse::getOperatorId, bo.getOperatorId());
+        return lqw;
+    }
+
+    /**
+     * 新增政企主体-实际使用客户（zqzt_grp_cust_inuse）
+     */
+    @Override
+    public Boolean insertByBo(ZqztGrpCustInuseBo bo) {
+        ZqztGrpCustInuse add = BeanUtil.toBean(bo, ZqztGrpCustInuse.class);
+        validEntityBeforeSave(add);
+        boolean flag = baseMapper.insert(add) > 0;
+        if (flag) {
+            bo.setInuseId(add.getInuseId());
+        }
+        return flag;
+    }
+
+    /**
+     * 修改政企主体-实际使用客户（zqzt_grp_cust_inuse）
+     */
+    @Override
+    public Boolean updateByBo(ZqztGrpCustInuseBo bo) {
+        ZqztGrpCustInuse update = BeanUtil.toBean(bo, ZqztGrpCustInuse.class);
+        validEntityBeforeSave(update);
+        return baseMapper.updateById(update) > 0;
+    }
+
+    /**
+     * 保存前的数据校验
+     */
+    private void validEntityBeforeSave(ZqztGrpCustInuse entity){
+        //TODO 做一些数据校验,如唯一约束
+    }
+
+    /**
+     * 批量删除政企主体-实际使用客户（zqzt_grp_cust_inuse）
+     */
+    @Override
+    public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
+        if(isValid){
+            //TODO 做一些业务上的校验,判断是否需要校验
+        }
+        return baseMapper.deleteBatchIds(ids) > 0;
+    }
     /**
      * 查询合同和关联客户ID列表
      */
     @Override
     public TableDataInfo<ZqztGrpCustInuseRespDTO> queryPageList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         // 获取完整数据列表
-        List<ZqztGrpCustInuseRespDTO> list = zqztGrpCustInuseMapper.queryZqztGrpCustInuseList(reqDTO);
+        List<ZqztGrpCustInuseRespDTO> list = baseMapper.queryZqztGrpCustInuseList(reqDTO);
 
         // 创建分页对象
         Page<ZqztGrpCustInuseRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
@@ -116,7 +209,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
-        return zqztGrpCustInuseMapper.updateByHqGrpCodeB(ids,loginUser);
+        return baseMapper.updateByHqGrpCodeB(ids,loginUser);
     }
 
     /**
@@ -129,7 +222,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
     @Override
     public TableDataInfo<ZqztGrpCustInuseUserListRespDTO> queryPageUserList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         // 获取完整数据列表
-        List<ZqztGrpCustInuseUserListRespDTO> list = zqztGrpCustInuseMapper.queryPageUserList(reqDTO);
+        List<ZqztGrpCustInuseUserListRespDTO> list = baseMapper.queryPageUserList(reqDTO);
 
         // 创建分页对象
         Page<ZqztGrpCustInuseUserListRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
@@ -195,7 +288,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
-        return zqztGrpCustInuseMapper.updateByInuseId(subscrbids, loginUser);
+        return baseMapper.updateByInuseId(subscrbids, loginUser);
     }
 
     /**
@@ -204,7 +297,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
     @Override
     public TableDataInfo<ZqztGrpCustInuseRespDTO> queryPageGrpList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         // 获取完整数据列表
-        List<ZqztGrpCustInuseRespDTO> list = zqztGrpCustInuseMapper.queryPageGrpList(reqDTO);
+        List<ZqztGrpCustInuseRespDTO> list = baseMapper.queryPageGrpList(reqDTO);
 
         // 创建分页对象
         Page<ZqztGrpCustInuseRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
@@ -251,7 +344,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
     @Override
     public int addInuse(ZqztGrpCustReqDTO reqDTO) {
         Map<String, String> loginUser = getLoginUser();
-        return zqztGrpCustInuseMapper.addInuse(reqDTO, loginUser);
+        return baseMapper.addInuse(reqDTO, loginUser);
     }
 
     /**
@@ -263,16 +356,16 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
             return null;
         }
         // 获取cust_id信息
-        String custId = zqztGrpCustInuseMapper.getCustId(reqDTO);
+        String custId = baseMapper.getCustId(reqDTO);
         if(StringUtils.isEmpty(custId)){
             return null;
         }
 
         // 获取已关联用户列表
-        List<String> userIds = zqztGrpCustInuseMapper.queryUserIdArray(reqDTO);
+        List<String> userIds = baseMapper.queryUserIdArray(reqDTO);
 
         // 获取完整数据列表
-        List<ZqztGrpCustInuseUserListRespDTO> list = zqztGrpCustInuseMapper.queryPageAddUserList(reqDTO.getInuseId(), custId, userIds);
+        List<ZqztGrpCustInuseUserListRespDTO> list = baseMapper.queryPageAddUserList(reqDTO.getInuseId(), custId, userIds);
 
         // 创建分页对象
         Page<ZqztGrpCustInuseUserListRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
@@ -325,8 +418,8 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         }
         String inuseId = reqDTO.getAddInuseUserList().get(0).get("inuseId");
         // 获取待关联用户信息
-        List<ZqztGrpCustInuseUserListRespDTO> userList = zqztGrpCustInuseMapper.queryPageAddUserData(inuseId, reqDTO.getAddInuseUserList());
-        return zqztGrpCustInuseMapper.addUserList(userList, loginUser);
+        List<ZqztGrpCustInuseUserListRespDTO> userList = baseMapper.queryPageAddUserData(inuseId, reqDTO.getAddInuseUserList());
+        return baseMapper.addUserList(userList, loginUser);
     }
 
 
