@@ -178,7 +178,7 @@ public class GrpContractInfoVo {
      * 客户需求简述，系统控制字符不少于１０个字
      */
     @ExcelProperty(value = "客户需求简述")
-    private String busiOppDesc;
+    private String custDemandDesc;
 
     /**
      * 解决方案简述，系统控制字符不少于１０个字
@@ -236,7 +236,7 @@ public class GrpContractInfoVo {
      */
     @ExcelProperty(value = "不含增值税合同额(元)")
     private BigDecimal contractMoney2;
-    
+
     /**
      * 是否固定金额 0-是；1-否
      */
@@ -248,7 +248,7 @@ public class GrpContractInfoVo {
      */
     @ExcelProperty(value = "审批通过日期")
     private Date auditDate;
-    
+
     /**
      * 承办人联系电话
      */

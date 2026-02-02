@@ -141,7 +141,7 @@ public class GrpContractInfo extends BaseEntity {
     /**
      * 客户需求简述，系统控制字符不少于１０个字
      */
-    private String busiOppDesc;
+    private String custDemandDesc;
     /**
      * 解决方案简述，系统控制字符不少于１０个字
      */

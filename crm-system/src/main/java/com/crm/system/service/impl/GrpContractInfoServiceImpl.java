@@ -84,7 +84,7 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getBusiOppNo()), GrpContractInfo::getBusiOppNo, bo.getBusiOppNo());
         lqw.eq(StringUtils.isNotBlank(bo.getBusiOppSecLvl()), GrpContractInfo::getBusiOppSecLvl, bo.getBusiOppSecLvl());
         lqw.eq(StringUtils.isNotBlank(bo.getBusiOppName()), GrpContractInfo::getBusiOppName, bo.getBusiOppName());
-        lqw.eq(StringUtils.isNotBlank(bo.getBusiOppDesc()), GrpContractInfo::getBusiOppDesc, bo.getBusiOppDesc());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustDemandDesc()), GrpContractInfo::getCustDemandDesc, bo.getCustDemandDesc());
         lqw.eq(StringUtils.isNotBlank(bo.getSolvePlanDesc()), GrpContractInfo::getSolvePlanDesc, bo.getSolvePlanDesc());
         lqw.eq(StringUtils.isNotBlank(bo.getIsBidding()), GrpContractInfo::getIsBidding, bo.getIsBidding());
         lqw.eq(StringUtils.isNotBlank(bo.getContractMain()), GrpContractInfo::getContractMain, bo.getContractMain());

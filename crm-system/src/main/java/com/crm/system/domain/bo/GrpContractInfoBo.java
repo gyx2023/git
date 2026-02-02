@@ -171,7 +171,7 @@ public class GrpContractInfoBo extends BaseEntity {
     /**
      * 客户需求简述，系统控制字符不少于１０个字
      */
-    private String busiOppDesc;
+    private String custDemandDesc;
 
     /**
      * 解决方案简述，系统控制字符不少于１０个字
@@ -295,7 +295,7 @@ public class GrpContractInfoBo extends BaseEntity {
      @JsonFormat(pattern = "yyyy-MM-dd")
      @NotNull(message = "合同签约日期不能为空")
      private Date contractSigndate;
-     
+
      /**
       * 合同状态：
       * 0	其他
@@ -317,12 +317,12 @@ public class GrpContractInfoBo extends BaseEntity {
       */
      @NotBlank(message = "合同状态不能为空", groups = { AddGroup.class, EditGroup.class })
      private String contractStatus;
-     
+
      /**
       * 合同类别一级编码
       */
      private String contractCateL1Code;
-     
+
      /**
       * 合同类别一级名称
       */
