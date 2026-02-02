@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.GrpContractOtherInfoMapper">
+
+    <resultMap type="com.crm.system.domain.GrpContractOtherInfo" id="GrpContractOtherInfoResult">
+        <result property="contractId" column="contract_id"/>
+        <result property="infoTag" column="info_tag"/>
+        <result property="infoVal" column="info_val"/>
+        <result property="infoVal2" column="info_val2"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="selectGrpContractOtherInfoVo">
+        select  contract_id, info_tag, info_val, info_val2
+        from zqzt_grp_contract_other_info
+    </sql>
+
+    <!-- 根据ID查询单条数据 -->
+    <select id="selectById" parameterType="long" resultMap="GrpContractOtherInfoResult">
+        <include refid="selectGrpContractOtherInfoVo"/>
+        where id = #{id}
+    </select>
+
+    <!-- 查询所有扩展信息数据 -->
+    <select id="selectAll" resultMap="GrpContractOtherInfoResult">
+        <include refid="selectGrpContractOtherInfoVo"/>
+    </select>
+
+    <!-- 根据合同ID查询 -->
+    <select id="selectByContractId" parameterType="string" resultMap="GrpContractOtherInfoResult">
+        <include refid="selectGrpContractOtherInfoVo"/>
+        where contract_id = #{contractId}
+    </select>
+
+    <!-- 根据信息标识查询 -->
+    <select id="selectByInfoTag" parameterType="string" resultMap="GrpContractOtherInfoResult">
+        <include refid="selectGrpContractOtherInfoVo"/>
+        where info_tag = #{infoTag}
+    </select>
+</mapper>
