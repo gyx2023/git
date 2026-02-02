@@ -5,8 +5,6 @@
     <resultMap type="com.crm.system.domain.GrpContractInfo" id="GrpContractInfoResult">
         <result property="contractId" column="contract_id"/>
         <result property="grpId" column="grp_id"/>
-        <result property="string2" column="string2"/>
-        <result property="string15" column="string15"/>
         <result property="contractType" column="contract_type"/>
         <result property="contractName" column="contract_name"/>
         <result property="contractEffdate" column="contract_effdate"/>
@@ -15,12 +13,24 @@
         <result property="contractNote" column="contract_note"/>
         <result property="creator" column="creator"/>
         <result property="files" column="files"/>
-        <result property="contractProperty" column="contract_property"/>
+        <result property="contractStat" column="contract_stat"/>
+        <result property="auditSn" column="audit_sn"/>
+        <result property="remark" column="remark"/>
+        <result property="string1" column="string1"/>
+        <result property="string2" column="string2"/>
+        <result property="string3" column="string3"/>
+        <result property="busiOppNo" column="busi_opp_no"/>
+        <result property="busiOppSecLvl" column="busi_opp_sec_lvl"/>
+        <result property="busiOppName" column="busi_opp_name"/>
+        <result property="busiOppDesc" column="busi_opp_desc"/>
+        <result property="solvePlanDesc" column="solve_plan_desc"/>
         <result property="isBidding" column="is_bidding"/>
         <result property="contractMain" column="contract_main"/>
         <result property="contractParty" column="contract_party"/>
         <result property="contractDept" column="contract_dept"/>
         <result property="contractMan" column="contract_man"/>
+        <result property="string14" column="string14"/>
+        <result property="string15" column="string15"/>
         <result property="contractMoney2" column="contract_money2"/>
         <result property="isFix" column="is_fix"/>
         <result property="auditDate" column="audit_date"/>
@@ -28,6 +38,10 @@
         <result property="contractOldnum" column="contract_oldnum"/>
         <result property="yearIncome" column="year_income"/>
         <result property="servAmount" column="serv_amount"/>
+        <result property="int8" column="int8"/>
+        <result property="int9" column="int9"/>
+        <result property="int10" column="int10"/>
+        <result property="busiType" column="busi_type"/>
         <result property="contractMoney" column="contract_money"/>
         <result property="contractSigndate" column="contract_signdate"/>
         <result property="contractStatus" column="contract_status"/>
@@ -37,18 +51,19 @@
         <result property="contractCateL2Name" column="contract_cate_l2_name"/>
         <result property="contractCateL3Code" column="contract_cate_l3_code"/>
         <result property="contractCateL3Name" column="contract_cate_l3_name"/>
-        <result property="remark" column="remark"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="selectGrpContractInfoVo">
-        select contract_id, grp_id, string2, string15, contract_type, contract_name, contract_effdate,
-               contract_expdate, paytype, contract_note, creator, files, contract_property, is_bidding, contract_main,
-               contract_party, contract_dept, contract_man, contract_money2, is_fix, audit_date, contract_phone,
-               contract_oldnum, year_income, serv_amount, contract_money, contract_signdate, contract_status,
-               contract_cate_l1_code, contract_cate_l1_name, contract_cate_l2_code, contract_cate_l2_name,
-               contract_cate_l3_code, contract_cate_l3_name, remark
-        from zqzt_grp_contract_info
+        select contract_id, grp_id, contract_type, contract_name, contract_effdate,
+               contract_expdate, paytype, contract_note, creator, files, contract_stat, audit_sn, remark,
+               string1, string2, string3, busi_opp_no, busi_opp_sec_lvl, busi_opp_name, busi_opp_desc,
+               solve_plan_desc, is_bidding, contract_main, contract_party, contract_dept, contract_man,
+               string14, string15, contract_money2, is_fix, audit_date, contract_phone, contract_oldnum,
+               year_income, serv_amount, int8, int9, int10, busi_type, contract_money, contract_signdate,
+               contract_status, contract_cate_l1_code, contract_cate_l1_name, contract_cate_l2_code,
+               contract_cate_l2_name, contract_cate_l3_code, contract_cate_l3_name
+        from grp_contract_info
     </sql>
 
     <!-- 根据合同ID查询单条数据 -->

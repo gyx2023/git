@@ -33,14 +33,6 @@ public class GrpContractInfo extends BaseEntity {
      */
     private Long grpId;
     /**
-     * 合同ERP编码
-     */
-    private String string2;
-    /**
-     * 合同编号，等于grp_cust_inuse.CONTRACT_ID
-     */
-    private String string15;
-    /**
      * 合同类型（于sys_param_detail.param_name='GRP_CONTRACT_TYPE_NEW'定义）
         0	普通合同
          00	ERP主体合同
@@ -94,16 +86,70 @@ public class GrpContractInfo extends BaseEntity {
      */
     private String files;
     /**
+     * 合同状态，在SYS_PARAM_DETAIL.PARAM_NAME='CONTRACT_STAT'定义
+     * 00	待审核
+     * 01	未审核
+     * 02	生效
+     * 03	注销
+     * 10	一审通过
+     * 11	一审不通过
+     * 20	二审通过
+     * 21	二审不通过
+     * 30	三审通过
+     * 31	三审不通过
+     */
+    private String contractStat;
+    /**
+     * 审核流水
+     */
+    private String auditSn;
+
+    /**
+     * 备注
+     */
+    private String remark;
+    /**
      * 合同是首次合同，还是续约合同。在SYS_PARAM_DETAIL.PARAM_NAME='GRP_CONTRACT_PROPERTY_NEW'定义
      00	新签合同
      01	续签合同
      03	补充合同
      */
-    private String contractProperty;
+    private String string1;
     /**
-     * 是否为招投标项目，选择"是""否"，系统默认"否"，在SYS_PARAM_DETAIL.PARAM_NAME='LOGIC_STATUS'定义
-     0	否
-     1	是
+     * 合同erp编码
+     */
+    private String string2;
+    /**
+     * 备用
+     */
+    private String string3;
+    /**
+     * 本地商机编号
+     */
+    private String busiOppNo;
+    /**
+     * 合同商机密级，系统默认“3级”，在SYS_PARAM_DETAIL.PARAM_NAME='BUSI_OPP_SEC_LVL'定义
+     * 01	一级
+     * 02	二级
+     * 03	三级
+     */
+    private String busiOppSecLvl;
+    /**
+     * 商机名称，系统控制字符不少于５个字
+     */
+    private String busiOppName;
+    /**
+     * 客户需求简述，系统控制字符不少于１０个字
+     */
+    private String busiOppDesc;
+    /**
+     * 解决方案简述，系统控制字符不少于１０个字
+     */
+    private String solvePlanDesc;
+    /**
+     * 是否为招投标项目，选择“是”“否”，系统默认“否”，在SYS_PARAM_DETAIL.PARAM_NAME='LOGIC_STATUS'定义
+     * 0	否
+     * 1	是
      */
     private String isBidding;
     /**
@@ -123,13 +169,22 @@ public class GrpContractInfo extends BaseEntity {
      */
     private String contractMan;
     /**
+     * 合同审核意见
+     */
+    private String string14;
+    /**
+     * 合同编号
+     * 等于grp_cust_inuse.CONTRACT_ID
+     */
+    private String string15;
+    /**
      * 不含增值税合同额(元)
      */
     private BigDecimal contractMoney2;
     /**
      * 是否固定金额 0-是；1-否
      */
-    private Long isFix;
+    private String isFix;
     /**
      * 审批通过日期
      */
@@ -151,6 +206,22 @@ public class GrpContractInfo extends BaseEntity {
      */
     private BigDecimal servAmount;
     /**
+     * 备用
+     */
+    private String int8;
+    /**
+     * 备用
+     */
+    private String int9;
+    /**
+     * 备用
+     */
+    private String int10;
+    /**
+     * 业务类型
+     */
+    private  String busiType;
+    /**
      * 含增值税合同额(元)
      */
     private BigDecimal contractMoney;
@@ -160,52 +231,48 @@ public class GrpContractInfo extends BaseEntity {
     private Date contractSigndate;
     /**
      * 合同状态：
-     0	其他
-     1	已审批
-     10	取消
-     11	起草
-     12	终止解除
-     13	作废申请中
-     14	删除
-     15	已定稿
-     16	签订中
-     2	审签中
-     3	暂停履行
-     4	终止履行
-     5	办结
-     6	变更补充
-     7	作废
-     9	履行中
+     * 0	其他
+     * 1	已审批
+     * 10	取消
+     * 11	起草
+     * 12	终止解除
+     * 13	作废申请中
+     * 14	删除
+     * 15	已定稿
+     * 16	签订中
+     * 2	审签中
+     * 3	暂停履行
+     * 4	终止履行
+     * 5	办结
+     * 6	变更补充
+     * 7	作废
+     * 9	履行中
      */
     private String contractStatus;
     /**
-     * 合同分类一级代码
+     * 合同类别一级编码
      */
-    private Long contractCateL1Code;
+    private String contractCateL1Code;
     /**
-     * 合同分类一级名称
+     * 合同类别一级名称
      */
     private String contractCateL1Name;
     /**
-     * 合同分类二级代码
+     * 合同类别二级编码
      */
-    private Long contractCateL2Code;
+    private String contractCateL2Code;
     /**
-     * 合同分类二级名称
+     * 合同类别二级名称
      */
     private String contractCateL2Name;
     /**
-     * 合同分类三级代码
+     * 合同类别三级编码
      */
-    private Long contractCateL3Code;
+    private String contractCateL3Code;
     /**
-     * 合同分类三级名称
+     * 合同类别三级名称
      */
     private String contractCateL3Name;
-    /**
-     * 备注
-     */
-    private String remark;
 
     /**
      * 数据库不查询的字段
