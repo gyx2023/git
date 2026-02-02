@@ -3,7 +3,7 @@ package com.crm.generator.util;
 public class Desensitization {
     /**
      * 脱敏公司或集团名称
-     * 规则：保留最后两位字符，前面的所有字符用 '*' 替换。
+     * 规则：保留前1后2汉字
      *
      * @param companyName 公司或集团的完整名称
      * @return 脱敏后的名称，如果输入为 null 或空字符串则返回原输入
@@ -35,9 +35,7 @@ public class Desensitization {
 
     /**
      * 脱敏个人姓名
-     * 规则：
-     * - 2个字：第一个字保留，第二个字用 '*' 替换。
-     * - 3个字及以上：首尾字符保留，中间的所有字符用 '*' 替换。
+     * 规则：保留第一个字符，后面的所有字符用 '*' 替换。
      *
      * @param fullName 个人的完整姓名
      * @return 脱敏后的姓名，如果输入为 null 或空字符串则返回原输入

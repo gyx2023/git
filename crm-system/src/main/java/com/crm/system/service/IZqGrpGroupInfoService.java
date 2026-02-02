@@ -81,6 +81,16 @@ public interface IZqGrpGroupInfoService {
     List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode, boolean needDesensitize);
 
     /**
+     * 根据ID列表查询政企集团客户信息列表（用于部分导出）
+     *
+     * @param grpIds ID列表
+     * @param areaCode 区域代码
+     * @param needDesensitize 是否需要脱敏
+     * @return 政企集团客户信息列表
+     */
+    List<ZqGrpGroupInfoVo> exportByIds(List<Long> grpIds, String areaCode, boolean needDesensitize);
+
+    /**
      * 新增政企集团客户信息
      */
     Boolean insertByBo(ZqGrpGroupInfoBo bo);
