@@ -37,11 +37,5 @@ public class GrpContractOtherInfoBo extends BaseEntity {
      */
     @NotBlank(message = "信息值不能为空", groups = { AddGroup.class, EditGroup.class })
     private String infoVal;
-
-    /**
-     * 填写服务号码
-     */
-    @NotBlank(message = "填写服务号码不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String infoVal2;
 }
 

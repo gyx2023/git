@@ -68,8 +68,6 @@ public class GrpContractOtherInfoServiceImpl implements IGrpContractOtherInfoSer
         lqw.eq(StringUtils.isNotBlank(bo.getContractId()), GrpContractOtherInfo::getContractId, bo.getContractId());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoTag()), GrpContractOtherInfo::getInfoTag, bo.getInfoTag());
         lqw.eq(StringUtils.isNotBlank(bo.getInfoVal()), GrpContractOtherInfo::getInfoVal, bo.getInfoVal());
-        lqw.eq(StringUtils.isNotBlank(bo.getInfoVal2()), GrpContractOtherInfo::getInfoVal2, bo.getInfoVal2());
-
         return lqw;
     }
 
