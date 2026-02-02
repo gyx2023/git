@@ -60,6 +60,6 @@ public class RabbitMQProducerService{
      * @param message 消息内容
      */
     public void sendMessage(String message) {
-        sendMessage(RabbitMQConfig.YgcfConfig.RPA_EXCHANGE, RabbitMQConfig.YgcfConfig.RPA_ROUTING_KEY, message);
+        sendMessage(RabbitMQConfig.YgcfConfig.RPA_YGCF_EXCHANGE, RabbitMQConfig.YgcfConfig.RPA_YGCF_ROUTING_KEY, message);
     }
 }

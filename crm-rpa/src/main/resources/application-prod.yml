@@ -147,3 +147,8 @@ springdoc:
       packages-to-scan: com.crm.web
     - group: 3.代码生成模块
       packages-to-scan: com.crm.generator
+ability:
+  app_id: bR4nqpsTto
+  app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
+  url:
+    worksheetsComplete: http://10.164.255.25:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1

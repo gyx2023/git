@@ -52,6 +52,9 @@ public class NengKaiServiceImpl implements NengKaiService {
     @Value("${ability.url.worksheetsComplete}")
     private String worksheetsCompleteURL;
 
+    @Resource
+    private RedissonClient redissonClient;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public NengKaiResponseVo nengKaiNotice(NengKaiRequestVo requestVo) {
@@ -114,11 +117,10 @@ public class NengKaiServiceImpl implements NengKaiService {
             Map<String, Object> orderUpdate = new HashMap<>();
             Map<String, Object> order = new HashMap<>();
             Map<String, Object> body = new HashMap<>();
+            body = JSONUtil.toBean(zqztJtNoticeRecordDo.getBody(), Map.class);
             order.put("body", body);
             orderUpdate.put("order", order);
             worksheetItem.put("orderUpdate", orderUpdate);
-
-
 
             worksheetsList.add(worksheetItem);
 
@@ -191,16 +193,13 @@ public class NengKaiServiceImpl implements NengKaiService {
     }
 
 
-    @Resource
-    private RedissonClient redissonClient;
-
     private String getCode(String seqName) {
         String lockKey = "sequence_lock:" + seqName;
         long expireTime = 60; // 锁过期时间60秒
 
         RLock lock = redissonClient.getLock(lockKey);
         try {
-            // 获取分布式锁，设置锁超时时间为10秒
+            // 获取分布式锁，设置锁超时时间为60秒
             boolean acquired = lock.tryLock(expireTime, expireTime, TimeUnit.SECONDS);
 
             if (acquired) {
@@ -221,7 +220,7 @@ public class NengKaiServiceImpl implements NengKaiService {
                 } else {
                     // 如果当天没有记录，说明这个序列当天第一次使用，将search_date更新为当天，current_val更新为1
                     updateSequenceForNewDay(seqName, currentDate, 1);
-                    return String.format("%09d", "1");
+                    return String.format("%09d", 1);
                 }
             } else {
                 throw new RuntimeException("获取序列号锁失败");

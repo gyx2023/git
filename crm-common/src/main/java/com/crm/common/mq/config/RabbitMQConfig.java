@@ -25,11 +25,6 @@ public class RabbitMQConfig {
         public static final String RPA_DLQ = "rpa.dlq";
         public static final String RPA_DLX = "rpa.dlx";
 
-        // 重试队列名称
-        public static final String RPA_RETRY_QUEUE = "rpa.retry.queue";
-        public static final String RPA_RETRY_EXCHANGE = "rpa.retry.exchange";
-        public static final String RPA_RETRY_ROUTING_KEY = "rpa.retry.routing.key";
-
         // 死信队列路由键
         public static final String RPA_DLQ_ROUTING_KEY = "rpa.dlq.routing.key";
 
@@ -53,34 +48,6 @@ public class RabbitMQConfig {
         }
 
         /**
-         * 创建重试队列
-         */
-        @Bean
-        public Queue rpaRetryQueue() {
-            Map<String, Object> args = new HashMap<>();
-            // 设置死信交换机，当消息过期后会发送到这个交换机
-            args.put("x-dead-letter-exchange", YgcfConfig.RPA_EXCHANGE);
-            args.put("x-dead-letter-routing-key", YgcfConfig.RPA_ROUTING_KEY);
-            return new Queue(RPA_RETRY_QUEUE, true, false, false, args);
-        }
-
-        /**
-         * 创建重试交换机
-         */
-        @Bean
-        public DirectExchange rpaRetryExchange() {
-            return new DirectExchange(RPA_RETRY_EXCHANGE, true, false);
-        }
-
-        /**
-         * 绑定重试队列到重试交换机
-         */
-        @Bean
-        public Binding bindingRetryQueue() {
-            return BindingBuilder.bind(rpaRetryQueue()).to(rpaRetryExchange()).with(RPA_RETRY_ROUTING_KEY);
-        }
-
-        /**
          * 绑定死信队列到死信交换机
          */
         @Bean
@@ -94,18 +61,23 @@ public class RabbitMQConfig {
     @Configuration
     public static class YgcfConfig {
         // 队列名称
-        public static final String RPA_QUEUE = "rpa.queue";
+        public static final String RPA_YGCF_QUEUE = "rpa.ygcf.queue";
         // 交换机名称
-        public static final String RPA_EXCHANGE = "rpa.exchange";
+        public static final String RPA_YGCF_EXCHANGE = "rpa.ygcf.exchange";
 
         // 路由键
-        public static final String RPA_ROUTING_KEY = "rpa.routing.key";
+        public static final String RPA_YGCF_ROUTING_KEY = "rpa.ygcf.routing.key";
+
+        // 重试队列名称
+        public static final String RPA_YGCF_RETRY_QUEUE = "rpa.ygcf.retry.queue";
+        public static final String RPA_YGCF_RETRY_EXCHANGE = "rpa.ygcf.retry.exchange";
+        public static final String RPA_YGCF_RETRY_ROUTING_KEY = "rpa.ygcf.retry.routing.key";
 
         /**
          * 创建测试队列
          */
         @Bean
-        public Queue rpaQueue() {
+        public Queue rpaYgcfQueue() {
             Map<String, Object> args = new HashMap<>();
             // 设置死信交换机
             args.put("x-dead-letter-exchange", CommonConfig.RPA_DLX);
@@ -115,7 +87,7 @@ public class RabbitMQConfig {
             args.put("x-max-length", 10000);
             // 设置消息存活时间
             //args.put("x-message-ttl", 3600000); // 10分钟
-            return new Queue(RPA_QUEUE, true, false, false, args); // 持久化队列
+            return new Queue(RPA_YGCF_QUEUE, true, false, false, args); // 持久化队列
         }
 
         /**
@@ -123,7 +95,7 @@ public class RabbitMQConfig {
          */
         @Bean
         public DirectExchange rpaExchange() {
-            return new DirectExchange(RPA_EXCHANGE, true, false);
+            return new DirectExchange(RPA_YGCF_EXCHANGE, true, false);
         }
 
 
@@ -132,7 +104,35 @@ public class RabbitMQConfig {
          */
         @Bean
         public Binding bindingTestQueue() {
-            return BindingBuilder.bind(rpaQueue()).to(rpaExchange()).with(RPA_ROUTING_KEY);
+            return BindingBuilder.bind(rpaYgcfQueue()).to(rpaExchange()).with(RPA_YGCF_ROUTING_KEY);
+        }
+
+        /**
+         * 创建重试队列
+         */
+        @Bean
+        public Queue rpaRetryQueue() {
+            Map<String, Object> args = new HashMap<>();
+            // 设置死信交换机，当消息过期后会发送到这个交换机
+            args.put("x-dead-letter-exchange", YgcfConfig.RPA_YGCF_EXCHANGE);
+            args.put("x-dead-letter-routing-key", YgcfConfig.RPA_YGCF_ROUTING_KEY);
+            return new Queue(RPA_YGCF_RETRY_QUEUE, true, false, false, args);
+        }
+
+        /**
+         * 创建重试交换机
+         */
+        @Bean
+        public DirectExchange rpaRetryExchange() {
+            return new DirectExchange(RPA_YGCF_RETRY_EXCHANGE, true, false);
+        }
+
+        /**
+         * 绑定重试队列到重试交换机
+         */
+        @Bean
+        public Binding bindingRetryQueue() {
+            return BindingBuilder.bind(rpaRetryQueue()).to(rpaRetryExchange()).with(RPA_YGCF_RETRY_ROUTING_KEY);
         }
     }
 

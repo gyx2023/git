@@ -43,6 +43,13 @@ public class ZqztRpaFormMappingDo extends BaseEntity {
      * 表单名称
      */
     private String formName;
+
+
+    private String isComponent;
+
+    private String componentKey;
+
+    private String componentTemplate;
     /**
      * 表单对应的取值key
      */
@@ -55,9 +62,19 @@ public class ZqztRpaFormMappingDo extends BaseEntity {
      * 取值类型:1-表单，2-文件
      */
     private String sourceType;
+
+    private String conditionsShow;
+
+    private String conditionsValue;
+
+
     /**
      * 是否必填，0-否，1-是
      */
     private String isRequired;
+
+    private String defaultValue;
+
+    private String valueType;
 
 }
