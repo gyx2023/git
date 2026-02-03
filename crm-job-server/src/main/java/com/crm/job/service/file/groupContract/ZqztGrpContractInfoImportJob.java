@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.GrpContractInfo;
 import com.crm.system.domain.ZqztGrpContractInfo;
 import com.crm.system.mapper.GrpContractInfoMapper;
+import com.crm.system.mapper.ZqztGrpContractInfoMapper;
 import com.crm.system.service.IZqztGrpContractInfoService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -31,6 +32,9 @@ public class ZqztGrpContractInfoImportJob {
 
     @Resource
     private GrpContractInfoMapper grpContractInfoMapper;
+
+    @Resource
+    private ZqztGrpContractInfoMapper zqztGrpContractInfoMapper;
 
     /**
      * 集团合同信息导入任务<br>
