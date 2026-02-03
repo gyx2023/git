@@ -401,7 +401,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             if (businessType != null && !businessType.trim().isEmpty()) {
                 ZqztGrpContractOtherInfoBo otherInfoBo = new ZqztGrpContractOtherInfoBo();
                 otherInfoBo.setContractId(contractId);
-                otherInfoBo.setInfoTag(businessType.trim());
+                otherInfoBo.setInfoTag("GRP_CONTRACT_BUSI_TYPE");
+                otherInfoBo.setInfoVal(businessType.trim());
                 // 默认有效
                 otherInfoBo.setIsValid("1");
 
