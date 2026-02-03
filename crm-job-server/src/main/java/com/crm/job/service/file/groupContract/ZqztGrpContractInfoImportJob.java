@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.GrpContractInfo;
 import com.crm.system.domain.ZqztGrpContractInfo;
 import com.crm.system.mapper.GrpContractInfoMapper;
-import com.crm.system.mapper.ZqztGrpContractInfoMapper;
 import com.crm.system.service.IZqztGrpContractInfoService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 集团合同信息表导入定时任务<br>
@@ -32,9 +32,6 @@ public class ZqztGrpContractInfoImportJob {
     @Resource
     private GrpContractInfoMapper grpContractInfoMapper;
 
-    @Resource
-    private ZqztGrpContractInfoMapper zqztGrpContractInfoMapper;
-
     /**
      * 集团合同信息导入任务<br>
      * 在xxl-job调度中心配置JobHandler为：zqztGrpContractInfoImportJob
@@ -46,15 +43,16 @@ public class ZqztGrpContractInfoImportJob {
         try {
             // 1. 清空目标表数据
             XxlJobHelper.log("清空目标表zqzt_grp_contract_info数据");
-            zqztGrpContractInfoMapper.delete(null);
+            zqztGrpContractInfoService.importAllClear(null);
 
-            // 2. 分页查询Oracle数据源grp_contract_info表的数据
+            // 2. 分页查询grp_contract_info表的数据并处理
             int pageSize = 1000;
             long currentPage = 0;
             int totalProcessed = 0;
             boolean hasMoreData = true;
 
             while (hasMoreData) {
+
                 Page<GrpContractInfo> page = new Page<>(currentPage + 1, pageSize);
                 Page<GrpContractInfo> resultPage = grpContractInfoMapper.selectPage(page, Wrappers.emptyWrapper());
 
@@ -64,33 +62,16 @@ public class ZqztGrpContractInfoImportJob {
                     break;
                 }
 
-                // 3. 遍历数据，转换并插入到主数据源的zqzt_grp_contract_info表
-                int successCount = 0;
-                int totalCount = oracleDataList.size();
+                // 转换数据列表
+                List<ZqztGrpContractInfo> targetDataList = convertToTargetDataList(oracleDataList);
 
-                for (int i = 0; i < oracleDataList.size(); i++) {
-                    GrpContractInfo oracleData = oracleDataList.get(i);
-
-                    try {
-                        // 转换数据并填充新增字段
-                        ZqztGrpContractInfo targetData = convertToTargetData(oracleData);
-
-                        // 插入到目标表
-                        zqztGrpContractInfoMapper.insert(targetData);
-                        successCount++;
-                        totalProcessed++;
-
-                        // 每100条记录输出一次进度
-                        if ((i + 1) % 100 == 0) {
-                            XxlJobHelper.log("已处理第" + (currentPage + 1) + "页：" + (i + 1) + "/" + totalCount + " 条记录");
-                        }
-                    } catch (Exception e) {
-                        XxlJobHelper.log("处理第 " + (i + 1) + " 条记录时发生错误: " + e.getMessage());
-                        log.error("处理数据时发生错误", e);
-                    }
+                // 批量插入数据
+                if (!targetDataList.isEmpty()) {
+                    XxlJobHelper.log("开始批量插入第" + (currentPage + 1) + "页数据，数量：" + targetDataList.size());
+                    int successCount = zqztGrpContractInfoService.importAll(targetDataList);
+                    totalProcessed += successCount;
+                    XxlJobHelper.log("第" + (currentPage + 1) + "页数据处理完成，成功导入: " + successCount + " 条");
                 }
-
-                XxlJobHelper.log("第" + (currentPage + 1) + "页数据处理完成，成功: " + successCount + " 条");
 
                 currentPage++;
 
@@ -100,8 +81,8 @@ public class ZqztGrpContractInfoImportJob {
                 }
             }
 
-            XxlJobHelper.log("数据同步完成，总计处理: " + totalProcessed + " 条，成功: " + totalProcessed + " 条");
-            log.info("数据同步完成，总计处理: {} 条，成功: {} 条", totalProcessed, totalProcessed);
+            XxlJobHelper.log("数据同步完成，总计处理: " + totalProcessed + " 条");
+            log.info("数据同步完成，总计处理: {} 条", totalProcessed);
 
             String successMsg = String.format("集团合同信息导入任务执行成功，导入记录数：%d", totalProcessed);
             XxlJobHelper.handleSuccess(successMsg);
@@ -115,9 +96,18 @@ public class ZqztGrpContractInfoImportJob {
     }
 
     /**
-     * 将Oracle数据转换为目标数据，并填充新增字段
+     * 将Oracle数据转换为目标数据列表，并应用业务逻辑
      */
-    private ZqztGrpContractInfo convertToTargetData(GrpContractInfo oracleData) {
+    private List<ZqztGrpContractInfo> convertToTargetDataList(List<GrpContractInfo> oracleDataList) {
+        return oracleDataList.stream()
+            .map(this::convertSingleRecord)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 转换单条记录
+     */
+    private ZqztGrpContractInfo convertSingleRecord(GrpContractInfo oracleData) {
         ZqztGrpContractInfo targetData = new ZqztGrpContractInfo();
 
         // 复制基础字段
