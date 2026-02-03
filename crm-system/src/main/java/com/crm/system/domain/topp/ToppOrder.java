@@ -1,13 +1,12 @@
 package com.crm.system.domain.topp;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serializable;
-import java.util.Date;
-import java.math.BigDecimal;
-
-import com.crm.common.core.domain.BaseEntity;
 
 /**
  * 【请填写功能名称】对象 topp_order
@@ -20,12 +19,12 @@ import com.crm.common.core.domain.BaseEntity;
 @TableName("topp_order")
 public class ToppOrder extends BaseEntity {
 
-    private static final long serialVersionUID=1L;
+    private static final long serialVersionUID = 1L;
 
     /**
      *
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
     /**
      * 关联商机，可以为空
@@ -38,6 +37,7 @@ public class ToppOrder extends BaseEntity {
     /**
      * 创建人
      */
+    @TableField("creator_")
     private Long creator;
     /**
      * 关联sys_form表
@@ -74,6 +74,7 @@ public class ToppOrder extends BaseEntity {
     /**
      * 当前阶段,可以是多个，逗号开始，逗号结束，逗号分隔
      */
+    @TableField("phase_")
     private String phase;
     /**
      * 订单客户经理，默认是创建人，但是如果选择了客户经理那么就是选择的
@@ -82,10 +83,12 @@ public class ToppOrder extends BaseEntity {
     /**
      *
      */
+    @TableField("actors_")
     private String actors;
     /**
      * 状态：对应码表order_status
      */
+    @TableField("status_")
     private String status;
     /**
      *
@@ -200,4 +203,10 @@ public class ToppOrder extends BaseEntity {
      */
     private String thirdCheckResult;
 
+    @TableField(exist = false)
+    private String createBy;
+
+
+    @TableField(exist = false)
+    private String updateBy;
 }

@@ -2,12 +2,9 @@ package com.crm.system.domain.topp;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-import java.util.Date;
 import java.math.BigDecimal;
-
-import com.crm.common.core.domain.BaseEntity;
+import java.util.Date;
 
 /**
  * 【请填写功能名称】对象 topp_contract
@@ -19,12 +16,12 @@ import com.crm.common.core.domain.BaseEntity;
 @TableName("topp_contract")
 public class ToppContractDo {
 
-    private static final long serialVersionUID=1L;
+    private static final long serialVersionUID = 1L;
 
     /**
      * 主键
      */
-    @TableId(value = "id_",type = IdType.AUTO)
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
     /**
      * 关联商机
