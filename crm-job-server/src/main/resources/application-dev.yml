@@ -106,46 +106,6 @@ spring:
         connectionTestQuery: SELECT 1
         # 多久检查一次连接的活性
         keepaliveTime: 30000
-  # RabbitMQ配置
-  rabbitmq:
-    # 服务器地址
-    host: localhost
-    # 端口号
-    port: 5672
-    # 用户名
-    username: admin
-    # 密码
-    password: admin123
-    # 虚拟主机
-    virtual-host: /
-    # 连接超时时间
-    connection-timeout: 15000
-    # 消费者手动确认
-    listener:
-      simple:
-        acknowledge-mode: auto
-        default-requeue-rejected: false   # 失败后不重新入队（避免无限循环）
-        # 并发消费者数量
-        concurrency: 5
-        # 最大并发消费者数量
-        max-concurrency: 10
-        # 预取数量
-        prefetch: 1
-        retry:
-          enabled: true #开启消费者重试
-          max-attempts: 3 # 最大重试次数
-          initial-interval: 5000  #重试间隔时间（单位毫秒）
-          max-interval: 1200000    #重试最大时间间隔（单位毫秒）
-          # 乘子。间隔时间*乘子=下一次的间隔时间，不能超过max-interval
-          # 以本处为例：第一次间隔 5 秒，第二次间隔 10 秒，以此类推
-          multiplier: 2
-    # 生产者确认
-    publisher-confirm-type: correlated
-    # 生产者返回
-    publisher-returns: true
-    # 模板强制返回
-    template:
-      mandatory: true
 
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring:

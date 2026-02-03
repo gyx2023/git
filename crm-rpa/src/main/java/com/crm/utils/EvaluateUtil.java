@@ -15,6 +15,7 @@ public class EvaluateUtil {
 
     // 创建EL表达式执行方法 - 修复参数传递
     public static boolean evaluateCondition(String expression, Map<String, Object> messageMap) {
+        log.info("开始执行EL表达式: {}, 参数map: {}", expression, messageMap);
         ExpressionFactory factory = new ExpressionFactoryImpl();
         SimpleContext context = new SimpleContext();
 
@@ -33,7 +34,9 @@ public class EvaluateUtil {
                 context, expression, Boolean.class);
 
             Object result = ve.getValue(context);
-            return result instanceof Boolean ? (Boolean) result : Boolean.FALSE;
+            boolean finalResult = result instanceof Boolean ? (Boolean) result : Boolean.FALSE;
+            log.info("EL表达式执行完成: {}, 结果: {}", expression, finalResult);
+            return finalResult;
         } catch (Exception e) {
             log.error("EL表达式执行失败: {}", expression, e);
             return false;
