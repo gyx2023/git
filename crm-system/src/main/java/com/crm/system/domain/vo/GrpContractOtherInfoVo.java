@@ -34,11 +34,5 @@ public class GrpContractOtherInfoVo {
      */
     @ExcelProperty(value = "信息值")
     private String infoVal;
-
-    /**
-     * 填写服务号码
-     */
-    @ExcelProperty(value = "填写服务号码")
-    private String infoVal2;
 }
 
