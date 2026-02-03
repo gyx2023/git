@@ -68,7 +68,7 @@ spring:
     # 用户名
     username: zqyyadmin
     # 密码
-    password: "a!@#dmin123@!AA@!"
+    password: "admin123@123!AA"
     # 虚拟主机
     virtual-host: /
     # 连接超时时间
