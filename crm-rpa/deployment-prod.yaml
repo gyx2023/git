@@ -24,13 +24,6 @@ spec:
             - name: tcp-backend
               containerPort: 8080
               protocol: TCP
-          resources:
-            limits:
-              cpu: 500m
-              memory: 4096Mi
-            requests:
-              cpu: 200m
-              memory: 2048Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: IfNotPresent
