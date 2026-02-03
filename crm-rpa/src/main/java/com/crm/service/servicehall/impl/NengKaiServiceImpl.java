@@ -3,11 +3,11 @@ package com.crm.service.servicehall.impl;
 import cn.hutool.json.JSONUtil;
 import com.crm.service.mq.ygcf.RabbitMQProducerService;
 import com.crm.service.servicehall.NengKaiService;
-import com.crm.system.domain.seq.SequenceDo;
+import com.crm.system.domain.Sequence;
 import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
-import com.crm.system.mapper.seq.SequenceMapper;
+import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.utils.HaoKaoSignUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -239,12 +239,12 @@ public class NengKaiServiceImpl implements NengKaiService {
     // 从数据库获取当前值
     private Integer getCurrentValueFromDB(String seqName, String searchDate) {
         // 使用LambdaQueryWrapper进行精确查询
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SequenceDo> lambdaQueryWrapper =
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Sequence> lambdaQueryWrapper =
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(SequenceDo::getSeqName, seqName)
-            .eq(SequenceDo::getSearchDate, searchDate);
+        lambdaQueryWrapper.eq(Sequence::getSeqName, seqName)
+            .eq(Sequence::getSearchDate, searchDate);
 
-        SequenceDo sequence = sequenceMapper.selectOne(lambdaQueryWrapper);
+        Sequence sequence = sequenceMapper.selectOne(lambdaQueryWrapper);
 
         return sequence != null ? sequence.getCurrentVal().intValue() : null;
     }
@@ -252,11 +252,11 @@ public class NengKaiServiceImpl implements NengKaiService {
     // 更新数据库中的当前值
     private void updateCurrentValueInDB(String seqName, String searchDate, int newValue) {
         // 使用LambdaUpdateWrapper更新sequence表中的current_val字段
-        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<SequenceDo> lambdaUpdateWrapper =
+        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Sequence> lambdaUpdateWrapper =
             new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
-        lambdaUpdateWrapper.eq(SequenceDo::getSeqName, seqName)
-            .eq(SequenceDo::getSearchDate, searchDate)
-            .set(SequenceDo::getCurrentVal, Long.valueOf(newValue));
+        lambdaUpdateWrapper.eq(Sequence::getSeqName, seqName)
+            .eq(Sequence::getSearchDate, searchDate)
+            .set(Sequence::getCurrentVal, Long.valueOf(newValue));
 
         sequenceMapper.update(null, lambdaUpdateWrapper);
     }
@@ -264,11 +264,11 @@ public class NengKaiServiceImpl implements NengKaiService {
     // 更新序列记录，将日期更新为当天，current_val更新为1
     private void updateSequenceForNewDay(String seqName, String searchDate, int initValue) {
         // 使用LambdaUpdateWrapper更新sequence表中的search_date和current_val字段
-        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<SequenceDo> lambdaUpdateWrapper =
+        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Sequence> lambdaUpdateWrapper =
             new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
-        lambdaUpdateWrapper.eq(SequenceDo::getSeqName, seqName)
-            .set(SequenceDo::getSearchDate, searchDate)
-            .set(SequenceDo::getCurrentVal, Long.valueOf(initValue));
+        lambdaUpdateWrapper.eq(Sequence::getSeqName, seqName)
+            .set(Sequence::getSearchDate, searchDate)
+            .set(Sequence::getCurrentVal, Long.valueOf(initValue));
 
         sequenceMapper.update(null, lambdaUpdateWrapper);
     }
