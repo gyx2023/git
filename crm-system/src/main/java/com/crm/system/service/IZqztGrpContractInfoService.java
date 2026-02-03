@@ -29,7 +29,7 @@ public interface IZqztGrpContractInfoService {
     TableDataInfo<ZqztGrpContractInfoVo> queryPageList(ZqztGrpContractInfoBo bo, PageQuery pageQuery);
 
     /**
-     * 全量导入集团合同信息数据
+     * 全量删除集团合同信息数据
      *
      * @param dataList 数据列表
      * @return 成功导入数量
