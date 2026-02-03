@@ -1,8 +1,10 @@
 package com.crm.job.service.file.groupContract;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.GrpContractOtherInfo;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
-import com.crm.system.service.IGrpContractOtherInfoService;
+import com.crm.system.mapper.GrpContractOtherInfoMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -28,7 +30,7 @@ public class ZqztGrpContractOtherInfoImportJob {
     private IZqztGrpContractOtherInfoService zqztGrpContractOtherInfoService;
 
     @Resource
-    private IGrpContractOtherInfoService grpContractOtherInfoService; // Oracle数据源的服务
+    private GrpContractOtherInfoMapper grpContractOtherInfoMapper;
 
     /**
      * 集团合同扩展信息导入任务<br>
@@ -44,36 +46,46 @@ public class ZqztGrpContractOtherInfoImportJob {
             XxlJobHelper.log("清空目标表zqzt_grp_contract_other_info数据");
             zqztGrpContractOtherInfoService.importAllClear(null);
 
-            // 2. 查询grp_contract_other_info表的所有数据
-            XxlJobHelper.log("查询grp_contract_other_info表数据");
-            List<GrpContractOtherInfo> oracleDataList = grpContractOtherInfoService.selectAllGrpContractOtherInfo();
-            XxlJobHelper.log("查询到数据条数：" + oracleDataList.size());
+            // 2. 分页查询grp_contract_other_info表的数据并处理
+            int pageSize = 1000;
+            long currentPage = 0;
+            int totalProcessed = 0;
+            boolean hasMoreData = true;
 
-            if (oracleDataList == null || oracleDataList.isEmpty()) {
-                String warnMsg = "数据源数据为空";
-                log.warn(warnMsg);
-                XxlJobHelper.log(warnMsg);
-                XxlJobHelper.handleSuccess(warnMsg);
-                return;
+            while (hasMoreData) {
+
+                Page<GrpContractOtherInfo> page = new Page<>(currentPage + 1, pageSize);
+                Page<GrpContractOtherInfo> resultPage = grpContractOtherInfoMapper.selectPage(page, Wrappers.emptyWrapper());
+
+                List<GrpContractOtherInfo> oracleDataList = resultPage.getRecords();
+
+                if (oracleDataList == null || oracleDataList.isEmpty()) {
+                    break;
+                }
+
+                // 转换数据列表
+                List<ZqztGrpContractOtherInfo> targetDataList = convertToTargetDataList(oracleDataList);
+
+                // 批量插入数据
+                if (!targetDataList.isEmpty()) {
+                    XxlJobHelper.log("开始批量插入第" + (currentPage + 1) + "页数据，数量：" + targetDataList.size());
+                    int successCount = zqztGrpContractOtherInfoService.importAll(targetDataList);
+                    totalProcessed += successCount;
+                    XxlJobHelper.log("第" + (currentPage + 1) + "页数据处理完成，成功导入: " + successCount + " 条");
+                }
+
+                currentPage++;
+
+                // 检查是否还有更多数据
+                if (oracleDataList.size() < pageSize) {
+                    hasMoreData = false;
+                }
             }
 
-            // 3. 遍历数据，转换并插入到主数据源的zqzt_grp_contract_other_info表
-            int successCount = 0;
-            int totalCount = oracleDataList.size();
+            XxlJobHelper.log("数据同步完成，总计处理: " + totalProcessed + " 条");
+            log.info("数据同步完成，总计处理: {} 条", totalProcessed);
 
-            // 转换数据列表
-            List<ZqztGrpContractOtherInfo> targetDataList = convertToTargetDataList(oracleDataList);
-
-            // 批量插入数据
-            if (!targetDataList.isEmpty()) {
-                XxlJobHelper.log("开始批量插入数据，数量：" + targetDataList.size());
-                successCount = zqztGrpContractOtherInfoService.importAll(targetDataList);
-            }
-
-            XxlJobHelper.log("数据同步完成，总计处理: " + totalCount + " 条，成功: " + successCount + " 条");
-            log.info("数据同步完成，总计处理: {} 条，成功: {} 条", totalCount, successCount);
-
-            String successMsg = String.format("集团合同扩展信息导入任务执行成功，导入记录数：%d", successCount);
+            String successMsg = String.format("集团合同扩展信息导入任务执行成功，导入记录数：%d", totalProcessed);
             log.info(successMsg);
             XxlJobHelper.handleSuccess(successMsg);
 

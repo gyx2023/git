@@ -91,6 +91,32 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     }
 
     /**
+     * 批量导入集团合同信息
+     */
+    @Override
+    public int importAll(List<ZqztGrpContractInfo> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        baseMapper.insertBatch(dataList);
+
+        return dataList.size();
+    }
+
+    @Override
+    public int importAllClear(List<ZqztGrpContractInfo> dataList) {
+        // 清空现有数据，进行全量更新
+        baseMapper.delete(null);
+
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        return dataList.size();
+    }
+
+    /**
      * 查询集团合同信息列表
      */
     @Override
@@ -289,16 +315,16 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             // 查询并备份扩展表中与该合同ID关联的记录到日志表
             LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
-            List<ZqztGrpContractOtherInfo> existingOtherRecords = 
+            List<ZqztGrpContractOtherInfo> existingOtherRecords =
                 SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
-            
+
             // 将扩展表的现有记录备份到日志表
             for (ZqztGrpContractOtherInfo otherRecord : existingOtherRecords) {
                 ZqztGrpContractOtherInfoLog logRecord = BeanUtil.toBean(otherRecord, ZqztGrpContractOtherInfoLog.class);
                 logRecord.setId(null); // 设置日志记录的ID为null，以便自动生成新ID
                 SpringUtils.getBean(ZqztGrpContractOtherInfoLogMapper.class).insert(logRecord);
             }
-            
+
             // 删除扩展表中与该合同ID关联的记录
             SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).delete(queryWrapper);
 
