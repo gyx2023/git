@@ -87,40 +87,6 @@ spring:
         # 多久检查一次连接的活性
         keepaliveTime: 30000
 
-  # RabbitMQ配置
-  rabbitmq:
-    # 服务器地址
-    host: localhost
-    # 端口号
-    port: 5672
-    # 用户名
-    username: admin
-    # 密码
-    password: admin123
-    # 虚拟主机
-    virtual-host: /
-    # 连接超时时间
-    connection-timeout: 15000
-    # 消费者手动确认
-    listener:
-      simple:
-        acknowledge-mode: manual
-        # 并发消费者数量
-        concurrency: 5
-        # 最大并发消费者数量
-        max-concurrency: 10
-        # 预取数量
-        prefetch: 1
-        retry:
-          enabled: false # 关闭内置重试机制，使用手动重试逻辑
-    # 生产者确认
-    publisher-confirm-type: correlated
-    # 生产者返回
-    publisher-returns: true
-    # 模板强制返回
-    template:
-      mandatory: true
-
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring:
   redis:
