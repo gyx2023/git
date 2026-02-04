@@ -112,8 +112,8 @@ public class Desensitization {
         String startTwoChars = trimmedName.substring(0, 2);
         String endTwoChars = trimmedName.substring(length - 2);
 
-        // 4. 计算需要脱敏的字符数量，并生成相应数量的 '*'
-        int starsCount = length - 4;
+        // 4. 计算需要脱敏的字符数量，最多保留8个'*'
+        int starsCount = Math.min(length - 4, 8);
         String stars = generateAsterisks(starsCount);
 
         // 5. 拼接结果
@@ -134,7 +134,7 @@ public class Desensitization {
         }
 
         String trimmedPhone = phoneNumber.trim();
-        
+
         // 2. 检查手机号码长度是否符合标准（通常为11位）
         if (trimmedPhone.length() < 7) {
             // 如果长度小于7，直接返回原号码（不做脱敏处理）
