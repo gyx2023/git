@@ -225,7 +225,7 @@ public class RabbitMQConsumerService {
         String body = recordDo.getBody();
 
         Boolean checkResult = this.checekData(recordDo);
-
+        recordDo.setDealResultCode("0");
         // 先将JSON字符串转换为JSONObject
         cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(body);
         // 完全转换为Map结构，确保嵌套的JSON对象和数组也被正确转换
