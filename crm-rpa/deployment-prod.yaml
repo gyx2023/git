@@ -18,7 +18,7 @@ spec:
         ckp/owner-name: zqzt-backend-rpa
     spec:
       containers:
-        - name: container-zqzt-backend-rpa
+        - name: zqzt-backend-rpa
           image: huailaikxq-registry.cucloud.cn/zj_zq2025/zqzt-backend-rpa-prod
           ports:
             - name: tcp-backend
