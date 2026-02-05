@@ -39,4 +39,14 @@ public class WfForm extends BaseEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 表单类型：system-系统表单，custom-自定义URL
+     */
+    private String formType;
+
+    /**
+     * 自定义表单URL路径
+     */
+    private String formUrl;
 }
