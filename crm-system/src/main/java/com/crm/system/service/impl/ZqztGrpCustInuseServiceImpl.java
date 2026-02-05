@@ -136,27 +136,23 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
      */
     @Override
     public TableDataInfo<ZqztGrpCustInuseRespDTO> queryPageList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
+        // 获取总记录数
+        int total = baseMapper.queryZqztGrpCustInuseListTotal(reqDTO);
+
+        // 计算分页起始位置和结束位置
+        int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
+        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
+        reqDTO.setStartIndex(startIndex);
+        reqDTO.setEndIndex(endIndex);
+
         // 获取完整数据列表
         List<ZqztGrpCustInuseRespDTO> list = baseMapper.queryZqztGrpCustInuseList(reqDTO);
 
         // 创建分页对象
         Page<ZqztGrpCustInuseRespDTO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
 
-        // 获取总记录数
-        int total = list.size();
-
-        // 计算分页起始位置和结束位置
-        int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
-        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
-
-        // 分页处理
-        List<ZqztGrpCustInuseRespDTO> pagedList = new ArrayList<>();
-        if (startIndex < total) {
-            pagedList = list.subList(startIndex, endIndex);
-        }
-
         // 设置分页数据
-        page.setRecords(pagedList);
+        page.setRecords(list);
         page.setTotal(total);
 
         SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
