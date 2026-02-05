@@ -65,4 +65,13 @@ public class ZqztGrpCustReqDTO {
      */
     private String inuseId;
 
+    /**
+     * 分页起始位置
+     */
+    private int startIndex;
+
+    /**
+     * 分页结束位置
+     */
+    private int endIndex;
 }
