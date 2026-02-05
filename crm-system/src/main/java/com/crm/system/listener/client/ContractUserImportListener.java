@@ -88,7 +88,7 @@ public class ContractUserImportListener {
                 // 构造合同关联用户信息并调用添加接口
                 ZqztGrpContractOtherInfoBo bo = new ZqztGrpContractOtherInfoBo();
                 bo.setContractId(contractId);
-                bo.setInfoTag("USER_ID"); // 假设infoTag为USER_ID
+                bo.setInfoTag("GRP_CONTRACT_USER_LIST");
                 bo.setInfoVal(userId);
                 bo.setInfoVal2(svcNum);
                 bo.setIsValid("1");

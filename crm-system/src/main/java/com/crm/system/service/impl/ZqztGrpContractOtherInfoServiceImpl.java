@@ -120,8 +120,11 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             return false;
         }
 
-        // 对请求参数中的infoVal2字段进行解密处理
+        // 对请求参数中的infoVal2字段进行解密处理，并设置固定的info_tag
         for (ZqztGrpContractOtherInfoBo bo : boList) {
+            // 设置固定的info_tag值
+            bo.setInfoTag("GRP_CONTRACT_USER_LIST");
+            
             if (bo.getInfoVal2() != null && !bo.getInfoVal2().isEmpty()) {
                 try {
                     // 解密infoVal2字段
