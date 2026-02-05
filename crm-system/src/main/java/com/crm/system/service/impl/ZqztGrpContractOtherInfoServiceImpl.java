@@ -347,20 +347,23 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
         }
 
-        // 第三步：合并数据，构建结果列表
+        // INNER JOIN逻辑：只返回在两个表中都有匹配的数据
+        // 如果任何一个contractOtherInfo在custMaintInfo中没有匹配，则整条记录都不返回
         List<Map<String, Object>> result = new ArrayList<>();
+        
         for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
-            Map<String, Object> mergedInfo = new HashMap<>();
-            // 添加合同扩展信息字段
-            mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
-            mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
-            mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
-            mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
-            mergedInfo.put("isValid", contractOtherInfo.getIsValid());
-
-            // 添加从客户维护信息查询到的字段
             String userId = contractOtherInfo.getInfoVal();
-            if (userId != null && custMaintInfoMap.containsKey(userId)) {
+            // INNER JOIN条件：必须在客户维护信息中找到匹配的记录
+            if (userId != null && custMaintInfoMap.containsKey(userId) && custMaintInfoMap.get(userId) != null) {
+                Map<String, Object> mergedInfo = new HashMap<>();
+                // 添加合同扩展信息字段
+                mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
+                mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
+                mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
+                mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
+                mergedInfo.put("isValid", contractOtherInfo.getIsValid());
+
+                // 添加从客户维护信息查询到的字段
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
                 // 对手机号码进行脱敏处理
                 String svcNum = (String) custInfo.get("svcNum");
@@ -375,14 +378,10 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 String custGrpName = (String) custInfo.get("custGrpName");
                 String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
                 mergedInfo.put("custGrpName", desensitizedCustGrpName);
-            } else {
-                // 如果没有找到对应的客户信息，设置为空值
-                mergedInfo.put("svcNum", "");
-                mergedInfo.put("userId", "");
-                mergedInfo.put("custName", "");
-                mergedInfo.put("custGrpName", "");
+                
+                result.add(mergedInfo);
             }
-            result.add(mergedInfo);
+            // 如果没有匹配的客户信息，直接跳过这条记录（相当于INNER JOIN的过滤效果）
         }
 
         return result;
