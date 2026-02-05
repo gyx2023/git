@@ -92,21 +92,20 @@ public class RabbitMQConsumerService {
             log.info("消息处理成功，手动确认");
         } catch (Exception e) {
             log.error("处理消息时发生错误：{}", e.getMessage(), e);
-
             // 获取重试次数
-            Integer retryCount = (Integer) message.getMessageProperties().getHeaders().get("x-retry-count");
-            if (retryCount == null) {
-                retryCount = 0;
-            }
-
-            if (retryCount < MAX_RETRY_COUNT) {
-                // 增加重试次数并重新发送到重试队列
-                retryMessage(message, channel, deliveryTag, retryCount + 1);
-            } else {
-                // 达到最大重试次数，直接进入死信队列
-                channel.basicReject(deliveryTag, false);
-                log.warn("消息处理失败，已达到最大重试次数，移至死信队列");
-            }
+//            Integer retryCount = (Integer) message.getMessageProperties().getHeaders().get("x-retry-count");
+//            if (retryCount == null) {
+//                retryCount = 0;
+//            }
+//
+//            if (retryCount < MAX_RETRY_COUNT) {
+//                // 增加重试次数并重新发送到重试队列
+//                retryMessage(message, channel, deliveryTag, retryCount + 1);
+//            } else {
+//                // 达到最大重试次数，直接进入死信队列
+//                channel.basicReject(deliveryTag, false);
+//                log.warn("消息处理失败，已达到最大重试次数，移至死信队列");
+//            }
         }
     }
 
