@@ -81,15 +81,8 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
             }*/
             try {
-                // 使用流式导出方法
-                boolean success;
-                if (grpIds != null && !grpIds.isEmpty()) {
-                    // 部分导出：按grpIds列表导出
-                    success = exportToExcelByIds(grpIds, areaCode, needDesensitize, tempFile);
-                } else {
-                    // 全量导出：按查询条件导出
-                    success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
-                }
+                // 使用修改后的exportPageList方法进行统一导出
+                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
                 if (!success) {
                     task.setRemark("导出失败");
                     return false;
@@ -136,31 +129,48 @@ public class GroupCustomersExport extends AbstractExportStrategy {
      */
     private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode,
                                         boolean needDesensitize, File outputFile) throws Exception {
-        // 使用 EasyExcel 分批写入数据
+        // 使用 EasyExcel 写入数据
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo.class)
             .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
             .build()) {
 
             WriteSheet writeSheet = EasyExcel.writerSheet("集团客户信息").build();
 
-            // 分批读取并写入数据
-            int pageSize = 1000;
-            int currentPage = 1;
-            boolean hasMoreData = true;
-
-            while (hasMoreData) {
-                Page<ZqGrpGroupInfo> page = new Page<>(currentPage, pageSize, false);
-                List<ZqGrpGroupInfoVo> batchData = iZqGrpGroupInfoService.exportPageList(
-                    queryParams, page, areaCode, needDesensitize);
-
-                if (batchData == null || batchData.isEmpty()) {
-                    hasMoreData = false;
-                    break;
+            // 判断导出方式
+            if (queryParams.getGrpIds() != null && !queryParams.getGrpIds().isEmpty()) {
+                // 按ID列表导出 - 直接一次性获取所有数据
+                log.info("按ID列表导出，grpIds数量: {}", queryParams.getGrpIds().size());
+                List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportPageList(
+                    queryParams, null, areaCode, needDesensitize);
+                
+                if (dataList != null && !dataList.isEmpty()) {
+                    excelWriter.write(dataList, writeSheet);
+                } else {
+                    log.warn("根据ID列表未查询到数据");
+                    return false;
                 }
+            } else {
+                // 按查询条件导出 - 使用分页
+                log.info("按查询条件导出");
+                // 分批读取并写入数据
+                int pageSize = 1000;
+                int currentPage = 1;
+                boolean hasMoreData = true;
 
-                // 写入当前批次数据
-                excelWriter.write(batchData, writeSheet);
-                currentPage++;
+                while (hasMoreData) {
+                    Page<ZqGrpGroupInfo> page = new Page<>(currentPage, pageSize, false);
+                    List<ZqGrpGroupInfoVo> batchData = iZqGrpGroupInfoService.exportPageList(
+                        queryParams, page, areaCode, needDesensitize);
+
+                    if (batchData == null || batchData.isEmpty()) {
+                        hasMoreData = false;
+                        break;
+                    }
+
+                    // 写入当前批次数据
+                    excelWriter.write(batchData, writeSheet);
+                    currentPage++;
+                }
             }
         }
         return true;
