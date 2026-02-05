@@ -92,6 +92,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     @Override
     public TableDataInfo<ZqztGrpContractInfoVo> queryPageList(ZqztGrpContractInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = buildQueryWrapper(bo);
+        // 按创建时间倒序排列
+        lqw.orderByDesc(ZqztGrpContractInfo::getCreateTime);
         Page<ZqztGrpContractInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
         // 添加敏感角色判断
@@ -230,6 +232,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             add.setCreator(LoginHelper.getNickName());
         }
 
+        if (add.getInuseContractId() == null || add.getInuseContractId().isEmpty()) {
+            add.setInuseContractId(generateRandomContractId());
+        }
+
         // 设置默认缴费方式，如果未提供
         if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
             add.setPaytype("10"); // 默认设置为"后付费"
@@ -261,6 +267,35 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             }
         }
         return flag;
+    }
+
+    // 生成15位随机数,且唯一
+    public String generateRandomContractId(){
+        String inuseContractId;
+        int maxAttempts = 10; // 重试次数
+
+        for (int i = 0; i < maxAttempts; i++) {
+            // 生成时间戳部分(10位): 年月日时分秒毫秒的后10位
+            String timestamp = new java.text.SimpleDateFormat("yyMMddHHmmssSSS").format(new Date());
+            String timePart = timestamp.substring(Math.max(0, timestamp.length() - 10));
+
+            // 生成随机数部分(5位)
+            java.util.Random random = new java.util.Random();
+            String randomPart = String.format("%05d", random.nextInt(100000));
+
+            // 组合生成15位合同编号
+            inuseContractId = timePart + randomPart;
+
+            // 检查数据库中是否已存在该合同编号
+            LambdaQueryWrapper<ZqztGrpContractInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ZqztGrpContractInfo::getInuseContractId, inuseContractId);
+
+            if (baseMapper.selectCount(queryWrapper) == 0) {
+                System.out.println("随机InuseContractId:" + inuseContractId);
+                return inuseContractId; // 唯一性校验通过，返回合同编号
+            }
+        }
+        throw new RuntimeException("无法生成唯一的15位合同编号，请稍后重试");
     }
 
     /**
@@ -467,8 +502,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
-                   .ne(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE") // 排除旧的固定标签，查询实际业务类型标签
-                   .eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+                   .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE")
+                   .eq(ZqztGrpContractOtherInfo::getIsValid, "1");
 
         List<ZqztGrpContractOtherInfo> list = SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
 
@@ -476,10 +511,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             return null;
         }
 
-        // 将所有业务类型标签用逗号连接
+        // 将所有业务类型值用逗号连接
         return list.stream()
-                  .map(ZqztGrpContractOtherInfo::getInfoTag) // 从infoTag获取业务类型
-                  .filter(infoTag -> infoTag != null && !infoTag.trim().isEmpty())
+                  .map(ZqztGrpContractOtherInfo::getInfoVal) // 从infoVal获取业务类型代码
+                  .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
                   .collect(Collectors.joining(","));
     }
 
