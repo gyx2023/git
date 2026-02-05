@@ -45,4 +45,8 @@ public interface IToppContractService {
      * 校验并批量删除【请填写功能名称】信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    List<ToppContractVo> queryContractList(List<Long> ids);
+
+    List<ToppContractVo>  findContractDetailById(Long oppoId);
 }

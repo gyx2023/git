@@ -1,36 +1,33 @@
 package com.crm.web.controller.system;
 
-import java.util.*;
-
-import lombok.RequiredArgsConstructor;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.*;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
-import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.annotation.Log;
+import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
+import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
-import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
-import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
-import com.crm.system.service.IZqGrpGroupInfoService;
-import com.crm.system.domain.vo.CustomerManagerTemplateVo;
-import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
-import com.crm.system.domain.vo.GrpExpandTypeTemplateVo;
-import com.crm.system.utils.ExcelDropdownHandler;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.utils.file.FileUtils;
+import com.crm.common.utils.poi.ExcelUtil;
+import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
+import com.crm.system.domain.vo.*;
+import com.crm.system.service.IZqGrpGroupInfoService;
+import com.crm.system.utils.ExcelDropdownHandler;
+import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 政企集团客户信息
@@ -62,10 +59,10 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @GetMapping("/list")
     public TableDataInfo<ZqGrpGroupInfoVo> listWithTimes(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
-            @RequestParam(value = "assignBeginTime", required = false) String assignBeginTime,
-            @RequestParam(value = "assignEndTime", required = false) String assignEndTime,
-            @RequestParam(value = "createBeginTime", required = false) String createBeginTime,
-            @RequestParam(value = "createEndTime", required = false) String createEndTime) {
+                                                         @RequestParam(value = "assignBeginTime", required = false) String assignBeginTime,
+                                                         @RequestParam(value = "assignEndTime", required = false) String assignEndTime,
+                                                         @RequestParam(value = "createBeginTime", required = false) String createBeginTime,
+                                                         @RequestParam(value = "createEndTime", required = false) String createEndTime) {
 
         // 处理分配时间范围参数
         if (assignBeginTime != null || assignEndTime != null) {
@@ -107,25 +104,6 @@ public class ZqGrpGroupInfoController extends BaseController {
         return iZqGrpGroupInfoService.queryPageList(bo, pageQuery);
     }
 
-
-    /**
-     * 导出政企集团客户信息列表
-     */
-    @Log(title = "政企集团客户信息", businessType = BusinessType.EXPORT)
-    @PostMapping("/export")
-    public void export(ZqGrpGroupInfoBo bo, HttpServletResponse response,
-                       @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
-                       @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
-        // 处理时间范围参数
-        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
-            bo.setGrpCreateTimeBegin(grpCreateTimeBegin);
-            bo.setGrpCreateTimeEnd(grpCreateTimeEnd);
-        }
-
-        List<ZqGrpGroupInfoVo> list = iZqGrpGroupInfoService.queryList(bo);
-        ExcelUtil.exportExcel(list, "政企集团客户信息", ZqGrpGroupInfoVo.class, response);
-    }
-
     /**
      * 获取政企集团客户信息详细信息
      *
@@ -133,7 +111,7 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @GetMapping("/{grpId}")
     public R<ZqGrpGroupInfoVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long grpId) {
+                                       @PathVariable Long grpId) {
         ZqGrpGroupInfoVo vo = iZqGrpGroupInfoService.queryById(grpId);
         return R.ok(vo);
     }
@@ -256,8 +234,8 @@ public class ZqGrpGroupInfoController extends BaseController {
 
             // 创建Excel写入器并注册下拉框处理器
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpBusiDeptTemplateVo.class)
-                    .registerWriteHandler(new ExcelDropdownHandler(1, "sys_busi_dept_type")) // 第二列(索引1)是客户归属部门
-                    .build();
+                .registerWriteHandler(new ExcelDropdownHandler(1, "sys_busi_dept_type")) // 第二列(索引1)是客户归属部门
+                .build();
 
             WriteSheet writeSheet = EasyExcel.writerSheet("客户归属部门维护模板").build();
             excelWriter.write(new ArrayList<>(), writeSheet);
@@ -279,8 +257,8 @@ public class ZqGrpGroupInfoController extends BaseController {
 
             // 创建Excel写入器并注册下拉框处理器
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), GrpExpandTypeTemplateVo.class)
-                    .registerWriteHandler(new ExcelDropdownHandler(1, "sys_expand_type")) // 第二列(索引1)是集团客户拓展类型
-                    .build();
+                .registerWriteHandler(new ExcelDropdownHandler(1, "sys_expand_type")) // 第二列(索引1)是集团客户拓展类型
+                .build();
 
             WriteSheet writeSheet = EasyExcel.writerSheet("集团客户拓展类型维护模板").build();
             excelWriter.write(new ArrayList<>(), writeSheet);
@@ -289,4 +267,58 @@ public class ZqGrpGroupInfoController extends BaseController {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 下载客户存增量维护模板
+     */
+    @GetMapping("/downloadStockTemplate")
+    public void downloadStockTemplate(HttpServletResponse response) {
+        try {
+            // 设置响应头
+            FileUtils.setAttachmentResponseHeader(response, "客户存增量维护模板.xlsx");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+
+            // 创建Excel写入器并注册下拉框处理器
+            ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), CustomerExistingStockTemplateVo.class)
+                .registerWriteHandler(new ExcelDropdownHandler(1, "sys_province_newold_type"))
+                .build();
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("客户存增量维护模板").build();
+            excelWriter.write(new ArrayList<>(), writeSheet);
+            excelWriter.finish();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 下载客户类别维护模板
+     */
+    @GetMapping("/downloadCustomerTypeTemplate")
+    public void downloadCustomerTypeTemplate(HttpServletResponse response) {
+        try {
+            // 设置响应头
+            FileUtils.setAttachmentResponseHeader(response, "集团客户类别维护模板.xlsx");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+
+            // 创建Excel写入器并注册下拉框处理器
+            ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream(), CustomerTypeTemplateVo.class)
+                .registerWriteHandler(new ExcelDropdownHandler(1, "sys_cust_type"))
+                .build();
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("集团客户类别维护模板").build();
+            excelWriter.write(new ArrayList<>(), writeSheet);
+            excelWriter.finish();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @GetMapping("/queryStt")
+    public String queryStt() {
+        // 从zq_grp_group_info表中获取字典数据
+        String result = iZqGrpGroupInfoService.getUserByStt();
+        return result;
+    }
+
 }
