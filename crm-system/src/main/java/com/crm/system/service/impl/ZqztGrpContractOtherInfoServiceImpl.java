@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.crypto.symmetric.AES;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
@@ -13,6 +14,7 @@ import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.domain.grp.TfFCustGroupMDo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
@@ -41,6 +43,7 @@ import java.util.stream.Collectors;
  * @date 2026-01-13
  */
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOtherInfoService {
 
@@ -115,6 +118,20 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     public Boolean insertBatchByBo(List<ZqztGrpContractOtherInfoBo> boList) {
         if (boList == null || boList.isEmpty()) {
             return false;
+        }
+
+        // 对请求参数中的infoVal2字段进行解密处理
+        for (ZqztGrpContractOtherInfoBo bo : boList) {
+            if (bo.getInfoVal2() != null && !bo.getInfoVal2().isEmpty()) {
+                try {
+                    // 解密infoVal2字段
+                    String decryptedInfoVal2 = decryptInfoVal2(bo.getInfoVal2());
+                    bo.setInfoVal2(decryptedInfoVal2);
+                } catch (Exception e) {
+                    log.error("解密infoVal2失败: {}", bo.getInfoVal2(), e);
+                    throw new RuntimeException("参数解密失败: " + e.getMessage());
+                }
+            }
         }
 
         List<ZqztGrpContractOtherInfo> entities = boList.stream()
@@ -350,7 +367,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         // INNER JOIN逻辑：只返回在两个表中都有匹配的数据
         // 如果任何一个contractOtherInfo在custMaintInfo中没有匹配，则整条记录都不返回
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
             String userId = contractOtherInfo.getInfoVal();
             // INNER JOIN条件：必须在客户维护信息中找到匹配的记录
@@ -378,7 +395,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 String custGrpName = (String) custInfo.get("custGrpName");
                 String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
                 mergedInfo.put("custGrpName", desensitizedCustGrpName);
-                
+
                 result.add(mergedInfo);
             }
             // 如果没有匹配的客户信息，直接跳过这条记录（相当于INNER JOIN的过滤效果）
@@ -499,10 +516,16 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .map(custMaintInfo -> {
                 Map<String, Object> userMap = new HashMap<>();
                 String svcNum = custMaintInfo.getSvcNum();
-                userMap.put("svcNum", svcNum); // 脱敏前的号码
-                // 对SVC_NUM进行脱敏处理
+
+                //userMap.put("svcNum", svcNum); // 原始号码
+                // 对SVC_NUM进行加密处理
+                String encryptedSvcNum = encryptSvcNum(svcNum);
+                userMap.put("encryptedSvcNum", encryptedSvcNum); // 加密后的号码
+
+                // 对SVC_NUM进行脱敏处理（保留作为对比）
                 String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
                 userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
+
                 userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
                 userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
                 return userMap;
@@ -510,5 +533,70 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .collect(Collectors.toList());
 
         return uncontractedUsers;
+    }
+
+    /**
+     * 对SVC_NUM进行简单混淆处理（避免加密库兼容性问题）
+     * @param svcNum 原始服务号码
+     * @return 混淆后的字符串
+     */
+    private String encryptSvcNum(String svcNum) {
+        if (svcNum == null || svcNum.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 使用简单的Base64编码+字符替换作为混淆处理
+            String base64Encoded = java.util.Base64.getEncoder().encodeToString(svcNum.getBytes("UTF-8"));
+            // 简单的字符替换混淆
+            return base64Encoded.replace('=', '_').replace('+', '-').replace('/', '_');
+        } catch (Exception e) {
+            log.error("SVC_NUM混淆处理失败: {}", svcNum, e);
+            return ""; // 处理失败返回空字符串
+        }
+    }
+
+//    /**
+//     * 对混淆的SVC_NUM进行还原处理
+//     * @param encryptedSvcNum 混淆的服务号码
+//     * @return 还原后的原始字符串
+//     */
+//    public String decryptSvcNum(String encryptedSvcNum) {
+//        if (encryptedSvcNum == null || encryptedSvcNum.isEmpty()) {
+//            return "";
+//        }
+//
+//        try {
+//            // 还原字符替换
+//            String restored = encryptedSvcNum.replace('_', '=').replace('-', '+').replace('_', '/');
+//            // Base64解码
+//            byte[] decodedBytes = java.util.Base64.getDecoder().decode(restored);
+//            return new String(decodedBytes, "UTF-8");
+//        } catch (Exception e) {
+//            log.error("SVC_NUM还原处理失败: {}", encryptedSvcNum, e);
+//            return ""; // 还原失败返回空字符串
+//        }
+//    }
+
+    /**
+     * 解密infoVal2字段（用于批量新增接口）
+     * @param encryptedInfoVal2 加密的信息值2
+     * @return 解密后的原始字符串
+     */
+    private String decryptInfoVal2(String encryptedInfoVal2) {
+        if (encryptedInfoVal2 == null || encryptedInfoVal2.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 还原字符替换
+            String restored = encryptedInfoVal2.replace('_', '=').replace('-', '+').replace('_', '/');
+            // Base64解码
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(restored);
+            return new String(decodedBytes, "UTF-8");
+        } catch (Exception e) {
+            log.error("infoVal2解密失败: {}", encryptedInfoVal2, e);
+            throw new RuntimeException("解密失败: " + e.getMessage());
+        }
     }
 }
