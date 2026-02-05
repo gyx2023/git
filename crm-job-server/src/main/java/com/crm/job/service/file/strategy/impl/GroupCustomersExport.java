@@ -81,15 +81,8 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
             }*/
             try {
-                // 使用流式导出方法
-                boolean success;
-                if (grpIds != null && !grpIds.isEmpty()) {
-                    // 部分导出：按grpIds列表导出
-                    success = exportToExcelByIds(grpIds, areaCode, needDesensitize, tempFile);
-                } else {
-                    // 全量导出：按查询条件导出
-                    success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
-                }
+                // 使用统一的流式导出方法
+                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
                 if (!success) {
                     task.setRemark("导出失败");
                     return false;
@@ -248,30 +241,5 @@ public class GroupCustomersExport extends AbstractExportStrategy {
         return grpIds;
     }
 
-    /**
-     * 根据ID列表导出到Excel文件
-     */
-    private boolean exportToExcelByIds(List<Long> grpIds, String areaCode,
-                                       boolean needDesensitize, File outputFile) throws Exception {
-        // 直接根据ID列表查询数据
-        List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportByIds(grpIds, areaCode, needDesensitize);
 
-        if (dataList == null || dataList.isEmpty()) {
-            log.warn("根据ID列表未查询到数据: {}", grpIds);
-            return false;
-        }
-
-        // 使用 EasyExcel 写入数据
-        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo.class)
-                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                .build()) {
-
-            WriteSheet writeSheet = EasyExcel.writerSheet("集团客户信息").build();
-
-            // 写入数据
-            excelWriter.write(dataList, writeSheet);
-        }
-
-        return true;
-    }
 }
