@@ -37,5 +37,10 @@ public class FormConf {
      * 表单数据
      */
     private Map<String, Object> formData;
+    /**
+     * 表单类型
+     */
+    private String formType;
+    private String formUrl;
 }
 

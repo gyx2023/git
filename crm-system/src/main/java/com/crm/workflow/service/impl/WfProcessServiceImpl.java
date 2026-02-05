@@ -15,6 +15,7 @@ import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysRole;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.service.UserService;
+import com.crm.common.enums.FormTypeEnum;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
@@ -37,6 +38,7 @@ import com.crm.workflow.mapper.WfDeployFormMapper;
 import com.crm.workflow.service.IWfProcessService;
 import com.crm.workflow.service.IWfTaskService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.*;
@@ -66,6 +68,7 @@ import java.util.stream.Collectors;
  * @author KonBAI
  * @createTime 2022/3/24 18:57
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProcessService {
@@ -556,12 +559,24 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .eq(WfDeployForm::getFormKey, startEvent.getFormKey())
             .eq(WfDeployForm::getNodeKey, startEvent.getId()));
         Map<String, Object> formModel = JsonUtils.parseObject(deployForm.getContent(), Map.class);
-        if (null == formModel || formModel.isEmpty()) {
-            throw new RuntimeException("获取流程表单失败！");
+        if(FormTypeEnum.SYSTEM.name().equalsIgnoreCase(deployForm.getFormType())){
+            if (null == formModel || formModel.isEmpty()) {
+                throw new RuntimeException("获取流程表单失败！");
+            }
+        }else{
+            if(FormTypeEnum.CUSTOM.name().equalsIgnoreCase(deployForm.getFormType())){
+                if(StringUtils.isEmpty(deployForm.getFormUrl())){
+                    throw new RuntimeException("获取流程自定义表单失败！");
+                }
+            }else {
+                throw new RuntimeException("表单配置有误，请联系管理员！");
+            }
         }
         FormConf formConf = new FormConf();
         formConf.setFormBtns(false);
         formConf.setFormModel(formModel);
+        formConf.setFormType(deployForm.getFormType());
+        formConf.setFormUrl(deployForm.getFormUrl());
         if (ObjectUtil.isNotEmpty(procInsId)) {
             // 获取流程实例
             HistoricProcessInstance historicProcIns = historyService.createHistoricProcessInstanceQuery()
@@ -694,6 +709,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         ProcessInstance processInstance = runtimeService.startProcessInstanceById(procDef.getId(), variables);
         // 第一个用户任务为发起人，则自动完成任务
         wfTaskService.startFirstTask(processInstance, variables);
+        //若参数里有initialAssignerUserId 则将流程第一个处理人设置为该用户
+        if (variables.containsKey(ProcessConstants.INITIAL_ASSIGNER_USERID)) {
+            wfTaskService.assignFirstTask(processInstance, variables);
+        }
     }
 
 
@@ -729,6 +748,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (null != formModel && !formModel.isEmpty()) {
                 currTaskFormData.setFormBtns(false);
                 currTaskFormData.setFormModel(formModel);
+                currTaskFormData.setFormType(deployFormVo.getFormType());
+                currTaskFormData.setFormUrl(deployFormVo.getFormUrl());
                 currTaskFormData.setFormData(taskIns.getTaskLocalVariables());
                 return currTaskFormData;
             }
@@ -787,14 +808,29 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 String formName = Optional.ofNullable(formInfo.getFormName()).orElse(StringUtils.EMPTY);
                 String title = localScope ? formName.concat("(" + flowElement.getName() + ")") : formName;
                 FormConf formConf = new FormConf();
-                Map<String, Object> formModel = JsonUtils.parseObject(formInfo.getContent(), Map.class);
-                if (null != formModel && !formModel.isEmpty()) {
+                if(FormTypeEnum.SYSTEM.name().equalsIgnoreCase(formInfo.getFormType())){
+                    Map<String, Object> formModel = JsonUtils.parseObject(formInfo.getContent(), Map.class);
+                    if (null != formModel && !formModel.isEmpty()) {
+                        formConf.setTitle(title);
+                        formConf.setDisabled(true);
+                        formConf.setFormBtns(false);
+                        formConf.setFormModel(formModel);
+                        formConf.setFormData(variables);
+                        formConf.setFormUrl(formInfo.getFormUrl());
+                        formConf.setFormType(formInfo.getFormType());
+                        procFormList.add(formConf);
+                    }
+                }else if(FormTypeEnum.CUSTOM.name().equalsIgnoreCase(formInfo.getFormType())){
                     formConf.setTitle(title);
                     formConf.setDisabled(true);
                     formConf.setFormBtns(false);
-                    formConf.setFormModel(formModel);
+                    formConf.setFormModel(new HashMap<>());
                     formConf.setFormData(variables);
+                    formConf.setFormUrl(formInfo.getFormUrl());
+                    formConf.setFormType(formInfo.getFormType());
                     procFormList.add(formConf);
+                }else{
+                    throw new RuntimeException("表单配置错误");
                 }
             }
         }
@@ -822,6 +858,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 formConf.setFormBtns(false);
                 formConf.setFormModel(formModel);
                 formConf.setFormData(historicProcIns.getProcessVariables());
+                formConf.setFormUrl(startFormInfo.getFormUrl());
+                formConf.setFormType(startFormInfo.getFormType());
                 procFormList.add(formConf);
             }
         }
