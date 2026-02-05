@@ -47,6 +47,8 @@ public class IdentifyScoreCustomerController extends BaseController {
         return iIdentifyScoreCustomerService.queryPageList(bo, pageQuery);
     }
 
+
+
     /**
      * 导出三清单智能评分记录列表
      */

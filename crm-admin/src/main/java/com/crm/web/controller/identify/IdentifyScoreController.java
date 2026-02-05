@@ -76,9 +76,9 @@ public class IdentifyScoreController extends BaseController {
     @SaCheckPermission("system:score:add")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
     @RepeatSubmit()
-    @PostMapping()
-    public R<Void> add(@Validated(AddGroup.class) @RequestBody IdentifyScoreBo bo) {
-        return toAjax(iIdentifyScoreService.insertByBo(bo));
+    @GetMapping("/add")
+    public R<Void> add(@RequestBody Long[] ossIds) {
+        return toAjax(iIdentifyScoreService.save(ossIds));
     }
 
     /**

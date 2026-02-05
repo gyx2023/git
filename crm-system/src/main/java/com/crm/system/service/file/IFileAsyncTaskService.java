@@ -70,4 +70,6 @@ public interface IFileAsyncTaskService {
      * @param response HTTP响应
      */
     void downloadFile(Long taskId,String fileType, HttpServletResponse response) throws Exception;
+
+    String getDailySequence();
 }

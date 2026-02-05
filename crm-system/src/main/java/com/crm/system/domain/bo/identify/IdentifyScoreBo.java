@@ -71,5 +71,6 @@ public class IdentifyScoreBo extends BaseEntity {
     @NotNull(message = "上传人员不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long uploader;
 
+    private Long taskId;
 
 }

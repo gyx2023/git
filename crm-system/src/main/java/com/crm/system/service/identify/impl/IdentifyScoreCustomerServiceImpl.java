@@ -117,4 +117,13 @@ public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerS
         }
         return identifyScoreCustomerMapper.deleteBatchIds(ids) > 0;
     }
+
+    @Override
+    public IdentifyScoreCustomerDo queryByFileId(Long fileUrlId, Long userId) {
+        IdentifyScoreCustomerBo bo = new IdentifyScoreCustomerBo();
+        bo.setFileUrlId(fileUrlId);
+        bo.setCreatorId(userId);
+        LambdaQueryWrapper<IdentifyScoreCustomerDo> lqw = buildQueryWrapper(bo);
+        return identifyScoreCustomerMapper.selectOne(lqw);
+    }
 }

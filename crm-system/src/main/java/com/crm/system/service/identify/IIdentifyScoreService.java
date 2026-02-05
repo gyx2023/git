@@ -3,6 +3,7 @@ package com.crm.system.service.identify;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.identify.IdentifyScoreBo;
+import com.crm.system.domain.identify.IdentifyScoreDo;
 import com.crm.system.domain.vo.identify.IdentifyScoreVo;
 
 import java.util.Collection;
@@ -45,4 +46,10 @@ public interface IIdentifyScoreService {
      * 校验并批量删除【请填写功能名称】信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    Boolean save(Long[] ossIds);
+
+    IdentifyScoreDo queryByCustomerId(Long custmoerId,Long taskId);
+
+
 }

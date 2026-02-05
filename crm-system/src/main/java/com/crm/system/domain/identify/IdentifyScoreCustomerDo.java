@@ -76,4 +76,16 @@ public class IdentifyScoreCustomerDo extends BaseEntity {
      */
     private Long updaterId;
 
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
 }

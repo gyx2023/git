@@ -3,6 +3,7 @@ package com.crm.system.service.identify;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.identify.IdentifyScoreCustomerBo;
+import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
 import com.crm.system.domain.vo.identify.IdentifyScoreCustomerVo;
 
 import java.util.Collection;
@@ -45,4 +46,6 @@ public interface IIdentifyScoreCustomerService {
      * 校验并批量删除三清单智能评分记录信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    IdentifyScoreCustomerDo queryByFileId(Long fileUrlId, Long userId);
 }

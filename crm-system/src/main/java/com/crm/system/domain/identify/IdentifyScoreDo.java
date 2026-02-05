@@ -57,5 +57,17 @@ public class IdentifyScoreDo extends BaseEntity {
      * 上传人员
      */
     private Long uploader;
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String createBy;
 
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    private Long taskId;
 }
