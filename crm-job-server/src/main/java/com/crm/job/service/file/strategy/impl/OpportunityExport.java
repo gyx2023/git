@@ -1,20 +1,13 @@
 package com.crm.job.service.file.strategy.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.write.metadata.WriteSheet;
-import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDo;
-import com.crm.system.domain.vo.SysOssVo;
-import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.service.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -43,61 +36,48 @@ public class OpportunityExport extends AbstractExportStrategy {
             log.info("开始执行商机导出任务，任务ID: {}", task.getTaskId());
 
             // 解析请求参数
-            Map<String, Object> queryParams = null;
+            Map<String, Object> requestParams = null;
             if (task.getRequestParams() != null) {
-                queryParams = JSONUtil.toBean(task.getRequestParams(), Map.class);
+                requestParams = JSONUtil.toBean(task.getRequestParams(), Map.class);
             }
 
-            // 直接获取老项目生成的完整HQL语句
-            String generatedHql = getGeneratedHql(queryParams);
-            if (generatedHql == null || generatedHql.isEmpty()) {
-                task.setRemark("未获取到有效的HQL查询语句");
-                return false;
-            }
+            String oppCode = getParamValue(requestParams, "oppCode");
+            String oppName = getParamValue(requestParams, "oppName");
+            String custName = getParamValue(requestParams, "custName");
+            String oppoStates = getParamValue(requestParams, "oppoStates");
+            String oppSource = getParamValue(requestParams, "oppSource");
+            String custManagerName = getParamValue(requestParams, "custManagerName");
+            String areaId = getParamValue(requestParams, "areaId");
+            String developFlag = getParamValue(requestParams, "developFlag");
+            String auditStatus = getParamValue(requestParams, "auditStatus");
+            String createTimeLeft = getParamValue(requestParams, "createTimeLeft");
+            String createTimeRight = getParamValue(requestParams, "createTimeRight");
+            String auditTimeLeft = getParamValue(requestParams, "auditTimeLeft");
+            String auditTimeRight = getParamValue(requestParams, "auditTimeRight");
+            String type1 = getParamValue(requestParams, "type1");
+            String oppoTypes = getParamValue(requestParams, "oppoTypes");
+            String oppoTypesNew = getParamValue(requestParams, "oppoTypesNew");
+            String bgType = getParamValue(requestParams, "bgType");
+            String expectContractMoneyMin = getParamValue(requestParams, "expectContractMoneyMin");
+            String expectContractMoneyMax = getParamValue(requestParams, "expectContractMoneyMax");
+            String isValid = getParamValue(requestParams, "isValid");
+            String isBidding = getParamValue(requestParams, "isBidding");
+            String bidState = getParamValue(requestParams, "bidState");
+            String moneyMin = getParamValue(requestParams, "moneyMin");
+            String moneyMax = getParamValue(requestParams, "moneyMax");
+            String signTimeStart = getParamValue(requestParams, "signTimeStart");
+            String signTimeEnd = getParamValue(requestParams, "signTimeEnd");
+            String oppWinProbMin = getParamValue(requestParams, "oppWinProbMin");
+            String oppWinProbMax = getParamValue(requestParams, "oppWinProbMax");
+            String oppGrowthType = getParamValue(requestParams, "oppGrowthType");
+            String estimatTotalContratAmountMin = getParamValue(requestParams, "estimatTotalContratAmountMin");
+            String estimatTotalContratAmountMax = getParamValue(requestParams, "estimatTotalContratAmountMax");
 
-            log.info("使用老项目生成的HQL语句: {}", generatedHql);
-
-            // 创建临时文件
-            String fileName = "商机查询统计详情" + System.currentTimeMillis() + ".xlsx";
-            File tempFile = File.createTempFile("opportunity_export_", ".xlsx");
-
-            try {
-                // 使用HQL查询并导出到Excel
-                boolean success = exportToExcelWithHql(generatedHql, tempFile);
-                if (!success) {
-                    task.setRemark("HQL查询导出失败");
-                    return false;
-                }
-            } catch (Exception e) {
-                log.error("HQL查询导出过程中发生异常: ", e);
-                task.setRemark("HQL查询导出异常: " + e.getMessage());
-                tempFile.delete();
-                return false;
-            }
-
-            // 验证文件是否创建成功
-            if (!tempFile.exists() || tempFile.length() == 0) {
-                task.setRemark("临时文件创建失败");
-                return false;
-            }
-
-            // 上传文件到OSS
-            SysOssVo upload = iSysOssService.upload(tempFile, fileName);
-
-            // 验证上传是否成功
-            if (upload == null) {
-                task.setRemark("文件上传失败");
-                tempFile.delete();
-                return false;
-            }
-
-            // 删除临时文件
-            tempFile.delete();
-
-            // 设置文件信息
-            task.setFileName(fileName);
-            task.setFileUrl(upload.getUrl());
-            task.setRemark("商机信息导出成功");
+            StringBuffer sql = new StringBuffer();
+            sql.append("select * from topp_opportunity op " +
+                "join sys_user su on su.id_ = op.cust_manager_id where" +
+                " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) " +
+                "and op.unicom_type in('22','01','23','02','03','25','unicom_jr',");
             return true;
 
         } catch (Exception e) {
@@ -108,34 +88,30 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 获取老项目生成的完整HQL语句
+     * 从参数Map中获取指定参数的值
+     * @param params 参数Map
+     * @param paramName 参数名
+     * @return 参数值
      */
-    private String getGeneratedHql(Map<String, Object> params) {
-        if (params != null && params.containsKey("generatedHql")) {
-            return (String) params.get("generatedHql");
-        }
-        return null;
-    }
-
-    /**
-     * 使用HQL查询并导出到Excel
-     */
-    private boolean exportToExcelWithHql(String hql, File outputFile) throws Exception {
-        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ToppOpportunityVo.class)
-            .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-            .build()) {
-
-            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
-
-            // 分批查询并写入数据
-            int pageSize = 1000;
-            int firstResult = 0;
-            boolean hasMoreData = true;
-
-            while (hasMoreData) {
-
+    private String getParamValue(Map<String, Object> params, String paramName) {
+        if (params != null && params.containsKey(paramName)) {
+            Object valueObj = params.get(paramName);
+            if (valueObj != null) {
+                if (valueObj instanceof String[]) {
+                    String[] values = (String[]) valueObj;
+                    if (values.length > 0) {
+                        return values[0];
+                    }
+                } else if (valueObj instanceof String) {
+                    return (String) valueObj;
+                } else if (valueObj instanceof List) {
+                    List<?> list = (List<?>) valueObj;
+                    if (!list.isEmpty()) {
+                        return String.valueOf(list.get(0));
+                    }
+                }
             }
         }
-        return true;
+        return null;
     }
 }
