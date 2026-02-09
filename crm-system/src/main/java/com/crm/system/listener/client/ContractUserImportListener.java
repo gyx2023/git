@@ -39,18 +39,20 @@ public class ContractUserImportListener {
         // 获取未绑定合同的用户列表
         List<Map<String, Object>> uncontractedCustomers = contractOtherInfoService.selectUncontractedCustomersByHqGrpCode(hqGrpCode, contractId);
 
-        // 提取未绑定合同的服务号码列表
-        List<String> validSvcNums = uncontractedCustomers.stream()
-                .map(item -> (String) item.get("svcNum"))
+        // 提取未绑定合同的加密服务号码列表，并解密后进行匹配
+        List<String> validDecryptedSvcNums = uncontractedCustomers.stream()
+                .map(item -> (String) item.get("encryptedSvcNum"))
+                .filter(StringUtils::hasText)
+                .map(encryptedSvcNum -> contractOtherInfoService.decryptSvcNum(encryptedSvcNum))
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toList());
 
-        // 构建服务号码到用户ID的映射
-        Map<String, String> svcNumToUserIdMap = uncontractedCustomers.stream()
-                .filter(item -> item.containsKey("svcNum") && item.containsKey("userId"))
-                .filter(item -> StringUtils.hasText((String) item.get("svcNum")) && StringUtils.hasText((String) item.get("userId")))
+        // 构建解密后的号码到用户ID的映射
+        Map<String, String> decryptedSvcNumToUserIdMap = uncontractedCustomers.stream()
+                .filter(item -> item.containsKey("encryptedSvcNum") && item.containsKey("userId"))
+                .filter(item -> StringUtils.hasText((String) item.get("encryptedSvcNum")) && StringUtils.hasText((String) item.get("userId")))
                 .collect(Collectors.toMap(
-                        item -> (String) item.get("svcNum"),
+                        item -> contractOtherInfoService.decryptSvcNum((String) item.get("encryptedSvcNum")),
                         item -> (String) item.get("userId"),
                         (existing, replacement) -> existing // 处理重复键的情况
                 ));
@@ -69,8 +71,8 @@ public class ContractUserImportListener {
                     continue;
                 }
 
-                // 验证服务号码是否在未绑定合同的用户列表中
-                if (!validSvcNums.contains(svcNum)) {
+                // 验证服务号码是否在未绑定合同的用户列表中（使用解密后的号码进行匹配）
+                if (!validDecryptedSvcNums.contains(svcNum)) {
                     resultVo.setProcessResult("失败");
                     resultVo.setErrorMessage("服务号码不在未绑定合同的用户列表中");
                     resultList.add(resultVo);
@@ -78,7 +80,7 @@ public class ContractUserImportListener {
                 }
 
                 // 获取对应的用户ID
-                String userId = svcNumToUserIdMap.get(svcNum);
+                String userId = decryptedSvcNumToUserIdMap.get(svcNum);
                 if (!StringUtils.hasText(userId)) {
                     resultVo.setProcessResult("失败");
                     resultVo.setErrorMessage("未找到服务号码对应的用户ID");
@@ -91,7 +93,7 @@ public class ContractUserImportListener {
                 bo.setContractId(contractId);
                 bo.setInfoTag(InfoTagEnum.GRP_CONTRACT_USER_LIST.getValue());
                 bo.setInfoVal(userId);
-                bo.setInfoVal2(svcNum);
+                bo.setInfoVal2(svcNum); // 保存原始号码用于加密存储
                 bo.setIsValid("1");
 
                 boolean success = contractOtherInfoService.insertByBo(bo);
