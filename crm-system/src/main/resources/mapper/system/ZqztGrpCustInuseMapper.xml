@@ -51,12 +51,43 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </foreach>
         </if>
     </insert>
-    <update id="updateByHqGrpCodeB">
+    <insert id="insertInuse">
+        insert into zqzt_grp_cust_inuse (
+            inuse_id, contract_id, contract_name, grp_id_a, grp_code_a, hq_grp_code_a, grp_name_a,
+            relation, grp_id_b, grp_code_b, hq_grp_code_b, grp_name_b, create_time, region_id,
+            county_id, operator_id, is_valid, update_time
+        )
+        select
+            #{reqDTO.inuseId} as inuse_id,
+            a.inuse_contract_id as contract_id,
+            a.contract_name,
+            b.grp_id as grp_id_a,
+            b.grp_code as grp_code_a,
+            b.hq_grp_code as hq_grp_code_a,
+            b.grp_name as grp_name_a,
+            '1001' as relation,
+            c.grp_id as grp_id_b,
+            c.grp_code as grp_code_b,
+            c.hq_grp_code as hq_grp_code_b,
+            c.grp_name as grp_name_b,
+            date_format(now(), '%Y-%m-%d %H:%i:%s') as create_time,
+            #{loginUser.regionId} as region_id,
+            #{loginUser.countyId} as county_id,
+            #{loginUser.operatorId} as operator_id,
+            '1' as is_valid,
+            date_format(now(), '%Y-%m-%d %H:%i:%s') as update_time
+        from zqzt_grp_contract_info a,
+             zqzt_grp_group_info b,
+             zqzt_grp_group_info c
+        where a.inuse_contract_id = #{reqDTO.contractId}
+          and b.grp_code = #{reqDTO.grpCodeA}
+          and b.hq_grp_code = #{reqDTO.hqGrpCodeA}
+          and c.grp_code = #{reqDTO.grpCodeB}
+          and c.hq_grp_code = #{reqDTO.hqGrpCodeB}
+    </insert>
+    <update id="updateUserByInuseId">
         update zqzt_grp_cust_inuse
-        set grp_id_b = null,
-            grp_code_b = null,
-            hq_grp_code_b = null,
-            grp_name_b = null,
+        set is_valid = '0',
             region_id = #{loginUser.regionId},
             county_id = #{loginUser.countyId},
             operator_id = #{loginUser.operatorId},
@@ -66,7 +97,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{inuseId}
         </foreach>
     </update>
-    <update id="updateByInuseId">
+    <update id="updateBySubscrbid">
         update zqzt_grp_cust_inuse_userlist
         set is_valid = '0',
             region_id = #{loginUser.regionId},
@@ -76,6 +107,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where subscrbid in
         <foreach collection="subscrbids" item="subscrbid" open="(" separator="," close=")">
             #{subscrbid}
+        </foreach>
+    </update>
+    <update id="updateUserlistByInuseId">
+        update zqzt_grp_cust_inuse_userlist
+        set is_valid = '0',
+            region_id = #{loginUser.regionId},
+            county_id = #{loginUser.countyId},
+            operator_id = #{loginUser.operatorId},
+            update_time = now()
+        where is_valid = '1'
+          and inuse_id in
+        <foreach collection="ids" item="inuseId" open="(" separator="," close=")">
+            #{inuseId}
         </foreach>
     </update>
     <select id="queryZqztGrpCustInuseList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO">
@@ -109,10 +153,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ) d on c.inuse_id = d.inuse_id
         <where>
             <if test="regionId != null and regionId != ''">
-                and b.area_id = #{regionId}
+                and c.region_id = #{regionId}
             </if>
             <if test="countyId != null and countyId != ''">
-                and b.county_id = #{countyId}
+                and c.county_id = #{countyId}
             </if>
             <if test="grpCodeA != null and grpCodeA != ''">
                 and b.grp_code = #{grpCodeA}
@@ -171,7 +215,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     <select id="getCustId" resultType="java.lang.String">
-        select cust_id from tf_f_cust_group_m  where group_id = #{hqGrpCodeB}
+        select cust_id from tf_f_cust_group_m  where group_id = #{hqGrpCodeA}
     </select>
     <select id="queryUserIdArray" resultType="java.lang.String">
         select subscrbid from zqzt_grp_cust_inuse_userlist where inuse_id = #{inuseId} and is_valid = '1'
@@ -219,10 +263,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ) d on c.inuse_id = d.inuse_id
         <where>
             <if test="regionId != null and regionId != ''">
-                and b.area_id = #{regionId}
+                and c.region_id = #{regionId}
             </if>
             <if test="countyId != null and countyId != ''">
-                and b.county_id = #{countyId}
+                and c.county_id = #{countyId}
             </if>
             <if test="grpCodeA != null and grpCodeA != ''">
                 and b.grp_code = #{grpCodeA}
@@ -249,5 +293,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and date_format(a.contract_effdate, '%Y-%m-%d') &lt;= date_format(#{createTimeEnd}, '%Y-%m-%d')
             </if>
         </where>
+    </select>
+    <select id="queryZqztGrpGroupInfoCount" resultType="java.lang.Integer">
+        select count(1) from zqzt_grp_cust_inuse where is_valid = '1' and contract_id = #{contractId}
     </select>
 </mapper>
