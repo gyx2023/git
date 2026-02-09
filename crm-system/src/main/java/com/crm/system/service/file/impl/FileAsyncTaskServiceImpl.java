@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -231,7 +232,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      * 当Redis不可用时，从数据库获取序列号（降级方案）
      */
     private synchronized String getSequenceFromDatabase(String currentDateStr) {
-        // 查询数据库中当天的最大任务ID
+        // 查询数据库中当前分钟的最大任务ID
         Long maxTaskId = baseMapper.selectMaxTaskIdByDate(currentDateStr);
 
         int sequence = 1;
@@ -278,8 +279,8 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             taskBo.setStatus(0L); // 0-待处理
             taskBo.setCreateUserId(LoginHelper.getUserId());
 
-            // 生成任务ID：yyyymmdd+0001（4位序列号）格式
-            String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            // 生成任务ID：yyyymmddHHmm+0001（4位序列号）格式
+            String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
             String sequence = getDailySequence();
             String taskIdStr = dateStr + sequence;
             Long taskId = Long.valueOf(taskIdStr);
@@ -329,8 +330,8 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             taskBo.setCreateUserId(LoginHelper.getUserId());
 
 
-            // 生成任务ID：yyyymmdd+0001（4位序列号）格式
-            String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            // 生成任务ID：yyyymmddHHmm+0001（4位序列号）格式
+            String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
             String sequence = getDailySequence();
             String taskIdStr = dateStr + sequence;
             Long taskId = Long.valueOf(taskIdStr);
