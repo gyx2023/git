@@ -3,19 +3,24 @@ package com.crm.job.service.sync;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.GrpCustInuse;
 import com.crm.system.domain.ZqztGrpCustInuse;
-import com.crm.system.domain.grp.GrpGroupInfoDo; // 使用MySQL数据源的实体类
+import com.crm.system.domain.ZqGrpGroupInfo; // 使用zqzt_grp_group_info表的实体类
+import com.crm.system.domain.SysArea; // 使用sys_area表的实体类
 import com.crm.system.mapper.GrpCustInuseMapper; // 使用现有的Oracle数据源Mapper
 import com.crm.system.mapper.ZqztGrpCustInuseMapper; // 使用现有的主数据源Mapper
-import com.crm.system.mapper.grp.GrpGroupInfoMapper; // 使用MySQL数据源的Mapper
+import com.crm.system.mapper.ZqGrpGroupInfoMapper; // 使用zqzt_grp_group_info表的Mapper
+import com.crm.system.mapper.SysAreaMapper; // 使用sys_area表的Mapper
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 政企实际使用客户数据同步任务
@@ -35,7 +40,37 @@ public class GrpCustInuseSyncJob {
     private ZqztGrpCustInuseMapper zqztGrpCustInuseMapper; // 主数据源的Mapper（使用现有的）
 
     @Resource
-    private GrpGroupInfoMapper grpGroupInfoMapper; // 用于查询MySQL数据源的grp_group_info表
+    private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper; // 用于查询zqzt_grp_group_info表
+
+    @Resource
+    private SysAreaMapper sysAreaMapper; // 用于查询sys_area表
+
+    // 缓存Map，用于存储BSS_CODE到区域ID的映射（因为可能存在重复查询）
+    private final Map<String, String> bssCodeToAreaIdCache = new ConcurrentHashMap<>();
+
+    /**
+     * 初始化缓存数据
+     */
+    @PostConstruct
+    public void initCache() {
+        log.info("开始初始化GrpCustInuseSyncJob缓存数据");
+        
+        // 预加载sys_area表数据到缓存
+        try {
+            LambdaQueryWrapper<SysArea> areaWrapper = new LambdaQueryWrapper<>();
+            areaWrapper.select(SysArea::getBssCode, SysArea::getId);
+            List<SysArea> areaList = sysAreaMapper.selectList(areaWrapper);
+            
+            for (SysArea sysArea : areaList) {
+                if (sysArea.getBssCode() != null && sysArea.getId() != null) {
+                    bssCodeToAreaIdCache.put(sysArea.getBssCode(), String.valueOf(sysArea.getId()));
+                }
+            }
+            log.info("预加载sys_area缓存数据完成，共加载 {} 条记录", bssCodeToAreaIdCache.size());
+        } catch (Exception e) {
+            log.error("预加载sys_area缓存数据失败", e);
+        }
+    }
 
     /**
      * 同步任务入口
@@ -74,6 +109,10 @@ public class GrpCustInuseSyncJob {
                     // 每100条记录输出一次进度
                     if ((i + 1) % 100 == 0) {
                         XxlJobHelper.log("已处理：" + (i + 1) + "/" + totalCount + " 条记录");
+                        // 定期刷新缓存，确保数据新鲜度
+                        if ((i + 1) % 1000 == 0) {
+                            refreshCache();
+                        }
                     }
                 } catch (Exception e) {
                     XxlJobHelper.log("处理第 " + (i + 1) + " 条记录时发生错误: " + e.getMessage());
@@ -107,39 +146,108 @@ public class GrpCustInuseSyncJob {
         // 2. is_valid - 默认为1（有效）
         targetData.setIsValid("1");
 
-        // 3. HQ_GRP_CODE_A - 通过GRP_ID_A查询MySQL数据源的grp_group_info表的grp_code字段
+        // 3. HQ_GRP_CODE_A - 直接查询zqzt_grp_group_info表的HQ_GRP_CODE字段（无缓存）
         if (oracleData.getGrpIdA() != null) {
-            String hqGrpCodeA = queryGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdA()));
+            String hqGrpCodeA = queryHqGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdA()));
             targetData.setHqGrpCodeA(hqGrpCodeA);
         }
 
-        // 4. HQ_GRP_CODE_B - 通过GRP_ID_B查询MySQL数据源的grp_group_info表的grp_code字段
+        // 4. HQ_GRP_CODE_B - 直接查询zqzt_grp_group_info表的HQ_GRP_CODE字段（无缓存）
         if (oracleData.getGrpIdB() != null) {
-            String hqGrpCodeB = queryGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdB()));
+            String hqGrpCodeB = queryHqGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdB()));
             targetData.setHqGrpCodeB(hqGrpCodeB);
+        }
+
+        // 5. region_id - 特殊处理：如果为"Z"则映射为"330000"，否则从缓存查询sys_area表的id_字段值
+        if (targetData.getRegionId() != null && !targetData.getRegionId().isEmpty()) {
+            String regionId;
+            if ("Z".equals(targetData.getRegionId())) {
+                regionId = "330000"; // Z值直接映射为330000
+            } else {
+                regionId = getCachedAreaIdByBssCode(targetData.getRegionId());
+            }
+            targetData.setRegionId(regionId); // 将id_字段值写入region_id字段
+        }
+
+        // 6. county_id - 特殊处理：如果为"Z"则映射为"330000"，否则从缓存查询sys_area表的id_字段值
+        if (targetData.getCountyId() != null && !targetData.getCountyId().isEmpty()) {
+            String countyId;
+            if ("Z".equals(targetData.getCountyId())) {
+                countyId = "330000"; // Z值直接映射为330000
+            } else {
+                countyId = getCachedAreaIdByBssCode(targetData.getCountyId());
+            }
+            targetData.setCountyId(countyId); // 将id_字段值写入county_id字段
         }
 
         return targetData;
     }
 
     /**
-     * 根据GRP_ID查询grp_code字段值
+     * 根据GRP_ID查询zqzt_grp_group_info表的HQ_GRP_CODE字段值（直接查询，无缓存）
      */
-    private String queryGrpCodeByGrpId(Long grpId) {
+    private String queryHqGrpCodeByGrpId(Long grpId) {
         try {
-            // 使用MySQL主数据源查询grp_group_info表
-            LambdaQueryWrapper<GrpGroupInfoDo> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(GrpGroupInfoDo::getGrpId, grpId);
+            // 使用MySQL主数据源查询zqzt_grp_group_info表
+            LambdaQueryWrapper<ZqGrpGroupInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ZqGrpGroupInfo::getGrpId, grpId);
+            queryWrapper.select(ZqGrpGroupInfo::getHqGrpCode);
 
-            GrpGroupInfoDo groupInfo = grpGroupInfoMapper.selectOne(queryWrapper);
+            ZqGrpGroupInfo groupInfo = zqGrpGroupInfoMapper.selectOne(queryWrapper);
             if (groupInfo != null) {
-                return groupInfo.getGrpCode(); // 返回grp_code字段值
+                return groupInfo.getHqGrpCode(); // 返回HQ_GRP_CODE字段值
             }
         } catch (Exception e) {
-            log.warn("查询grp_group_info表时发生错误，grpId: {}, 错误: {}", grpId, e.getMessage());
+            log.warn("查询zqzt_grp_group_info表时发生错误，grpId: {}, 错误: {}", grpId, e.getMessage());
         }
 
         // 如果没找到，返回空字符串或根据业务需求返回默认值
         return "";
+    }
+
+    /**
+     * 从缓存获取区域ID，如果缓存未命中则查询数据库并更新缓存
+     */
+    private String getCachedAreaIdByBssCode(String bssCode) {
+        // 先从缓存获取
+        String cachedValue = bssCodeToAreaIdCache.get(bssCode);
+        if (cachedValue != null) {
+            return cachedValue;
+        }
+
+        // 缓存未命中，查询数据库
+        try {
+            LambdaQueryWrapper<SysArea> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(SysArea::getBssCode, bssCode);
+            queryWrapper.select(SysArea::getId);
+
+            SysArea sysArea = sysAreaMapper.selectOne(queryWrapper);
+            if (sysArea != null && sysArea.getId() != null) {
+                String areaId = String.valueOf(sysArea.getId());
+                // 更新缓存
+                bssCodeToAreaIdCache.put(bssCode, areaId);
+                return areaId;
+            }
+        } catch (Exception e) {
+            log.warn("查询sys_area表时发生错误，bssCode: {}, 错误: {}", bssCode, e.getMessage());
+        }
+
+        // 如果没找到，返回原值
+        return bssCode;
+    }
+
+    /**
+     * 刷新缓存数据
+     */
+    private void refreshCache() {
+        log.info("开始刷新缓存数据");
+        
+        // 清空现有缓存
+        bssCodeToAreaIdCache.clear();
+        
+        // 重新加载缓存
+        initCache();
+        
+        log.info("缓存刷新完成");
     }
 }

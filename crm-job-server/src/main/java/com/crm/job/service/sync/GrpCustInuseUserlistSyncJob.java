@@ -1,23 +1,29 @@
 package com.crm.job.service.sync;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.GrpCustInuseUserlist;
 import com.crm.system.domain.ZqztGrpCustInuseUserlist;
+import com.crm.system.domain.SysArea; // 使用sys_area表的实体类
 import com.crm.system.mapper.GrpCustInuseUserlistMapper;
 import com.crm.system.mapper.ZqztGrpCustInuseUserlistMapper;
+import com.crm.system.mapper.SysAreaMapper; // 使用sys_area表的Mapper
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 政企实际使用客户类型用户清单数据同步任务
  * 从Oracle库的grp_cust_inuse_userlist表查询数据，然后添加到MySQL主数据源的zqzt_grp_cust_inuse_userlist表
- * 
+ *
  * @author crm
  * @date 2026-01-20
  */
@@ -30,6 +36,36 @@ public class GrpCustInuseUserlistSyncJob {
 
     @Resource
     private ZqztGrpCustInuseUserlistMapper zqztGrpCustInuseUserlistMapper; // 主数据源的Mapper
+
+    @Resource
+    private SysAreaMapper sysAreaMapper; // 用于查询sys_area表
+
+    // 缓存Map，用于存储BSS_CODE到区域ID的映射
+    private final Map<String, String> bssCodeToAreaIdCache = new ConcurrentHashMap<>();
+
+    /**
+     * 初始化缓存数据
+     */
+    @PostConstruct
+    public void initCache() {
+        log.info("开始初始化GrpCustInuseUserlistSyncJob缓存数据");
+        
+        // 预加载sys_area表数据到缓存
+        try {
+            LambdaQueryWrapper<SysArea> areaWrapper = new LambdaQueryWrapper<>();
+            areaWrapper.select(SysArea::getBssCode, SysArea::getId);
+            List<SysArea> areaList = sysAreaMapper.selectList(areaWrapper);
+            
+            for (SysArea sysArea : areaList) {
+                if (sysArea.getBssCode() != null && sysArea.getId() != null) {
+                    bssCodeToAreaIdCache.put(sysArea.getBssCode(), String.valueOf(sysArea.getId()));
+                }
+            }
+            log.info("预加载sys_area缓存数据完成，共加载 {} 条记录", bssCodeToAreaIdCache.size());
+        } catch (Exception e) {
+            log.error("预加载sys_area缓存数据失败", e);
+        }
+    }
 
     /**
      * 同步任务入口
@@ -68,6 +104,10 @@ public class GrpCustInuseUserlistSyncJob {
                     // 每100条记录输出一次进度
                     if ((i + 1) % 100 == 0) {
                         XxlJobHelper.log("已处理：" + (i + 1) + "/" + totalCount + " 条记录");
+                        // 定期刷新缓存，确保数据新鲜度
+                        if ((i + 1) % 1000 == 0) {
+                            refreshCache();
+                        }
                     }
                 } catch (Exception e) {
                     XxlJobHelper.log("处理第 " + (i + 1) + " 条记录时发生错误: " + e.getMessage());
@@ -101,6 +141,74 @@ public class GrpCustInuseUserlistSyncJob {
         // 2. is_valid - 默认为1（有效）
         targetData.setIsValid("1");
 
+        // 3. region_id - 特殊处理：如果为"Z"则映射为"330000"，否则从缓存查询sys_area表的id_字段值
+        if (targetData.getRegionId() != null && !targetData.getRegionId().isEmpty()) {
+            String regionId;
+            if ("Z".equals(targetData.getRegionId())) {
+                regionId = "330000"; // Z值直接映射为330000
+            } else {
+                regionId = getCachedAreaIdByBssCode(targetData.getRegionId());
+            }
+            targetData.setRegionId(regionId); // 将id_字段值写入region_id字段
+        }
+
+        // 4. county_id - 特殊处理：如果为"Z"则映射为"330000"，否则从缓存查询sys_area表的id_字段值
+        if (targetData.getCountyId() != null && !targetData.getCountyId().isEmpty()) {
+            String countyId;
+            if ("Z".equals(targetData.getCountyId())) {
+                countyId = "330000"; // Z值直接映射为330000
+            } else {
+                countyId = getCachedAreaIdByBssCode(targetData.getCountyId());
+            }
+            targetData.setCountyId(countyId); // 将id_字段值写入county_id字段
+        }
+
         return targetData;
+    }
+
+    /**
+     * 从缓存获取区域ID，如果缓存未命中则查询数据库并更新缓存
+     */
+    private String getCachedAreaIdByBssCode(String bssCode) {
+        // 先从缓存获取
+        String cachedValue = bssCodeToAreaIdCache.get(bssCode);
+        if (cachedValue != null) {
+            return cachedValue;
+        }
+
+        // 缓存未命中，查询数据库
+        try {
+            LambdaQueryWrapper<SysArea> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(SysArea::getBssCode, bssCode);
+            queryWrapper.select(SysArea::getId);
+
+            SysArea sysArea = sysAreaMapper.selectOne(queryWrapper);
+            if (sysArea != null && sysArea.getId() != null) {
+                String areaId = String.valueOf(sysArea.getId());
+                // 更新缓存
+                bssCodeToAreaIdCache.put(bssCode, areaId);
+                return areaId;
+            }
+        } catch (Exception e) {
+            log.warn("查询sys_area表时发生错误，bssCode: {}, 错误: {}", bssCode, e.getMessage());
+        }
+
+        // 如果没找到，返回原值
+        return bssCode;
+    }
+
+    /**
+     * 刷新缓存数据
+     */
+    private void refreshCache() {
+        log.info("开始刷新缓存数据");
+        
+        // 清空现有缓存
+        bssCodeToAreaIdCache.clear();
+        
+        // 重新加载缓存
+        initCache();
+        
+        log.info("缓存刷新完成");
     }
 }
