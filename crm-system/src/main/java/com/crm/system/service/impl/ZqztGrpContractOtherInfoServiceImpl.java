@@ -345,7 +345,19 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
         lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
-        lqw.like(infoVal2 != null && !infoVal2.isEmpty(), ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 按服务号码模糊查询
+        
+        // 如果infoVal2不为空，先解密再查询
+        String decryptedInfoVal2 = null;
+        if (infoVal2 != null && !infoVal2.isEmpty()) {
+            try {
+                decryptedInfoVal2 = decryptInfoVal2(infoVal2);
+                lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, decryptedInfoVal2); // 按解密后的服务号码模糊查询
+            } catch (Exception e) {
+                log.warn("infoVal2解密失败，使用原始值查询: {}", infoVal2);
+                lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 解密失败时使用原始值
+            }
+        }
+        
         List<ZqztGrpContractOtherInfoVo> contractOtherInfos = baseMapper.selectVoList(lqw);
         if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
             return new ArrayList<>();
@@ -377,7 +389,16 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
                 mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
                 mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
-                mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
+                
+                // 对infoVal2进行加密后返回给前端
+                String originalInfoVal2 = contractOtherInfo.getInfoVal2();
+                if (originalInfoVal2 != null && !originalInfoVal2.isEmpty()) {
+                    String encryptedInfoVal2 = encryptInfoVal2(originalInfoVal2);
+                    mergedInfo.put("infoVal2", encryptedInfoVal2);
+                } else {
+                    mergedInfo.put("infoVal2", originalInfoVal2);
+                }
+                
                 mergedInfo.put("isValid", contractOtherInfo.getIsValid());
 
                 // 添加从客户维护信息查询到的字段
@@ -566,6 +587,27 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             return base64Encoded.replace('=', '_').replace('+', '-').replace('/', '_');
         } catch (Exception e) {
             log.error("SVC_NUM混淆处理失败: {}", svcNum, e);
+            return ""; // 处理失败返回空字符串
+        }
+    }
+
+    /**
+     * 加密infoVal2字段
+     * @param infoVal2 原始的信息值2
+     * @return 加密后的字符串
+     */
+    private String encryptInfoVal2(String infoVal2) {
+        if (infoVal2 == null || infoVal2.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 使用Base64编码+字符替换作为混淆处理
+            String base64Encoded = java.util.Base64.getEncoder().encodeToString(infoVal2.getBytes("UTF-8"));
+            // 简单的字符替换混淆
+            return base64Encoded.replace('=', '_').replace('+', '-').replace('/', '_');
+        } catch (Exception e) {
+            log.error("infoVal2加密失败: {}", infoVal2, e);
             return ""; // 处理失败返回空字符串
         }
     }
