@@ -88,6 +88,7 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
         SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
         SysDept sysDept = getParentDept(loginDept);
         List<SysDept> depts = baseMapper.selectDqDeptList(sysDept.getDeptId());
+        depts.remove(sysDept);
         return buildDeptTreeSelect(depts);
     }
 
