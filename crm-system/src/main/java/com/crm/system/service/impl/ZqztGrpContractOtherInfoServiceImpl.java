@@ -28,6 +28,7 @@ import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.utils.spring.SpringUtils;
 import com.crm.common.enums.InfoTagEnum;
+import com.crm.common.helper.LoginHelper;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -376,6 +377,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
         }
 
+        // 判断当前用户是否需要脱敏（仿照集团客户管理页面的逻辑）
+        boolean needDesensitize = !LoginHelper.isAdmin();
+
         // INNER JOIN逻辑：只返回在两个表中都有匹配的数据
         // 如果任何一个contractOtherInfo在custMaintInfo中没有匹配，则整条记录都不返回
         List<Map<String, Object>> result = new ArrayList<>();
@@ -403,19 +407,35 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
                 // 添加从客户维护信息查询到的字段
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
-                // 对手机号码进行脱敏处理
+                
+                // 根据权限判断是否脱敏处理手机号码
                 String svcNum = (String) custInfo.get("svcNum");
-                String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
-                mergedInfo.put("svcNum", desensitizedSvcNum);
+                if (needDesensitize) {
+                    String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                    mergedInfo.put("svcNum", desensitizedSvcNum);
+                } else {
+                    mergedInfo.put("svcNum", svcNum); // 管理员不脱敏
+                }
+                
                 mergedInfo.put("userId", custInfo.get("userId"));
-                // 对归属客户名称进行脱敏
+                
+                // 根据权限判断是否脱敏处理客户名称
                 String custName = (String) custInfo.get("custName");
-                String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
-                mergedInfo.put("custName", desensitizedCustName);
-                // 对收入归集集团名称进行脱敏
+                if (needDesensitize) {
+                    String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
+                    mergedInfo.put("custName", desensitizedCustName);
+                } else {
+                    mergedInfo.put("custName", custName); // 管理员不脱敏
+                }
+                
+                // 根据权限判断是否脱敏处理收入归集集团名称
                 String custGrpName = (String) custInfo.get("custGrpName");
-                String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
-                mergedInfo.put("custGrpName", desensitizedCustGrpName);
+                if (needDesensitize) {
+                    String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
+                    mergedInfo.put("custGrpName", desensitizedCustGrpName);
+                } else {
+                    mergedInfo.put("custGrpName", custGrpName); // 管理员不脱敏
+                }
 
                 result.add(mergedInfo);
             }
@@ -542,6 +562,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .filter(infoVal -> infoVal != null && !infoVal.isEmpty())
             .collect(Collectors.toList());
 
+        // 判断当前用户是否需要脱敏（仿照集团客户管理页面的逻辑）
+        boolean needDesensitize = !LoginHelper.isAdmin();
+
         // 4. 过滤掉已经有合同的用户，只返回未签约的用户
         List<Map<String, Object>> uncontractedUsers = allCustMaintInfosFromDb.stream()
             .filter(custMaintInfo -> {
@@ -557,9 +580,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 String encryptedSvcNum = encryptSvcNum(svcNum);
                 userMap.put("encryptedSvcNum", encryptedSvcNum); // 加密后的号码
 
-                // 对SVC_NUM进行脱敏处理（保留作为对比）
-                String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
-                userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
+                // 根据权限判断是否脱敏处理手机号码
+                if (needDesensitize) {
+                    String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                    userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
+                } else {
+                    userMap.put("desensitizationSvcNum", svcNum); // 管理员不脱敏
+                }
 
                 userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
                 userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
