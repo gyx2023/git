@@ -1,16 +1,24 @@
 package com.crm.job.service.file.strategy.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
+import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.vo.SysOssVo;
+import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
+import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +36,9 @@ public class OpportunityExport extends AbstractExportStrategy {
     @Resource
     private ISysOssService iSysOssService;
 
+    @Resource
+    private ToppOpportunityMapper toppOpportunityMapper;
+
     @Override
     public String getBusinessType() {
         return "opportunity_export";
@@ -42,10 +53,14 @@ public class OpportunityExport extends AbstractExportStrategy {
             Map<String, Object> requestParams = parseRequestParams(task);
 
             // 获取登录用户信息
-            LoginUser loginUser = LoginHelper.getLoginUser();
+            Long userId = task.getCreateUserId();
+            if (userId == null){
+                task.setRemark("任务缺少创建用户信息");
+                return false;
+            }
 
             // 构建基础SQL查询
-            StringBuffer sql = buildBaseSql(loginUser);
+            StringBuffer sql = buildBaseSql(userId);
 
             // 添加查询条件
             appendAllQueryConditions(sql, requestParams);
@@ -53,6 +68,53 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 添加排序条件
             sql.append(" order by op.id_ desc");
 
+            //打印 SQL
+            log.info("SQL: {}", sql.toString());
+
+            // 创建临时文件
+            String prefix = "opportunity_export_" + System.currentTimeMillis();
+            File tempFile = File.createTempFile(prefix, ".xlsx");
+
+            try {
+                // 使用流式导出方法
+                boolean success = exportToExcelStream(sql.toString(), tempFile);
+                if (!success) {
+                    task.setRemark("流式导出失败");
+                    return false;
+                }
+            } catch (Exception e) {
+                task.setRemark("流式导出异常" );
+                log.error("流式导出异常: " + e.getMessage());
+                tempFile.delete();
+                return false;
+            }
+
+            // 验证文件是否创建成功
+            if (!tempFile.exists() || tempFile.length() == 0) {
+                task.setRemark("临时文件创建失败");
+                return false;
+            }
+
+            // 定义原始中文文件名
+            String originalFileName = "商机信息导出_" + System.currentTimeMillis() + ".xlsx";
+
+            // 上传文件到OSS
+            SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
+
+            // 验证上传是否成功
+            if (upload == null) {
+                task.setRemark("文件上传失败");
+                tempFile.delete();
+                return false;
+            }
+
+            // 删除临时文件
+            tempFile.delete();
+
+            // 设置文件信息
+            task.setFileName(originalFileName);
+            task.setFileUrl(upload.getUrl());
+            task.setRemark("商机信息导出成功");
             return true;
 
         } catch (Exception e) {
@@ -75,41 +137,38 @@ public class OpportunityExport extends AbstractExportStrategy {
     /**
      * 构建基础SQL查询语句
      */
-    private StringBuffer buildBaseSql(LoginUser loginUser) {
+    private StringBuffer buildBaseSql(Long userId) {
         StringBuffer sql = new StringBuffer();
         sql.append("select * from topp_opportunity op " +
             "join sys_user su on su.id_ = op.cust_manager_id where" +
-            " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) " +
-            "op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
+            " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) and" +
+            " op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
             "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
             "'unicom_xy','30','10','13','15','16','17','18','19','unicom_dqy'," +
-            "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + loginUser.getUserId() + "or " +
-            "op.designer = " + loginUser.getUserId() + "or op.white_list like '%,"+ loginUser.getUserId() +",%' or" +
-            " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + loginUser.getUserId()
+            "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + userId + " or " +
+            "op.designer = " + userId + " or op.white_list like '%,"+ userId +",%' or" +
+            " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + userId
             + "))) ");
         return sql;
     }
 
-    /**
-     * 添加所有查询条件（按原代码顺序排列）
-     */
     private void appendAllQueryConditions(StringBuffer sql, Map<String, Object> params) {
         // 1. 商机编码查询
         String oppCode = getParamValue(params, "oppCode");
         if (StringUtils.isNotEmpty(oppCode)) {
-            sql.append("and op.opp_code like '%" + oppCode + "%'");
+            sql.append(" and op.opp_code like '%" + oppCode + "%'");
         }
 
         // 2. 商机名称查询
         String oppName = getParamValue(params, "oppName");
         if (StringUtils.isNotEmpty(oppName)) {
-            sql.append("and op.opp_name like '%" + oppName + "%'");
+            sql.append(" and op.opp_name like '%" + oppName + "%'");
         }
 
         // 3. 客户名称查询
         String custName = getParamValue(params, "custName");
         if (StringUtils.isNotEmpty(custName)) {
-            sql.append("and op.cust_name like '%" + custName + "%'");
+            sql.append(" and op.cust_name like '%" + custName + "%'");
         }
 
         // 4. 商机状态查询（支持多选）
@@ -130,25 +189,25 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 5. 商机来源查询
         String oppSource = getParamValue(params, "oppSource");
         if (StringUtils.isNotEmpty(oppSource)) {
-            sql.append("and op.opp_source = '" + oppSource + "'");
+            sql.append(" and op.opp_source = '" + oppSource + "'");
         }
 
         // 6. 客户经理名称查询
         String custManagerName = getParamValue(params, "custManagerName");
         if (StringUtils.isNotEmpty(custManagerName)) {
-            sql.append("and op.name like '%" + custManagerName + "%'");
+            sql.append(" and op.name like '%" + custManagerName + "%'");
         }
 
         // 7. 区域ID查询
         String areaId = getParamValue(params, "areaId");
         if (StringUtils.isNotEmpty(areaId)) {
-            sql.append("and op.opp_area_id = '" + areaId + "'");
+            sql.append(" and op.opp_area_id = '" + areaId + "'");
         }
 
         // 8. 开发标识查询
         String developFlag = getParamValue(params, "developFlag");
         if (StringUtils.isNotEmpty(developFlag)) {
-            sql.append("and op.develop_flag = '" + developFlag + "'");
+            sql.append(" and op.develop_flag = '" + developFlag + "'");
         }
 
         // 9. 审核状态查询
@@ -164,25 +223,25 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 10. 创建时间左边界查询
         String createTimeLeft = getParamValue(params, "createTimeLeft");
         if (StringUtils.isNotEmpty(createTimeLeft)) {
-            sql.append("and op.create_time >= '" + createTimeLeft + "'");
+            sql.append(" and op.create_time >= '" + createTimeLeft + "'");
         }
 
         // 11. 创建时间右边界查询
         String createTimeRight = getParamValue(params, "createTimeRight");
         if (StringUtils.isNotEmpty(createTimeRight)) {
-            sql.append("and op.create_time <= '" + createTimeRight + "'");
+            sql.append(" and op.create_time <= '" + createTimeRight + "'");
         }
 
         // 12. 审核时间左边界查询
         String auditTimeLeft = getParamValue(params, "auditTimeLeft");
         if (StringUtils.isNotEmpty(auditTimeLeft)) {
-            sql.append("and op.audit_time >= '" + auditTimeLeft + "'");
+            sql.append(" and op.audit_time >= '" + auditTimeLeft + "'");
         }
 
         // 13. 审核时间右边界查询
         String auditTimeRight = getParamValue(params, "auditTimeRight");
         if (StringUtils.isNotEmpty(auditTimeRight)) {
-            sql.append("and op.audit_time <= '" + auditTimeRight + "'");
+            sql.append(" and op.audit_time <= '" + auditTimeRight + "'");
         }
 
         // 14. 一级行业查询（支持多选）
@@ -234,19 +293,19 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 16. BG类型查询
         String bgType = getParamValue(params, "bgType");
         if (StringUtils.isNotEmpty(bgType)) {
-            sql.append("and op.bg_type = '" + bgType + "'");
+            sql.append(" and op.bg_type = '" + bgType + "'");
         }
 
         // 17. 预期合同金额最小值查询
         String expectContractMoneyMin = getParamValue(params, "expectContractMoneyMin");
         if (StringUtils.isNotEmpty(expectContractMoneyMin)) {
-            sql.append("and op.expect_contract_money >= " + Double.valueOf(expectContractMoneyMin));
+            sql.append(" and op.expect_contract_money >= " + Double.valueOf(expectContractMoneyMin));
         }
 
         // 18. 预期合同金额最大值查询
         String expectContractMoneyMax = getParamValue(params, "expectContractMoneyMax");
         if (StringUtils.isNotEmpty(expectContractMoneyMax)) {
-            sql.append("and op.expect_contract_money <= " + Double.valueOf(expectContractMoneyMax));
+            sql.append(" and op.expect_contract_money <= " + Double.valueOf(expectContractMoneyMax));
         }
 
         // 19. 是否有效查询
@@ -258,7 +317,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 20. 是否招投标查询
         String isBidding = getParamValue(params, "isBidding");
         if (StringUtils.isNotEmpty(isBidding)) {
-            sql.append("and op.is_bidding = '" + isBidding + "'");
+            sql.append(" and op.is_bidding = '" + isBidding + "'");
         }
 
         // 21. 投标状态查询
@@ -284,13 +343,13 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 24. 签约时间开始查询
         String signTimeStart = getParamValue(params, "signTimeStart");
         if (StringUtils.isNotEmpty(signTimeStart)) {
-            sql.append("and op.sign_time >= '" + signTimeStart + "'");
+            sql.append(" and op.sign_time >= '" + signTimeStart + "'");
         }
 
         // 25. 签约时间结束查询
         String signTimeEnd = getParamValue(params, "signTimeEnd");
         if (StringUtils.isNotEmpty(signTimeEnd)) {
-            sql.append("and op.sign_time <= '" + signTimeEnd + "'");
+            sql.append(" and op.sign_time <= '" + signTimeEnd + "'");
         }
 
         // 26. 商机赢率范围查询
@@ -298,26 +357,65 @@ public class OpportunityExport extends AbstractExportStrategy {
         String oppWinProbMax = getParamValue(params, "oppWinProbMax");
         if (StringUtils.isNotEmpty(oppWinProbMin) && StringUtils.isNotEmpty(oppWinProbMax)) {
             String oppWinProb = oppWinProbMin + "%-" + oppWinProbMax + "%";
-            sql.append("and op.opp_win_prob = '" + oppWinProb + "'");
+            sql.append(" and op.opp_win_prob = '" + oppWinProb + "'");
         }
 
         // 27. 商机增长类型查询
         String oppGrowthType = getParamValue(params, "oppGrowthType");
         if (StringUtils.isNotEmpty(oppGrowthType)) {
-            sql.append("and op.opp_growth_type = '" + oppGrowthType + "'");
+            sql.append(" and op.opp_growth_type = '" + oppGrowthType + "'");
         }
 
         // 28. 预估总合同金额最小值查询
         String estimatTotalContratAmountMin = getParamValue(params, "estimatTotalContratAmountMin");
         if (StringUtils.isNotEmpty(estimatTotalContratAmountMin)) {
-            sql.append("and op.estimat_total_contrat_amount >= '" + estimatTotalContratAmountMin + "'");
+            sql.append(" and op.estimat_total_contrat_amount >= '" + estimatTotalContratAmountMin + "'");
         }
 
         // 29. 预估总合同金额最大值查询
         String estimatTotalContratAmountMax = getParamValue(params, "estimatTotalContratAmountMax");
         if (StringUtils.isNotEmpty(estimatTotalContratAmountMax)) {
-            sql.append("and op.estimat_total_contrat_amount <= '" + estimatTotalContratAmountMax + "'");
+            sql.append(" and op.estimat_total_contrat_amount <= '" + estimatTotalContratAmountMax + "'");
         }
+    }
+
+    /**
+     * 流式导出到Excel文件
+     */
+    private boolean exportToExcelStream(String sql, File outputFile) throws Exception {
+        // 使用 EasyExcel 分批写入数据
+        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, SignOppoFileExportVO.class)
+            .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+            .build()) {
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
+
+            // 分批读取并写入数据
+            int pageSize = 1000;
+            int offset = 0;
+            boolean hasMoreData = true;
+
+            while (hasMoreData) {
+                // 构建分页SQL
+                String paginatedSql = sql + " limit " + pageSize + " offset " + offset;
+
+                // 查询当前批次数据
+                List<SignOppoFileExportDTO> batchData = toppOpportunityMapper.selectExportData(paginatedSql);
+
+                if (batchData == null || batchData.isEmpty()) {
+                    hasMoreData = false;
+                    break;
+                }
+
+                // 转换DTO为VO
+                List<SignOppoFileExportVO> batchVoData = BeanCopyUtils.copyList(batchData, SignOppoFileExportVO.class);
+
+                // 写入当前批次数据
+                excelWriter.write(batchVoData, writeSheet);
+                offset += pageSize;
+            }
+        }
+        return true;
     }
 
     /**

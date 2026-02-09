@@ -31,4 +31,12 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
 
 
     List<SignOppoFileExportDTO> selectOpportunityUnbound();
+
+    /**
+     * 执行动态SQL查询导出数据
+     * @param sql 动态SQL语句
+     * @return 导出数据列表
+     */
+    @Select("${sql}")
+    List<SignOppoFileExportDTO> selectExportData(@Param("sql") String sql);
 }
