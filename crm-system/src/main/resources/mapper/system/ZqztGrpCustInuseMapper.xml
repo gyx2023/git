@@ -35,8 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             a.county_id = #{loginUser.countyId},
             a.operator_id = #{loginUser.operatorId},
             a.update_time = now()
-        where a.grp_code_a = #{reqDTO.grpCodeA}
-          and a.hq_grp_code_a = #{reqDTO.hqGrpCodeA}
+        where a.contract_id = #{reqDTO.contractId}
           and b.grp_code = #{reqDTO.grpCodeB}
           and b.hq_grp_code = #{reqDTO.hqGrpCodeB}
     </insert>
@@ -140,6 +139,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and date_format(a.contract_effdate, '%Y-%m-%d') &lt;= date_format(#{createTimeEnd}, '%Y-%m-%d')
             </if>
         </where>
+        limit #{startIndex}, #{endIndex}
     </select>
     <select id="queryPageUserList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
         select
@@ -202,5 +202,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 #{userList.subscrbid}
             </foreach>
         </if>
+    </select>
+    <select id="queryZqztGrpCustInuseListTotal" resultType="java.lang.Integer">
+        select
+            count(1)
+        from zqzt_grp_contract_info a
+        left join zqzt_grp_group_info b  on a.grp_id = b.grp_id
+        left join zqzt_grp_cust_inuse c  on a.inuse_contract_id = c.contract_id and c.is_valid = '1'
+        left join zqzt_grp_group_info b2 on c.grp_id_b = b2.grp_id
+        left join (
+            select
+                inuse_id, count(1) as user_num
+            from zqzt_grp_cust_inuse_userlist
+            where is_valid = '1'
+            group by inuse_id
+        ) d on c.inuse_id = d.inuse_id
+        <where>
+            <if test="regionId != null and regionId != ''">
+                and b.area_id = #{regionId}
+            </if>
+            <if test="countyId != null and countyId != ''">
+                and b.county_id = #{countyId}
+            </if>
+            <if test="grpCodeA != null and grpCodeA != ''">
+                and b.grp_code = #{grpCodeA}
+            </if>
+            <if test="hqGrpCodeA != null and hqGrpCodeA != ''">
+                and b.hq_grp_code = #{hqGrpCodeA}
+            </if>
+            <if test="contractId != null and contractId != ''">
+                and a.inuse_contract_id = #{contractId}
+            </if>
+            <if test="contractName != null and contractName != ''">
+                and lower(a.contract_name) like lower(concat('%', #{contractName}, '%'))
+            </if>
+            <if test="grpCodeB != null and grpCodeB != ''">
+                and b2.grp_code = #{grpCodeB}
+            </if>
+            <if test="hqGrpCodeB != null and hqGrpCodeB != ''">
+                and b2.hq_grp_code = #{hqGrpCodeB}
+            </if>
+            <if test="createTimeBegin != null and createTimeBegin != ''">
+                and date_format(a.contract_effdate, '%Y-%m-%d') >= date_format(#{createTimeBegin}, '%Y-%m-%d')
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                and date_format(a.contract_effdate, '%Y-%m-%d') &lt;= date_format(#{createTimeEnd}, '%Y-%m-%d')
+            </if>
+        </where>
     </select>
 </mapper>
