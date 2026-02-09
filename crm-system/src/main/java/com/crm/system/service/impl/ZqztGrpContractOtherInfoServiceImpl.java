@@ -198,9 +198,6 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             return 0;
         }
 
-        // 使用批量插入方法提高性能
-        baseMapper.insertBatch(dataList);
-
         return dataList.size();
     }
 
@@ -217,9 +214,6 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
-
-        baseMapper.delete(null);
-
         // 根据user_id验证并设置相应状态
         List<ZqztGrpContractOtherInfo> processedDataList = processBusinessLogic(dataList);
 

@@ -62,7 +62,7 @@ public interface IZqztGrpContractOtherInfoService {
     int importAll(List<ZqztGrpContractOtherInfo> dataList);
 
     /**
-     * 全量导入集团合同扩展信息数据
+     * 全量删除集团合同扩展信息数据
      *
      * @param dataList 数据列表
      * @return 成功导入数量
@@ -108,7 +108,7 @@ public interface IZqztGrpContractOtherInfoService {
 
     /**
      * 根据总部集团编码查询未签约的客户
-     * 
+     *
      * @param hqGrpCode 总部集团编码
      * @param contractId 合同ID
      * @return 未签约的客户列表
