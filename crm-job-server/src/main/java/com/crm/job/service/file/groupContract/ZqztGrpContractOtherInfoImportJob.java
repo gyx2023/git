@@ -104,7 +104,6 @@ public class ZqztGrpContractOtherInfoImportJob {
         targetData.setContractId(oracleData.getContractId());
         targetData.setInfoTag(oracleData.getInfoTag());
         targetData.setInfoVal(oracleData.getInfoVal());
-        targetData.setInfoVal2(oracleData.getInfoVal2());
 
         return targetData;
     }

@@ -103,6 +103,7 @@ public class ZqztGrpContractInfoImportJob {
         // 特殊字段映射
         targetData.setErpContractId(oracleData.getString2());
         targetData.setInuseContractId(oracleData.getString15());
+        targetData.setContractParty(oracleData.getString1());
 
         return targetData;
     }

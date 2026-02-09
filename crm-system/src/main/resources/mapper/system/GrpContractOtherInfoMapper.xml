@@ -6,13 +6,12 @@
         <result property="contractId" column="contract_id"/>
         <result property="infoTag" column="info_tag"/>
         <result property="infoVal" column="info_val"/>
-        <result property="infoVal2" column="info_val2"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="selectGrpContractOtherInfoVo">
-        select  contract_id, info_tag, info_val, info_val2
-        from zqzt_grp_contract_other_info
+        select  contract_id, info_tag, info_val
+        from grp_contract_other_info
     </sql>
 
     <!-- 根据ID查询单条数据 -->
