@@ -28,6 +28,7 @@ import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.utils.spring.SpringUtils;
 import com.crm.common.enums.InfoTagEnum;
+import com.crm.common.helper.LoginHelper;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -324,7 +325,19 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
         lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
-        lqw.like(infoVal2 != null && !infoVal2.isEmpty(), ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 按服务号码模糊查询
+        
+        // 如果infoVal2不为空，先解密再查询
+        String decryptedInfoVal2 = null;
+        if (infoVal2 != null && !infoVal2.isEmpty()) {
+            try {
+                decryptedInfoVal2 = decryptInfoVal2(infoVal2);
+                lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, decryptedInfoVal2); // 按解密后的服务号码模糊查询
+            } catch (Exception e) {
+                log.warn("infoVal2解密失败，使用原始值查询: {}", infoVal2);
+                lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 解密失败时使用原始值
+            }
+        }
+        
         List<ZqztGrpContractOtherInfoVo> contractOtherInfos = baseMapper.selectVoList(lqw);
         if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
             return new ArrayList<>();
@@ -343,6 +356,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
         }
 
+        // 判断当前用户是否需要脱敏（仿照集团客户管理页面的逻辑）
+        boolean needDesensitize = !LoginHelper.isAdmin();
+
         // INNER JOIN逻辑：只返回在两个表中都有匹配的数据
         // 如果任何一个contractOtherInfo在custMaintInfo中没有匹配，则整条记录都不返回
         List<Map<String, Object>> result = new ArrayList<>();
@@ -356,24 +372,49 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
                 mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
                 mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
-                mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
+                
+                // 对infoVal2进行加密后返回给前端
+                String originalInfoVal2 = contractOtherInfo.getInfoVal2();
+                if (originalInfoVal2 != null && !originalInfoVal2.isEmpty()) {
+                    String encryptedInfoVal2 = encryptInfoVal2(originalInfoVal2);
+                    mergedInfo.put("infoVal2", encryptedInfoVal2);
+                } else {
+                    mergedInfo.put("infoVal2", originalInfoVal2);
+                }
+                
                 mergedInfo.put("isValid", contractOtherInfo.getIsValid());
 
                 // 添加从客户维护信息查询到的字段
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
-                // 对手机号码进行脱敏处理
+                
+                // 根据权限判断是否脱敏处理手机号码
                 String svcNum = (String) custInfo.get("svcNum");
-                String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
-                mergedInfo.put("svcNum", desensitizedSvcNum);
+                if (needDesensitize) {
+                    String desensitizedSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                    mergedInfo.put("svcNum", desensitizedSvcNum);
+                } else {
+                    mergedInfo.put("svcNum", svcNum); // 管理员不脱敏
+                }
+                
                 mergedInfo.put("userId", custInfo.get("userId"));
-                // 对归属客户名称进行脱敏
+                
+                // 根据权限判断是否脱敏处理客户名称
                 String custName = (String) custInfo.get("custName");
-                String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
-                mergedInfo.put("custName", desensitizedCustName);
-                // 对收入归集集团名称进行脱敏
+                if (needDesensitize) {
+                    String desensitizedCustName = Desensitization.desensitizeCompanyName(custName);
+                    mergedInfo.put("custName", desensitizedCustName);
+                } else {
+                    mergedInfo.put("custName", custName); // 管理员不脱敏
+                }
+                
+                // 根据权限判断是否脱敏处理收入归集集团名称
                 String custGrpName = (String) custInfo.get("custGrpName");
-                String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
-                mergedInfo.put("custGrpName", desensitizedCustGrpName);
+                if (needDesensitize) {
+                    String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
+                    mergedInfo.put("custGrpName", desensitizedCustGrpName);
+                } else {
+                    mergedInfo.put("custGrpName", custGrpName); // 管理员不脱敏
+                }
 
                 result.add(mergedInfo);
             }
@@ -500,6 +541,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .filter(infoVal -> infoVal != null && !infoVal.isEmpty())
             .collect(Collectors.toList());
 
+        // 判断当前用户是否需要脱敏（仿照集团客户管理页面的逻辑）
+        boolean needDesensitize = !LoginHelper.isAdmin();
+
         // 4. 过滤掉已经有合同的用户，只返回未签约的用户
         List<Map<String, Object>> uncontractedUsers = allCustMaintInfosFromDb.stream()
             .filter(custMaintInfo -> {
@@ -515,9 +559,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 String encryptedSvcNum = encryptSvcNum(svcNum);
                 userMap.put("encryptedSvcNum", encryptedSvcNum); // 加密后的号码
 
-                // 对SVC_NUM进行脱敏处理（保留作为对比）
-                String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
-                userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
+                // 根据权限判断是否脱敏处理手机号码
+                if (needDesensitize) {
+                    String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
+                    userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
+                } else {
+                    userMap.put("desensitizationSvcNum", svcNum); // 管理员不脱敏
+                }
 
                 userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
                 userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
@@ -545,6 +593,27 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             return base64Encoded.replace('=', '_').replace('+', '-').replace('/', '_');
         } catch (Exception e) {
             log.error("SVC_NUM混淆处理失败: {}", svcNum, e);
+            return ""; // 处理失败返回空字符串
+        }
+    }
+
+    /**
+     * 加密infoVal2字段
+     * @param infoVal2 原始的信息值2
+     * @return 加密后的字符串
+     */
+    private String encryptInfoVal2(String infoVal2) {
+        if (infoVal2 == null || infoVal2.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 使用Base64编码+字符替换作为混淆处理
+            String base64Encoded = java.util.Base64.getEncoder().encodeToString(infoVal2.getBytes("UTF-8"));
+            // 简单的字符替换混淆
+            return base64Encoded.replace('=', '_').replace('+', '-').replace('/', '_');
+        } catch (Exception e) {
+            log.error("infoVal2加密失败: {}", infoVal2, e);
             return ""; // 处理失败返回空字符串
         }
     }
