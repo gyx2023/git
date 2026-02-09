@@ -114,4 +114,12 @@ public interface IZqztGrpContractOtherInfoService {
      * @return 未签约的客户列表
      */
     List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId);
+
+    /**
+     * 解密加密的服务号码
+     * @param encryptedSvcNum 加密的服务号码
+     * @return 解密后的原始服务号码
+     */
+    String decryptSvcNum(String encryptedSvcNum);
+
 }

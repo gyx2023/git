@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.crypto.symmetric.AES;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
@@ -13,6 +14,7 @@ import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.domain.grp.TfFCustGroupMDo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
@@ -25,13 +27,10 @@ import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.utils.spring.SpringUtils;
+import com.crm.common.enums.InfoTagEnum;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +40,7 @@ import java.util.stream.Collectors;
  * @date 2026-01-13
  */
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOtherInfoService {
 
@@ -115,6 +115,23 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     public Boolean insertBatchByBo(List<ZqztGrpContractOtherInfoBo> boList) {
         if (boList == null || boList.isEmpty()) {
             return false;
+        }
+
+        // 对请求参数中的infoVal2字段进行解密处理，并设置固定的info_tag
+        for (ZqztGrpContractOtherInfoBo bo : boList) {
+            // 设置固定的info_tag值
+            bo.setInfoTag(InfoTagEnum.GRP_CONTRACT_USER_LIST.getValue());
+
+            if (bo.getInfoVal2() != null && !bo.getInfoVal2().isEmpty()) {
+                try {
+                    // 解密infoVal2字段
+                    String decryptedInfoVal2 = decryptInfoVal2(bo.getInfoVal2());
+                    bo.setInfoVal2(decryptedInfoVal2);
+                } catch (Exception e) {
+                    log.error("解密infoVal2失败: {}", bo.getInfoVal2(), e);
+                    throw new RuntimeException("参数解密失败: " + e.getMessage());
+                }
+            }
         }
 
         List<ZqztGrpContractOtherInfo> entities = boList.stream()
@@ -326,20 +343,23 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             custMaintInfoMap = custMaintInfoService.batchGetCustMaintInfoByUserIds(userIds);
         }
 
-        // 第三步：合并数据，构建结果列表
+        // INNER JOIN逻辑：只返回在两个表中都有匹配的数据
+        // 如果任何一个contractOtherInfo在custMaintInfo中没有匹配，则整条记录都不返回
         List<Map<String, Object>> result = new ArrayList<>();
-        for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
-            Map<String, Object> mergedInfo = new HashMap<>();
-            // 添加合同扩展信息字段
-            mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
-            mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
-            mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
-            mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
-            mergedInfo.put("isValid", contractOtherInfo.getIsValid());
 
-            // 添加从客户维护信息查询到的字段
+        for (ZqztGrpContractOtherInfoVo contractOtherInfo : contractOtherInfos) {
             String userId = contractOtherInfo.getInfoVal();
-            if (userId != null && custMaintInfoMap.containsKey(userId)) {
+            // INNER JOIN条件：必须在客户维护信息中找到匹配的记录
+            if (userId != null && custMaintInfoMap.containsKey(userId) && custMaintInfoMap.get(userId) != null) {
+                Map<String, Object> mergedInfo = new HashMap<>();
+                // 添加合同扩展信息字段
+                mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
+                mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
+                mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
+                mergedInfo.put("infoVal2", contractOtherInfo.getInfoVal2());
+                mergedInfo.put("isValid", contractOtherInfo.getIsValid());
+
+                // 添加从客户维护信息查询到的字段
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
                 // 对手机号码进行脱敏处理
                 String svcNum = (String) custInfo.get("svcNum");
@@ -354,14 +374,10 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 String custGrpName = (String) custInfo.get("custGrpName");
                 String desensitizedCustGrpName = Desensitization.desensitizeCompanyName(custGrpName);
                 mergedInfo.put("custGrpName", desensitizedCustGrpName);
-            } else {
-                // 如果没有找到对应的客户信息，设置为空值
-                mergedInfo.put("svcNum", "");
-                mergedInfo.put("userId", "");
-                mergedInfo.put("custName", "");
-                mergedInfo.put("custGrpName", "");
+
+                result.add(mergedInfo);
             }
-            result.add(mergedInfo);
+            // 如果没有匹配的客户信息，直接跳过这条记录（相当于INNER JOIN的过滤效果）
         }
 
         return result;
@@ -417,7 +433,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
 
-
+    // 查询未绑定合同的用户列表
     @Override
     public List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId) {
         // 1. 根据总部集团编码(hqGrpCode)在tf_f_cust_group_m表中查询GROUP_ID，获取CUST_ID
@@ -427,7 +443,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             custId = custGroup.getCustId();
         }
 
-        // 2. 分别执行两个SQL查询并合并结果
+        // 2. 分别执行两个SQL查询并合并结果（去重处理）
+        // 使用Set基于userId去重，避免同一个用户在两个查询条件中都出现导致重复
+        Set<String> processedUserIds = new HashSet<>();
         List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
 
         // SQL 1: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
@@ -437,7 +455,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 .eq("STATUS", "1")
                 .eq("CUST_ID", custId);
             List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
-            allCustMaintInfosFromDb.addAll(records1);
+            // 过滤并添加不重复的记录
+            for (CustMaintInfo record : records1) {
+                if (record.getUserId() != null && !processedUserIds.contains(record.getUserId())) {
+                    allCustMaintInfosFromDb.add(record);
+                    processedUserIds.add(record.getUserId());
+                }
+            }
         }
 
         // SQL 2: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
@@ -446,7 +470,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .eq("STATUS", "1")
             .eq("CUST_GRP_ID", hqGrpCode);
         List<CustMaintInfo> records2 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper2);
-        allCustMaintInfosFromDb.addAll(records2);
+        // 过滤并添加不重复的记录
+        for (CustMaintInfo record : records2) {
+            if (record.getUserId() != null && !processedUserIds.contains(record.getUserId())) {
+                allCustMaintInfosFromDb.add(record);
+                processedUserIds.add(record.getUserId());
+            }
+        }
 
         // 提取userIds
         List<String> userIds = allCustMaintInfosFromDb.stream()
@@ -479,10 +509,16 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .map(custMaintInfo -> {
                 Map<String, Object> userMap = new HashMap<>();
                 String svcNum = custMaintInfo.getSvcNum();
-                userMap.put("svcNum", svcNum); // 脱敏前的号码
-                // 对SVC_NUM进行脱敏处理
+
+                //userMap.put("svcNum", svcNum); // 原始号码
+                // 对SVC_NUM进行加密处理
+                String encryptedSvcNum = encryptSvcNum(svcNum);
+                userMap.put("encryptedSvcNum", encryptedSvcNum); // 加密后的号码
+
+                // 对SVC_NUM进行脱敏处理（保留作为对比）
                 String desensitizationSvcNum = Desensitization.desensitizePhoneNumber(svcNum);
                 userMap.put("desensitizationSvcNum", desensitizationSvcNum); // 脱敏后的号码
+
                 userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
                 userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
                 return userMap;
@@ -490,5 +526,62 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .collect(Collectors.toList());
 
         return uncontractedUsers;
+    }
+
+    /**
+     * 对SVC_NUM进行简单混淆处理（避免加密库兼容性问题）
+     * @param svcNum 原始服务号码
+     * @return 混淆后的字符串
+     */
+    private String encryptSvcNum(String svcNum) {
+        if (svcNum == null || svcNum.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 使用简单的Base64编码+字符替换作为混淆处理
+            String base64Encoded = java.util.Base64.getEncoder().encodeToString(svcNum.getBytes("UTF-8"));
+            // 简单的字符替换混淆
+            return base64Encoded.replace('=', '_').replace('+', '-').replace('/', '_');
+        } catch (Exception e) {
+            log.error("SVC_NUM混淆处理失败: {}", svcNum, e);
+            return ""; // 处理失败返回空字符串
+        }
+    }
+
+    /**
+     * 解密加密的服务号码
+     * @param encryptedSvcNum 加密的服务号码
+     * @return 解密后的原始服务号码
+     */
+    @Override
+    public String decryptSvcNum(String encryptedSvcNum) {
+        return decryptInfoVal2(encryptedSvcNum);
+    }
+
+    /**
+     * 解密infoVal2字段（用于批量新增接口）
+     * @param encryptedInfoVal2 加密的信息值2
+     * @return 解密后的原始字符串
+     */
+    private String decryptInfoVal2(String encryptedInfoVal2) {
+        if (encryptedInfoVal2 == null || encryptedInfoVal2.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 正确的字符还原逻辑：将混淆字符换回原始Base64字符
+            // _ -> =, - -> +, / -> _ (然后再将_ -> /)
+            String restored = encryptedInfoVal2.replace('_', '=').replace('-', '+').replace('/', '_');
+            // 再将'_'换回'/'
+            restored = restored.replace('_', '/');
+            
+            // Base64解码
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(restored);
+            return new String(decodedBytes, "UTF-8");
+        } catch (Exception e) {
+            log.error("infoVal2解密失败: {}", encryptedInfoVal2, e);
+            throw new RuntimeException("解密失败: " + e.getMessage());
+        }
     }
 }
