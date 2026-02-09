@@ -27,13 +27,10 @@ import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.utils.spring.SpringUtils;
+import com.crm.common.enums.InfoTagEnum;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -123,8 +120,8 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         // 对请求参数中的infoVal2字段进行解密处理，并设置固定的info_tag
         for (ZqztGrpContractOtherInfoBo bo : boList) {
             // 设置固定的info_tag值
-            bo.setInfoTag("GRP_CONTRACT_USER_LIST");
-            
+            bo.setInfoTag(InfoTagEnum.GRP_CONTRACT_USER_LIST.getValue());
+
             if (bo.getInfoVal2() != null && !bo.getInfoVal2().isEmpty()) {
                 try {
                     // 解密infoVal2字段
@@ -446,7 +443,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             custId = custGroup.getCustId();
         }
 
-        // 2. 分别执行两个SQL查询并合并结果
+        // 2. 分别执行两个SQL查询并合并结果（去重处理）
+        // 使用Set基于userId去重，避免同一个用户在两个查询条件中都出现导致重复
+        Set<String> processedUserIds = new HashSet<>();
         List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
 
         // SQL 1: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
@@ -456,7 +455,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 .eq("STATUS", "1")
                 .eq("CUST_ID", custId);
             List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
-            allCustMaintInfosFromDb.addAll(records1);
+            // 过滤并添加不重复的记录
+            for (CustMaintInfo record : records1) {
+                if (record.getUserId() != null && !processedUserIds.contains(record.getUserId())) {
+                    allCustMaintInfosFromDb.add(record);
+                    processedUserIds.add(record.getUserId());
+                }
+            }
         }
 
         // SQL 2: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
@@ -465,7 +470,13 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .eq("STATUS", "1")
             .eq("CUST_GRP_ID", hqGrpCode);
         List<CustMaintInfo> records2 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper2);
-        allCustMaintInfosFromDb.addAll(records2);
+        // 过滤并添加不重复的记录
+        for (CustMaintInfo record : records2) {
+            if (record.getUserId() != null && !processedUserIds.contains(record.getUserId())) {
+                allCustMaintInfosFromDb.add(record);
+                processedUserIds.add(record.getUserId());
+            }
+        }
 
         // 提取userIds
         List<String> userIds = allCustMaintInfosFromDb.stream()
@@ -538,27 +549,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         }
     }
 
-//    /**
-//     * 对混淆的SVC_NUM进行还原处理
-//     * @param encryptedSvcNum 混淆的服务号码
-//     * @return 还原后的原始字符串
-//     */
-//    public String decryptSvcNum(String encryptedSvcNum) {
-//        if (encryptedSvcNum == null || encryptedSvcNum.isEmpty()) {
-//            return "";
-//        }
-//
-//        try {
-//            // 还原字符替换
-//            String restored = encryptedSvcNum.replace('_', '=').replace('-', '+').replace('_', '/');
-//            // Base64解码
-//            byte[] decodedBytes = java.util.Base64.getDecoder().decode(restored);
-//            return new String(decodedBytes, "UTF-8");
-//        } catch (Exception e) {
-//            log.error("SVC_NUM还原处理失败: {}", encryptedSvcNum, e);
-//            return ""; // 还原失败返回空字符串
-//        }
-//    }
+
 
     /**
      * 解密infoVal2字段（用于批量新增接口）
