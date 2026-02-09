@@ -5,12 +5,13 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.crm.common.core.domain.dto.OldOpportunityDTO;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDo;
-import com.crm.system.domain.vo.SysOssVo;
+import com.crm.system.domain.vo.topp.OldOpportunityVO;
 import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.ISysOssService;
@@ -72,15 +73,15 @@ public class OpportunityExport extends AbstractExportStrategy {
             sql.append(" order by op.id_ desc");
 
             //打印 SQL
-            log.info("SQL: {}", sql.toString());
+            log.info("查询的SQL语句: {}", sql.toString());
 
             // 创建临时文件
             String prefix = "opportunity_export_" + System.currentTimeMillis();
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
             try {
-                // 使用流式导出方法
-                boolean success = exportToExcelStream(sql.toString(), tempFile);
+                // 使用完整版流式导出方法
+                boolean success = exportToExcelStreamFull(sql.toString(), tempFile);
                 if (!success) {
                     task.setRemark("流式导出失败");
                     return false;
@@ -387,27 +388,16 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 流式导出到Excel文件
+     * 完整商机信息流式导出到Excel文件
+     * 使用OldOpportunityVO模板自动生成表头
      */
-    private boolean exportToExcelStream(String sql, File outputFile) throws Exception {
-        // 使用 EasyExcel 分批写入数据
-        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, SignOppoFileExportVO.class)
+    private boolean exportToExcelStreamFull(String sql, File outputFile) throws Exception {
+        // 使用 EasyExcel 分批写入数据，自动根据VO注解生成表头
+        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, OldOpportunityVO.class)
             .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
             .build()) {
 
-            // 自定义表头
-            String[] customHeaders = {
-                "商机编号", "商机名称", "业务类型（主）", "业务类型（次）", "所属一级行业", "商机来源", "预计合同金额",
-                "月收入贡献", "预估合同周期", "是否招投标", "集团客户编号", "集团客户名称", "创建时间", "商机状态", "商机创建人姓名",
-                "商机创建人电话", "商机创建人归属地市", "商机创建人归属区县", "商机创建人归属部门", "商机客户经理姓名", "商机客户经理电话",
-                "商机客户经理归属地市", "商机客户经理归属区县", "商机客户经理归属部门", "商机支撑经理姓名", "商机支撑经理电话",
-                "商机支撑经理归属地市", "商机支撑经理归属区县", "商机支撑经理归属部门", "是否有效", "主要产品/解决方案", "项目来源分类",
-                "商机签约概率", "预计签约时间", "商机增长类型", "绑定合同", "电子表单"
-            };
-
-            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息")
-                .head(generateCustomHead(customHeaders))
-                .build();
+            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
 
             // 分批读取并写入数据
             int pageSize = 1000;
@@ -419,7 +409,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                 String paginatedSql = sql + " limit " + pageSize + " offset " + offset;
 
                 // 查询当前批次数据
-                List<SignOppoFileExportDTO> batchData = toppOpportunityMapper.selectExportData(paginatedSql);
+                List<OldOpportunityDTO> batchData = toppOpportunityMapper.selectOldOppoExportData(paginatedSql);
 
                 if (batchData == null || batchData.isEmpty()) {
                     hasMoreData = false;
@@ -427,7 +417,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                 }
 
                 // 转换DTO为VO
-                List<SignOppoFileExportVO> batchVoData = BeanCopyUtils.copyList(batchData, SignOppoFileExportVO.class);
+                List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
 
                 // 写入当前批次数据
                 excelWriter.write(batchVoData, writeSheet);
@@ -435,21 +425,6 @@ public class OpportunityExport extends AbstractExportStrategy {
             }
         }
         return true;
-    }
-
-    /**
-     * 生成自定义表头
-     * @param headers 表头数组
-     * @return EasyExcel所需的表头格式
-     */
-    private List<List<String>> generateCustomHead(String[] headers) {
-        List<List<String>> head = new ArrayList<>();
-        for (String header : headers) {
-            List<String> headItem = new ArrayList<>();
-            headItem.add(header);
-            head.add(headItem);
-        }
-        return head;
     }
 
     /**

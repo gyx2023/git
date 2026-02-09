@@ -1,6 +1,7 @@
 package com.crm.system.mapper.topp;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.crm.common.core.domain.dto.OldOpportunityDTO;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.topp.ToppOpportunityDo;
@@ -33,10 +34,10 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
     List<SignOppoFileExportDTO> selectOpportunityUnbound();
 
     /**
-     * 执行动态SQL查询导出数据
+     * 执行动态SQL查询完整商机导出数据
      * @param sql 动态SQL语句
-     * @return 导出数据列表
+     * @return 完整导出数据列表
      */
     @Select("${sql}")
-    List<SignOppoFileExportDTO> selectExportData(@Param("sql") String sql);
+    List<OldOpportunityDTO> selectOldOppoExportData(@Param("sql") String sql);
 }

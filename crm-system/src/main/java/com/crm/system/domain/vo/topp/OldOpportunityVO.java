@@ -77,7 +77,7 @@ public class OldOpportunityVO {
     private String custManagerName;
 
     @ExcelProperty("商机客户经理电话")
-    private String custManagerPhone;
+    private String custManagerTel;
 
     @ExcelProperty("商机客户经理归属地市")
     private String custManagerCity;

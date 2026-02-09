@@ -76,7 +76,7 @@ public class OldOpportunityDTO {
     private String custManagerName;
 
     /** 21. 商机客户经理电话 */
-    private String custManagerPhone;
+    private String custManagerTel;
 
     /** 22. 商机客户经理归属地市 */
     private String custManagerCity;
