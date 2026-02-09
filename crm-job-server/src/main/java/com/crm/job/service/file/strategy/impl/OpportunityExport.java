@@ -1,6 +1,9 @@
 package com.crm.job.service.file.strategy.impl;
 
 import cn.hutool.json.JSONUtil;
+import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.service.ISysOssService;
@@ -73,11 +76,158 @@ public class OpportunityExport extends AbstractExportStrategy {
             String estimatTotalContratAmountMin = getParamValue(requestParams, "estimatTotalContratAmountMin");
             String estimatTotalContratAmountMax = getParamValue(requestParams, "estimatTotalContratAmountMax");
 
+            LoginUser loginUser = LoginHelper.getLoginUser();
+
             StringBuffer sql = new StringBuffer();
+
             sql.append("select * from topp_opportunity op " +
                 "join sys_user su on su.id_ = op.cust_manager_id where" +
                 " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) " +
-                "and op.unicom_type in('22','01','23','02','03','25','unicom_jr',");
+                "op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
+                "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
+                "'unicom_xy','30','10','13','15','16','17','18','19','unicom_dqy'," +
+                "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + loginUser.getUserId() + "or " +
+                "op.designer = " + loginUser.getUserId() + "or op.white_list like '%,"+ loginUser.getUserId() +",%' or" +
+                " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + loginUser.getUserId()
+                + "))) "
+            );
+
+            // 判断并决定是否查询条件
+            if (StringUtils.isNotEmpty(oppCode)) {
+                sql.append("and op.opp_code like '%" + oppCode + "%'");
+            }
+
+            if (StringUtils.isNotEmpty(oppName)) {
+                sql.append("and op.opp_name like '%" + oppName + "%'");
+            }
+
+            if (StringUtils.isNotEmpty(custName)) {
+                sql.append("and op.cust_name like '%" + custName + "%'");
+            }
+
+            // 商机状态处理，支持多选
+            if (StringUtils.isNotEmpty(oppoStates)) {
+                if (oppoStates.contains(",")) {
+                    String[] states = oppoStates.split(",");
+                    sql.append(" and ( 1=2");
+                    for (String state : states) {
+                        sql.append(" or op.opp_states = '" + state.trim() + "' ");
+                    }
+                    sql.append(" ) ");
+                } else {
+                    sql.append(" and op.opp_states = '" + oppoStates.trim() + "' ");
+                }
+            }
+
+            if (StringUtils.isNotEmpty(oppSource)) {
+                sql.append("and op.opp_source = '" + oppSource + "'" );
+            }
+
+            if (StringUtils.isNotEmpty(custManagerName)){
+                sql.append("and op.name like '%" + custManagerName + "%'");
+            }
+
+            if (StringUtils.isNotEmpty(areaId)) {
+                sql.append("and op.opp_area_id = '" + areaId + "'");
+            }
+
+            if (StringUtils.isNotEmpty(developFlag)) {
+                sql.append("and op.develop_flag = '" + developFlag + "'" );
+            }
+
+            if (auditStatus != null) {
+            }
+
+            if (StringUtils.isNotEmpty(createTimeLeft)) {
+                sql.append("and op.create_time >= '" + createTimeLeft + "'");
+            }
+
+            if (StringUtils.isNotEmpty(createTimeRight)) {
+                sql.append("and op.create_time <= '" + createTimeRight + "'");
+            }
+
+            if (StringUtils.isNotEmpty(auditTimeLeft)) {
+                sql.append("and op.audit_time >= '" + auditTimeLeft + "'");
+            }
+
+            if (StringUtils.isNotEmpty(auditTimeRight)) {
+                sql.append("and op.audit_time <= '" + auditTimeRight + "'");
+            }
+
+            if (type1 != null) {
+            }
+
+            // 商机类型处理，支持多选
+            if (StringUtils.isNotEmpty(oppoTypesNew) && StringUtils.isNotEmpty(oppoTypes)) {
+                oppoTypes += "," + oppoTypesNew;
+            } else if (StringUtils.isEmpty(oppoTypes) && StringUtils.isNotEmpty(oppoTypesNew)) {
+                oppoTypes = oppoTypesNew;
+            }
+
+            // 构建商机类型查询条件
+            if (StringUtils.isNotEmpty(oppoTypes)) {
+                if (oppoTypes.contains(",")) {
+                    String[] types = oppoTypes.split(",");
+                    sql.append(" and ( 1=2");
+                    for (String type : types) {
+                        sql.append(" or op.opp_type = '" + type + "' or op.opp_include_type like '%," + type + ",%' ");
+                    }
+                    sql.append(" ) ");
+                } else {
+                    sql.append(" and (op.opp_type = '" + oppoTypes + "' or op.opp_include_type like '%," + oppoTypes + ",%')");
+                }
+            }
+
+            if (StringUtils.isNotEmpty(bgType)) {
+                sql.append("and op.bg_type = '" + bgType + "'" );
+            }
+
+            if (isValid != null) {
+            }
+
+            if (StringUtils.isNotEmpty(isBidding)) {
+                sql.append("and op.is_bidding = '" + isBidding + "'" );
+            }
+
+            if (bidState != null) {
+            }
+
+            if (StringUtils.isNotEmpty(moneyMin)) {
+                sql.append("and op.expectContractMoney >= '" + moneyMin + "'");
+            }
+
+            if (StringUtils.isNotEmpty(moneyMax)) {
+                sql.append("and op.expectContractMoney <= '" + moneyMax + "'");
+            }
+
+            if (StringUtils.isNotEmpty(signTimeStart)) {
+                sql.append("and op.sign_time >= '" + signTimeStart + "'");
+            }
+
+            if (StringUtils.isNotEmpty(signTimeEnd)) {
+                sql.append("and op.sign_time <= '" + signTimeEnd + "'");
+            }
+
+            if (StringUtils.isNotEmpty(oppWinProbMin) && StringUtils.isNotEmpty(oppWinProbMax)) {
+                String oppWinProb = oppWinProbMin + "%-" + oppWinProbMax+"%";
+                sql.append("and op.opp_win_prob = '" + oppWinProb + "'");
+            }
+
+            if (StringUtils.isNotEmpty(oppGrowthType)) {
+                sql.append("and op.opp_growth_type = '" + oppGrowthType + "'" );
+            }
+
+            if (StringUtils.isNotEmpty(estimatTotalContratAmountMin)) {
+                sql.append("and op.estimat_total_contrat_amount >= '" + estimatTotalContratAmountMin + "'");
+            }
+
+            if (StringUtils.isNotEmpty(estimatTotalContratAmountMax)) {
+                sql.append("and op.estimat_total_contrat_amount <= '" + estimatTotalContratAmountMax + "'");
+            }
+
+
+
+            sql.append(" order by op.id_ desc ok");
             return true;
 
         } catch (Exception e) {
