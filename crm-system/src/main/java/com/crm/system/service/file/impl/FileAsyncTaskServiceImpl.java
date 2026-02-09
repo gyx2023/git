@@ -283,7 +283,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             // 生成任务ID：yyyymmddHHmm+0001（4位序列号）格式
             String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
             String sequence = getDailySequence();
-            String taskIdStr = dateStr + sequence;
+            String taskIdStr = "10" + dateStr + sequence;
             Long taskId = Long.valueOf(taskIdStr);
             taskBo.setTaskId(taskId);
             taskBo.setTaskName(taskName);
