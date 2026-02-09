@@ -160,7 +160,29 @@ public class OpportunityExport extends AbstractExportStrategy {
                 sql.append("and op.audit_time <= '" + auditTimeRight + "'");
             }
 
-            if (type1 != null) {
+            // 一级行业处理，支持多选
+            sql.append(" and ( 1=2");
+            // 一级行业
+            if (StringUtils.isNotEmpty(type1)) {
+                if (type1.contains(",")) {
+                    String[] strings = type1.split(",");
+                    sql.append(" or ( 1=2");
+                    for (String string : strings) {
+                        sql.append(" or op.unicom_type ='" + string.trim() + "' ");
+                    }
+                    sql.append(" ) ");
+                } else {
+                    // 如果二级行业根本没选择
+                    sql.append(" or op.unicom_type ='" + type1.trim() + "' ");
+                }
+            } else {
+                sql.append(" or 1=2 ");
+            }
+
+            if (sql.toString().endsWith("( 1=2 or 1=2 ")) {
+                sql.append(" or 1=1 )");
+            } else {
+                sql.append(" or 1=2 )");
             }
 
             // 商机类型处理，支持多选
