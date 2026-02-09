@@ -210,22 +210,37 @@ public class OpportunityExport extends AbstractExportStrategy {
                 sql.append("and op.bg_type = '" + bgType + "'" );
             }
 
-            if (isValid != null) {
+            if (StringUtils.isNotEmpty(expectContractMoneyMin)){
+                sql.append("and op.expect_contract_money >= " + Double.valueOf(expectContractMoneyMin));
+            }
+
+            if (StringUtils.isNotEmpty(expectContractMoneyMax)){
+                sql.append("and op.expect_contract_money <= " + Double.valueOf(expectContractMoneyMax));
+            }
+
+            // 是否有效查询
+            if (StringUtils.isNotEmpty(isValid)) {
+                sql.append(" and op.is_valid = " + isValid);
             }
 
             if (StringUtils.isNotEmpty(isBidding)) {
                 sql.append("and op.is_bidding = '" + isBidding + "'" );
             }
 
-            if (bidState != null) {
+            if (StringUtils.isNotEmpty(bidState)) {
+                sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and result = '" + bidState + "') ");
             }
 
+            // 最低投标金额查询
             if (StringUtils.isNotEmpty(moneyMin)) {
-                sql.append("and op.expectContractMoney >= '" + moneyMin + "'");
+                sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and match_bid_money >= "
+                    + Double.valueOf(moneyMin) + ") ");
             }
 
+            // 最高投标金额查询
             if (StringUtils.isNotEmpty(moneyMax)) {
-                sql.append("and op.expectContractMoney <= '" + moneyMax + "'");
+                sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and match_bid_money <= "
+                    + Double.valueOf(moneyMax) + ") ");
             }
 
             if (StringUtils.isNotEmpty(signTimeStart)) {
