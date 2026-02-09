@@ -1,9 +1,12 @@
 package com.crm.job.service.sync;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.GrpCustInuseUserlist;
 import com.crm.system.domain.ZqztGrpCustInuseUserlist;
+import com.crm.system.domain.SysArea; // 使用sys_area表的实体类
 import com.crm.system.mapper.GrpCustInuseUserlistMapper;
 import com.crm.system.mapper.ZqztGrpCustInuseUserlistMapper;
+import com.crm.system.mapper.SysAreaMapper; // 使用sys_area表的Mapper
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +33,9 @@ public class GrpCustInuseUserlistSyncJob {
 
     @Resource
     private ZqztGrpCustInuseUserlistMapper zqztGrpCustInuseUserlistMapper; // 主数据源的Mapper
+
+    @Resource
+    private SysAreaMapper sysAreaMapper; // 用于查询sys_area表
 
     /**
      * 同步任务入口
@@ -101,6 +107,39 @@ public class GrpCustInuseUserlistSyncJob {
         // 2. is_valid - 默认为1（有效）
         targetData.setIsValid("1");
 
+        // 3. region_id - 通过region_id值查询sys_area表的bss_code进行匹配，获取name_字段值
+        if (targetData.getRegionId() != null && !targetData.getRegionId().isEmpty()) {
+            String regionName = queryAreaNameByBssCode(targetData.getRegionId());
+            targetData.setRegionId(regionName); // 将name_字段值写入region_id字段
+        }
+
+        // 4. county_id - 通过county_id值查询sys_area表的bss_code进行匹配，获取name_字段值
+        if (targetData.getCountyId() != null && !targetData.getCountyId().isEmpty()) {
+            String countyName = queryAreaNameByBssCode(targetData.getCountyId());
+            targetData.setCountyId(countyName); // 将name_字段值写入county_id字段
+        }
+
         return targetData;
+    }
+
+    /**
+     * 根据BSS_CODE查询sys_area表的name_字段值
+     */
+    private String queryAreaNameByBssCode(String bssCode) {
+        try {
+            // 使用MySQL主数据源查询sys_area表
+            LambdaQueryWrapper<SysArea> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(SysArea::getBssCode, bssCode);
+
+            SysArea sysArea = sysAreaMapper.selectOne(queryWrapper);
+            if (sysArea != null) {
+                return sysArea.getName(); // 返回name_字段值
+            }
+        } catch (Exception e) {
+            log.warn("查询sys_area表时发生错误，bssCode: {}, 错误: {}", bssCode, e.getMessage());
+        }
+
+        // 如果没找到，返回原值或根据业务需求返回默认值
+        return bssCode;
     }
 }
