@@ -3,10 +3,12 @@ package com.crm.job.service.sync;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.GrpCustInuse;
 import com.crm.system.domain.ZqztGrpCustInuse;
-import com.crm.system.domain.grp.GrpGroupInfoDo; // 使用MySQL数据源的实体类
+import com.crm.system.domain.ZqGrpGroupInfo; // 使用zqzt_grp_group_info表的实体类
+import com.crm.system.domain.SysArea; // 使用sys_area表的实体类
 import com.crm.system.mapper.GrpCustInuseMapper; // 使用现有的Oracle数据源Mapper
 import com.crm.system.mapper.ZqztGrpCustInuseMapper; // 使用现有的主数据源Mapper
-import com.crm.system.mapper.grp.GrpGroupInfoMapper; // 使用MySQL数据源的Mapper
+import com.crm.system.mapper.ZqGrpGroupInfoMapper; // 使用zqzt_grp_group_info表的Mapper
+import com.crm.system.mapper.SysAreaMapper; // 使用sys_area表的Mapper
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +37,10 @@ public class GrpCustInuseSyncJob {
     private ZqztGrpCustInuseMapper zqztGrpCustInuseMapper; // 主数据源的Mapper（使用现有的）
 
     @Resource
-    private GrpGroupInfoMapper grpGroupInfoMapper; // 用于查询MySQL数据源的grp_group_info表
+    private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper; // 用于查询zqzt_grp_group_info表
+
+    @Resource
+    private SysAreaMapper sysAreaMapper; // 用于查询sys_area表
 
     /**
      * 同步任务入口
@@ -107,39 +112,72 @@ public class GrpCustInuseSyncJob {
         // 2. is_valid - 默认为1（有效）
         targetData.setIsValid("1");
 
-        // 3. HQ_GRP_CODE_A - 通过GRP_ID_A查询MySQL数据源的grp_group_info表的grp_code字段
+        // 3. HQ_GRP_CODE_A - 通过GRP_ID_A查询zqzt_grp_group_info表的HQ_GRP_CODE字段
         if (oracleData.getGrpIdA() != null) {
-            String hqGrpCodeA = queryGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdA()));
+            String hqGrpCodeA = queryHqGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdA()));
             targetData.setHqGrpCodeA(hqGrpCodeA);
         }
 
-        // 4. HQ_GRP_CODE_B - 通过GRP_ID_B查询MySQL数据源的grp_group_info表的grp_code字段
+        // 4. HQ_GRP_CODE_B - 通过GRP_ID_B查询zqzt_grp_group_info表的HQ_GRP_CODE字段
         if (oracleData.getGrpIdB() != null) {
-            String hqGrpCodeB = queryGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdB()));
+            String hqGrpCodeB = queryHqGrpCodeByGrpId(Long.valueOf(oracleData.getGrpIdB()));
             targetData.setHqGrpCodeB(hqGrpCodeB);
+        }
+
+        // 5. region_id - 通过region_id值查询sys_area表的bss_code进行匹配，获取name_字段值
+        if (targetData.getRegionId() != null && !targetData.getRegionId().isEmpty()) {
+            String regionName = queryAreaNameByBssCode(targetData.getRegionId());
+            targetData.setRegionId(regionName); // 将name_字段值写入region_id字段
+        }
+
+        // 6. county_id - 通过county_id值查询sys_area表的bss_code进行匹配，获取name_字段值
+        if (targetData.getCountyId() != null && !targetData.getCountyId().isEmpty()) {
+            String countyName = queryAreaNameByBssCode(targetData.getCountyId());
+            targetData.setCountyId(countyName); // 将name_字段值写入county_id字段
         }
 
         return targetData;
     }
 
     /**
-     * 根据GRP_ID查询grp_code字段值
+     * 根据GRP_ID查询zqzt_grp_group_info表的HQ_GRP_CODE字段值
      */
-    private String queryGrpCodeByGrpId(Long grpId) {
+    private String queryHqGrpCodeByGrpId(Long grpId) {
         try {
-            // 使用MySQL主数据源查询grp_group_info表
-            LambdaQueryWrapper<GrpGroupInfoDo> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(GrpGroupInfoDo::getGrpId, grpId);
+            // 使用MySQL主数据源查询zqzt_grp_group_info表
+            LambdaQueryWrapper<ZqGrpGroupInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ZqGrpGroupInfo::getGrpId, grpId);
 
-            GrpGroupInfoDo groupInfo = grpGroupInfoMapper.selectOne(queryWrapper);
+            ZqGrpGroupInfo groupInfo = zqGrpGroupInfoMapper.selectOne(queryWrapper);
             if (groupInfo != null) {
-                return groupInfo.getGrpCode(); // 返回grp_code字段值
+                return groupInfo.getHqGrpCode(); // 返回HQ_GRP_CODE字段值
             }
         } catch (Exception e) {
-            log.warn("查询grp_group_info表时发生错误，grpId: {}, 错误: {}", grpId, e.getMessage());
+            log.warn("查询zqzt_grp_group_info表时发生错误，grpId: {}, 错误: {}", grpId, e.getMessage());
         }
 
         // 如果没找到，返回空字符串或根据业务需求返回默认值
         return "";
+    }
+
+    /**
+     * 根据BSS_CODE查询sys_area表的name_字段值
+     */
+    private String queryAreaNameByBssCode(String bssCode) {
+        try {
+            // 使用MySQL主数据源查询sys_area表
+            LambdaQueryWrapper<SysArea> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(SysArea::getBssCode, bssCode);
+
+            SysArea sysArea = sysAreaMapper.selectOne(queryWrapper);
+            if (sysArea != null) {
+                return sysArea.getName(); // 返回name_字段值
+            }
+        } catch (Exception e) {
+            log.warn("查询sys_area表时发生错误，bssCode: {}, 错误: {}", bssCode, e.getMessage());
+        }
+
+        // 如果没找到，返回原值或根据业务需求返回默认值
+        return bssCode;
     }
 }
