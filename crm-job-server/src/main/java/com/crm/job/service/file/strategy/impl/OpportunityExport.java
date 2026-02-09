@@ -135,7 +135,13 @@ public class OpportunityExport extends AbstractExportStrategy {
                 sql.append("and op.develop_flag = '" + developFlag + "'" );
             }
 
-            if (auditStatus != null) {
+            // 审核状态处理
+            if (StringUtils.isNotEmpty(auditStatus)) {
+                if ("01".equals(auditStatus)) {
+                    sql.append(" and op.audit_time is NULL ");
+                } else if ("02".equals(auditStatus)) {
+                    sql.append(" and op.audit_time is not NULL ");
+                }
             }
 
             if (StringUtils.isNotEmpty(createTimeLeft)) {
