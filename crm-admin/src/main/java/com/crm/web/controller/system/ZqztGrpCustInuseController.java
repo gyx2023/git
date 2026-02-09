@@ -2,6 +2,7 @@ package com.crm.web.controller.system;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.crm.common.core.domain.dto.ZqztGrpCustAddUserListReqDTO;
@@ -185,4 +186,14 @@ public class ZqztGrpCustInuseController extends BaseController {
     public R<Void> removeList(@NotEmpty(message = "主键不能为空") @PathVariable String[] inuseIds) {
         return toAjax(iZqztGrpCustInuseService.deleteWithValidByIds(inuseIds, true));
     }
+
+    /**
+     * 查询登录用户地市县分编码
+     */
+    @SaCheckPermission("system:grpCustInuse:getLongUserAreaCode")
+    @GetMapping("/getLongUserAreaCode")
+    public R<Map<String, String>> getLongUserAreaCode() {
+        return R.ok(iZqztGrpCustInuseService.getLongUserAreaCode());
+    }
+
 }

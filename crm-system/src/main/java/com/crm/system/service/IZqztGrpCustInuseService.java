@@ -1,11 +1,9 @@
 package com.crm.system.service;
 
-import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.dto.ZqztGrpCustAddUserListReqDTO;
 import com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO;
 import com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO;
 import com.crm.common.core.domain.dto.ZqztGrpCustReqDTO;
-import com.crm.system.domain.ZqztGrpCustInuse;
 import com.crm.system.domain.vo.ZqztGrpCustInuseVo;
 import com.crm.system.domain.bo.ZqztGrpCustInuseBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -13,6 +11,7 @@ import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 政企主体-实际使用客户（zqzt_grp_cust_inuse）Service接口
@@ -91,4 +90,8 @@ public interface IZqztGrpCustInuseService {
      */
     int addUserList(ZqztGrpCustAddUserListReqDTO reqDTO);
 
+    /**
+     * 查询登录用户地市县分编码
+     */
+    Map<String, String> getLongUserAreaCode();
 }
