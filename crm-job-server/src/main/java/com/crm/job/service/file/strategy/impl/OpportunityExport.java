@@ -39,244 +39,284 @@ public class OpportunityExport extends AbstractExportStrategy {
             log.info("开始执行商机导出任务，任务ID: {}", task.getTaskId());
 
             // 解析请求参数
-            Map<String, Object> requestParams = null;
-            if (task.getRequestParams() != null) {
-                requestParams = JSONUtil.toBean(task.getRequestParams(), Map.class);
-            }
+            Map<String, Object> requestParams = parseRequestParams(task);
 
-            String oppCode = getParamValue(requestParams, "oppCode");
-            String oppName = getParamValue(requestParams, "oppName");
-            String custName = getParamValue(requestParams, "custName");
-            String oppoStates = getParamValue(requestParams, "oppoStates");
-            String oppSource = getParamValue(requestParams, "oppSource");
-            String custManagerName = getParamValue(requestParams, "custManagerName");
-            String areaId = getParamValue(requestParams, "areaId");
-            String developFlag = getParamValue(requestParams, "developFlag");
-            String auditStatus = getParamValue(requestParams, "auditStatus");
-            String createTimeLeft = getParamValue(requestParams, "createTimeLeft");
-            String createTimeRight = getParamValue(requestParams, "createTimeRight");
-            String auditTimeLeft = getParamValue(requestParams, "auditTimeLeft");
-            String auditTimeRight = getParamValue(requestParams, "auditTimeRight");
-            String type1 = getParamValue(requestParams, "type1");
-            String oppoTypes = getParamValue(requestParams, "oppoTypes");
-            String oppoTypesNew = getParamValue(requestParams, "oppoTypesNew");
-            String bgType = getParamValue(requestParams, "bgType");
-            String expectContractMoneyMin = getParamValue(requestParams, "expectContractMoneyMin");
-            String expectContractMoneyMax = getParamValue(requestParams, "expectContractMoneyMax");
-            String isValid = getParamValue(requestParams, "isValid");
-            String isBidding = getParamValue(requestParams, "isBidding");
-            String bidState = getParamValue(requestParams, "bidState");
-            String moneyMin = getParamValue(requestParams, "moneyMin");
-            String moneyMax = getParamValue(requestParams, "moneyMax");
-            String signTimeStart = getParamValue(requestParams, "signTimeStart");
-            String signTimeEnd = getParamValue(requestParams, "signTimeEnd");
-            String oppWinProbMin = getParamValue(requestParams, "oppWinProbMin");
-            String oppWinProbMax = getParamValue(requestParams, "oppWinProbMax");
-            String oppGrowthType = getParamValue(requestParams, "oppGrowthType");
-            String estimatTotalContratAmountMin = getParamValue(requestParams, "estimatTotalContratAmountMin");
-            String estimatTotalContratAmountMax = getParamValue(requestParams, "estimatTotalContratAmountMax");
-
+            // 获取登录用户信息
             LoginUser loginUser = LoginHelper.getLoginUser();
 
-            StringBuffer sql = new StringBuffer();
+            // 构建基础SQL查询
+            StringBuffer sql = buildBaseSql(loginUser);
 
-            sql.append("select * from topp_opportunity op " +
-                "join sys_user su on su.id_ = op.cust_manager_id where" +
-                " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) " +
-                "op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
-                "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
-                "'unicom_xy','30','10','13','15','16','17','18','19','unicom_dqy'," +
-                "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + loginUser.getUserId() + "or " +
-                "op.designer = " + loginUser.getUserId() + "or op.white_list like '%,"+ loginUser.getUserId() +",%' or" +
-                " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + loginUser.getUserId()
-                + "))) "
-            );
+            // 添加查询条件
+            appendAllQueryConditions(sql, requestParams);
 
-            // 判断并决定是否查询条件
-            if (StringUtils.isNotEmpty(oppCode)) {
-                sql.append("and op.opp_code like '%" + oppCode + "%'");
-            }
+            // 添加排序条件
+            sql.append(" order by op.id_ desc");
 
-            if (StringUtils.isNotEmpty(oppName)) {
-                sql.append("and op.opp_name like '%" + oppName + "%'");
-            }
-
-            if (StringUtils.isNotEmpty(custName)) {
-                sql.append("and op.cust_name like '%" + custName + "%'");
-            }
-
-            // 商机状态处理，支持多选
-            if (StringUtils.isNotEmpty(oppoStates)) {
-                if (oppoStates.contains(",")) {
-                    String[] states = oppoStates.split(",");
-                    sql.append(" and ( 1=2");
-                    for (String state : states) {
-                        sql.append(" or op.opp_states = '" + state.trim() + "' ");
-                    }
-                    sql.append(" ) ");
-                } else {
-                    sql.append(" and op.opp_states = '" + oppoStates.trim() + "' ");
-                }
-            }
-
-            if (StringUtils.isNotEmpty(oppSource)) {
-                sql.append("and op.opp_source = '" + oppSource + "'" );
-            }
-
-            if (StringUtils.isNotEmpty(custManagerName)){
-                sql.append("and op.name like '%" + custManagerName + "%'");
-            }
-
-            if (StringUtils.isNotEmpty(areaId)) {
-                sql.append("and op.opp_area_id = '" + areaId + "'");
-            }
-
-            if (StringUtils.isNotEmpty(developFlag)) {
-                sql.append("and op.develop_flag = '" + developFlag + "'" );
-            }
-
-            // 审核状态处理
-            if (StringUtils.isNotEmpty(auditStatus)) {
-                if ("01".equals(auditStatus)) {
-                    sql.append(" and op.audit_time is NULL ");
-                } else if ("02".equals(auditStatus)) {
-                    sql.append(" and op.audit_time is not NULL ");
-                }
-            }
-
-            if (StringUtils.isNotEmpty(createTimeLeft)) {
-                sql.append("and op.create_time >= '" + createTimeLeft + "'");
-            }
-
-            if (StringUtils.isNotEmpty(createTimeRight)) {
-                sql.append("and op.create_time <= '" + createTimeRight + "'");
-            }
-
-            if (StringUtils.isNotEmpty(auditTimeLeft)) {
-                sql.append("and op.audit_time >= '" + auditTimeLeft + "'");
-            }
-
-            if (StringUtils.isNotEmpty(auditTimeRight)) {
-                sql.append("and op.audit_time <= '" + auditTimeRight + "'");
-            }
-
-            // 一级行业处理，支持多选
-            sql.append(" and ( 1=2");
-            // 一级行业
-            if (StringUtils.isNotEmpty(type1)) {
-                if (type1.contains(",")) {
-                    String[] strings = type1.split(",");
-                    sql.append(" or ( 1=2");
-                    for (String string : strings) {
-                        sql.append(" or op.unicom_type ='" + string.trim() + "' ");
-                    }
-                    sql.append(" ) ");
-                } else {
-                    // 如果二级行业根本没选择
-                    sql.append(" or op.unicom_type ='" + type1.trim() + "' ");
-                }
-            } else {
-                sql.append(" or 1=2 ");
-            }
-
-            if (sql.toString().endsWith("( 1=2 or 1=2 ")) {
-                sql.append(" or 1=1 )");
-            } else {
-                sql.append(" or 1=2 )");
-            }
-
-            // 商机类型处理，支持多选
-            if (StringUtils.isNotEmpty(oppoTypesNew) && StringUtils.isNotEmpty(oppoTypes)) {
-                oppoTypes += "," + oppoTypesNew;
-            } else if (StringUtils.isEmpty(oppoTypes) && StringUtils.isNotEmpty(oppoTypesNew)) {
-                oppoTypes = oppoTypesNew;
-            }
-
-            // 构建商机类型查询条件
-            if (StringUtils.isNotEmpty(oppoTypes)) {
-                if (oppoTypes.contains(",")) {
-                    String[] types = oppoTypes.split(",");
-                    sql.append(" and ( 1=2");
-                    for (String type : types) {
-                        sql.append(" or op.opp_type = '" + type + "' or op.opp_include_type like '%," + type + ",%' ");
-                    }
-                    sql.append(" ) ");
-                } else {
-                    sql.append(" and (op.opp_type = '" + oppoTypes + "' or op.opp_include_type like '%," + oppoTypes + ",%')");
-                }
-            }
-
-            if (StringUtils.isNotEmpty(bgType)) {
-                sql.append("and op.bg_type = '" + bgType + "'" );
-            }
-
-            if (StringUtils.isNotEmpty(expectContractMoneyMin)){
-                sql.append("and op.expect_contract_money >= " + Double.valueOf(expectContractMoneyMin));
-            }
-
-            if (StringUtils.isNotEmpty(expectContractMoneyMax)){
-                sql.append("and op.expect_contract_money <= " + Double.valueOf(expectContractMoneyMax));
-            }
-
-            // 是否有效查询
-            if (StringUtils.isNotEmpty(isValid)) {
-                sql.append(" and op.is_valid = " + isValid);
-            }
-
-            if (StringUtils.isNotEmpty(isBidding)) {
-                sql.append("and op.is_bidding = '" + isBidding + "'" );
-            }
-
-            if (StringUtils.isNotEmpty(bidState)) {
-                sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and result = '" + bidState + "') ");
-            }
-
-            // 最低投标金额查询
-            if (StringUtils.isNotEmpty(moneyMin)) {
-                sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and match_bid_money >= "
-                    + Double.valueOf(moneyMin) + ") ");
-            }
-
-            // 最高投标金额查询
-            if (StringUtils.isNotEmpty(moneyMax)) {
-                sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and match_bid_money <= "
-                    + Double.valueOf(moneyMax) + ") ");
-            }
-
-            if (StringUtils.isNotEmpty(signTimeStart)) {
-                sql.append("and op.sign_time >= '" + signTimeStart + "'");
-            }
-
-            if (StringUtils.isNotEmpty(signTimeEnd)) {
-                sql.append("and op.sign_time <= '" + signTimeEnd + "'");
-            }
-
-            if (StringUtils.isNotEmpty(oppWinProbMin) && StringUtils.isNotEmpty(oppWinProbMax)) {
-                String oppWinProb = oppWinProbMin + "%-" + oppWinProbMax+"%";
-                sql.append("and op.opp_win_prob = '" + oppWinProb + "'");
-            }
-
-            if (StringUtils.isNotEmpty(oppGrowthType)) {
-                sql.append("and op.opp_growth_type = '" + oppGrowthType + "'" );
-            }
-
-            if (StringUtils.isNotEmpty(estimatTotalContratAmountMin)) {
-                sql.append("and op.estimat_total_contrat_amount >= '" + estimatTotalContratAmountMin + "'");
-            }
-
-            if (StringUtils.isNotEmpty(estimatTotalContratAmountMax)) {
-                sql.append("and op.estimat_total_contrat_amount <= '" + estimatTotalContratAmountMax + "'");
-            }
-
-
-
-            sql.append(" order by op.id_ desc ok");
             return true;
 
         } catch (Exception e) {
             log.error("商机信息导出失败，任务ID: {}", task.getTaskId(), e);
             task.setRemark("导出失败: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * 解析请求参数
+     */
+    private Map<String, Object> parseRequestParams(FileAsyncTaskDo task) {
+        if (task.getRequestParams() != null) {
+            return JSONUtil.toBean(task.getRequestParams(), Map.class);
+        }
+        return null;
+    }
+
+    /**
+     * 构建基础SQL查询语句
+     */
+    private StringBuffer buildBaseSql(LoginUser loginUser) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("select * from topp_opportunity op " +
+            "join sys_user su on su.id_ = op.cust_manager_id where" +
+            " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) " +
+            "op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
+            "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
+            "'unicom_xy','30','10','13','15','16','17','18','19','unicom_dqy'," +
+            "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + loginUser.getUserId() + "or " +
+            "op.designer = " + loginUser.getUserId() + "or op.white_list like '%,"+ loginUser.getUserId() +",%' or" +
+            " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + loginUser.getUserId()
+            + "))) ");
+        return sql;
+    }
+
+    /**
+     * 添加所有查询条件（按原代码顺序排列）
+     */
+    private void appendAllQueryConditions(StringBuffer sql, Map<String, Object> params) {
+        // 1. 商机编码查询
+        String oppCode = getParamValue(params, "oppCode");
+        if (StringUtils.isNotEmpty(oppCode)) {
+            sql.append("and op.opp_code like '%" + oppCode + "%'");
+        }
+
+        // 2. 商机名称查询
+        String oppName = getParamValue(params, "oppName");
+        if (StringUtils.isNotEmpty(oppName)) {
+            sql.append("and op.opp_name like '%" + oppName + "%'");
+        }
+
+        // 3. 客户名称查询
+        String custName = getParamValue(params, "custName");
+        if (StringUtils.isNotEmpty(custName)) {
+            sql.append("and op.cust_name like '%" + custName + "%'");
+        }
+
+        // 4. 商机状态查询（支持多选）
+        String oppoStates = getParamValue(params, "oppoStates");
+        if (StringUtils.isNotEmpty(oppoStates)) {
+            if (oppoStates.contains(",")) {
+                String[] states = oppoStates.split(",");
+                sql.append(" and ( 1=2");
+                for (String state : states) {
+                    sql.append(" or op.opp_states = '" + state.trim() + "' ");
+                }
+                sql.append(" ) ");
+            } else {
+                sql.append(" and op.opp_states = '" + oppoStates.trim() + "' ");
+            }
+        }
+
+        // 5. 商机来源查询
+        String oppSource = getParamValue(params, "oppSource");
+        if (StringUtils.isNotEmpty(oppSource)) {
+            sql.append("and op.opp_source = '" + oppSource + "'");
+        }
+
+        // 6. 客户经理名称查询
+        String custManagerName = getParamValue(params, "custManagerName");
+        if (StringUtils.isNotEmpty(custManagerName)) {
+            sql.append("and op.name like '%" + custManagerName + "%'");
+        }
+
+        // 7. 区域ID查询
+        String areaId = getParamValue(params, "areaId");
+        if (StringUtils.isNotEmpty(areaId)) {
+            sql.append("and op.opp_area_id = '" + areaId + "'");
+        }
+
+        // 8. 开发标识查询
+        String developFlag = getParamValue(params, "developFlag");
+        if (StringUtils.isNotEmpty(developFlag)) {
+            sql.append("and op.develop_flag = '" + developFlag + "'");
+        }
+
+        // 9. 审核状态查询
+        String auditStatus = getParamValue(params, "auditStatus");
+        if (StringUtils.isNotEmpty(auditStatus)) {
+            if ("01".equals(auditStatus)) {
+                sql.append(" and op.audit_time is NULL ");
+            } else if ("02".equals(auditStatus)) {
+                sql.append(" and op.audit_time is not NULL ");
+            }
+        }
+
+        // 10. 创建时间左边界查询
+        String createTimeLeft = getParamValue(params, "createTimeLeft");
+        if (StringUtils.isNotEmpty(createTimeLeft)) {
+            sql.append("and op.create_time >= '" + createTimeLeft + "'");
+        }
+
+        // 11. 创建时间右边界查询
+        String createTimeRight = getParamValue(params, "createTimeRight");
+        if (StringUtils.isNotEmpty(createTimeRight)) {
+            sql.append("and op.create_time <= '" + createTimeRight + "'");
+        }
+
+        // 12. 审核时间左边界查询
+        String auditTimeLeft = getParamValue(params, "auditTimeLeft");
+        if (StringUtils.isNotEmpty(auditTimeLeft)) {
+            sql.append("and op.audit_time >= '" + auditTimeLeft + "'");
+        }
+
+        // 13. 审核时间右边界查询
+        String auditTimeRight = getParamValue(params, "auditTimeRight");
+        if (StringUtils.isNotEmpty(auditTimeRight)) {
+            sql.append("and op.audit_time <= '" + auditTimeRight + "'");
+        }
+
+        // 14. 一级行业查询（支持多选）
+        String type1 = getParamValue(params, "type1");
+        sql.append(" and ( 1=2");
+        if (StringUtils.isNotEmpty(type1)) {
+            if (type1.contains(",")) {
+                String[] strings = type1.split(",");
+                sql.append(" or ( 1=2");
+                for (String string : strings) {
+                    sql.append(" or op.unicom_type ='" + string.trim() + "' ");
+                }
+                sql.append(" ) ");
+            } else {
+                sql.append(" or op.unicom_type ='" + type1.trim() + "' ");
+            }
+        } else {
+            sql.append(" or 1=2 ");
+        }
+
+        if (sql.toString().endsWith("( 1=2 or 1=2 ")) {
+            sql.append(" or 1=1 )");
+        } else {
+            sql.append(" or 1=2 )");
+        }
+
+        // 15. 商机类型处理（支持多选）
+        String oppoTypes = getParamValue(params, "oppoTypes");
+        String oppoTypesNew = getParamValue(params, "oppoTypesNew");
+        if (StringUtils.isNotEmpty(oppoTypesNew) && StringUtils.isNotEmpty(oppoTypes)) {
+            oppoTypes += "," + oppoTypesNew;
+        } else if (StringUtils.isEmpty(oppoTypes) && StringUtils.isNotEmpty(oppoTypesNew)) {
+            oppoTypes = oppoTypesNew;
+        }
+
+        if (StringUtils.isNotEmpty(oppoTypes)) {
+            if (oppoTypes.contains(",")) {
+                String[] types = oppoTypes.split(",");
+                sql.append(" and ( 1=2");
+                for (String type : types) {
+                    sql.append(" or op.opp_type = '" + type + "' or op.opp_include_type like '%," + type + ",%' ");
+                }
+                sql.append(" ) ");
+            } else {
+                sql.append(" and (op.opp_type = '" + oppoTypes + "' or op.opp_include_type like '%," + oppoTypes + ",%')");
+            }
+        }
+
+        // 16. BG类型查询
+        String bgType = getParamValue(params, "bgType");
+        if (StringUtils.isNotEmpty(bgType)) {
+            sql.append("and op.bg_type = '" + bgType + "'");
+        }
+
+        // 17. 预期合同金额最小值查询
+        String expectContractMoneyMin = getParamValue(params, "expectContractMoneyMin");
+        if (StringUtils.isNotEmpty(expectContractMoneyMin)) {
+            sql.append("and op.expect_contract_money >= " + Double.valueOf(expectContractMoneyMin));
+        }
+
+        // 18. 预期合同金额最大值查询
+        String expectContractMoneyMax = getParamValue(params, "expectContractMoneyMax");
+        if (StringUtils.isNotEmpty(expectContractMoneyMax)) {
+            sql.append("and op.expect_contract_money <= " + Double.valueOf(expectContractMoneyMax));
+        }
+
+        // 19. 是否有效查询
+        String isValid = getParamValue(params, "isValid");
+        if (StringUtils.isNotEmpty(isValid)) {
+            sql.append(" and op.is_valid = " + isValid);
+        }
+
+        // 20. 是否招投标查询
+        String isBidding = getParamValue(params, "isBidding");
+        if (StringUtils.isNotEmpty(isBidding)) {
+            sql.append("and op.is_bidding = '" + isBidding + "'");
+        }
+
+        // 21. 投标状态查询
+        String bidState = getParamValue(params, "bidState");
+        if (StringUtils.isNotEmpty(bidState)) {
+            sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and result = '" + bidState + "') ");
+        }
+
+        // 22. 最低投标金额查询
+        String moneyMin = getParamValue(params, "moneyMin");
+        if (StringUtils.isNotEmpty(moneyMin)) {
+            sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and match_bid_money >= "
+                + Double.valueOf(moneyMin) + ") ");
+        }
+
+        // 23. 最高投标金额查询
+        String moneyMax = getParamValue(params, "moneyMax");
+        if (StringUtils.isNotEmpty(moneyMax)) {
+            sql.append(" and EXISTS (select 1 from topp_bid b where op.bid_id = b.id_ and match_bid_money <= "
+                + Double.valueOf(moneyMax) + ") ");
+        }
+
+        // 24. 签约时间开始查询
+        String signTimeStart = getParamValue(params, "signTimeStart");
+        if (StringUtils.isNotEmpty(signTimeStart)) {
+            sql.append("and op.sign_time >= '" + signTimeStart + "'");
+        }
+
+        // 25. 签约时间结束查询
+        String signTimeEnd = getParamValue(params, "signTimeEnd");
+        if (StringUtils.isNotEmpty(signTimeEnd)) {
+            sql.append("and op.sign_time <= '" + signTimeEnd + "'");
+        }
+
+        // 26. 商机赢率范围查询
+        String oppWinProbMin = getParamValue(params, "oppWinProbMin");
+        String oppWinProbMax = getParamValue(params, "oppWinProbMax");
+        if (StringUtils.isNotEmpty(oppWinProbMin) && StringUtils.isNotEmpty(oppWinProbMax)) {
+            String oppWinProb = oppWinProbMin + "%-" + oppWinProbMax + "%";
+            sql.append("and op.opp_win_prob = '" + oppWinProb + "'");
+        }
+
+        // 27. 商机增长类型查询
+        String oppGrowthType = getParamValue(params, "oppGrowthType");
+        if (StringUtils.isNotEmpty(oppGrowthType)) {
+            sql.append("and op.opp_growth_type = '" + oppGrowthType + "'");
+        }
+
+        // 28. 预估总合同金额最小值查询
+        String estimatTotalContratAmountMin = getParamValue(params, "estimatTotalContratAmountMin");
+        if (StringUtils.isNotEmpty(estimatTotalContratAmountMin)) {
+            sql.append("and op.estimat_total_contrat_amount >= '" + estimatTotalContratAmountMin + "'");
+        }
+
+        // 29. 预估总合同金额最大值查询
+        String estimatTotalContratAmountMax = getParamValue(params, "estimatTotalContratAmountMax");
+        if (StringUtils.isNotEmpty(estimatTotalContratAmountMax)) {
+            sql.append("and op.estimat_total_contrat_amount <= '" + estimatTotalContratAmountMax + "'");
         }
     }
 
