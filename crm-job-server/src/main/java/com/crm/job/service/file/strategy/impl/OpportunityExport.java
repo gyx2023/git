@@ -19,6 +19,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -98,23 +101,27 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 定义原始中文文件名
             String originalFileName = "商机信息导出_" + System.currentTimeMillis() + ".xlsx";
 
+            // 保存到本地指定目录
+            String localDownloadPath = saveToLocal(tempFile, originalFileName);
+
             // 上传文件到OSS
-            SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
-
-            // 验证上传是否成功
-            if (upload == null) {
-                task.setRemark("文件上传失败");
-                tempFile.delete();
-                return false;
-            }
-
-            // 删除临时文件
-            tempFile.delete();
+//            SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
+//
+//            // 验证上传是否成功
+//            if (upload == null) {
+//                task.setRemark("文件上传失败");
+//                tempFile.delete();
+//                return false;
+//            }
+//
+//            // 删除临时文件
+//            tempFile.delete();
 
             // 设置文件信息
             task.setFileName(originalFileName);
-            task.setFileUrl(upload.getUrl());
-            task.setRemark("商机信息导出成功");
+//            task.setFileUrl(upload.getUrl());
+            task.setFileUrl("file:///" + localDownloadPath); // 本地文件路径
+            task.setRemark("商机信息导出成功，文件保存至: " + localDownloadPath);
             return true;
 
         } catch (Exception e) {
@@ -388,7 +395,19 @@ public class OpportunityExport extends AbstractExportStrategy {
             .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
             .build()) {
 
-            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
+            // 自定义表头
+            String[] customHeaders = {
+                "商机编号", "商机名称", "业务类型（主）", "业务类型（次）", "所属一级行业", "商机来源", "预计合同金额",
+                "月收入贡献", "预估合同周期", "是否招投标", "集团客户编号", "集团客户名称", "创建时间", "商机状态", "商机创建人姓名",
+                "商机创建人电话", "商机创建人归属地市", "商机创建人归属区县", "商机创建人归属部门", "商机客户经理姓名", "商机客户经理电话",
+                "商机客户经理归属地市", "商机客户经理归属区县", "商机客户经理归属部门", "商机支撑经理姓名", "商机支撑经理电话",
+                "商机支撑经理归属地市", "商机支撑经理归属区县", "商机支撑经理归属部门", "是否有效", "主要产品/解决方案", "项目来源分类",
+                "商机签约概率", "预计签约时间", "商机增长类型", "绑定合同", "电子表单"
+            };
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息")
+                .head(generateCustomHead(customHeaders))
+                .build();
 
             // 分批读取并写入数据
             int pageSize = 1000;
@@ -416,6 +435,56 @@ public class OpportunityExport extends AbstractExportStrategy {
             }
         }
         return true;
+    }
+
+    /**
+     * 生成自定义表头
+     * @param headers 表头数组
+     * @return EasyExcel所需的表头格式
+     */
+    private List<List<String>> generateCustomHead(String[] headers) {
+        List<List<String>> head = new ArrayList<>();
+        for (String header : headers) {
+            List<String> headItem = new ArrayList<>();
+            headItem.add(header);
+            head.add(headItem);
+        }
+        return head;
+    }
+
+    /**
+     * 保存文件到本地目录
+     * @param tempFile 临时文件
+     * @param fileName 目标文件名
+     * @return 保存的文件路径
+     */
+    private String saveToLocal(File tempFile, String fileName) throws Exception {
+        // 配置本地下载
+        String downloadDir = "C:\\Users\\FBODC\\Desktop";
+
+        // 创建目录
+        File downloadDirectory = new File(downloadDir);
+        if (!downloadDirectory.exists()) {
+            downloadDirectory.mkdirs();
+        }
+
+        // 目标文件路径
+        String targetPath = downloadDir + File.separator + fileName;
+        File targetFile = new File(targetPath);
+
+        // 复制文件
+        try (FileInputStream fis = new FileInputStream(tempFile);
+             FileOutputStream fos = new FileOutputStream(targetFile)) {
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = fis.read(buffer)) > 0) {
+                fos.write(buffer, 0, length);
+            }
+        }
+
+        log.info("文件已保存到本地: {}", targetPath);
+        return targetPath;
     }
 
     /**
