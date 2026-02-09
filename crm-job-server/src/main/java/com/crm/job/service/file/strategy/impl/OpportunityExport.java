@@ -11,9 +11,12 @@ import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.topp.OldOpportunityVO;
 import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
+import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
+import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,9 +25,7 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 商机信息导出策略实现类
@@ -43,6 +44,12 @@ public class OpportunityExport extends AbstractExportStrategy {
     @Resource
     private ToppOpportunityMapper toppOpportunityMapper;
 
+    @Resource
+    private DwdRepSysPersonDMapper dwdRepSysPersonDMapper;
+
+    @Resource
+    private IDwdRepSysPersonDService dwdRepSysPersonDService;
+
     @Override
     public String getBusinessType() {
         return "opportunity_export";
@@ -58,7 +65,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
             // 获取登录用户信息
             Long userId = task.getCreateUserId();
-            if (userId == null){
+            if (userId == null) {
                 task.setRemark("任务缺少创建用户信息");
                 return false;
             }
@@ -87,7 +94,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                     return false;
                 }
             } catch (Exception e) {
-                task.setRemark("流式导出异常" );
+                task.setRemark("流式导出异常");
                 log.error("流式导出异常: " + e.getMessage());
                 tempFile.delete();
                 return false;
@@ -154,7 +161,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
             "'unicom_xy','30','10','13','15','16','17','18','19','unicom_dqy'," +
             "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + userId + " or " +
-            "op.designer = " + userId + " or op.white_list like '%,"+ userId +",%' or" +
+            "op.designer = " + userId + " or op.white_list like '%," + userId + ",%' or" +
             " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + userId
             + "))) ");
         return sql;
@@ -416,6 +423,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                     break;
                 }
 
+                // 补充客户经理和创建人地区信息
+                enrichAreaInfo(batchData);
+
                 // 转换DTO为VO
                 List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
 
@@ -429,6 +439,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 保存文件到本地目录
+     *
      * @param tempFile 临时文件
      * @param fileName 目标文件名
      * @return 保存的文件路径
@@ -463,8 +474,83 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
+     * 补充商机客户经理和创建人地区信息
+     * 查询并填充客户经理的地市和区县信息
+     *
+     * @param batchData 批量商机数据
+     */
+    private void enrichAreaInfo(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        // 收集需要查询的人员信息
+        List<Map<String, String>> personInfos = new ArrayList<>();
+        Set<String> uniquePersons = new HashSet<>();
+
+        for (OldOpportunityDTO dto : batchData) {
+            if (StringUtils.isNotEmpty(dto.getCustManagerName()) &&
+                StringUtils.isNotEmpty(dto.getCustManagerTel())) {
+                String key = dto.getCustManagerName() + "_" + dto.getCustManagerTel();
+                if (!uniquePersons.contains(key)) {
+                    Map<String, String> personInfo = new HashMap<>();
+                    personInfo.put("fullName", dto.getCustManagerName());
+                    personInfo.put("mobile", dto.getCustManagerTel());
+                    personInfos.add(personInfo);
+                    uniquePersons.add(key);
+                }
+            }
+        }
+
+        // 查询客户经理地区信息
+        if (!personInfos.isEmpty()) {
+            try {
+                log.debug("开始查询客户经理地区信息，需要查询人数: {}", personInfos.size());
+                List<DwdRepSysPersonDVo> personAreaInfos = dwdRepSysPersonDService.selectAreaAndCounty(personInfos);
+
+                log.debug("查询到的客户经理地区信息数量: {}", personAreaInfos != null ? personAreaInfos.size() : 0);
+
+                // 构建姓名电话到地区信息的映射
+                Map<String, DwdRepSysPersonDVo> personAreaMap = new HashMap<>();
+                for (DwdRepSysPersonDVo personInfo : personAreaInfos) {
+                    String key = personInfo.getFullName() + "_" + personInfo.getMobile();
+                    personAreaMap.put(key, personInfo);
+                }
+
+                // 填充客户经理地区信息到DTO
+                int filledCount = 0;
+                for (OldOpportunityDTO dto : batchData) {
+                    // 填充客户经理地区信息
+                    String custManagerKey = dto.getCustManagerName() + "_" + dto.getCustManagerTel();
+                    DwdRepSysPersonDVo custManagerInfo = personAreaMap.get(custManagerKey);
+                    if (custManagerInfo != null) {
+                        dto.setCustManagerCity(custManagerInfo.getAreaName());
+                        dto.setCustManagerCounty(custManagerInfo.getCountyName());
+                        filledCount++;
+                    }
+                }
+
+                log.debug("成功填充客户经理地区信息的记录数: {}", filledCount);
+            } catch (Exception e) {
+                log.warn("查询客户经理地区信息失败: {}", e.getMessage(), e);
+            }
+        }
+
+        // 将客户经理的信息复制给创建人
+        for (OldOpportunityDTO dto : batchData) {
+            dto.setCreatorName(dto.getCustManagerName());
+            dto.setCreatorPhone(dto.getCustManagerTel());
+            dto.setCreatorCity(dto.getCustManagerCity());
+            dto.setCreatorCounty(dto.getCustManagerCounty());
+        }
+
+        log.debug("已完成客户经理信息查询，处理记录数: {}", batchData.size());
+    }
+
+    /**
      * 从参数Map中获取指定参数的值
-     * @param params 参数Map
+     *
+     * @param params    参数Map
      * @param paramName 参数名
      * @return 参数值
      */

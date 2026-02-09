@@ -172,6 +172,47 @@
         <result property="isValid" column="is_valid"/>
     </resultMap>
 
+    <!-- OldOpportunityDTO的resultMap映射 -->
+    <resultMap id="OldOpportunityDTOResult" type="com.crm.common.core.domain.dto.OldOpportunityDTO">
+        <result property="oppCode" column="opp_code"/>
+        <result property="oppName" column="opp_name"/>
+        <result property="oppType" column="opp_type"/>
+        <result property="oppIncludeType" column="opp_include_type"/>
+        <result property="unicomType" column="unicom_type"/>
+        <result property="oppSource" column="opp_source"/>
+        <result property="expectContractMoney" column="expect_contract_money"/>
+        <result property="monthIncomeContribution" column="month_income_contribution"/>
+        <result property="contractMonth" column="contract_month"/>
+        <result property="isBidding" column="is_bidding"/>
+        <result property="custNo" column="cust_no"/>
+        <result property="custName" column="cust_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="oppoState" column="oppo_state"/>
+        <result property="creatorName" column="creator_name"/>
+        <result property="creatorPhone" column="creator_phone"/>
+        <result property="creatorCity" column="creator_city"/>
+        <result property="creatorCounty" column="creator_county"/>
+        <result property="creatorOrg" column="creator_org"/>
+        <result property="custManagerName" column="cust_manager_name"/>
+        <result property="custManagerTel" column="cust_manager_tel"/>
+        <result property="custManagerCity" column="cust_manager_city"/>
+        <result property="custManagerCounty" column="cust_manager_county"/>
+        <result property="custManagerOrg" column="cust_manager_org"/>
+        <result property="designerName" column="designer_name"/>
+        <result property="designerPhone" column="designer_phone"/>
+        <result property="designerCity" column="designer_city"/>
+        <result property="designerCounty" column="designer_county"/>
+        <result property="designerOrg" column="designer_org"/>
+        <result property="isValid" column="is_valid"/>
+        <result property="mainProduct" column="main_product"/>
+        <result property="oppDataReform" column="opp_data_reform"/>
+        <result property="oppWinProb" column="opp_win_prob"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="oppGrowthType" column="opp_growth_type"/>
+        <result property="contractNames" column="contract_names"/>
+        <result property="eformNames" column="eform_names"/>
+    </resultMap>
+
     <!-- 核心修改：SQL改为单行无换行，消除解析敏感点 -->
     <select id="selectToppOpportunity" resultMap="resultOpp">
         SELECT op.opp_code,
@@ -262,6 +303,9 @@
 
     </select>
 
-
+    <!-- 完整商机导出数据查询 -->
+    <select id="selectOldOppoExportData" resultMap="OldOpportunityDTOResult">
+        ${sql}
+    </select>
 
 </mapper>

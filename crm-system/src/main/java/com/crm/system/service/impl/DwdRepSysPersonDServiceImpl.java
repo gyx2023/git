@@ -336,4 +336,14 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
             }
         }
     }
+
+    /**
+     * 批量根据姓名和电话查询人员地区信息
+     * @param personInfos 人员信息列表 [{fullName: "张三", mobile: "13800138000"}, ...]
+     * @return 人员地区信息列表
+     */
+    @Override
+    public List<DwdRepSysPersonDVo> selectAreaAndCounty(List<Map<String, String>> personInfos) {
+        return baseMapper.selectAreaAndCounty(personInfos);
+    }
 }
