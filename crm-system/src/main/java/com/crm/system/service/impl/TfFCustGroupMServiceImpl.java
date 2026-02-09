@@ -1,26 +1,24 @@
-package com.crm.job.service.grp.impl;
+package com.crm.system.service.impl;
 
 import com.crm.system.domain.grp.TfFCustGroupMDo;
 import com.crm.system.mapper.grp.TfFCustGroupMMapper;
-import com.crm.job.service.grp.TfFCustGroupMService;
+import com.crm.system.service.ITfFCustGroupMService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
 
-/**
- * 客户集团信息服务实现类
- *
- * @author crm
- */
-@Slf4j
 @Service
-public class TfFCustGroupMServiceImpl implements TfFCustGroupMService {
+@Slf4j
+public class TfFCustGroupMServiceImpl implements ITfFCustGroupMService {
 
     @Resource
     private TfFCustGroupMMapper tfFCustGroupMMapper;
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -44,5 +42,13 @@ public class TfFCustGroupMServiceImpl implements TfFCustGroupMService {
         int result = tfFCustGroupMMapper.delete(null);
         log.info("清空tf_f_cust_group_m表数据完成，删除数量: {}", result);
         return result;
+    }
+
+    @Override
+    public TfFCustGroupMDo selectByGroupId(String groupId) {
+        LambdaQueryWrapper<TfFCustGroupMDo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TfFCustGroupMDo::getGroupId, groupId);
+        List<TfFCustGroupMDo> list = tfFCustGroupMMapper.selectList(queryWrapper);
+        return list != null && !list.isEmpty() ? list.get(0) : null;
     }
 }

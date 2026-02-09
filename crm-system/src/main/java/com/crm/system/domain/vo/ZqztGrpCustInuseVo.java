@@ -10,10 +10,10 @@ import java.util.Date;
 
 
 /**
- * 政企主体-实际使用客户（zqzt_grp_cust_inuse）视图对象 zqzt_grp_cust_inuse
+ * 合同和关联客户ID视图对象 zqzt_grp_cust_inuse
  *
  * @author crm
- * @date 2026-01-20
+ * @date 2026-01-19
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -22,16 +22,15 @@ public class ZqztGrpCustInuseVo {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 关系编码（主键）
+     * 关系编码ZQ1904150001
      */
-    @ExcelProperty(value = "关系编码", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "主=键")
+    @ExcelProperty(value = "关系编码ZQ1904150001")
     private String inuseId;
 
     /**
-     * 合同编号，关联zqzt_grp_contract_info.INUSE_CONTRACT_ID
+     * 合同编号，对应GRP_CONTRACT_INFO.INUSE_CONTRACT_ID
      */
-    @ExcelProperty(value = "合同编号，关联zqzt_grp_contract_info.INUSE_CONTRACT_ID")
+    @ExcelProperty(value = "合同编号，对应GRP_CONTRACT_INFO.INUSE_CONTRACT_ID")
     private String contractId;
 
     /**
@@ -41,59 +40,52 @@ public class ZqztGrpCustInuseVo {
     private String contractName;
 
     /**
-     * 合同签约集团ID
+     * 合同签约的集团ID
      */
-    @ExcelProperty(value = "合同签约集团ID")
-    private Integer grpIdA;
+    @ExcelProperty(value = "合同签约的集团ID")
+    private Long grpIdA;
 
     /**
-     * 客户类型：1000=非收入划转使用客户、1001=收入划转使用客户、1002=收入归集客户
+     * 合同签约的15位集团编码
      */
-    @ExcelProperty(value = "客户类型：1000=非收入划转使用客户、1001=收入划转使用客户、1002=收入归集客户")
-    private Integer relation;
+    @ExcelProperty(value = "合同签约的15位集团编码")
+    private String grpCodeA;
+
+    /**
+     * 合同签约的总部集团编码
+     */
+    @ExcelProperty(value = "合同签约的总部集团编码")
+    private String hqGrpCodeA;
+
+    /**
+     * 合同签约的集团名称
+     */
+    @ExcelProperty(value = "合同签约的集团名称")
+    private String grpNameA;
+
+    /**
+     * 关联客户类型：1000：使用客户（非收入划转）1001：使用客户（收入划转）1002：收入归集客户
+     */
+    @ExcelProperty(value = "关联客户类型：1000：使用客户", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(readConverterExp = "非=收入划转")
+    private Long relation;
 
     /**
      * 关联客户集团ID
      */
     @ExcelProperty(value = "关联客户集团ID")
-    private Integer grpIdB;
+    private Long grpIdB;
 
     /**
-     * 是否有效：1=有效、0=无效
+     * 关联客户集团15位编码
      */
-    @ExcelProperty(value = "是否有效：1=有效、0=无效")
-    private String isValid;
-
-    /**
-     * 签约集团15位编码
-     */
-    @ExcelProperty(value = "签约集团15位编码")
-    private String grpCodeA;
-
-    /**
-     * 签约集团总部编码（关联grp_group_info）
-     */
-    @ExcelProperty(value = "签约集团总部编码", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "关=联grp_group_info")
-    private String hqGrpCodeA;
-
-    /**
-     * 签约集团名称
-     */
-    @ExcelProperty(value = "签约集团名称")
-    private String grpNameA;
-
-    /**
-     * 关联客户15位编码
-     */
-    @ExcelProperty(value = "关联客户15位编码")
+    @ExcelProperty(value = "关联客户集团15位编码")
     private String grpCodeB;
 
     /**
-     * 关联客户总部编码（关联grp_group_info）
+     * 关联客户的总部集团编码
      */
-    @ExcelProperty(value = "关联客户总部编码", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "关=联grp_group_info")
+    @ExcelProperty(value = "关联客户的总部集团编码")
     private String hqGrpCodeB;
 
     /**
@@ -103,29 +95,34 @@ public class ZqztGrpCustInuseVo {
     private String grpNameB;
 
     /**
-     * 地市标识（如Z）
+     * 地市
      */
-    @ExcelProperty(value = "地市标识", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "如=Z")
+    @ExcelProperty(value = "地市")
     private String regionId;
 
     /**
-     * 所属业务市县编码
+     * 所属业务市县
      */
-    @ExcelProperty(value = "所属业务市县编码")
+    @ExcelProperty(value = "所属业务市县")
     private String countyId;
 
     /**
-     * 受理操作员ID
+     * 受理操作员
      */
-    @ExcelProperty(value = "受理操作员ID")
+    @ExcelProperty(value = "受理操作员")
     private String operatorId;
 
     /**
-     * 备注信息
+     * 备注
      */
-    @ExcelProperty(value = "备注信息")
+    @ExcelProperty(value = "备注")
     private String remark;
+
+    /**
+     * 是否有效：1有效，0无效
+     */
+    @ExcelProperty(value = "是否有效：1有效，0无效")
+    private String isValid;
 
 
 }

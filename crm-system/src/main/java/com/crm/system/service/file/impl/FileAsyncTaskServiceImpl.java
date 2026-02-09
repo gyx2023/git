@@ -258,7 +258,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
     }
 
     @Override
-    public Long applyImport(MultipartFile file, String businessType,String taskName) {
+    public Long applyImport(MultipartFile file, String businessType, String taskName, String requestParams) {
         SysOssVo upload = iSysOssService.upload(file);
 
         try {
@@ -278,6 +278,7 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             taskBo.setBusinessType(businessType);
             taskBo.setStatus(0L); // 0-待处理
             taskBo.setCreateUserId(LoginHelper.getUserId());
+            taskBo.setRequestParams(requestParams);
 
             // 生成任务ID：yyyymmddHHmm+0001（4位序列号）格式
             String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
