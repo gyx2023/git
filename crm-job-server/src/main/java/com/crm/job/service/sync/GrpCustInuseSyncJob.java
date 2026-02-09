@@ -124,16 +124,16 @@ public class GrpCustInuseSyncJob {
             targetData.setHqGrpCodeB(hqGrpCodeB);
         }
 
-        // 5. region_id - 通过region_id值查询sys_area表的bss_code进行匹配，获取name_字段值
+        // 5. region_id - 通过region_id值查询sys_area表的bss_code进行匹配，获取id_字段值
         if (targetData.getRegionId() != null && !targetData.getRegionId().isEmpty()) {
-            String regionName = queryAreaNameByBssCode(targetData.getRegionId());
-            targetData.setRegionId(regionName); // 将name_字段值写入region_id字段
+            String regionId = queryAreaIdByBssCode(targetData.getRegionId());
+            targetData.setRegionId(regionId); // 将id_字段值写入region_id字段
         }
 
-        // 6. county_id - 通过county_id值查询sys_area表的bss_code进行匹配，获取name_字段值
+        // 6. county_id - 通过county_id值查询sys_area表的bss_code进行匹配，获取id_字段值
         if (targetData.getCountyId() != null && !targetData.getCountyId().isEmpty()) {
-            String countyName = queryAreaNameByBssCode(targetData.getCountyId());
-            targetData.setCountyId(countyName); // 将name_字段值写入county_id字段
+            String countyId = queryAreaIdByBssCode(targetData.getCountyId());
+            targetData.setCountyId(countyId); // 将id_字段值写入county_id字段
         }
 
         return targetData;
@@ -161,9 +161,9 @@ public class GrpCustInuseSyncJob {
     }
 
     /**
-     * 根据BSS_CODE查询sys_area表的name_字段值
+     * 根据BSS_CODE查询sys_area表的id_字段值
      */
-    private String queryAreaNameByBssCode(String bssCode) {
+    private String queryAreaIdByBssCode(String bssCode) {
         try {
             // 使用MySQL主数据源查询sys_area表
             LambdaQueryWrapper<SysArea> queryWrapper = new LambdaQueryWrapper<>();
@@ -171,7 +171,7 @@ public class GrpCustInuseSyncJob {
 
             SysArea sysArea = sysAreaMapper.selectOne(queryWrapper);
             if (sysArea != null) {
-                return sysArea.getName(); // 返回name_字段值
+                return String.valueOf(sysArea.getId()); // 返回id_字段值
             }
         } catch (Exception e) {
             log.warn("查询sys_area表时发生错误，bssCode: {}, 错误: {}", bssCode, e.getMessage());
