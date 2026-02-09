@@ -27,6 +27,7 @@ import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.utils.spring.SpringUtils;
+import com.crm.common.enums.InfoTagEnum;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -123,7 +124,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         // 对请求参数中的infoVal2字段进行解密处理，并设置固定的info_tag
         for (ZqztGrpContractOtherInfoBo bo : boList) {
             // 设置固定的info_tag值
-            bo.setInfoTag("GRP_CONTRACT_USER_LIST");
+            bo.setInfoTag(InfoTagEnum.GRP_CONTRACT_USER_LIST.getValue());
             
             if (bo.getInfoVal2() != null && !bo.getInfoVal2().isEmpty()) {
                 try {

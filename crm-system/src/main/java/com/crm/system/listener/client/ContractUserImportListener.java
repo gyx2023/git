@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.crm.common.enums.InfoTagEnum;
 
 /**
  * 合同关联用户导入监听器
@@ -88,7 +89,7 @@ public class ContractUserImportListener {
                 // 构造合同关联用户信息并调用添加接口
                 ZqztGrpContractOtherInfoBo bo = new ZqztGrpContractOtherInfoBo();
                 bo.setContractId(contractId);
-                bo.setInfoTag("GRP_CONTRACT_USER_LIST");
+                bo.setInfoTag(InfoTagEnum.GRP_CONTRACT_USER_LIST.getValue());
                 bo.setInfoVal(userId);
                 bo.setInfoVal2(svcNum);
                 bo.setIsValid("1");
