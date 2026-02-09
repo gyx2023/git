@@ -44,6 +44,7 @@ public class IdentifyScoreDo extends BaseEntity {
     /**
      * 附件原始名称
      */
+    @TableField(value = "name_")
     private String name;
     /**
      * 调用接口状态,0待调用，1成功,2失败
@@ -56,6 +57,7 @@ public class IdentifyScoreDo extends BaseEntity {
     /**
      * 上传人员
      */
+    @TableField(value = "uploader_")
     private Long uploader;
     /**
      * 更新者
@@ -68,6 +70,19 @@ public class IdentifyScoreDo extends BaseEntity {
      */
     @TableField(exist = false)
     private String updateBy;
+
+
+    /**
+     * 创建时间
+     */
+    @TableField(exist = false)
+    private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 
     private Long taskId;
 }
