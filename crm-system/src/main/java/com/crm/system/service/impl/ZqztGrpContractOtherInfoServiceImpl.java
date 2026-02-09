@@ -433,7 +433,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
 
-
+    // 查询未绑定合同的用户列表
     @Override
     public List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId) {
         // 1. 根据总部集团编码(hqGrpCode)在tf_f_cust_group_m表中查询GROUP_ID，获取CUST_ID
@@ -549,7 +549,15 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         }
     }
 
-
+    /**
+     * 解密加密的服务号码
+     * @param encryptedSvcNum 加密的服务号码
+     * @return 解密后的原始服务号码
+     */
+    @Override
+    public String decryptSvcNum(String encryptedSvcNum) {
+        return decryptInfoVal2(encryptedSvcNum);
+    }
 
     /**
      * 解密infoVal2字段（用于批量新增接口）
@@ -562,8 +570,12 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         }
 
         try {
-            // 还原字符替换
-            String restored = encryptedInfoVal2.replace('_', '=').replace('-', '+').replace('_', '/');
+            // 正确的字符还原逻辑：将混淆字符换回原始Base64字符
+            // _ -> =, - -> +, / -> _ (然后再将_ -> /)
+            String restored = encryptedInfoVal2.replace('_', '=').replace('-', '+').replace('/', '_');
+            // 再将'_'换回'/'
+            restored = restored.replace('_', '/');
+            
             // Base64解码
             byte[] decodedBytes = java.util.Base64.getDecoder().decode(restored);
             return new String(decodedBytes, "UTF-8");
