@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ZqztGrpCustInuseMapper">
+    <resultMap type="com.crm.system.domain.ZqztGrpCustInuse" id="ZqztGrpCustInuseResult">
+        <result property="inuseId" column="inuse_id"/>
+        <result property="contractId" column="contract_id"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="grpIdA" column="grp_id_a"/>
+        <result property="grpCodeA" column="grp_code_a"/>
+        <result property="hqGrpCodeA" column="hq_grp_code_a"/>
+        <result property="grpNameA" column="grp_name_a"/>
+        <result property="relation" column="relation"/>
+        <result property="grpIdB" column="grp_id_b"/>
+        <result property="grpCodeB" column="grp_code_b"/>
+        <result property="hqGrpCodeB" column="hq_grp_code_b"/>
+        <result property="grpNameB" column="grp_name_b"/>
+        <result property="createTime" column="create_time"/>
+        <result property="regionId" column="region_id"/>
+        <result property="countyId" column="county_id"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="remark" column="remark"/>
+        <result property="isValid" column="is_valid"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <insert id="addInuse">
+        update zqzt_grp_cust_inuse a, zqzt_grp_group_info b
+        set a.relation = '1001',
+            a.grp_id_b = b.grp_id,
+            a.grp_code_b = b.grp_code,
+            a.hq_grp_code_b = b.hq_grp_code,
+            a.grp_name_b = b.grp_name,
+            a.region_id = #{loginUser.regionId},
+            a.county_id = #{loginUser.countyId},
+            a.operator_id = #{loginUser.operatorId},
+            a.update_time = now()
+        where a.contract_id = #{reqDTO.contractId}
+          and b.grp_code = #{reqDTO.grpCodeB}
+          and b.hq_grp_code = #{reqDTO.hqGrpCodeB}
+    </insert>
+    <insert id="addUserList">
+        <if test="userList != null and userList.size() > 0">
+            insert into zqzt_grp_cust_inuse_userlist
+            (inuse_id, subscrbid, svc_num, create_time, is_valid,
+             region_id, county_id, operator_id, update_time
+            ) values
+            <foreach collection="userList" item="user" separator=",">
+                (#{user.inuseId, jdbcType=VARCHAR}, #{user.subscrbid, jdbcType=VARCHAR}, #{user.svcNum, jdbcType=VARCHAR}, now(), '1',
+                 #{loginUser.regionId}, #{loginUser.countyId}, #{loginUser.operatorId}, now())
+            </foreach>
+        </if>
+    </insert>
+    <insert id="insertInuse">
+        insert into zqzt_grp_cust_inuse (
+            inuse_id, contract_id, contract_name, grp_id_a, grp_code_a, hq_grp_code_a, grp_name_a,
+            relation, grp_id_b, grp_code_b, hq_grp_code_b, grp_name_b, create_time, region_id,
+            county_id, operator_id, is_valid, update_time
+        )
+        select
+            #{reqDTO.inuseId} as inuse_id,
+            a.inuse_contract_id as contract_id,
+            a.contract_name,
+            b.grp_id as grp_id_a,
+            b.grp_code as grp_code_a,
+            b.hq_grp_code as hq_grp_code_a,
+            b.grp_name as grp_name_a,
+            '1001' as relation,
+            c.grp_id as grp_id_b,
+            c.grp_code as grp_code_b,
+            c.hq_grp_code as hq_grp_code_b,
+            c.grp_name as grp_name_b,
+            date_format(now(), '%Y-%m-%d %H:%i:%s') as create_time,
+            #{loginUser.regionId} as region_id,
+            #{loginUser.countyId} as county_id,
+            #{loginUser.operatorId} as operator_id,
+            '1' as is_valid,
+            date_format(now(), '%Y-%m-%d %H:%i:%s') as update_time
+        from zqzt_grp_contract_info a,
+             zqzt_grp_group_info b,
+             zqzt_grp_group_info c
+        where a.inuse_contract_id = #{reqDTO.contractId}
+          and b.grp_code = #{reqDTO.grpCodeA}
+          and b.hq_grp_code = #{reqDTO.hqGrpCodeA}
+          and c.grp_code = #{reqDTO.grpCodeB}
+          and c.hq_grp_code = #{reqDTO.hqGrpCodeB}
+    </insert>
+    <update id="updateUserByInuseId">
+        update zqzt_grp_cust_inuse
+        set is_valid = '0',
+            region_id = #{loginUser.regionId},
+            county_id = #{loginUser.countyId},
+            operator_id = #{loginUser.operatorId},
+            update_time = now()
+        where inuse_id in
+        <foreach collection="ids" item="inuseId" open="(" separator="," close=")">
+            #{inuseId}
+        </foreach>
+    </update>
+    <update id="updateBySubscrbid">
+        update zqzt_grp_cust_inuse_userlist
+        set is_valid = '0',
+            region_id = #{loginUser.regionId},
+            county_id = #{loginUser.countyId},
+            operator_id = #{loginUser.operatorId},
+            update_time = now()
+        where subscrbid in
+        <foreach collection="subscrbids" item="subscrbid" open="(" separator="," close=")">
+            #{subscrbid}
+        </foreach>
+    </update>
+    <update id="updateUserlistByInuseId">
+        update zqzt_grp_cust_inuse_userlist
+        set is_valid = '0',
+            region_id = #{loginUser.regionId},
+            county_id = #{loginUser.countyId},
+            operator_id = #{loginUser.operatorId},
+            update_time = now()
+        where is_valid = '1'
+          and inuse_id in
+        <foreach collection="ids" item="inuseId" open="(" separator="," close=")">
+            #{inuseId}
+        </foreach>
+    </update>
+    <select id="queryZqztGrpCustInuseList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO">
+        select
+            c.inuse_id,
+            a.inuse_contract_id as contract_id,
+            a.contract_name,
+            b.grp_code as grp_code_a,
+            b.hq_grp_code as hq_grp_code_a,
+            b.grp_name as grp_name_a,
+            case
+                when c.relation = '1000' then '使用客户（非收入划转）'
+                when c.relation = '1001' then '使用客户（收入划转）'
+                when c.relation = '1002' then '收入归集客户'
+            end as relation,
+            b2.grp_code as grp_code_b,
+            b2.hq_grp_code as hq_grp_code_b,
+            b2.grp_name as grp_name_b,
+            ifnull(d.user_num, 0) as user_num,
+            date_format(a.contract_effdate, '%Y-%m-%d') as create_time
+        from zqzt_grp_contract_info a
+        left join zqzt_grp_group_info b  on a.grp_id = b.grp_id
+        left join zqzt_grp_cust_inuse c  on a.inuse_contract_id = c.contract_id and c.is_valid = '1'
+        left join zqzt_grp_group_info b2 on c.grp_id_b = b2.grp_id
+        left join (
+            select
+                inuse_id, count(1) as user_num
+            from zqzt_grp_cust_inuse_userlist
+            where is_valid = '1'
+            group by inuse_id
+        ) d on c.inuse_id = d.inuse_id
+        <where>
+            <if test="regionId != null and regionId != ''">
+                and c.region_id = #{regionId}
+            </if>
+            <if test="countyId != null and countyId != ''">
+                and c.county_id = #{countyId}
+            </if>
+            <if test="grpCodeA != null and grpCodeA != ''">
+                and b.grp_code = #{grpCodeA}
+            </if>
+            <if test="hqGrpCodeA != null and hqGrpCodeA != ''">
+                and b.hq_grp_code = #{hqGrpCodeA}
+            </if>
+            <if test="contractId != null and contractId != ''">
+                and a.inuse_contract_id = #{contractId}
+            </if>
+            <if test="contractName != null and contractName != ''">
+                and lower(a.contract_name) like lower(concat('%', #{contractName}, '%'))
+            </if>
+            <if test="grpCodeB != null and grpCodeB != ''">
+                and b2.grp_code = #{grpCodeB}
+            </if>
+            <if test="hqGrpCodeB != null and hqGrpCodeB != ''">
+                and b2.hq_grp_code = #{hqGrpCodeB}
+            </if>
+            <if test="createTimeBegin != null and createTimeBegin != ''">
+                and date_format(a.contract_effdate, '%Y-%m-%d') >= date_format(#{createTimeBegin}, '%Y-%m-%d')
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                and date_format(a.contract_effdate, '%Y-%m-%d') &lt;= date_format(#{createTimeEnd}, '%Y-%m-%d')
+            </if>
+        </where>
+        limit #{startIndex}, #{endIndex}
+    </select>
+    <select id="queryPageUserList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
+        select
+            a.inuse_id,
+            a.subscrbid,
+            a.svc_num,
+            b.cust_name
+        from zqzt_grp_cust_inuse_userlist a
+        left join tf_f_cust_group_m b on a.subscrbid = b.cust_id
+        where a.is_valid = '1'
+          and a.inuse_id = #{inuseId}
+    </select>
+    <select id="queryPageGrpList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO">
+        select
+            grp_code as grp_code_b,
+            hq_grp_code as hq_grp_code_b,
+            grp_name as grp_name_b
+        from zqzt_grp_group_info
+        <where>
+            <if test="grpCodeB != null and grpCodeB != ''">
+                and grp_code = #{grpCodeB}
+            </if>
+            <if test="hqGrpCodeB != null and hqGrpCodeB != ''">
+                and hq_grp_code = #{hqGrpCodeB}
+            </if>
+            <if test="grpNameB != null and grpNameB != ''">
+                and lower(grp_name) like lower(concat('%', #{grpNameB}, '%'))
+            </if>
+        </where>
+    </select>
+    <select id="getCustId" resultType="java.lang.String">
+        select cust_id from tf_f_cust_group_m  where group_id = #{hqGrpCodeA}
+    </select>
+    <select id="queryUserIdArray" resultType="java.lang.String">
+        select subscrbid from zqzt_grp_cust_inuse_userlist where inuse_id = #{inuseId} and is_valid = '1'
+    </select>
+    <select id="queryPageAddUserList"
+            resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
+        select
+            #{inuseId} as INUSE_ID, USER_ID as SUBSCRBID, SVC_NUM, PHYSICAL_CUST_NAME as CUST_NAME
+        from IOB_GOV2.CUST_MAINT_INFO
+        where STATUS = '1'
+          and CUST_ID = #{custId}
+        <if test="userIds != null and userIds.size() > 0">
+            and USER_ID not in
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+    </select>
+    <select id="queryPageAddUserData"
+            resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
+        select
+            #{inuseId} as INUSE_ID, USER_ID as SUBSCRBID, SVC_NUM, PHYSICAL_CUST_NAME as CUST_NAME
+        from IOB_GOV2.CUST_MAINT_INFO
+        where STATUS = '1'
+        <if test="addInuseUserList != null and addInuseUserList.size() > 0">
+            and USER_ID in
+            <foreach collection="addInuseUserList" item="userList" open="(" separator="," close=")">
+                #{userList.subscrbid}
+            </foreach>
+        </if>
+    </select>
+    <select id="queryZqztGrpCustInuseListTotal" resultType="java.lang.Integer">
+        select
+            count(1)
+        from zqzt_grp_contract_info a
+        left join zqzt_grp_group_info b  on a.grp_id = b.grp_id
+        left join zqzt_grp_cust_inuse c  on a.inuse_contract_id = c.contract_id and c.is_valid = '1'
+        left join zqzt_grp_group_info b2 on c.grp_id_b = b2.grp_id
+        left join (
+            select
+                inuse_id, count(1) as user_num
+            from zqzt_grp_cust_inuse_userlist
+            where is_valid = '1'
+            group by inuse_id
+        ) d on c.inuse_id = d.inuse_id
+        <where>
+            <if test="regionId != null and regionId != ''">
+                and c.region_id = #{regionId}
+            </if>
+            <if test="countyId != null and countyId != ''">
+                and c.county_id = #{countyId}
+            </if>
+            <if test="grpCodeA != null and grpCodeA != ''">
+                and b.grp_code = #{grpCodeA}
+            </if>
+            <if test="hqGrpCodeA != null and hqGrpCodeA != ''">
+                and b.hq_grp_code = #{hqGrpCodeA}
+            </if>
+            <if test="contractId != null and contractId != ''">
+                and a.inuse_contract_id = #{contractId}
+            </if>
+            <if test="contractName != null and contractName != ''">
+                and lower(a.contract_name) like lower(concat('%', #{contractName}, '%'))
+            </if>
+            <if test="grpCodeB != null and grpCodeB != ''">
+                and b2.grp_code = #{grpCodeB}
+            </if>
+            <if test="hqGrpCodeB != null and hqGrpCodeB != ''">
+                and b2.hq_grp_code = #{hqGrpCodeB}
+            </if>
+            <if test="createTimeBegin != null and createTimeBegin != ''">
+                and date_format(a.contract_effdate, '%Y-%m-%d') >= date_format(#{createTimeBegin}, '%Y-%m-%d')
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                and date_format(a.contract_effdate, '%Y-%m-%d') &lt;= date_format(#{createTimeEnd}, '%Y-%m-%d')
+            </if>
+        </where>
+    </select>
+    <select id="queryZqztGrpGroupInfoCount" resultType="java.lang.Integer">
+        select count(1) from zqzt_grp_cust_inuse where is_valid = '1' and contract_id = #{contractId}
+    </select>
+</mapper>

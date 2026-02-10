@@ -562,6 +562,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getManagerId()), ZqGrpGroupInfo::getManagerId, bo.getManagerId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpCreator()), ZqGrpGroupInfo::getGrpCreator, bo.getGrpCreator());
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
+        lqw.in(bo.getGrpIds() != null && !bo.getGrpIds().isEmpty(), ZqGrpGroupInfo::getGrpId, bo.getGrpIds());
 
         // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
         String provManagerOauser = bo.getProvManagerOauser();
@@ -937,12 +938,21 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode, boolean needDesensitize) {
+        // 按查询条件导出
+        log.info("按查询条件导出");
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
         lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
-        // 执行分页查询
-        IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
-        List<ZqGrpGroupInfoVo> resultList = resultPage.getRecords();
+
+        List<ZqGrpGroupInfoVo> resultList;
+        if (page != null) {
+            // 执行分页查询
+            IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
+            resultList = resultPage.getRecords();
+        } else {
+            // 执行全量查询
+            resultList = baseMapper.selectVoList(lqw);
+        }
 
         // 进行字典翻译
         translateDictLabels(resultList);
@@ -1005,5 +1015,49 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                 }
             }
         }
+    }
+
+    @Override
+    public List<ZqGrpGroupInfoVo> exportByIds(List<Long> grpIds, String areaCode, boolean needDesensitize) {
+        if (grpIds == null || grpIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 使用MyBatis-Plus的in查询条件
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = new LambdaQueryWrapper<>();
+        lqw.in(ZqGrpGroupInfo::getGrpId, grpIds);
+
+        // 应用数据权限过滤
+        if (!"330000".equals(areaCode)) {
+            // 判断区域代码级别
+            if (areaCode.endsWith("0000")) {
+                log.info("省本级用户导出");
+                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
+                // 不添加过滤条件，可查看全省数据
+            } else if (areaCode.endsWith("00")) {
+                // 地市级用户(如330100)，只能查看本市数据
+                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+            } else {
+                // 区县级用户(如330102)，可查看所属地市的所有数据
+                // 提取地市代码(前4位+00)
+                String cityCode = areaCode.substring(0, 4) + "00";
+                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+            }
+        }
+
+        // 查询数据
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+
+        // 进行字典翻译
+        translateDictLabels(list);
+
+        // 根据needDesensitize参数决定是否对数据进行脱敏处理
+        if (needDesensitize) {
+            list = list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        }
+
+        return list;
     }
 }

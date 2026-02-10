@@ -114,7 +114,7 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
         // 获取所有子部门
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
-                .eq(SysDept::getParentId, reqDTO.getDeptId()));
+                .eq(SysDept::getParentId, reqDTO.getDeptId()).orderByAsc(SysDept::getOrderNum));
         deptList.add(sysDept);
 
         // 合计数据
@@ -289,7 +289,7 @@ public class StatisticsContractServiceImpl implements StatisticsContractService 
         // 获取所有子部门
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
-                .eq(SysDept::getParentId, reqDTO.getDeptId()));
+                .eq(SysDept::getParentId, reqDTO.getDeptId()).orderByAsc(SysDept::getOrderNum));
         if (!sysDept.getDeptId().equals(1L)) {
             deptList.add(sysDept);
         }
