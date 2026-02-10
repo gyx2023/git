@@ -128,4 +128,11 @@ public class OldOpportunityDTO {
 
     /** 37. 电子表单 */
     private String eformNames;
+
+
+    /** 产品编码 */
+    private String productCode;
+
+    /** SF产品名称 */
+    private String sfProductName;
 }

@@ -4,24 +4,32 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.crm.common.core.domain.dto.OldOpportunityDTO;
+import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
-import com.crm.system.domain.bo.topp.ToppContractBo;
-import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.topp.OldOpportunityVO;
-import com.crm.system.domain.vo.topp.ToppContractEformVo;
-import com.crm.system.domain.vo.topp.ToppContractVo;
+import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysOssService;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
+import com.crm.system.service.ISysCodeService;
+import com.crm.system.domain.vo.topp.ToppContractVo;
+import com.crm.system.domain.vo.topp.ToppContractEformVo;
+import com.crm.system.domain.bo.topp.ToppContractBo;
+import com.crm.system.domain.bo.topp.ToppContractEformBo;
+import com.crm.system.domain.bo.SysCodeBo;
+import com.crm.system.domain.vo.SysCodeVo;
+import java.util.stream.Collectors;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +38,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 商机信息导出策略实现类
@@ -61,6 +68,9 @@ public class OpportunityExport extends AbstractExportStrategy {
     @Resource
     private IToppContractEformService contractEformService;
 
+    @Resource
+    private ISysCodeService sysCodeService;
+
     @Override
     public String getBusinessType() {
         return "opportunity_export";
@@ -89,9 +99,6 @@ public class OpportunityExport extends AbstractExportStrategy {
 
             // 添加排序条件
             sql.append(" order by op.id_ desc");
-
-            //打印 SQL
-            log.info("查询的SQL语句: {}", sql.toString());
 
             // 创建临时文件
             String prefix = "opportunity_export_" + System.currentTimeMillis();
@@ -440,6 +447,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                 // 补充合同和电子表单信息
                 enrichContractAndEformInfo(batchData);
 
+                // 补充主要产品/解决方案信息
+                enrichMainProductInfo(batchData);
+
                 // 转换DTO为VO
                 List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
 
@@ -694,6 +704,74 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         return eformMap;
+    }
+
+    /**
+     * 补充主要产品/解决方案信息
+     * @param batchData 批量商机数据
+     */
+    private void enrichMainProductInfo(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        for (OldOpportunityDTO dto : batchData) {
+
+            String productCode = dto.getProductCode();
+            String oppType = dto.getOppType();
+            String sfProductName = dto.getSfProductName();
+
+            // 特殊情况：产品编码为"1"或其他特殊情况时，直接使用sfProductName
+            if ("1".equals(productCode) || StringUtils.isEmpty(productCode)) {
+                if (StringUtils.isNotEmpty(sfProductName)) {
+                    dto.setMainProduct(sfProductName);
+                }
+                continue;
+            }
+
+            // 根据业务类型确定settingStr1的值
+            String settingStr1 = null;
+            if ("opp_type_np".equals(oppType) || "opp_type_spy".equals(oppType)
+                || "opp_type_yzy".equals(oppType) || "opp_type_yyy".equals(oppType)) {
+                settingStr1 = "400301";
+            } else if ("opp_type_zwyw".equals(oppType)) {
+                settingStr1 = "400302";
+            }
+
+            // 查询sys_code表获取产品名称
+            if (StringUtils.isNotEmpty(settingStr1)) {
+                try {
+                    SysCodeBo codeBo = new SysCodeBo();
+                    codeBo.setType("main_product");
+                    codeBo.setCode(productCode);
+                    codeBo.setSettingStr1(settingStr1);
+
+                    List<SysCodeVo> codeList = sysCodeService.queryList(codeBo);
+                    if (!codeList.isEmpty()) {
+                        dto.setMainProduct(codeList.get(0).getName());
+                    } else {
+                        // 查询不到时使用备用方案
+                        if (StringUtils.isNotEmpty(sfProductName)) {
+                            dto.setMainProduct(sfProductName);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("查询产品编码信息失败，productCode: {}, oppType: {}, error: {}",
+                        productCode, oppType, e.getMessage());
+                    // 异常时使用备用方案
+                    if (StringUtils.isNotEmpty(sfProductName)) {
+                        dto.setMainProduct(sfProductName);
+                    }
+                }
+            } else {
+                // 没有匹配的业务类型时使用备用方案
+                if (StringUtils.isNotEmpty(sfProductName)) {
+                    dto.setMainProduct(sfProductName);
+                }
+            }
+        }
+
+        log.debug("已完成主要产品信息补充，处理记录数: {}", batchData.size());
     }
 
     /**
