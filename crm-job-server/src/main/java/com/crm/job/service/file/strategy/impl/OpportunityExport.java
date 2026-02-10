@@ -6,6 +6,7 @@ import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.crm.common.core.domain.dto.OldOpportunityDTO;
+import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
@@ -28,8 +29,6 @@ import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import com.crm.common.core.domain.entity.SysDictData;
 
 import javax.annotation.Resource;
 import java.io.File;
@@ -107,7 +106,6 @@ public class OpportunityExport extends AbstractExportStrategy {
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
             try {
-                // 使用完整版流式导出方法
                 boolean success = exportToExcelStreamFull(sql.toString(), tempFile);
                 if (!success) {
                     task.setRemark("流式导出失败");
@@ -120,7 +118,6 @@ public class OpportunityExport extends AbstractExportStrategy {
                 return false;
             }
 
-            // 验证文件是否创建成功
             if (!tempFile.exists() || tempFile.length() == 0) {
                 task.setRemark("临时文件创建失败");
                 return false;
@@ -132,23 +129,9 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 保存到本地指定目录
             String localDownloadPath = saveToLocal(tempFile, originalFileName);
 
-            // 上传文件到OSS
-//            SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
-//
-//            // 验证上传是否成功
-//            if (upload == null) {
-//                task.setRemark("文件上传失败");
-//                tempFile.delete();
-//                return false;
-//            }
-//
-//            // 删除临时文件
-//            tempFile.delete();
-
             // 设置文件信息
             task.setFileName(originalFileName);
-//            task.setFileUrl(upload.getUrl());
-            task.setFileUrl("file:///" + localDownloadPath); // 本地文件路径
+            task.setFileUrl("file:///" + localDownloadPath);
             task.setRemark("商机信息导出成功，文件保存至: " + localDownloadPath);
             return true;
 
@@ -187,6 +170,9 @@ public class OpportunityExport extends AbstractExportStrategy {
         return sql;
     }
 
+    /**
+     * 添加所有查询条件
+     */
     private void appendAllQueryConditions(StringBuffer sql, Map<String, Object> params) {
         // 1. 商机编码查询
         String oppCode = getParamValue(params, "oppCode");
@@ -415,7 +401,7 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 完整商机信息流式导出到Excel文件（老项目风格）
+     * 完整商机信息流式导出到Excel文件
      */
     private boolean exportToExcelStreamFull(String sql, File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据，自动根据VO注解生成表头
@@ -425,7 +411,6 @@ public class OpportunityExport extends AbstractExportStrategy {
 
             WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
 
-            // 分批读取并写入数据
             int pageSize = 1000;
             int offset = 0;
             boolean hasMoreData = true;
@@ -442,9 +427,6 @@ public class OpportunityExport extends AbstractExportStrategy {
                     break;
                 }
 
-                // 补充客户经理和创建人地区信息
-                enrichAreaInfo(batchData);
-
                 // 补充客户经理组织机构信息
                 enrichCustManagerOrgInfo(batchData);
 
@@ -453,6 +435,9 @@ public class OpportunityExport extends AbstractExportStrategy {
 
                 // 补充主要产品/解决方案信息
                 enrichMainProductInfo(batchData);
+
+                // 补充客户经理和创建人地区信息
+                enrichAreaInfo(batchData);
 
                 // 进行翻译
                 translateSysCodeFields(batchData);
@@ -503,6 +488,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         log.info("文件已保存到本地: {}", targetPath);
         return targetPath;
     }
+
 
     /**
      * 补充商机客户经理和创建人地区信息
@@ -629,6 +615,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
     }
 
+
     /**
      * 查询客户经理对应的组织机构名称
      * 通过 sys_user.org_id 关联 sys_org 表获取 name_ 字段
@@ -644,7 +631,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         try {
-            // 分批查询，避免一次性查询过多数据
+            // 分批查询
             int batchSize = 100;
             for (int i = 0; i < custManagerIds.size(); i += batchSize) {
                 int endIndex = Math.min(i + batchSize, custManagerIds.size());
@@ -818,7 +805,7 @@ public class OpportunityExport extends AbstractExportStrategy {
     private Map<Long, List<ToppContractEformVo>> queryEformsByOpportunityIds(List<Long> opportunityIds) {
         Map<Long, List<ToppContractEformVo>> eformMap = new HashMap<>();
 
-        // 分批查询，避免一次性查询过多数据
+        // 分批查询
         int batchSize = 100;
         for (int i = 0; i < opportunityIds.size(); i += batchSize) {
             int endIndex = Math.min(i + batchSize, opportunityIds.size());
@@ -859,7 +846,6 @@ public class OpportunityExport extends AbstractExportStrategy {
             String oppType = dto.getOppType();
             String sfProductName = dto.getSfProductName();
 
-            // 特殊情况：产品编码为"1"或其他特殊情况时，直接使用sfProductName
             if ("1".equals(productCode) || StringUtils.isEmpty(productCode)) {
                 if (StringUtils.isNotEmpty(sfProductName)) {
                     dto.setMainProduct(sfProductName);
@@ -887,24 +873,10 @@ public class OpportunityExport extends AbstractExportStrategy {
                     List<SysCodeVo> codeList = sysCodeService.queryList(codeBo);
                     if (!codeList.isEmpty()) {
                         dto.setMainProduct(codeList.get(0).getName());
-                    } else {
-                        // 查询不到时使用备用方案
-                        if (StringUtils.isNotEmpty(sfProductName)) {
-                            dto.setMainProduct(sfProductName);
-                        }
                     }
                 } catch (Exception e) {
                     log.warn("查询产品编码信息失败，productCode: {}, oppType: {}, error: {}",
                         productCode, oppType, e.getMessage());
-                    // 异常时使用备用方案
-                    if (StringUtils.isNotEmpty(sfProductName)) {
-                        dto.setMainProduct(sfProductName);
-                    }
-                }
-            } else {
-                // 没有匹配的业务类型时使用备用方案
-                if (StringUtils.isNotEmpty(sfProductName)) {
-                    dto.setMainProduct(sfProductName);
                 }
             }
         }
