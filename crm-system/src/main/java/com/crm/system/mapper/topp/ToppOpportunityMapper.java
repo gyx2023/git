@@ -40,4 +40,13 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      */
     @Select("${sql}")
     List<OldOpportunityDTO> selectOldOppoExportData(@Param("sql") String sql);
+
+    /**
+     * 查询客户经理组织机构信息
+     * 通过opportunity.cust_manager_id -> sys_user.org_id -> sys_org.name_ 关联查询
+     * @param sql 动态SQL语句
+     * @return 包含用户ID和组织名称的结果列表
+     */
+    @Select("${sql}")
+    List<java.util.Map<String, Object>> selectCustManagerOrgInfo(@Param("sql") String sql);
 }

@@ -445,6 +445,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                 // 补充客户经理和创建人地区信息
                 enrichAreaInfo(batchData);
 
+                // 补充客户经理组织机构信息
+                enrichCustManagerOrgInfo(batchData);
+
                 // 补充合同和电子表单信息
                 enrichContractAndEformInfo(batchData);
 
@@ -570,9 +573,136 @@ public class OpportunityExport extends AbstractExportStrategy {
             dto.setCreatorPhone(dto.getCustManagerTel());
             dto.setCreatorCity(dto.getCustManagerCity());
             dto.setCreatorCounty(dto.getCustManagerCounty());
+            dto.setCreatorOrg(dto.getCustManagerOrg());
         }
 
         log.debug("已完成客户经理信息查询，处理记录数: {}", batchData.size());
+    }
+
+    /**
+     * 补充客户经理组织机构信息
+     * 通过opportunity.cust_manager_id -> sys_user.org_id -> sys_org.name_ 的关联关系
+     * 查询并填充客户经理所属的组织机构名称
+     *
+     * @param batchData 批量商机数据
+     */
+    private void enrichCustManagerOrgInfo(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 收集所有客户经理ID
+            Set<Long> custManagerIds = new HashSet<>();
+            for (OldOpportunityDTO dto : batchData) {
+                if (dto.getCustManagerId() != null) {
+                    custManagerIds.add(Long.valueOf(dto.getCustManagerId()));
+                }
+            }
+
+            if (custManagerIds.isEmpty()) {
+                log.debug("没有需要查询的客户经理组织信息");
+                return;
+            }
+
+            log.debug("开始查询客户经理组织信息，需要查询客户经理数量: {}", custManagerIds.size());
+
+            // 查询客户经理对应的组织机构信息
+            Map<Long, String> custManagerOrgMap = queryCustManagerOrgNames(new ArrayList<>(custManagerIds));
+
+            // 填充组织机构信息到DTO
+            int filledCount = 0;
+            for (OldOpportunityDTO dto : batchData) {
+                if (dto.getCustManagerId() != null) {
+                    Long managerId = Long.valueOf(dto.getCustManagerId());
+                    String orgName = custManagerOrgMap.get(managerId);
+                    if (StringUtils.isNotEmpty(orgName)) {
+                        dto.setCustManagerOrg(orgName);
+                        filledCount++;
+                    }
+                }
+            }
+
+            log.debug("成功填充客户经理组织信息的记录数: {}", filledCount);
+        } catch (Exception e) {
+            log.warn("查询客户经理组织信息失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 查询客户经理对应的组织机构名称
+     * 通过 sys_user.org_id 关联 sys_org 表获取 name_ 字段
+     *
+     * @param custManagerIds 客户经理ID列表
+     * @return 客户经理ID到组织名称的映射
+     */
+    private Map<Long, String> queryCustManagerOrgNames(List<Long> custManagerIds) {
+        Map<Long, String> orgNameMap = new HashMap<>();
+
+        if (custManagerIds == null || custManagerIds.isEmpty()) {
+            return orgNameMap;
+        }
+
+        try {
+            // 分批查询，避免一次性查询过多数据
+            int batchSize = 100;
+            for (int i = 0; i < custManagerIds.size(); i += batchSize) {
+                int endIndex = Math.min(i + batchSize, custManagerIds.size());
+                List<Long> batchIds = custManagerIds.subList(i, endIndex);
+
+                StringBuilder idCondition = new StringBuilder();
+                for (int j = 0; j < batchIds.size(); j++) {
+                    if (j > 0) {
+                        idCondition.append(",");
+                    }
+                    idCondition.append(batchIds.get(j));
+                }
+
+                // 构造联表查询SQL
+                String sql = "SELECT u.id_ as userId, o.name_ as orgName " +
+                            "FROM sys_user u " +
+                            "LEFT JOIN sys_org o ON u.org_id = o.id_ " +
+                            "WHERE u.id_ IN (" + idCondition.toString() + ")";
+
+                try {
+                    // 执行查询
+                    List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCustManagerOrgInfo(sql);
+
+                    if (batchResult != null && !batchResult.isEmpty()) {
+                        for (Map<String, Object> row : batchResult) {
+                            Object userIdObj = row.get("userId");
+                            String orgName = (String) row.get("orgName");
+
+                            // 安全的类型转换
+                            Long userId = null;
+                            if (userIdObj instanceof Long) {
+                                userId = (Long) userIdObj;
+                            } else if (userIdObj instanceof Integer) {
+                                userId = ((Integer) userIdObj).longValue();
+                            } else if (userIdObj instanceof String) {
+                                try {
+                                    userId = Long.parseLong((String) userIdObj);
+                                } catch (NumberFormatException e) {
+                                    log.warn("无法将字符串转换为Long类型: {}", userIdObj);
+                                }
+                            }
+
+                            if (userId != null && StringUtils.isNotEmpty(orgName)) {
+                                orgNameMap.put(userId, orgName);
+                            }
+                        }
+                    }
+
+                    log.debug("批次查询完成，查询到组织信息数量: {}", batchResult != null ? batchResult.size() : 0);
+                } catch (Exception e) {
+                    log.warn("批次查询客户经理组织信息失败，用户IDs: {}", batchIds, e);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询客户经理组织信息时发生异常", e);
+        }
+
+        return orgNameMap;
     }
 
     /**

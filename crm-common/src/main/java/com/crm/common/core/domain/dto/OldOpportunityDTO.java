@@ -134,4 +134,7 @@ public class OldOpportunityDTO {
 
     /** SF产品名称 */
     private String sfProductName;
+
+    /** 产品经理id */
+    private String custManagerId;
 }
