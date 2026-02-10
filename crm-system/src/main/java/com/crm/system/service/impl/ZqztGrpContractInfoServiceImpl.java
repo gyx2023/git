@@ -236,27 +236,11 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             add.setInuseContractId(generateRandomContractId());
         }
 
-        // 设置默认缴费方式，如果未提供
-        if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
-            add.setPaytype("10"); // 默认设置为"后付费"
-        }
-
         // 设置默认合同状态，如果未提供
         if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
-            add.setContractStatus("11"); // 默认设置为"起草"
+            add.setContractStatus("9"); // 默认设置为"履行中"
         }
 
-        // 设置默认合同属性，如果未提供
-        if (add.getContractProperty() == null || add.getContractProperty().isEmpty()) {
-            add.setContractProperty("00"); // 默认设置为"新签合同"
-        }
-
-        // 设置默认是否招投标项目，如果未提供
-        if (add.getIsBidding() == null || add.getIsBidding().isEmpty()) {
-            add.setIsBidding("0"); // 默认设置为"否"
-        }
-
-        validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setContractId(add.getContractId());
