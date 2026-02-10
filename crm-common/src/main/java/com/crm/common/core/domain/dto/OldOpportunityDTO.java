@@ -7,7 +7,6 @@ import java.util.Date;
 
 /**
  * 老项目商机导出DTO
- * 对应老项目ExportOpportunityService中的37个导出字段
  *
  * @author wcf
  * @date 2026-02-09

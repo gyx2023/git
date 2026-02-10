@@ -22,11 +22,14 @@ import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysCodeService;
+import com.crm.system.service.ISysDictTypeService;
 import com.crm.system.service.ISysOssService;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import com.crm.common.core.domain.entity.SysDictData;
 
 import javax.annotation.Resource;
 import java.io.File;
@@ -66,6 +69,9 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     @Resource
     private ISysCodeService sysCodeService;
+
+    @Resource
+    private ISysDictTypeService sysDictTypeService;
 
     @Override
     public String getBusinessType() {
@@ -445,7 +451,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                 // 补充主要产品/解决方案信息
                 enrichMainProductInfo(batchData);
 
-                // 进行码表翻译（老项目风格）
+                // 进行翻译
                 translateSysCodeFields(batchData);
 
                 // 转换DTO为VO
@@ -855,6 +861,11 @@ public class OpportunityExport extends AbstractExportStrategy {
         Map<String, String> clueSourceMap = getSysCodeMap("clue_source", null, null);
         Map<String, String> oppoStateMap = getSysCodeMap("oppo_state", null, null);
         Map<String, String> selectType1Map = getSysCodeMap("select_type_1", null, null);
+        List<SysDictData> growthTypeDictList = sysDictTypeService.selectDictDataByType("opp_growth_type");
+        Map<String, String> oppGrowthTypeMap = new HashMap<>();
+        if (growthTypeDictList != null && !growthTypeDictList.isEmpty()) {
+            oppGrowthTypeMap = growthTypeDictList.stream()
+                .collect(Collectors.toMap(SysDictData::getDictValue, SysDictData::getDictLabel)); }
 
         // isValid字段映射：1->有效, 0->无效
         Map<String, String> isValidMap = new HashMap<>();
@@ -885,6 +896,10 @@ public class OpportunityExport extends AbstractExportStrategy {
 
             if (StringUtils.isNotEmpty(dto.getIsValid())) {
                 dto.setIsValid(isValidMap.getOrDefault(dto.getIsValid(), dto.getIsValid()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppGrowthType())) {
+                dto.setOppGrowthType(oppGrowthTypeMap.getOrDefault(dto.getOppGrowthType(), dto.getOppGrowthType()));
             }
         }
 
