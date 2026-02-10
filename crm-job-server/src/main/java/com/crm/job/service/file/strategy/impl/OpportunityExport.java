@@ -4,20 +4,24 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
-import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.crm.common.core.domain.dto.OldOpportunityDTO;
-import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
+import com.crm.system.domain.bo.topp.ToppContractBo;
+import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.topp.OldOpportunityVO;
-import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
+import com.crm.system.domain.vo.topp.ToppContractEformVo;
+import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysOssService;
+import com.crm.system.service.topp.IToppContractEformService;
+import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +30,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 商机信息导出策略实现类
@@ -49,6 +54,12 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     @Resource
     private IDwdRepSysPersonDService dwdRepSysPersonDService;
+
+    @Resource
+    private IToppContractService contractService;
+
+    @Resource
+    private IToppContractEformService contractEformService;
 
     @Override
     public String getBusinessType() {
@@ -401,7 +412,7 @@ public class OpportunityExport extends AbstractExportStrategy {
     private boolean exportToExcelStreamFull(String sql, File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据，自动根据VO注解生成表头
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, OldOpportunityVO.class)
-            .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+            .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20)) // 固定列宽
             .build()) {
 
             WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
@@ -425,6 +436,9 @@ public class OpportunityExport extends AbstractExportStrategy {
 
                 // 补充客户经理和创建人地区信息
                 enrichAreaInfo(batchData);
+
+                // 补充合同和电子表单信息
+                enrichContractAndEformInfo(batchData);
 
                 // 转换DTO为VO
                 List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
@@ -545,6 +559,141 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         log.debug("已完成客户经理信息查询，处理记录数: {}", batchData.size());
+    }
+
+    /**
+     * 查询并填充合同信息和电子表单信息
+     * @param batchData 批量商机数据
+     */
+    private void enrichContractAndEformInfo(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        // 收集所有商机ID
+        List<Long> opportunityIds = batchData.stream()
+                .map(OldOpportunityDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (opportunityIds.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 查询合同信息
+            Map<Long, List<ToppContractVo>> contractMap = queryContractsByOpportunityIds(opportunityIds);
+
+            // 查询电子表单信息
+            Map<Long, List<ToppContractEformVo>> eformMap = queryEformsByOpportunityIds(opportunityIds);
+
+            // 填充合同和电子表单信息到DTO
+            for (OldOpportunityDTO dto : batchData) {
+                Long oppId = dto.getId();
+
+                // 填充合同信息
+                List<ToppContractVo> contracts = contractMap.get(oppId);
+                if (contracts != null && !contracts.isEmpty()) {
+                    StringBuilder contractNames = new StringBuilder();
+                    for (int i = 0; i < contracts.size(); i++) {
+                        ToppContractVo contract = contracts.get(i);
+                        if (i > 0) {
+                            contractNames.append(",");
+                        }
+                        if (StringUtils.isNotEmpty(contract.getContractName())) {
+                            contractNames.append(contract.getContractName());
+                        }
+                    }
+                    dto.setContractNames(contractNames.toString());
+                }
+
+                // 填充电子表单信息
+                List<ToppContractEformVo> eforms = eformMap.get(oppId);
+                if (eforms != null && !eforms.isEmpty()) {
+                    StringBuilder eformNames = new StringBuilder();
+                    for (int i = 0; i < eforms.size(); i++) {
+                        ToppContractEformVo eform = eforms.get(i);
+                        if (i > 0) {
+                            eformNames.append(",");
+                        }
+                        if (StringUtils.isNotEmpty(eform.getEformName())) {
+                            eformNames.append(eform.getEformName());
+                        }
+                    }
+                    dto.setEformNames(eformNames.toString());
+                }
+            }
+
+            log.debug("已完成合同和电子表单信息查询，处理商机数量: {}", batchData.size());
+        } catch (Exception e) {
+            log.warn("查询合同和电子表单信息失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 根据商机ID列表查询合同信息
+     * @param opportunityIds 商机ID列表
+     * @return 商机ID到合同列表的映射
+     */
+    private Map<Long, List<ToppContractVo>> queryContractsByOpportunityIds(List<Long> opportunityIds) {
+        Map<Long, List<ToppContractVo>> contractMap = new HashMap<>();
+
+        // 分批查询，避免一次性查询过多数据
+        int batchSize = 100;
+        for (int i = 0; i < opportunityIds.size(); i += batchSize) {
+            int endIndex = Math.min(i + batchSize, opportunityIds.size());
+            List<Long> batchIds = opportunityIds.subList(i, endIndex);
+
+            for (Long oppId : batchIds) {
+                try {
+                    ToppContractBo contractBo = new ToppContractBo();
+                    contractBo.setProjectId(oppId);
+                    contractBo.setIsValid("1"); // 只查询有效数据
+
+                    List<ToppContractVo> contracts = contractService.queryList(contractBo);
+                    if (contracts != null && !contracts.isEmpty()) {
+                        contractMap.put(oppId, contracts);
+                    }
+                } catch (Exception e) {
+                    log.warn("查询商机{}的合同信息失败: {}", oppId, e.getMessage());
+                }
+            }
+        }
+
+        return contractMap;
+    }
+
+    /**
+     * 根据商机ID列表查询电子表单信息
+     * @param opportunityIds 商机ID列表
+     * @return 商机ID到电子表单列表的映射
+     */
+    private Map<Long, List<ToppContractEformVo>> queryEformsByOpportunityIds(List<Long> opportunityIds) {
+        Map<Long, List<ToppContractEformVo>> eformMap = new HashMap<>();
+
+        // 分批查询，避免一次性查询过多数据
+        int batchSize = 100;
+        for (int i = 0; i < opportunityIds.size(); i += batchSize) {
+            int endIndex = Math.min(i + batchSize, opportunityIds.size());
+            List<Long> batchIds = opportunityIds.subList(i, endIndex);
+
+            for (Long oppId : batchIds) {
+                try {
+                    ToppContractEformBo eformBo = new ToppContractEformBo();
+                    eformBo.setProjectId(oppId);
+                    eformBo.setIsValid(1); // 只查询有效数据
+
+                    List<ToppContractEformVo> eforms = contractEformService.queryList(eformBo);
+                    if (eforms != null && !eforms.isEmpty()) {
+                        eformMap.put(oppId, eforms);
+                    }
+                } catch (Exception e) {
+                    log.warn("查询商机{}的电子表单信息失败: {}", oppId, e.getMessage());
+                }
+            }
+        }
+
+        return eformMap;
     }
 
     /**

@@ -15,6 +15,9 @@ import java.util.Date;
 @Data
 public class OldOpportunityDTO {
 
+    /** 主键ID */
+    private Long id;
+
     /** 1. 商机编号 */
     private String oppCode;
 
