@@ -901,6 +901,40 @@ public class OpportunityExport extends AbstractExportStrategy {
             if (StringUtils.isNotEmpty(dto.getOppGrowthType())) {
                 dto.setOppGrowthType(oppGrowthTypeMap.getOrDefault(dto.getOppGrowthType(), dto.getOppGrowthType()));
             }
+
+            if (StringUtils.isNotEmpty(dto.getOppIncludeType())) {
+                String oppIncludeType = dto.getOppIncludeType();
+                StringBuilder translatedResult = new StringBuilder();
+
+                // 去除首尾逗号
+                if (oppIncludeType.startsWith(",")) {
+                    oppIncludeType = oppIncludeType.substring(1);
+                }
+                if (oppIncludeType.endsWith(",")) {
+                    oppIncludeType = oppIncludeType.substring(0, oppIncludeType.length() - 1);
+                }
+
+                // 按逗号分割并逐个翻译
+                if (oppIncludeType.contains(",")) {
+                    // 多个业务类型
+                    String[] typeCodes = oppIncludeType.split(",");
+                    for (String typeCode : typeCodes) {
+                        if (StringUtils.isNotEmpty(typeCode)) {
+                            String translated = oppTypeMap.getOrDefault(typeCode.trim(), typeCode.trim());
+                            if (translatedResult.length() > 0) {
+                                translatedResult.append(" ");
+                            }
+                            translatedResult.append(translated);
+                        }
+                    }
+                } else {
+                    // 单个业务类型
+                    String translated = oppTypeMap.getOrDefault(oppIncludeType, oppIncludeType);
+                    translatedResult.append(translated);
+                }
+
+                dto.setOppIncludeType(translatedResult.toString());
+            }
         }
 
         log.debug("完成码表翻译，处理记录数: {}", batchData.size());
