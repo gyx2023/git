@@ -36,8 +36,8 @@ public class ContractUserImportListener {
     public List<ContractUserTemplateResultVo> processImportData(List<String> dataList, String contractId, String hqGrpCode) {
         List<ContractUserTemplateResultVo> resultList = new ArrayList<>();
 
-        // 获取未绑定合同的用户列表
-        List<Map<String, Object>> uncontractedCustomers = contractOtherInfoService.selectUncontractedCustomersByHqGrpCode(hqGrpCode, contractId);
+        // 获取未绑定合同的用户列表（使用不脱敏的批量处理方法）
+        List<Map<String, Object>> uncontractedCustomers = contractOtherInfoService.selectUncontractedCustomersByHqGrpCodeForBatch(hqGrpCode, contractId);
 
         // 提取未绑定合同的加密服务号码列表，并解密后进行匹配
         List<String> validDecryptedSvcNums = uncontractedCustomers.stream()
