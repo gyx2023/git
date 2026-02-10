@@ -4,32 +4,27 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
-import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.crm.common.core.domain.dto.OldOpportunityDTO;
-import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
+import com.crm.system.domain.bo.SysCodeBo;
+import com.crm.system.domain.bo.topp.ToppContractBo;
+import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
+import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.domain.vo.topp.OldOpportunityVO;
-import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
+import com.crm.system.domain.vo.topp.ToppContractEformVo;
+import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
+import com.crm.system.service.ISysCodeService;
 import com.crm.system.service.ISysOssService;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
-import com.crm.system.service.ISysCodeService;
-import com.crm.system.domain.vo.topp.ToppContractVo;
-import com.crm.system.domain.vo.topp.ToppContractEformVo;
-import com.crm.system.domain.bo.topp.ToppContractBo;
-import com.crm.system.domain.bo.topp.ToppContractEformBo;
-import com.crm.system.domain.bo.SysCodeBo;
-import com.crm.system.domain.vo.SysCodeVo;
-import java.util.stream.Collectors;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +33,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 商机信息导出策略实现类
@@ -575,6 +571,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 查询并填充合同信息和电子表单信息
+     *
      * @param batchData 批量商机数据
      */
     private void enrichContractAndEformInfo(List<OldOpportunityDTO> batchData) {
@@ -584,9 +581,9 @@ public class OpportunityExport extends AbstractExportStrategy {
 
         // 收集所有商机ID
         List<Long> opportunityIds = batchData.stream()
-                .map(OldOpportunityDTO::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+            .map(OldOpportunityDTO::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
 
         if (opportunityIds.isEmpty()) {
             return;
@@ -644,6 +641,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 根据商机ID列表查询合同信息
+     *
      * @param opportunityIds 商机ID列表
      * @return 商机ID到合同列表的映射
      */
@@ -677,6 +675,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 根据商机ID列表查询电子表单信息
+     *
      * @param opportunityIds 商机ID列表
      * @return 商机ID到电子表单列表的映射
      */
@@ -710,6 +709,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 补充主要产品/解决方案信息
+     *
      * @param batchData 批量商机数据
      */
     private void enrichMainProductInfo(List<OldOpportunityDTO> batchData) {
@@ -806,8 +806,9 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 获取码表映射（类似老项目的getCodeAndNameMap方法）
-     * @param type 码表类型
+     * 获取码表映射
+     *
+     * @param type        码表类型
      * @param settingStr1 条件1
      * @param settingStr2 条件2
      * @return code到name的映射
@@ -853,7 +854,12 @@ public class OpportunityExport extends AbstractExportStrategy {
         Map<String, String> unicomTypeMap = getSysCodeMap("unicom_type_new", null, null);
         Map<String, String> clueSourceMap = getSysCodeMap("clue_source", null, null);
         Map<String, String> oppoStateMap = getSysCodeMap("oppo_state", null, null);
-        Map<String,String> selectType1Map = getSysCodeMap("select_type_1", null, null);
+        Map<String, String> selectType1Map = getSysCodeMap("select_type_1", null, null);
+
+        // isValid字段映射：1->有效, 0->无效
+        Map<String, String> isValidMap = new HashMap<>();
+        isValidMap.put("1", "有效");
+        isValidMap.put("0", "无效");
 
         // 为每个商机数据进行翻译
         for (OldOpportunityDTO dto : batchData) {
@@ -873,8 +879,12 @@ public class OpportunityExport extends AbstractExportStrategy {
                 dto.setOppoState(oppoStateMap.getOrDefault(dto.getOppoState(), dto.getOppoState()));
             }
 
-            if (StringUtils.isNotEmpty(dto.getIsBidding())){
+            if (StringUtils.isNotEmpty(dto.getIsBidding())) {
                 dto.setIsBidding(selectType1Map.getOrDefault(dto.getIsBidding(), dto.getIsBidding()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getIsValid())) {
+                dto.setIsValid(isValidMap.getOrDefault(dto.getIsValid(), dto.getIsValid()));
             }
         }
 
