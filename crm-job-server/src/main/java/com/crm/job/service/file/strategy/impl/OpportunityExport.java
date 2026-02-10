@@ -413,8 +413,7 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 完整商机信息流式导出到Excel文件
-     * 使用OldOpportunityVO模板自动生成表头
+     * 完整商机信息流式导出到Excel文件（老项目风格）
      */
     private boolean exportToExcelStreamFull(String sql, File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据，自动根据VO注解生成表头
@@ -449,6 +448,9 @@ public class OpportunityExport extends AbstractExportStrategy {
 
                 // 补充主要产品/解决方案信息
                 enrichMainProductInfo(batchData);
+
+                // 进行码表翻译（老项目风格）
+                translateSysCodeFields(batchData);
 
                 // 转换DTO为VO
                 List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
@@ -801,5 +803,81 @@ public class OpportunityExport extends AbstractExportStrategy {
             }
         }
         return null;
+    }
+
+    /**
+     * 获取码表映射（类似老项目的getCodeAndNameMap方法）
+     * @param type 码表类型
+     * @param settingStr1 条件1
+     * @param settingStr2 条件2
+     * @return code到name的映射
+     */
+    private Map<String, String> getSysCodeMap(String type, String settingStr1, String settingStr2) {
+        try {
+            SysCodeBo queryBo = new SysCodeBo();
+            queryBo.setType(type);
+            if (StringUtils.isNotEmpty(settingStr1)) {
+                queryBo.setSettingStr1(settingStr1);
+            }
+            if (StringUtils.isNotEmpty(settingStr2)) {
+                queryBo.setSettingStr2(settingStr2);
+            }
+
+            List<SysCodeVo> codeList = sysCodeService.queryList(queryBo);
+            Map<String, String> resultMap = new LinkedHashMap<>();
+
+            if (codeList != null && !codeList.isEmpty()) {
+                for (SysCodeVo sysCode : codeList) {
+                    if (sysCode.getCode() != null && sysCode.getName() != null) {
+                        resultMap.put(sysCode.getCode(), sysCode.getName());
+                    }
+                }
+            }
+            return resultMap;
+        } catch (Exception e) {
+            log.warn("获取码表映射失败, type: {}", type, e);
+            return new HashMap<>();
+        }
+    }
+
+    /**
+     * 在导出过程中进行码表翻译
+     */
+    private void translateSysCodeFields(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        // 获取各种码表映射
+        Map<String, String> oppTypeMap = getSysCodeMap("opp_type", null, null);
+        Map<String, String> unicomTypeMap = getSysCodeMap("unicom_type_new", null, null);
+        Map<String, String> clueSourceMap = getSysCodeMap("clue_source", null, null);
+        Map<String, String> oppoStateMap = getSysCodeMap("oppo_state", null, null);
+        Map<String,String> selectType1Map = getSysCodeMap("select_type_1", null, null);
+
+        // 为每个商机数据进行翻译
+        for (OldOpportunityDTO dto : batchData) {
+            if (StringUtils.isNotEmpty(dto.getOppType())) {
+                dto.setOppType(oppTypeMap.getOrDefault(dto.getOppType(), dto.getOppType()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getUnicomType())) {
+                dto.setUnicomType(unicomTypeMap.getOrDefault(dto.getUnicomType(), dto.getUnicomType()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppSource())) {
+                dto.setOppSource(clueSourceMap.getOrDefault(dto.getOppSource(), dto.getOppSource()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppoState())) {
+                dto.setOppoState(oppoStateMap.getOrDefault(dto.getOppoState(), dto.getOppoState()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getIsBidding())){
+                dto.setIsBidding(selectType1Map.getOrDefault(dto.getIsBidding(), dto.getIsBidding()));
+            }
+        }
+
+        log.debug("完成码表翻译，处理记录数: {}", batchData.size());
     }
 }
