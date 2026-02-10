@@ -25,6 +25,10 @@ import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysCodeService;
 import com.crm.system.service.ISysDictTypeService;
 import com.crm.system.service.ISysOssService;
+import com.crm.system.service.ISysAreaService;
+import com.crm.system.domain.SysArea;
+import com.crm.system.domain.SysUsers;
+import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +75,12 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     @Resource
     private ISysDictTypeService sysDictTypeService;
+
+    @Resource
+    private ISysAreaService sysAreaService;
+
+    @Resource
+    private SysUsersMapper sysUsersMapper;
 
     @Override
     public String getBusinessType() {
@@ -492,7 +502,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 补充商机客户经理和创建人地区信息
-     * 查询并填充客户经理的地市和区县信息
+     * 基于客户经理的组织机构关联地区信息，并根据地区级别进行相应处理
      *
      * @param batchData 批量商机数据
      */
@@ -552,6 +562,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                 log.warn("查询客户经理地区信息失败: {}", e.getMessage(), e);
             }
         }
+
+        // 基于客户经理组织机构关联地区信息的新逻辑
+        enrichAreaInfoByOrgStructure(batchData);
 
         // 将客户经理的信息复制给创建人
         for (OldOpportunityDTO dto : batchData) {
@@ -613,6 +626,198 @@ public class OpportunityExport extends AbstractExportStrategy {
         } catch (Exception e) {
             log.warn("查询客户经理组织信息失败: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * 基于客户经理组织机构关联地区信息
+     * 实现参考代码中的地区级别判断逻辑
+     *
+     * @param batchData 批量商机数据
+     */
+    private void enrichAreaInfoByOrgStructure(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 收集所有客户经理ID
+            Set<Long> custManagerIds = new HashSet<>();
+            for (OldOpportunityDTO dto : batchData) {
+                if (dto.getCustManagerId() != null) {
+                    custManagerIds.add(Long.valueOf(dto.getCustManagerId()));
+                }
+            }
+
+            if (custManagerIds.isEmpty()) {
+                log.debug("没有需要查询的客户经理组织结构信息");
+                return;
+            }
+
+            log.debug("开始查询客户经理组织结构地区信息，需要查询客户经理数量: {}", custManagerIds.size());
+
+            // 查询客户经理对应的组织机构地区信息
+            Map<Long, AreaInfo> custManagerAreaMap = queryCustManagerAreaInfo(new ArrayList<>(custManagerIds));
+
+            // 填充地区信息到DTO
+            int filledCount = 0;
+            for (OldOpportunityDTO dto : batchData) {
+                if (dto.getCustManagerId() != null) {
+                    Long managerId = Long.valueOf(dto.getCustManagerId());
+                    AreaInfo areaInfo = custManagerAreaMap.get(managerId);
+                    if (areaInfo != null) {
+                        // 根据地区级别判断机制设置地区信息
+                        if ("一级".equals(areaInfo.getAreaType())) {
+                            // 省级：省本级
+                            dto.setCustManagerCity("省本级");
+                            dto.setCustManagerCounty("");
+                        } else if ("二级".equals(areaInfo.getAreaType())) {
+                            // 市级：地市名称 + 市本级
+                            dto.setCustManagerCity(areaInfo.getAreaName());
+                            dto.setCustManagerCounty("市本级");
+                        } else if ("三级".equals(areaInfo.getAreaType())) {
+                            // 区县级：父级地市名称 + 区县名称
+                            dto.setCustManagerCity(areaInfo.getParentAreaName());
+                            dto.setCustManagerCounty(areaInfo.getAreaName());
+                        }
+                        filledCount++;
+                    }
+                }
+            }
+
+            log.debug("成功填充客户经理组织结构地区信息的记录数: {}", filledCount);
+        } catch (Exception e) {
+            log.warn("查询客户经理组织结构地区信息失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 查询客户经理对应的组织机构地区信息
+     * 关联链路：sys_user.org_id -> sys_org.area_id -> sys_area.id_
+     *
+     * @param custManagerIds 客户经理ID列表
+     * @return 客户经理ID到地区信息的映射
+     */
+    private Map<Long, AreaInfo> queryCustManagerAreaInfo(List<Long> custManagerIds) {
+        Map<Long, AreaInfo> areaInfoMap = new HashMap<>();
+
+        if (custManagerIds == null || custManagerIds.isEmpty()) {
+            return areaInfoMap;
+        }
+
+        try {
+            // 分批查询
+            int batchSize = 100;
+            for (int i = 0; i < custManagerIds.size(); i += batchSize) {
+                int endIndex = Math.min(i + batchSize, custManagerIds.size());
+                List<Long> batchIds = custManagerIds.subList(i, endIndex);
+
+                StringBuilder idCondition = new StringBuilder();
+                for (int j = 0; j < batchIds.size(); j++) {
+                    if (j > 0) {
+                        idCondition.append(",");
+                    }
+                    idCondition.append(batchIds.get(j));
+                }
+
+                // 构造联表查询SQL
+                // 关联链路：sys_user -> sys_org -> sys_area
+                String sql = "SELECT u.id_ as userId, a.id_ as areaId, a.name_ as areaName, " +
+                            "a.type_ as areaType, a.parent_ as parentAreaId, pa.name_ as parentAreaName " +
+                            "FROM sys_user u " +
+                            "LEFT JOIN sys_org o ON u.org_id = o.id_ " +
+                            "LEFT JOIN sys_area a ON o.area_id = a.id_ " +
+                            "LEFT JOIN sys_area pa ON a.parent_ = pa.id_ " +
+                            "WHERE u.id_ IN (" + idCondition.toString() + ")";
+
+                try {
+                    // 执行查询
+                    List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCustManagerOrgInfo(sql);
+
+                    if (batchResult != null && !batchResult.isEmpty()) {
+                        for (Map<String, Object> row : batchResult) {
+                            Object userIdObj = row.get("userId");
+                            Object areaIdObj = row.get("areaId");
+                            String areaName = (String) row.get("areaName");
+                            String areaType = (String) row.get("areaType");
+                            Object parentAreaIdObj = row.get("parentAreaId");
+                            String parentAreaName = (String) row.get("parentAreaName");
+
+                            // 安全的类型转换
+                            Long userId = convertToLong(userIdObj);
+                            Long areaId = convertToLong(areaIdObj);
+                            Long parentAreaId = convertToLong(parentAreaIdObj);
+
+                            if (userId != null && areaId != null && 
+                                StringUtils.isNotEmpty(areaName) && StringUtils.isNotEmpty(areaType)) {
+                                AreaInfo areaInfo = new AreaInfo();
+                                areaInfo.setAreaId(areaId);
+                                areaInfo.setAreaName(areaName);
+                                areaInfo.setAreaType(areaType);
+                                areaInfo.setParentAreaId(parentAreaId);
+                                areaInfo.setParentAreaName(parentAreaName);
+                                areaInfoMap.put(userId, areaInfo);
+                            }
+                        }
+                    }
+
+                    log.debug("批次查询完成，查询到组织结构地区信息数量: {}", batchResult != null ? batchResult.size() : 0);
+                } catch (Exception e) {
+                    log.warn("批次查询客户经理组织结构地区信息失败，用户IDs: {}", batchIds, e);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询客户经理组织结构地区信息时发生异常", e);
+        }
+
+        return areaInfoMap;
+    }
+
+    /**
+     * 安全的类型转换为Long
+     */
+    private Long convertToLong(Object obj) {
+        if (obj == null) return null;
+        
+        if (obj instanceof Long) {
+            return (Long) obj;
+        } else if (obj instanceof Integer) {
+            return ((Integer) obj).longValue();
+        } else if (obj instanceof String) {
+            try {
+                return Long.parseLong((String) obj);
+            } catch (NumberFormatException e) {
+                log.warn("无法将字符串转换为Long类型: {}", obj);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 地区信息封装类
+     */
+    private static class AreaInfo {
+        private Long areaId;
+        private String areaName;
+        private String areaType;  // "一级"(省级)、"二级"(市级)、"三级"(区县级)
+        private Long parentAreaId;
+        private String parentAreaName;
+
+        // getter和setter方法
+        public Long getAreaId() { return areaId; }
+        public void setAreaId(Long areaId) { this.areaId = areaId; }
+        
+        public String getAreaName() { return areaName; }
+        public void setAreaName(String areaName) { this.areaName = areaName; }
+        
+        public String getAreaType() { return areaType; }
+        public void setAreaType(String areaType) { this.areaType = areaType; }
+        
+        public Long getParentAreaId() { return parentAreaId; }
+        public void setParentAreaId(Long parentAreaId) { this.parentAreaId = parentAreaId; }
+        
+        public String getParentAreaName() { return parentAreaName; }
+        public void setParentAreaName(String parentAreaName) { this.parentAreaName = parentAreaName; }
     }
 
 
