@@ -15,21 +15,15 @@ import com.crm.system.domain.bo.topp.ToppContractBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
+import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.domain.vo.topp.OldOpportunityVO;
 import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
-import com.crm.system.mapper.topp.ToppOpportunityMapper;
-import com.crm.system.service.IDwdRepSysPersonDService;
-import com.crm.system.service.ISysCodeService;
-import com.crm.system.service.ISysDictTypeService;
-import com.crm.system.service.ISysOssService;
-import com.crm.system.service.ISysAreaService;
-import com.crm.system.domain.SysArea;
-import com.crm.system.domain.SysUsers;
 import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.mapper.topp.ToppOpportunityMapper;
+import com.crm.system.service.*;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
@@ -204,17 +198,17 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         // 4. 商机状态查询（支持多选）
-        String oppoStates = getParamValue(params, "oppoStates");
+        String oppoStates = getParamValue(params, "oppoState");
         if (StringUtils.isNotEmpty(oppoStates)) {
             if (oppoStates.contains(",")) {
                 String[] states = oppoStates.split(",");
                 sql.append(" and ( 1=2");
                 for (String state : states) {
-                    sql.append(" or op.opp_states = '" + state.trim() + "' ");
+                    sql.append(" or op.opp_state = '" + state.trim() + "' ");
                 }
                 sql.append(" ) ");
             } else {
-                sql.append(" and op.opp_states = '" + oppoStates.trim() + "' ");
+                sql.append(" and op.opp_state = '" + oppoStates.trim() + "' ");
             }
         }
 
@@ -748,7 +742,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                             Long areaId = convertToLong(areaIdObj);
                             Long parentAreaId = convertToLong(parentAreaIdObj);
 
-                            if (userId != null && areaId != null && 
+                            if (userId != null && areaId != null &&
                                 StringUtils.isNotEmpty(areaName) && StringUtils.isNotEmpty(areaType)) {
                                 SysAreaVo areaInfo = new SysAreaVo();
                                 areaInfo.setId(areaId);
@@ -777,7 +771,7 @@ public class OpportunityExport extends AbstractExportStrategy {
      */
     private Long convertToLong(Object obj) {
         if (obj == null) return null;
-        
+
         if (obj instanceof Long) {
             return (Long) obj;
         } else if (obj instanceof Integer) {
