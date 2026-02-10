@@ -308,4 +308,39 @@
         ${sql}
     </select>
 
+    <!-- 批量查询客户经理组织机构信息 - 优化版 -->
+    <select id="selectCustManagerOrgInfoBatch" resultType="map">
+        SELECT u.id_ as userId, o.name_ as orgName
+        FROM sys_user u
+        LEFT JOIN sys_org o ON u.org_id = o.id_
+        <where>
+            <if test="userIds != null and userIds.size() > 0">
+                u.id_ IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!-- 批量查询客户经理地区信息 - 优化版 -->
+    <select id="selectCustManagerAreaInfoBatch" resultType="map">
+        SELECT u.id_ as userId, 
+               a.id_ as areaId, 
+               a.name_ as areaName, 
+               a.type_ as areaType, 
+               a.parent_ as parentAreaId
+        FROM sys_user u
+        LEFT JOIN sys_org o ON u.org_id = o.id_
+        LEFT JOIN sys_area a ON o.area_id = a.id_
+        <where>
+            <if test="userIds != null and userIds.size() > 0">
+                u.id_ IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
 </mapper>

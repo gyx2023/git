@@ -49,4 +49,12 @@ public interface IToppContractEformService {
 
     List<ToppContractEformVo> queryContractList(List<Long> ids);
 
+    /**
+     * 根据商机ID列表批量查询电子表单信息 - 优化版
+     * 替代N+1查询问题
+     * @param opportunityIds 商机ID列表
+     * @return 电子表单信息列表
+     */
+    List<ToppContractEformVo> selectByOpportunityIds(List<Long> opportunityIds);
+
 }

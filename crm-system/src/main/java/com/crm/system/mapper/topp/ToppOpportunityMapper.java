@@ -49,4 +49,20 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      */
     @Select("${sql}")
     List<java.util.Map<String, Object>> selectCustManagerOrgInfo(@Param("sql") String sql);
+
+    /**
+     * 批量查询客户经理组织机构信息 - 优化版
+     * 使用MyBatis动态SQL避免字符串拼接
+     * @param userIds 客户经理用户ID列表
+     * @return 包含用户ID和组织名称的结果列表
+     */
+    List<java.util.Map<String, Object>> selectCustManagerOrgInfoBatch(@Param("userIds") List<Long> userIds);
+
+    /**
+     * 批量查询客户经理地区信息 - 优化版
+     * 使用MyBatis动态SQL避免字符串拼接
+     * @param userIds 客户经理用户ID列表
+     * @return 包含用户ID和地区信息的结果列表
+     */
+    List<java.util.Map<String, Object>> selectCustManagerAreaInfoBatch(@Param("userIds") List<Long> userIds);
 }
