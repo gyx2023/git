@@ -29,6 +29,7 @@ import com.crm.system.service.ISysAreaService;
 import com.crm.system.domain.SysArea;
 import com.crm.system.domain.SysUsers;
 import com.crm.system.mapper.SysUsersMapper;
+import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
@@ -656,28 +657,30 @@ public class OpportunityExport extends AbstractExportStrategy {
             log.debug("开始查询客户经理组织结构地区信息，需要查询客户经理数量: {}", custManagerIds.size());
 
             // 查询客户经理对应的组织机构地区信息
-            Map<Long, AreaInfo> custManagerAreaMap = queryCustManagerAreaInfo(new ArrayList<>(custManagerIds));
+            Map<Long, SysAreaVo> custManagerAreaMap = queryCustManagerAreaInfo(new ArrayList<>(custManagerIds));
 
             // 填充地区信息到DTO
             int filledCount = 0;
             for (OldOpportunityDTO dto : batchData) {
                 if (dto.getCustManagerId() != null) {
                     Long managerId = Long.valueOf(dto.getCustManagerId());
-                    AreaInfo areaInfo = custManagerAreaMap.get(managerId);
+                    SysAreaVo areaInfo = custManagerAreaMap.get(managerId);
                     if (areaInfo != null) {
                         // 根据地区级别判断机制设置地区信息
-                        if ("一级".equals(areaInfo.getAreaType())) {
+                        if ("一级".equals(areaInfo.getType())) {
                             // 省级：省本级
                             dto.setCustManagerCity("省本级");
                             dto.setCustManagerCounty("");
-                        } else if ("二级".equals(areaInfo.getAreaType())) {
+                        } else if ("二级".equals(areaInfo.getType())) {
                             // 市级：地市名称 + 市本级
-                            dto.setCustManagerCity(areaInfo.getAreaName());
+                            dto.setCustManagerCity(areaInfo.getName());
                             dto.setCustManagerCounty("市本级");
-                        } else if ("三级".equals(areaInfo.getAreaType())) {
+                        } else if ("三级".equals(areaInfo.getType())) {
                             // 区县级：父级地市名称 + 区县名称
-                            dto.setCustManagerCity(areaInfo.getParentAreaName());
-                            dto.setCustManagerCounty(areaInfo.getAreaName());
+                            // 查询父级地区名称
+                            String parentAreaName = getParentAreaName(areaInfo.getParent());
+                            dto.setCustManagerCity(parentAreaName);
+                            dto.setCustManagerCounty(areaInfo.getName());
                         }
                         filledCount++;
                     }
@@ -697,8 +700,8 @@ public class OpportunityExport extends AbstractExportStrategy {
      * @param custManagerIds 客户经理ID列表
      * @return 客户经理ID到地区信息的映射
      */
-    private Map<Long, AreaInfo> queryCustManagerAreaInfo(List<Long> custManagerIds) {
-        Map<Long, AreaInfo> areaInfoMap = new HashMap<>();
+    private Map<Long, SysAreaVo> queryCustManagerAreaInfo(List<Long> custManagerIds) {
+        Map<Long, SysAreaVo> areaInfoMap = new HashMap<>();
 
         if (custManagerIds == null || custManagerIds.isEmpty()) {
             return areaInfoMap;
@@ -722,11 +725,10 @@ public class OpportunityExport extends AbstractExportStrategy {
                 // 构造联表查询SQL
                 // 关联链路：sys_user -> sys_org -> sys_area
                 String sql = "SELECT u.id_ as userId, a.id_ as areaId, a.name_ as areaName, " +
-                            "a.type_ as areaType, a.parent_ as parentAreaId, pa.name_ as parentAreaName " +
+                            "a.type_ as areaType, a.parent_ as parentAreaId " +
                             "FROM sys_user u " +
                             "LEFT JOIN sys_org o ON u.org_id = o.id_ " +
                             "LEFT JOIN sys_area a ON o.area_id = a.id_ " +
-                            "LEFT JOIN sys_area pa ON a.parent_ = pa.id_ " +
                             "WHERE u.id_ IN (" + idCondition.toString() + ")";
 
                 try {
@@ -740,7 +742,6 @@ public class OpportunityExport extends AbstractExportStrategy {
                             String areaName = (String) row.get("areaName");
                             String areaType = (String) row.get("areaType");
                             Object parentAreaIdObj = row.get("parentAreaId");
-                            String parentAreaName = (String) row.get("parentAreaName");
 
                             // 安全的类型转换
                             Long userId = convertToLong(userIdObj);
@@ -749,12 +750,11 @@ public class OpportunityExport extends AbstractExportStrategy {
 
                             if (userId != null && areaId != null && 
                                 StringUtils.isNotEmpty(areaName) && StringUtils.isNotEmpty(areaType)) {
-                                AreaInfo areaInfo = new AreaInfo();
-                                areaInfo.setAreaId(areaId);
-                                areaInfo.setAreaName(areaName);
-                                areaInfo.setAreaType(areaType);
-                                areaInfo.setParentAreaId(parentAreaId);
-                                areaInfo.setParentAreaName(parentAreaName);
+                                SysAreaVo areaInfo = new SysAreaVo();
+                                areaInfo.setId(areaId);
+                                areaInfo.setName(areaName);
+                                areaInfo.setType(areaType);
+                                areaInfo.setParent(parentAreaId);
                                 areaInfoMap.put(userId, areaInfo);
                             }
                         }
@@ -794,30 +794,22 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 地区信息封装类
+     * 根据父级ID获取父级地区名称
+     *
+     * @param parentId 父级地区ID
+     * @return 父级地区名称
      */
-    private static class AreaInfo {
-        private Long areaId;
-        private String areaName;
-        private String areaType;  // "一级"(省级)、"二级"(市级)、"三级"(区县级)
-        private Long parentAreaId;
-        private String parentAreaName;
-
-        // getter和setter方法
-        public Long getAreaId() { return areaId; }
-        public void setAreaId(Long areaId) { this.areaId = areaId; }
-        
-        public String getAreaName() { return areaName; }
-        public void setAreaName(String areaName) { this.areaName = areaName; }
-        
-        public String getAreaType() { return areaType; }
-        public void setAreaType(String areaType) { this.areaType = areaType; }
-        
-        public Long getParentAreaId() { return parentAreaId; }
-        public void setParentAreaId(Long parentAreaId) { this.parentAreaId = parentAreaId; }
-        
-        public String getParentAreaName() { return parentAreaName; }
-        public void setParentAreaName(String parentAreaName) { this.parentAreaName = parentAreaName; }
+    private String getParentAreaName(Long parentId) {
+        if (parentId == null) {
+            return "";
+        }
+        try {
+            SysAreaVo parentArea = sysAreaService.queryById(parentId);
+            return parentArea != null ? parentArea.getName() : "";
+        } catch (Exception e) {
+            log.warn("查询父级地区名称失败，parentId: {}", parentId, e);
+            return "";
+        }
     }
 
 
