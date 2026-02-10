@@ -653,4 +653,97 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             throw new RuntimeException("解密失败: " + e.getMessage());
         }
     }
+
+    // 查询未绑定合同的用户列表（用于后端批量处理，不脱敏）
+    @Override
+    public List<Map<String, Object>> selectUncontractedCustomersByHqGrpCodeForBatch(String hqGrpCode, String contractId) {
+        // 1. 根据总部集团编码(hqGrpCode)在tf_f_cust_group_m表中查询GROUP_ID，获取CUST_ID
+        TfFCustGroupMDo custGroup = tfFCustGroupMService.selectByGroupId(hqGrpCode);
+        String custId = null;
+        if (custGroup != null && custGroup.getCustId() != null && !custGroup.getCustId().isEmpty()) {
+            custId = custGroup.getCustId();
+        }
+
+        // 2. 分别执行两个SQL查询并合并结果（去重处理）
+        // 使用Set基于userId去重，避免同一个用户在两个查询条件中都出现导致重复
+        Set<String> processedUserIds = new HashSet<>();
+        List<CustMaintInfo> allCustMaintInfosFromDb = new ArrayList<>();
+
+        // SQL 1: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_ID ='xxx')
+        if (custId != null && !custId.isEmpty()) {
+            QueryWrapper<CustMaintInfo> queryWrapper1 = new QueryWrapper<>();
+            queryWrapper1.select("USER_ID", "SVC_NUM", "TYPE_LVL2_NAME")
+                .eq("STATUS", "1")
+                .eq("CUST_ID", custId);
+            List<CustMaintInfo> records1 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper1);
+            // 过滤并添加不重复的记录
+            for (CustMaintInfo record : records1) {
+                if (record.getUserId() != null && !processedUserIds.contains(record.getUserId())) {
+                    allCustMaintInfosFromDb.add(record);
+                    processedUserIds.add(record.getUserId());
+                }
+            }
+        }
+
+        // SQL 2: SELECT user_id,svc_num,type_lvl2_name FROM IOB_GOV2.CUST_MAINT_INFO WHERE (STATUS = '1' AND CUST_GRP_ID = 'xxx')
+        QueryWrapper<CustMaintInfo> queryWrapper2 = new QueryWrapper<>();
+        queryWrapper2.select("USER_ID", "SVC_NUM", "TYPE_LVL2_NAME")
+            .eq("STATUS", "1")
+            .eq("CUST_GRP_ID", hqGrpCode);
+        List<CustMaintInfo> records2 = SpringUtils.getBean(CustMaintInfoMapper.class).selectList(queryWrapper2);
+        // 过滤并添加不重复的记录
+        for (CustMaintInfo record : records2) {
+            if (record.getUserId() != null && !processedUserIds.contains(record.getUserId())) {
+                allCustMaintInfosFromDb.add(record);
+                processedUserIds.add(record.getUserId());
+            }
+        }
+
+        // 提取userIds
+        List<String> userIds = allCustMaintInfosFromDb.stream()
+            .map(CustMaintInfo::getUserId)
+            .filter(userId -> userId != null && !userId.isEmpty())
+            .collect(Collectors.toList());
+
+        if (userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 3. 查询zqzt_grp_contract_other_info表中已经存在的info_val（即user_id）
+        List<ZqztGrpContractOtherInfo> existingContracts = new ArrayList<>();
+        if (!userIds.isEmpty()) {
+            existingContracts = selectByInfoValAndContractId(userIds, contractId);
+        }
+
+        // 提取已经有关联合同的user_id
+        List<String> contractedUserIds = existingContracts.stream()
+            .map(ZqztGrpContractOtherInfo::getInfoVal)
+            .filter(infoVal -> infoVal != null && !infoVal.isEmpty())
+            .collect(Collectors.toList());
+
+        // 4. 过滤掉已经有合同的用户，只返回未签约的用户（不进行脱敏处理）
+        List<Map<String, Object>> uncontractedUsers = allCustMaintInfosFromDb.stream()
+            .filter(custMaintInfo -> {
+                String userId = custMaintInfo.getUserId();
+                return userId != null && !contractedUserIds.contains(userId);
+            })
+            .map(custMaintInfo -> {
+                Map<String, Object> userMap = new HashMap<>();
+                String svcNum = custMaintInfo.getSvcNum();
+
+                // 直接返回原始服务号码，不进行脱敏
+                userMap.put("svcNum", svcNum); // 原始号码
+                
+                // 对SVC_NUM进行加密处理（用于后续匹配）
+                String encryptedSvcNum = encryptSvcNum(svcNum);
+                userMap.put("encryptedSvcNum", encryptedSvcNum); // 加密后的号码
+
+                userMap.put("userId", custMaintInfo.getUserId()); // 用户编号
+                userMap.put("typeLvl2Name", custMaintInfo.getTypeLvl2Name()); // 业务类型
+                return userMap;
+            })
+            .collect(Collectors.toList());
+
+        return uncontractedUsers;
+    }
 }

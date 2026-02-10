@@ -116,6 +116,15 @@ public interface IZqztGrpContractOtherInfoService {
     List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId);
 
     /**
+     * 根据总部集团编码查询未签约的客户（用于后端批量处理，不脱敏）
+     *
+     * @param hqGrpCode 总部集团编码
+     * @param contractId 合同ID
+     * @return 未签约的客户列表（包含原始服务号码）
+     */
+    List<Map<String, Object>> selectUncontractedCustomersByHqGrpCodeForBatch(String hqGrpCode, String contractId);
+
+    /**
      * 解密加密的服务号码
      * @param encryptedSvcNum 加密的服务号码
      * @return 解密后的原始服务号码
