@@ -80,6 +80,7 @@ spring:
           password: zyy_2026
           hikari:
             connectionTestQuery: SELECT 1 FROM DUAL
+            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
       hikari:
         pool-name: HikariCP-Pool
         # 最大连接池数量

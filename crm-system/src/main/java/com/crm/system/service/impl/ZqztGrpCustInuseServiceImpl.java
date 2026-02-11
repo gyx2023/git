@@ -144,9 +144,8 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
 
         // 计算分页起始位置和结束位置
         int startIndex = (pageQuery.getPageNum() - 1) * pageQuery.getPageSize();
-        int endIndex = Math.min(startIndex + pageQuery.getPageSize(), total);
         reqDTO.setStartIndex(startIndex);
-        reqDTO.setEndIndex(endIndex);
+        reqDTO.setEndIndex(pageQuery.getPageSize());
 
         // 获取完整数据列表
         List<ZqztGrpCustInuseRespDTO> list = baseMapper.queryZqztGrpCustInuseList(reqDTO);
