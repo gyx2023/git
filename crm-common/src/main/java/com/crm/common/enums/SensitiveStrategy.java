@@ -1,7 +1,6 @@
 package com.crm.common.enums;
 
 import cn.hutool.core.util.DesensitizedUtil;
-import com.crm.common.utils.Desensitization;
 import lombok.AllArgsConstructor;
 
 import java.util.function.Function;
@@ -38,27 +37,7 @@ public enum SensitiveStrategy {
     /**
      * 银行卡
      */
-    BANK_CARD(DesensitizedUtil::bankCard),
-
-    /**
-     * 公司或集团名称脱敏
-     */
-    COMPANY_NAME(Desensitization::desensitizeCompanyName),
-
-    /**
-     * 个人姓名脱敏
-     */
-    NAME(Desensitization::desensitizeName),
-
-    /**
-     * 合同名称脱敏
-     */
-    CONTRACT_NAME(Desensitization::desensitizeContractName),
-
-    /**
-     * 手机号码脱敏（自定义规则）
-     */
-    CUSTOM_PHONE(Desensitization::desensitizePhoneNumber);
+    BANK_CARD(DesensitizedUtil::bankCard);
 
     //可自行添加其他脱敏策略
 

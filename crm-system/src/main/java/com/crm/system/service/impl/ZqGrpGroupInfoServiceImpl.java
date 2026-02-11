@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -13,7 +14,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.GrpExpandTypeenum;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
-import com.crm.common.utils.Desensitization;
+import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.SysArea;
 import com.crm.system.domain.SysCategory;
 import com.crm.system.domain.ZqGrpGroupInfo;
@@ -21,6 +22,7 @@ import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
+import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.SysCategoryMapper;
@@ -36,6 +38,10 @@ import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.crm.common.constant.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 /**
  * 政企集团客户信息Service业务层处理
@@ -68,6 +74,18 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public ZqGrpGroupInfoVo queryById(Long grpId){
         ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
+
+        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
+        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        List<RoleDTO> roles = loginUser.getRoles();
+        boolean isSensitive = sensitiveRoles.stream()
+            .anyMatch(roleStr -> roles.stream()
+                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
+
+        if (!isSensitive) {
+            return desensitizeVo(vo);
+        }
         return vo;
     }
 
@@ -84,6 +102,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
+        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
+        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
+        List<RoleDTO> roles = loginUser.getRoles();
+        boolean isSensitive = sensitiveRoles.stream()
+                .anyMatch(roleStr -> roles.stream()
+                        .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
+        // 根据用户角色决定是否对查询结果进行脱敏处理
+        if (!isSensitive) {
+            List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
+                    .map(this::desensitizeVo)
+                    .collect(Collectors.toList());
+            result.setRecords(desensitizedList);
+        }
         return TableDataInfo.build(result);
     }
 
@@ -113,18 +144,22 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
+        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
+        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
+        List<RoleDTO> roles = loginUser.getRoles();
+        boolean isSensitive = sensitiveRoles.stream()
+            .anyMatch(roleStr -> roles.stream()
+                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
+
+        // 根据用户角色决定是否对查询结果进行脱敏处理
+        if (!isSensitive) {
+            List<ZqGrpGroupInfoVo> desensitizedList = result.getRecords().stream()
+                    .map(this::desensitizeVo)
+                    .collect(Collectors.toList());
+            result.setRecords(desensitizedList);
+        }
+
         return TableDataInfo.build(result);
-    }
-
-     @Override
-    public List<ZqGrpGroupInfoVo> exportListLevel(ZqGrpGroupInfoBo bo, String areaCode) {
-        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
-        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
-
-        // 字典翻译
-        translateDictLabels(list);
-        return list;
     }
 
     /**
@@ -136,6 +171,37 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode) {
+        return exportList(bo, areaCode, true); // 默认需要脱敏
+    }
+     @Override
+    public List<ZqGrpGroupInfoVo> exportListLevel(ZqGrpGroupInfoBo bo, String areaCode, boolean needDesensitize) {
+        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
+        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+        List<ZqGrpGroupInfoVo> list = baseMapper.selectVoList(lqw);
+
+        // 字典翻译
+        translateDictLabels(list);
+
+        // 根据needDesensitize参数决定是否对查询结果进行脱敏处理
+        if (needDesensitize) {
+            list = list.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        }
+
+        return list;
+    }
+
+    /**
+     * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
+     *
+     * @param bo 查询条件
+     * @param areaCode 区域代码
+     * @param needDesensitize 是否需要脱敏
+     * @return 政企集团客户信息列表
+     */
+    @Override
+    public List<ZqGrpGroupInfoVo> exportList(ZqGrpGroupInfoBo bo, String areaCode, boolean needDesensitize) {
 
         Map<String, Object> dictCache = preLoadDictCache(bo, areaCode);
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
@@ -159,6 +225,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
             // 对当前批次数据进行字典翻译（使用预加载的缓存）
             translateDictLabelsWithCache(batchList, dictCache);
+
+            // 根据needDesensitize参数决定是否对当前批次数据进行脱敏处理
+            if (needDesensitize) {
+                batchList = batchList.stream()
+                    .map(this::desensitizeVo)
+                    .collect(Collectors.toList());
+            }
 
             allResults.addAll(batchList);
 
@@ -333,6 +406,28 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
     }
+
+    /**
+     * 对ZqGrpGroupInfoVo对象进行脱敏处理
+     * @param vo 要脱敏的ZqGrpGroupInfoVo对象
+     * @return 脱敏后的ZqGrpGroupInfoVo对象
+     */
+    private ZqGrpGroupInfoVo desensitizeVo(ZqGrpGroupInfoVo vo) {
+        if (vo == null) {
+            return null;
+        }
+
+        // 对集团名称进行脱敏
+        vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
+
+        // 对省、市、县客户经理姓名进行脱敏
+        vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
+        vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
+        vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+
+        return vo;
+    }
+
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
@@ -841,7 +936,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * @return 政企集团客户信息列表
      */
     @Override
-    public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
+    public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode, boolean needDesensitize) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
         lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
@@ -851,6 +946,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 进行字典翻译
         translateDictLabels(resultList);
+
+        // 根据needDesensitize参数决定是否对数据进行脱敏处理
+        if (needDesensitize) {
+            resultList = resultList.stream()
+                .map(this::desensitizeVo)
+                .collect(Collectors.toList());
+        }
 
         return resultList;
     }
