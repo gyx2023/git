@@ -1320,7 +1320,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                 for (Map<String, Object> row : batchResult) {
                     Object userIdObj = row.get("userId");
                     Long userId = convertToLong(userIdObj);
-                    
+
                     if (userId != null) {
                         supportManagerInfoMap.put(userId, row);
                     }
@@ -1361,6 +1361,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
     /**
      * 从参数Map中获取指定参数的值
+     * 支持多选参数的处理
      */
     private String getParamValue(Map<String, Object> params, String paramName) {
         if (params != null && params.containsKey(paramName)) {
@@ -1369,20 +1370,25 @@ public class OpportunityExport extends AbstractExportStrategy {
                 if (valueObj instanceof String[]) {
                     String[] values = (String[]) valueObj;
                     if (values.length > 0) {
-                        return values[0];
+                        // 对于多选参数，将数组元素用逗号连接
+                        return String.join(",", values);
                     }
                 } else if (valueObj instanceof String) {
                     return (String) valueObj;
                 } else if (valueObj instanceof List) {
                     List<?> list = (List<?>) valueObj;
                     if (!list.isEmpty()) {
-                        return String.valueOf(list.get(0));
+                        // 对于List类型，将元素用逗号连接
+                        return list.stream()
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(","));
                     }
                 }
             }
         }
         return null;
     }
+
 
     /**
      * 批量预加载上下文类
