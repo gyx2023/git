@@ -11,8 +11,6 @@ import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.bo.SysCodeBo;
-import com.crm.system.domain.bo.topp.ToppContractBo;
-import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.SysAreaVo;
@@ -29,19 +27,26 @@ import com.crm.system.service.topp.IToppContractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
  * 商机信息导出策略实现类
- * 处理商机信息导出的具体业务逻辑
  *
  * @author crm
- * @date 2026-02-04
+ * @date 2026-02-10
  */
 @Slf4j
 @Component
@@ -77,6 +82,33 @@ public class OpportunityExport extends AbstractExportStrategy {
     @Resource
     private SysUsersMapper sysUsersMapper;
 
+    // 全局缓存
+    private static final Map<String, Map<String, String>> SYS_CODE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, List<SysDictData>> DICT_TYPE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Long, SysAreaVo> AREA_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, String> ORG_NAME_CACHE = new ConcurrentHashMap<>();
+
+    // 缓存初始化标志
+    private volatile boolean cacheInitialized = false;
+    private final Object cacheInitLock = new Object();
+
+    // 创建固定线程池用于并行处理
+    private final ExecutorService executorService = Executors.newFixedThreadPool(8);
+
+    @PostConstruct
+    public void init() {
+        log.info("导出服务初始化完成");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+        }
+        clearGlobalCache();
+        log.info("导出服务销毁完成");
+    }
+
     @Override
     public String getBusinessType() {
         return "opportunity_export";
@@ -85,7 +117,10 @@ public class OpportunityExport extends AbstractExportStrategy {
     @Override
     protected boolean doExportTask(FileAsyncTaskDo task) throws Exception {
         try {
-            log.info("开始执行商机导出任务，任务ID: {}", task.getTaskId());
+            log.info("开始执行优化版商机导出任务，任务ID: {}", task.getTaskId());
+
+            // 初始化全局缓存
+            initializeGlobalCache();
 
             // 解析请求参数
             Map<String, Object> requestParams = parseRequestParams(task);
@@ -103,15 +138,12 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 添加查询条件
             appendAllQueryConditions(sql, requestParams);
 
-            // 添加排序条件
-            sql.append(" order by op.id_ desc");
-
             // 创建临时文件
             String prefix = "opportunity_export_" + System.currentTimeMillis();
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
             try {
-                boolean success = exportToExcelStreamFull(sql.toString(), tempFile);
+                boolean success = exportToExcelStreamOptimized(sql.toString(), tempFile, userId);
                 if (!success) {
                     task.setRemark("流式导出失败");
                     return false;
@@ -132,7 +164,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             String originalFileName = "商机信息导出_" + System.currentTimeMillis() + ".xlsx";
 
             // 保存到本地指定目录
-            String localDownloadPath = saveToLocal(tempFile, originalFileName);
+            String localDownloadPath = saveToLocalOptimized(tempFile, originalFileName);
 
             // 设置文件信息
             task.setFileName(originalFileName);
@@ -148,13 +180,576 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
+     * 初始化全局缓存
+     */
+    private void initializeGlobalCache() {
+        if (cacheInitialized) {
+            return;
+        }
+
+        synchronized (cacheInitLock) {
+            if (cacheInitialized) {
+                return;
+            }
+
+            try {
+                long startTime = System.currentTimeMillis();
+                log.info("开始初始化全局缓存...");
+
+                // 并行初始化各种静态数据缓存
+                CompletableFuture<Void> sysCodeFuture = CompletableFuture.runAsync(this::initSysCodeCache, executorService);
+                CompletableFuture<Void> dictTypeFuture = CompletableFuture.runAsync(this::initDictTypeCache, executorService);
+                CompletableFuture<Void> areaFuture = CompletableFuture.runAsync(this::initAreaCache, executorService);
+
+                // 等待所有缓存初始化完成
+                CompletableFuture.allOf(sysCodeFuture, dictTypeFuture, areaFuture).join();
+
+                cacheInitialized = true;
+                long endTime = System.currentTimeMillis();
+                log.info("全局缓存初始化完成，耗时: {}ms", (endTime - startTime));
+
+            } catch (Exception e) {
+                log.error("全局缓存初始化失败", e);
+                throw new RuntimeException("全局缓存初始化失败", e);
+            }
+        }
+    }
+
+    /**
+     * 初始化码表缓存
+     */
+    private void initSysCodeCache() {
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // 预定义需要缓存的码表类型
+            String[] codeTypes = {
+                "opp_type", "unicom_type_new", "clue_source",
+                "oppo_state", "select_type_1", "main_product"
+            };
+
+            for (String type : codeTypes) {
+                try {
+                    SysCodeBo queryBo = new SysCodeBo();
+                    queryBo.setType(type);
+
+                    List<SysCodeVo> codeList = sysCodeService.queryList(queryBo);
+                    Map<String, String> codeMap = new HashMap<>();
+
+                    if (codeList != null && !codeList.isEmpty()) {
+                        for (SysCodeVo sysCode : codeList) {
+                            if (sysCode.getCode() != null && sysCode.getName() != null) {
+                                codeMap.put(sysCode.getCode(), sysCode.getName());
+                            }
+                        }
+                    }
+
+                    SYS_CODE_CACHE.put(type, codeMap);
+                    log.debug("码表缓存初始化完成: {}，条目数: {}", type, codeMap.size());
+
+                } catch (Exception e) {
+                    log.warn("初始化码表缓存失败，type: {}", type, e);
+                }
+            }
+
+            long endTime = System.currentTimeMillis();
+            log.info("码表缓存初始化完成，耗时: {}ms", (endTime - startTime));
+
+        } catch (Exception e) {
+            log.error("码表缓存初始化异常", e);
+        }
+    }
+
+    /**
+     * 初始化字典类型缓存
+     */
+    private void initDictTypeCache() {
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // 预定义需要缓存的字典类型
+            String[] dictTypes = {"opp_growth_type"};
+
+            for (String type : dictTypes) {
+                try {
+                    List<SysDictData> dictList = sysDictTypeService.selectDictDataByType(type);
+                    DICT_TYPE_CACHE.put(type, dictList != null ? dictList : new ArrayList<>());
+                    log.debug("字典类型缓存初始化完成: {}，条目数: {}", type,
+                        dictList != null ? dictList.size() : 0);
+
+                } catch (Exception e) {
+                    log.warn("初始化字典类型缓存失败，type: {}", type, e);
+                }
+            }
+
+            long endTime = System.currentTimeMillis();
+            log.info("字典类型缓存初始化完成，耗时: {}ms", (endTime - startTime));
+
+        } catch (Exception e) {
+            log.error("字典类型缓存初始化异常", e);
+        }
+    }
+
+    /**
+     * 初始化地区缓存
+     */
+    private void initAreaCache() {
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // 查询所有地区信息
+            List<SysAreaVo> allAreas = sysAreaService.queryList(null);
+
+            if (allAreas != null && !allAreas.isEmpty()) {
+                for (SysAreaVo area : allAreas) {
+                    if (area.getId() != null) {
+                        AREA_CACHE.put(area.getId(), area);
+                    }
+                }
+            }
+
+            long endTime = System.currentTimeMillis();
+            log.info("地区缓存初始化完成，总条目数: {}，耗时: {}ms", AREA_CACHE.size(), (endTime - startTime));
+
+        } catch (Exception e) {
+            log.error("地区缓存初始化异常", e);
+        }
+    }
+
+    /**
+     * 清理全局缓存
+     */
+    private void clearGlobalCache() {
+        SYS_CODE_CACHE.clear();
+        DICT_TYPE_CACHE.clear();
+        AREA_CACHE.clear();
+        ORG_NAME_CACHE.clear();
+        cacheInitialized = false;
+        log.info("全局缓存已清理");
+    }
+
+    /**
+     * 商机信息流式导出到Excel文件
+     */
+    private boolean exportToExcelStreamOptimized(String baseSql, File outputFile, Long userId) throws Exception {
+        // 使用 EasyExcel 分批写入数据
+        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, OldOpportunityVO.class)
+            .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+            .build()) {
+
+            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
+
+            int pageSize = 3000;
+            Long lastMaxId = null;
+            boolean hasMoreData = true;
+
+            while (hasMoreData) {
+
+                String paginatedSql = buildCursorPaginationSql(baseSql, lastMaxId, pageSize);
+
+                // 查询当前批次数据
+                List<OldOpportunityDTO> batchData = toppOpportunityMapper.selectOldOppoExportData(paginatedSql);
+
+                if (batchData == null || batchData.isEmpty()) {
+                    hasMoreData = false;
+                    break;
+                }
+
+                log.info("处理第{}批次数据，数量: {}",
+                    lastMaxId == null ? 1 : (int)(lastMaxId / pageSize) + 1, batchData.size());
+
+                // 更新游标
+                lastMaxId = batchData.stream()
+                    .map(OldOpportunityDTO::getId)
+                    .filter(Objects::nonNull)
+                    .max(Long::compareTo)
+                    .orElse(null);
+
+                // 批量预加载动态数据
+                BatchEnrichmentContext context = preloadDynamicDataOptimized(batchData);
+
+                // 并行处理各项补充信息
+                CompletableFuture<Void> areaFuture = CompletableFuture.runAsync(() ->
+                    enrichAreaInfoOptimized(batchData, context), executorService);
+
+                CompletableFuture<Void> contractFuture = CompletableFuture.runAsync(() ->
+                    enrichContractAndEformInfoOptimized(batchData, context), executorService);
+
+                CompletableFuture<Void> productFuture = CompletableFuture.runAsync(() ->
+                    enrichMainProductInfoOptimized(batchData), executorService);
+
+                // 等待所有并行任务完成
+                CompletableFuture.allOf(areaFuture, contractFuture, productFuture).join();
+
+                // 进行翻译
+                translateSysCodeFieldsOptimized(batchData);
+
+                // 转换DTO为VO
+                List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
+
+                // 写入当前批次数据
+                excelWriter.write(batchVoData, writeSheet);
+
+                log.info("第{}批次数据处理完成", lastMaxId == null ? 1 : (int)(lastMaxId / pageSize));
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 构建游标分页SQL
+     */
+    private String buildCursorPaginationSql(String baseSql, Long lastMaxId, int pageSize) {
+        StringBuilder cursorSql = new StringBuilder(baseSql);
+
+        if (lastMaxId != null) {
+            // 添加游标条件
+            if (baseSql.toLowerCase().contains("where")) {
+                cursorSql.append(" AND op.id_ > ").append(lastMaxId);
+            } else {
+                cursorSql.append(" WHERE op.id_ > ").append(lastMaxId);
+            }
+        }
+
+        // 添加排序和限制
+        cursorSql.append(" ORDER BY op.id_ ASC LIMIT ").append(pageSize);
+        return cursorSql.toString();
+    }
+
+    /**
+     * 动态数据预加载
+     */
+    private BatchEnrichmentContext preloadDynamicDataOptimized(List<OldOpportunityDTO> batchData) {
+        BatchEnrichmentContext context = new BatchEnrichmentContext();
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // 收集所有需要查询的ID
+            Set<Long> opportunityIds = batchData.stream()
+                .map(OldOpportunityDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+            Set<Long> custManagerIds = batchData.stream()
+                .map(dto -> dto.getCustManagerId() != null ? Long.valueOf(dto.getCustManagerId()) : null)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+            // 并行预加载动态数据
+            CompletableFuture<Void> contractFuture = CompletableFuture.runAsync(() -> {
+                context.contractMap = queryContractsByOpportunityIdsOptimized(new ArrayList<>(opportunityIds));
+            }, executorService);
+
+            CompletableFuture<Void> eformFuture = CompletableFuture.runAsync(() -> {
+                context.eformMap = queryEformsByOpportunityIdsOptimized(new ArrayList<>(opportunityIds));
+            }, executorService);
+
+            CompletableFuture<Void> orgFuture = CompletableFuture.runAsync(() -> {
+                context.orgNameMap = queryCustManagerOrgNamesOptimized(new ArrayList<>(custManagerIds));
+            }, executorService);
+
+            CompletableFuture<Void> areaFuture = CompletableFuture.runAsync(() -> {
+                context.areaInfoMap = queryCustManagerAreaInfoOptimized(new ArrayList<>(custManagerIds));
+            }, executorService);
+
+            CompletableFuture<Void> personAreaFuture = CompletableFuture.runAsync(() -> {
+                context.personAreaMap = queryPersonAreaInfo(batchData);
+            }, executorService);
+
+            // 等待所有预加载完成
+            CompletableFuture.allOf(contractFuture, eformFuture, orgFuture, areaFuture, personAreaFuture).join();
+
+            long endTime = System.currentTimeMillis();
+            log.info("优化版动态数据预加载完成，耗时: {}ms", (endTime - startTime));
+
+        } catch (Exception e) {
+            log.warn("优化版动态数据预加载失败: {}", e.getMessage(), e);
+        }
+
+        return context;
+    }
+
+    /**
+     * 地区信息补充
+     */
+    private void enrichAreaInfoOptimized(List<OldOpportunityDTO> batchData, BatchEnrichmentContext context) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            batchData.parallelStream().forEach(dto -> {
+                if (dto.getCustManagerId() != null) {
+                    Long managerId = Long.valueOf(dto.getCustManagerId());
+
+                    // 填充组织机构信息（优先使用缓存）
+                    String orgName = context.orgNameMap.get(managerId);
+                    if (StringUtils.isNotEmpty(orgName)) {
+                        dto.setCustManagerOrg(orgName);
+                    }
+
+                    // 填充地区信息（优先使用缓存）
+                    SysAreaVo areaInfo = context.areaInfoMap.get(managerId);
+                    if (areaInfo != null) {
+                        if ("一级".equals(areaInfo.getType())) {
+                            dto.setCustManagerCity("省本级");
+                            dto.setCustManagerCounty("");
+                        } else if ("二级".equals(areaInfo.getType())) {
+                            dto.setCustManagerCity(areaInfo.getName());
+                            dto.setCustManagerCounty("市本级");
+                        } else if ("三级".equals(areaInfo.getType())) {
+                            String parentAreaName = getCachedParentAreaName(areaInfo.getParent());
+                            dto.setCustManagerCity(parentAreaName);
+                            dto.setCustManagerCounty(areaInfo.getName());
+                        }
+                    }
+                }
+
+                // 填充客户经理地区信息
+                String personKey = dto.getCustManagerName() + "_" + dto.getCustManagerTel();
+                DwdRepSysPersonDVo personInfo = context.personAreaMap.get(personKey);
+                if (personInfo != null) {
+                    dto.setCustManagerCity(personInfo.getAreaName());
+                    dto.setCustManagerCounty(personInfo.getCountyName());
+                }
+
+                // 复制给创建人
+                dto.setCreatorName(dto.getCustManagerName());
+                dto.setCreatorPhone(dto.getCustManagerTel());
+                dto.setCreatorCity(dto.getCustManagerCity());
+                dto.setCreatorCounty(dto.getCustManagerCounty());
+                dto.setCreatorOrg(dto.getCustManagerOrg());
+            });
+
+            long endTime = System.currentTimeMillis();
+            log.debug("地区信息补充完成，处理记录数: {}, 耗时: {}ms", batchData.size(), (endTime - startTime));
+
+        } catch (Exception e) {
+            log.warn("地区信息补充失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 从缓存中获取父级地区名称
+     */
+    private String getCachedParentAreaName(Long parentId) {
+        if (parentId == null) {
+            return "";
+        }
+
+        SysAreaVo parentArea = AREA_CACHE.get(parentId);
+        return parentArea != null ? parentArea.getName() : "";
+    }
+
+    /**
+     * 合同和电子表单信息补充
+     */
+    private void enrichContractAndEformInfoOptimized(List<OldOpportunityDTO> batchData, BatchEnrichmentContext context) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // 处理合同和电子表单信息补充
+            batchData.parallelStream().forEach(dto -> {
+                Long oppId = dto.getId();
+
+                // 填充合同信息
+                List<ToppContractVo> contracts = context.contractMap.get(oppId);
+                if (contracts != null && !contracts.isEmpty()) {
+                    StringBuilder contractNames = new StringBuilder();
+                    for (int i = 0; i < contracts.size(); i++) {
+                        ToppContractVo contract = contracts.get(i);
+                        if (i > 0) contractNames.append(",");
+                        if (StringUtils.isNotEmpty(contract.getContractName())) {
+                            contractNames.append(contract.getContractName());
+                        }
+                    }
+                    dto.setContractNames(contractNames.toString());
+                }
+
+                // 填充电子表单信息
+                List<ToppContractEformVo> eforms = context.eformMap.get(oppId);
+                if (eforms != null && !eforms.isEmpty()) {
+                    StringBuilder eformNames = new StringBuilder();
+                    for (int i = 0; i < eforms.size(); i++) {
+                        ToppContractEformVo eform = eforms.get(i);
+                        if (i > 0) eformNames.append(",");
+                        if (StringUtils.isNotEmpty(eform.getEformName())) {
+                            eformNames.append(eform.getEformName());
+                        }
+                    }
+                    dto.setEformNames(eformNames.toString());
+                }
+            });
+
+            long endTime = System.currentTimeMillis();
+            log.debug("合同信息补充完成，耗时: {}ms", (endTime - startTime));
+
+        } catch (Exception e) {
+            log.warn("合同信息补充失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 主要产品信息补充
+     */
+    private void enrichMainProductInfoOptimized(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        // 处理主要产品信息补充
+        batchData.parallelStream().forEach(dto -> {
+            String productCode = dto.getProductCode();
+            String oppType = dto.getOppType();
+            String sfProductName = dto.getSfProductName();
+
+            if ("1".equals(productCode) || StringUtils.isEmpty(productCode)) {
+                if (StringUtils.isNotEmpty(sfProductName)) {
+                    dto.setMainProduct(sfProductName);
+                }
+                return;
+            }
+
+            // 根据业务类型确定settingStr1的值
+            String settingStr1 = null;
+            if ("opp_type_np".equals(oppType) || "opp_type_spy".equals(oppType)
+                || "opp_type_yzy".equals(oppType) || "opp_type_yyy".equals(oppType)) {
+                settingStr1 = "400301";
+            } else if ("opp_type_zwyw".equals(oppType)) {
+                settingStr1 = "400302";
+            }
+
+            // 查询main_product码表（使用全局缓存）
+            if (StringUtils.isNotEmpty(settingStr1)) {
+                try {
+                    Map<String, String> mainProductMap = SYS_CODE_CACHE.get("main_product");
+                    if (mainProductMap != null) {
+                        String productName = mainProductMap.get(productCode);
+                        if (StringUtils.isNotEmpty(productName)) {
+                            dto.setMainProduct(productName);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("查询产品编码信息失败，productCode: {}, oppType: {}, error: {}",
+                        productCode, oppType, e.getMessage());
+                }
+            }
+        });
+
+        log.debug("已完成主要产品信息补充，处理记录数: {}", batchData.size());
+    }
+
+    /**
+     * 码表翻译
+     */
+    private void translateSysCodeFieldsOptimized(List<OldOpportunityDTO> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        // 一次性获取所有需要的缓存Map到局部变量
+        final Map<String, String> oppTypeMap = SYS_CODE_CACHE.get("opp_type");
+        final Map<String, String> unicomTypeMap = SYS_CODE_CACHE.get("unicom_type_new");
+        final Map<String, String> clueSourceMap = SYS_CODE_CACHE.get("clue_source");
+        final Map<String, String> oppoStateMap = SYS_CODE_CACHE.get("oppo_state");
+        final Map<String, String> selectType1Map = SYS_CODE_CACHE.get("select_type_1");
+
+        // 字典类型缓存
+        List<SysDictData> growthTypeDictList = DICT_TYPE_CACHE.get("opp_growth_type");
+        final Map<String, String> oppGrowthTypeMap = new HashMap<>();
+        if (growthTypeDictList != null && !growthTypeDictList.isEmpty()) {
+            oppGrowthTypeMap.putAll(growthTypeDictList.stream()
+                .collect(Collectors.toMap(SysDictData::getDictValue, SysDictData::getDictLabel)));
+        }
+
+        // isValid字段映射：1->有效, 0->无效（静态映射）
+        Map<String, String> isValidMap = new HashMap<>();
+        isValidMap.put("1", "有效");
+        isValidMap.put("0", "无效");
+
+        // 翻译处理
+        batchData.parallelStream().forEach(dto -> {
+            if (StringUtils.isNotEmpty(dto.getOppType()) && oppTypeMap != null) {
+                dto.setOppType(oppTypeMap.getOrDefault(dto.getOppType(), dto.getOppType()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getUnicomType()) && unicomTypeMap != null) {
+                dto.setUnicomType(unicomTypeMap.getOrDefault(dto.getUnicomType(), dto.getUnicomType()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppSource()) && clueSourceMap != null) {
+                dto.setOppSource(clueSourceMap.getOrDefault(dto.getOppSource(), dto.getOppSource()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppoState()) && oppoStateMap != null) {
+                dto.setOppoState(oppoStateMap.getOrDefault(dto.getOppoState(), dto.getOppoState()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getIsBidding()) && selectType1Map != null) {
+                dto.setIsBidding(selectType1Map.getOrDefault(dto.getIsBidding(), dto.getIsBidding()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getIsValid())) {
+                dto.setIsValid(isValidMap.getOrDefault(dto.getIsValid(), dto.getIsValid()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppGrowthType()) && oppGrowthTypeMap != null) {
+                dto.setOppGrowthType(oppGrowthTypeMap.getOrDefault(dto.getOppGrowthType(), dto.getOppGrowthType()));
+            }
+
+            if (StringUtils.isNotEmpty(dto.getOppIncludeType()) && oppTypeMap != null) {
+                String oppIncludeType = dto.getOppIncludeType();
+                StringBuilder translatedResult = new StringBuilder();
+
+                // 去除首尾逗号
+                if (oppIncludeType.startsWith(",")) {
+                    oppIncludeType = oppIncludeType.substring(1);
+                }
+                if (oppIncludeType.endsWith(",")) {
+                    oppIncludeType = oppIncludeType.substring(0, oppIncludeType.length() - 1);
+                }
+
+                // 按逗号分割并逐个翻译
+                if (oppIncludeType.contains(",")) {
+                    // 多个业务类型
+                    String[] typeCodes = oppIncludeType.split(",");
+                    for (String typeCode : typeCodes) {
+                        if (StringUtils.isNotEmpty(typeCode)) {
+                            String translated = oppTypeMap.getOrDefault(typeCode.trim(), typeCode.trim());
+                            if (translatedResult.length() > 0) {
+                                translatedResult.append(" ");
+                            }
+                            translatedResult.append(translated);
+                        }
+                    }
+                } else {
+                    // 单个业务类型
+                    String translated = oppTypeMap.getOrDefault(oppIncludeType, oppIncludeType);
+                    translatedResult.append(translated);
+                }
+
+                dto.setOppIncludeType(translatedResult.toString());
+            }
+        });
+
+        log.debug("码表翻译，处理记录数: {}", batchData.size());
+    }
+
+    /**
      * 解析请求参数
      */
     private Map<String, Object> parseRequestParams(FileAsyncTaskDo task) {
         if (task.getRequestParams() != null) {
             return JSONUtil.toBean(task.getRequestParams(), Map.class);
         }
-        return null;
+        return new HashMap<>();
     }
 
     /**
@@ -163,7 +758,8 @@ public class OpportunityExport extends AbstractExportStrategy {
     private StringBuffer buildBaseSql(Long userId) {
         StringBuffer sql = new StringBuffer();
         sql.append("select * from topp_opportunity op " +
-            "join sys_user su on su.id_ = op.cust_manager_id where" +
+            "join sys_user su on su.id_ = op.cust_manager_id " +
+            "left join tcomm_customer customer on op.cust_id = customer.id_ where" +
             " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) and" +
             " op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
             "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
@@ -230,10 +826,10 @@ public class OpportunityExport extends AbstractExportStrategy {
             sql.append(" and op.opp_area_id = '" + areaId + "'");
         }
 
-        // 8. 开发标识查询
+        // 8. 开发标识查询 - 通过客户表关联查询
         String developFlag = getParamValue(params, "developFlag");
         if (StringUtils.isNotEmpty(developFlag)) {
-            sql.append(" and op.develop_flag = '" + developFlag + "'");
+            sql.append(" and customer.develop_flag = '" + developFlag + "'");
         }
 
         // 9. 审核状态查询
@@ -406,105 +1002,37 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 完整商机信息流式导出到Excel文件
+     * 文件保存
      */
-    private boolean exportToExcelStreamFull(String sql, File outputFile) throws Exception {
-        // 使用 EasyExcel 分批写入数据，自动根据VO注解生成表头
-        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, OldOpportunityVO.class)
-            .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20)) // 固定列宽
-            .build()) {
-
-            WriteSheet writeSheet = EasyExcel.writerSheet("商机信息").build();
-
-            int pageSize = 1000;
-            int offset = 0;
-            boolean hasMoreData = true;
-
-            while (hasMoreData) {
-                // 构建分页SQL
-                String paginatedSql = sql + " limit " + pageSize + " offset " + offset;
-
-                // 查询当前批次数据
-                List<OldOpportunityDTO> batchData = toppOpportunityMapper.selectOldOppoExportData(paginatedSql);
-
-                if (batchData == null || batchData.isEmpty()) {
-                    hasMoreData = false;
-                    break;
-                }
-
-                // 补充客户经理组织机构信息
-                enrichCustManagerOrgInfo(batchData);
-
-                // 补充合同和电子表单信息
-                enrichContractAndEformInfo(batchData);
-
-                // 补充主要产品/解决方案信息
-                enrichMainProductInfo(batchData);
-
-                // 补充客户经理和创建人地区信息
-                enrichAreaInfo(batchData);
-
-                // 进行翻译
-                translateSysCodeFields(batchData);
-
-                // 转换DTO为VO
-                List<OldOpportunityVO> batchVoData = BeanCopyUtils.copyList(batchData, OldOpportunityVO.class);
-
-                // 写入当前批次数据
-                excelWriter.write(batchVoData, writeSheet);
-                offset += pageSize;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * 保存文件到本地目录
-     *
-     * @param tempFile 临时文件
-     * @param fileName 目标文件名
-     * @return 保存的文件路径
-     */
-    private String saveToLocal(File tempFile, String fileName) throws Exception {
-        // 配置本地下载
+    private String saveToLocalOptimized(File tempFile, String fileName) throws Exception {
         String downloadDir = "C:\\Users\\FBODC\\Desktop";
+        Path downloadPath = Paths.get(downloadDir);
 
-        // 创建目录
-        File downloadDirectory = new File(downloadDir);
-        if (!downloadDirectory.exists()) {
-            downloadDirectory.mkdirs();
+        // 确保目录存在
+        if (!Files.exists(downloadPath)) {
+            Files.createDirectories(downloadPath);
         }
 
-        // 目标文件路径
-        String targetPath = downloadDir + File.separator + fileName;
-        File targetFile = new File(targetPath);
+        Path targetPath = downloadPath.resolve(fileName);
+        Path sourcePath = tempFile.toPath();
 
-        // 复制文件
-        try (FileInputStream fis = new FileInputStream(tempFile);
-             FileOutputStream fos = new FileOutputStream(targetFile)) {
-
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = fis.read(buffer)) > 0) {
-                fos.write(buffer, 0, length);
-            }
+        try {
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            // 删除临时文件
+            Files.deleteIfExists(sourcePath);
         }
 
-        log.info("文件已保存到本地: {}", targetPath);
-        return targetPath;
+        String fullPath = targetPath.toString();
+        log.info("文件已保存到本地: {}", fullPath);
+        return fullPath;
     }
 
-
     /**
-     * 补充商机客户经理和创建人地区信息
-     * 基于客户经理的组织机构关联地区信息，并根据地区级别进行相应处理
-     *
-     * @param batchData 批量商机数据
+     * 查询人员地区信息
      */
-    private void enrichAreaInfo(List<OldOpportunityDTO> batchData) {
-        if (batchData == null || batchData.isEmpty()) {
-            return;
-        }
+    private Map<String, DwdRepSysPersonDVo> queryPersonAreaInfo(List<OldOpportunityDTO> batchData) {
+        Map<String, DwdRepSysPersonDVo> personAreaMap = new HashMap<>();
 
         // 收集需要查询的人员信息
         List<Map<String, String>> personInfos = new ArrayList<>();
@@ -527,174 +1055,63 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 查询客户经理地区信息
         if (!personInfos.isEmpty()) {
             try {
-                log.debug("开始查询客户经理地区信息，需要查询人数: {}", personInfos.size());
                 List<DwdRepSysPersonDVo> personAreaInfos = dwdRepSysPersonDService.selectAreaAndCounty(personInfos);
 
-                log.debug("查询到的客户经理地区信息数量: {}", personAreaInfos != null ? personAreaInfos.size() : 0);
-
                 // 构建姓名电话到地区信息的映射
-                Map<String, DwdRepSysPersonDVo> personAreaMap = new HashMap<>();
                 for (DwdRepSysPersonDVo personInfo : personAreaInfos) {
                     String key = personInfo.getFullName() + "_" + personInfo.getMobile();
                     personAreaMap.put(key, personInfo);
                 }
 
-                // 填充客户经理地区信息到DTO
-                int filledCount = 0;
-                for (OldOpportunityDTO dto : batchData) {
-                    // 填充客户经理地区信息
-                    String custManagerKey = dto.getCustManagerName() + "_" + dto.getCustManagerTel();
-                    DwdRepSysPersonDVo custManagerInfo = personAreaMap.get(custManagerKey);
-                    if (custManagerInfo != null) {
-                        dto.setCustManagerCity(custManagerInfo.getAreaName());
-                        dto.setCustManagerCounty(custManagerInfo.getCountyName());
-                        filledCount++;
-                    }
-                }
-
-                log.debug("成功填充客户经理地区信息的记录数: {}", filledCount);
+                log.debug("查询到人员地区信息数量: {}", personAreaInfos.size());
             } catch (Exception e) {
-                log.warn("查询客户经理地区信息失败: {}", e.getMessage(), e);
+                log.warn("查询人员地区信息失败: {}", e.getMessage(), e);
             }
         }
 
-        // 基于客户经理组织机构关联地区信息的新逻辑
-        enrichAreaInfoByOrgStructure(batchData);
-
-        // 将客户经理的信息复制给创建人
-        for (OldOpportunityDTO dto : batchData) {
-            dto.setCreatorName(dto.getCustManagerName());
-            dto.setCreatorPhone(dto.getCustManagerTel());
-            dto.setCreatorCity(dto.getCustManagerCity());
-            dto.setCreatorCounty(dto.getCustManagerCounty());
-            dto.setCreatorOrg(dto.getCustManagerOrg());
-        }
-
-        log.debug("已完成客户经理信息查询，处理记录数: {}", batchData.size());
+        return personAreaMap;
     }
 
     /**
-     * 补充客户经理组织机构信息
-     * 通过opportunity.cust_manager_id -> sys_user.org_id -> sys_org.name_ 的关联关系
-     * 查询并填充客户经理所属的组织机构名称
-     *
-     * @param batchData 批量商机数据
+     * 查询客户经理对应的组织机构名称
      */
-    private void enrichCustManagerOrgInfo(List<OldOpportunityDTO> batchData) {
-        if (batchData == null || batchData.isEmpty()) {
-            return;
+    private Map<Long, String> queryCustManagerOrgNamesOptimized(List<Long> custManagerIds) {
+        Map<Long, String> orgNameMap = new HashMap<>();
+
+        if (custManagerIds == null || custManagerIds.isEmpty()) {
+            return orgNameMap;
         }
 
         try {
-            // 收集所有客户经理ID
-            Set<Long> custManagerIds = new HashSet<>();
-            for (OldOpportunityDTO dto : batchData) {
-                if (dto.getCustManagerId() != null) {
-                    custManagerIds.add(Long.valueOf(dto.getCustManagerId()));
-                }
-            }
+            // 批量查询
+            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCustManagerOrgInfoBatch(custManagerIds);
 
-            if (custManagerIds.isEmpty()) {
-                log.debug("没有需要查询的客户经理组织信息");
-                return;
-            }
+            if (batchResult != null && !batchResult.isEmpty()) {
+                for (Map<String, Object> row : batchResult) {
+                    Object userIdObj = row.get("userId");
+                    String orgName = (String) row.get("orgName");
 
-            log.debug("开始查询客户经理组织信息，需要查询客户经理数量: {}", custManagerIds.size());
-
-            // 查询客户经理对应的组织机构信息
-            Map<Long, String> custManagerOrgMap = queryCustManagerOrgNames(new ArrayList<>(custManagerIds));
-
-            // 填充组织机构信息到DTO
-            int filledCount = 0;
-            for (OldOpportunityDTO dto : batchData) {
-                if (dto.getCustManagerId() != null) {
-                    Long managerId = Long.valueOf(dto.getCustManagerId());
-                    String orgName = custManagerOrgMap.get(managerId);
-                    if (StringUtils.isNotEmpty(orgName)) {
-                        dto.setCustManagerOrg(orgName);
-                        filledCount++;
+                    // 类型转换
+                    Long userId = convertToLong(userIdObj);
+                    if (userId != null && StringUtils.isNotEmpty(orgName)) {
+                        orgNameMap.put(userId, orgName);
                     }
                 }
             }
 
-            log.debug("成功填充客户经理组织信息的记录数: {}", filledCount);
+            log.debug("查询完成，查询到组织信息数量: {}", batchResult != null ? batchResult.size() : 0);
+
         } catch (Exception e) {
             log.warn("查询客户经理组织信息失败: {}", e.getMessage(), e);
         }
-    }
 
-    /**
-     * 基于客户经理组织机构关联地区信息
-     * 实现参考代码中的地区级别判断逻辑
-     *
-     * @param batchData 批量商机数据
-     */
-    private void enrichAreaInfoByOrgStructure(List<OldOpportunityDTO> batchData) {
-        if (batchData == null || batchData.isEmpty()) {
-            return;
-        }
-
-        try {
-            // 收集所有客户经理ID
-            Set<Long> custManagerIds = new HashSet<>();
-            for (OldOpportunityDTO dto : batchData) {
-                if (dto.getCustManagerId() != null) {
-                    custManagerIds.add(Long.valueOf(dto.getCustManagerId()));
-                }
-            }
-
-            if (custManagerIds.isEmpty()) {
-                log.debug("没有需要查询的客户经理组织结构信息");
-                return;
-            }
-
-            log.debug("开始查询客户经理组织结构地区信息，需要查询客户经理数量: {}", custManagerIds.size());
-
-            // 查询客户经理对应的组织机构地区信息
-            Map<Long, SysAreaVo> custManagerAreaMap = queryCustManagerAreaInfo(new ArrayList<>(custManagerIds));
-
-            // 填充地区信息到DTO
-            int filledCount = 0;
-            for (OldOpportunityDTO dto : batchData) {
-                if (dto.getCustManagerId() != null) {
-                    Long managerId = Long.valueOf(dto.getCustManagerId());
-                    SysAreaVo areaInfo = custManagerAreaMap.get(managerId);
-                    if (areaInfo != null) {
-                        // 根据地区级别判断机制设置地区信息
-                        if ("一级".equals(areaInfo.getType())) {
-                            // 省级：省本级
-                            dto.setCustManagerCity("省本级");
-                            dto.setCustManagerCounty("");
-                        } else if ("二级".equals(areaInfo.getType())) {
-                            // 市级：地市名称 + 市本级
-                            dto.setCustManagerCity(areaInfo.getName());
-                            dto.setCustManagerCounty("市本级");
-                        } else if ("三级".equals(areaInfo.getType())) {
-                            // 区县级：父级地市名称 + 区县名称
-                            // 查询父级地区名称
-                            String parentAreaName = getParentAreaName(areaInfo.getParent());
-                            dto.setCustManagerCity(parentAreaName);
-                            dto.setCustManagerCounty(areaInfo.getName());
-                        }
-                        filledCount++;
-                    }
-                }
-            }
-
-            log.debug("成功填充客户经理组织结构地区信息的记录数: {}", filledCount);
-        } catch (Exception e) {
-            log.warn("查询客户经理组织结构地区信息失败: {}", e.getMessage(), e);
-        }
+        return orgNameMap;
     }
 
     /**
      * 查询客户经理对应的组织机构地区信息
-     * 关联链路：sys_user.org_id -> sys_org.area_id -> sys_area.id_
-     *
-     * @param custManagerIds 客户经理ID列表
-     * @return 客户经理ID到地区信息的映射
      */
-    private Map<Long, SysAreaVo> queryCustManagerAreaInfo(List<Long> custManagerIds) {
+    private Map<Long, SysAreaVo> queryCustManagerAreaInfoOptimized(List<Long> custManagerIds) {
         Map<Long, SysAreaVo> areaInfoMap = new HashMap<>();
 
         if (custManagerIds == null || custManagerIds.isEmpty()) {
@@ -702,72 +1119,45 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         try {
-            // 分批查询
-            int batchSize = 100;
-            for (int i = 0; i < custManagerIds.size(); i += batchSize) {
-                int endIndex = Math.min(i + batchSize, custManagerIds.size());
-                List<Long> batchIds = custManagerIds.subList(i, endIndex);
+            // 批量查询
+            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCustManagerAreaInfoBatch(custManagerIds);
 
-                StringBuilder idCondition = new StringBuilder();
-                for (int j = 0; j < batchIds.size(); j++) {
-                    if (j > 0) {
-                        idCondition.append(",");
+            if (batchResult != null && !batchResult.isEmpty()) {
+                for (Map<String, Object> row : batchResult) {
+                    Object userIdObj = row.get("userId");
+                    Object areaIdObj = row.get("areaId");
+                    String areaName = (String) row.get("areaName");
+                    String areaType = (String) row.get("areaType");
+                    Object parentAreaIdObj = row.get("parentAreaId");
+
+                    // 类型转换
+                    Long userId = convertToLong(userIdObj);
+                    Long areaId = convertToLong(areaIdObj);
+                    Long parentAreaId = convertToLong(parentAreaIdObj);
+
+                    if (userId != null && areaId != null &&
+                        StringUtils.isNotEmpty(areaName) && StringUtils.isNotEmpty(areaType)) {
+                        SysAreaVo areaInfo = new SysAreaVo();
+                        areaInfo.setId(areaId);
+                        areaInfo.setName(areaName);
+                        areaInfo.setType(areaType);
+                        areaInfo.setParent(parentAreaId);
+                        areaInfoMap.put(userId, areaInfo);
                     }
-                    idCondition.append(batchIds.get(j));
-                }
-
-                // 构造联表查询SQL
-                // 关联链路：sys_user -> sys_org -> sys_area
-                String sql = "SELECT u.id_ as userId, a.id_ as areaId, a.name_ as areaName, " +
-                            "a.type_ as areaType, a.parent_ as parentAreaId " +
-                            "FROM sys_user u " +
-                            "LEFT JOIN sys_org o ON u.org_id = o.id_ " +
-                            "LEFT JOIN sys_area a ON o.area_id = a.id_ " +
-                            "WHERE u.id_ IN (" + idCondition.toString() + ")";
-
-                try {
-                    // 执行查询
-                    List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCustManagerOrgInfo(sql);
-
-                    if (batchResult != null && !batchResult.isEmpty()) {
-                        for (Map<String, Object> row : batchResult) {
-                            Object userIdObj = row.get("userId");
-                            Object areaIdObj = row.get("areaId");
-                            String areaName = (String) row.get("areaName");
-                            String areaType = (String) row.get("areaType");
-                            Object parentAreaIdObj = row.get("parentAreaId");
-
-                            // 安全的类型转换
-                            Long userId = convertToLong(userIdObj);
-                            Long areaId = convertToLong(areaIdObj);
-                            Long parentAreaId = convertToLong(parentAreaIdObj);
-
-                            if (userId != null && areaId != null &&
-                                StringUtils.isNotEmpty(areaName) && StringUtils.isNotEmpty(areaType)) {
-                                SysAreaVo areaInfo = new SysAreaVo();
-                                areaInfo.setId(areaId);
-                                areaInfo.setName(areaName);
-                                areaInfo.setType(areaType);
-                                areaInfo.setParent(parentAreaId);
-                                areaInfoMap.put(userId, areaInfo);
-                            }
-                        }
-                    }
-
-                    log.debug("批次查询完成，查询到组织结构地区信息数量: {}", batchResult != null ? batchResult.size() : 0);
-                } catch (Exception e) {
-                    log.warn("批次查询客户经理组织结构地区信息失败，用户IDs: {}", batchIds, e);
                 }
             }
+
+            log.debug("查询完成，查询到组织结构地区信息数量: {}", batchResult != null ? batchResult.size() : 0);
+
         } catch (Exception e) {
-            log.warn("查询客户经理组织结构地区信息时发生异常", e);
+            log.warn("查询客户经理组织结构地区信息失败: {}", e.getMessage(), e);
         }
 
         return areaInfoMap;
     }
 
     /**
-     * 安全的类型转换为Long
+     * 类型转换
      */
     private Long convertToLong(Object obj) {
         if (obj == null) return null;
@@ -788,299 +1178,57 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 根据父级ID获取父级地区名称
-     *
-     * @param parentId 父级地区ID
-     * @return 父级地区名称
+     * 查询合同信息
      */
-    private String getParentAreaName(Long parentId) {
-        if (parentId == null) {
-            return "";
-        }
-        try {
-            SysAreaVo parentArea = sysAreaService.queryById(parentId);
-            return parentArea != null ? parentArea.getName() : "";
-        } catch (Exception e) {
-            log.warn("查询父级地区名称失败，parentId: {}", parentId, e);
-            return "";
-        }
-    }
-
-
-    /**
-     * 查询客户经理对应的组织机构名称
-     * 通过 sys_user.org_id 关联 sys_org 表获取 name_ 字段
-     *
-     * @param custManagerIds 客户经理ID列表
-     * @return 客户经理ID到组织名称的映射
-     */
-    private Map<Long, String> queryCustManagerOrgNames(List<Long> custManagerIds) {
-        Map<Long, String> orgNameMap = new HashMap<>();
-
-        if (custManagerIds == null || custManagerIds.isEmpty()) {
-            return orgNameMap;
-        }
-
-        try {
-            // 分批查询
-            int batchSize = 100;
-            for (int i = 0; i < custManagerIds.size(); i += batchSize) {
-                int endIndex = Math.min(i + batchSize, custManagerIds.size());
-                List<Long> batchIds = custManagerIds.subList(i, endIndex);
-
-                StringBuilder idCondition = new StringBuilder();
-                for (int j = 0; j < batchIds.size(); j++) {
-                    if (j > 0) {
-                        idCondition.append(",");
-                    }
-                    idCondition.append(batchIds.get(j));
-                }
-
-                // 构造联表查询SQL
-                String sql = "SELECT u.id_ as userId, o.name_ as orgName " +
-                            "FROM sys_user u " +
-                            "LEFT JOIN sys_org o ON u.org_id = o.id_ " +
-                            "WHERE u.id_ IN (" + idCondition.toString() + ")";
-
-                try {
-                    // 执行查询
-                    List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCustManagerOrgInfo(sql);
-
-                    if (batchResult != null && !batchResult.isEmpty()) {
-                        for (Map<String, Object> row : batchResult) {
-                            Object userIdObj = row.get("userId");
-                            String orgName = (String) row.get("orgName");
-
-                            // 安全的类型转换
-                            Long userId = null;
-                            if (userIdObj instanceof Long) {
-                                userId = (Long) userIdObj;
-                            } else if (userIdObj instanceof Integer) {
-                                userId = ((Integer) userIdObj).longValue();
-                            } else if (userIdObj instanceof String) {
-                                try {
-                                    userId = Long.parseLong((String) userIdObj);
-                                } catch (NumberFormatException e) {
-                                    log.warn("无法将字符串转换为Long类型: {}", userIdObj);
-                                }
-                            }
-
-                            if (userId != null && StringUtils.isNotEmpty(orgName)) {
-                                orgNameMap.put(userId, orgName);
-                            }
-                        }
-                    }
-
-                    log.debug("批次查询完成，查询到组织信息数量: {}", batchResult != null ? batchResult.size() : 0);
-                } catch (Exception e) {
-                    log.warn("批次查询客户经理组织信息失败，用户IDs: {}", batchIds, e);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("查询客户经理组织信息时发生异常", e);
-        }
-
-        return orgNameMap;
-    }
-
-    /**
-     * 查询并填充合同信息和电子表单信息
-     *
-     * @param batchData 批量商机数据
-     */
-    private void enrichContractAndEformInfo(List<OldOpportunityDTO> batchData) {
-        if (batchData == null || batchData.isEmpty()) {
-            return;
-        }
-
-        // 收集所有商机ID
-        List<Long> opportunityIds = batchData.stream()
-            .map(OldOpportunityDTO::getId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-
-        if (opportunityIds.isEmpty()) {
-            return;
-        }
-
-        try {
-            // 查询合同信息
-            Map<Long, List<ToppContractVo>> contractMap = queryContractsByOpportunityIds(opportunityIds);
-
-            // 查询电子表单信息
-            Map<Long, List<ToppContractEformVo>> eformMap = queryEformsByOpportunityIds(opportunityIds);
-
-            // 填充合同和电子表单信息到DTO
-            for (OldOpportunityDTO dto : batchData) {
-                Long oppId = dto.getId();
-
-                // 填充合同信息
-                List<ToppContractVo> contracts = contractMap.get(oppId);
-                if (contracts != null && !contracts.isEmpty()) {
-                    StringBuilder contractNames = new StringBuilder();
-                    for (int i = 0; i < contracts.size(); i++) {
-                        ToppContractVo contract = contracts.get(i);
-                        if (i > 0) {
-                            contractNames.append(",");
-                        }
-                        if (StringUtils.isNotEmpty(contract.getContractName())) {
-                            contractNames.append(contract.getContractName());
-                        }
-                    }
-                    dto.setContractNames(contractNames.toString());
-                }
-
-                // 填充电子表单信息
-                List<ToppContractEformVo> eforms = eformMap.get(oppId);
-                if (eforms != null && !eforms.isEmpty()) {
-                    StringBuilder eformNames = new StringBuilder();
-                    for (int i = 0; i < eforms.size(); i++) {
-                        ToppContractEformVo eform = eforms.get(i);
-                        if (i > 0) {
-                            eformNames.append(",");
-                        }
-                        if (StringUtils.isNotEmpty(eform.getEformName())) {
-                            eformNames.append(eform.getEformName());
-                        }
-                    }
-                    dto.setEformNames(eformNames.toString());
-                }
-            }
-
-            log.debug("已完成合同和电子表单信息查询，处理商机数量: {}", batchData.size());
-        } catch (Exception e) {
-            log.warn("查询合同和电子表单信息失败: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 根据商机ID列表查询合同信息
-     *
-     * @param opportunityIds 商机ID列表
-     * @return 商机ID到合同列表的映射
-     */
-    private Map<Long, List<ToppContractVo>> queryContractsByOpportunityIds(List<Long> opportunityIds) {
+    private Map<Long, List<ToppContractVo>> queryContractsByOpportunityIdsOptimized(List<Long> opportunityIds) {
         Map<Long, List<ToppContractVo>> contractMap = new HashMap<>();
 
-        // 分批查询，避免一次性查询过多数据
-        int batchSize = 100;
-        for (int i = 0; i < opportunityIds.size(); i += batchSize) {
-            int endIndex = Math.min(i + batchSize, opportunityIds.size());
-            List<Long> batchIds = opportunityIds.subList(i, endIndex);
+        if (opportunityIds == null || opportunityIds.isEmpty()) {
+            return contractMap;
+        }
 
-            for (Long oppId : batchIds) {
-                try {
-                    ToppContractBo contractBo = new ToppContractBo();
-                    contractBo.setProjectId(oppId);
-                    contractBo.setIsValid("1"); // 只查询有效数据
+        try {
+            // 批量查询
+            List<ToppContractVo> allContracts = contractService.selectByOpportunityIds(opportunityIds);
 
-                    List<ToppContractVo> contracts = contractService.queryList(contractBo);
-                    if (contracts != null && !contracts.isEmpty()) {
-                        contractMap.put(oppId, contracts);
-                    }
-                } catch (Exception e) {
-                    log.warn("查询商机{}的合同信息失败: {}", oppId, e.getMessage());
-                }
-            }
+            // 按商机ID分组
+            contractMap = allContracts.stream()
+                .collect(Collectors.groupingBy(ToppContractVo::getProjectId));
+
+        } catch (Exception e) {
+            log.warn("查询合同信息失败: {}", e.getMessage(), e);
         }
 
         return contractMap;
     }
 
     /**
-     * 根据商机ID列表查询电子表单信息
-     *
-     * @param opportunityIds 商机ID列表
-     * @return 商机ID到电子表单列表的映射
+     * 查询电子表单信息
      */
-    private Map<Long, List<ToppContractEformVo>> queryEformsByOpportunityIds(List<Long> opportunityIds) {
+    private Map<Long, List<ToppContractEformVo>> queryEformsByOpportunityIdsOptimized(List<Long> opportunityIds) {
         Map<Long, List<ToppContractEformVo>> eformMap = new HashMap<>();
 
-        // 分批查询
-        int batchSize = 100;
-        for (int i = 0; i < opportunityIds.size(); i += batchSize) {
-            int endIndex = Math.min(i + batchSize, opportunityIds.size());
-            List<Long> batchIds = opportunityIds.subList(i, endIndex);
+        if (opportunityIds == null || opportunityIds.isEmpty()) {
+            return eformMap;
+        }
 
-            for (Long oppId : batchIds) {
-                try {
-                    ToppContractEformBo eformBo = new ToppContractEformBo();
-                    eformBo.setProjectId(oppId);
-                    eformBo.setIsValid(1); // 只查询有效数据
+        try {
+            // 批量查询
+            List<ToppContractEformVo> allEforms = contractEformService.selectByOpportunityIds(opportunityIds);
 
-                    List<ToppContractEformVo> eforms = contractEformService.queryList(eformBo);
-                    if (eforms != null && !eforms.isEmpty()) {
-                        eformMap.put(oppId, eforms);
-                    }
-                } catch (Exception e) {
-                    log.warn("查询商机{}的电子表单信息失败: {}", oppId, e.getMessage());
-                }
-            }
+            // 按商机ID分组
+            eformMap = allEforms.stream()
+                .collect(Collectors.groupingBy(ToppContractEformVo::getProjectId));
+
+        } catch (Exception e) {
+            log.warn("优化版查询电子表单信息失败: {}", e.getMessage(), e);
         }
 
         return eformMap;
     }
 
     /**
-     * 补充主要产品/解决方案信息
-     *
-     * @param batchData 批量商机数据
-     */
-    private void enrichMainProductInfo(List<OldOpportunityDTO> batchData) {
-        if (batchData == null || batchData.isEmpty()) {
-            return;
-        }
-
-        for (OldOpportunityDTO dto : batchData) {
-
-            String productCode = dto.getProductCode();
-            String oppType = dto.getOppType();
-            String sfProductName = dto.getSfProductName();
-
-            if ("1".equals(productCode) || StringUtils.isEmpty(productCode)) {
-                if (StringUtils.isNotEmpty(sfProductName)) {
-                    dto.setMainProduct(sfProductName);
-                }
-                continue;
-            }
-
-            // 根据业务类型确定settingStr1的值
-            String settingStr1 = null;
-            if ("opp_type_np".equals(oppType) || "opp_type_spy".equals(oppType)
-                || "opp_type_yzy".equals(oppType) || "opp_type_yyy".equals(oppType)) {
-                settingStr1 = "400301";
-            } else if ("opp_type_zwyw".equals(oppType)) {
-                settingStr1 = "400302";
-            }
-
-            // 查询sys_code表获取产品名称
-            if (StringUtils.isNotEmpty(settingStr1)) {
-                try {
-                    SysCodeBo codeBo = new SysCodeBo();
-                    codeBo.setType("main_product");
-                    codeBo.setCode(productCode);
-                    codeBo.setSettingStr1(settingStr1);
-
-                    List<SysCodeVo> codeList = sysCodeService.queryList(codeBo);
-                    if (!codeList.isEmpty()) {
-                        dto.setMainProduct(codeList.get(0).getName());
-                    }
-                } catch (Exception e) {
-                    log.warn("查询产品编码信息失败，productCode: {}, oppType: {}, error: {}",
-                        productCode, oppType, e.getMessage());
-                }
-            }
-        }
-
-        log.debug("已完成主要产品信息补充，处理记录数: {}", batchData.size());
-    }
-
-    /**
      * 从参数Map中获取指定参数的值
-     *
-     * @param params    参数Map
-     * @param paramName 参数名
-     * @return 参数值
      */
     private String getParamValue(Map<String, Object> params, String paramName) {
         if (params != null && params.containsKey(paramName)) {
@@ -1105,131 +1253,13 @@ public class OpportunityExport extends AbstractExportStrategy {
     }
 
     /**
-     * 获取码表映射
-     *
-     * @param type        码表类型
-     * @param settingStr1 条件1
-     * @param settingStr2 条件2
-     * @return code到name的映射
+     * 批量预加载上下文类
      */
-    private Map<String, String> getSysCodeMap(String type, String settingStr1, String settingStr2) {
-        try {
-            SysCodeBo queryBo = new SysCodeBo();
-            queryBo.setType(type);
-            if (StringUtils.isNotEmpty(settingStr1)) {
-                queryBo.setSettingStr1(settingStr1);
-            }
-            if (StringUtils.isNotEmpty(settingStr2)) {
-                queryBo.setSettingStr2(settingStr2);
-            }
-
-            List<SysCodeVo> codeList = sysCodeService.queryList(queryBo);
-            Map<String, String> resultMap = new LinkedHashMap<>();
-
-            if (codeList != null && !codeList.isEmpty()) {
-                for (SysCodeVo sysCode : codeList) {
-                    if (sysCode.getCode() != null && sysCode.getName() != null) {
-                        resultMap.put(sysCode.getCode(), sysCode.getName());
-                    }
-                }
-            }
-            return resultMap;
-        } catch (Exception e) {
-            log.warn("获取码表映射失败, type: {}", type, e);
-            return new HashMap<>();
-        }
-    }
-
-    /**
-     * 在导出过程中进行码表翻译
-     */
-    private void translateSysCodeFields(List<OldOpportunityDTO> batchData) {
-        if (batchData == null || batchData.isEmpty()) {
-            return;
-        }
-
-        // 获取各种码表映射
-        Map<String, String> oppTypeMap = getSysCodeMap("opp_type", null, null);
-        Map<String, String> unicomTypeMap = getSysCodeMap("unicom_type_new", null, null);
-        Map<String, String> clueSourceMap = getSysCodeMap("clue_source", null, null);
-        Map<String, String> oppoStateMap = getSysCodeMap("oppo_state", null, null);
-        Map<String, String> selectType1Map = getSysCodeMap("select_type_1", null, null);
-        List<SysDictData> growthTypeDictList = sysDictTypeService.selectDictDataByType("opp_growth_type");
-        Map<String, String> oppGrowthTypeMap = new HashMap<>();
-        if (growthTypeDictList != null && !growthTypeDictList.isEmpty()) {
-            oppGrowthTypeMap = growthTypeDictList.stream()
-                .collect(Collectors.toMap(SysDictData::getDictValue, SysDictData::getDictLabel)); }
-
-        // isValid字段映射：1->有效, 0->无效
-        Map<String, String> isValidMap = new HashMap<>();
-        isValidMap.put("1", "有效");
-        isValidMap.put("0", "无效");
-
-        // 为每个商机数据进行翻译
-        for (OldOpportunityDTO dto : batchData) {
-            if (StringUtils.isNotEmpty(dto.getOppType())) {
-                dto.setOppType(oppTypeMap.getOrDefault(dto.getOppType(), dto.getOppType()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getUnicomType())) {
-                dto.setUnicomType(unicomTypeMap.getOrDefault(dto.getUnicomType(), dto.getUnicomType()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getOppSource())) {
-                dto.setOppSource(clueSourceMap.getOrDefault(dto.getOppSource(), dto.getOppSource()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getOppoState())) {
-                dto.setOppoState(oppoStateMap.getOrDefault(dto.getOppoState(), dto.getOppoState()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getIsBidding())) {
-                dto.setIsBidding(selectType1Map.getOrDefault(dto.getIsBidding(), dto.getIsBidding()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getIsValid())) {
-                dto.setIsValid(isValidMap.getOrDefault(dto.getIsValid(), dto.getIsValid()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getOppGrowthType())) {
-                dto.setOppGrowthType(oppGrowthTypeMap.getOrDefault(dto.getOppGrowthType(), dto.getOppGrowthType()));
-            }
-
-            if (StringUtils.isNotEmpty(dto.getOppIncludeType())) {
-                String oppIncludeType = dto.getOppIncludeType();
-                StringBuilder translatedResult = new StringBuilder();
-
-                // 去除首尾逗号
-                if (oppIncludeType.startsWith(",")) {
-                    oppIncludeType = oppIncludeType.substring(1);
-                }
-                if (oppIncludeType.endsWith(",")) {
-                    oppIncludeType = oppIncludeType.substring(0, oppIncludeType.length() - 1);
-                }
-
-                // 按逗号分割并逐个翻译
-                if (oppIncludeType.contains(",")) {
-                    // 多个业务类型
-                    String[] typeCodes = oppIncludeType.split(",");
-                    for (String typeCode : typeCodes) {
-                        if (StringUtils.isNotEmpty(typeCode)) {
-                            String translated = oppTypeMap.getOrDefault(typeCode.trim(), typeCode.trim());
-                            if (translatedResult.length() > 0) {
-                                translatedResult.append(" ");
-                            }
-                            translatedResult.append(translated);
-                        }
-                    }
-                } else {
-                    // 单个业务类型
-                    String translated = oppTypeMap.getOrDefault(oppIncludeType, oppIncludeType);
-                    translatedResult.append(translated);
-                }
-
-                dto.setOppIncludeType(translatedResult.toString());
-            }
-        }
-
-        log.debug("完成码表翻译，处理记录数: {}", batchData.size());
+    private static class BatchEnrichmentContext {
+        Map<Long, List<ToppContractVo>> contractMap = new HashMap<>();
+        Map<Long, List<ToppContractEformVo>> eformMap = new HashMap<>();
+        Map<Long, String> orgNameMap = new HashMap<>();
+        Map<Long, SysAreaVo> areaInfoMap = new HashMap<>();
+        Map<String, DwdRepSysPersonDVo> personAreaMap = new HashMap<>();
     }
 }
