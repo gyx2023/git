@@ -30,3 +30,7 @@ ALTER TABLE `zj_sj`.`identify_score`
     MODIFY COLUMN `score_status` VARCHAR(2)  CHARACTER SET utf8 COLLATE  utf8_general_ci NULL COMMENT '调用接口状态,0待调用，1成功,2失败' AFTER `name_`,
     MODIFY COLUMN `upload_time` DATETIME(0) NULL COMMENT '上传时间' AFTER `score_status`,
     MODIFY COLUMN `uploader_` INT(11) NULL COMMENT '上传人员' AFTER `upload_time`;
+
+INSERT INTO `zj_sj`.`sys_param` (`id_`,`code_`,`name_`,`value_`,`remark_`,`type_`,`input_type`,`is_system` ) VALUES (507,'identify_score_api_url','三清单地址接口url','https://132.151.50.33:15605/api/proxy/api/v1/sync_run_app_workflow','三清单地址接口url','identify_score_api','string','1');
+
+INSERT INTO `zj_sj`.`sys_param` (`id_`,`code_`,`name_`,`value_`,`remark_`,`type_`,`input_type`,`is_system` ) VALUES (508,'identify_score_api_key','三清单地址接口key','d4ja6vea6n5ndl3ehi1g','三清单地址接口key','identify_score_api','string','1');

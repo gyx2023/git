@@ -99,5 +99,10 @@ public class IdentifyScoreCustomerBo extends BaseEntity {
     @NotNull(message = "更新人员ID不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long updaterId;
 
+    private String createTimeBegin;
+    private String createTimeEnd;
 
+    private String minScore;
+
+    private String maxScore;
 }

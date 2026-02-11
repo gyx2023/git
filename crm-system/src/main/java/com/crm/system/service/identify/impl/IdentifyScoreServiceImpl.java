@@ -7,22 +7,24 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.utils.WordTextExtractor;
+import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.file.FileAsyncTaskBo;
 import com.crm.system.domain.bo.identify.IdentifyScoreBo;
 import com.crm.system.domain.bo.identify.IdentifyScoreCustomerBo;
+import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
 import com.crm.system.domain.identify.IdentifyScoreDo;
-import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysOssVo;
+import com.crm.system.domain.vo.identify.IdentifyScoreCustomerVo;
 import com.crm.system.domain.vo.identify.IdentifyScoreVo;
 import com.crm.system.mapper.identify.IdentifyScoreMapper;
-import com.crm.system.service.ISysAreaService;
-import com.crm.system.service.ISysDeptService;
 import com.crm.system.service.ISysOssService;
-import com.crm.system.service.file.IFileAsyncTaskService;
+import com.crm.system.service.ISysUserService;
 import com.crm.system.service.identify.IIdentifyScoreCustomerService;
 import com.crm.system.service.identify.IIdentifyScoreService;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.LocalDateTime;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -48,14 +51,13 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
     @Resource
     private ISysOssService ossService;
     @Resource
-    private ISysDeptService iSysDeptService;
-    @Resource
-    private ISysAreaService iSysAreaService;
-    @Resource
     private IIdentifyScoreCustomerService iIdentifyScoreCustomerService;
 
     @Resource
-    private IFileAsyncTaskService iFileAsyncTaskService;
+    private ISysUserService sysUserService;
+
+    @Resource
+    private ScoreDataParser scoreDataParser;
 
     /**
      * 查询【请填写功能名称】
@@ -71,7 +73,17 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
     @Override
     public TableDataInfo<IdentifyScoreVo> queryPageList(IdentifyScoreBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<IdentifyScoreDo> lqw = buildQueryWrapper(bo);
+        if (ObjectUtil.isNotEmpty(bo.getUploadTimeBegin())) {
+            lqw.ge(IdentifyScoreDo::getUploadTime, bo.getUploadTimeBegin());
+        }
+        if (ObjectUtil.isNotEmpty(bo.getUploadTimeEnd())) {
+            lqw.le(IdentifyScoreDo::getUploadTime, bo.getUploadTimeEnd());
+        }
         Page<IdentifyScoreVo> result = identifyScoreMapper.selectVoPage(pageQuery.build(), lqw);
+        Map<Long, String> userMap = sysUserService.listAll();
+        result.getRecords().forEach(item -> {
+            item.setUserName(userMap.get(item.getUploader()));
+        });
         return TableDataInfo.build(result);
     }
 
@@ -141,59 +153,11 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
 
     @Override
     public Boolean save(Long[] ossIds) {
-        Long ds = null;
-        Long xf = null;
         try {
             List<SysOssVo> list = ossService.listByIds(Arrays.asList(ossIds));
-            Long deptId = LoginHelper.getDeptId();
-            SysDept sysDept = iSysDeptService.selectDeptById(deptId);
-            SysAreaVo sysAreaVo = iSysAreaService.queryById(Long.valueOf(sysDept.getAreaCode()));
-            if (ObjectUtil.equals("二级", sysAreaVo.getType())) {
-                ds = sysAreaVo.getId();
-            } else {
-                xf = iSysAreaService.queryById(sysAreaVo.getParent()).getId();
-            }
-            if (ObjectUtil.equals("三级", sysAreaVo.getType())) {
-                xf = sysAreaVo.getId();
-            }
             Date now = DateUtil.date();
             for (SysOssVo sysOssVo : list) {
-                IdentifyScoreCustomerBo customerDo = new IdentifyScoreCustomerBo();
-                customerDo.setFileName(sysOssVo.getFileName());
-                customerDo.setFileUrlId(sysOssVo.getOssId());
-                customerDo.setCreatorId(LoginHelper.getUserId());
-                customerDo.setUpdaterId(LoginHelper.getUserId());
-                customerDo.setAreaId(ds);
-                customerDo.setCountyId(xf);
-                iIdentifyScoreCustomerService.insertByBo(customerDo);
-                // 创建异步任务
-                FileAsyncTaskBo taskBo = new FileAsyncTaskBo();
-                taskBo.setTaskType("import");
-                taskBo.setFileName(sysOssVo.getFileName());
-
-                taskBo.setFileUrl(sysOssVo.getUrl());
-                taskBo.setBusinessType("identify_score_import");
-                taskBo.setStatus(0L); // 0-待处理
-                taskBo.setCreateUserId(LoginHelper.getUserId());
-
-                // 生成任务ID：yyyymmdd+0001（4位序列号）格式
-                String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-                String sequence = iFileAsyncTaskService.getDailySequence();
-                String taskIdStr = dateStr + sequence;
-                Long taskId = Long.valueOf(taskIdStr);
-                taskBo.setTaskId(taskId);
-                taskBo.setTaskName("三清单文件导入");
-                taskBo.setStartTime(LocalDateTime.now());
-                iFileAsyncTaskService.insertByBo(taskBo);
-
-                IdentifyScoreDo scoreDo = new IdentifyScoreDo();
-                scoreDo.setCustomerId(customerDo.getId());
-                scoreDo.setUploadTime(now);
-                scoreDo.setName(sysOssVo.getFileName());
-                scoreDo.setScoreStatus("0");
-                scoreDo.setUploader(LoginHelper.getUserId());
-                scoreDo.setTaskId(taskBo.getTaskId());
-                identifyScoreMapper.insert(scoreDo);
+                createTask(sysOssVo,now);
             }
         } catch (Exception e) {
             log.error("保存失败", e);
@@ -202,10 +166,112 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
         return true;
     }
 
+    private void createTask(SysOssVo sysOssVo,Date now) throws Exception {
+        SysUser sysUser = sysUserService.selectUserById(LoginHelper.getUserId());
+        log.info("开始三清单导入任务，文件URL: {}", sysOssVo.getUrl());
+        try {
+            // 3. 读取Word文件内容
+            String wordContent = readWordFileContent(sysOssVo);
+            if (ObjectUtil.isEmpty(wordContent)) {
+                String errorMsg = "处理失败：Word文件内容为空，OSS ID: " + sysOssVo.getOssId();
+                log.error(errorMsg);
+            }
+
+            // 4. 解析客户名称（委托解析器）
+            String custName = scoreDataParser.extractCustName(wordContent);
+            IdentifyScoreCustomerDo customerDo = iIdentifyScoreCustomerService.queryByCustName(custName, sysUser.getUserId());
+            IdentifyScoreDo scoreDo = new IdentifyScoreDo();
+            if(ObjectUtil.isEmpty(customerDo)){
+                IdentifyScoreCustomerBo  customerBo = iIdentifyScoreCustomerService.initCustomerData(sysUser, sysOssVo);
+                customerBo.setCustName(custName);
+                iIdentifyScoreCustomerService.insertByBo(customerBo);
+                scoreDo.setCustomerId(customerBo.getId());
+            }else{
+                scoreDo.setCustomerId(customerDo.getId());
+            }
+            scoreDo.setUploadTime(now);
+            scoreDo.setName(sysOssVo.getOriginalName());
+            scoreDo.setFileText(wordContent);
+            scoreDo.setScoreStatus("0");
+            scoreDo.setUploader(LoginHelper.getUserId());
+            scoreDo.setIsAgain("0");
+            identifyScoreMapper.insert(scoreDo);
+        } catch (Exception e) {
+            log.error("更新评分失败状态异常", e);
+        }
+    }
+
+
     @Override
-    public IdentifyScoreDo queryByCustomerId(Long custmoerId,Long taskId) {
-        return identifyScoreMapper.selectOne(new LambdaQueryWrapper<IdentifyScoreDo>()
-            .eq(IdentifyScoreDo::getCustomerId, custmoerId)
-            .eq(IdentifyScoreDo::getTaskId, taskId));
+    public Boolean again(Long customerId) {
+        IdentifyScoreCustomerVo customerVo = iIdentifyScoreCustomerService.queryById(customerId);
+        IdentifyScoreDo scoreDo = identifyScoreMapper.selectList(new LambdaQueryWrapper<IdentifyScoreDo>()
+            .eq(IdentifyScoreDo::getCustomerId, customerId)
+            .eq(IdentifyScoreDo::getTotalScore, customerVo.getTotalScore())
+            .eq(IdentifyScoreDo::getScoreStatus, "1")
+            .eq(IdentifyScoreDo::getName, customerVo.getFileName())
+            .orderByDesc(IdentifyScoreDo::getUploadTime)
+        ).get(0);
+        if(ObjectUtil.isNotEmpty(scoreDo)){
+            IdentifyScoreDo newScoreDo = new IdentifyScoreDo();
+            newScoreDo.setUploadTime(new Date());
+            newScoreDo.setName(scoreDo.getName());
+            newScoreDo.setCustomerId(scoreDo.getId());
+            newScoreDo.setFileText(scoreDo.getFileText());
+            newScoreDo.setScoreStatus("0");
+            newScoreDo.setUploader(LoginHelper.getUserId());
+            newScoreDo.setIsAgain("1");
+            identifyScoreMapper.insert(scoreDo);
+        }
+        return true;
+    }
+
+    @Override
+    public void updateById(IdentifyScoreDo scoreDo) {
+        identifyScoreMapper.updateById(scoreDo);
+    }
+
+    // 原有方法保持不变，新增以下方法
+
+
+    /**
+     * 更新评分数据
+     */
+    @Override
+    public void updateScoreData(IdentifyScoreCustomerDo customerDo, IdentifyScoreDo
+        scoreDo, Map<String, Object> scoreResultMap,String status) {
+        // 更新客户表
+        if (ObjectUtil.equals("0", scoreDo.getIsAgain())) {
+            customerDo.setContent(Objects.toString(scoreResultMap.get("content"), null));
+            customerDo.setTotalScore(Objects.toString(scoreResultMap.get("totalScore"), null));
+            customerDo.setUpdateTime(new Date());
+            customerDo.setUpdaterId(Long.valueOf(scoreDo.getCreateBy()));
+            iIdentifyScoreCustomerService.updateByBo(BeanCopyUtils.copy(customerDo, IdentifyScoreCustomerBo.class));
+        }
+        // 更新评分表
+        scoreDo.setContent(Objects.toString(scoreResultMap.get("content"), null));
+        scoreDo.setTotalScore(Objects.toString(scoreResultMap.get("totalScore"), null));
+        scoreDo.setScoreStatus(status); // 成功状态
+        scoreDo.setCustomerId(customerDo.getId());
+        scoreDo.setUpdateTime(new Date());
+        updateByBo(BeanCopyUtils.copy(scoreDo, IdentifyScoreBo.class));
+    }
+
+    @Override
+    public List<IdentifyScoreDo> queryWaitList() {
+        return identifyScoreMapper.selectList
+            (new LambdaQueryWrapper<IdentifyScoreDo>()
+                .eq(IdentifyScoreDo::getScoreStatus, "0"));
+    }
+
+    /**
+     * 读取Word文件内容
+     */
+    public String readWordFileContent(SysOssVo sysOss) throws Exception {
+        InputStream fileContent = ossService.getFileContent(sysOss.getOssId());
+        StringBuilder wordText = WordTextExtractor.readWordText(
+           fileContent, sysOss.getFileName()
+        );
+        return ObjectUtil.isEmpty(wordText) ? "" : wordText.toString();
     }
 }

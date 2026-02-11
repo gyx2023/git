@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
+import org.springframework.data.annotation.Id;
 
 /**
  * 【请填写功能名称】对象 identify_score
@@ -27,7 +28,7 @@ public class IdentifyScoreDo extends BaseEntity {
     /**
      *
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
     /**
      * 对应 identify_score_customer表的id
@@ -84,5 +85,8 @@ public class IdentifyScoreDo extends BaseEntity {
     @TableField(exist = false)
     private Date updateTime;
 
-    private Long taskId;
+
+    private String isAgain;
+
+    private String fileText;
 }

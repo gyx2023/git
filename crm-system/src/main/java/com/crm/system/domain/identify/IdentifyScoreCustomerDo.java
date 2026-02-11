@@ -25,7 +25,7 @@ public class IdentifyScoreCustomerDo extends BaseEntity {
     /**
      * 主键ID
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
     /**
      * 地市id，上传人员归属的地市

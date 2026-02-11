@@ -76,8 +76,8 @@ public class IdentifyScoreController extends BaseController {
     @SaCheckPermission("system:score:add")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
     @RepeatSubmit()
-    @GetMapping("/add")
-    public R<Void> add(@RequestBody Long[] ossIds) {
+    @PostMapping ("/add")
+    public R<Void> add( @RequestParam("ossIds") Long[] ossIds ) {
         return toAjax(iIdentifyScoreService.save(ossIds));
     }
 
@@ -103,5 +103,17 @@ public class IdentifyScoreController extends BaseController {
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
         return toAjax(iIdentifyScoreService.deleteWithValidByIds(Arrays.asList(ids), true));
+    }
+
+
+    /**
+     * 重新评分
+     */
+    @SaCheckPermission("system:score:again")
+    @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @GetMapping("/again")
+    public R<Void> again(@RequestBody Long customerId) {
+        return toAjax(iIdentifyScoreService.again(customerId));
     }
 }

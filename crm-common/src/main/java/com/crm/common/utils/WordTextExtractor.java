@@ -23,7 +23,7 @@ public class WordTextExtractor {
      * @param inputStream 文档路径
      * @return 提取的文本
      */
-    public static StringBuilder readWordText(FileInputStream inputStream, String fileName) {
+    public static StringBuilder readWordText(InputStream inputStream, String fileName) {
         if (inputStream == null || !fileName.matches(".*\\.(doc|docx)$")) {
             throw new IllegalArgumentException("仅支持 .doc 或 .docx 格式文档");
         }

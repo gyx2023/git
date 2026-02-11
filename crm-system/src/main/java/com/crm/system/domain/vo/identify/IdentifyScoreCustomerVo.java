@@ -102,4 +102,12 @@ public class IdentifyScoreCustomerVo {
     private Long updaterId;
 
 
+    private String userName;
+
+
+    private String areaName;
+
+    private String countyName;
+
+    private Date createTime;
 }

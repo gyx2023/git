@@ -1,20 +1,32 @@
 package com.crm.system.service.identify.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
+import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.identify.IdentifyScoreCustomerBo;
 import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
+import com.crm.system.domain.identify.IdentifyScoreDo;
+import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.identify.IdentifyScoreCustomerVo;
+import com.crm.system.domain.vo.identify.IdentifyScoreVo;
 import com.crm.system.mapper.identify.IdentifyScoreCustomerMapper;
+import com.crm.system.service.ISysAreaService;
+import com.crm.system.service.ISysDeptService;
+import com.crm.system.service.ISysUserService;
 import com.crm.system.service.identify.IIdentifyScoreCustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +40,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Service
 public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerService {
+    @Resource
+    private  IdentifyScoreCustomerMapper identifyScoreCustomerMapper;
 
-    private final IdentifyScoreCustomerMapper identifyScoreCustomerMapper;
+    @Resource
+    private ISysUserService sysUserService;
+
+    @Resource
+    private ISysAreaService iSysAreaService;
+
+    @Resource
+    private ISysDeptService sysDeptService;
+    @Resource
+    private ISysAreaService sysAreaService;
 
     /**
      * 查询三清单智能评分记录
@@ -45,7 +68,26 @@ public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerS
     @Override
     public TableDataInfo<IdentifyScoreCustomerVo> queryPageList(IdentifyScoreCustomerBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<IdentifyScoreCustomerDo> lqw = buildQueryWrapper(bo);
+        if(ObjectUtil.isNotEmpty(bo.getCreateTimeBegin())){
+            lqw.ge(IdentifyScoreCustomerDo::getCreateTime, bo.getCreateTimeBegin()) ;
+        }
+        if(ObjectUtil.isNotEmpty(bo.getCreateTimeEnd())){
+            lqw.le(IdentifyScoreCustomerDo::getCreateTime, bo.getCreateTimeEnd()) ;
+        }
+        if(ObjectUtil.isNotEmpty(bo.getMinScore())){
+            lqw.ge(IdentifyScoreCustomerDo::getTotalScore, bo.getMinScore()) ;
+        }
+        if(ObjectUtil.isNotEmpty(bo.getMaxScore())){
+            lqw.le(IdentifyScoreCustomerDo::getTotalScore, bo.getMaxScore()) ;
+        }
         Page<IdentifyScoreCustomerVo> result = identifyScoreCustomerMapper.selectVoPage(pageQuery.build(), lqw);
+        Map<Long, String > userMap = sysUserService.listAll();
+        Map<Long, String> areaMap =iSysAreaService.listAll();
+        result.getRecords().forEach(item -> {
+            item.setUserName(userMap.get(item.getCreatorId()));
+            item.setAreaName(areaMap.get(item.getAreaId()));
+            item.setCountyName(areaMap.get(item.getCountyId()));
+        });
         return TableDataInfo.build(result);
     }
 
@@ -119,11 +161,41 @@ public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerS
     }
 
     @Override
-    public IdentifyScoreCustomerDo queryByFileId(Long fileUrlId, Long userId) {
+    public IdentifyScoreCustomerDo queryByCustName(String custName, Long userId) {
         IdentifyScoreCustomerBo bo = new IdentifyScoreCustomerBo();
-        bo.setFileUrlId(fileUrlId);
+        bo.setCustName(custName);
         bo.setCreatorId(userId);
         LambdaQueryWrapper<IdentifyScoreCustomerDo> lqw = buildQueryWrapper(bo);
         return identifyScoreCustomerMapper.selectOne(lqw);
+    }
+
+    /**
+     * 初始化客户数据（抽取重复逻辑）
+     */
+    @Override
+    public IdentifyScoreCustomerBo initCustomerData(SysUser sysUser, SysOssVo sysOss) {
+        IdentifyScoreCustomerBo customerDo = new IdentifyScoreCustomerBo();
+        Long ds = null;
+        Long xf = null;
+
+        SysDept sysDept = sysDeptService.selectDeptById(sysUser.getDeptId());
+        SysAreaVo sysAreaVo = sysAreaService.queryById(Long.valueOf(sysDept.getAreaCode()));
+        if(ObjectUtil.equals("一级", sysAreaVo.getType())){
+
+        }else if (ObjectUtil.equals("二级", sysAreaVo.getType())) {
+            ds = sysAreaVo.getId();
+        } else {
+            ds = sysAreaService.queryById(sysAreaVo.getParent()).getId();
+            xf = sysAreaVo.getId();
+        }
+
+        customerDo.setFileName(sysOss.getOriginalName());
+        customerDo.setFileUrlId(sysOss.getOssId());
+        customerDo.setCreatorId(sysUser.getUserId());
+        customerDo.setUpdaterId(sysUser.getUserId());
+        customerDo.setAreaId(ds);
+        customerDo.setCountyId(xf);
+
+        return customerDo;
     }
 }

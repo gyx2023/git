@@ -71,7 +71,12 @@ public class IdentifyScoreVo {
     @ExcelProperty(value = "上传人员")
     private Long uploader;
 
-    private Long taskId;
 
+
+    private String userName;
+
+    private String isAgain;
+
+    private String fileText;
 
 }

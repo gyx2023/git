@@ -33,9 +33,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 用户 业务层处理
@@ -472,6 +471,13 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
         // 删除用户与岗位表
         userPostMapper.delete(new LambdaQueryWrapper<SysUserPost>().in(SysUserPost::getUserId, ids));
         return baseMapper.deleteBatchIds(ids);
+    }
+
+    @Override
+    public Map<Long,String> listAll() {
+        return baseMapper.selectList()
+            .stream()
+            .collect(Collectors.toMap(SysUser::getUserId, SysUser::getNickName));
     }
 
     @Cacheable(cacheNames = CacheNames.SYS_USER_NAME, key = "#userId")
