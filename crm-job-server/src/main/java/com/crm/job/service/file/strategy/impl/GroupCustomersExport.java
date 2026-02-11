@@ -52,14 +52,31 @@ public class GroupCustomersExport extends AbstractExportStrategy {
 
             // 从任务参数中获取areaCode
             String areaCode = parseAreaCode(task);
+            // 检查是否需要脱敏 - 从任务参数中获取isAdmin标识
+            boolean needDesensitize = parseDesensitizeFlag(task);
+
+        /*    // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
+            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportListLevel(queryParams, areaCode, needDesensitize);
+
+            // 检查数据是否为空
+            if (dataList == null || dataList.isEmpty()) {
+                task.setRemark("导出数据为空");
+                return false;
+            }*/
 
             // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
             String prefix = "group_customers_export_" + System.currentTimeMillis();
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
+            /*// 定义原始中文文件名（用于用户下载时显示）
+            String originalFileName = "集团客户信息导出_"+System.currentTimeMillis()+".xlsx";
+
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
+            }*/
             try {
                 // 使用流式导出方法
-                boolean success = exportToExcelStream(queryParams, areaCode, tempFile);
+                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
                 if (!success) {
                     task.setRemark("流式导出失败");
                     return false;
@@ -105,7 +122,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
      * 流式导出到Excel文件
      */
     private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode,
-                                         File outputFile) throws Exception {
+                                        boolean needDesensitize, File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo.class)
             .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
@@ -121,7 +138,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             while (hasMoreData) {
                 Page<ZqGrpGroupInfo> page = new Page<>(currentPage, pageSize, false);
                 List<ZqGrpGroupInfoVo> batchData = iZqGrpGroupInfoService.exportPageList(
-                    queryParams, page, areaCode);
+                    queryParams, page, areaCode, needDesensitize);
 
                 if (batchData == null || batchData.isEmpty()) {
                     hasMoreData = false;
@@ -153,6 +170,22 @@ public class GroupCustomersExport extends AbstractExportStrategy {
         return areaCode;
     }
 
+    /**
+     * 解析脱敏标志
+     */
+    private boolean parseDesensitizeFlag(FileAsyncTaskDo task) {
+        boolean needDesensitize = true;
+        try {
+            cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+            if (jsonObject.containsKey("isAdmin")) {
+                boolean isAdmin = jsonObject.getBool("isAdmin");
+                needDesensitize = !isAdmin;
+            }
+        } catch (Exception e) {
+            log.warn("解析isAdmin失败，默认进行脱敏处理: {}", e.getMessage());
+        }
+        return needDesensitize;
+    }
     private ZqGrpGroupInfoBo parseQueryParams(ZqGrpGroupInfoBo queryParams, FileAsyncTaskDo task) {
         try {
             cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
