@@ -184,7 +184,7 @@ public class GrpContractInfo extends BaseEntity {
     /**
      * 是否固定金额 0-是；1-否
      */
-    private String isFix;
+    private int isFix;
     /**
      * 审批通过日期
      */
@@ -252,7 +252,7 @@ public class GrpContractInfo extends BaseEntity {
     /**
      * 合同类别一级编码
      */
-    private String contractCateL1Code;
+    private Long contractCateL1Code;
     /**
      * 合同类别一级名称
      */
@@ -260,7 +260,7 @@ public class GrpContractInfo extends BaseEntity {
     /**
      * 合同类别二级编码
      */
-    private String contractCateL2Code;
+    private Long contractCateL2Code;
     /**
      * 合同类别二级名称
      */
@@ -268,7 +268,7 @@ public class GrpContractInfo extends BaseEntity {
     /**
      * 合同类别三级编码
      */
-    private String contractCateL3Code;
+    private Long contractCateL3Code;
     /**
      * 合同类别三级名称
      */

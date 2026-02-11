@@ -246,9 +246,9 @@ public class GrpCustGroupSyncJob {
             ZqGrpGroupInfo zqGrpGroupInfo = zqGrpGroupInfoMapper.selectOne(new LambdaQueryWrapper<ZqGrpGroupInfo>().eq(ZqGrpGroupInfo::getHqGrpCode, custGroup.getGroupId()));
             if(zqGrpGroupInfo==null){
                 ZqGrpGroupInfo newGroup = new ZqGrpGroupInfo();
-                newGroup.setGrpName(custGroup.getContactName());
+                newGroup.setGrpName(custGroup.getCustName());
                 newGroup.setGrpCode(generateUniqueGrpCode());
-                newGroup.setHqGrpCode(custGroup.getCertiCode());
+                newGroup.setHqGrpCode(custGroup.getGroupId());
                 newGroup.setCustId(custGroup.getProvinceCustId());
                 newGroup.setGrpStatus(custStateMap.get(custGroup.getCustState()));
                 newGroup.setAreaId(custGroup.getEparchyCode());
