@@ -363,18 +363,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
      * 保存前的数据校验
      */
     private void validEntityBeforeSave(ZqztGrpContractInfo entity){
-        // 校验金额相关字段必须为有效数字
-        validateAmountFields(entity);
-
-        // 校验电话号码格式
-        validatePhoneNumber(entity);
-    }
-
-    /**
-     * 校验金额字段格式
-     * @param entity 合同实体
-     */
-    private void validateAmountFields(ZqztGrpContractInfo entity) {
         // 校验不含增值税合同额
         if (entity.getContractMoney2() != null) {
             if (entity.getContractMoney2().compareTo(BigDecimal.ZERO) < 0) {
@@ -414,13 +402,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
                 throw new ServiceException("服务性金额最多保留两位小数");
             }
         }
-    }
 
-    /**
-     * 校验电话号码格式
-     * @param entity 合同实体
-     */
-    private void validatePhoneNumber(ZqztGrpContractInfo entity) {
         if (entity.getContractPhone() != null && !entity.getContractPhone().trim().isEmpty()) {
             String phone = entity.getContractPhone().trim();
             //手机号格式校验：1开头，第二位为3-9，共11位数字
