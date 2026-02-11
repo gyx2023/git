@@ -7,8 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -147,6 +146,8 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 不含增值税合同额(元)
      */
+    @DecimalMin(value = "0.00", message = "不含增值税合同额不能为负数")
+    @Digits(integer = 10, fraction = 2, message = "不含增值税合同额最多保留两位小数")
     private BigDecimal contractMoney2;
 
     /**
@@ -164,6 +165,7 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 承办人联系电话
      */
+    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "承办人联系电话格式不正确，请输入正确的11位手机号码")
     private String contractPhone;
 
     /**
@@ -174,16 +176,22 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 预计本年完成收入（元）
      */
+    @DecimalMin(value = "0.00", message = "预计本年完成收入不能为负数")
+    @Digits(integer = 10, fraction = 2, message = "预计本年完成收入最多保留两位小数")
     private BigDecimal yearIncome;
 
     /**
      * 服务性金额（元）
      */
+    @DecimalMin(value = "0.00", message = "服务性金额不能为负数")
+    @Digits(integer = 10, fraction = 2, message = "服务性金额最多保留两位小数")
     private BigDecimal servAmount;
 
     /**
      * 含增值税合同额(元)
      */
+    @DecimalMin(value = "0.00", message = "含增值税合同额不能为负数")
+    @Digits(integer = 10, fraction = 2, message = "含增值税合同额最多保留两位小数")
     private BigDecimal contractMoney;
 
      /**

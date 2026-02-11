@@ -248,8 +248,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             add.setContractStatus("9"); // 默认设置为"履行中"
         }
 
-        validEntityBeforeSave(add);
-
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setContractId(add.getContractId());
@@ -330,7 +328,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             update.setCreator(LoginHelper.getNickName());
         }
 
-        validEntityBeforeSave(update);
         boolean result = baseMapper.updateById(update) > 0;
 
         if (result) {
@@ -357,60 +354,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
 
         return vo;
-    }
-
-    /**
-     * 保存前的数据校验
-     */
-    private void validEntityBeforeSave(ZqztGrpContractInfo entity){
-        // 校验不含增值税合同额
-        if (entity.getContractMoney2() != null) {
-            if (entity.getContractMoney2().compareTo(BigDecimal.ZERO) < 0) {
-                throw new ServiceException("不含增值税合同额不能为负数");
-            }
-            if (entity.getContractMoney2().scale() > 2) {
-                throw new ServiceException("不含增值税合同额最多保留两位小数");
-            }
-        }
-
-        // 校验预计本年完成收入
-        if (entity.getYearIncome() != null) {
-            if (entity.getYearIncome().compareTo(BigDecimal.ZERO) < 0) {
-                throw new ServiceException("预计本年完成收入不能为负数");
-            }
-            if (entity.getYearIncome().scale() > 2) {
-                throw new ServiceException("预计本年完成收入最多保留两位小数");
-            }
-        }
-
-        // 校验含增值税合同额
-        if (entity.getContractMoney() != null) {
-            if (entity.getContractMoney().compareTo(BigDecimal.ZERO) < 0) {
-                throw new ServiceException("含增值税合同额不能为负数");
-            }
-            if (entity.getContractMoney().scale() > 2) {
-                throw new ServiceException("含增值税合同额最多保留两位小数");
-            }
-        }
-
-        // 校验服务性金额
-        if (entity.getServAmount() != null) {
-            if (entity.getServAmount().compareTo(BigDecimal.ZERO) < 0) {
-                throw new ServiceException("服务性金额不能为负数");
-            }
-            if (entity.getServAmount().scale() > 2) {
-                throw new ServiceException("服务性金额最多保留两位小数");
-            }
-        }
-
-        if (entity.getContractPhone() != null && !entity.getContractPhone().trim().isEmpty()) {
-            String phone = entity.getContractPhone().trim();
-            //手机号格式校验：1开头，第二位为3-9，共11位数字
-            String phonePattern = "^1[3-9]\\d{9}$";
-            if (!phone.matches(phonePattern)) {
-                throw new ServiceException("承办人联系电话格式不正确，请输入正确的11位手机号码");
-            }
-        }
     }
 
     /**
