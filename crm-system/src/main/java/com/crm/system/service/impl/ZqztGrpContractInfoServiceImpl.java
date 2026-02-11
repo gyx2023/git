@@ -1,4 +1,5 @@
 package com.crm.system.service.impl;
+import java.math.BigDecimal;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -10,6 +11,7 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.spring.SpringUtils;
 import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.ZqztGrpContractInfo;
@@ -236,27 +238,16 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             add.setInuseContractId(generateRandomContractId());
         }
 
-        // 设置默认缴费方式，如果未提供
+        // 添加 paytype 默认值
         if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
-            add.setPaytype("10"); // 默认设置为"后付费"
+            add.setPaytype("17");
         }
 
         // 设置默认合同状态，如果未提供
         if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
-            add.setContractStatus("11"); // 默认设置为"起草"
+            add.setContractStatus("9"); // 默认设置为"履行中"
         }
 
-        // 设置默认合同属性，如果未提供
-        if (add.getContractProperty() == null || add.getContractProperty().isEmpty()) {
-            add.setContractProperty("00"); // 默认设置为"新签合同"
-        }
-
-        // 设置默认是否招投标项目，如果未提供
-        if (add.getIsBidding() == null || add.getIsBidding().isEmpty()) {
-            add.setIsBidding("0"); // 默认设置为"否"
-        }
-
-        validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setContractId(add.getContractId());
@@ -337,7 +328,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             update.setCreator(LoginHelper.getNickName());
         }
 
-        validEntityBeforeSave(update);
         boolean result = baseMapper.updateById(update) > 0;
 
         if (result) {
@@ -364,13 +354,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
 
         return vo;
-    }
-
-    /**
-     * 保存前的数据校验
-     */
-    private void validEntityBeforeSave(ZqztGrpContractInfo entity){
-        //TODO 做一些数据校验,如唯一约束
     }
 
     /**
