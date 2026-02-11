@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.vo.DwdContractsDDoVo;
+import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.domain.bo.DwdContractsDBo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -21,7 +21,7 @@ public interface IDwdContractsDService {
      * @param contractNoLocal 合同编号
      * @return DWD_CONTRACTS_D
      */
-    DwdContractsDDoVo selectDwdContractsDById(String contractNoLocal);
+    DwdContractsDVo selectDwdContractsDById(String contractNoLocal);
 
     /**
      * 查询DWD_CONTRACTS_D列表
@@ -29,7 +29,7 @@ public interface IDwdContractsDService {
      * @param dwdContractsDBo DWD_CONTRACTS_D
      * @return DWD_CONTRACTS_D集合
      */
-    List<DwdContractsDDoVo> selectDwdContractsDList(DwdContractsDBo dwdContractsDBo);
+    List<DwdContractsDVo> selectDwdContractsDList(DwdContractsDBo dwdContractsDBo);
 
     /**
      * 分页查询DWD_CONTRACTS_D列表
@@ -38,7 +38,7 @@ public interface IDwdContractsDService {
      * @param pageQuery 分页查询对象
      * @return DWD_CONTRACTS_D集合
      */
-    TableDataInfo<DwdContractsDDoVo> selectDwdContractsDPageList(DwdContractsDBo dwdContractsDBo, PageQuery pageQuery);
+    TableDataInfo<DwdContractsDVo> selectDwdContractsDPageList(DwdContractsDBo dwdContractsDBo, PageQuery pageQuery);
 
     /**
      * 新增DWD_CONTRACTS_D

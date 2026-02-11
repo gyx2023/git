@@ -8,7 +8,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.DwdContractsDBo;
-import com.crm.system.domain.vo.DwdContractsDDoVo;
+import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.service.IDwdContractsDService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -35,7 +35,7 @@ public class DwdContractsDController extends BaseController {
      * 查询DWD_CONTRACTS_D列表
      */
     @GetMapping("/list")
-    public TableDataInfo<DwdContractsDDoVo> list(DwdContractsDBo bo, PageQuery pageQuery) {
+    public TableDataInfo<DwdContractsDVo> list(DwdContractsDBo bo, PageQuery pageQuery) {
         return dwdContractsDService.selectDwdContractsDPageList(bo, pageQuery);
     }
 
@@ -43,9 +43,9 @@ public class DwdContractsDController extends BaseController {
      * 根据合同编号获取DWD_CONTRACTS_D详细信息
      */
     @GetMapping(value = "/{arrairNo}")
-    public R<DwdContractsDDoVo> getInfo(@PathVariable String arrairNo) {
+    public R<DwdContractsDVo> getInfo(@PathVariable String arrairNo) {
         // 通过流水号查询数据
-        DwdContractsDDoVo dwdContractsDDoVo = dwdContractsDService.selectDwdContractsDById(arrairNo);
+        DwdContractsDVo dwdContractsDDoVo = dwdContractsDService.selectDwdContractsDById(arrairNo);
         return R.ok(dwdContractsDDoVo);
     }
 
@@ -55,7 +55,7 @@ public class DwdContractsDController extends BaseController {
     @Log(title = "DWD_CONTRACTS_D", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(DwdContractsDBo bo, HttpServletResponse response) {
-        List<DwdContractsDDoVo> list = dwdContractsDService.selectDwdContractsDList(bo);
-        ExcelUtil.exportExcel(list, "DWD_CONTRACTS_D数据", DwdContractsDDoVo.class, response);
+        List<DwdContractsDVo> list = dwdContractsDService.selectDwdContractsDList(bo);
+        ExcelUtil.exportExcel(list, "DWD_CONTRACTS_D数据", DwdContractsDVo.class, response);
     }
 }

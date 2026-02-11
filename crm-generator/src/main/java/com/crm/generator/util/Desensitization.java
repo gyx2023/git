@@ -3,7 +3,7 @@ package com.crm.generator.util;
 public class Desensitization {
     /**
      * 脱敏公司或集团名称
-     * 规则：保留最后两位字符，前面的所有字符用 '*' 替换。
+     * 规则：保留前1后2汉字
      *
      * @param companyName 公司或集团的完整名称
      * @return 脱敏后的名称，如果输入为 null 或空字符串则返回原输入
@@ -18,19 +18,19 @@ public class Desensitization {
         String trimmedName = companyName.trim();
         int length = trimmedName.length();
 
-        // 2. 如果名称长度小于等于2，直接返回原名称（无需脱敏）
-        if (length <= 4) {
+        // 2. 如果名称长度小于等于3，直接返回原名称（无需脱敏）
+        if (length <= 3) {
             return trimmedName;
         }
 
         // 3. 计算需要脱敏的字符数量，并生成相应数量的 '*'
-        int starsCount = length - 4;
+        int starsCount = length - 3;
         String stars = generateAsterisks(starsCount);
 
         // 4. 获取最后两位字符，并与 '*' 拼接
         String lastTwoChars = trimmedName.substring(length - 2);
-        String startTwoChars = trimmedName.substring(0, 2);
-        return startTwoChars + stars + lastTwoChars;
+        String startOneChar = trimmedName.substring(0, 1);
+        return startOneChar + stars + lastTwoChars;
     }
 
     /**
@@ -117,8 +117,8 @@ public class Desensitization {
         String startTwoChars = trimmedName.substring(0, 2);
         String endTwoChars = trimmedName.substring(length - 2);
 
-        // 4. 计算需要脱敏的字符数量，并生成相应数量的 '*'
-        int starsCount = length - 4;
+        // 4. 计算需要脱敏的字符数量，最多保留8个'*'
+        int starsCount = Math.min(length - 4, 8);
         String stars = generateAsterisks(starsCount);
 
         // 5. 拼接结果
@@ -139,7 +139,7 @@ public class Desensitization {
         }
 
         String trimmedPhone = phoneNumber.trim();
-        
+
         // 2. 检查手机号码长度是否符合标准（通常为11位）
         if (trimmedPhone.length() < 7) {
             // 如果长度小于7，直接返回原号码（不做脱敏处理）

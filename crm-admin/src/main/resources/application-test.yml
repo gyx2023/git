@@ -66,9 +66,18 @@ spring:
           driverClassName: dm.jdbc.driver.DmDriver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:dm://132.151.27.11:5236/IOB_GOV2?columnNameUpperCase=false
+          url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
           username: IOB_GOV2
-          password: re.12aq,123l;06a!
+          password: aP3`zK8#xJ0$
+        oracle:
+          type: ${spring.datasource.type}
+          driverClassName: oracle.jdbc.OracleDriver
+          url: jdbc:oracle:thin:@130.36.23.9:1521:crmdb2
+          username: ps_uni_zyy
+          password: zyy_2026
+          hikari:
+            connectionTestQuery: SELECT 1 FROM DUAL
+            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
       hikari:
         # 最大连接池数量
         maxPoolSize: 20

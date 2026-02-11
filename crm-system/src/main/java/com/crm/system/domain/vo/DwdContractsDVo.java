@@ -14,7 +14,7 @@ import java.util.Date;
  */
 @Data
 @ExcelIgnoreUnannotated
-public class DwdContractsDDoVo {
+public class DwdContractsDVo {
 
     /**
      * 客户编码

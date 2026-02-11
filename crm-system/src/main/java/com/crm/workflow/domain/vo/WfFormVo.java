@@ -39,4 +39,16 @@ public class WfFormVo {
      */
     @ExcelProperty(value = "备注")
     private String remark;
+
+    /**
+     * 表单类型：system-系统表单，custom-自定义URL
+     */
+    @ExcelProperty(value = "表单类型")
+    private String formType;
+
+    /**
+     * 表单URL
+     */
+    @ExcelProperty(value = "表单URL")
+    private String formUrl;
 }

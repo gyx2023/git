@@ -1,6 +1,7 @@
 package com.crm.system.service;
 
 import com.crm.system.domain.ZqztGrpContractInfo;
+import com.crm.system.domain.ZqztGrpContractOtherInfo;
 import com.crm.system.domain.vo.ZqztGrpContractInfoVo;
 import com.crm.system.domain.bo.ZqztGrpContractInfoBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -26,6 +27,22 @@ public interface IZqztGrpContractInfoService {
      * 查询集团合同信息列表
      */
     TableDataInfo<ZqztGrpContractInfoVo> queryPageList(ZqztGrpContractInfoBo bo, PageQuery pageQuery);
+
+    /**
+     * 全量删除集团合同信息数据
+     *
+     * @param dataList 数据列表
+     * @return 成功导入数量
+     */
+    int importAllClear(List<ZqztGrpContractInfo> dataList);
+
+    /**
+     * 全量导入集团合同信息数据
+     *
+     * @param dataList 数据列表
+     * @return 成功导入数量
+     */
+    int importAll(List<ZqztGrpContractInfo> dataList);
 
     /**
      * 查询集团合同信息列表

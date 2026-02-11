@@ -9,7 +9,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.DwdContractsDDo;
-import com.crm.system.domain.vo.DwdContractsDDoVo;
+import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.domain.bo.DwdContractsDBo;
 import com.crm.system.mapper.DwdContractsDMapper;
 import com.crm.system.service.IDwdContractsDService;
@@ -38,12 +38,12 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      */
     @DS("slave_2")  // 使用达梦数据库
     @Override
-    public DwdContractsDDoVo selectDwdContractsDById(String contractNoLocal) {
+    public DwdContractsDVo selectDwdContractsDById(String contractNoLocal) {
         // 使用合同编号作为查询条件，而不是按主键查询
         // 注意：这里使用contractNoLocal作为参数值去查询ARRAIR_NO字段，因为根据业务需求，
         // 传入的合同编号实际上应该对应数据库中的ARRAIR_NO字段
         DwdContractsDDo dwdContractsDDo = baseMapper.selectByArrairNo(contractNoLocal);
-        return BeanUtil.toBean(dwdContractsDDo, DwdContractsDDoVo.class);
+        return BeanUtil.toBean(dwdContractsDDo, DwdContractsDVo.class);
     }
 
     /**
@@ -54,7 +54,7 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      */
     @DS("slave_2")  // 使用达梦数据库
     @Override
-    public List<DwdContractsDDoVo> selectDwdContractsDList(DwdContractsDBo dwdContractsDBo) {
+    public List<DwdContractsDVo> selectDwdContractsDList(DwdContractsDBo dwdContractsDBo) {
         LambdaQueryWrapper<DwdContractsDDo> lqw = buildQueryWrapper(dwdContractsDBo);
         return baseMapper.selectVoList(lqw);
     }
@@ -68,9 +68,9 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
      */
     @DS("slave_2")  // 使用达梦数据库
     @Override
-    public TableDataInfo<DwdContractsDDoVo> selectDwdContractsDPageList(DwdContractsDBo dwdContractsDBo, PageQuery pageQuery) {
+    public TableDataInfo<DwdContractsDVo> selectDwdContractsDPageList(DwdContractsDBo dwdContractsDBo, PageQuery pageQuery) {
         LambdaQueryWrapper<DwdContractsDDo> lqw = buildQueryWrapper(dwdContractsDBo);
-        Page<DwdContractsDDoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        Page<DwdContractsDVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
 

@@ -43,4 +43,14 @@ public class WfDeployForm {
      * 表单内容
      */
     private String content;
+
+    /**
+     * 表单类型：system-系统表单，custom-自定义URL
+     */
+    private String formType;
+
+    /**
+     * 自定义表单URL路径
+     */
+    private String formUrl;
 }
