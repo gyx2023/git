@@ -147,13 +147,11 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 不含增值税合同额(元)
      */
-    @NotNull(message = "不含增值税合同额不能为空", groups = { AddGroup.class,EditGroup.class })
     private BigDecimal contractMoney2;
 
     /**
      * 是否固定金额 0-是；1-否
      */
-    @NotNull(message = "固定金额不能为空", groups = { AddGroup.class , EditGroup.class })
     private Long isFix;
 
     /**
@@ -166,7 +164,6 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 承办人联系电话
      */
-    @NotNull(message = "承办人联系电话不能为空", groups = { AddGroup.class,EditGroup.class })
     private String contractPhone;
 
     /**
@@ -177,7 +174,6 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 预计本年完成收入（元）
      */
-    @NotNull(message = "预计本年完成收入不能为空", groups = { AddGroup.class,EditGroup.class })
     private BigDecimal yearIncome;
 
     /**
@@ -188,7 +184,6 @@ public class ZqztGrpContractInfoBo extends BaseEntity {
     /**
      * 含增值税合同额(元)
      */
-    @NotNull(message = "含增值税合同额不能为空", groups = { AddGroup.class,EditGroup.class })
     private BigDecimal contractMoney;
 
      /**

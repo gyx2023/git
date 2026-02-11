@@ -1,4 +1,5 @@
 package com.crm.system.service.impl;
+import java.math.BigDecimal;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -10,6 +11,7 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.spring.SpringUtils;
 import com.crm.generator.util.Desensitization;
 import com.crm.system.domain.ZqztGrpContractInfo;
@@ -236,10 +238,17 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             add.setInuseContractId(generateRandomContractId());
         }
 
+        // 添加 paytype 默认值
+        if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
+            add.setPaytype("17");
+        }
+
         // 设置默认合同状态，如果未提供
         if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
             add.setContractStatus("9"); // 默认设置为"履行中"
         }
+
+        validEntityBeforeSave(add);
 
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -354,7 +363,72 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
      * 保存前的数据校验
      */
     private void validEntityBeforeSave(ZqztGrpContractInfo entity){
-        //TODO 做一些数据校验,如唯一约束
+        // 校验金额相关字段必须为有效数字
+        validateAmountFields(entity);
+
+        // 校验电话号码格式
+        validatePhoneNumber(entity);
+    }
+
+    /**
+     * 校验金额字段格式
+     * @param entity 合同实体
+     */
+    private void validateAmountFields(ZqztGrpContractInfo entity) {
+        // 校验不含增值税合同额
+        if (entity.getContractMoney2() != null) {
+            if (entity.getContractMoney2().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ServiceException("不含增值税合同额不能为负数");
+            }
+            if (entity.getContractMoney2().scale() > 2) {
+                throw new ServiceException("不含增值税合同额最多保留两位小数");
+            }
+        }
+
+        // 校验预计本年完成收入
+        if (entity.getYearIncome() != null) {
+            if (entity.getYearIncome().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ServiceException("预计本年完成收入不能为负数");
+            }
+            if (entity.getYearIncome().scale() > 2) {
+                throw new ServiceException("预计本年完成收入最多保留两位小数");
+            }
+        }
+
+        // 校验含增值税合同额
+        if (entity.getContractMoney() != null) {
+            if (entity.getContractMoney().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ServiceException("含增值税合同额不能为负数");
+            }
+            if (entity.getContractMoney().scale() > 2) {
+                throw new ServiceException("含增值税合同额最多保留两位小数");
+            }
+        }
+
+        // 校验服务性金额
+        if (entity.getServAmount() != null) {
+            if (entity.getServAmount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ServiceException("服务性金额不能为负数");
+            }
+            if (entity.getServAmount().scale() > 2) {
+                throw new ServiceException("服务性金额最多保留两位小数");
+            }
+        }
+    }
+
+    /**
+     * 校验电话号码格式
+     * @param entity 合同实体
+     */
+    private void validatePhoneNumber(ZqztGrpContractInfo entity) {
+        if (entity.getContractPhone() != null && !entity.getContractPhone().trim().isEmpty()) {
+            String phone = entity.getContractPhone().trim();
+            //手机号格式校验：1开头，第二位为3-9，共11位数字
+            String phonePattern = "^1[3-9]\\d{9}$";
+            if (!phone.matches(phonePattern)) {
+                throw new ServiceException("承办人联系电话格式不正确，请输入正确的11位手机号码");
+            }
+        }
     }
 
     /**
