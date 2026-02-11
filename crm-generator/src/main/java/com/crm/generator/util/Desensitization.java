@@ -36,8 +36,9 @@ public class Desensitization {
     /**
      * 脱敏个人姓名
      * 规则：
-     * - 2个字：第一个字保留，第二个字用 '*' 替换。
-     * - 3个字及以上：首尾字符保留，中间的所有字符用 '*' 替换。
+     * - 1个字：直接返回一个星号
+     * - 2个字：第一个字保留，第二个字用 '*' 替换
+     * - 3个字及以上：首尾字符保留，中间的所有字符用 '*' 替换
      *
      * @param fullName 个人的完整姓名
      * @return 脱敏后的姓名，如果输入为 null 或空字符串则返回原输入
@@ -51,13 +52,18 @@ public class Desensitization {
         String trimmedName = fullName.trim();
         int length = trimmedName.length();
 
-        // 2. 处理2个字的姓名
+        // 2. 处理1个字的姓名
+        if (length == 1) {
+            return "*";
+        }
+
+        // 3. 处理2个字的姓名
         if (length == 2) {
             String firstChar = trimmedName.substring(0, 1);
             return firstChar + "*";
         }
 
-        // 3. 处理3个字及以上的姓名
+        // 4. 处理3个字及以上的姓名
         if (length > 2) {
             String firstChar = trimmedName.substring(0, 1);
             String lastChar = trimmedName.substring(length - 1);
@@ -66,7 +72,6 @@ public class Desensitization {
             return firstChar + stars + lastChar;
         }
 
-        // 对于长度为1的姓名，直接返回
         return trimmedName;
     }
 
