@@ -907,10 +907,23 @@ public class OpportunityExport extends AbstractExportStrategy {
             sql.append(" and op.cust_manager_name like '%" + custManagerName + "%'");
         }
 
-        // 7. 区域ID查询
+        // 7. 区域ID查询 - 通过客户经理的组织机构地区关联查询
         String areaId = getParamValue(params, "areaId");
         if (StringUtils.isNotEmpty(areaId)) {
-            sql.append(" and op.opp_area_id = '" + areaId + "'");
+            // 通过关联关系查询：opportunity.cust_manager_id → sys_user.org_id → sys_org.area_id
+            if (areaId.length() == 4) {
+                // 4位地区编码，使用模糊匹配
+                sql.append(" and EXISTS (SELECT 1 FROM sys_user su2 " +
+                    "JOIN sys_org o2 ON su2.org_id = o2.id_ " +
+                    "WHERE su2.id_ = op.cust_manager_id " +
+                    "AND o2.area_id LIKE '%" + areaId.trim() + "%')");
+            } else {
+                // 精确匹配
+                sql.append(" and EXISTS (SELECT 1 FROM sys_user su2 " +
+                    "JOIN sys_org o2 ON su2.org_id = o2.id_ " +
+                    "WHERE su2.id_ = op.cust_manager_id " +
+                    "AND o2.area_id = '" + areaId + "')");
+            }
         }
 
         // 8. 开发标识查询 - 通过客户表关联查询
