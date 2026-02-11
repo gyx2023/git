@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.generator.util.Desensitization;
+import com.crm.common.utils.Desensitization;
 import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.domain.grp.TfFCustGroupMDo;
 import com.crm.system.mapper.CustMaintInfoMapper;

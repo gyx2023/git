@@ -1,4 +1,4 @@
-package com.crm.generator.util;
+package com.crm.common.utils;
 
 public class Desensitization {
     /**

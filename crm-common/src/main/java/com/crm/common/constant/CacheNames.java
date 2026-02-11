@@ -75,4 +75,9 @@ public interface CacheNames {
      */
     String SYS_CATEGORY = "sys_category";
 
+    /**
+     * 配置参数
+     */
+    String SYS_PARAM_CACHE = "SYS_PARAM_CACHE";
+
 }

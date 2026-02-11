@@ -13,7 +13,7 @@ import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.spring.SpringUtils;
-import com.crm.generator.util.Desensitization;
+import com.crm.common.utils.Desensitization;
 import com.crm.system.domain.ZqztGrpContractInfo;
 import com.crm.system.domain.ZqztGrpContractInfoLog;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
