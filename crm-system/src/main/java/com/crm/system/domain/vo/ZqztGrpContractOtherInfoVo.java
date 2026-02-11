@@ -2,6 +2,8 @@ package com.crm.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.crm.common.annotation.Sensitive;
+import com.crm.common.enums.SensitiveStrategy;
 import lombok.Data;
 
 
@@ -53,5 +55,35 @@ public class ZqztGrpContractOtherInfoVo {
      */
     @ExcelProperty(value = "是否有效：1有效，0无效，99迁移失效")
     private String isValid;
+
+    /**
+     * 服务号码
+     */
+    @Sensitive(strategy = SensitiveStrategy.PHONE)
+    private String svcNum;
+
+    /**
+     * 用户编码
+     */
+    private String userId;
+
+    /**
+     * 归属客户名称
+     */
+    @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
+    private String custName;
+
+    /**
+     * 收入归集集团名称
+     */
+    @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
+    private String custGrpName;
+
+    private String encryptedSvcNum;
+
+    /**
+     * 业务类型
+     */
+    private String typeLvl2Name;
 }
 

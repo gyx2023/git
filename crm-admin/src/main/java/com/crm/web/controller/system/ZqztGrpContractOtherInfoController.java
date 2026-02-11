@@ -161,19 +161,9 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      */
     @SaCheckPermission("system:grpContractOtherInfo:list")
     @GetMapping({"/contract/{contractId}/userInfo", "/contract/{contractId}/infoVal2/{infoVal2}/userInfo"})
-    public R<List<Map<String, Object>>> listContractRelatedUserInfo(@PathVariable String contractId, @PathVariable(required = false) String infoVal2) {
-        // 解密infoVal2参数后再调用服务
-//        String decryptedInfoVal2 = infoVal2;
-//        if (infoVal2 != null && !infoVal2.isEmpty()) {
-//            try {
-//                decryptedInfoVal2 = iZqztGrpContractOtherInfoService.decryptSvcNum(infoVal2);
-//            } catch (Exception e) {
-//                log.warn("infoVal2解密失败，使用原始值: {}", infoVal2);
-//            }
-//        }
-//        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, decryptedInfoVal2);
+    public R<List<ZqztGrpContractOtherInfoVo>> listContractRelatedUserInfo(@PathVariable String contractId, @PathVariable(required = false) String infoVal2) {
 
-        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2);
+        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2);
         return R.ok(list);
     }
 

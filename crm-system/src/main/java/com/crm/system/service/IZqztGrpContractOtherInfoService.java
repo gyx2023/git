@@ -94,7 +94,7 @@ public interface IZqztGrpContractOtherInfoService {
      * @param infoVal2 服务号码（可选）
      * @return 关联的客户信息列表
      */
-    List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2);
+    List<ZqztGrpContractOtherInfoVo> selectContractRelatedUserInfo(String contractId, String infoVal2);
 
     /**
      * 批量使合同关联用户信息失效
@@ -113,7 +113,7 @@ public interface IZqztGrpContractOtherInfoService {
      * @param contractId 合同ID
      * @return 未签约的客户列表
      */
-    List<Map<String, Object>> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId);
+    List<ZqztGrpContractOtherInfoVo> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId);
 
     /**
      * 根据总部集团编码查询未签约的客户（用于后端批量处理，不脱敏）

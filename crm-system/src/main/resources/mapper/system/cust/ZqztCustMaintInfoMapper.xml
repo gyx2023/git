@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.cust.ZqztCustMaintInfoMapper">
+
+    <resultMap type="com.crm.system.domain.cust.ZqztCustMaintInfo" id="ZqztCustMaintInfoResult">
+        <result property="statCycle" column="STAT_CYCLE"/>
+        <result property="etlTime" column="ETL_TIME"/>
+        <result property="operType" column="OPER_TYPE"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="svcNum" column="SVC_NUM"/>
+        <result property="typeLvl2" column="TYPE_LVL2"/>
+        <result property="typeLvl2Name" column="TYPE_LVL2_NAME"/>
+        <result property="custGrpId" column="CUST_GRP_ID"/>
+        <result property="custGrpName" column="CUST_GRP_NAME"/>
+        <result property="custGrpType" column="CUST_GRP_TYPE"/>
+        <result property="custId" column="CUST_ID"/>
+        <result property="custName" column="CUST_NAME"/>
+        <result property="STATUS" column="STATUS"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="updateTime" column="UPDATE_TIME"/>
+    </resultMap>
+
+
+</mapper>
