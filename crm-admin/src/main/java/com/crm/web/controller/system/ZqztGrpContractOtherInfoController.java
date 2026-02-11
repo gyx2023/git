@@ -162,14 +162,24 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      */
     @SaCheckPermission("system:grpContractOtherInfo:list")
     @GetMapping({"/contract/{contractId}/userInfo", "/contract/{contractId}/infoVal2/{infoVal2}/userInfo"})
-    public R<List<Map<String, Object>>> listContractRelatedUserInfo(@PathVariable String contractId, @PathVariable(required = false) String infoVal2) {
+    public R<List<Map<String, Object>>> listContractRelatedUserInfo(
+            @PathVariable String contractId, 
+            @PathVariable(required = false) String infoVal2,
+            PageQuery pageQuery) {
         // 处理路径变量中的"null"字符串，转换为真正的null值
         if ("null".equals(infoVal2)) {
             infoVal2 = null;
         }
         
-        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2);
-        return R.ok(list);
+        // 如果没有提供分页参数，使用默认值
+        if (pageQuery == null) {
+            pageQuery = new PageQuery();
+            pageQuery.setPageNum(1);
+            pageQuery.setPageSize(10);
+        }
+        
+        List<Map<String, Object>> result = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2, pageQuery);
+        return R.ok(result);
     }
 
     /**

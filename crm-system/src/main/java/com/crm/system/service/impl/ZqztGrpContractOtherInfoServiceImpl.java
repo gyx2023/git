@@ -341,8 +341,16 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     }
 
     @Override
-    public List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2) {
-        // 第一步：根据合同ID和服务号码查询集团合同扩展信息
+    public List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2, PageQuery pageQuery) {
+        // 强制使用分页查询
+        if (pageQuery == null) {
+            // 如果没有提供分页参数，使用默认分页设置
+            pageQuery = new PageQuery();
+            pageQuery.setPageNum(1);
+            pageQuery.setPageSize(10);
+        }
+        
+        // 第一步：使用数据库分页查询集团合同扩展信息
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
         lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
@@ -352,19 +360,10 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, infoVal2);
         }
 
-        // 如果infoVal2不为空，先解密再查询
-//        String decryptedInfoVal2 = null;
-//        if (infoVal2 != null && !infoVal2.isEmpty()) {
-//            try {
-//                decryptedInfoVal2 = decryptInfoVal2(infoVal2);
-//                lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, decryptedInfoVal2); // 按解密后的服务号码模糊查询
-//            } catch (Exception e) {
-//                log.warn("infoVal2解密失败，使用原始值查询: {}", infoVal2);
-//                lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 解密失败时使用原始值
-//            }
-//        }
-
-        List<ZqztGrpContractOtherInfoVo> contractOtherInfos = baseMapper.selectVoList(lqw);
+        // 使用数据库分页查询
+        Page<ZqztGrpContractOtherInfoVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        List<ZqztGrpContractOtherInfoVo> contractOtherInfos = page.getRecords();
+        
         if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
             return new ArrayList<>();
         }

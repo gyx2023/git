@@ -99,9 +99,10 @@ public interface IZqztGrpContractOtherInfoService {
      *
      * @param contractId 合同ID
      * @param infoVal2 服务号码（可选）
+     * @param pageQuery 分页参数
      * @return 关联的客户信息列表
      */
-    List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2);
+    List<Map<String, Object>> selectContractRelatedUserInfo(String contractId, String infoVal2, PageQuery pageQuery);
 
     /**
      * 批量使合同关联用户信息失效
