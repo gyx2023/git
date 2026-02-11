@@ -114,13 +114,42 @@ public class ZqztGrpContractInfoImportJob {
     private ZqztGrpContractInfo convertSingleRecord(GrpContractInfo oracleData) {
         ZqztGrpContractInfo targetData = new ZqztGrpContractInfo();
 
-        // 复制基础字段
-        BeanUtils.copyProperties(oracleData, targetData);
-
         // 特殊字段映射
+        targetData.setContractId(oracleData.getContractId());
+        targetData.setGrpId(oracleData.getGrpId());
         targetData.setErpContractId(oracleData.getString2());
         targetData.setInuseContractId(oracleData.getString15());
-        targetData.setContractParty(oracleData.getString1());
+        targetData.setContractType(oracleData.getContractType());
+        targetData.setContractName(oracleData.getContractName());
+        targetData.setContractEffdate(oracleData.getContractEffdate());
+        targetData.setContractExpdate(oracleData.getContractExpdate());
+        targetData.setPaytype(oracleData.getPaytype());
+        targetData.setContractNote(oracleData.getContractNote());
+        targetData.setCreator(oracleData.getCreator());
+        targetData.setFiles(oracleData.getFiles());
+        targetData.setContractProperty(oracleData.getString1());
+        targetData.setIsBidding(oracleData.getIsBidding());
+        targetData.setContractMain(oracleData.getContractMain());
+        targetData.setContractParty(oracleData.getContractParty());
+        targetData.setContractDept(oracleData.getContractDept());
+        targetData.setContractMan(oracleData.getContractMan());
+        targetData.setContractMoney2(oracleData.getContractMoney2());
+        targetData.setIsFix(Long.valueOf(oracleData.getIsFix()));
+        targetData.setAuditDate(oracleData.getAuditDate());
+        targetData.setContractPhone(oracleData.getContractPhone());
+        targetData.setContractOldnum(oracleData.getContractOldnum());
+        targetData.setYearIncome(oracleData.getYearIncome());
+        targetData.setServAmount(oracleData.getServAmount());
+        targetData.setContractMoney(oracleData.getContractMoney());
+        targetData.setContractSigndate(oracleData.getContractSigndate());
+        targetData.setContractStatus(oracleData.getContractStatus());
+        targetData.setContractCateL1Code(Long.valueOf(oracleData.getContractCateL1Code()));
+        targetData.setContractCateL1Name(oracleData.getContractCateL1Name());
+        targetData.setContractCateL2Code(Long.valueOf(oracleData.getContractCateL2Code()));
+        targetData.setContractCateL2Name(oracleData.getContractCateL2Name());
+        targetData.setContractCateL3Code(Long.valueOf(oracleData.getContractCateL3Code()));
+        targetData.setContractCateL3Name(oracleData.getContractCateL3Name());
+        targetData.setRemark(oracleData.getRemark());
 
         return targetData;
     }
