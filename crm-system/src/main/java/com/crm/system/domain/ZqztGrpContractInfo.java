@@ -129,7 +129,7 @@ public class ZqztGrpContractInfo extends BaseEntity {
     /**
      * 是否固定金额 0-是；1-否
      */
-    private Long isFix;
+    private int isFix;
     /**
      * 审批通过日期
      */

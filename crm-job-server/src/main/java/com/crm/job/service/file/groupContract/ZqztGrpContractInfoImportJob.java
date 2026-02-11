@@ -114,13 +114,13 @@ public class ZqztGrpContractInfoImportJob {
     private ZqztGrpContractInfo convertSingleRecord(GrpContractInfo oracleData) {
         ZqztGrpContractInfo targetData = new ZqztGrpContractInfo();
 
-        // 复制基础字段
+        // 普通字段映射
         BeanUtils.copyProperties(oracleData, targetData);
 
         // 特殊字段映射
         targetData.setErpContractId(oracleData.getString2());
         targetData.setInuseContractId(oracleData.getString15());
-        targetData.setContractParty(oracleData.getString1());
+        targetData.setContractProperty(oracleData.getString1());
 
         return targetData;
     }
