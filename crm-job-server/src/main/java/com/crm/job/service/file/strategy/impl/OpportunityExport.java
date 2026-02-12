@@ -31,10 +31,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import com.crm.system.domain.vo.SysOssVo;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -163,13 +160,24 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 定义原始中文文件名
             String originalFileName = "商机信息导出_" + System.currentTimeMillis() + ".xlsx";
 
-            // 保存到本地指定目录
-            String localDownloadPath = saveToLocalOptimized(tempFile, originalFileName);
+            // 上传文件到OSS - 使用新方法直接设置原始文件名
+            SysOssVo upload = iSysOssService.upload(tempFile, originalFileName);
 
-            // 设置文件信息
+            // 验证上传是否成功
+            if (upload == null) {
+                task.setRemark("文件上传失败");
+                tempFile.delete();
+                return false;
+            }
+
+            // 删除临时文件
+            tempFile.delete();
+
+            // 设置文件信息 - 使用原始中文文件名
             task.setFileName(originalFileName);
-            task.setFileUrl("file:///" + localDownloadPath);
-            task.setRemark("商机信息导出成功，文件保存至: " + localDownloadPath);
+            task.setFileUrl(upload.getUrl());
+            task.setRemark("商机信息导出成功");
+            task.setUpdateBy(task.getUpdateBy());
             return true;
 
         } catch (Exception e) {
@@ -1101,32 +1109,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
     }
 
-    /**
-     * 文件保存
-     */
-    private String saveToLocalOptimized(File tempFile, String fileName) throws Exception {
-        String downloadDir = "C:\\Users\\FBODC\\Desktop";
-        Path downloadPath = Paths.get(downloadDir);
 
-        // 确保目录存在
-        if (!Files.exists(downloadPath)) {
-            Files.createDirectories(downloadPath);
-        }
-
-        Path targetPath = downloadPath.resolve(fileName);
-        Path sourcePath = tempFile.toPath();
-
-        try {
-            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-        } finally {
-            // 删除临时文件
-            Files.deleteIfExists(sourcePath);
-        }
-
-        String fullPath = targetPath.toString();
-        log.info("文件已保存到本地: {}", fullPath);
-        return fullPath;
-    }
 
     /**
      * 查询人员地区信息
