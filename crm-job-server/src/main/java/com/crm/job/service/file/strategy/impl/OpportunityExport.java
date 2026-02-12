@@ -114,7 +114,7 @@ public class OpportunityExport extends AbstractExportStrategy {
     @Override
     protected boolean doExportTask(FileAsyncTaskDo task) throws Exception {
         try {
-            log.info("开始执行优化版商机导出任务，任务ID: {}", task.getTaskId());
+            log.info("开始执行商机导出任务，任务ID: {}", task.getTaskId());
 
             // 初始化全局缓存
             initializeGlobalCache();
@@ -177,7 +177,6 @@ public class OpportunityExport extends AbstractExportStrategy {
             task.setFileName(originalFileName);
             task.setFileUrl(upload.getUrl());
             task.setRemark("商机信息导出成功");
-            task.setUpdateBy(task.getUpdateBy());
             return true;
 
         } catch (Exception e) {
@@ -232,7 +231,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
             // 预定义需要缓存的码表类型
             String[] codeTypes = {
-                "opp_type", "unicom_type_new", "clue_source",
+                "opp_type", "unicom_type", "clue_source",
                 "oppo_state", "select_type_1", "main_product"
             };
 
@@ -476,10 +475,10 @@ public class OpportunityExport extends AbstractExportStrategy {
             CompletableFuture.allOf(contractFuture, eformFuture, orgFuture, areaFuture, personAreaFuture, supportManagerFuture).join();
 
             long endTime = System.currentTimeMillis();
-            log.info("优化版动态数据预加载完成，耗时: {}ms", (endTime - startTime));
+            log.info("动态数据预加载完成，耗时: {}ms", (endTime - startTime));
 
         } catch (Exception e) {
-            log.warn("优化版动态数据预加载失败: {}", e.getMessage(), e);
+            log.warn("动态数据预加载失败: {}", e.getMessage(), e);
         }
 
         return context;
@@ -742,7 +741,7 @@ public class OpportunityExport extends AbstractExportStrategy {
 
         // 一次性获取所有需要的缓存Map到局部变量
         final Map<String, String> oppTypeMap = SYS_CODE_CACHE.get("opp_type");
-        final Map<String, String> unicomTypeMap = SYS_CODE_CACHE.get("unicom_type_new");
+        final Map<String, String> unicomTypeMap = SYS_CODE_CACHE.get("unicom_type");
         final Map<String, String> clueSourceMap = SYS_CODE_CACHE.get("clue_source");
         final Map<String, String> oppoStateMap = SYS_CODE_CACHE.get("oppo_state");
         final Map<String, String> selectType1Map = SYS_CODE_CACHE.get("select_type_1");
@@ -1336,7 +1335,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                 .collect(Collectors.groupingBy(ToppContractEformVo::getProjectId));
 
         } catch (Exception e) {
-            log.warn("优化版查询电子表单信息失败: {}", e.getMessage(), e);
+            log.warn("查询电子表单信息失败: {}", e.getMessage(), e);
         }
 
         return eformMap;
