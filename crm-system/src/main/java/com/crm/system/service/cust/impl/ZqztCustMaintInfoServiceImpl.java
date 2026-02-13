@@ -166,10 +166,13 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
         }
 
         // 调用 Mapper 查询已存在的 user_id
-        List<ZqztCustMaintInfoVo> existingUserVos = baseMapper.selectVoBatchIds(userIds); // 假设返回 Vo 类型
-        // 提取 user_id 并转换为 Set
-        return existingUserVos.stream()
-            .map(ZqztCustMaintInfoVo::getUserId) // 使用 Vo 的 getUserId 方法
+        // 使用 LambdaQueryWrapper 构建查询条件
+        List<ZqztCustMaintInfo> existingUsers = baseMapper.selectList(
+            new LambdaQueryWrapper<ZqztCustMaintInfo>()
+                .in(ZqztCustMaintInfo::getUserId, userIds)
+        );        // 提取 user_id 并转换为 Set
+        return existingUsers.stream()
+            .map(ZqztCustMaintInfo::getUserId) // 使用 Vo 的 getUserId 方法
             .collect(Collectors.toSet());
     }
 }
