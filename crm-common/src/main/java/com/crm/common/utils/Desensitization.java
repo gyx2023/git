@@ -1,9 +1,9 @@
-package com.crm.generator.util;
+package com.crm.common.utils;
 
 public class Desensitization {
     /**
      * 脱敏公司或集团名称
-     * 规则：保留前1后2汉字
+     * 规则：当长度>=4时保留前1位和后2位，中间用'*'替换；当长度<4时返回对应数量的'*'。
      *
      * @param companyName 公司或集团的完整名称
      * @return 脱敏后的名称，如果输入为 null 或空字符串则返回原输入
@@ -14,23 +14,32 @@ public class Desensitization {
             return companyName;
         }
 
-
         String trimmedName = companyName.trim();
         int length = trimmedName.length();
 
-        // 2. 如果名称长度小于等于3，直接返回原名称（无需脱敏）
-        if (length <= 3) {
-            return trimmedName;
+        // 2. 处理1个字的姓名
+        if (length == 1) {
+            return "*";
         }
 
-        // 3. 计算需要脱敏的字符数量，并生成相应数量的 '*'
-        int starsCount = length - 3;
+        // 3. 处理2个字的姓名
+        if (length == 2) {
+            String firstChar = trimmedName.substring(0, 1);
+            return firstChar + "*";
+        }
+        // 4. 处理3个字的姓名
+        if (length == 3) {
+            String firstChar = trimmedName.substring(0, 1);
+            return firstChar + "*" + trimmedName.charAt(1);
+        }
+
+        // 5. 当长度大于等于4时，保留前1位和后2位，中间用星号替代
+        String firstChar = trimmedName.substring(0, 1);
+        String lastTwoChars = trimmedName.substring(length - 2);
+        int starsCount = length - 3; // 总长度减去保留的3个字符(前1+后2)
         String stars = generateAsterisks(starsCount);
 
-        // 4. 获取最后两位字符，并与 '*' 拼接
-        String lastTwoChars = trimmedName.substring(length - 2);
-        String startOneChar = trimmedName.substring(0, 1);
-        return startOneChar + stars + lastTwoChars;
+        return firstChar + stars + lastTwoChars;
     }
 
     /**
@@ -52,18 +61,13 @@ public class Desensitization {
         String trimmedName = fullName.trim();
         int length = trimmedName.length();
 
-        // 2. 处理1个字的姓名
-        if (length == 1) {
-            return "*";
-        }
-
-        // 3. 处理2个字的姓名
+        // 2. 处理2个字的姓名
         if (length == 2) {
             String firstChar = trimmedName.substring(0, 1);
             return firstChar + "*";
         }
 
-        // 4. 处理3个字及以上的姓名
+        // 3. 处理3个字及以上的姓名
         if (length > 2) {
             String firstChar = trimmedName.substring(0, 1);
             String lastChar = trimmedName.substring(length - 1);
@@ -117,40 +121,12 @@ public class Desensitization {
         String startTwoChars = trimmedName.substring(0, 2);
         String endTwoChars = trimmedName.substring(length - 2);
 
-        // 4. 计算需要脱敏的字符数量，最多保留8个'*'
-        int starsCount = Math.min(length - 4, 8);
+        // 4. 计算需要脱敏的字符数量，并生成相应数量的 '*'
+        int starsCount = length - 4;
         String stars = generateAsterisks(starsCount);
 
         // 5. 拼接结果
         return startTwoChars + stars + endTwoChars;
     }
 
-    /**
-     * 脱敏手机号码
-     * 规则：保留前3位和后4位，中间4位用 '*' 替换。
-     *
-     * @param phoneNumber 完整的手机号码
-     * @return 脱敏后的手机号码，如果输入为 null 或空字符串则返回原输入
-     */
-    public static String desensitizePhoneNumber(String phoneNumber) {
-        // 1. 处理 null 或空字符串的情况
-        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            return phoneNumber;
-        }
-
-        String trimmedPhone = phoneNumber.trim();
-
-        // 2. 检查手机号码长度是否符合标准（通常为11位）
-        if (trimmedPhone.length() < 7) {
-            // 如果长度小于7，直接返回原号码（不做脱敏处理）
-            return trimmedPhone;
-        }
-
-        // 3. 提取前3位和后4位
-        String startThreeDigits = trimmedPhone.substring(0, 3);
-        String endFourDigits = trimmedPhone.substring(trimmedPhone.length() - 4);
-
-        // 4. 中间部分用4个星号替换
-        return startThreeDigits + "****" + endFourDigits;
-    }
 }
