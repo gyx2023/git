@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 客户维护信息数据同步任务
@@ -45,9 +47,20 @@ public class CustMaintInfoSyncJob {
                     hasMoreData = false; // 无数据时退出循环
                     break;
                 }
+                // 查询目标表中已存在的 user_id
+                Set<String> existingUserIds = zqztCustMaintInfoService.selectExistingUserIds(batchData.stream()
+                    .map(CustMaintInfo::getUserId)
+                    .collect(Collectors.toList()));
 
-                // 插入到 zqzt_cust_main_info 表
-                zqztCustMaintInfoService.batchInsert(batchData);
+                // 过滤掉已存在的数据
+                List<CustMaintInfo> filteredData = batchData.stream()
+                    .filter(info -> !existingUserIds.contains(info.getUserId()))
+                    .collect(Collectors.toList());
+
+                // 插入过滤后的数据
+                if (!filteredData.isEmpty()) {
+                    zqztCustMaintInfoService.batchInsert(filteredData);
+                }
 
                 // 日志记录
                 XxlJobHelper.log("第 {} 页数据同步完成，共处理 {} 条数据", currentPage + 1, batchData.size());

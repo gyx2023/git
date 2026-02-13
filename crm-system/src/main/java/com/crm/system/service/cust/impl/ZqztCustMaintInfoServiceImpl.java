@@ -16,9 +16,7 @@ import com.crm.system.domain.cust.ZqztCustMaintInfo;
 import com.crm.system.mapper.cust.ZqztCustMaintInfoMapper;
 import com.crm.system.service.cust.IZqztCustMaintInfoService;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -160,5 +158,18 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
 
         // 批量插入
         return baseMapper.insertBatch(zqztCustMaintInfoList);
+    }
+    @Override
+    public Set<String> selectExistingUserIds(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        // 调用 Mapper 查询已存在的 user_id
+        List<ZqztCustMaintInfoVo> existingUserVos = baseMapper.selectVoBatchIds(userIds); // 假设返回 Vo 类型
+        // 提取 user_id 并转换为 Set
+        return existingUserVos.stream()
+            .map(ZqztCustMaintInfoVo::getUserId) // 使用 Vo 的 getUserId 方法
+            .collect(Collectors.toSet());
     }
 }
