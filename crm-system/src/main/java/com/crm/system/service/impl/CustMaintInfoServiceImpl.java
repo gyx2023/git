@@ -2,6 +2,9 @@ package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.utils.DateUtils;
 import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import com.crm.system.service.ICustMaintInfoService;
@@ -113,5 +116,35 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
         }
         return resultMap;
     }
+    /**
+     * 分页查询客户维护信息
+     *
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @return 当前页的客户维护信息列表
+     */
+    @Override
+    public List<CustMaintInfo> selectBatch(int page, int size, String params) {
+        // 使用QueryWrapper构建查询条件
+        QueryWrapper<CustMaintInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("STATUS", "1"); // 只查询状态为1的记录
+        // 如果params不为空且为数字，则根据params计算目标日期
+        if (params != null && params.matches("\\d+")) {
+            int days = Integer.parseInt(params);
+            String formattedDate = DateUtils.getBeforeNDays(days);
 
+            // 添加创建时间或更新时间大于目标日期的条件
+            queryWrapper.gt("CREATE_TIME", formattedDate)
+                .or()
+                .gt("UPDATE_TIME", formattedDate);
+        }
+        queryWrapper.orderByAsc("CREATE_TIME");
+
+        // 分页查询
+        Page<CustMaintInfo> pageInfo = new Page<>(page, size);
+        IPage<CustMaintInfo> resultPage = custMaintInfoMapper.selectPage(pageInfo, queryWrapper);
+
+        // 返回当前页的数据
+        return resultPage.getRecords();
+    }
 }

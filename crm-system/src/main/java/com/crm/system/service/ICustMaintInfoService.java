@@ -45,4 +45,6 @@ public interface ICustMaintInfoService {
      * @return key为userId，value为服务号码的Map
      */
     Map<String, String> selectValidSvcNumByUserIds(List<String> userIds);
+
+    List<CustMaintInfo> selectBatch(int page, int size, String params);
 }

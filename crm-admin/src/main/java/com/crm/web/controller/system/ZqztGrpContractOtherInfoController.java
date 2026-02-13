@@ -140,15 +140,14 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     @GetMapping("/contract/{contractId}/infoVal2/{infoVal2}")
     public R<List<ZqztGrpContractOtherInfoVo>> listByContractIdAndInfoVal2(@PathVariable String contractId, @PathVariable String infoVal2) {
         // 解密infoVal2参数后再调用服务
-//        String decryptedInfoVal2 = infoVal2;
-//        try {
-//            decryptedInfoVal2 = iZqztGrpContractOtherInfoService.decryptSvcNum(infoVal2);
-//        } catch (Exception e) {
-//            log.warn("infoVal2解密失败，使用原始值: {}", infoVal2);
-//        }
-//        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractIdAndInfoVal2(contractId, decryptedInfoVal2);
+        String decryptedInfoVal2 = infoVal2;
+        try {
+            decryptedInfoVal2 = iZqztGrpContractOtherInfoService.decryptSvcNum(infoVal2);
+        } catch (Exception e) {
+            log.warn("infoVal2解密失败，使用原始值: {}", infoVal2);
+        }
 
-        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractIdAndInfoVal2(contractId, infoVal2);
+        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractIdAndInfoVal2(contractId, decryptedInfoVal2);
         return R.ok(list);
     }
 
@@ -162,24 +161,10 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      */
     @SaCheckPermission("system:grpContractOtherInfo:list")
     @GetMapping({"/contract/{contractId}/userInfo", "/contract/{contractId}/infoVal2/{infoVal2}/userInfo"})
-    public R<List<Map<String, Object>>> listContractRelatedUserInfo(
-            @PathVariable String contractId, 
-            @PathVariable(required = false) String infoVal2,
-            PageQuery pageQuery) {
-        // 处理路径变量中的"null"字符串，转换为真正的null值
-        if ("null".equals(infoVal2)) {
-            infoVal2 = null;
-        }
-        
-        // 如果没有提供分页参数，使用默认值
-        if (pageQuery == null) {
-            pageQuery = new PageQuery();
-            pageQuery.setPageNum(1);
-            pageQuery.setPageSize(10);
-        }
-        
-        List<Map<String, Object>> result = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2, pageQuery);
-        return R.ok(result);
+    public R<List<ZqztGrpContractOtherInfoVo>> listContractRelatedUserInfo(@PathVariable String contractId, @PathVariable(required = false) String infoVal2) {
+
+        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2);
+        return R.ok(list);
     }
 
     /**
