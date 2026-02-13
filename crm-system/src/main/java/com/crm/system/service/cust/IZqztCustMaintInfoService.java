@@ -8,6 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 【请填写功能名称】Service接口
@@ -52,4 +53,6 @@ public interface IZqztCustMaintInfoService {
      * @param dataList 待插入的数据列表
      */
     boolean batchInsert(List<CustMaintInfo> dataList);
+
+    Set<String> selectExistingUserIds(List<String> userIds);
 }
