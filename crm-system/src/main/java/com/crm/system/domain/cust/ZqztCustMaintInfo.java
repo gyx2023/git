@@ -13,9 +13,8 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2026-02-12
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("zqzt_cust_maint_info")
-public class ZqztCustMaintInfo extends BaseEntity {
+public class ZqztCustMaintInfo {
 
     private static final long serialVersionUID=1L;
 
@@ -87,6 +86,17 @@ public class ZqztCustMaintInfo extends BaseEntity {
      * 状态
      */
     @TableField("STATUS")
-    private String STATUS;
+    private String status;
 
+    /**
+     * 创建时间
+     */
+    @TableField(exist = false)
+    private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
 }

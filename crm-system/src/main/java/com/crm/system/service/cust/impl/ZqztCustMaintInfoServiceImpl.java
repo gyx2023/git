@@ -73,7 +73,7 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getCustGrpType()), ZqztCustMaintInfo::getCustGrpType, bo.getCustGrpType());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqztCustMaintInfo::getCustId, bo.getCustId());
         lqw.like(StringUtils.isNotBlank(bo.getCustName()), ZqztCustMaintInfo::getCustName, bo.getCustName());
-        lqw.eq(StringUtils.isNotBlank(bo.getSTATUS()), ZqztCustMaintInfo::getSTATUS, bo.getSTATUS());
+        lqw.eq(StringUtils.isNotBlank(bo.getSTATUS()), ZqztCustMaintInfo::getStatus, bo.getSTATUS());
         lqw.eq(bo.getCreateTime() != null, ZqztCustMaintInfo::getCreateTime, bo.getCreateTime());
         lqw.eq(bo.getUpdateTime() != null, ZqztCustMaintInfo::getUpdateTime, bo.getUpdateTime());
         return lqw;
@@ -148,7 +148,7 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
                 zqztInfo.setCustGrpType(custInfo.getCustGrpType());
                 zqztInfo.setCustId(custInfo.getCustId());
                 zqztInfo.setCustName(custInfo.getCustName());
-                zqztInfo.setSTATUS(custInfo.getStatus());
+                zqztInfo.setStatus(custInfo.getStatus());
                 // 设置 BaseEntity 的字段
                 zqztInfo.setCreateTime(custInfo.getCreateTime());
                 zqztInfo.setUpdateTime(custInfo.getUpdateTime());
