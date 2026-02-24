@@ -29,7 +29,7 @@ public class CustMaintInfoSyncJob {
     private IZqztCustMaintInfoService zqztCustMaintInfoService;
 
     @XxlJob("custMaintInfoSyncJob")
-    public void custMaintInfoSyncJob() {
+    public void execute() {
         log.info("开始执行客户维护信息数据同步任务");
         XxlJobHelper.log("开始执行客户维护信息数据同步任务");
         String param = XxlJobHelper.getJobParam();

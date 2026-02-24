@@ -134,11 +134,9 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
             String formattedDate = DateUtils.getBeforeNDays(days);
 
             // 添加创建时间或更新时间大于目标日期的条件
-            queryWrapper.gt("CREATE_TIME", formattedDate)
-                .or()
-                .gt("UPDATE_TIME", formattedDate);
+            queryWrapper.gt("ETL_TIME", formattedDate);
         }
-        queryWrapper.orderByAsc("CREATE_TIME");
+        queryWrapper.orderByAsc("ETL_TIME");
 
         // 分页查询
         Page<CustMaintInfo> pageInfo = new Page<>(page, size);
