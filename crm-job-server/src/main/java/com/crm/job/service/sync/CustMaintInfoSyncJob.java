@@ -1,6 +1,6 @@
 package com.crm.job.service.sync;
 
-import com.crm.common.utils.StringUtils;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.cust.IZqztCustMaintInfoService;
@@ -35,18 +35,20 @@ public class CustMaintInfoSyncJob {
         String param = XxlJobHelper.getJobParam();
 
         int pageSize = 1000; // 每批次处理的数据量
-        int currentPage = 0; // 当前页码
+        int currentPage = 1; // 当前页码
         boolean hasMoreData = true; // 是否还有更多数据
 
         try {
             while (hasMoreData) {
                 // 分页查询 cust_maint_info 表数据
-                List<CustMaintInfo> batchData = custMaintInfoService.selectBatch(currentPage, pageSize, param);
+                IPage<CustMaintInfo> batchDataPage = custMaintInfoService.selectBatch(currentPage, pageSize, param);
 
-                if (batchData == null || batchData.isEmpty()) {
-                    hasMoreData = false; // 无数据时退出循环
+                if (batchDataPage == null || batchDataPage.getTotal() == 0) {
+                    // 无数据时退出循环
+                    hasMoreData = false;
                     break;
                 }
+                List<CustMaintInfo> batchData = batchDataPage.getRecords();
                 // 查询目标表中已存在的 user_id
                 Set<String> existingUserIds = zqztCustMaintInfoService.selectExistingUserIds(batchData.stream()
                     .map(CustMaintInfo::getUserId)
@@ -63,9 +65,14 @@ public class CustMaintInfoSyncJob {
                 }
 
                 // 日志记录
-                XxlJobHelper.log("第 {} 页数据同步完成，共处理 {} 条数据", currentPage + 1, batchData.size());
-                log.info("第 {} 页数据同步完成，共处理 {} 条数据", currentPage + 1, batchData.size());
+                XxlJobHelper.log("第 {} 页数据同步完成，共处理 {} 条数据", currentPage , batchData.size());
+                log.info("第 {} 页数据同步完成，共处理 {} 条数据", currentPage , batchData.size());
 
+                if (batchData.size() < pageSize) {
+                    // 数据量不足一页时退出循环
+                    hasMoreData = false;
+                    break;
+                }
                 currentPage++; // 下一页
             }
 
