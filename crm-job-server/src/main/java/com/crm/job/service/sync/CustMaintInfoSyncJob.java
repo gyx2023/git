@@ -32,7 +32,7 @@ public class CustMaintInfoSyncJob {
     public void execute() {
         log.info("开始执行客户维护信息数据同步任务");
         XxlJobHelper.log("开始执行客户维护信息数据同步任务");
-        String param = "61"; // XxlJobHelper.getJobParam();
+        String param = XxlJobHelper.getJobParam();
 
         int pageSize = 1000; // 每批次处理的数据量
         int currentPage = 1; // 当前页码
