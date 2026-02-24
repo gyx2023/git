@@ -43,12 +43,12 @@ public class CustMaintInfoSyncJob {
                 // 分页查询 cust_maint_info 表数据
                 IPage<CustMaintInfo> batchDataPage = custMaintInfoService.selectBatch(currentPage, pageSize, param);
 
-                if (batchDataPage == null || batchDataPage.getTotal() == 0) {
+                List<CustMaintInfo> batchData = batchDataPage.getRecords();
+
+                if (batchDataPage.getTotal() == 0 || batchData.isEmpty()) {
                     // 无数据时退出循环
                     hasMoreData = false;
-                    break;
                 }
-                List<CustMaintInfo> batchData = batchDataPage.getRecords();
                 // 查询目标表中已存在的 user_id
                 Set<String> existingUserIds = zqztCustMaintInfoService.selectExistingUserIds(batchData.stream()
                     .map(CustMaintInfo::getUserId)
@@ -71,7 +71,6 @@ public class CustMaintInfoSyncJob {
                 if (batchData.size() < pageSize) {
                     // 数据量不足一页时退出循环
                     hasMoreData = false;
-                    break;
                 }
                 currentPage++; // 下一页
             }
