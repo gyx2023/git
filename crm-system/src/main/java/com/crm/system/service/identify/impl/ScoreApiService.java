@@ -113,7 +113,7 @@ public class ScoreApiService {
      */
     private String buildRequestJson(String inputContent, SysUser sysUser) {
         Map<String, Object> reqBodyMap = new HashMap<>(2);
-        reqBodyMap.put("UserID", sysUser.getUserId());
+        reqBodyMap.put("UserID", sysUser.getUserId().toString());
 
         Map<String, Object> inputDataMap = new HashMap<>(1);
         inputDataMap.put("uploadFileContext", inputContent);

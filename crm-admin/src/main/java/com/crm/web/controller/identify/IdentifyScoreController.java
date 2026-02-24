@@ -51,11 +51,11 @@ public class IdentifyScoreController extends BaseController {
      * 导出【请填写功能名称】列表
      */
     @SaCheckPermission("system:score:export")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
+    @Log(title = "导出", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(IdentifyScoreBo bo, HttpServletResponse response) {
         List<IdentifyScoreVo> list = iIdentifyScoreService.queryList(bo);
-        ExcelUtil.exportExcel(list, "【请填写功能名称】", IdentifyScoreVo.class, response);
+        ExcelUtil.exportExcel(list, "导出", IdentifyScoreVo.class, response);
     }
 
     /**
@@ -74,7 +74,7 @@ public class IdentifyScoreController extends BaseController {
      * 新增【请填写功能名称】
      */
     @SaCheckPermission("system:score:add")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
+    @Log(title = "新增评分", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping ("/add")
     public R<Void> add( @RequestParam("ossIds") Long[] ossIds ) {
@@ -85,7 +85,7 @@ public class IdentifyScoreController extends BaseController {
      * 修改【请填写功能名称】
      */
     @SaCheckPermission("system:score:edit")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
+    @Log(title = "修改", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody IdentifyScoreBo bo) {
@@ -98,7 +98,7 @@ public class IdentifyScoreController extends BaseController {
      * @param ids 主键串
      */
     @SaCheckPermission("system:score:remove")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
+    @Log(title = "删除", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
@@ -110,10 +110,10 @@ public class IdentifyScoreController extends BaseController {
      * 重新评分
      */
     @SaCheckPermission("system:score:again")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
+    @Log(title = "新文件重新评分", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
-    @GetMapping("/again")
-    public R<Void> again(@RequestBody Long customerId) {
+    @PostMapping("/again")
+    public R<Void> again(@RequestParam Long customerId) {
         return toAjax(iIdentifyScoreService.again(customerId));
     }
 }

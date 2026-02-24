@@ -216,12 +216,12 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
             IdentifyScoreDo newScoreDo = new IdentifyScoreDo();
             newScoreDo.setUploadTime(new Date());
             newScoreDo.setName(scoreDo.getName());
-            newScoreDo.setCustomerId(scoreDo.getId());
+            newScoreDo.setCustomerId(customerId);
             newScoreDo.setFileText(scoreDo.getFileText());
             newScoreDo.setScoreStatus("0");
             newScoreDo.setUploader(LoginHelper.getUserId());
             newScoreDo.setIsAgain("1");
-            identifyScoreMapper.insert(scoreDo);
+            identifyScoreMapper.insert(newScoreDo);
         }
         return true;
     }
@@ -245,7 +245,6 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
             customerDo.setContent(Objects.toString(scoreResultMap.get("content"), null));
             customerDo.setTotalScore(Objects.toString(scoreResultMap.get("totalScore"), null));
             customerDo.setUpdateTime(new Date());
-            customerDo.setUpdaterId(Long.valueOf(scoreDo.getCreateBy()));
             iIdentifyScoreCustomerService.updateByBo(BeanCopyUtils.copy(customerDo, IdentifyScoreCustomerBo.class));
         }
         // 更新评分表

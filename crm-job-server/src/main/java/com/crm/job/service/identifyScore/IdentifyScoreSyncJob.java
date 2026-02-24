@@ -35,22 +35,55 @@ public class IdentifyScoreSyncJob {
 
     // 评分状态常量（可抽取到枚举类）
     private static final String SCORE_STATUS_FAILED = "2";
+    private static final String SCORE_STATUS_SUCCESS = "1";
+
 
     @XxlJob("identifyScoreSyncJob")
-    public void syncOppoUnbound() {
-        List<IdentifyScoreDo> identifyScoreDos = identifyScoreService.queryWaitList();
-        for (IdentifyScoreDo identifyScoreDo : identifyScoreDos) {
+public void syncOppoUnbound() {
+    List<IdentifyScoreDo> identifyScoreDos = identifyScoreService.queryWaitList();
+    if (identifyScoreDos == null || identifyScoreDos.isEmpty()) {
+        log.info("没有待处理的评分数据");
+        return;
+    }
+
+    for (IdentifyScoreDo identifyScoreDo : identifyScoreDos) {
+        try {
             SysUser sysUser = sysUserService.selectUserById(identifyScoreDo.getUploader());
-            IdentifyScoreCustomerVo customerVo = iIdentifyScoreCustomerService.queryById(identifyScoreDo.getCustomerId());
-            try {
-                Map<String, Object> scoreResultMap = scoreApiService.queryFileByScore(identifyScoreDo.getFileText(), sysUser);
-                identifyScoreService.updateScoreData(BeanCopyUtils.copy(customerVo, IdentifyScoreCustomerDo.class), identifyScoreDo, scoreResultMap, "1");
-            } catch (Exception e) {
-                String errorMsg = "三清单导入任务异常，文件URL: ";
-                log.error(errorMsg, e);
-                identifyScoreService.updateScoreData(BeanCopyUtils.copy(customerVo, IdentifyScoreCustomerDo.class), identifyScoreDo, null, SCORE_STATUS_FAILED);
+            if (sysUser == null) {
+                log.warn("未找到上传用户，用户ID: {}", identifyScoreDo.getUploader());
+                continue;
             }
-            log.info("评分数据同步完成");
+
+            IdentifyScoreCustomerVo customerVo = iIdentifyScoreCustomerService.queryById(identifyScoreDo.getCustomerId());
+            if (customerVo == null) {
+                log.warn("未找到客户信息，客户ID: {}", identifyScoreDo.getCustomerId());
+                continue;
+            }
+
+            Map<String, Object> scoreResultMap = scoreApiService.queryFileByScore(identifyScoreDo.getFileText(), sysUser);
+            identifyScoreService.updateScoreData(
+                BeanCopyUtils.copy(customerVo, IdentifyScoreCustomerDo.class),
+                identifyScoreDo,
+                scoreResultMap,
+                SCORE_STATUS_SUCCESS
+            );
+            log.info("评分数据同步成功，客户ID: {}", identifyScoreDo.getCustomerId());
+        } catch (Exception e) {
+            log.error("评分数据同步失败，客户ID: {}, 异常信息: ", identifyScoreDo.getCustomerId(), e);
+            try {
+                IdentifyScoreCustomerVo customerVo = iIdentifyScoreCustomerService.queryById(identifyScoreDo.getCustomerId());
+                if (customerVo != null) {
+                    identifyScoreService.updateScoreData(
+                        BeanCopyUtils.copy(customerVo, IdentifyScoreCustomerDo.class),
+                        identifyScoreDo,
+                        null,
+                        SCORE_STATUS_FAILED
+                    );
+                }
+            } catch (Exception innerException) {
+                log.error("更新评分状态为失败时发生异常，客户ID: {}", identifyScoreDo.getCustomerId(), innerException);
+            }
         }
     }
+}
 }
