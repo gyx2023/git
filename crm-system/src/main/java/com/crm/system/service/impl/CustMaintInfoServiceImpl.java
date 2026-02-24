@@ -8,6 +8,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import com.crm.system.service.ICustMaintInfoService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.util.Map;
  * @author 肖英杰
  */
 @Service
+@Slf4j
 public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
 
     @Autowired
@@ -124,7 +126,7 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
      * @return 当前页的客户维护信息列表
      */
     @Override
-    public List<CustMaintInfo> selectBatch(int page, int size, String params) {
+    public IPage<CustMaintInfo> selectBatch(int page, int size, String params) {
         // 使用QueryWrapper构建查询条件
         QueryWrapper<CustMaintInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("STATUS", "1"); // 只查询状态为1的记录
@@ -138,11 +140,11 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
         }
         queryWrapper.orderByAsc("ETL_TIME");
 
-        // 分页查询
+        log.info("查询页数：{},数量：{}", page , size);
         Page<CustMaintInfo> pageInfo = new Page<>(page, size);
         IPage<CustMaintInfo> resultPage = custMaintInfoMapper.selectPage(pageInfo, queryWrapper);
 
         // 返回当前页的数据
-        return resultPage.getRecords();
+        return resultPage;
     }
 }

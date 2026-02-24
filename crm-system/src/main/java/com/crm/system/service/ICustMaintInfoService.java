@@ -1,5 +1,6 @@
 package com.crm.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.crm.system.domain.CustMaintInfo;
 
 import java.util.Map;
@@ -46,5 +47,5 @@ public interface ICustMaintInfoService {
      */
     Map<String, String> selectValidSvcNumByUserIds(List<String> userIds);
 
-    List<CustMaintInfo> selectBatch(int page, int size, String params);
+    IPage<CustMaintInfo> selectBatch(int page, int size, String params);
 }
