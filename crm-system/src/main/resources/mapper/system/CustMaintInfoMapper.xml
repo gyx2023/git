@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.CustMaintInfoMapper">
+
+    <resultMap type="com.crm.system.domain.CustMaintInfo" id="CustMaintInfoResult">
+        <!-- 核心主键字段 -->
+        <result property="userId" column="USER_ID"/>
+        <!-- 基础信息字段 -->
+        <result property="statCycle" column="STAT_CYCLE"/>
+        <result property="etlTime" column="ETL_TIME"/>
+        <result property="operType" column="OPER_TYPE"/>
+        <result property="svcNum" column="SVC_NUM"/>
+        <result property="typeLvl2" column="TYPE_LVL2"/>
+        <result property="typeLvl2Name" column="TYPE_LVL2_NAME"/>
+        <result property="userAreaId" column="USER_AREA_ID"/>
+        <result property="userAreaName" column="USER_AREA_NAME"/>
+        <result property="userCountyId" column="USER_COUNTY_ID"/>
+        <result property="userCountyName" column="USER_COUNTY_NAME"/>
+        <result property="contactNumber" column="CONTACT_NUMBER"/>
+        <result property="openDate" column="OPEN_DATE"/>
+        <!-- 省级维护信息 -->
+        <result property="provMaintEmpId" column="PROV_MAINT_EMP_ID"/>
+        <result property="provMaintOauser" column="PROV_MAINT_OAUSER"/>
+        <result property="provMaintName" column="PROV_MAINT_NAME"/>
+        <result property="provMaintDepartId" column="PROV_MAINT_DEPART_ID"/>
+        <result property="provMaintDepart" column="PROV_MAINT_DEPART"/>
+        <!-- 市级维护信息 -->
+        <result property="cityMaintEmpId" column="CITY_MAINT_EMP_ID"/>
+        <result property="cityMaintOauser" column="CITY_MAINT_OAUSER"/>
+        <result property="cityMaintName" column="CITY_MAINT_NAME"/>
+        <result property="cityMaintDepartId" column="CITY_MAINT_DEPART_ID"/>
+        <result property="cityMaintDepart" column="CITY_MAINT_DEPART"/>
+        <!-- 基础维护信息 -->
+        <result property="basicMaintEmpId" column="BASIC_MAINT_EMP_ID"/>
+        <result property="basicMaintOauser" column="BASIC_MAINT_OAUSER"/>
+        <result property="basicMaintName" column="BASIC_MAINT_NAME"/>
+        <result property="basicMaintDepartId" column="BASIC_MAINT_DEPART_ID"/>
+        <result property="basicMaintDepart" column="BASIC_MAINT_DEPART"/>
+        <result property="basicMaintAreaId" column="BASIC_MAINT_AREA_ID"/>
+        <result property="basicMaintArea" column="BASIC_MAINT_AREA"/>
+        <result property="basicMaintCountyId" column="BASIC_MAINT_COUNTY_ID"/>
+        <result property="basicMaintCounty" column="BASIC_MAINT_COUNTY"/>
+        <!-- 拓展信息 -->
+        <result property="developId" column="DEVELOP_ID"/>
+        <result property="developOaId" column="DEVELOP_OA_ID"/>
+        <result property="developOaName" column="DEVELOP_OA_NAME"/>
+        <result property="developArea" column="DEVELOP_AREA"/>
+        <result property="developCounty" column="DEVELOP_COUNTY"/>
+        <result property="devChnlId" column="DEV_CHNL_ID"/>
+        <result property="devChnlName" column="DEV_CHNL_NAME"/>
+        <!-- 客户信息 -->
+        <result property="rosterCustomerId" column="ROSTER_CUSTOMER_ID"/>
+        <result property="rosterCustomerName" column="ROSTER_CUSTOMER_NAME"/>
+        <result property="natureCustId" column="NATURE_CUST_ID"/>
+        <result property="natureCustName" column="NATURE_CUST_NAME"/>
+        <result property="custGrpId" column="CUST_GRP_ID"/>
+        <result property="custGrpName" column="CUST_GRP_NAME"/>
+        <result property="custGrpType" column="CUST_GRP_TYPE"/>
+        <result property="custId" column="CUST_ID"/>
+        <result property="custName" column="CUST_NAME"/>
+        <result property="grpIdB" column="GRP_ID_B"/>
+        <result property="grpNameB" column="GRP_NAME_B"/>
+        <result property="contractId" column="CONTRACT_ID"/>
+        <result property="grpBusiDeptType" column="GRP_BUSI_DEPT_TYPE"/>
+        <result property="grpBusiDeptTypeName" column="GRP_BUSI_DEPT_TYPE_NAME"/>
+        <result property="typeLvl6" column="TYPE_LVL6"/>
+        <result property="typeLvl6Name" column="TYPE_LVL6_NAME"/>
+        <!-- 状态及时间信息 -->
+        <result property="curInnetFlag" column="CUR_INNET_FLAG"/>
+        <result property="closeDate" column="CLOSE_DATE"/>
+        <result property="status" column="STATUS"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="updateTime" column="UPDATE_TIME"/>
+        <!-- 操作人信息 -->
+        <result property="updateOperName" column="UPDATE_OPER_NAME"/>
+        <result property="updateOperId" column="UPDATE_OPER_ID"/>
+        <result property="updateOperOa" column="UPDATE_OPER_OA"/>
+        <result property="updateOperPhone" column="UPDATE_OPER_PHONE"/>
+        <!-- 其他属性 -->
+        <result property="certType" column="CERT_TYPE"/>
+        <result property="levels" column="LEVELS"/>
+        <result property="majorFlag" column="MAJOR_FLAG"/>
+        <result property="grpExpandType" column="GRP_EXPAND_TYPE"/>
+        <result property="physicalCustId" column="PHYSICAL_CUST_ID"/>
+        <result property="physicalCustName" column="PHYSICAL_CUST_NAME"/>
+        <result property="physicalCustNameCity" column="PHYSICAL_CUST_NAME_CITY"/>
+        <result property="custManagerId" column="CUST_MANAGER_ID"/>
+        <result property="custManagerOa" column="CUST_MANAGER_OA"/>
+        <result property="custManagerName" column="CUST_MANAGER_NAME"/>
+        <result property="custExpansionType" column="CUST_EXPANSION_TYPE"/>
+        <result property="custIndustry" column="CUST_INDUSTRY"/>
+    </resultMap>
+
+    <!-- 批量根据用户ID查询有效的客户维护信息及服务号码 -->
+    <select id="selectValidSvcNumByUserIds" parameterType="list" resultType="map">
+        SELECT USER_ID as "key", SVC_NUM as "value"
+        FROM CUST_MAINT_INFO
+        WHERE STATUS = '1' AND USER_ID IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </select>
+</mapper>

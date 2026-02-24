@@ -77,6 +77,22 @@ spring:
 #          password: root
 #          hikari:
 #            connectionTestQuery: SELECT 1 FROM DUAL
+        oracle:
+          type: ${spring.datasource.type}
+          driverClassName: oracle.jdbc.OracleDriver
+          url: jdbc:oracle:thin:@//130.36.23.9:1521/crmdb2
+          username: ps_uni_zyy
+          password: zyy_2026
+          hikari:
+            connectionTestQuery: SELECT 1 FROM DUAL
+#        oracle:
+#          type: ${spring.datasource.type}
+#          driverClassName: oracle.jdbc.OracleDriver
+#          url: jdbc:oracle:thin:@//localhost:1521/XE
+#          username: ROOT
+#          password: root
+#          hikari:
+#            connectionTestQuery: SELECT 1 FROM DUAL
 #        postgres:
 #          type: ${spring.datasource.type}
 #          driverClassName: org.postgresql.Driver

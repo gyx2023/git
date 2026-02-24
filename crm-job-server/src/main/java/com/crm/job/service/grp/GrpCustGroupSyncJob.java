@@ -11,6 +11,7 @@ import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.service.ITfFCustGroupMService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ public class GrpCustGroupSyncJob {
     private SysParamMapper sysParamMapper;
 
     @Resource
-    private TfFCustGroupMService tfFCustGroupMService;
+    private ITfFCustGroupMService tfFCustGroupMService;
 
     @Resource
     private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper;
@@ -245,9 +246,9 @@ public class GrpCustGroupSyncJob {
             ZqGrpGroupInfo zqGrpGroupInfo = zqGrpGroupInfoMapper.selectOne(new LambdaQueryWrapper<ZqGrpGroupInfo>().eq(ZqGrpGroupInfo::getHqGrpCode, custGroup.getGroupId()));
             if(zqGrpGroupInfo==null){
                 ZqGrpGroupInfo newGroup = new ZqGrpGroupInfo();
-                newGroup.setGrpName(custGroup.getContactName());
+                newGroup.setGrpName(custGroup.getCustName());
                 newGroup.setGrpCode(generateUniqueGrpCode());
-                newGroup.setHqGrpCode(custGroup.getCertiCode());
+                newGroup.setHqGrpCode(custGroup.getGroupId());
                 newGroup.setCustId(custGroup.getProvinceCustId());
                 newGroup.setGrpStatus(custStateMap.get(custGroup.getCustState()));
                 newGroup.setAreaId(custGroup.getEparchyCode());
