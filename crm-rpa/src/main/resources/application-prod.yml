@@ -1,0 +1,188 @@
+--- # 临时文件存储位置 避免临时文件被系统清理报错
+spring.servlet.multipart.location: /crm/server/temp
+
+--- # 监控中心配置
+spring.boot.admin.client:
+  # 增加客户端开关
+  enabled: false
+  url: http://localhost:9090/admin
+  instance:
+    service-host-type: IP
+  username: crm
+  password: 123456
+
+--- # 数据源配置
+spring:
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
+    dynamic:
+      # 性能分析插件(有性能损耗 不建议生产环境使用)
+      p6spy: false
+      # 设置默认的数据源或者数据源组,默认值即为 master
+      primary: master
+      # 严格模式 匹配不到数据源则报错
+      strict: true
+      datasource:
+        # 主库数据源
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
+          # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
+          url: jdbc:mysql://10.129.161.149:3306/zj_sj?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+          username: service_ob_cads@ZJZQ_REAL#hl_cluster16
+          password: n#F5Tp5VCQ5JJ5zSy4Dp7ZA_
+        # 从库数据源
+        slave:
+          lazy: true
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
+          username: ZQ_USER_36@zqzx_mysql#zqmdb
+          password: g#40Gu$IG3HuJ
+      hikari:
+        # 最大连接池数量
+        maxPoolSize: 20
+        # 最小空闲线程数量
+        minIdle: 10
+        # 配置获取连接等待超时的时间
+        connectionTimeout: 30000
+        # 校验超时时间
+        validationTimeout: 5000
+        # 空闲连接存活最大时间，默认10分钟
+        idleTimeout: 600000
+        # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+        maxLifetime: 1800000
+        # 连接测试query（配置检测连接是否有效）
+        connectionTestQuery: SELECT 1
+        # 多久检查一次连接的活性
+        keepaliveTime: 30000
+
+  # RabbitMQ配置
+  rabbitmq:
+    # 服务器地址
+    host: rabbitmq-svc.zjzqyypt2022
+    # 端口号
+    port: 5672
+    # 用户名
+    username: zqyyadmin
+    # 密码
+    password: "admin123@123!AA"
+    # 虚拟主机
+    virtual-host: /
+    # 连接超时时间
+    connection-timeout: 15000
+    # 消费者手动确认
+    listener:
+      simple:
+        acknowledge-mode: manual
+        # 并发消费者数量
+        concurrency: 5
+        # 最大并发消费者数量
+        max-concurrency: 10
+        # 预取数量
+        prefetch: 1
+        retry:
+          enabled: false # 关闭内置重试机制，使用手动重试逻辑
+    # 生产者确认
+    publisher-confirm-type: correlated
+    # 生产者返回
+    publisher-returns: true
+    # 模板强制返回
+    template:
+      mandatory: true
+
+--- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
+spring:
+  redis:
+    # 地址
+    host: redis.zjzqyypt2022
+    # 端口，默认为6379
+    port: 6379
+    # 数据库索引
+    database: 0
+    # 密码(如没有密码请注释掉)
+    password: Redis!@#123
+    # 连接超时时间
+    timeout: 10s
+    # 是否开启ssl
+    ssl: false
+
+redisson:
+  # redis key前缀
+  keyPrefix:
+  # 线程池数量
+  threads: 16
+  # Netty线程池数量
+  nettyThreads: 32
+  # 单节点配置
+  singleServerConfig:
+    # 客户端名称
+    clientName: ${crm.name}
+    # 最小空闲连接数
+    connectionMinimumIdleSize: 32
+    # 连接池大小
+    connectionPoolSize: 64
+    # 连接空闲超时，单位：毫秒
+    idleConnectionTimeout: 10000
+    # 命令等待超时，单位：毫秒
+    timeout: 3000
+    # 发布和订阅连接池大小
+    subscriptionConnectionPoolSize: 50
+
+security:
+  # 排除路径
+  excludes:
+    # 静态资源
+    - /*.html
+    - /**/*.html
+    - /**/*.css
+    - /**/*.js
+    # 公共路径
+    - /favicon.ico
+    - /error
+    # SSO自动登录接口
+    - /sso/autoLogin
+    - /zqzt_backend/health/**
+# Swagger配置
+swagger:
+  info:
+    # 标题
+    title: '标题：${crm.name}后台管理系统_接口文档'
+    # 描述
+    description: '描述：用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...'
+    # 版本
+    version: '版本号: ${zqzt_backend.version}'
+    # 作者信息
+    contact:
+      name: KonBAI
+      email: 1527468660@qq.com
+      url: https://gitee.com/KonBAI-Q/zqzt_backend
+  components:
+    # 鉴权方式配置
+    security-schemes:
+      apiKey:
+        type: APIKEY
+        in: HEADER
+        name: ${sa-token.token-name}
+springdoc:
+  api-docs:
+    # 是否开启接口文档
+    enabled: false
+  swagger-ui:
+    # 持久化认证数据
+    persistAuthorization: true
+  #这里定义了两个分组，可定义多个，也可以不定义
+  group-configs:
+    - group: 1.演示模块
+      packages-to-scan: com.crm.demo
+    - group: 2.系统模块
+      packages-to-scan: com.crm.web
+    - group: 3.代码生成模块
+      packages-to-scan: com.crm.generator
+ability:
+  app_id: bR4nqpsTto
+  app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
+  url:
+    worksheetsComplete: http://10.164.255.25:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1

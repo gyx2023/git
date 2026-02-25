@@ -28,7 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxTaskIdByDate" resultType="java.lang.Long">
         select max(task_id) as max_task_id
         from sys_file_async_task
-        where DATE_FORMAT(create_time, '%Y%m%d') = #{dateStr}
+        where DATE_FORMAT(create_time, '%Y%m%d%H%i') = #{dateStr}
     </select>
 
     <!-- 查询待处理的任务列表 -->

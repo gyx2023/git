@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ZqztGrpCustInuseUserlistMapper">
+
+    <resultMap type="com.crm.system.domain.ZqztGrpCustInuseUserlist" id="ZqztGrpCustInuseUserlistResult">
+        <result property="inuseId" column="INUSE_ID"/>
+        <result property="SUBSCRBID" column="SUBSCRBID"/>
+        <result property="svcNum" column="SVC_NUM"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="regionId" column="REGION_ID"/>
+        <result property="countyId" column="COUNTY_ID"/>
+        <result property="operatorId" column="OPERATOR_ID"/>
+        <result property="REMARK" column="REMARK"/>
+        <result property="isValid" column="IS_VALID"/>
+        <result property="updateTime" column="UPDATE_TIME"/>
+    </resultMap>
+
+
+</mapper>

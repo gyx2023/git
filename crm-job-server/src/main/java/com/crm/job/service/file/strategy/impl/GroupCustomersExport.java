@@ -1,5 +1,6 @@
 package com.crm.job.service.file.strategy.impl;
 
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
@@ -24,8 +25,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -55,6 +58,9 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             // 检查是否需要脱敏 - 从任务参数中获取isAdmin标识
             boolean needDesensitize = parseDesensitizeFlag(task);
 
+            // 检查是否有grpIds参数，如果有则按ID列表导出（部分导出）
+            List<Long> grpIds = parseGrpIds(task);
+
         /*    // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
             List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportListLevel(queryParams, areaCode, needDesensitize);
 
@@ -75,15 +81,15 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                 ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
             }*/
             try {
-                // 使用流式导出方法
+                // 使用统一的流式导出方法
                 boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
                 if (!success) {
-                    task.setRemark("流式导出失败");
+                    task.setRemark("导出失败");
                     return false;
                 }
             } catch (Exception e) {
-                log.error("流式导出过程中发生异常: ", e);
-                task.setRemark("流式导出异常: " + e.getMessage());
+                log.error("导出过程中发生异常: ", e);
+                task.setRemark("导出异常: " + e.getMessage());
                 tempFile.delete();
                 return false;
             }
@@ -210,4 +216,30 @@ public class GroupCustomersExport extends AbstractExportStrategy {
         }
         return queryParams;
     }
+
+    /**
+     * 解析grpIds
+     */
+    private List<Long> parseGrpIds(FileAsyncTaskDo task) {
+        List<Long> grpIds = null;
+        try {
+            JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+            if (jsonObject.containsKey("grpIds")) {
+                String grpIdsStr = jsonObject.getStr("grpIds");
+                if (grpIdsStr != null && !grpIdsStr.isEmpty()) {
+                    // 将逗号分隔的字符串转换为Long列表
+                    grpIds = Arrays.stream(grpIdsStr.split(","))
+                            .map(String::trim)
+                            .filter(id -> !id.isEmpty())
+                            .map(Long::valueOf)
+                            .collect(Collectors.toList());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析grpIds失败: {}", e.getMessage());
+        }
+        return grpIds;
+    }
+
+
 }
