@@ -93,8 +93,14 @@ public class SysAreaServiceImpl implements ISysAreaService {
     }
 
     private LambdaQueryWrapper<SysArea> buildQueryWrapper(SysAreaBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        
+        // 添加null检查保护
+        if (bo == null) {
+            return lqw;
+        }
+        
+        Map<String, Object> params = bo.getParams();
         lqw.eq(StringUtils.isNotBlank(bo.getName()), SysArea::getName, bo.getName());
         lqw.eq(StringUtils.isNotBlank(bo.getType()), SysArea::getType, bo.getType());
         lqw.eq(bo.getParent() != null, SysArea::getParent, bo.getParent());
