@@ -62,7 +62,10 @@ public class NengKaiServiceImpl implements NengKaiService {
         ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = convert(requestVo);
         zqztJtNoticeRecordMapper.insert(zqztJtNoticeRecordDo);
         //发送mq消息
-        rabbitMQProducerService.sendMessage(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
+        //rabbitMQProducerService.sendMessage(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
+
+        //接入无人工厂接口
+
         return NengKaiResponseVo.success();
     }
 

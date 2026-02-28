@@ -2,6 +2,9 @@ package com.crm.web.controller.servicehall;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.utils.StringUtils;
+import com.crm.dto.BusinessMessageDTO;
+import com.crm.dto.BusinessResponseDTO;
+import com.crm.service.mq.ygcf.RabbitMQConsumerService;
 import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
@@ -9,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/capability/development")
@@ -17,6 +21,9 @@ public class NotificationsController {
 
     @Resource
     private NengKaiService nengKaiService;
+
+    @Resource
+    private RabbitMQConsumerService rabbitMQConsumerService;
 
 
 
@@ -40,5 +47,17 @@ public class NotificationsController {
             return NengKaiResponseVo.error("action异常：" + e.getMessage());
         }
 
+    }
+
+    /**
+     * 无人工厂消息消费接口
+     */
+    @PostMapping(value = "consume")
+    @ResponseBody
+    public BusinessResponseDTO consumeMessage(@RequestBody BusinessMessageDTO message) throws IOException {
+
+        rabbitMQConsumerService.receiveRpaMessage(message);
+
+        return null;
     }
 }
