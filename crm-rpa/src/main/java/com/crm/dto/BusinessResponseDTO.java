@@ -18,9 +18,6 @@ public class BusinessResponseDTO implements Serializable {
 
     /**
      * 处理状态
-     * SUCCESS: 处理成功
-     * FAILED: 处理失败
-     * PROCESSING: 处理中
      */
     private String status;
 
