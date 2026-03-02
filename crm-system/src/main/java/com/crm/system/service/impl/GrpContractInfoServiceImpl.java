@@ -67,8 +67,6 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
         LambdaQueryWrapper<GrpContractInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getContractId()), GrpContractInfo::getContractId, bo.getContractId());
         lqw.eq(bo.getGrpId() != null, GrpContractInfo::getGrpId, bo.getGrpId());
-        lqw.eq(StringUtils.isNotBlank(bo.getString2()), GrpContractInfo::getString2, bo.getString2());
-        lqw.eq(StringUtils.isNotBlank(bo.getString15()), GrpContractInfo::getString15, bo.getString15());
         lqw.eq(StringUtils.isNotBlank(bo.getContractType()), GrpContractInfo::getContractType, bo.getContractType());
         lqw.like(StringUtils.isNotBlank(bo.getContractName()), GrpContractInfo::getContractName, bo.getContractName());
         lqw.eq(bo.getContractEffdate() != null, GrpContractInfo::getContractEffdate, bo.getContractEffdate());
@@ -77,33 +75,48 @@ public class GrpContractInfoServiceImpl implements IGrpContractInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getContractNote()), GrpContractInfo::getContractNote, bo.getContractNote());
         lqw.eq(StringUtils.isNotBlank(bo.getCreator()), GrpContractInfo::getCreator, bo.getCreator());
         lqw.eq(StringUtils.isNotBlank(bo.getFiles()), GrpContractInfo::getFiles, bo.getFiles());
-        lqw.eq(StringUtils.isNotBlank(bo.getContractProperty()), GrpContractInfo::getContractProperty, bo.getContractProperty());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractStat()), GrpContractInfo::getContractStat, bo.getContractStat());
+        lqw.eq(StringUtils.isNotBlank(bo.getAuditSn()), GrpContractInfo::getAuditSn, bo.getAuditSn());
+        lqw.eq(StringUtils.isNotBlank(bo.getRemark()), GrpContractInfo::getRemark, bo.getRemark());
+        lqw.eq(StringUtils.isNotBlank(bo.getString1()), GrpContractInfo::getString1, bo.getString1());
+        lqw.eq(StringUtils.isNotBlank(bo.getString2()), GrpContractInfo::getString2, bo.getString2());
+        lqw.eq(StringUtils.isNotBlank(bo.getString3()), GrpContractInfo::getString3, bo.getString3());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiOppNo()), GrpContractInfo::getBusiOppNo, bo.getBusiOppNo());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiOppSecLvl()), GrpContractInfo::getBusiOppSecLvl, bo.getBusiOppSecLvl());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiOppName()), GrpContractInfo::getBusiOppName, bo.getBusiOppName());
+        lqw.eq(StringUtils.isNotBlank(bo.getCustDemandDesc()), GrpContractInfo::getCustDemandDesc, bo.getCustDemandDesc());
+        lqw.eq(StringUtils.isNotBlank(bo.getSolvePlanDesc()), GrpContractInfo::getSolvePlanDesc, bo.getSolvePlanDesc());
         lqw.eq(StringUtils.isNotBlank(bo.getIsBidding()), GrpContractInfo::getIsBidding, bo.getIsBidding());
         lqw.eq(StringUtils.isNotBlank(bo.getContractMain()), GrpContractInfo::getContractMain, bo.getContractMain());
         lqw.eq(StringUtils.isNotBlank(bo.getContractParty()), GrpContractInfo::getContractParty, bo.getContractParty());
         lqw.eq(StringUtils.isNotBlank(bo.getContractDept()), GrpContractInfo::getContractDept, bo.getContractDept());
         lqw.eq(StringUtils.isNotBlank(bo.getContractMan()), GrpContractInfo::getContractMan, bo.getContractMan());
+        lqw.eq(StringUtils.isNotBlank(bo.getString14()), GrpContractInfo::getString14, bo.getString14());
+        lqw.eq(StringUtils.isNotBlank(bo.getString15()), GrpContractInfo::getString15, bo.getString15());
         lqw.eq(bo.getContractMoney2() != null, GrpContractInfo::getContractMoney2, bo.getContractMoney2());
-        lqw.eq(bo.getIsFix() != null, GrpContractInfo::getIsFix, bo.getIsFix());
+        lqw.eq(StringUtils.isNotBlank(bo.getIsFix()), GrpContractInfo::getIsFix, bo.getIsFix());
         lqw.eq(bo.getAuditDate() != null, GrpContractInfo::getAuditDate, bo.getAuditDate());
         lqw.eq(StringUtils.isNotBlank(bo.getContractPhone()), GrpContractInfo::getContractPhone, bo.getContractPhone());
         lqw.eq(StringUtils.isNotBlank(bo.getContractOldnum()), GrpContractInfo::getContractOldnum, bo.getContractOldnum());
         lqw.eq(bo.getYearIncome() != null, GrpContractInfo::getYearIncome, bo.getYearIncome());
         lqw.eq(bo.getServAmount() != null, GrpContractInfo::getServAmount, bo.getServAmount());
+        lqw.eq(StringUtils.isNotBlank(bo.getInt8()), GrpContractInfo::getInt8, bo.getInt8());
+        lqw.eq(StringUtils.isNotBlank(bo.getInt9()), GrpContractInfo::getInt9, bo.getInt9());
+        lqw.eq(StringUtils.isNotBlank(bo.getInt10()), GrpContractInfo::getInt10, bo.getInt10());
+        lqw.eq(StringUtils.isNotBlank(bo.getBusiType()), GrpContractInfo::getBusiType, bo.getBusiType());
         lqw.eq(bo.getContractMoney() != null, GrpContractInfo::getContractMoney, bo.getContractMoney());
         lqw.eq(bo.getContractSigndate() != null, GrpContractInfo::getContractSigndate, bo.getContractSigndate());
         lqw.eq(StringUtils.isNotBlank(bo.getContractStatus()), GrpContractInfo::getContractStatus, bo.getContractStatus());
-        lqw.eq(bo.getContractCateL1Code() != null, GrpContractInfo::getContractCateL1Code, bo.getContractCateL1Code());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractCateL1Code()), GrpContractInfo::getContractCateL1Code, bo.getContractCateL1Code());
         lqw.eq(StringUtils.isNotBlank(bo.getContractCateL1Name()), GrpContractInfo::getContractCateL1Name, bo.getContractCateL1Name());
-        lqw.eq(bo.getContractCateL2Code() != null, GrpContractInfo::getContractCateL2Code, bo.getContractCateL2Code());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractCateL2Code()), GrpContractInfo::getContractCateL2Code, bo.getContractCateL2Code());
         lqw.eq(StringUtils.isNotBlank(bo.getContractCateL2Name()), GrpContractInfo::getContractCateL2Name, bo.getContractCateL2Name());
-        lqw.eq(bo.getContractCateL3Code() != null, GrpContractInfo::getContractCateL3Code, bo.getContractCateL3Code());
+        lqw.eq(StringUtils.isNotBlank(bo.getContractCateL3Code()), GrpContractInfo::getContractCateL3Code, bo.getContractCateL3Code());
         lqw.eq(StringUtils.isNotBlank(bo.getContractCateL3Name()), GrpContractInfo::getContractCateL3Name, bo.getContractCateL3Name());
-        lqw.eq(StringUtils.isNotBlank(bo.getRemark()), GrpContractInfo::getRemark, bo.getRemark());
 
         // 处理时间范围查询
         if (params.get("beginContractEffdate") != null && params.get("endContractEffdate") != null) {
-            lqw.between(GrpContractInfo::getContractEffdate, params.get("beginContractEffdate"), params.get("endContractEffdate"));
+            lqw.between(GrpContractInfo::getContractEffdate, params.get("beginContractEffdate"), params.get("endContractExpdate"));
         }
         if (params.get("beginContractExpdate") != null && params.get("endContractExpdate") != null) {
             lqw.between(GrpContractInfo::getContractExpdate, params.get("beginContractExpdate"), params.get("endContractExpdate"));

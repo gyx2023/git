@@ -172,6 +172,12 @@
             <version>0.1.55</version>
         </dependency>
 
+        <!-- RabbitMQ 消息队列 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- 处理 .doc 格式文档的核心依赖 -->
         <dependency>
             <groupId>org.apache.poi</groupId>

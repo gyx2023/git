@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.crm.common.enums.InfoTagEnum;
 
 /**
  * 合同关联用户导入监听器
@@ -35,16 +36,10 @@ public class ContractUserImportListener {
     public List<ContractUserTemplateResultVo> processImportData(List<String> dataList, String contractId, String hqGrpCode) {
         List<ContractUserTemplateResultVo> resultList = new ArrayList<>();
 
-        // 获取未绑定合同的用户列表
-        List<Map<String, Object>> uncontractedCustomers = contractOtherInfoService.selectUncontractedCustomersByHqGrpCode(hqGrpCode, contractId);
+        // 获取未绑定合同的用户列表（使用不脱敏的批量处理方法）
+        List<Map<String, Object>> uncontractedCustomers = contractOtherInfoService.selectUncontractedCustomersByHqGrpCodeForBatch(hqGrpCode, contractId);
 
-        // 提取未绑定合同的服务号码列表
-        List<String> validSvcNums = uncontractedCustomers.stream()
-                .map(item -> (String) item.get("svcNum"))
-                .filter(StringUtils::hasText)
-                .collect(Collectors.toList());
-
-        // 构建服务号码到用户ID的映射
+        // 构建明文服务号码到用户ID的映射
         Map<String, String> svcNumToUserIdMap = uncontractedCustomers.stream()
                 .filter(item -> item.containsKey("svcNum") && item.containsKey("userId"))
                 .filter(item -> StringUtils.hasText((String) item.get("svcNum")) && StringUtils.hasText((String) item.get("userId")))
@@ -68,8 +63,8 @@ public class ContractUserImportListener {
                     continue;
                 }
 
-                // 验证服务号码是否在未绑定合同的用户列表中
-                if (!validSvcNums.contains(svcNum)) {
+                // 验证服务号码是否在未绑定合同的用户列表中（直接使用明文号码进行匹配）
+                if (!svcNumToUserIdMap.containsKey(svcNum)) {
                     resultVo.setProcessResult("失败");
                     resultVo.setErrorMessage("服务号码不在未绑定合同的用户列表中");
                     resultList.add(resultVo);
@@ -88,9 +83,9 @@ public class ContractUserImportListener {
                 // 构造合同关联用户信息并调用添加接口
                 ZqztGrpContractOtherInfoBo bo = new ZqztGrpContractOtherInfoBo();
                 bo.setContractId(contractId);
-                bo.setInfoTag("USER_ID"); // 假设infoTag为USER_ID
+                bo.setInfoTag(InfoTagEnum.GRP_CONTRACT_USER_LIST.getValue());
                 bo.setInfoVal(userId);
-                bo.setInfoVal2(svcNum);
+                bo.setInfoVal2(svcNum); // 保存原始号码用于加密存储
                 bo.setIsValid("1");
 
                 boolean success = contractOtherInfoService.insertByBo(bo);

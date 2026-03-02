@@ -22,11 +22,11 @@ public interface ZqztGrpCustInuseMapper extends BaseMapperPlus<ZqztGrpCustInuseM
 
     List<ZqztGrpCustInuseRespDTO> queryZqztGrpCustInuseList(ZqztGrpCustReqDTO reqDTO);
 
-    Boolean updateByHqGrpCodeB(@Param("ids") String[] ids, @Param("loginUser") Map<String,String> loginUser);
+    Boolean updateUserByInuseId(@Param("ids") String[] ids, @Param("loginUser") Map<String,String> loginUser);
 
     List<ZqztGrpCustInuseUserListRespDTO> queryPageUserList(ZqztGrpCustReqDTO reqDTO);
 
-    int updateByInuseId(@Param("subscrbids") String[] subscrbids, @Param("loginUser") Map<String,String> loginUser);
+    int updateBySubscrbid(@Param("subscrbids") String[] subscrbids, @Param("loginUser") Map<String,String> loginUser);
 
     List<ZqztGrpCustInuseRespDTO> queryPageGrpList(ZqztGrpCustReqDTO reqDTO);
 
@@ -43,4 +43,12 @@ public interface ZqztGrpCustInuseMapper extends BaseMapperPlus<ZqztGrpCustInuseM
     List<ZqztGrpCustInuseUserListRespDTO> queryPageAddUserData(@Param("inuseId") String inuseId, @Param("addInuseUserList") List<Map<String, String>> addInuseUserList);
 
     int addUserList(@Param("userList") List<ZqztGrpCustInuseUserListRespDTO> userList, @Param("loginUser") Map<String,String> loginUser);
+
+    int queryZqztGrpCustInuseListTotal(ZqztGrpCustReqDTO reqDTO);
+
+    int queryZqztGrpGroupInfoCount(ZqztGrpCustReqDTO reqDTO);
+
+    int insertInuse(@Param("reqDTO") ZqztGrpCustReqDTO reqDTO, @Param("loginUser") Map<String, String> loginUser);
+
+    Boolean updateUserlistByInuseId(@Param("ids") String[] ids, @Param("loginUser") Map<String,String> loginUser);
 }

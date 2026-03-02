@@ -77,7 +77,8 @@ spring:
           password: zyy_2026
           hikari:
             connectionTestQuery: SELECT 1 FROM DUAL
-#        oracle:
+            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
+      #        oracle:
 #          type: ${spring.datasource.type}
 #          driverClassName: oracle.jdbc.OracleDriver
 #          url: jdbc:oracle:thin:@//localhost:1521/XE

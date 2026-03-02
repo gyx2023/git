@@ -1,34 +1,38 @@
 package com.crm.system.service.impl;
+import java.math.BigDecimal;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.helper.LoginHelper;
-import com.crm.common.utils.StringUtils;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.core.domain.PageQuery;
-import com.crm.generator.util.Desensitization;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.dto.RoleDTO;
+import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.enums.contract.ContractStatusEnum;
+import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.StringUtils;
+import com.crm.common.exception.ServiceException;
+import com.crm.common.utils.spring.SpringUtils;
+import com.crm.common.utils.Desensitization;
+import com.crm.system.domain.ZqztGrpContractInfo;
 import com.crm.system.domain.ZqztGrpContractInfoLog;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
 import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
+import com.crm.system.domain.bo.ZqztGrpContractInfoBo;
+import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
+import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.vo.ZqztGrpContractInfoVo;
 import com.crm.system.mapper.ZqztGrpContractInfoLogMapper;
+import com.crm.system.mapper.ZqztGrpContractInfoMapper;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
+import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
+import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.service.IZqztGrpContractInfoService;
+import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.crm.common.utils.spring.SpringUtils;
-import com.crm.system.domain.bo.ZqztGrpContractInfoBo;
-import com.crm.system.domain.vo.ZqztGrpContractInfoVo;
-import com.crm.system.domain.ZqztGrpContractInfo;
-import com.crm.system.mapper.ZqztGrpContractInfoMapper;
-import com.crm.system.service.IZqztGrpContractInfoService;
-import com.crm.system.service.IZqztGrpContractOtherInfoService;
-import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
-import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
-
-import com.crm.system.domain.ZqztGrpContractInfoLog;
-import com.crm.system.mapper.ZqztGrpContractInfoLogMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +50,9 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     private final ZqztGrpContractInfoMapper baseMapper;
 
     @Autowired
+    private SysParamMapper sysParamMapper;
+
+    @Autowired
     private IZqztGrpContractOtherInfoService zqztGrpContractOtherInfoService;
 
     /**
@@ -56,18 +63,9 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         // 构建查询条件，排除状态为7（作废）的合同
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(ZqztGrpContractInfo::getContractId, contractId);
-        lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除作废的合同
+        lqw.ne(ZqztGrpContractInfo::getContractStatus, ContractStatusEnum.CANCELLED_FINAL.getCode()); // 排除作废的合同
 
         ZqztGrpContractInfoVo vo = baseMapper.selectVoOne(lqw);
-
-        // 对合同名称进行脱敏
-        if (vo != null) {
-            vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
-
-            // 获取业务类型
-            String businessTypes = getBusinessTypesByContractId(contractId);
-            vo.setBusinessTypes(businessTypes);
-        }
 
         return vo;
     }
@@ -78,16 +76,42 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     @Override
     public TableDataInfo<ZqztGrpContractInfoVo> queryPageList(ZqztGrpContractInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = buildQueryWrapper(bo);
+        // 按创建时间倒序排列
+        lqw.orderByDesc(ZqztGrpContractInfo::getCreateTime);
         Page<ZqztGrpContractInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
-        // 对查询结果进行脱敏处理
-        List<ZqztGrpContractInfoVo> desensitizedList = result.getRecords().stream()
-                .map(this::desensitizeVo)
-                .map(this::addBusinessTypesToVo)
-                .collect(Collectors.toList());
-        result.setRecords(desensitizedList);
+        List<ZqztGrpContractInfoVo> normalList = result.getRecords().stream()
+            .map(this::addBusinessTypesToVo)
+            .collect(Collectors.toList());
+        result.setRecords(normalList);
 
         return TableDataInfo.build(result);
+    }
+
+    /**
+     * 批量导入集团合同信息
+     */
+    @Override
+    public int importAll(List<ZqztGrpContractInfo> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        baseMapper.insertBatch(dataList);
+
+        return dataList.size();
+    }
+
+    @Override
+    public int importAllClear(List<ZqztGrpContractInfo> dataList) {
+        // 清空现有数据，进行全量更新
+        baseMapper.delete(null);
+
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        return dataList.size();
     }
 
     /**
@@ -98,11 +122,9 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = buildQueryWrapper(bo);
         List<ZqztGrpContractInfoVo> list = baseMapper.selectVoList(lqw);
 
-        // 对查询结果进行脱敏处理
         return list.stream()
-                .map(this::desensitizeVo)
-                .map(this::addBusinessTypesToVo)
-                .collect(Collectors.toList());
+            .map(this::addBusinessTypesToVo)
+            .collect(Collectors.toList());
     }
 
     private LambdaQueryWrapper<ZqztGrpContractInfo> buildQueryWrapper(ZqztGrpContractInfoBo bo) {
@@ -135,8 +157,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         lqw.eq(bo.getContractMoney() != null, ZqztGrpContractInfo::getContractMoney, bo.getContractMoney());
         lqw.eq(bo.getContractSigndate() != null, ZqztGrpContractInfo::getContractSigndate, bo.getContractSigndate());
         // 如果用户没有特别指定合同状态为7（作废），则排除作废的合同
-        if (StringUtils.isBlank(bo.getContractStatus()) || !"7".equals(bo.getContractStatus())) {
-            lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除状态为7（作废）的合同
+        if (StringUtils.isBlank(bo.getContractStatus()) || !ContractStatusEnum.CANCELLED_FINAL.getCode().equals(bo.getContractStatus())) {
+            lqw.ne(ZqztGrpContractInfo::getContractStatus, ContractStatusEnum.CANCELLED_FINAL.getCode()); // 排除状态为7（作废）的合同
         } else {
             lqw.eq(ZqztGrpContractInfo::getContractStatus, bo.getContractStatus());
         }
@@ -161,27 +183,20 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             add.setCreator(LoginHelper.getNickName());
         }
 
-        // 设置默认缴费方式，如果未提供
+        if (add.getInuseContractId() == null || add.getInuseContractId().isEmpty()) {
+            add.setInuseContractId(generateRandomContractId());
+        }
+
+        // 添加 paytype 默认值
         if (add.getPaytype() == null || add.getPaytype().isEmpty()) {
-            add.setPaytype("10"); // 默认设置为"后付费"
+            add.setPaytype("17");
         }
 
         // 设置默认合同状态，如果未提供
         if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
-            add.setContractStatus("11"); // 默认设置为"起草"
+            add.setContractStatus(ContractStatusEnum.IN_PROGRESS.getCode()); // 默认设置为"履行中"
         }
 
-        // 设置默认合同属性，如果未提供
-        if (add.getContractProperty() == null || add.getContractProperty().isEmpty()) {
-            add.setContractProperty("00"); // 默认设置为"新签合同"
-        }
-
-        // 设置默认是否招投标项目，如果未提供
-        if (add.getIsBidding() == null || add.getIsBidding().isEmpty()) {
-            add.setIsBidding("0"); // 默认设置为"否"
-        }
-
-        validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setContractId(add.getContractId());
@@ -192,6 +207,35 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             }
         }
         return flag;
+    }
+
+    // 生成15位随机数,且唯一
+    public String generateRandomContractId(){
+        String inuseContractId;
+        int maxAttempts = 10; // 重试次数
+
+        for (int i = 0; i < maxAttempts; i++) {
+            // 生成时间戳部分(10位): 年月日时分秒毫秒的后10位
+            String timestamp = new java.text.SimpleDateFormat("yyMMddHHmmssSSS").format(new Date());
+            String timePart = timestamp.substring(Math.max(0, timestamp.length() - 10));
+
+            // 生成随机数部分(5位)
+            java.util.Random random = new java.util.Random();
+            String randomPart = String.format("%05d", random.nextInt(100000));
+
+            // 组合生成15位合同编号
+            inuseContractId = timePart + randomPart;
+
+            // 检查数据库中是否已存在该合同编号
+            LambdaQueryWrapper<ZqztGrpContractInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ZqztGrpContractInfo::getInuseContractId, inuseContractId);
+
+            if (baseMapper.selectCount(queryWrapper) == 0) {
+                System.out.println("随机InuseContractId:" + inuseContractId);
+                return inuseContractId; // 唯一性校验通过，返回合同编号
+            }
+        }
+        throw new RuntimeException("无法生成唯一的15位合同编号，请稍后重试");
     }
 
     /**
@@ -233,7 +277,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             update.setCreator(LoginHelper.getNickName());
         }
 
-        validEntityBeforeSave(update);
         boolean result = baseMapper.updateById(update) > 0;
 
         if (result) {
@@ -245,30 +288,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         return result;
     }
-
-    /**
-     * 对ZqztGrpContractInfoVo对象进行脱敏处理
-     * @param vo 要脱敏的ZqztGrpContractInfoVo对象
-     * @return 脱敏后的ZqztGrpContractInfoVo对象
-     */
-    private ZqztGrpContractInfoVo desensitizeVo(ZqztGrpContractInfoVo vo) {
-        if (vo == null) {
-            return null;
-        }
-
-        // 对合同名称进行脱敏
-        vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
-
-        return vo;
-    }
-
-    /**
-     * 保存前的数据校验
-     */
-    private void validEntityBeforeSave(ZqztGrpContractInfo entity){
-        //TODO 做一些数据校验,如唯一约束
-    }
-
     /**
      * 批量删除集团合同信息（逻辑删除，将合同状态改为7作废）
      */
@@ -289,23 +308,23 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             // 查询并备份扩展表中与该合同ID关联的记录到日志表
             LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
-            List<ZqztGrpContractOtherInfo> existingOtherRecords = 
+            List<ZqztGrpContractOtherInfo> existingOtherRecords =
                 SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
-            
+
             // 将扩展表的现有记录备份到日志表
             for (ZqztGrpContractOtherInfo otherRecord : existingOtherRecords) {
                 ZqztGrpContractOtherInfoLog logRecord = BeanUtil.toBean(otherRecord, ZqztGrpContractOtherInfoLog.class);
                 logRecord.setId(null); // 设置日志记录的ID为null，以便自动生成新ID
                 SpringUtils.getBean(ZqztGrpContractOtherInfoLogMapper.class).insert(logRecord);
             }
-            
+
             // 删除扩展表中与该合同ID关联的记录
             SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).delete(queryWrapper);
 
             // 更新合同状态为7（作废）
             ZqztGrpContractInfo updateRecord = new ZqztGrpContractInfo();
             updateRecord.setContractId(contractId);
-            updateRecord.setContractStatus("7"); // 7代表作废
+            updateRecord.setContractStatus(ContractStatusEnum.CANCELLED_FINAL.getCode()); // 7代表作废
             updateRecord.setUpdateBy(currentUser); // 记录操作人
             updateRecord.setUpdateTime(new Date()); // 记录操作时间
 
@@ -346,7 +365,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     public List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo() {
         // 排除状态为7（作废）的合同
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
-        lqw.ne(ZqztGrpContractInfo::getContractStatus, "7");
+        lqw.ne(ZqztGrpContractInfo::getContractStatus, ContractStatusEnum.CANCELLED_FINAL.getCode());
         return baseMapper.selectList(lqw);
     }
 
@@ -375,7 +394,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             if (businessType != null && !businessType.trim().isEmpty()) {
                 ZqztGrpContractOtherInfoBo otherInfoBo = new ZqztGrpContractOtherInfoBo();
                 otherInfoBo.setContractId(contractId);
-                otherInfoBo.setInfoTag(businessType.trim());
+                otherInfoBo.setInfoTag("GRP_CONTRACT_BUSI_TYPE");
+                otherInfoBo.setInfoVal(businessType.trim());
                 // 默认有效
                 otherInfoBo.setIsValid("1");
 
@@ -397,8 +417,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ZqztGrpContractOtherInfo::getContractId, contractId)
-                   .ne(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE") // 排除旧的固定标签，查询实际业务类型标签
-                   .eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
+                   .eq(ZqztGrpContractOtherInfo::getInfoTag, "GRP_CONTRACT_BUSI_TYPE")
+                   .eq(ZqztGrpContractOtherInfo::getIsValid, "1");
 
         List<ZqztGrpContractOtherInfo> list = SpringUtils.getBean(ZqztGrpContractOtherInfoMapper.class).selectList(queryWrapper);
 
@@ -406,10 +426,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             return null;
         }
 
-        // 将所有业务类型标签用逗号连接
+        // 将所有业务类型值用逗号连接
         return list.stream()
-                  .map(ZqztGrpContractOtherInfo::getInfoTag) // 从infoTag获取业务类型
-                  .filter(infoTag -> infoTag != null && !infoTag.trim().isEmpty())
+                  .map(ZqztGrpContractOtherInfo::getInfoVal) // 从infoVal获取业务类型代码
+                  .filter(infoVal -> infoVal != null && !infoVal.trim().isEmpty())
                   .collect(Collectors.joining(","));
     }
 
@@ -445,7 +465,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         // 判断合同状态是否为履行中（字符9）或办结（字符5）
         String contractStatus = contractInfo.getContractStatus();
-        boolean isStatusValid = "9".equals(contractStatus) || "5".equals(contractStatus);
+        boolean isStatusValid = ContractStatusEnum.IN_PROGRESS.getCode().equals(contractStatus) || ContractStatusEnum.COMPLETED.getCode().equals(contractStatus);
 
         // 获取合同失效时间
         Date contractExpdate = contractInfo.getContractExpdate();

@@ -34,10 +34,6 @@ public class GrpContractOtherInfo extends BaseEntity {
      * 信息值
      */
     private String infoVal;
-    /**
-     * 填写服务号码
-     */
-    private String infoVal2;
 
     /**
      * 数据库不查询的字段

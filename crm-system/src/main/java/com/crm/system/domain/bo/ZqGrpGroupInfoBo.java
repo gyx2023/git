@@ -9,6 +9,8 @@ import javax.validation.constraints.*;
 import java.util.Date;
 
 import java.util.Date;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.crm.common.core.domain.BaseEntity;
 
@@ -211,4 +213,6 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
     private String grpCreateTimeEnd;
 
     private String areaCode;
+
+    private List<Long> grpIds;
 }
