@@ -46,7 +46,6 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询政企主体-实际使用客户（zqzt_grp_cust_inuse）列表
      */
-    @SaCheckPermission("system:grpCustInuse:list")
     @GetMapping("/list")
     public TableDataInfo<ZqztGrpCustInuseVo> list(ZqztGrpCustInuseBo bo, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(bo, pageQuery);
@@ -54,7 +53,6 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询关联客户列表
      */
-    @SaCheckPermission("system:grpCustInuse:list")
     @GetMapping("/grpList")
     public TableDataInfo<ZqztGrpCustInuseRespDTO> grpList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageGrpList(reqDTO, pageQuery);
@@ -75,34 +73,12 @@ public class ZqztGrpCustInuseController extends BaseController {
      *
      * @param inuseId 主键
      */
-    @SaCheckPermission("system:grpCustInuse:query")
     @GetMapping("/{inuseId}")
     public R<ZqztGrpCustInuseVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable String inuseId) {
         return R.ok(iZqztGrpCustInuseService.queryById(inuseId));
     }
 
-    /**
-     * 新增政企主体-实际使用客户（zqzt_grp_cust_inuse）
-     */
-    @SaCheckPermission("system:grpCustInuse:add")
-    @Log(title = "政企主体-实际使用客户（zqzt_grp_cust_inuse）", businessType = BusinessType.INSERT)
-    @RepeatSubmit()
-    @PostMapping()
-    public R<Void> add(@Validated(AddGroup.class) @RequestBody ZqztGrpCustInuseBo bo) {
-        return toAjax(iZqztGrpCustInuseService.insertByBo(bo));
-    }
-
-    /**
-     * 修改政企主体-实际使用客户（zqzt_grp_cust_inuse）
-     */
-    @SaCheckPermission("system:grpCustInuse:edit")
-    @Log(title = "政企主体-实际使用客户（zqzt_grp_cust_inuse）", businessType = BusinessType.UPDATE)
-    @RepeatSubmit()
-    @PutMapping()
-    public R<Void> edit(@Validated(EditGroup.class) @RequestBody ZqztGrpCustInuseBo bo) {
-        return toAjax(iZqztGrpCustInuseService.updateByBo(bo));
-    }
 
     /**
      * 删除政企主体-实际使用客户（zqzt_grp_cust_inuse）
@@ -119,7 +95,6 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询待添加关联客户用户列表
      */
-    @SaCheckPermission("system:grpCustInuse:userList")
     @GetMapping("/getAddUserList")
     public TableDataInfo<ZqztGrpCustInuseUserListRespDTO> getAddUserList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.getAddUserList(reqDTO, pageQuery);
@@ -137,7 +112,6 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询关联客户用户列表
      */
-    @SaCheckPermission("system:grpCustInuse:userList")
     @GetMapping("/userList")
     public TableDataInfo<ZqztGrpCustInuseUserListRespDTO> userList(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageUserList(reqDTO, pageQuery);
@@ -168,7 +142,6 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询合同和关联客户ID列表
      */
-    @SaCheckPermission("system:grpCustInuse:listAll")
     @GetMapping("/listAll")
     public TableDataInfo<ZqztGrpCustInuseRespDTO> listAll(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(reqDTO, pageQuery);
