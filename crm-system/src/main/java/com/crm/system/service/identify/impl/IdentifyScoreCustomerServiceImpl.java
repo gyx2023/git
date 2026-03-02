@@ -175,13 +175,13 @@ public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerS
     @Override
     public IdentifyScoreCustomerBo initCustomerData(SysUser sysUser, SysOssVo sysOss) {
         IdentifyScoreCustomerBo customerDo = new IdentifyScoreCustomerBo();
-        Long ds = null;
+        Long ds;
         Long xf = null;
 
         SysDept sysDept = sysDeptService.selectDeptById(sysUser.getDeptId());
         SysAreaVo sysAreaVo = sysAreaService.queryById(Long.valueOf(sysDept.getAreaCode()));
         if(ObjectUtil.equals("一级", sysAreaVo.getType())){
-
+            ds = sysAreaVo.getId();
         }else if (ObjectUtil.equals("二级", sysAreaVo.getType())) {
             ds = sysAreaVo.getId();
         } else {
