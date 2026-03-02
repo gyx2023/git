@@ -1,8 +1,10 @@
 package com.crm.system.service;
 
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.SysOperLog;
+import com.crm.system.domain.vo.SysUsersVo;
 
 import java.util.List;
 
@@ -50,4 +52,8 @@ public interface ISysOperLogService {
      * 清空操作日志
      */
     void cleanOperLog();
+
+    void recordOperLog(String title, String method, String requestMethod, String operUrl,
+                       String operParam, Long startTime, Integer status,
+                       String jsonResult, String errorMsg, Integer operatorType, SysUser sysUser );
 }

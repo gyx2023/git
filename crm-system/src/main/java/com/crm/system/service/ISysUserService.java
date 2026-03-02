@@ -4,7 +4,9 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户 业务层
@@ -208,4 +210,5 @@ public interface ISysUserService {
      */
     int deleteUserByIds(Long[] userIds);
 
+    Map<Long,String> listAll();
 }

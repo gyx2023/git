@@ -199,7 +199,8 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      * 使用Redis的INCR命令生成序列号，确保分布式环境下的唯一性和高性能
      * 每天从0001开始计数
      */
-    private String getDailySequence() {
+    @Override
+    public String getDailySequence() {
         String currentDateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
         // Redis键名，格式为: task:sequence:20251124
         String redisKey = String.format("task:sequence:%s", currentDateStr);
