@@ -41,10 +41,4 @@ public class BusinessResponseDTO implements Serializable {
      * 用于分类和统计不同类型的错误
      */
     private String errorCode;
-
-    /**
-     * 处理完成时间戳
-     * 用于性能统计和监控
-     */
-    private Long processTime;
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.mq.config.RabbitMQConfig;
 import com.crm.common.utils.StringUtils;
 import com.crm.dto.BusinessMessageDTO;
+import com.crm.dto.BusinessResponseDTO;
 import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
@@ -115,7 +116,9 @@ public class RabbitMQConsumerService {
      *
      * @param businessMessage 业务消息
      */
-    public void receiveRpaMessage(BusinessMessageDTO businessMessage) throws IOException {
+    public BusinessResponseDTO receiveRpaMessage(BusinessMessageDTO businessMessage) throws IOException {
+
+        BusinessResponseDTO response = new BusinessResponseDTO();
 
         try {
             // 获取信息
@@ -134,9 +137,16 @@ public class RabbitMQConsumerService {
             noticeRecordDo.setFailReason(StringUtils.isNotEmpty(failReason) ? failReason : null);
             zqztJtNoticeRecordMapper.updateById(noticeRecordDo);
 
+            log.info("更新成功");
+            response.setStatus("success");
+            response.setMessage("处理成功");
+
         } catch (Exception e) {
             log.error("处理消息时发生错误：{}", e.getMessage());
+            response.setStatus("failed");
+            response.setMessage(e.getMessage());
         }
+        return response;
     }
 
 

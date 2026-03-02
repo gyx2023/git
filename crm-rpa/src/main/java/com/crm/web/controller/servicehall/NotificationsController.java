@@ -56,8 +56,15 @@ public class NotificationsController {
     @ResponseBody
     public BusinessResponseDTO consumeMessage(@RequestBody BusinessMessageDTO message) throws IOException {
 
-        rabbitMQConsumerService.receiveRpaMessage(message);
+        BusinessResponseDTO response = new BusinessResponseDTO();
 
-        return null;
+        log.info("无人工厂消息消费接口 接收消息：{}", message);
+        if (message == null) {
+            response.setStatus("failed");
+            response.setMessage("参数不能为空");
+            return response;
+        }
+
+        return rabbitMQConsumerService.receiveRpaMessage(message);
     }
 }
