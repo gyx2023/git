@@ -158,4 +158,6 @@ public class ZqztGrpCustInuseController extends BaseController {
     public R<Void> removeList(@NotEmpty(message = "主键不能为空") @PathVariable String[] inuseIds) {
         return toAjax(iZqztGrpCustInuseService.deleteWithValidByIds(inuseIds, true));
     }
+
+
 }
