@@ -41,7 +41,6 @@ public class IdentifyScoreCustomerController extends BaseController {
     /**
      * 查询三清单智能评分记录列表
      */
-    @SaCheckPermission("system:scoreCustomer:list")
     @GetMapping("/list")
     public TableDataInfo<IdentifyScoreCustomerVo> list(IdentifyScoreCustomerBo bo, PageQuery pageQuery) {
         return iIdentifyScoreCustomerService.queryPageList(bo, pageQuery);
@@ -65,7 +64,6 @@ public class IdentifyScoreCustomerController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:scoreCustomer:query")
     @GetMapping("/{id}")
     public R<IdentifyScoreCustomerVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
