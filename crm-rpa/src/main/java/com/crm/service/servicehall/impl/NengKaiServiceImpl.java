@@ -84,7 +84,7 @@ public class NengKaiServiceImpl implements NengKaiService {
 
         log.info("接入无人工厂,接口开始调用");
         String[] values = sysParam.selectValueByType(zqztJtNoticeRecordDo.getBizCode()).split(",");
-        log.info("业务类型: {};流水线:{}", values[0], values[1]);
+        log.info("业务类型: bizType = {};流水线: lineCode = {}", values[0], values[1]);
         KafkaMessageRecordEntity kafkaMessage = new KafkaMessageRecordEntity();
         //获取唯一标识
         String messageId = uniquely(values[0], values[1]);
