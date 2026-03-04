@@ -1,6 +1,7 @@
 package com.crm.system.service.cust.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.encrypt.DataEncryptionUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -9,6 +10,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.system.domain.CustMaintInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.cust.ZqztCustMaintInfoBo;
 import com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo;
@@ -27,9 +30,13 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
 
     private final ZqztCustMaintInfoMapper baseMapper;
+
+    @Autowired
+    private DataEncryptionUtil encryptionUtil;
 
     /**
      * 查询【请填写功能名称】
@@ -160,19 +167,53 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
         return baseMapper.insertBatch(zqztCustMaintInfoList);
     }
     @Override
-    public Set<String> selectExistingUserIds(List<String> userIds) {
+    public List<ZqztCustMaintInfo> selectExistingUserIds(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
-            return Collections.emptySet();
+            return null;
         }
-
         // 调用 Mapper 查询已存在的 user_id
         // 使用 LambdaQueryWrapper 构建查询条件
         List<ZqztCustMaintInfo> existingUsers = baseMapper.selectList(
             new LambdaQueryWrapper<ZqztCustMaintInfo>()
                 .in(ZqztCustMaintInfo::getUserId, userIds)
-        );        // 提取 user_id 并转换为 Set
-        return existingUsers.stream()
-            .map(ZqztCustMaintInfo::getUserId) // 使用 Vo 的 getUserId 方法
-            .collect(Collectors.toSet());
+        );
+        return existingUsers;
+    }
+    @Override
+    public TableDataInfo<ZqztCustMaintInfoVo> selectUncontractedUsers(String hqGrpCode, String contractId, PageQuery pageQuery) {
+        // 构建分页对象
+        Page<ZqztCustMaintInfoVo> page = pageQuery.build();
+        page = baseMapper.selectUncontractedUsers(page, hqGrpCode, contractId);
+        List<ZqztCustMaintInfoVo> custMaintInfoList = page.getRecords();
+        custMaintInfoList.stream().forEach(custMaintInfo -> {
+            custMaintInfo.setEncryptedSvcNum(encryptionUtil.encryptData(custMaintInfo.getEncryptedSvcNum()));
+        });
+
+        return TableDataInfo.build(page);
+    }
+    @Override
+    public List<ZqztCustMaintInfoVo> selectUncontractedUsersNoPage(String hqGrpCode, String contractId, List<String> svcNums) {
+        List<ZqztCustMaintInfoVo> custMaintInfoList = baseMapper.selectUncontractedUsersNoPage(hqGrpCode, contractId, svcNums);
+        custMaintInfoList.stream().forEach(custMaintInfo -> {
+            custMaintInfo.setEncryptedSvcNum(encryptionUtil.encryptData(custMaintInfo.getEncryptedSvcNum()));
+        });
+        return custMaintInfoList;
+    }
+    @Override
+    public Boolean deleteByUserIds(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return false;
+        }
+
+        log.info("开始批量删除客户维护信息，删除 user_id 数量：{}", userIds.size());
+
+        // 使用 LambdaQueryWrapper 构建删除条件
+        int result = baseMapper.delete(
+            new LambdaQueryWrapper<ZqztCustMaintInfo>()
+                .in(ZqztCustMaintInfo::getUserId, userIds)
+        );
+
+        log.info("批量删除客户维护信息完成，删除记录数：{}", result);
+        return result > 0;
     }
 }

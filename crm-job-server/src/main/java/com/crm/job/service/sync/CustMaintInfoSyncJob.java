@@ -32,49 +32,25 @@ public class CustMaintInfoSyncJob {
     public void execute() {
         log.info("开始执行客户维护信息数据同步任务");
         XxlJobHelper.log("开始执行客户维护信息数据同步任务");
-        String param = XxlJobHelper.getJobParam();
-
-        int pageSize = 1000; // 每批次处理的数据量
-        int currentPage = 1; // 当前页码
-        boolean hasMoreData = true; // 是否还有更多数据
+        String params = XxlJobHelper.getJobParam();
 
         try {
-            while (hasMoreData) {
-                // 分页查询 cust_maint_info 表数据
-                IPage<CustMaintInfo> batchDataPage = custMaintInfoService.selectBatch(currentPage, pageSize, param);
-
-                if (batchDataPage == null || batchDataPage.getTotal() == 0) {
-                    // 无数据时退出循环
-                    hasMoreData = false;
-                    break;
-                }
-                List<CustMaintInfo> batchData = batchDataPage.getRecords();
-                // 查询目标表中已存在的 user_id
-                Set<String> existingUserIds = zqztCustMaintInfoService.selectExistingUserIds(batchData.stream()
+            custMaintInfoService.streamingQuery(params, batchData -> {
+                // 获取当前批次的 user_id 列表
+                List<String> userIds = batchData.stream()
                     .map(CustMaintInfo::getUserId)
-                    .collect(Collectors.toList()));
-
-                // 过滤掉已存在的数据
-                List<CustMaintInfo> filteredData = batchData.stream()
-                    .filter(info -> !existingUserIds.contains(info.getUserId()))
                     .collect(Collectors.toList());
 
-                // 插入过滤后的数据
-                if (!filteredData.isEmpty()) {
-                    zqztCustMaintInfoService.batchInsert(filteredData);
+                // 先删除表中已存在的 user_id 数据
+                if (!userIds.isEmpty()) {
+                    zqztCustMaintInfoService.deleteByUserIds(userIds);
                 }
 
-                // 日志记录
-                XxlJobHelper.log("第 {} 页数据同步完成，共处理 {} 条数据", currentPage , batchData.size());
-                log.info("第 {} 页数据同步完成，共处理 {} 条数据", currentPage , batchData.size());
-
-                if (batchData.size() < pageSize) {
-                    // 数据量不足一页时退出循环
-                    hasMoreData = false;
-                    break;
+                // 直接插入所有新数据
+                if (!batchData.isEmpty()) {
+                    zqztCustMaintInfoService.batchInsert(batchData);
                 }
-                currentPage++; // 下一页
-            }
+            });
 
             XxlJobHelper.log("客户维护信息数据同步任务执行完成");
             log.info("客户维护信息数据同步任务执行完成");
