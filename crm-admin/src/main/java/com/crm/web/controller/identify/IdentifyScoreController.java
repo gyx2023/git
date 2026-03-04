@@ -41,7 +41,6 @@ public class IdentifyScoreController extends BaseController {
     /**
      * 查询【请填写功能名称】列表
      */
-    @SaCheckPermission("system:score:list")
     @GetMapping("/list")
     public TableDataInfo<IdentifyScoreVo> list(IdentifyScoreBo bo, PageQuery pageQuery) {
         return iIdentifyScoreService.queryPageList(bo, pageQuery);
@@ -63,7 +62,6 @@ public class IdentifyScoreController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:score:query")
     @GetMapping("/{id}")
     public R<IdentifyScoreVo> getInfo(@NotNull(message = "主键不能为空")
                                       @PathVariable Long id) {
