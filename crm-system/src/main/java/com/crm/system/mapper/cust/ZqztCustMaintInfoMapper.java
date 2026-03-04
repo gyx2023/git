@@ -25,5 +25,5 @@ public interface ZqztCustMaintInfoMapper extends BaseMapperPlus<ZqztCustMaintInf
      */
     Page<ZqztCustMaintInfoVo> selectUncontractedUsers(Page<ZqztCustMaintInfoVo> page, @Param("hqGrpCode") String hqGrpCode, @Param("contractId") String contractId);
 
-    List<ZqztCustMaintInfoVo> selectUncontractedUsersNoPage(@Param("hqGrpCode") String hqGrpCode, @Param("contractId") String contractId, List<String> svcNums);
+    List<ZqztCustMaintInfoVo> selectUncontractedUsersNoPage(@Param("hqGrpCode") String hqGrpCode, @Param("contractId") String contractId,@Param("svcNums") List<String> svcNums);
 }
