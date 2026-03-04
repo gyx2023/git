@@ -93,16 +93,6 @@
         <result property="custIndustry" column="CUST_INDUSTRY"/>
     </resultMap>
 
-    <!-- 批量根据用户ID查询有效的客户维护信息及服务号码 -->
-    <select id="selectValidSvcNumByUserIds" parameterType="list" resultType="map">
-        SELECT USER_ID as "key", SVC_NUM as "value"
-        FROM CUST_MAINT_INFO
-        WHERE STATUS = '1' AND USER_ID IN
-        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
-            #{userId}
-        </foreach>
-    </select>
-
     <!-- 第一页查询 -->
     <select id="selectFirstPage" resultType="com.crm.system.domain.CustMaintInfo">
         SELECT * FROM CUST_MAINT_INFO

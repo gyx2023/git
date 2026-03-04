@@ -167,20 +167,17 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
         return baseMapper.insertBatch(zqztCustMaintInfoList);
     }
     @Override
-    public Set<String> selectExistingUserIds(List<String> userIds) {
+    public List<ZqztCustMaintInfo> selectExistingUserIds(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
-            return Collections.emptySet();
+            return null;
         }
-
         // 调用 Mapper 查询已存在的 user_id
         // 使用 LambdaQueryWrapper 构建查询条件
         List<ZqztCustMaintInfo> existingUsers = baseMapper.selectList(
             new LambdaQueryWrapper<ZqztCustMaintInfo>()
                 .in(ZqztCustMaintInfo::getUserId, userIds)
-        );        // 提取 user_id 并转换为 Set
-        return existingUsers.stream()
-            .map(ZqztCustMaintInfo::getUserId) // 使用 Vo 的 getUserId 方法
-            .collect(Collectors.toSet());
+        );
+        return existingUsers;
     }
     @Override
     public TableDataInfo<ZqztCustMaintInfoVo> selectUncontractedUsers(String hqGrpCode, String contractId, PageQuery pageQuery) {

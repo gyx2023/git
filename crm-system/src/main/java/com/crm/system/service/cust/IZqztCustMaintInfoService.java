@@ -1,6 +1,7 @@
 package com.crm.system.service.cust;
 
 import com.crm.system.domain.CustMaintInfo;
+import com.crm.system.domain.cust.ZqztCustMaintInfo;
 import com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo;
 import com.crm.system.domain.bo.cust.ZqztCustMaintInfoBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -54,7 +55,7 @@ public interface IZqztCustMaintInfoService {
      */
     boolean batchInsert(List<CustMaintInfo> dataList);
 
-    Set<String> selectExistingUserIds(List<String> userIds);
+    List<ZqztCustMaintInfo> selectExistingUserIds(List<String> userIds);
 
     TableDataInfo<ZqztCustMaintInfoVo> selectUncontractedUsers(String hqGrpCode, String contractId, PageQuery pageQuery);
 

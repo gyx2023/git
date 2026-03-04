@@ -8,6 +8,8 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.domain.cust.ZqztCustMaintInfo;
+import com.crm.system.service.cust.IZqztCustMaintInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +21,6 @@ import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
-import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
 import com.crm.common.enums.InfoTagEnum;
 
@@ -44,7 +45,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
     private ZqztGrpContractOtherInfoLogMapper logMapper;
 
     @Resource
-    private ICustMaintInfoService custMaintInfoService;
+    private IZqztCustMaintInfoService zqztCustMaintInfoService;
 
     @Autowired
     private ITfFCustGroupMService tfFCustGroupMService;
@@ -244,9 +245,16 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
         // 批量查询用户维护信息
         Map<String, String> svcNumMap = new HashMap<>();
-        if (custMaintInfoService != null && !userIds.isEmpty()) {
-            svcNumMap = custMaintInfoService.selectValidSvcNumByUserIds(userIds);
+        if (!userIds.isEmpty()) {
+            List<ZqztCustMaintInfo> custMaintInfoList = zqztCustMaintInfoService.selectExistingUserIds(userIds);
+            svcNumMap = custMaintInfoList.stream()
+                .collect(Collectors.toMap(
+                    ZqztCustMaintInfo::getUserId,
+                    ZqztCustMaintInfo::getSvcNum,
+                    (existing, replacement) -> existing
+                ));
         }
+
 
         // 处理每个数据项
         List<ZqztGrpContractOtherInfo> processedDataList = new ArrayList<>();
