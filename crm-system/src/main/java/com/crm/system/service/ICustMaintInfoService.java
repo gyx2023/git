@@ -5,6 +5,7 @@ import com.crm.system.domain.CustMaintInfo;
 
 import java.util.Map;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 客户维护信息查询服务接口
@@ -48,4 +49,6 @@ public interface ICustMaintInfoService {
     Map<String, String> selectValidSvcNumByUserIds(List<String> userIds);
 
     IPage<CustMaintInfo> selectBatch(int page, int size, String params);
+
+    void streamingQuery(String params, Consumer<List<CustMaintInfo>> consumer);
 }

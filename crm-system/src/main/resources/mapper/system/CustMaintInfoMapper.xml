@@ -102,4 +102,30 @@
             #{userId}
         </foreach>
     </select>
+
+    <!-- 第一页查询 -->
+    <select id="selectFirstPage" resultType="com.crm.system.domain.CustMaintInfo">
+        SELECT * FROM CUST_MAINT_INFO
+        WHERE STATUS = '1'
+        <if test="params != null and params.matches('\\d+')">
+            AND ETL_TIME &gt;= STR_TO_DATE(#{params}, '%Y-%m-%d')
+        </if>
+        ORDER BY ETL_TIME ASC, USER_ID ASC
+        LIMIT #{size}
+    </select>
+
+    <!-- 后续页查询 - 游标方式 -->
+    <select id="selectNextPage" resultType="com.crm.system.domain.CustMaintInfo">
+        SELECT * FROM CUST_MAINT_INFO
+        WHERE STATUS = '1'
+        AND (
+        (ETL_TIME > #{lastEtlTime})
+        OR (ETL_TIME = #{lastEtlTime} AND USER_ID > #{lastUserId})
+        )
+        <if test="params != null and params.matches('\\d+')">
+            AND ETL_TIME &gt;= STR_TO_DATE(#{params}, '%Y-%m-%d')
+        </if>
+        ORDER BY ETL_TIME ASC, USER_ID ASC
+        LIMIT #{size}
+    </select>
 </mapper>

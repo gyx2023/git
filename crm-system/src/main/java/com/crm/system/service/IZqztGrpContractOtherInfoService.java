@@ -87,15 +87,15 @@ public interface IZqztGrpContractOtherInfoService {
     List<ZqztGrpContractOtherInfoVo> selectByContractIdAndInfoVal2(String contractId, String infoVal2);
 
     /**
-     * 根据合同ID和服务号码查询合同关联的客户信息
-     * 当infoVal2为null或空时，仅按合同ID查询
+     * 分页查询合同关联用户信息（LEFT JOIN方式）
+     * 替代原有的selectContractRelatedUserInfo方法，使用LEFT JOIN查询方式
      *
      * @param contractId 合同ID
      * @param infoVal2 服务号码（可选）
-     * @return 关联的客户信息列表
+     * @param pageQuery 分页参数
+     * @return 分页结果
      */
-    List<ZqztGrpContractOtherInfoVo> selectContractRelatedUserInfo(String contractId, String infoVal2);
-
+    TableDataInfo<ZqztGrpContractOtherInfoVo> selectContractRelatedUserInfoPage(String contractId, String infoVal2, PageQuery pageQuery);
     /**
      * 批量使合同关联用户信息失效
      *
@@ -104,31 +104,5 @@ public interface IZqztGrpContractOtherInfoService {
      */
     Boolean batchInvalidateContractUserRelation(List<Long> ids);
 
-    List<ZqztGrpContractOtherInfo> selectByInfoValAndContractId(List<String> infoVal, String contractId);
-
-    /**
-     * 根据总部集团编码查询未签约的客户
-     *
-     * @param hqGrpCode 总部集团编码
-     * @param contractId 合同ID
-     * @return 未签约的客户列表
-     */
-    List<ZqztGrpContractOtherInfoVo> selectUncontractedCustomersByHqGrpCode(String hqGrpCode, String contractId);
-
-    /**
-     * 根据总部集团编码查询未签约的客户（用于后端批量处理，不脱敏）
-     *
-     * @param hqGrpCode 总部集团编码
-     * @param contractId 合同ID
-     * @return 未签约的客户列表（包含原始服务号码）
-     */
-    List<Map<String, Object>> selectUncontractedCustomersByHqGrpCodeForBatch(String hqGrpCode, String contractId);
-
-    /**
-     * 解密加密的服务号码
-     * @param encryptedSvcNum 加密的服务号码
-     * @return 解密后的原始服务号码
-     */
-    String decryptSvcNum(String encryptedSvcNum);
 
 }

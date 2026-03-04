@@ -55,4 +55,16 @@ public interface IZqztCustMaintInfoService {
     boolean batchInsert(List<CustMaintInfo> dataList);
 
     Set<String> selectExistingUserIds(List<String> userIds);
+
+    TableDataInfo<ZqztCustMaintInfoVo> selectUncontractedUsers(String hqGrpCode, String contractId, PageQuery pageQuery);
+
+    List<ZqztCustMaintInfoVo> selectUncontractedUsersNoPage(String hqGrpCode, String contractId, List<String> svcNums);
+
+    /**
+     * 根据 user_id 批量删除客户维护信息
+     * @param userIds user_id 列表
+     * @return 删除是否成功
+     */
+    Boolean deleteByUserIds(List<String> userIds);
+
 }

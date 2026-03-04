@@ -1,8 +1,11 @@
 package com.crm.system.domain.vo.cust;
 
 import java.util.Date;
+
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.crm.common.annotation.Sensitive;
+import com.crm.common.enums.SensitiveStrategy;
 import lombok.Data;
 
 
@@ -47,7 +50,10 @@ public class ZqztCustMaintInfoVo {
      *
      */
     @ExcelProperty(value = "")
+    @Sensitive(strategy = SensitiveStrategy.PHONE)
     private String svcNum;
+
+    private String encryptedSvcNum;
 
     /**
      *
@@ -71,6 +77,7 @@ public class ZqztCustMaintInfoVo {
      *
      */
     @ExcelProperty(value = "")
+    @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
     private String custGrpName;
 
     /**
@@ -89,13 +96,14 @@ public class ZqztCustMaintInfoVo {
      *
      */
     @ExcelProperty(value = "")
+    @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
     private String custName;
 
     /**
      *
      */
     @ExcelProperty(value = "")
-    private String STATUS;
+    private String status;
 
     /**
      *

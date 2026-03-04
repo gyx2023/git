@@ -48,6 +48,7 @@ public class ZqztGrpContractOtherInfoVo {
      * 填写服务号码
      */
     @ExcelProperty(value = "填写服务号码")
+    @Sensitive(strategy = SensitiveStrategy.PHONE)
     private String infoVal2;
 
     /**
@@ -59,7 +60,6 @@ public class ZqztGrpContractOtherInfoVo {
     /**
      * 服务号码
      */
-    @Sensitive(strategy = SensitiveStrategy.PHONE)
     private String svcNum;
 
     /**
@@ -78,8 +78,6 @@ public class ZqztGrpContractOtherInfoVo {
      */
     @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
     private String custGrpName;
-
-    private String encryptedSvcNum;
 
     /**
      * 业务类型
