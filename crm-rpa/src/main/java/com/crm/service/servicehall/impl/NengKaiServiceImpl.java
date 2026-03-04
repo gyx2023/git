@@ -98,8 +98,7 @@ public class NengKaiServiceImpl implements NengKaiService {
             if (response.getCode() == 20000) {
                 log.info("接口调用成功");
             } else {
-                log.error("接口调用失败: 状态码={}, 错误信息={}",
-                    response.getCode(), response.getMessage());
+                log.error("接口调用失败: 状态码={}, 错误信息={}", response.getCode(), response.getMessage());
             }
         } else {
             log.error("接口调用失败: 响应对象为空");
