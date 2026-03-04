@@ -24,24 +24,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询未签约用户列表 -->
     <select id="selectUncontractedUsers" resultType="com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo">
-        SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME,SVC_NUM AS ENCRYPTED_SVC_NUM
-            FROM ZQZT_CUST_MAINT_INFO a
-        WHERE a.STATUS = '1'
-          AND (
-            a.CUST_GRP_ID = #{hqGrpCode}
-           OR EXISTS (
-            SELECT 1 FROM TF_F_CUST_GROUP_M b
-            WHERE b.CUST_ID = a.CUST_ID
-          AND b.GROUP_ID = #{hqGrpCode}
-            )
-            )
-          AND NOT EXISTS (
-            SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
-            WHERE c.INFO_VAL = a.USER_ID
-          AND c.CONTRACT_ID = #{contractId}
-          AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
-          AND c.IS_VALID = 1
-            )
+        SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME, SVC_NUM AS ENCRYPTED_SVC_NUM
+        FROM (
+                 SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME
+                 FROM ZQZT_CUST_MAINT_INFO a
+                 WHERE a.STATUS = '1'
+                   AND a.CUST_GRP_ID = #{hqGrpCode}
+                   AND NOT EXISTS (
+                     SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
+                     WHERE c.INFO_VAL = a.USER_ID
+                       AND c.CONTRACT_ID = #{contractId}
+                       AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
+                       AND c.IS_VALID = 1
+                 )
+                 UNION ALL
+                 SELECT a.SVC_NUM, a.USER_ID, a.TYPE_LVL2_NAME
+                 FROM ZQZT_CUST_MAINT_INFO a
+                          INNER JOIN TF_F_CUST_GROUP_M b ON a.CUST_ID = b.CUST_ID
+                     AND b.GROUP_ID = #{hqGrpCode}
+                 WHERE a.STATUS = '1'
+                   AND (a.CUST_GRP_ID != #{hqGrpCode} OR a.CUST_GRP_ID IS NULL)
+                   AND NOT EXISTS (
+                     SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
+                     WHERE c.INFO_VAL = a.USER_ID
+                       AND c.CONTRACT_ID = #{contractId}
+                       AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
+                       AND c.IS_VALID = 1
+                 )
+             ) t
     </select>
     <!-- 查询未签约用户列表 -->
     <select id="selectUncontractedUsersNoPage" resultType="com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo">
