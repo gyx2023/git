@@ -80,6 +80,8 @@ public class WfFormServiceImpl implements IWfFormService {
         wfForm.setFormName(bo.getFormName());
         wfForm.setContent(bo.getContent());
         wfForm.setRemark(bo.getRemark());
+        wfForm.setFormUrl(bo.getFormUrl());
+        wfForm.setFormType(bo.getFormType());
         return baseMapper.insert(wfForm);
     }
 
@@ -95,6 +97,8 @@ public class WfFormServiceImpl implements IWfFormService {
             .set(StrUtil.isNotBlank(bo.getFormName()), WfForm::getFormName, bo.getFormName())
             .set(StrUtil.isNotBlank(bo.getContent()), WfForm::getContent, bo.getContent())
             .set(StrUtil.isNotBlank(bo.getRemark()), WfForm::getRemark, bo.getRemark())
+            .set(StrUtil.isNotBlank(bo.getFormUrl()), WfForm::getFormUrl, bo.getFormUrl())
+            .set(StrUtil.isNotBlank(bo.getFormType()), WfForm::getFormType, bo.getFormType())
             .eq(WfForm::getFormId, bo.getFormId()));
     }
 

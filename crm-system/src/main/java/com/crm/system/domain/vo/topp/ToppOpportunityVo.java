@@ -830,4 +830,6 @@ public class ToppOpportunityVo {
      */
     @ExcelProperty(value = "商机转化状态")
     private String oppoConversionState;
+
+    private String finalEndOppTypeMemo;
 }

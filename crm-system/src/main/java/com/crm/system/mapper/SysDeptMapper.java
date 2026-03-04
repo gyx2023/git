@@ -23,9 +23,9 @@ public interface SysDeptMapper extends BaseMapperPlus<SysDeptMapper, SysDept, Sy
      * @param queryWrapper 查询条件
      * @return 部门信息集合
      */
-    @DataPermission({
-        @DataColumn(key = "deptName", value = "dept_id")
-    })
+//    @DataPermission({
+//        @DataColumn(key = "deptName", value = "dept_id")
+//    })
     List<SysDept> selectDeptList(@Param(Constants.WRAPPER) Wrapper<SysDept> queryWrapper);
 
     /**

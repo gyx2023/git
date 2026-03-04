@@ -5,11 +5,13 @@ import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.event.OperLogEvent;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.ip.AddressUtils;
 import com.crm.system.domain.SysOperLog;
+import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.mapper.SysOperLogMapper;
 import com.crm.system.service.ISysOperLogService;
 import lombok.RequiredArgsConstructor;
@@ -137,5 +139,41 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
     @Override
     public void cleanOperLog() {
         baseMapper.delete(new LambdaQueryWrapper<>());
+    }
+
+
+    @Override
+    public void recordOperLog(String title, String method, String requestMethod, String operUrl,
+                              String operParam, Long startTime, Integer status,
+                              String jsonResult, String errorMsg, Integer operatorType, SysUser currentUser) {
+        SysOperLog sysOperLog = new SysOperLog();
+        sysOperLog.setTitle(title);
+        sysOperLog.setMethod(truncateString(method, 255));
+        sysOperLog.setRequestMethod(requestMethod);
+        sysOperLog.setOperName(currentUser.getNickName());
+        sysOperLog.setOperUrl(operUrl);
+        sysOperLog.setOperIp(currentUser.getLoginIp());
+        sysOperLog.setOperParam(truncateString(operParam, 2000));
+        sysOperLog.setOperTime(new Date());
+        sysOperLog.setOperatorType(operatorType);
+
+        Long endTime = System.currentTimeMillis();
+        sysOperLog.setRequestTime(endTime - startTime);
+        sysOperLog.setStatus(status);
+
+        if (status == 0) { // 正常
+            sysOperLog.setJsonResult(truncateString(jsonResult, 2000));
+        } else { // 异常
+            sysOperLog.setErrorMsg(truncateString(errorMsg, 2000));
+        }
+
+        baseMapper.insert(sysOperLog);
+    }
+
+    public String truncateString(String str, int maxLength) {
+        if (str != null && str.length() > maxLength) {
+            return str.substring(0, maxLength);
+        }
+        return str;
     }
 }

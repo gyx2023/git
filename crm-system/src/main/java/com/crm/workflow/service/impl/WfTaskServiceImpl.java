@@ -573,6 +573,27 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             }
         }
     }
+    /**
+     * 指定task第一个处理人
+     * @param processInstance 流程实例
+     * @param variables 流程参数
+     */
+    @Override
+    public void assignFirstTask(ProcessInstance processInstance, Map<String, Object> variables) {
+        // 若第一个用户任务为发起人，则自动完成任务
+        List<Task> tasks = taskService.createTaskQuery().processInstanceId(processInstance.getProcessInstanceId()).orderByTaskCreateTime().asc().list();
+        if (CollUtil.isNotEmpty(tasks)) {
+            String userIdAssigner = (String) variables.get(ProcessConstants.INITIAL_ASSIGNER_USERID);
+            identityService.setAuthenticatedUserId(TaskUtils.getUserId());
+            for (Task task : tasks) {
+                // 指定第一个用户任务的审批人 为userIdAssigner
+                if(StrUtil.isNotEmpty(userIdAssigner)){
+                    taskService.setAssignee(task.getId(), userIdAssigner);
+                }
+                break;
+            }
+        }
+    }
 
     /**
      * 指派下一任务审批人
