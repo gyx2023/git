@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN ZQZT_CUST_MAINT_INFO main ON contract.info_val = main.user_id
         WHERE contract.contract_id = #{contractId}
         AND contract.info_tag = 'GRP_CONTRACT_USER_LIST'
-        AND contract.IS_VALID = 1 and main.cust_id is not null
+        AND contract.IS_VALID = 1 and main.user_id is not null
         <if test="infoVal2 != null and infoVal2 != ''">
             AND contract.info_val2 LIKE CONCAT('%', #{infoVal2}, '%')
         </if>
