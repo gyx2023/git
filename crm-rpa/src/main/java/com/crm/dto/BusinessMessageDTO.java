@@ -17,10 +17,15 @@ public class BusinessMessageDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 项目编号（车间标识）
-     * 用于区分不同的业务项目
+     * 消息唯一标识
+     * 用于消息去重和追踪
      */
-    private String projectCode;
+    private String messageId;
+
+    /**
+     * 消息内容
+     */
+    private String messageBody;
 
     /**
      * 业务类型（流水线标识）
@@ -29,14 +34,7 @@ public class BusinessMessageDTO implements Serializable {
     private String bizType;
 
     /**
-     * 消息唯一标识
-     * 用于消息去重和追踪
+     * 流水线
      */
-    private String messageId;
-
-    /**
-     * 业务数据JSON字符串
-     * 具体的业务参数内容
-     */
-    private String bizData;
+    private String lineCode;
 }

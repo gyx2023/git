@@ -1,8 +1,7 @@
 package com.crm.service.servicehall.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.crm.dto.BusinessResponseDTO;
-import com.crm.dto.KafkaMessageRecordEntity;
+import com.crm.dto.BusinessMessageDTO;
 import com.crm.dto.Response;
 import com.crm.service.mq.ygcf.RabbitMQProducerService;
 import com.crm.service.servicehall.NengKaiService;
@@ -15,24 +14,21 @@ import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.utils.HaoKaoSignUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-
-import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.crm.utils.HttpClientUtil.doPost_nlpt;
 
@@ -85,14 +81,14 @@ public class NengKaiServiceImpl implements NengKaiService {
         log.info("接入无人工厂,接口开始调用");
         String[] values = sysParam.selectValueByType(zqztJtNoticeRecordDo.getBizCode()).split(",");
         log.info("业务类型: bizType = {};流水线: lineCode = {}", values[0], values[1]);
-        KafkaMessageRecordEntity kafkaMessage = new KafkaMessageRecordEntity();
+        BusinessMessageDTO businessMessageDTO = new BusinessMessageDTO();
         //获取唯一标识
         String messageId = uniquely(values[0], values[1]);
-        kafkaMessage.setMessageId(messageId);
-        kafkaMessage.setMessageBody(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
-        kafkaMessage.setBizType(values[0]);
-        kafkaMessage.setLineCode(values[1]);
-        Response response = restTemplate.postForObject(UnmannedFactoryURL, kafkaMessage, Response.class);
+        businessMessageDTO.setMessageId(messageId);
+        businessMessageDTO.setMessageBody(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
+        businessMessageDTO.setBizType(values[0]);
+        businessMessageDTO.setLineCode(values[1]);
+        Response response = restTemplate.postForObject(UnmannedFactoryURL, businessMessageDTO, Response.class);
 
         if (response != null) {
             if (response.getCode() == 20000) {
