@@ -123,10 +123,10 @@ public class OldOpportunityDTO {
     private String oppGrowthType;
 
     /** 36. 绑定合同 */
-    private String contractNames;
+    private String contractNos;
 
     /** 37. 电子表单 */
-    private String eformNames;
+    private String eformNos;
 
 
     /** 产品编码 */

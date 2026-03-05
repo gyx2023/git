@@ -573,43 +573,42 @@ public class OpportunityExport extends AbstractExportStrategy {
             batchData.parallelStream().forEach(dto -> {
                 Long oppId = dto.getId();
 
-                // 填充合同信息
+                // 填充合同编号信息
                 List<ToppContractVo> contracts = context.contractMap.get(oppId);
                 if (contracts != null && !contracts.isEmpty()) {
-                    StringBuilder contractNames = new StringBuilder();
+                    StringBuilder contractNos = new StringBuilder();
                     for (int i = 0; i < contracts.size(); i++) {
                         ToppContractVo contract = contracts.get(i);
-                        if (i > 0) contractNames.append(",");
-                        if (StringUtils.isNotEmpty(contract.getContractName())) {
-                            contractNames.append(contract.getContractName());
+                        if (i > 0) contractNos.append(",");
+                        if (StringUtils.isNotEmpty(contract.getContractNo())) {
+                            contractNos.append(contract.getContractNo());
                         }
                     }
-                    dto.setContractNames(contractNames.toString());
+                    dto.setContractNos(contractNos.toString());
                 }
 
-                // 填充电子表单信息
+                // 填充电子表单编号信息
                 List<ToppContractEformVo> eforms = context.eformMap.get(oppId);
                 if (eforms != null && !eforms.isEmpty()) {
-                    StringBuilder eformNames = new StringBuilder();
+                    StringBuilder eformNos = new StringBuilder();
                     for (int i = 0; i < eforms.size(); i++) {
                         ToppContractEformVo eform = eforms.get(i);
-                        if (i > 0) eformNames.append(",");
-                        if (StringUtils.isNotEmpty(eform.getEformName())) {
-                            eformNames.append(eform.getEformName());
+                        if (i > 0) eformNos.append(",");
+                        if (StringUtils.isNotEmpty(eform.getEformNo())) {
+                            eformNos.append(eform.getEformNo());
                         }
                     }
-                    dto.setEformNames(eformNames.toString());
+                    dto.setEformNos(eformNos.toString());
                 }
             });
 
             long endTime = System.currentTimeMillis();
-            log.debug("合同信息补充完成，耗时: {}ms", (endTime - startTime));
+            log.debug("合同信息补充完成，耗时：{}ms", (endTime - startTime));
 
         } catch (Exception e) {
-            log.warn("合同信息补充失败: {}", e.getMessage(), e);
+            log.warn("合同信息补充失败：{}", e.getMessage(), e);
         }
     }
-
     /**
      * 支撑经理信息补充
      */

@@ -121,9 +121,9 @@ public class OldOpportunityVO {
     @ExcelProperty("商机增长类型")
     private String oppGrowthType;
 
-    @ExcelProperty("绑定合同")
-    private String contractNames;
+    @ExcelProperty("合同编号")
+    private String contractNos;
 
-    @ExcelProperty("电子表单")
-    private String eformNames;
+    @ExcelProperty("电子表单编号")
+    private String eformNos;
 }
