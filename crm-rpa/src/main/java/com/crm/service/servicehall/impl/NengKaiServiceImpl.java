@@ -85,9 +85,9 @@ public class NengKaiServiceImpl implements NengKaiService {
         //获取唯一标识
         String messageId = uniquely(values[0], values[1]);
         businessMessageDTO.setMessageId(messageId);
-        businessMessageDTO.setMessageBody(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
         businessMessageDTO.setBizType(values[0]);
         businessMessageDTO.setLineCode(values[1]);
+        businessMessageDTO.setMessageBody(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
         Response response = restTemplate.postForObject(UnmannedFactoryURL, businessMessageDTO, Response.class);
 
         if (response != null) {

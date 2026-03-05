@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.utils.StringUtils;
 import com.crm.dto.BusinessMessageDTO;
 import com.crm.dto.BusinessResponseDTO;
-import com.crm.service.mq.ygcf.RabbitMQConsumerService;
+import com.crm.service.mq.ygcf.RpaConsumerService;
 import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
@@ -23,7 +23,7 @@ public class NotificationsController {
     private NengKaiService nengKaiService;
 
     @Resource
-    private RabbitMQConsumerService rabbitMQConsumerService;
+    private RpaConsumerService rpaConsumerService;
 
 
 
@@ -71,6 +71,6 @@ public class NotificationsController {
             return response;
         }
 
-        return rabbitMQConsumerService.receiveRpaMessage(message);
+        return rpaConsumerService.receiveRpaMessage(message);
     }
 }
