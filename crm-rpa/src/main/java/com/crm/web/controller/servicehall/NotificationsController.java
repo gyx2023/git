@@ -61,7 +61,13 @@ public class NotificationsController {
         log.info("无人工厂消息消费接口 接收消息：{}", message);
         if (message == null) {
             response.setStatus("failed");
-            response.setMessage("参数不能为空");
+            response.setMessage("所有参数为空");
+            return response;
+        }
+
+        if (StringUtils.isBlank(message.getMessageBody())) {
+            response.setStatus("failed");
+            response.setMessage("处理参数为空");
             return response;
         }
 

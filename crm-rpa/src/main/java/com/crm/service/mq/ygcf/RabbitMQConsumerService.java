@@ -122,14 +122,13 @@ public class RabbitMQConsumerService {
 
         try {
             // 获取信息
-            String bizData = businessMessage.getBizData();
-
-            log.info("接收到项目编号：{}", businessMessage.getProjectCode());
-            log.info("接收到业务类型：{}", businessMessage.getBizType());
+            String messageBody = businessMessage.getMessageBody();
             log.info("接收到消息ID：{}", businessMessage.getMessageId());
-            log.info("接收到业务数据：{}", bizData);
+            log.info("接收到流水线编号：{}", businessMessage.getLineCode());
+            log.info("接收到业务类型：{}", businessMessage.getBizType());
+            log.info("接收到业务数据：{}", messageBody);
 
-            ZqztJtNoticeRecordDo jtNoticeRecordDo = processMessage(bizData);
+            ZqztJtNoticeRecordDo jtNoticeRecordDo = processMessage(messageBody);
             String failReason = this.extractFailReason(jtNoticeRecordDo.getResBody());
             ZqztJtNoticeRecordDo noticeRecordDo = new ZqztJtNoticeRecordDo();
             noticeRecordDo.setId(jtNoticeRecordDo.getId());
