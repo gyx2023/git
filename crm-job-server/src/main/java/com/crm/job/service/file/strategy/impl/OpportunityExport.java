@@ -232,7 +232,8 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 预定义需要缓存的码表类型
             String[] codeTypes = {
                 "opp_type", "unicom_type", "clue_source",
-                "oppo_state", "select_type_1", "main_product"
+                "oppo_state", "select_type_1", "main_product",
+                "oppo_conversion_state_type"
             };
 
             for (String type : codeTypes) {
@@ -738,12 +739,13 @@ public class OpportunityExport extends AbstractExportStrategy {
             return;
         }
 
-        // 一次性获取所有需要的缓存Map到局部变量
+        // 一次性获取所有需要的缓存 Map 到局部变量
         final Map<String, String> oppTypeMap = SYS_CODE_CACHE.get("opp_type");
         final Map<String, String> unicomTypeMap = SYS_CODE_CACHE.get("unicom_type");
         final Map<String, String> clueSourceMap = SYS_CODE_CACHE.get("clue_source");
         final Map<String, String> oppoStateMap = SYS_CODE_CACHE.get("oppo_state");
         final Map<String, String> selectType1Map = SYS_CODE_CACHE.get("select_type_1");
+        final Map<String, String> conversionStateMap = SYS_CODE_CACHE.get("oppo_conversion_state_type");
 
         // 字典类型缓存
         List<SysDictData> growthTypeDictList = DICT_TYPE_CACHE.get("opp_growth_type");
@@ -820,6 +822,40 @@ public class OpportunityExport extends AbstractExportStrategy {
                 }
 
                 dto.setOppIncludeType(translatedResult.toString());
+            }
+
+            // 商机转化状态翻译（支持逗号分隔的多个状态）
+            if (StringUtils.isNotEmpty(dto.getOppoConversionState()) && conversionStateMap != null) {
+                String oppoConversionState = dto.getOppoConversionState();
+                StringBuilder translatedResult = new StringBuilder();
+
+                // 去除首尾逗号
+                if (oppoConversionState.startsWith(",")) {
+                    oppoConversionState = oppoConversionState.substring(1);
+                }
+                if (oppoConversionState.endsWith(",")) {
+                    oppoConversionState = oppoConversionState.substring(0, oppoConversionState.length() - 1);
+                }
+
+                // 按逗号分割并逐个翻译
+                if (oppoConversionState.contains(",")) {
+                    String[] states = oppoConversionState.split(",");
+                    for (String state : states) {
+                        if (StringUtils.isNotEmpty(state.trim())) {
+                            String translated = conversionStateMap.getOrDefault(state.trim(), state.trim());
+                            if (translatedResult.length() > 0) {
+                                translatedResult.append(" ");
+                            }
+                            translatedResult.append(translated);
+                        }
+                    }
+                } else {
+                    // 单个状态
+                    String translated = conversionStateMap.getOrDefault(oppoConversionState, oppoConversionState);
+                    translatedResult.append(translated);
+                }
+
+                dto.setOppoConversionState(translatedResult.toString());
             }
         });
 
