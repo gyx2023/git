@@ -122,11 +122,23 @@ public class OldOpportunityDTO {
     /** 35. 商机增长类型 */
     private String oppGrowthType;
 
-    /** 36. 绑定合同 */
-    private String contractNames;
+    /** 36. 拜访次数 */
+    private Long visitCnt;
 
-    /** 37. 电子表单 */
-    private String eformNames;
+    /** 37. 最近访问时间 */
+    private Date lastVisitTime;
+
+    /** 38. 商机转化状态<br>
+     *  1-自动关闭、2-发起关闭、3-关联合同、4-关联电子表单、5-关联标讯、6-其他，<br>
+     *  该字段存在多个状态，当为多个值时用英文逗号分隔，例如：1,2,3,4
+     */
+    private String oppoConversionState;
+
+    /** 39. 绑定合同 */
+    private String contractNos;
+
+    /** 40. 电子表单 */
+    private String eformNos;
 
 
     /** 产品编码 */

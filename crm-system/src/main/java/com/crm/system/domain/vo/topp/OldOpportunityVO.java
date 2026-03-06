@@ -121,9 +121,18 @@ public class OldOpportunityVO {
     @ExcelProperty("商机增长类型")
     private String oppGrowthType;
 
-    @ExcelProperty("绑定合同")
-    private String contractNames;
+    @ExcelProperty("拜访次数")
+    private Long visitCnt;
 
-    @ExcelProperty("电子表单")
-    private String eformNames;
+    @ExcelProperty("最近访问时间")
+    private Date lastVisitTime;
+
+    @ExcelProperty("商机转化状态")
+    private String oppoConversionState;
+
+    @ExcelProperty("合同编号")
+    private String contractNos;
+
+    @ExcelProperty("电子表单编号")
+    private String eformNos;
 }
