@@ -37,7 +37,6 @@ public class StatisticsContractController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:contract:list")
     @GetMapping("/list")
     public TableDataInfo<ContractStatisticsRespDTO> list(ContractStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsContractService.selectPageList(reqDTO, pageQuery);
@@ -47,7 +46,6 @@ public class StatisticsContractController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:contract:userList")
     @GetMapping("/userList")
     public TableDataInfo<ContractStatisticsUserRespDTO> userList(ContractStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsContractService.selectUserPageList(reqDTO, pageQuery);

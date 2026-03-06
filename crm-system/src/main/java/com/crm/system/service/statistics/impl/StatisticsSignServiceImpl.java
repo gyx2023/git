@@ -125,7 +125,8 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         // 获取所有子部门
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
-                .eq(SysDept::getParentId, reqDTO.getDeptId()));
+                .eq(SysDept::getParentId, reqDTO.getDeptId())
+                .orderByAsc(SysDept::getOrderNum));
         deptList.add(sysDept);
 
         // 合计数据
@@ -263,7 +264,7 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
     public Boolean isLastOrg(String deptId) {
         List<SysDept> list = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
-                .eq(SysDept::getParentId, deptId));
+                .eq(SysDept::getParentId, deptId).orderByAsc(SysDept::getOrderNum));
         return ObjectUtil.isEmpty(list);
     }
 
@@ -396,7 +397,7 @@ public class StatisticsSignServiceImpl implements StatisticsSignService {
         // 获取所有子部门
         List<SysDept> deptList = sysDeptMapper.selectList(
             new LambdaQueryWrapper<SysDept>()
-                .eq(SysDept::getParentId, reqDTO.getDeptId()));
+                .eq(SysDept::getParentId, reqDTO.getDeptId()).orderByAsc(SysDept::getOrderNum));
         deptList.add(sysDept);
 
         // 遍历部门列表，获取各部门统计数据

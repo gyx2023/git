@@ -51,7 +51,7 @@ public interface IFileAsyncTaskService {
     /**
      * 申请导入任务
      */
-    Long applyImport(MultipartFile file, String businessType,String taskName);
+    Long applyImport(MultipartFile file, String businessType, String taskName, String requestParams);
 
     /**
      * 申请导出任务
@@ -70,4 +70,6 @@ public interface IFileAsyncTaskService {
      * @param response HTTP响应
      */
     void downloadFile(Long taskId,String fileType, HttpServletResponse response) throws Exception;
+
+    String getDailySequence();
 }

@@ -72,6 +72,8 @@ public class ProcessConstants {
      */
     public static final String PROCESS_STATUS_KEY = "processStatus";
 
+    public static final String INITIAL_ASSIGNER_USERID = "initialAssignerUserId";
+
 
     /**
      * 流程跳过

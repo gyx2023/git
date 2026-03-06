@@ -1,5 +1,6 @@
 package com.crm.job.service.file.strategy.impl;
 
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
@@ -24,8 +25,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -52,38 +55,21 @@ public class GroupCustomersExport extends AbstractExportStrategy {
 
             // 从任务参数中获取areaCode
             String areaCode = parseAreaCode(task);
-            // 检查是否需要脱敏 - 从任务参数中获取isAdmin标识
-            boolean needDesensitize = parseDesensitizeFlag(task);
-
-        /*    // 调用新的exportList方法，传入areaCode进行数据权限控制，并传入needDesensitize参数
-            List<ZqGrpGroupInfoVo> dataList = iZqGrpGroupInfoService.exportListLevel(queryParams, areaCode, needDesensitize);
-
-            // 检查数据是否为空
-            if (dataList == null || dataList.isEmpty()) {
-                task.setRemark("导出数据为空");
-                return false;
-            }*/
 
             // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
             String prefix = "group_customers_export_" + System.currentTimeMillis();
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
-            /*// 定义原始中文文件名（用于用户下载时显示）
-            String originalFileName = "集团客户信息导出_"+System.currentTimeMillis()+".xlsx";
-
-            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                ExcelUtil.exportExcel(dataList, "集团客户信息", ZqGrpGroupInfoVo.class, fos);
-            }*/
             try {
                 // 使用流式导出方法
-                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
+                boolean success = exportToExcelStream(queryParams, areaCode, tempFile);
                 if (!success) {
-                    task.setRemark("流式导出失败");
+                    task.setRemark("导出失败");
                     return false;
                 }
             } catch (Exception e) {
-                log.error("流式导出过程中发生异常: ", e);
-                task.setRemark("流式导出异常: " + e.getMessage());
+                log.error("导出过程中发生异常: ", e);
+                task.setRemark("导出异常: " + e.getMessage());
                 tempFile.delete();
                 return false;
             }
@@ -122,7 +108,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
      * 流式导出到Excel文件
      */
     private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode,
-                                        boolean needDesensitize, File outputFile) throws Exception {
+                                         File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo.class)
             .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
@@ -138,7 +124,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             while (hasMoreData) {
                 Page<ZqGrpGroupInfo> page = new Page<>(currentPage, pageSize, false);
                 List<ZqGrpGroupInfoVo> batchData = iZqGrpGroupInfoService.exportPageList(
-                    queryParams, page, areaCode, needDesensitize);
+                    queryParams, page, areaCode);
 
                 if (batchData == null || batchData.isEmpty()) {
                     hasMoreData = false;
@@ -170,22 +156,6 @@ public class GroupCustomersExport extends AbstractExportStrategy {
         return areaCode;
     }
 
-    /**
-     * 解析脱敏标志
-     */
-    private boolean parseDesensitizeFlag(FileAsyncTaskDo task) {
-        boolean needDesensitize = true;
-        try {
-            cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
-            if (jsonObject.containsKey("isAdmin")) {
-                boolean isAdmin = jsonObject.getBool("isAdmin");
-                needDesensitize = !isAdmin;
-            }
-        } catch (Exception e) {
-            log.warn("解析isAdmin失败，默认进行脱敏处理: {}", e.getMessage());
-        }
-        return needDesensitize;
-    }
     private ZqGrpGroupInfoBo parseQueryParams(ZqGrpGroupInfoBo queryParams, FileAsyncTaskDo task) {
         try {
             cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
@@ -210,4 +180,30 @@ public class GroupCustomersExport extends AbstractExportStrategy {
         }
         return queryParams;
     }
+
+    /**
+     * 解析grpIds
+     */
+    private List<Long> parseGrpIds(FileAsyncTaskDo task) {
+        List<Long> grpIds = null;
+        try {
+            JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+            if (jsonObject.containsKey("grpIds")) {
+                String grpIdsStr = jsonObject.getStr("grpIds");
+                if (grpIdsStr != null && !grpIdsStr.isEmpty()) {
+                    // 将逗号分隔的字符串转换为Long列表
+                    grpIds = Arrays.stream(grpIdsStr.split(","))
+                            .map(String::trim)
+                            .filter(id -> !id.isEmpty())
+                            .map(Long::valueOf)
+                            .collect(Collectors.toList());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析grpIds失败: {}", e.getMessage());
+        }
+        return grpIds;
+    }
+
+
 }
