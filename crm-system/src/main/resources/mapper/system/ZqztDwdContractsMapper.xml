@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.crm.system.mapper.ZqztDwdContractsMapper">
+
+    <resultMap type="com.crm.system.domain.bo.ZqztDwdContractsBo" id="ZqztDwdContractsResult">
+        <result property="storageType" column="storage_type"/>
+        <result property="storageTime" column="storage_time"/>
+        <result property="custumerCode" column="custumer_code"/>
+        <result property="areaName" column="area_name"/>
+        <result property="countyCode" column="county_code"/>
+        <result property="countyName" column="county_name"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="arrairNo" column="arrair_no"/>
+        <result property="contractNoLocal" column="contract_no_local"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="takerName" column="taker_name"/>
+        <result property="takerUserName" column="taker_user_name"/>
+        <result property="takerPhone" column="taker_phone"/>
+        <result property="arrairAmount" column="arrair_amount"/>
+        <result property="financeVatRate" column="finance_vat_rate"/>
+        <result property="financeUnVatAmount" column="finance_un_vat_amount"/>
+        <result property="repositoryNameUnicom" column="repository_name_unicom"/>
+        <result property="repositoryNameVendor" column="repository_name_vendor"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="approvalDate" column="approval_date"/>
+        <result property="enterpertime" column="enterpertime"/>
+        <result property="contractStartDate" column="contract_start_date"/>
+        <result property="contractEndDate" column="contract_end_date"/>
+        <result property="contractTimelimitName" column="contract_timelimit_name"/>
+        <result property="contractStatusName" column="contract_status_name"/>
+        <result property="performDeptName" column="perform_dept_name"/>
+        <result property="performer" column="performer"/>
+        <result property="performerUserName" column="performer_user_name"/>
+        <result property="performerPhone" column="performer_phone"/>
+        <result property="mainPerformer" column="main_performer"/>
+        <result property="mainPerformerUserName" column="main_performer_user_name"/>
+        <result property="mainPerformerPhone" column="main_performer_phone"/>
+        <result property="recAmount" column="rec_amount"/>
+        <result property="actRecAmount" column="act_rec_amount"/>
+        <result property="projectNum" column="project_num"/>
+        <result property="projectName" column="project_name"/>
+        <result property="contractChangetypeName" column="contract_changetype_name"/>
+        <result property="enterperformtime" column="enterperformtime"/>
+        <result property="hisContract" column="his_contract"/>
+        <result property="signType" column="sign_type"/>
+        <result property="contractPaymentTypeName" column="contract_payment_type_name"/>
+        <result property="unitName" column="unit_name"/>
+        <result property="payPeriod" column="pay_period"/>
+        <result property="industryProperty" column="industry_property"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="creationDate" column="creation_date"/>
+        <result property="lastUpdatedBy" column="last_updated_by"/>
+        <result property="lastUpdateDate" column="last_update_date"/>
+        <result property="etlDataCycle" column="etl_data_cycle"/>
+        <result property="etlTime" column="etl_time"/>
+        <result property="fixedAmount" column="fixed_amount"/>
+        <result property="oldArrairNo" column="old_arrair_no"/>
+        <result property="finalApprover" column="final_approver"/>
+        <result property="processdefname" column="processdefname"/>
+        <result property="oldSignDate" column="old_sign_date"/>
+        <result property="choseTxt" column="chose_txt"/>
+        <result property="contractTypeCode" column="contract_type_code"/>
+    </resultMap>
+
+    <insert id="batchInsert">
+        INSERT INTO zqzt_dwd_contracts_d (
+        storage_type,
+        storage_time,
+        custumer_code,
+        area_name,
+        county_code,
+        county_name,
+        contract_name,
+        arrair_no,
+        contract_no_local,
+        dept_name,
+        taker_name,
+        taker_user_name,
+        taker_phone,
+        arrair_amount,
+        finance_vat_rate,
+        finance_un_vat_amount,
+        repository_name_unicom,
+        repository_name_vendor,
+        contract_type,
+        approval_date,
+        enterpertime,
+        contract_start_date,
+        contract_end_date,
+        contract_timelimit_name,
+        contract_status_name,
+        perform_dept_name,
+        performer,
+        performer_user_name,
+        performer_phone,
+        main_performer,
+        main_performer_user_name,
+        main_performer_phone,
+        rec_amount,
+        act_rec_amount,
+        project_num,
+        project_name,
+        contract_changetype_name,
+        enterperformtime,
+        his_contract,
+        sign_type,
+        contract_payment_type_name,
+        unit_name,
+        pay_period,
+        industry_property,
+        created_by,
+        creation_date,
+        last_updated_by,
+        last_update_date,
+        etl_data_cycle,
+        etl_time,
+        fixed_amount,
+        old_arrair_no,
+        final_approver,
+        processdefname,
+        old_sign_date,
+        chose_txt,
+        contract_type_code
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.storageType},
+            #{item.storageTime},
+            #{item.custumerCode},
+            #{item.areaName},
+            #{item.countyCode},
+            #{item.countyName},
+            #{item.contractName},
+            #{item.arrairNo},
+            #{item.contractNoLocal},
+            #{item.deptName},
+            #{item.takerName},
+            #{item.takerUserName},
+            #{item.takerPhone},
+            #{item.arrairAmount},
+            #{item.financeVatRate},
+            #{item.financeUnVatAmount},
+            #{item.repositoryNameUnicom},
+            #{item.repositoryNameVendor},
+            #{item.contractType},
+            #{item.approvalDate},
+            #{item.enterpertime},
+            #{item.contractStartDate},
+            #{item.contractEndDate},
+            #{item.contractTimelimitName},
+            #{item.contractStatusName},
+            #{item.performDeptName},
+            #{item.performer},
+            #{item.performerUserName},
+            #{item.performerPhone},
+            #{item.mainPerformer},
+            #{item.mainPerformerUserName},
+            #{item.mainPerformerPhone},
+            #{item.recAmount},
+            #{item.actRecAmount},
+            #{item.projectNum},
+            #{item.projectName},
+            #{item.contractChangetypeName},
+            #{item.enterperformtime},
+            #{item.hisContract},
+            #{item.signType},
+            #{item.contractPaymentTypeName},
+            #{item.unitName},
+            #{item.payPeriod},
+            #{item.industryProperty},
+            #{item.createdBy},
+            #{item.creationDate},
+            #{item.lastUpdatedBy},
+            #{item.lastUpdateDate},
+            #{item.etlDataCycle},
+            #{item.etlTime},
+            #{item.fixedAmount},
+            #{item.oldArrairNo},
+            #{item.finalApprover},
+            #{item.processdefname},
+            #{item.oldSignDate},
+            #{item.choseTxt},
+            #{item.contractTypeCode}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteByStorageType">
+        DELETE FROM zqzt_dwd_contracts_d
+        <where>
+            <if test="storageType != null and storageType != ''">
+                storage_type = #{storageType}
+            </if>
+        </where>
+    </delete>
+
+</mapper>
