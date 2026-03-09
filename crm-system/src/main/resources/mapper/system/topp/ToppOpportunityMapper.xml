@@ -209,8 +209,11 @@
         <result property="oppWinProb" column="opp_win_prob"/>
         <result property="signTime" column="sign_time"/>
         <result property="oppGrowthType" column="opp_growth_type"/>
-        <result property="contractNames" column="contract_names"/>
-        <result property="eformNames" column="eform_names"/>
+        <result property="visitCnt" column="visit_cnt"/>
+        <result property="lastVisitTime" column="last_visit_time"/>
+        <result property="oppoConversionState" column="oppo_conversion_state"/>
+        <result property="contractNos" column="contract_nos"/>
+        <result property="eformNos" column="eform_nos"/>
     </resultMap>
 
     <!-- 核心修改：SQL改为单行无换行，消除解析敏感点 -->
