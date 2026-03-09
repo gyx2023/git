@@ -31,7 +31,9 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.File;
+
 import com.crm.system.domain.vo.SysOssVo;
+
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -350,8 +352,11 @@ public class OpportunityExport extends AbstractExportStrategy {
             int pageSize = 3000;
             Long lastMaxId = null;
             boolean hasMoreData = true;
+            int batchCount = 0; // 批次计数器
+            int totalRecords = 0; // 总记录数
 
             while (hasMoreData) {
+                batchCount++;
 
                 String paginatedSql = buildCursorPaginationSql(baseSql, lastMaxId, pageSize);
 
@@ -363,8 +368,8 @@ public class OpportunityExport extends AbstractExportStrategy {
                     break;
                 }
 
-                log.info("处理第{}批次数据，数量: {}",
-                    lastMaxId == null ? 1 : (int)(lastMaxId / pageSize) + 1, batchData.size());
+                totalRecords += batchData.size();
+                log.info("处理第{}批次数据，本批数量：{}, 累计数量：{}", batchCount, batchData.size(), totalRecords);
 
                 // 更新游标
                 lastMaxId = batchData.stream()
@@ -401,7 +406,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                 // 写入当前批次数据
                 excelWriter.write(batchVoData, writeSheet);
 
-                log.info("第{}批次数据处理完成", lastMaxId == null ? 1 : (int)(lastMaxId / pageSize));
+                log.info("第{}批次数据处理完成，累计写入{}条记录", batchCount, totalRecords);
             }
         }
         return true;
@@ -423,7 +428,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         // 添加排序和限制
-        cursorSql.append(" ORDER BY op.id_ DESC LIMIT ").append(pageSize);
+        cursorSql.append(" ORDER BY op.id_  LIMIT ").append(pageSize);
         return cursorSql.toString();
     }
 
@@ -610,6 +615,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             log.warn("合同信息补充失败：{}", e.getMessage(), e);
         }
     }
+
     /**
      * 支撑经理信息补充
      */
@@ -844,7 +850,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                         if (StringUtils.isNotEmpty(state.trim())) {
                             String translated = conversionStateMap.getOrDefault(state.trim(), state.trim());
                             if (translatedResult.length() > 0) {
-                                translatedResult.append(" ");
+                                translatedResult.append(",");
                             }
                             translatedResult.append(translated);
                         }
@@ -1142,7 +1148,6 @@ public class OpportunityExport extends AbstractExportStrategy {
             sql.append(" and op.estimat_total_contrat_amount <= '" + estimatTotalContratAmountMax + "'");
         }
     }
-
 
 
     /**
