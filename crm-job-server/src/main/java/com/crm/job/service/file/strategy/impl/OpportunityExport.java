@@ -844,7 +844,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                         if (StringUtils.isNotEmpty(state.trim())) {
                             String translated = conversionStateMap.getOrDefault(state.trim(), state.trim());
                             if (translatedResult.length() > 0) {
-                                translatedResult.append(" ");
+                                translatedResult.append(",");
                             }
                             translatedResult.append(translated);
                         }
