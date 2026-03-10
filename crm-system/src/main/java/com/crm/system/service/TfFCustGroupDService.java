@@ -2,7 +2,6 @@ package com.crm.system.service;
 
 import com.crm.system.domain.cust.TfFCustGroupDDo;
 
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -22,5 +21,5 @@ public interface TfFCustGroupDService {
      *
      * @return 删除的记录数
      */
-    int delByDateId(Date targetDate);
+    int truncateTable();
 }

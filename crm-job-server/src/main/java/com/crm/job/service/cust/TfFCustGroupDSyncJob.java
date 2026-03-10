@@ -1,7 +1,10 @@
 package com.crm.job.service.cust;
 
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.crm.common.utils.DateUtils;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.SysArea;
@@ -24,8 +27,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * 集团实体客户增量数据同步定时任务
- * 从SFTP读取客户集团增量信息文件并导入到tf_f_cust_group_d表
+ * 集团实体客户全量日数据同步定时任务
+ * 从SFTP读取客户集团全量日信息文件并导入到tf_f_cust_group_d表
  *
  * @author crm
  */
@@ -63,17 +66,18 @@ public class TfFCustGroupDSyncJob {
 
 
     /**
-     * 集团实体客户增量数据同步定时任务
+     * 集团实体客户全量日数据同步定时任务
      * 在xxl-job调度中心配置JobHandler为：tfFCustGroupDSyncJobHandler
      * 支持传入参数格式：
-     * 1. 单日期参数：YYYYMMDD - 仅指定日期
-     * 2. 配置类型和日期：configType:YYYYMMDD - 指定配置类型和日期
-     * 3. 仅配置类型：configType: - 仅指定配置类型，使用当前日期
+     * 1. 仅配置类型：configType: - 指定配置类型，使用当前日期 - 例：grp_group_info_syn
+     * 2. 单日期参数：targetDate：yyyyMMdd - 指定日期 - 例：20260228
+     * 3. 否入库zqzt_grp_group_info表：isInGrp：isInGrp - 指定是否入库 - 例：true
+     * 参数样例：{"configType": "zqzt_cust_group_syn", "targetDate": "20260228", "isInGrp": "true"}
      */
     @XxlJob("tfFCustGroupDSyncJobHandler")
     public void execute() {
-        log.info("开始执行集团实体客户增量数据同步定时任务");
-        XxlJobHelper.log("开始执行集团实体客户增量数据同步定时任务");
+        log.info("开始执行集团实体客户全量日数据同步定时任务");
+        XxlJobHelper.log("开始执行集团实体客户全量日数据同步定时任务");
 
         // 初始化地市列表（仅在首次执行时加载）
         if (!cityListInitialized) {
@@ -86,48 +90,51 @@ public class TfFCustGroupDSyncJob {
         }
 
         // 任务参数
-        String param = XxlJobHelper.getJobParam();
-        Date targetDate = new Date();
-        String updDate = formatter.format(targetDate);
         String sftpConfigType = "grp_group_info_syn"; // 默认配置类型
-        // 处理任务参数
-        if (param != null && !param.isEmpty()) {
-            log.info("任务参数: {}", param);
-            XxlJobHelper.log("任务参数: {}", param);
+        Date targetDate; // 默认T-2账期
+        try {
+            targetDate = new SimpleDateFormat("yyyy-MM-dd").parse(DateUtils.getBeforeNDays(2));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        boolean isInGrp = false; // 默认是否入库类型
 
-            // 检查是否包含配置类型前缀（格式：configType:YYYYMMDD 或 configType:）
-            if (param.contains(":")) {
-                String[] parts = param.split(":", 2);
-                sftpConfigType = parts[0]; // 获取配置类型
+        // 获取定时任务传入参数
+        String jobStr = XxlJobHelper.getJobParam();
+        if (StringUtils.isNotBlank(jobStr)) {
+            JSONObject json = JSONUtil.parseObj(jobStr);
+
+            // 指定配置类型
+            String sftpConfigTypeStr = json.getStr("configType", "");
+            if (StringUtils.isNotBlank(sftpConfigTypeStr)) {
+                sftpConfigType = sftpConfigTypeStr;
                 log.info("使用指定的配置类型: {}", sftpConfigType);
+            }
 
-                // 如果冒号后面有内容，则尝试解析为日期
-                if (parts.length > 1 && !parts[1].isEmpty()) {
-                    try {
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-                        targetDate = dateFormat.parse(parts[1]);
-                        log.info("成功解析日期参数: {}", dateFormat.format(targetDate));
-                    } catch (ParseException e) {
-                        log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", parts[1], e.getMessage());
-                        XxlJobHelper.log("日期参数格式错误，使用当前日期");
-                    }
-                }
-            } else {
-                // 仅日期参数，尝试解析为日期
+            // 指定日期
+            String targetDateStr = json.getStr("targetDate", "");
+            if (StringUtils.isNotBlank(targetDateStr)) {
                 try {
-                    // 尝试解析日期参数（格式：YYYYMMDD）
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-                    targetDate = dateFormat.parse(param);
-                    log.info("成功解析日期参数: {}", dateFormat.format(targetDate));
+                    targetDate = simpleDateFormat.parse(targetDateStr);
+                    log.info("成功解析日期参数: {}", simpleDateFormat.format(targetDate));
                 } catch (ParseException e) {
-                    log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", param, e.getMessage());
+                    log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", targetDateStr, e.getMessage());
                     XxlJobHelper.log("日期参数格式错误，使用当前日期");
                 }
             }
+
+            // 指定是否入库类型
+            String isInGrpStr = json.getStr("isInGrp", "");
+            if (StringUtils.isNotBlank(isInGrpStr)) {
+                isInGrp = isInGrpStr.equals("true");
+                log.info("使用指定的否入库类型: {}", isInGrp);
+            }
         }
+        log.info("数据参数：1.配置类型：{}, 2.日期参数：{}, 3.是否入库：{}", sftpConfigType, simpleDateFormat.format(targetDate), isInGrp);
+
 
         try {
-            // 生成目标文件路径：/opt/home/bi/dataout/ZQ/YYYY/MM/DD/DWD_D_CUS_ZQZT_CUST_GROUP_YYYYMMDD.txt
+            // 生成目标文件路径：/opt/home/bi/dataout/ZQ/yyyyMMdd/DWD_D_CUS_ZQZT_CUST_GROUP_yyyyMMdd.txt
             SysParamDo grpCustGroupSyn = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
                 .eq(SysParamDo::getType, sftpConfigType)
                 .eq(SysParamDo::getCode, "sftp.dataRootPath"));
@@ -143,14 +150,14 @@ public class TfFCustGroupDSyncJob {
 
             // 1. 检查文件是否存在
             if (!sftpUtil.exists(sftpConfigType, filePath)) {
-                String errorMsg = "客户集团信息文件不存在: " + filePath;
+                String errorMsg = "集团实体客户全量日文件不存在: " + filePath;
                 log.error(errorMsg);
                 XxlJobHelper.handleFail(errorMsg);
                 return;
             }
 
-            // 2. 清空tf_f_cust_group_d表账期数据
-            dwdDCusZqztCustGrouService.delByDateId(targetDate);
+            // 2. 清空tf_f_cust_group_d表数据
+            dwdDCusZqztCustGrouService.truncateTable();
 
             // 3. 使用批处理器处理大文件，每批处理100行数据以优化内存使用
             final int BATCH_SIZE = 500;
@@ -162,6 +169,7 @@ public class TfFCustGroupDSyncJob {
             final int[] totalRows = {0};
 
             // 使用指定的SFTP配置类型和批处理器处理文件，配置更大的缓冲区
+            boolean finalIsInGrp = isInGrp;
             sftpUtil.processFileInBatches(sftpConfigType, filePath, BATCH_SIZE, batchData -> {
                 try {
 
@@ -201,8 +209,10 @@ public class TfFCustGroupDSyncJob {
                         XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
                             totalRows[0], totalSuccess[0]);
 
-                        // 处理zqzt_grp_group_info表的逻辑
-                        processGrpGroupInfo(tfFCustGroupDList);
+                        if (finalIsInGrp) {
+                            // 处理zqzt_grp_group_info表的逻辑
+                            processGrpGroupInfo(tfFCustGroupDList);
+                        }
                     }
 
                     return true; // 继续处理下一批数据
@@ -223,14 +233,14 @@ public class TfFCustGroupDSyncJob {
             }
 
             // 4. 任务完成，记录结果
-            String successMsg = String.format("集团实体客户增量数据入库执行完成，成功导入: %d 条，失败: %d 条",
+            String successMsg = String.format("集团实体客户全量日数据入库执行完成，成功导入: %d 条，失败: %d 条",
                 totalSuccess[0], totalRows[0] - totalSuccess[0]);
             log.info(successMsg);
             XxlJobHelper.handleSuccess(successMsg);
 
         } catch (Exception e) {
             // 5. 处理异常
-            String errorMsg = "集团实体客户增量数据入库任务执行失败: " + e.getMessage();
+            String errorMsg = "集团实体客户全量日数据入库任务执行失败: " + e.getMessage();
             log.error(errorMsg, e);
             XxlJobHelper.log("任务执行失败: {}", e.getMessage());
             XxlJobHelper.handleFail(errorMsg);
@@ -275,7 +285,7 @@ public class TfFCustGroupDSyncJob {
      * 处理zqzt_grp_group_info表的逻辑
      * 根据GROUP_ID查询是否有数据，如果没有数据则插入
      *
-     * @param tfFCustGroupDList 客户集团增量列表
+     * @param tfFCustGroupDList 客户集团全量日列表
      */
     private void processGrpGroupInfo(List<TfFCustGroupDDo> tfFCustGroupDList) {
         List<ZqGrpGroupInfo> groupInfoList = new ArrayList<>();
@@ -284,7 +294,7 @@ public class TfFCustGroupDSyncJob {
 
             // 查询zqzt_grp_group_info表是否有该GROUP_ID的数据
             ZqGrpGroupInfo zqGrpGroupInfo = zqGrpGroupInfoMapper.selectOne(new LambdaQueryWrapper<ZqGrpGroupInfo>().eq(ZqGrpGroupInfo::getHqGrpCode, custGroup.getGroupId()));
-            if(zqGrpGroupInfo==null){
+            if (zqGrpGroupInfo == null) {
                 ZqGrpGroupInfo newGroup = new ZqGrpGroupInfo();
                 newGroup.setGrpName(custGroup.getCustName());
                 newGroup.setGrpCode(generateUniqueGrpCode());
@@ -303,7 +313,7 @@ public class TfFCustGroupDSyncJob {
                         Date grpCreateTime = formatter.parse(custGroup.getCreateDate());
                         newGroup.setGrpCreateTime(grpCreateTime);
                     } catch (ParseException e) {
-                        log.info("日期转换失败，createDate:{}, error:{}", custGroup.getCreateDate(),e.getMessage());
+                        log.info("日期转换失败，createDate:{}, error:{}", custGroup.getCreateDate(), e.getMessage());
                     }
                 }
                 newGroup.setCreateTime(new Date());
@@ -313,6 +323,7 @@ public class TfFCustGroupDSyncJob {
         }
         zqGrpGroupInfoMapper.insertBatch(groupInfoList);
     }
+
     private String generateUniqueGrpCode() {
         String grpCode;
         int maxAttempts = 10; // 最大重试次数

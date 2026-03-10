@@ -1,6 +1,5 @@
 package com.crm.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.system.domain.cust.TfFCustGroupDDo;
 import com.crm.system.mapper.cust.TfFCustGroupDMapper;
 import com.crm.system.service.TfFCustGroupDService;
@@ -9,8 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -37,12 +34,9 @@ public class TfFCustGroupDServiceImpl implements TfFCustGroupDService {
     }
 
     @Override
-    public int delByDateId(Date targetDate) {
+    public int truncateTable() {
         log.info("开始清空tf_f_cust_group_d表数据");
-        String etlDataCycle = new SimpleDateFormat("yyyyMMdd").format(targetDate);
-        QueryWrapper<TfFCustGroupDDo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("etl_data_cycle", etlDataCycle);
-        int result = tfFCustGroupDMapper.delete(queryWrapper);
+        int result = tfFCustGroupDMapper.delete(null);
         log.info("清空tf_f_cust_group_d表数据完成，删除数量: {}", result);
         return result;
     }
