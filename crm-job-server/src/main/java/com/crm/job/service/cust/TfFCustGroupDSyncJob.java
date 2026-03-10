@@ -64,7 +64,7 @@ public class TfFCustGroupDSyncJob {
 
     /**
      * 集团实体客户增量数据同步定时任务
-     * 在xxl-job调度中心配置JobHandler为：grpCustGroupSyncJobHandler
+     * 在xxl-job调度中心配置JobHandler为：tfFCustGroupDSyncJobHandler
      * 支持传入参数格式：
      * 1. 单日期参数：YYYYMMDD - 仅指定日期
      * 2. 配置类型和日期：configType:YYYYMMDD - 指定配置类型和日期
