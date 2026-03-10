@@ -1,6 +1,7 @@
 package com.crm.system.domain.vo.topp;
 
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -52,6 +53,7 @@ public class OldOpportunityVO {
     @ExcelProperty("集团客户名称")
     private String custName;
 
+    @DateTimeFormat("yyyy-MM-dd")
     @ExcelProperty("创建时间")
     private Date createTime;
 
@@ -115,6 +117,7 @@ public class OldOpportunityVO {
     @ExcelProperty("商机签约概率")
     private String oppWinProb;
 
+    @DateTimeFormat("yyyy-MM-dd")
     @ExcelProperty("预计签约时间")
     private Date signTime;
 
@@ -124,7 +127,8 @@ public class OldOpportunityVO {
     @ExcelProperty("拜访次数")
     private Long visitCnt;
 
-    @ExcelProperty("最近访问时间")
+    @DateTimeFormat("yyyy-MM-dd")
+    @ExcelProperty("最近拜访时间")
     private Date lastVisitTime;
 
     @ExcelProperty("商机转化状态")
