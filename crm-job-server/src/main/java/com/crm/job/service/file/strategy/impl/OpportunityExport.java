@@ -124,15 +124,15 @@ public class OpportunityExport extends AbstractExportStrategy {
             // 解析请求参数
             Map<String, Object> requestParams = parseRequestParams(task);
 
-            // 获取登录用户信息
-            Long userId = task.getCreateUserId();
-            if (userId == null) {
-                task.setRemark("任务缺少创建用户信息");
-                return false;
-            }
+//            // 获取登录用户信息
+//            Long userId = task.getCreateUserId();
+//            if (userId == null) {
+//                task.setRemark("任务缺少创建用户信息");
+//                return false;
+//            }
 
             // 构建基础SQL查询
-            StringBuffer sql = buildBaseSql(userId);
+            StringBuffer sql = buildBaseSql(requestParams);
 
             // 添加查询条件
             appendAllQueryConditions(sql, requestParams);
@@ -142,7 +142,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
             try {
-                boolean success = exportToExcelStreamOptimized(sql.toString(), tempFile, userId);
+                boolean success = exportToExcelStreamOptimized(sql.toString(), tempFile);
                 if (!success) {
                     task.setRemark("流式导出失败");
                     return false;
@@ -341,7 +341,7 @@ public class OpportunityExport extends AbstractExportStrategy {
     /**
      * 商机信息流式导出到Excel文件
      */
-    private boolean exportToExcelStreamOptimized(String baseSql, File outputFile, Long userId) throws Exception {
+    private boolean exportToExcelStreamOptimized(String baseSql, File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, OldOpportunityVO.class)
             .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
@@ -881,9 +881,9 @@ public class OpportunityExport extends AbstractExportStrategy {
     /**
      * 构建基础SQL查询语句
      */
-    private StringBuffer buildBaseSql(Long userId) {
+    private StringBuffer buildBaseSql(Map<String, Object> params) {
         StringBuffer sql = new StringBuffer();
-        sql.append("select * from topp_opportunity op " +
+        /*sql.append("select * from topp_opportunity op " +
             "join sys_user su on su.id_ = op.cust_manager_id " +
             "left join tcomm_customer customer on op.cust_id = customer.id_ where" +
             " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) and" +
@@ -893,7 +893,8 @@ public class OpportunityExport extends AbstractExportStrategy {
             "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + userId + " or " +
             "op.designer = " + userId + " or op.white_list like '%," + userId + ",%' or" +
             " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + userId
-            + "))) ");
+            + "))) ");*/
+        sql.append(getParamValue(params, "sql"));
         return sql;
     }
 
@@ -993,13 +994,13 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 10. 创建时间左边界查询
         String createTimeLeft = getParamValue(params, "createTimeLeft");
         if (StringUtils.isNotEmpty(createTimeLeft)) {
-            sql.append(" and op.create_time >= '" + createTimeLeft + "'");
+            sql.append(" AND op.create_time >= '").append(createTimeLeft).append(" 00:00:00'");
         }
 
         // 11. 创建时间右边界查询
         String createTimeRight = getParamValue(params, "createTimeRight");
         if (StringUtils.isNotEmpty(createTimeRight)) {
-            sql.append(" and op.create_time <= '" + createTimeRight + "'");
+            sql.append(" AND op.create_time <= '").append(createTimeRight).append(" 23:59:59'");
         }
 
         // 12. 审核时间左边界查询
@@ -1016,26 +1017,17 @@ public class OpportunityExport extends AbstractExportStrategy {
 
         // 14. 一级行业查询（支持多选）
         String type1 = getParamValue(params, "type1");
-        sql.append(" and ( 1=2");
         if (StringUtils.isNotEmpty(type1)) {
+            sql.append(" and (1=2 ");
             if (type1.contains(",")) {
                 String[] strings = type1.split(",");
-                sql.append(" or ( 1=2");
                 for (String string : strings) {
-                    sql.append(" or op.unicom_type ='" + string.trim() + "' ");
+                    sql.append("or op.unicom_type ='").append(string.trim()).append("' ");
                 }
-                sql.append(" ) ");
             } else {
-                sql.append(" or op.unicom_type ='" + type1.trim() + "' ");
+                sql.append("or op.unicom_type ='").append(type1.trim()).append("' ");
             }
-        } else {
-            sql.append(" or 1=2 ");
-        }
-
-        if (sql.toString().endsWith("( 1=2 or 1=2 ")) {
-            sql.append(" or 1=1 )");
-        } else {
-            sql.append(" or 1=2 )");
+            sql.append(") ");
         }
 
         // 15. 商机类型处理（支持多选）
@@ -1082,6 +1074,8 @@ public class OpportunityExport extends AbstractExportStrategy {
         String isValid = getParamValue(params, "isValid");
         if (StringUtils.isNotEmpty(isValid)) {
             sql.append(" and op.is_valid = " + isValid);
+        }else {
+            sql.append(" and op.is_valid = 1");
         }
 
         // 20. 是否招投标查询
