@@ -54,6 +54,7 @@ public class NotificationsController {
      */
     @PostMapping(value = "consume")
     @ResponseBody
+    @SaIgnore
     public BusinessResponseDTO consumeMessage(@RequestBody BusinessMessageDTO message) throws IOException {
 
         BusinessResponseDTO response = new BusinessResponseDTO();

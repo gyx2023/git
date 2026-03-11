@@ -6,7 +6,6 @@ import java.io.Serializable;
 
 /**
  * 业务消息数据传输对象<br>
- * 用于封装从Kafka接收的业务消息数据
  *
  * @author wcf
  * @version 1.0
