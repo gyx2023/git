@@ -64,7 +64,6 @@ public interface IToppOpportunityService {
 
     Boolean upppUnbound(Long id,String endOppTypeMemo);
 
-    String updateOppoState(Long oppId);
 
     List<ToppOpportunityVo> queryOpportunityByLastVisitTime(String bfStartTime,String bfEndTime);
 
