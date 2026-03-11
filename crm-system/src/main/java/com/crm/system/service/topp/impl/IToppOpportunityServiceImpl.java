@@ -316,15 +316,6 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     }
 
 
-    @Override
-    public String updateOppoState(Long oppId) {
-        ToppOpportunityDo opportunity = baseMapper.selectById(oppId);
-        String oppoState = baseMapper.callGetOppoState(oppId);
-        opportunity.setOppoState(oppoState);
-        System.out.println("更新商机"+oppId+"状态为:"+oppoState);
-        baseMapper.updateById(opportunity);
-        return oppoState;
-    }
 
     @Override
     public List<SignOppoFileExportDTO> selectOpportunityUnbound() {
