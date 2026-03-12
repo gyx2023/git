@@ -9,6 +9,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.identify.IdentifyScoreCustomerBo;
@@ -80,6 +81,7 @@ public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerS
         if(ObjectUtil.isNotEmpty(bo.getMaxScore())){
             lqw.le(IdentifyScoreCustomerDo::getTotalScore, bo.getMaxScore()) ;
         }
+        lqw.eq(IdentifyScoreCustomerDo::getCreatorId, LoginHelper.getLoginUser().getUserId());
         Page<IdentifyScoreCustomerVo> result = identifyScoreCustomerMapper.selectVoPage(pageQuery.build(), lqw);
         Map<Long, String > userMap = sysUserService.listAll();
         Map<Long, String> areaMap =iSysAreaService.listAll();
