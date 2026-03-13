@@ -110,4 +110,6 @@ public class IdentifyScoreCustomerVo {
     private String countyName;
 
     private Date createTime;
+
+    private Date updateTime;
 }

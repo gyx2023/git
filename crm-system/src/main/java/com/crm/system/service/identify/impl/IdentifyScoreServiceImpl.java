@@ -188,6 +188,10 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
                 scoreDo.setCustomerId(customerBo.getId());
             }else{
                 scoreDo.setCustomerId(customerDo.getId());
+                customerDo.setFileName(sysOssVo.getOriginalName());
+                customerDo.setUpdateTime(new Date());
+                IdentifyScoreCustomerBo customerBo = BeanUtil.toBean(customerDo, IdentifyScoreCustomerBo.class);
+                iIdentifyScoreCustomerService.updateByBo(customerBo);
             }
             scoreDo.setUploadTime(now);
             scoreDo.setName(sysOssVo.getOriginalName());
@@ -269,7 +273,7 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
     public String readWordFileContent(SysOssVo sysOss) throws Exception {
         InputStream fileContent = ossService.getFileContent(sysOss.getOssId());
         StringBuilder wordText = WordTextExtractor.readWordText(
-           fileContent, sysOss.getFileName()
+            fileContent, sysOss.getFileName()
         );
         return ObjectUtil.isEmpty(wordText) ? "" : wordText.toString();
     }
