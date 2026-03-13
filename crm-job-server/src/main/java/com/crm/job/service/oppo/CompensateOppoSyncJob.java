@@ -35,8 +35,8 @@ public class CompensateOppoSyncJob {
         } else {
             //  list=toppOpportunityService.
         }
-        ToppOpportunityVo newVo = new ToppOpportunityVo();
         for (ToppOpportunityVo toppOpportunityVo : list) {
+            ToppOpportunityVo newVo = new ToppOpportunityVo();
             BeanCopyUtils.copy(toppOpportunityVo, newVo);
             newVo.setOppoState(Constants.NEW_OPP_PHASE_OPP_END_LINK);
             newVo.setAuditStatus(Constants.OPP_STATUS_STOP);
