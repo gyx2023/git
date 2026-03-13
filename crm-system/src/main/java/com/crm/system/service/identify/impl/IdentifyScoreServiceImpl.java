@@ -188,6 +188,10 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
                 scoreDo.setCustomerId(customerBo.getId());
             }else{
                 scoreDo.setCustomerId(customerDo.getId());
+                customerDo.setFileName(sysOssVo.getOriginalName());
+                customerDo.setUpdateTime(new Date());
+                IdentifyScoreCustomerBo customerBo = BeanUtil.toBean(customerDo, IdentifyScoreCustomerBo.class);
+                iIdentifyScoreCustomerService.updateByBo(customerBo);
             }
             scoreDo.setUploadTime(now);
             scoreDo.setName(sysOssVo.getOriginalName());
