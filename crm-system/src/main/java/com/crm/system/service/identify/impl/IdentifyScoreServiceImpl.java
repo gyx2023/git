@@ -273,7 +273,7 @@ public class IdentifyScoreServiceImpl implements IIdentifyScoreService {
     public String readWordFileContent(SysOssVo sysOss) throws Exception {
         InputStream fileContent = ossService.getFileContent(sysOss.getOssId());
         StringBuilder wordText = WordTextExtractor.readWordText(
-           fileContent, sysOss.getFileName()
+            fileContent, sysOss.getFileName()
         );
         return ObjectUtil.isEmpty(wordText) ? "" : wordText.toString();
     }
