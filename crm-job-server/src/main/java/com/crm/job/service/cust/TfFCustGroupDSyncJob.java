@@ -209,10 +209,6 @@ public class TfFCustGroupDSyncJob {
                         XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条",
                             totalRows[0], totalSuccess[0]);
 
-                        if (finalIsInGrp) {
-                            // 处理zqzt_grp_group_info表的逻辑
-                            processGrpGroupInfo(tfFCustGroupDList);
-                        }
                     }
 
                     return true; // 继续处理下一批数据
@@ -224,6 +220,12 @@ public class TfFCustGroupDSyncJob {
                 }
             });
 
+            if (finalIsInGrp) {
+                // 获取未存入zqzt_grp_group_info表数据
+                List<TfFCustGroupDDo> tfFCustGroupDList = dwdDCusZqztCustGrouService.getTfFCustGroupDList();
+                // 处理zqzt_grp_group_info表的逻辑
+                processGrpGroupInfo(tfFCustGroupDList);
+            }
 
             // 验证是否有数据被处理
             if (totalRows[0] == 0) {
@@ -283,45 +285,56 @@ public class TfFCustGroupDSyncJob {
 
     /**
      * 处理zqzt_grp_group_info表的逻辑
-     * 根据GROUP_ID查询是否有数据，如果没有数据则插入
+     * 获取全量未存入zqzt_grp_group_info表数据，并存入zqzt_grp_group_info表
      *
      * @param tfFCustGroupDList 客户集团全量日列表
      */
     private void processGrpGroupInfo(List<TfFCustGroupDDo> tfFCustGroupDList) {
         List<ZqGrpGroupInfo> groupInfoList = new ArrayList<>();
+        int batchSize = 500; // 每批处理数量
+        int count = 0;
         for (TfFCustGroupDDo custGroup : tfFCustGroupDList) {
-            String groupId = custGroup.getGroupId(); // 假设TfFCustGroupDDO有getGroupId方法
-
-            // 查询zqzt_grp_group_info表是否有该GROUP_ID的数据
-            ZqGrpGroupInfo zqGrpGroupInfo = zqGrpGroupInfoMapper.selectOne(new LambdaQueryWrapper<ZqGrpGroupInfo>().eq(ZqGrpGroupInfo::getHqGrpCode, custGroup.getGroupId()));
-            if (zqGrpGroupInfo == null) {
-                ZqGrpGroupInfo newGroup = new ZqGrpGroupInfo();
-                newGroup.setGrpName(custGroup.getCustName());
-                newGroup.setGrpCode(generateUniqueGrpCode());
-                newGroup.setHqGrpCode(custGroup.getGroupId());
-                newGroup.setCustId(custGroup.getProvinceCustId());
-                newGroup.setGrpStatus(custStateMap.get(custGroup.getCustState()));
-                newGroup.setAreaId(custGroup.getEparchyCode());
-                newGroup.setCountyId(custGroup.getBCityCode());
-                newGroup.setIndustryMajorKind(custGroup.getFirstCallingTypeCode());
-                newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
-                newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
-                newGroup.setGrpCustType(custGroup.getCustClassType());
-                // 转换字符串日期为Date类型
-                if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
-                    try {
-                        Date grpCreateTime = formatter.parse(custGroup.getCreateDate());
-                        newGroup.setGrpCreateTime(grpCreateTime);
-                    } catch (ParseException e) {
-                        log.info("日期转换失败，createDate:{}, error:{}", custGroup.getCreateDate(), e.getMessage());
-                    }
+            // 获取zqGrpGroup信息
+            ZqGrpGroupInfo newGroup = new ZqGrpGroupInfo();
+            newGroup.setGrpName(custGroup.getCustName());
+            newGroup.setGrpCode(generateUniqueGrpCode());
+            newGroup.setHqGrpCode(custGroup.getGroupId());
+            newGroup.setCustId(custGroup.getProvinceCustId());
+            newGroup.setGrpStatus(custStateMap.get(custGroup.getCustState()));
+            newGroup.setAreaId(custGroup.getEparchyCode());
+            newGroup.setCountyId(custGroup.getBCityCode());
+            newGroup.setIndustryMajorKind(custGroup.getFirstCallingTypeCode());
+            newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
+            newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
+            newGroup.setGrpCustType(custGroup.getCustClassType());
+            // 转换字符串日期为Date类型
+            if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
+                try {
+                    Date grpCreateTime = formatter.parse(custGroup.getCreateDate());
+                    newGroup.setGrpCreateTime(grpCreateTime);
+                } catch (ParseException e) {
+                    log.info("日期转换失败，createDate:{}, error:{}", custGroup.getCreateDate(), e.getMessage());
                 }
-                newGroup.setCreateTime(new Date());
-                newGroup.setUpdateTime(new Date());
-                groupInfoList.add(newGroup);
+            }
+            newGroup.setCreateTime(new Date());
+            newGroup.setUpdateTime(new Date());
+            // 保存zqGrpGroup信息到List
+            groupInfoList.add(newGroup);
+
+            count++;
+            // 每500条执行一次批量插入
+            if (count % batchSize == 0) {
+                log.info("每500条执行一次批量插入政企集团客户信息表");
+                zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+                groupInfoList.clear(); // 清空list，准备下一批
             }
         }
-        zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+
+        // 处理剩余不足500条的数据
+        if (!groupInfoList.isEmpty()) {
+            log.info("处理剩余不足500条的政企集团客户信息数据");
+            zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+        }
     }
 
     private String generateUniqueGrpCode() {
