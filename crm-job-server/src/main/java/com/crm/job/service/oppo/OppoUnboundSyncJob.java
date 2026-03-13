@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.enums.SwitchStatus;
+import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
@@ -162,14 +163,19 @@ public class OppoUnboundSyncJob {
             filteredResultList.forEach(toppOpportunityVo -> {
                 log.info("更新商机 {} 的状态为终止", toppOpportunityVo.getId());
                 toppOpportunityVo.setOppoState(Constants.NEW_OPP_PHASE_OPP_END_LINK);
-                String result = oppoUnBoundSyncService.syncOppoStatus(toppOpportunityVo, "oppo_abandon");
-                log.info("同步商机状态结果：{}", result);
-                if (StringUtils.contains(result, "\"code\":10000")) {
-                    Boolean orderFlag = saveOrder(toppOpportunityVo);
-                    if (orderFlag) {
-                        Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId(), toppOpportunityVo.getFinalEndOppTypeMemo());
-                        log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
-                    }
+                Boolean orderFlag = saveOrder(toppOpportunityVo);
+                if (orderFlag) {
+                    ToppOpportunityVo newVo = new ToppOpportunityVo();
+                    BeanCopyUtils.copy(toppOpportunityVo, newVo);
+                    newVo.setOppoState(Constants.NEW_OPP_PHASE_OPP_END_LINK);
+                    newVo.setAuditStatus(Constants.OPP_STATUS_STOP);
+                    newVo.setOppPhase(Constants.OPP_PHASE_OPPO_END);
+                    newVo.setOppoState(Constants.OPPO_STATUS_END);
+                    newVo.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
+                    String result = oppoUnBoundSyncService.dealOppoBoJsonStr(newVo, "终结商机");
+                    log.info("同步商机状态结果：{}", result);
+                    Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId(), toppOpportunityVo.getFinalEndOppTypeMemo());
+                    log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
                 }
             });
 
@@ -285,14 +291,11 @@ public class OppoUnboundSyncJob {
         order.setOrderType(Constants.ACT_OPP_END_AUDIT);
         order.setClueId(oppotunity.getClueId());
         order.setContractId(oppotunity.getContractId());
-//        order.setPiId(piId);
         order.setStatus(Constants.ORDER_STATUS_END);
         order.setCustManagerId(su.getId());
         order.setActors(",," + oppotunity.getCustManagerId().toString() + ",,");
         order.setWhiteList("," + su.getId() + ",");
         order.setOrderType(Constants.ACT_OPP_END_AUDIT);
-//        order.setPhase(task.getTaskDefinitionKey());
-//        order.setPhaseName(task.getName());
         order.setAreaId(Long.parseLong(dept.getAreaCode()));
         order.setOrgId(nextUser.getOrgId());
         order.setCustId(oppotunity.getCustId());

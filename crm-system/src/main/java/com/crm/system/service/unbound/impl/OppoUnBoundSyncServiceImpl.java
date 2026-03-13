@@ -224,7 +224,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             //主要业务类型码值: 参照后续章节的码值
             oppoMap.put("primaryOppoTypeCode", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt"));
             //主要业务类型名称: 当oppoTypeCode码值对应为“其它”时，省分可传自己系统中的业务类型名称
-            oppoMap.put("primaryOppoTypeName", sysCodeService.findCode("opp_sf_type", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt")));
+            oppoMap.put("primaryOppoTypeName", sysCodeService.findCode("opp_sf_type", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt")).getName());
             //时间有限，规避风险
             //次要业务类型码值: 包含业务多个（不允许存在主要类型的编码）
             oppoMap.put("oppoTypeCode", "");
@@ -270,7 +270,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                     oppoMap.put("industry2", customerVo.getSecondPvCallingType());
                     // 二级行业名称
                     oppoMap.put("industry2Name", customerVo.getSecondPvCallingTypeName());
-                    oppoMap.put("industry3", customerVo.getThirdPvCallingType());
+                    oppoMap.put("industry3", ObjectUtil.isNotEmpty(customerVo.getThirdPvCallingType())?customerVo.getThirdPvCallingType():"");
                 }
                 SystemCustomerVo sysCustByName = systemCustomerService.findSysCustByName(customerVo.getCustName());
                 //是否名单制客户，0不是，1是
@@ -285,7 +285,9 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             //客户需求简介
             oppoMap.put("custReq", oppo.getCustNeed());
             //新型ICT产品字段  非必填
-            oppoMap.put("ictProductId", oppo.getNewIct());
+            if(ObjectUtil.isNotEmpty(oppo.getNewIct())){
+                oppoMap.put("ictProductId", oppo.getNewIct());
+            }
             //备注
             oppoMap.put("remark", oppo.getMemo());
             //创建时间:yyyyMMddHHmmss格式
@@ -559,7 +561,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
     }
 
     private String getOppStateInfo(ToppOpportunityVo oppo) {
-        String oppoState = oppo.getOppoState();
+        //获取状态以前先更新状态
+        String oppoState = oppotunityService.updateOppoState(oppo.getId());
         // 商机录入
         if (Constants.OPPO_STATUS_CJSJ.equals(oppoState) || Constants.OPPO_STATUS_SJZC.equals(oppoState)) {
             // 支撑中

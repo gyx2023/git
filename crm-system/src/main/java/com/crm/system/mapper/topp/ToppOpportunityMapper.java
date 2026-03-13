@@ -24,11 +24,7 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
     @InterceptorIgnore(dataPermission = "true")
     List<SignOppoFileExportDTO> selectToppOpportunity();
 
-    @Select("{call oppo_state_life_cycle(#{oppId, mode=IN})}")
-    @Options(statementType = StatementType.CALLABLE)
-    @Results({ // 若实体属性与数据库列名一致，可省略 @Results 映射
-        @Result(property = "oppoState", column = "oppoState")
-    })
+    @Select("SELECT oppo_state_life_cycle(#{oppId})")
     String callGetOppoState(@Param("oppId") Long oppId);
 
 
