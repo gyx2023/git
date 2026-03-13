@@ -214,7 +214,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             }
 
             //集团处室id
-            oppoMap.put("headquartersIndustry", customerVo.getFristCallingType());
+            oppoMap.put("headquartersIndustry", ObjectUtil.isNotEmpty(customerVo.getFristCallingType())?customerVo.getFristCallingType():"");
             SysCodeBo sysCodeBo = new SysCodeBo();
             sysCodeBo.setType("opp_type");
 
@@ -233,7 +233,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
             //如果商机的集团客户ID为36开头，并且长度为19位，则根据该编码查询集团客户信息，获取bbssCustId和custId
             // 因为2022年9月8号以后这两个字段就得必填了
-            oppoMap.put("natureCustId", customerVo.getCustNo());
+            oppoMap.put("natureCustId", ObjectUtil.isNotEmpty(customerVo.getCustNo())?customerVo.getCustNo():"");
             //客户名称在传输过程中括号半角被转全角了
             oppoMap.put("natureCustName", customerVo.getCustName().replace("（", "(").replace("）", ")"));
             if (ObjectUtil.isNotEmpty(customerVo.getBbssCustId())) {
@@ -247,9 +247,9 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             oppoMap.put("industry2Name", "其他");
             oppoMap.put("industry3", "");//三级行业
             //客户联系人
-            oppoMap.put("custContact", oppo.getCustContact());
+            oppoMap.put("custContact", ObjectUtil.isNotEmpty(oppo.getCustContact())?oppo.getCustContact():"");
             //客户联系人电话
-            oppoMap.put("contactTelephone", oppo.getCustContactTel());
+            oppoMap.put("contactTelephone",ObjectUtil.isNotEmpty( oppo.getCustContactTel())?oppo.getCustContactTel():"");
             //判断是否名单制客户,默认非名单制客户
             //是否名单制客户，0不是，1是
             oppoMap.put("isListCust", "0");
@@ -283,13 +283,13 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                 }
             }
             //客户需求简介
-            oppoMap.put("custReq", oppo.getCustNeed());
+            oppoMap.put("custReq", ObjectUtil.isNotEmpty(oppo.getCustNeed())?oppo.getCustNeed():"");
             //新型ICT产品字段  非必填
             if(ObjectUtil.isNotEmpty(oppo.getNewIct())){
                 oppoMap.put("ictProductId", oppo.getNewIct());
             }
             //备注
-            oppoMap.put("remark", oppo.getMemo());
+            oppoMap.put("remark",  ObjectUtil.isNotEmpty(oppo.getMemo())?oppo.getMemo():"");
             //创建时间:yyyyMMddHHmmss格式
             oppoMap.put("createTime", new SimpleDateFormat(OppoSyncConstants.DATE_TIME_FORMAT).format(oppo.getCreateTime()));
             //更新时间:yyyyMMddHHmmss格式
@@ -304,7 +304,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             //流程状态: 参照后续章节的码值
             oppoMap.put("oppoState", getOppStateInfo(oppo));
             //废弃原因
-            oppoMap.put("discardReason", oppo.getEndOppTypeMemo());
+            oppoMap.put("discardReason", ObjectUtil.isNotEmpty(oppo.getEndOppTypeMemo())?oppo.getEndOppTypeMemo():"");
             //省分编码
             oppoMap.put("synBusOppoSources", OppoSyncConstants.PROVINCE_CODE);
             //如果五融信息没有填写
