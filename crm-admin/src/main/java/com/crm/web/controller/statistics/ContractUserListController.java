@@ -37,7 +37,6 @@ public class ContractUserListController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:contractUser:list")
     @GetMapping("/list")
     public TableDataInfo<ContractUserRespDTO> list(ContractUserReqDTO reqDTO, PageQuery pageQuery) {
         return contractUserService.selectPageList(reqDTO, pageQuery);

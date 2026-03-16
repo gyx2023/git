@@ -41,7 +41,6 @@ public class StatisticsSignController extends BaseController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:sign:list")
     @GetMapping("/list")
     public TableDataInfo<SignStatisticsRespDTO> list(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsSignService.selectPageList(reqDTO, pageQuery);
@@ -50,7 +49,6 @@ public class StatisticsSignController extends BaseController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:sign:isLastOrg")
     @PostMapping("/isLastOrg")
     public R<Boolean> isLastOrg(@RequestParam("deptId") String deptId) {
         Boolean result = statisticsSignService.isLastOrg(deptId);
@@ -61,7 +59,6 @@ public class StatisticsSignController extends BaseController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:sign:userList")
     @GetMapping("/userList")
     public TableDataInfo<SignStatisticsUserRespDTO> userList(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsSignService.selectUserPageList(reqDTO, pageQuery);
