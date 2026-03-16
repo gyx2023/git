@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.DwdRepSysPersonDMapper">
 
     <resultMap type="com.crm.system.domain.DwdRepSysPersonD" id="DwdRepSysPersonDResult">
@@ -43,5 +43,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="etlTime" column="ETL_TIME"/>
     </resultMap>
 
+    <resultMap type="com.crm.system.domain.vo.DwdRepSysPersonDVo" id="DwdRepSysPersonDResult2">
+        <result property="fullName" column="full_name"/>
+        <result property="mobile" column="mobile"/>
+        <result property="areaName" column="area_name"/>
+        <result property="countyName" column="county_name"/>
+    </resultMap>
+
+    <select id="selectAreaAndCounty" resultMap="DwdRepSysPersonDResult2">
+        SELECT full_name,mobile, area_name,county_name FROM dwd_rep_sys_person_d WHERE
+        <foreach collection="personInfos" item="info" separator=" OR " open="(" close=")">
+            (full_name = #{info.fullName} AND mobile = #{info.mobile})
+        </foreach>
+    </select>
 
 </mapper>

@@ -131,4 +131,22 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
         lqw.in(ToppContractEformDo::getProjectId, ids);
         return baseMapper.selectVoList(lqw);
     }
+
+    /**
+     * 根据商机ID列表批量查询电子表单信息 - 优化版
+     * 替代N+1查询问题
+     */
+    @Override
+    public List<ToppContractEformVo> selectByOpportunityIds(List<Long> opportunityIds) {
+        if (opportunityIds == null || opportunityIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        LambdaQueryWrapper<ToppContractEformDo> lqw = Wrappers.lambdaQuery();
+        lqw.in(ToppContractEformDo::getProjectId, opportunityIds);
+        lqw.eq(ToppContractEformDo::getIsValid, 1); // 只查询有效的电子表单
+        lqw.orderByDesc(ToppContractEformDo::getCreateTime);
+        
+        return baseMapper.selectVoList(lqw);
+    }
 }
