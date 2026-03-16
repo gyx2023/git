@@ -40,4 +40,12 @@ public class TfFCustGroupDServiceImpl implements TfFCustGroupDService {
         log.info("清空tf_f_cust_group_d表数据完成，删除数量: {}", result);
         return result;
     }
+
+    @Override
+    public List<TfFCustGroupDDo> getTfFCustGroupDList() {
+        log.info("开始获取未存入zqzt_grp_group_info表数据");
+        List<TfFCustGroupDDo> tfFCustGroupDList = tfFCustGroupDMapper.getTfFCustGroupDList();
+        log.info("获取未存入zqzt_grp_group_info表数据完成，未存入数量: {}", tfFCustGroupDList.size());
+        return tfFCustGroupDList;
+    }
 }

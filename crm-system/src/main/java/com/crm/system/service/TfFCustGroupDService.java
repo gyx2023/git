@@ -22,4 +22,11 @@ public interface TfFCustGroupDService {
      * @return 删除的记录数
      */
     int truncateTable();
+
+    /**
+     * 获取未存入zqzt_grp_group_info表数据
+     *
+     * @return
+     */
+    List<TfFCustGroupDDo> getTfFCustGroupDList();
 }
