@@ -364,6 +364,7 @@
         <module>crm-sms</module>
         <module>crm-system</module>
         <module>crm-job-server</module>
+        <module>crm-rpa</module>
     </modules>
     <packaging>pom</packaging>
 
