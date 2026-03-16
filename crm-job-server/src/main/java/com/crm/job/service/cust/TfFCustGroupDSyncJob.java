@@ -325,6 +325,7 @@ public class TfFCustGroupDSyncJob {
             // 每500条执行一次批量插入
             if (count % batchSize == 0) {
                 log.info("每500条执行一次批量插入政企集团客户信息表");
+                XxlJobHelper.handleSuccess("每500条执行一次批量插入政企集团客户信息表");
                 zqGrpGroupInfoMapper.insertBatch(groupInfoList);
                 groupInfoList.clear(); // 清空list，准备下一批
             }
@@ -333,6 +334,7 @@ public class TfFCustGroupDSyncJob {
         // 处理剩余不足500条的数据
         if (!groupInfoList.isEmpty()) {
             log.info("处理剩余不足500条的政企集团客户信息数据");
+            XxlJobHelper.handleSuccess("处理剩余不足500条的政企集团客户信息数据");
             zqGrpGroupInfoMapper.insertBatch(groupInfoList);
         }
     }
