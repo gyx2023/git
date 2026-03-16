@@ -116,18 +116,21 @@ public class FileAsyncTaskController extends BaseController {
      *
      * @param file 文件
      * @param businessType 业务类型
+     * @param requestParams 请求参数
      * @return 任务ID
      */
     @PostMapping(value = "/applyImport", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Log(title = "导入任务申请", businessType = BusinessType.INSERT)
     public R<Long> applyImport(@RequestPart("file") MultipartFile file,
-                             @RequestParam("businessType") String businessType,@RequestParam("taskName") String taskName) {
+                             @RequestParam("businessType") String businessType, 
+                             @RequestParam("taskName") String taskName,
+                             @RequestParam(value = "requestParams", required = false) String requestParams) {
         if (ObjectUtil.isNull(file)) {
             return R.fail("上传文件不能为空");
         }
 
         try {
-            Long taskId = iFileAsyncTaskService.applyImport(file, businessType,taskName);
+            Long taskId = iFileAsyncTaskService.applyImport(file, businessType, taskName, requestParams);
             return R.ok(taskId);
         } catch (Exception e) {
             log.error("导入任务申请异常", e);

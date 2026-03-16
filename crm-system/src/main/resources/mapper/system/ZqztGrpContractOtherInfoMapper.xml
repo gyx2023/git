@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ZqztGrpContractOtherInfoMapper">
+
+    <resultMap type="com.crm.system.domain.ZqztGrpContractOtherInfo" id="ZqztGrpContractOtherInfoResult">
+        <result property="id" column="id"/>
+        <result property="contractId" column="contract_id"/>
+        <result property="infoTag" column="info_tag"/>
+        <result property="infoVal" column="info_val"/>
+        <result property="infoVal2" column="info_val2"/>
+        <result property="isValid" column="is_valid"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <!-- 分页查询合同关联用户信息（LEFT JOIN方式） -->
+    <select id="selectContractRelatedUserInfoPage" resultType="com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo">
+        SELECT
+        contract.id,
+        contract.info_val2,
+        contract.info_val,
+        main.cust_name,
+        main.cust_grp_name,
+        contract.info_val2 as svc_num
+        FROM zqzt_grp_contract_other_info contract
+        LEFT JOIN ZQZT_CUST_MAINT_INFO main ON contract.info_val = main.user_id
+        WHERE contract.contract_id = #{contractId}
+        AND contract.info_tag = 'GRP_CONTRACT_USER_LIST'
+        AND contract.IS_VALID = 1 and main.user_id is not null
+        <if test="infoVal2 != null and infoVal2 != ''">
+            AND contract.info_val2 LIKE CONCAT('%', #{infoVal2}, '%')
+        </if>
+        ORDER BY contract.create_time DESC
+    </select>
+
+</mapper>

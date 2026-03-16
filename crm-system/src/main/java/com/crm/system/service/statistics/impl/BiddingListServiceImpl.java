@@ -191,6 +191,7 @@ public class BiddingListServiceImpl implements BiddingListService {
         SysDept loginDept = baseMapper.selectById(loginUser.getDeptId());
         SysDept sysDept = iSysDeptService.getParentDept(loginDept);
         List<SysDept> depts = baseMapper.selectDeptQdList(sysDept.getDeptId());
+        depts.remove(sysDept);
         return iSysDeptService.buildDeptTreeSelect(depts);
     }
 
