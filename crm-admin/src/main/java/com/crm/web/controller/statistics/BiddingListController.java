@@ -38,7 +38,6 @@ public class BiddingListController {
     /**
      * 获取用户列表
      */
-    @SaCheckPermission("statistics:biddingList:list")
     @GetMapping("/list")
     public TableDataInfo<BiddingListRespDTO> list(BiddingListReqDTO reqDTO, PageQuery pageQuery) {
         return biddingListService.selectPageList(reqDTO, pageQuery);
