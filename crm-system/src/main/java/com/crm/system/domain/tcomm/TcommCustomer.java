@@ -118,6 +118,7 @@ public class TcommCustomer extends BaseEntity {
     /**
      * 	备注说明
      */
+    @TableField(value = "memo_")
     private String memo;
     /**
      *
@@ -244,4 +245,12 @@ public class TcommCustomer extends BaseEntity {
      */
     private String bbssCustId;
 
+    @TableField(exist = false)
+    private String createBy;
+
+    @TableField(exist = false)
+    private String updateBy;
+
+    @TableField(exist = false)
+    private Date updateTime;
 }

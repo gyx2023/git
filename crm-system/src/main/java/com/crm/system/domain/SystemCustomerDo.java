@@ -7,15 +7,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("system_customer")
-public class SystemCustomerDo extends BaseEntity {
+public class SystemCustomerDo{
     private static final long serialVersionUID=1L;
 
     /**
      * 主键
      */
-    @TableId(value = "id")
+    @TableId(value = "id_")
     private Long id;
 
     private String custName;

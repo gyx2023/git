@@ -1,6 +1,5 @@
 package com.crm.system.service.unbound.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONObject;
@@ -13,7 +12,6 @@ import com.crm.system.domain.SysLog;
 import com.crm.system.domain.bo.SysCodeBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.bo.topp.ToppMemberBo;
-import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.domain.vo.SystemCustomerVo;
 import com.crm.system.domain.vo.tcomm.TcommCustomerVo;
@@ -88,33 +86,29 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
 
     @Override
-    public String[] dealOppoBoJsonStr(ToppOpportunityVo oppo, String sendSource) {
+    public String dealOppoBoJsonStr(ToppOpportunityVo oppo, String sendSource) {
         Map<String, String> params = paramService.findValueMapsByType("oppSyncGroupParam");
         //快速商机不需要同步集团
         if (oppo.getIsSimpleOpp() != null && oppo.getIsSimpleOpp() == 1) {
-            return new String[]{"", "商机"};
+            return "商机";
         }
         try {
             TcommCustomerVo customerVo = customerService.queryById(oppo.getCustId());
             //自然客户id为空不同步
             if (ObjectUtil.isEmpty(customerVo.getCustNo())) {
-                return new String[]{"", "客户经理编码为空"};
+                return "客户经理编码为空";
             }
             Map<String, Object> baseMap = new HashMap<String, Object>();
             baseMap.put("UNI_BSS_HEAD", getHead(params));
             baseMap.put("UNI_BSS_BODY", getBody(oppo, customerVo, params));
             String jsonString = JsonUtils.toJsonString(baseMap);
-            log.info("商机信息同步集团接口转化后的json为:" + jsonString);
-            String result = doPost(MapUtil.getStr(params, "postUrl"), jsonString, "utf-8", "集团商机信息同步接口");
-            if (ObjectUtil.isNotEmpty(sendSource) && (sendSource.equals("定时重发") || sendSource.equals("定时自动重发"))) {
-                return new String[]{jsonString, result};
-            }
+            log.info("商机信息同步集团接口转化后的json为:{}", jsonString);
+            return doPost(MapUtil.getStr(params, "postUrl"), jsonString, "utf-8", "集团商机信息同步接口");
         } catch (Exception e) {
-            oppotunityService.updateByBo(BeanUtil.toBean(oppo, ToppOpportunityBo.class));
-            e.printStackTrace();
             saveLog("集团商机信息同步接口", "商机同步接口异常:" + e.getMessage());
+            e.printStackTrace();
         }
-        return new String[]{"", ""};
+        return null;
     }
 
 
@@ -220,17 +214,17 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             }
 
             //集团处室id
-            oppoMap.put("headquartersIndustry", customerVo.getFristCallingType());
+            oppoMap.put("headquartersIndustry", ObjectUtil.isNotEmpty(customerVo.getFristCallingType())?customerVo.getFristCallingType():"");
             SysCodeBo sysCodeBo = new SysCodeBo();
             sysCodeBo.setType("opp_type");
 
             Map<String, String> codeMap = sysCodeService.queryList(sysCodeBo).stream()
-                    .collect(Collectors.toMap(SysCodeVo::getCode, SysCodeVo::getSettingStr1));
+                .collect(Collectors.toMap(SysCodeVo::getCode, SysCodeVo::getSettingStr1));
             //20230412商机同步接口修改，增加次要业务类型、类型名字段，且原先为‘主要业务类型’的字段名传值改为次要类型
             //主要业务类型码值: 参照后续章节的码值
             oppoMap.put("primaryOppoTypeCode", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt"));
             //主要业务类型名称: 当oppoTypeCode码值对应为“其它”时，省分可传自己系统中的业务类型名称
-            oppoMap.put("primaryOppoTypeName", sysCodeService.findCode("opp_sf_type", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt")));
+            oppoMap.put("primaryOppoTypeName", sysCodeService.findCode("opp_sf_type", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt")).getName());
             //时间有限，规避风险
             //次要业务类型码值: 包含业务多个（不允许存在主要类型的编码）
             oppoMap.put("oppoTypeCode", "");
@@ -239,7 +233,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
             //如果商机的集团客户ID为36开头，并且长度为19位，则根据该编码查询集团客户信息，获取bbssCustId和custId
             // 因为2022年9月8号以后这两个字段就得必填了
-            oppoMap.put("natureCustId", customerVo.getCustNo());
+            oppoMap.put("natureCustId", ObjectUtil.isNotEmpty(customerVo.getCustNo())?customerVo.getCustNo():"");
             //客户名称在传输过程中括号半角被转全角了
             oppoMap.put("natureCustName", customerVo.getCustName().replace("（", "(").replace("）", ")"));
             if (ObjectUtil.isNotEmpty(customerVo.getBbssCustId())) {
@@ -253,9 +247,9 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             oppoMap.put("industry2Name", "其他");
             oppoMap.put("industry3", "");//三级行业
             //客户联系人
-            oppoMap.put("custContact", oppo.getCustContact());
+            oppoMap.put("custContact", ObjectUtil.isNotEmpty(oppo.getCustContact())?oppo.getCustContact():"");
             //客户联系人电话
-            oppoMap.put("contactTelephone", oppo.getCustContactTel());
+            oppoMap.put("contactTelephone",ObjectUtil.isNotEmpty( oppo.getCustContactTel())?oppo.getCustContactTel():"");
             //判断是否名单制客户,默认非名单制客户
             //是否名单制客户，0不是，1是
             oppoMap.put("isListCust", "0");
@@ -267,7 +261,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             if (ObjectUtil.isNotEmpty(customerVo)) {
                 //20230427 行业类型由远程接口直接查自然客户行业
                 if (ObjectUtil.isNotEmpty(customerVo.getFristPvCallingType()) &&
-                        ObjectUtil.isNotEmpty(customerVo.getSecondPvCallingType())) {
+                    ObjectUtil.isNotEmpty(customerVo.getSecondPvCallingType())) {
                     //一级行业
                     oppoMap.put("industry", customerVo.getFristPvCallingType());
                     // 一级行业名称
@@ -276,7 +270,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                     oppoMap.put("industry2", customerVo.getSecondPvCallingType());
                     // 二级行业名称
                     oppoMap.put("industry2Name", customerVo.getSecondPvCallingTypeName());
-                    oppoMap.put("industry3", customerVo.getThirdPvCallingType());
+                    oppoMap.put("industry3", ObjectUtil.isNotEmpty(customerVo.getThirdPvCallingType())?customerVo.getThirdPvCallingType():"");
                 }
                 SystemCustomerVo sysCustByName = systemCustomerService.findSysCustByName(customerVo.getCustName());
                 //是否名单制客户，0不是，1是
@@ -289,11 +283,13 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                 }
             }
             //客户需求简介
-            oppoMap.put("custReq", oppo.getCustNeed());
+            oppoMap.put("custReq", ObjectUtil.isNotEmpty(oppo.getCustNeed())?oppo.getCustNeed():"");
             //新型ICT产品字段  非必填
-            oppoMap.put("ictProductId", oppo.getNewIct());
+            if(ObjectUtil.isNotEmpty(oppo.getNewIct())){
+                oppoMap.put("ictProductId", oppo.getNewIct());
+            }
             //备注
-            oppoMap.put("remark", oppo.getMemo());
+            oppoMap.put("remark",  ObjectUtil.isNotEmpty(oppo.getMemo())?oppo.getMemo():"");
             //创建时间:yyyyMMddHHmmss格式
             oppoMap.put("createTime", new SimpleDateFormat(OppoSyncConstants.DATE_TIME_FORMAT).format(oppo.getCreateTime()));
             //更新时间:yyyyMMddHHmmss格式
@@ -308,7 +304,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             //流程状态: 参照后续章节的码值
             oppoMap.put("oppoState", getOppStateInfo(oppo));
             //废弃原因
-            oppoMap.put("discardReason", oppo.getEndOppTypeMemo());
+            oppoMap.put("discardReason", ObjectUtil.isNotEmpty(oppo.getEndOppTypeMemo())?oppo.getEndOppTypeMemo():"");
             //省分编码
             oppoMap.put("synBusOppoSources", OppoSyncConstants.PROVINCE_CODE);
             //如果五融信息没有填写
@@ -607,8 +603,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             httpClient = new SSLClient();
             httpPost = new HttpPost(url);
             RequestConfig requestConfig = RequestConfig.custom()
-                    .setConnectTimeout(OppoSyncConstants.HTTP_CONNECT_TIMEOUT)
-                    .build();
+                .setConnectTimeout(OppoSyncConstants.HTTP_CONNECT_TIMEOUT)
+                .build();
             httpPost.setConfig(requestConfig);
             httpPost.addHeader("Content-Type", OppoSyncConstants.CONTENT_TYPE_JSON);
             httpPost.addHeader("Accept", OppoSyncConstants.ACCEPT_JSON);
@@ -708,43 +704,43 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                     reqMap.put("time", 0);
                 } else {
                     Duration duration = Duration.between(oppo.getCreateTime().toInstant()
-                            .atZone(ZoneId.systemDefault()), arriveTime);
+                        .atZone(ZoneId.systemDefault()), arriveTime);
                     long durationResult = duration.toMillis();
                     reqMap.put("time", String.valueOf(durationResult));
                 }
             } else if (OppoSyncConstants.OPP_STATUS_SUPPORT_ORDER_ARRIVED.equals(status)) { // 支撑负责人收到工单时间
                 Duration duration = Duration.between(oppo.getAuditTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
-                        .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
-                        .toLocalDateTime(), arriveTime);
+                    .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
+                    .toLocalDateTime(), arriveTime);
                 // 当前时间减去商机审核时间
                 long durationResult = duration.toMillis();
                 reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_SUPPORT_FIRST_DEAL.equals(status)) { // 支撑负责人首次处理时间
                 // 当前时间减去支撑负责人收到工单时间
                 Duration duration = Duration.between(oppo.getAuditTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
-                        .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
-                        .toLocalDateTime(), arriveTime);
+                    .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
+                    .toLocalDateTime(), arriveTime);
                 long durationResult = duration.toMillis();
                 reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_SUPPORT_COMPLETE.equals(status)) { // 支撑完成(oppo_support_complete) - 第一次添加合同发起时间
                 // 当前时间减去客户经理提交合同开启审核流程时间
                 Duration duration = Duration.between(oppo.getAuditTime().toInstant() // 将 Date 转为 Instant（时间戳，无时区）
-                        .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
-                        .toLocalDateTime(), arriveTime);
+                    .atZone(ZoneId.systemDefault()) // 关联时区（关键步骤）
+                    .toLocalDateTime(), arriveTime);
                 long durationResult = duration.toMillis();
                 reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_SIGN.equals(status)) { // 签约(oppo_sign) - 第一次合同审核通过时间
                 // 当前时间减去第一条合同创建时间
                 ToppContractVo contract = contractService.findContractDetailById(oppo.getId()).get(0);
-                Duration duration = Duration.between(contract.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() , arriveTime);
+                Duration duration = Duration.between(contract.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(), arriveTime);
                 long durationResult = duration.toMillis();
                 reqMap.put("time", String.valueOf(durationResult));
             } else if (OppoSyncConstants.OPP_STATUS_ABANDON.equals(status)) { // 废弃(oppo_abandon) - 商机终止审核通过时间
                 // 当前时间减去商机创建时间
                 if (Constants.NEW_OPP_PHASE_OPP_END_LINK.equals(oppo.getOppoState())) {
                     Duration duration = Duration.between(oppo.getCreateTime().toInstant()
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDateTime(), arriveTime);
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(), arriveTime);
                     long durationResult = duration.toMillis();
                     reqMap.put("time", String.valueOf(durationResult));
                 }

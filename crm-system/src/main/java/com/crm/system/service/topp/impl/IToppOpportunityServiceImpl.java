@@ -285,7 +285,6 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
 
     private static ToppOpportunityDo getToppOpportunityDo(Date date) {
-
         ToppOpportunityDo updateEntity = new ToppOpportunityDo();
         //商机终止时修改为opp_end_link 废弃、更新时间
         updateEntity.setNewOppPhase(Constants.NEW_OPP_PHASE_OPP_END_LINK);
