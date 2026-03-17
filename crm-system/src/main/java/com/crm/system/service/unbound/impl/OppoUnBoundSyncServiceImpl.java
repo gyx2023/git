@@ -224,7 +224,12 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             //主要业务类型码值: 参照后续章节的码值
             oppoMap.put("primaryOppoTypeCode", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt"));
             //主要业务类型名称: 当oppoTypeCode码值对应为“其它”时，省分可传自己系统中的业务类型名称
-            oppoMap.put("primaryOppoTypeName", sysCodeService.findCode("opp_sf_type", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt")).getName());
+            String primaryOppoTypeName =sysCodeService.findCode("opp_sf_type", MapUtil.getStr(codeMap, oppo.getOppType(), "busin_qt")).getName();
+            if (ObjectUtil.isNotEmpty(primaryOppoTypeName)) {
+                oppoMap.put("primaryOppoTypeName", primaryOppoTypeName);
+            }else{
+                oppoMap.put("primaryOppoTypeName", sysCodeService.findCode("opp_sf_type","busin_qt").getName());
+            }
             //时间有限，规避风险
             //次要业务类型码值: 包含业务多个（不允许存在主要类型的编码）
             oppoMap.put("oppoTypeCode", "");
