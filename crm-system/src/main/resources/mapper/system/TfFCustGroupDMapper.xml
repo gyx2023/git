@@ -4,27 +4,12 @@
 
     <select id="getTfFCustGroupDList" resultType="com.crm.system.domain.cust.TfFCustGroupDDo">
         select
-            etl_data_cycle, etl_time, audit_date, audit_note,audit_staff_id,
-            audit_state, bbss_cust_id, bss_merge_lock_state, b_city_code,
-            certi_addr, certi_code, certi_end_date, certi_fileid, certi_type_code,
-            change_reason, contact_addr, contact_email, contact_name, contact_phone,
-            contact_tel, contract_name, contract_no, create_date, create_depart_id,
-            create_oa_user_code, create_staff, create_user_code, custclasstype_adjust_id,
-            custclasstype_upd_id, custclasstype_upd_time, cust_addr, cust_bak_col1,
-            cust_bak_col2, cust_class_type, cust_id, cust_name, cust_other_contacts,
-            cust_serv_nbr, cust_state, cust_status_date, data_state, email, empty_cbss_cust,
-            eparchy_code, examine_sts, exit_date, fax_nbr, first_calling_type_code,
-            first_na_calling_type, first_province_calling_type, frozen_channel, frozen_date,
-            grid_id, group_addr, group_id, group_memo, income_into_cust, in_method,
-            is_custend, is_imp, is_main_parent, is_m_cust, is_pass_org, is_real, lock_time,
-            main_parent_code, manage_level_id, merge_lock_state, ms_market_id, office_type,
-            org_code, phone, post_addr, post_code, pre_cust_state, province_cust_id, remark,
-            second_calling_type_code, second_na_calling_type, second_province_calling_type,
-            serv_level_id, super_group_id, sync_erp, tax_bind_flag, tax_reg_code,
-            third_calling_type_code, third_na_calling_type, third_province_calling_type,
-            update_date, update_depart_id, update_oa_user_code, update_staff, update_user_code,
-            value_level_id, voca_dept_type_id, website, month_id, day_id, province_code
+            cust_name, group_id, province_cust_id, cust_state, eparchy_code, b_city_code,
+            first_calling_type_code, second_calling_type_code, third_calling_type_code,
+            cust_class_type, create_date
         from tf_f_cust_group_d
         where group_id not in (select hq_grp_code from zqzt_grp_group_info)
+          and date_format(create_date, '%Y-%m-%d %H:%i:%s') >= date_format(#{createDate}, '%Y-%m-%d 00:00:00')
+          and date_format(create_date, '%Y-%m-%d %H:%i:%s') &lt;= date_format(#{createDate}, '%Y-%m-%d 23:59:59')
     </select>
 </mapper>

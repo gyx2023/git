@@ -222,7 +222,7 @@ public class TfFCustGroupDSyncJob {
 
             if (finalIsInGrp) {
                 // 获取未存入zqzt_grp_group_info表数据
-                List<TfFCustGroupDDo> tfFCustGroupDList = dwdDCusZqztCustGrouService.getTfFCustGroupDList();
+                List<TfFCustGroupDDo> tfFCustGroupDList = dwdDCusZqztCustGrouService.getTfFCustGroupDList(formatter.format(targetDate));
                 // 处理zqzt_grp_group_info表的逻辑
                 processGrpGroupInfo(tfFCustGroupDList);
             }
@@ -290,9 +290,18 @@ public class TfFCustGroupDSyncJob {
      * @param tfFCustGroupDList 客户集团全量日列表
      */
     private void processGrpGroupInfo(List<TfFCustGroupDDo> tfFCustGroupDList) {
+        System.out.println("-----------------存入政企集团客户信息开始-----------------");
+        XxlJobHelper.log("-----------------存入政企集团客户信息开始-----------------");
+
         List<ZqGrpGroupInfo> groupInfoList = new ArrayList<>();
         int batchSize = 500; // 每批处理数量
         int count = 0;
+        int totalProcessed = 0; // 总处理记录数
+        int totalSuccess = 0; // 总成功导入数
+        int batchCount = 0; // 批次计数
+        int successBatchCount = 0; // 成功批次计数
+        int failBatchCount = 0; // 失败批次计数
+
         for (TfFCustGroupDDo custGroup : tfFCustGroupDList) {
             // 获取zqGrpGroup信息
             ZqGrpGroupInfo newGroup = new ZqGrpGroupInfo();
@@ -307,6 +316,7 @@ public class TfFCustGroupDSyncJob {
             newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
             newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
             newGroup.setGrpCustType(custGroup.getCustClassType());
+
             // 转换字符串日期为Date类型
             if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
                 try {
@@ -318,25 +328,83 @@ public class TfFCustGroupDSyncJob {
             }
             newGroup.setCreateTime(new Date());
             newGroup.setUpdateTime(new Date());
+
             // 保存zqGrpGroup信息到List
             groupInfoList.add(newGroup);
 
             count++;
+            totalProcessed++;
+
             // 每500条执行一次批量插入
             if (count % batchSize == 0) {
-                log.info("每500条执行一次批量插入政企集团客户信息表");
-                XxlJobHelper.handleSuccess("每500条执行一次批量插入政企集团客户信息表");
-                zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+                batchCount++;
+                int currentBatchSize = batchSize;
+                log.info("第 {} 批次开始批量插入政企集团客户信息，本次处理 {} 条", batchCount, currentBatchSize);
+                XxlJobHelper.log("第 {} 批次开始批量插入政企集团客户信息，本次处理 {} 条", batchCount, currentBatchSize);
+
+                try {
+                    boolean batchSuccess = zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+                    if (batchSuccess) {
+                        successBatchCount++;
+                        totalSuccess += currentBatchSize; // 假设全部成功
+                        log.info("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条", totalProcessed, totalSuccess);
+                        XxlJobHelper.log("批次处理完成，当前已处理 {} 条记录，成功导入 {} 条", totalProcessed, totalSuccess);
+                    } else {
+                        // 批量插入失败
+                        failBatchCount++;
+                        log.error("第 {} 批次批量插入失败，本次处理 {} 条", batchCount, currentBatchSize);
+                        XxlJobHelper.log("第 {} 批次批量插入失败，本次处理 {} 条", batchCount, currentBatchSize);
+                    }
+                } catch (Exception e) {
+                    failBatchCount++;
+                    log.error("第 {} 批次批量插入异常，错误信息:{}", batchCount, e.getMessage(), e);
+                    XxlJobHelper.log("第 {} 批次批量插入异常，错误信息:{}", batchCount, e.getMessage());
+                }
+
                 groupInfoList.clear(); // 清空list，准备下一批
             }
         }
 
         // 处理剩余不足500条的数据
         if (!groupInfoList.isEmpty()) {
-            log.info("处理剩余不足500条的政企集团客户信息数据");
-            XxlJobHelper.handleSuccess("处理剩余不足500条的政企集团客户信息数据");
-            zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+            batchCount++;
+            int lastBatchSize = groupInfoList.size();
+            log.info("第 {} 批次(最后批次)开始批量插入政企集团客户信息，本次处理剩余 {} 条", batchCount, lastBatchSize);
+            XxlJobHelper.log("第 {} 批次(最后批次)开始批量插入政企集团客户信息，本次处理剩余 {} 条", batchCount, lastBatchSize);
+
+            try {
+                boolean batchSuccess = zqGrpGroupInfoMapper.insertBatch(groupInfoList);
+                if (batchSuccess) {
+                    successBatchCount++;
+                    totalSuccess += lastBatchSize; // 假设全部成功
+                    log.info("最后批次处理完成，本次处理 {} 条记录，成功导入 {} 条", lastBatchSize, lastBatchSize);
+                    XxlJobHelper.log("最后批次处理完成，本次处理 {} 条记录，成功导入 {} 条", lastBatchSize, lastBatchSize);
+                } else {
+                    // 批量插入失败
+                    failBatchCount++;
+                    log.error("最后批次批量插入失败，本次处理 {} 条", lastBatchSize);
+                    XxlJobHelper.log("最后批次批量插入失败，本次处理 {} 条", lastBatchSize);
+                }
+            } catch (Exception e) {
+                failBatchCount++;
+                log.error("最后批次批量插入异常，错误信息:{}", e.getMessage(), e);
+                XxlJobHelper.log("最后批次批量插入异常，错误信息:{}", e.getMessage());
+            }
         }
+
+        // 统计总结
+        String successMsg = String.format("政企集团客户信息表总计处理完成，累计处理 %d 条记录，成功导入 %d 条", totalProcessed, totalSuccess);
+        log.info(successMsg);
+        XxlJobHelper.handleSuccess(successMsg);
+
+        // 添加处理统计
+        log.info("数据处理统计：处理总条数={}，总批次={}，成功批次={}，失败批次={}，成功导入数={}",
+            totalProcessed, batchCount, successBatchCount, failBatchCount, totalSuccess);
+        XxlJobHelper.log("数据处理统计：处理总条数={}，总批次={}，成功批次={}，失败批次={}，成功导入数={}",
+            totalProcessed, batchCount, successBatchCount, failBatchCount, totalSuccess);
+
+        System.out.println("-----------------存入政企集团客户信息结束-----------------");
+        XxlJobHelper.log("-----------------存入政企集团客户信息结束-----------------");
     }
 
     private String generateUniqueGrpCode() {

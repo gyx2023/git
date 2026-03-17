@@ -28,5 +28,5 @@ public interface TfFCustGroupDService {
      *
      * @return
      */
-    List<TfFCustGroupDDo> getTfFCustGroupDList();
+    List<TfFCustGroupDDo> getTfFCustGroupDList(String createDate);
 }
