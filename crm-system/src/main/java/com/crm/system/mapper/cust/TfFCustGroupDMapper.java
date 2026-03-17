@@ -2,6 +2,7 @@ package com.crm.system.mapper.cust;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.cust.TfFCustGroupDDo;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -12,5 +13,5 @@ import java.util.List;
  */
 public interface TfFCustGroupDMapper extends BaseMapperPlus<TfFCustGroupDMapper, TfFCustGroupDDo, TfFCustGroupDDo> {
 
-    List<TfFCustGroupDDo> getTfFCustGroupDList();
+    List<TfFCustGroupDDo> getTfFCustGroupDList(@Param("createDate") String createDate);
 }
