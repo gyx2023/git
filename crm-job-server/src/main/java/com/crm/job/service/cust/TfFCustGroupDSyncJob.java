@@ -316,6 +316,7 @@ public class TfFCustGroupDSyncJob {
             newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
             newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
             newGroup.setGrpCustType(custGroup.getCustClassType());
+            newGroup.setGrpCreator(custGroup.getCreateOaUserCode());
 
             // 转换字符串日期为Date类型
             if (StringUtils.isNotBlank(custGroup.getCreateDate())) {

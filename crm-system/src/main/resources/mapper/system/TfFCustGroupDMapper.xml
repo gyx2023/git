@@ -4,9 +4,26 @@
 
     <select id="getTfFCustGroupDList" resultType="com.crm.system.domain.cust.TfFCustGroupDDo">
         select
-            cust_name, group_id, province_cust_id, cust_state, eparchy_code, b_city_code,
-            first_calling_type_code, second_calling_type_code, third_calling_type_code,
-            cust_class_type, create_date
+            cust_name,
+            group_id,
+            province_cust_id,
+            cust_state,
+            eparchy_code,
+            b_city_code,
+            first_calling_type_code,
+            case
+                when second_calling_type_code is not null and second_calling_type_code != '' then concat(second_calling_type_code, 'AA')
+                else ''
+            end as second_calling_type_code,
+            third_calling_type_code,
+            case
+                when cust_class_type = '1' then '600'
+                when cust_class_type = '2' then '500'
+                when cust_class_type = '3' then '400'
+                else ''
+            end as cust_class_type,
+            create_date,
+            create_oa_user_code
         from tf_f_cust_group_d
         where group_id not in (select hq_grp_code from zqzt_grp_group_info)
           and date_format(create_date, '%Y-%m-%d %H:%i:%s') >= date_format(#{createDate}, '%Y-%m-%d 00:00:00')
