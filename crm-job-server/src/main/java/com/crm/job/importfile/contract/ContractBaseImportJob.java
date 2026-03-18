@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.crm.system.utils.Constants.JF_COMMON_FTP;
+
 
 /**
  * 合同文件拉取解析入库任务
@@ -49,6 +51,8 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     private static final SimpleDateFormat DB_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final String FIELD_EXTENSION = "txt";
     private static final int BATCH_SIZE = 1000;
+    private static final Date ETL_DATE = new Date();
+
 
 
     // 文件列表前缀 & 类型标识
@@ -88,7 +92,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
         // 文件名类型后缀
         params.setExtension(FIELD_EXTENSION);
         // sftp 配置类型
-        params.setSftpConfigType("contract");
+        params.setSftpConfigType(JF_COMMON_FTP);
         // 批量提交条数
         params.setBatchSize(BATCH_SIZE);
         // 文件账期类型
@@ -156,7 +160,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
         List<ZqztDwdContractsBo> batchList = new ArrayList<>(batchSize);
 
         try {
-            sftpUtil.setActiveConfigType("contract");
+            sftpUtil.setActiveConfigType(JF_COMMON_FTP);
             sftp = sftpUtil.getSftp();
             if (sftp == null) {
                 log.error("获取SFTP连接失败，无法处理文件：{}", path);
@@ -229,7 +233,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
 
         try {
             bo.setStorageType(config.getStorageType());
-            bo.setStorageTime(new Date());
+            bo.setStorageTime(ETL_DATE);
             bo.setCustumerCode(get(fields, 0));
             bo.setAreaName(get(fields, 1));
             bo.setCountyCode(get(fields, 2));
@@ -277,7 +281,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
             bo.setLastUpdatedBy(get(fields, 44));
             bo.setLastUpdateDate(parseDate(get(fields, 45)));
             bo.setEtlDataCycle(fileDate);
-            bo.setEtlTime(new Date());
+            bo.setEtlTime(ETL_DATE);
             bo.setFixedAmount(get(fields, 46));
             bo.setOldArrairNo(get(fields, 47));
             bo.setFinalApprover(get(fields, 48));

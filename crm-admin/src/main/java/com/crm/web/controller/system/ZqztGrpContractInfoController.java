@@ -40,7 +40,6 @@ public class ZqztGrpContractInfoController extends BaseController {
     /**
      * 查询集团合同信息列表
      */
-    @SaCheckPermission("system:grpContractInfo:list")
     @GetMapping("/list")
     public TableDataInfo<ZqztGrpContractInfoVo> list(ZqztGrpContractInfoBo bo, PageQuery pageQuery) {
         return iZqztGrpContractInfoService.queryPageList(bo, pageQuery);
@@ -49,7 +48,6 @@ public class ZqztGrpContractInfoController extends BaseController {
     /**
      * 导出集团合同信息列表
      */
-    @SaCheckPermission("system:grpContractInfo:export")
     @Log(title = "集团合同信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ZqztGrpContractInfoBo bo, HttpServletResponse response) {
@@ -62,7 +60,6 @@ public class ZqztGrpContractInfoController extends BaseController {
      *
      * @param contractId 主键
      */
-    @SaCheckPermission("system:grpContractInfo:query")
     @GetMapping("/{contractId}")
     public R<ZqztGrpContractInfoVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable String contractId) {
@@ -72,7 +69,6 @@ public class ZqztGrpContractInfoController extends BaseController {
     /**
      * 新增集团合同信息
      */
-    @SaCheckPermission("system:grpContractInfo:add")
     @Log(title = "集团合同信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -83,7 +79,6 @@ public class ZqztGrpContractInfoController extends BaseController {
     /**
      * 修改集团合同信息
      */
-    @SaCheckPermission("system:grpContractInfo:edit")
     @Log(title = "集团合同信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -96,7 +91,6 @@ public class ZqztGrpContractInfoController extends BaseController {
      *
      * @param contractIds 主键串
      */
-    @SaCheckPermission("system:grpContractInfo:remove")
     @Log(title = "集团合同信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{contractIds}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
@@ -110,7 +104,6 @@ public class ZqztGrpContractInfoController extends BaseController {
      * @param contractId 合同ID
      * @return 是否可以关联用户
      */
-    @SaCheckPermission("system:grpContractInfo:validateUserAssociation")
     @GetMapping("/validateCanAssociateUser")
     public R<Boolean> validateContractCanAssociateUser(@RequestParam String contractId) {
         Boolean canAssociate = iZqztGrpContractInfoService.contractCanAssociateUser(contractId);
