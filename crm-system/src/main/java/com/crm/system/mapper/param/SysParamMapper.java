@@ -11,4 +11,5 @@ import com.crm.common.core.mapper.BaseMapperPlus;
  */
 public interface SysParamMapper extends BaseMapperPlus<SysParamMapper, SysParamDo, SysParamDo> {
 
+    String selectValueByType(String bizCode);
 }
