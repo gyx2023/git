@@ -4,6 +4,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.crm.common.enums.CustStateEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;
@@ -22,8 +23,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.security.SecureRandom;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.crm.system.utils.Constants.JF_COMMON_FTP;
@@ -67,26 +66,6 @@ public class TfFCustGroupDSyncJob {
      */
     private static final String FILE_SEPARATOR = "\\x1b";
     /**
-     * 客户状态映射键
-     */
-    private static final String CUST_STATE_KEY_0 = "0";
-    private static final String CUST_STATE_KEY_1 = "1";
-    private static final String CUST_STATE_KEY_2 = "2";
-    private static final String CUST_STATE_KEY_3 = "3";
-    private static final String CUST_STATE_KEY_4 = "4";
-    /**
-     * 客户状态映射值
-     */
-    private static final String CUST_STATE_VALUE_02 = "02";
-    private static final String CUST_STATE_VALUE_03 = "03";
-    private static final String CUST_STATE_VALUE_04 = "04";
-    private static final String CUST_STATE_VALUE_05 = "05";
-    private static final String CUST_STATE_VALUE_06 = "06";
-    /**
-     * 日期时间
-     */
-    private static final Date CREATE_TIME = new Date();
-    /**
      * 文件名前缀
      */
     private static final String DATA_ROOT_PATH = "sftp.dataRootPath";
@@ -111,6 +90,16 @@ public class TfFCustGroupDSyncJob {
      */
     private static final String IS_IN_GRP = "isInGrp";
 
+    private final Map<String, String> cityMap = new HashMap<>();
+
+    private volatile boolean cityListInitialized = false;
+
+    private static final Map<String, String> custStateMap = new HashMap<>();
+
+    private static final String FORMATTER = "yyyy-MM-dd HH:mm:ss";
+
+    private static final String SIMPLE_DATE_FORMAT = "yyyyMMdd";
+
     @Resource
     private SftpUtil sftpUtil;
 
@@ -128,18 +117,6 @@ public class TfFCustGroupDSyncJob {
 
     @Resource
     private ZqGrpGroupInfoMapper zqGrpGroupInfoMapper;
-
-
-    private final Map<String, String> cityMap = new HashMap<>();
-    private volatile boolean cityListInitialized = false;
-
-    private final Map<String, String> custStateMap = new HashMap<>();
-
-    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
-
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
 
     /**
@@ -168,12 +145,7 @@ public class TfFCustGroupDSyncJob {
 
         // 任务参数
         String sftpConfigType = JF_COMMON_FTP; // 默认配置类型
-        Date targetDate; // 默认T-2账期
-        try {
-            targetDate = dateFormat.parse(DateUtils.getBeforeNDays(DEFAULT_DAYS_BEFORE));
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
+        Date targetDate = DateUtils.parseDate(DateUtils.getBeforeNDays(DEFAULT_DAYS_BEFORE)); // 默认T-2账期
         boolean isInGrp = false; // 默认是否入库类型
 
         // 获取定时任务传入参数
@@ -192,9 +164,9 @@ public class TfFCustGroupDSyncJob {
             String targetDateStr = json.getStr(TARGET_DATE, "");
             if (StringUtils.isNotBlank(targetDateStr)) {
                 try {
-                    targetDate = simpleDateFormat.parse(targetDateStr);
-                    log.info("成功解析日期参数: {}", simpleDateFormat.format(targetDate));
-                } catch (ParseException e) {
+                    targetDate = DateUtils.dateTime(SIMPLE_DATE_FORMAT, targetDateStr);
+                    log.info("成功解析日期参数: {}", DateUtils.parseDateToStr(SIMPLE_DATE_FORMAT, targetDate));
+                } catch (Exception e) {
                     log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", targetDateStr, e.getMessage());
                     XxlJobHelper.log("日期参数格式错误，使用当前日期");
                 }
@@ -207,7 +179,7 @@ public class TfFCustGroupDSyncJob {
                 log.info("使用指定的否入库类型: {}", isInGrp);
             }
         }
-        log.info("数据参数：1.配置类型：{}, 2.日期参数：{}, 3.是否入库：{}", sftpConfigType, simpleDateFormat.format(targetDate), isInGrp);
+        log.info("数据参数：1.配置类型：{}, 2.日期参数：{}, 3.是否入库：{}", sftpConfigType, DateUtils.parseDateToStr(SIMPLE_DATE_FORMAT, targetDate), isInGrp);
 
 
         try {
@@ -220,7 +192,7 @@ public class TfFCustGroupDSyncJob {
             String basePath = grpCustGroupSyn.getValue(); // 例如 "/opt/home/bi/dataout/ZQ/"
 
             // 构建文件路径
-            String dateStr = simpleDateFormat.format(targetDate);
+            String dateStr = DateUtils.parseDateToStr(SIMPLE_DATE_FORMAT, targetDate);
             String filePath = basePath + dateStr + FILE_NAME + dateStr + FIELD_EXTENSION;
 
             log.info("使用配置类型 '{}' 生成的文件路径: {}", sftpConfigType, filePath);
@@ -298,7 +270,7 @@ public class TfFCustGroupDSyncJob {
             });
 
             if (finalIsInGrp) {
-                String createDate = formatter.format(targetDate);
+                String createDate = DateUtils.parseDateToStr(FORMATTER, targetDate);
                 // 获取未存入zqzt_grp_group_info表数据
                 List<TfFCustGroupDDo> tfFCustGroupDList = dwdDCusZqztCustGrouService.getTfFCustGroupDList(createDate);
                 // 处理zqzt_grp_group_info表的逻辑
@@ -333,11 +305,11 @@ public class TfFCustGroupDSyncJob {
                 cityMap.put(sysArea.getJtCode(), String.valueOf(sysArea.getId()));
             }
         }
-        custStateMap.put(CUST_STATE_KEY_0, CUST_STATE_VALUE_03);
-        custStateMap.put(CUST_STATE_KEY_1, CUST_STATE_VALUE_02);
-        custStateMap.put(CUST_STATE_KEY_2, CUST_STATE_VALUE_05);
-        custStateMap.put(CUST_STATE_KEY_3, CUST_STATE_VALUE_06);
-        custStateMap.put(CUST_STATE_KEY_4, CUST_STATE_VALUE_04);
+        custStateMap.put(CustStateEnum.CUST_STATE_0.getCode(), CustStateEnum.CUST_STATE_0.getLabel());
+        custStateMap.put(CustStateEnum.CUST_STATE_1.getCode(), CustStateEnum.CUST_STATE_1.getLabel());
+        custStateMap.put(CustStateEnum.CUST_STATE_2.getCode(), CustStateEnum.CUST_STATE_2.getLabel());
+        custStateMap.put(CustStateEnum.CUST_STATE_3.getCode(), CustStateEnum.CUST_STATE_3.getLabel());
+        custStateMap.put(CustStateEnum.CUST_STATE_4.getCode(), CustStateEnum.CUST_STATE_4.getLabel());
     }
 
     /**
@@ -374,19 +346,19 @@ public class TfFCustGroupDSyncJob {
             newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
             newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
             newGroup.setGrpCustType(custGroup.getCustClassType());
-            newGroup.setGrpLevel(CUST_STATE_KEY_2.equals(custGroup.getCustState()) ? GRP_LEVEL_IDENTIFIER : null);
+            newGroup.setGrpLevel(CustStateEnum.CUST_STATE_2.getCode().equals(custGroup.getCustState()) ? GRP_LEVEL_IDENTIFIER : null);
 
             // 转换字符串日期为Date类型
             if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
                 try {
-                    Date grpCreateTime = formatter.parse(custGroup.getCreateDate());
+                    Date grpCreateTime = DateUtils.dateTime(FORMATTER, custGroup.getCreateDate());
                     newGroup.setGrpCreateTime(grpCreateTime);
-                } catch (ParseException e) {
+                } catch (Exception e) {
                     log.info("日期转换失败，createDate:{}, error:{}", custGroup.getCreateDate(), e.getMessage());
                 }
             }
-            newGroup.setCreateTime(CREATE_TIME);
-            newGroup.setUpdateTime(CREATE_TIME);
+            newGroup.setCreateTime(DateUtils.getNowDate());
+            newGroup.setUpdateTime(DateUtils.getNowDate());
 
             // 保存zqGrpGroup信息到List
             groupInfoList.add(newGroup);
