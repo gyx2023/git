@@ -26,7 +26,6 @@
             create_oa_user_code
         from tf_f_cust_group_d
         where group_id not in (select hq_grp_code from zqzt_grp_group_info)
-          and date_format(create_date, '%Y-%m-%d %H:%i:%s') >= date_format(#{createDate}, '%Y-%m-%d 00:00:00')
-          and date_format(create_date, '%Y-%m-%d %H:%i:%s') &lt;= date_format(#{createDate}, '%Y-%m-%d 23:59:59')
+          and date(create_date) = date(#{createDate})
     </select>
 </mapper>
