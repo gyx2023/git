@@ -2,11 +2,11 @@ package com.crm.framework.interfaceLog.kafka;
 
 import com.crm.common.interfaceLog.domain.InterfaceLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.std.StringSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
@@ -71,7 +71,14 @@ public class KafkaLogSender {
             props.put(ProducerConfig.BATCH_SIZE_CONFIG, batchSize);
             props.put(ProducerConfig.LINGER_MS_CONFIG, lingerMs);
             props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, bufferMemory);
-
+            // 1. 连接Broker的超时时间（默认10秒，增大到30秒）
+            props.put(ProducerConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 30000);
+            // 2. Socket连接建立超时（关键！覆盖默认的10秒，设为20秒）
+            props.put("socket.connection.setup.timeout.ms", 20000);
+            // 3. Socket连接建立超时的重试次数（默认1次，增加到3次）
+            props.put("socket.connection.setup.timeout.max.ms", 60000);
+            // 5. 重试间隔（避免频繁重试，设为1秒）
+            props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
             // 1.3 SASL/SCRAM 安全认证配置 (核心！)
             props.put("security.protocol", securityProtocol);
             props.put("sasl.mechanism", saslMechanism);

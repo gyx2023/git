@@ -71,6 +71,10 @@
             <artifactId>kafka-clients</artifactId>
             <version>3.6.1</version> <!-- 最新稳定版，可根据需求调整 -->
         </dependency>
+        <dependency>
+            <groupId>com.crm</groupId>
+            <artifactId>crm-system</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
