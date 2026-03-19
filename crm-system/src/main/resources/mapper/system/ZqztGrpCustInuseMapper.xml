@@ -153,10 +153,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ) d on c.inuse_id = d.inuse_id
         <where>
             <if test="regionId != null and regionId != ''">
-                and c.region_id = #{regionId}
+                and b.area_id = #{regionId}
             </if>
             <if test="countyId != null and countyId != ''">
-                and c.county_id = #{countyId}
+                and b.county_id = #{countyId}
             </if>
             <if test="grpCodeA != null and grpCodeA != ''">
                 and b.grp_code = #{grpCodeA}
@@ -263,10 +263,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ) d on c.inuse_id = d.inuse_id
         <where>
             <if test="regionId != null and regionId != ''">
-                and c.region_id = #{regionId}
+                and b.area_id = #{regionId}
             </if>
             <if test="countyId != null and countyId != ''">
-                and c.county_id = #{countyId}
+                and b.county_id = #{countyId}
             </if>
             <if test="grpCodeA != null and grpCodeA != ''">
                 and b.grp_code = #{grpCodeA}
