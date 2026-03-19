@@ -4,6 +4,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.enums.DateTypeEnum;
+import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.domain.TaskParams;
 import com.crm.job.utils.SftpUtil;
@@ -12,7 +13,6 @@ import com.crm.system.mapper.param.SysParamMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -27,6 +27,9 @@ public abstract class AbstractImportJob<T, R> {
 
     @Resource
     protected SysParamMapper sysParamMapper;
+
+    final String DATE_FORMAT_DAY = "yyyyMMdd";
+    final String DATE_FORMAT_MONTH = "yyyyMM";
 
     /**
      * 执行导入任务
@@ -78,15 +81,18 @@ public abstract class AbstractImportJob<T, R> {
             Date fileEtlCycle = calendar.getTime();
 
 
+
             // TargetDate为空 且需要账期目录：设置账期目录
             if(StringUtils.isEmpty(params.getTargetDate()) && params.isHasPathDate()){
                 params.setTargetDate(DateTypeEnum.DAY.getCode().equals(params.getDateType())?
-                    new SimpleDateFormat("yyyyMMdd").format(calendar.getTime()):new SimpleDateFormat("yyyyMM").format(calendar.getTime()));
+                    DateUtils.parseDateToStr(DATE_FORMAT_DAY, calendar.getTime()):
+                    DateUtils.parseDateToStr(DATE_FORMAT_MONTH, calendar.getTime()));
             }
             // SuffixDate为空 且需要账期目录：设置账期后缀
             if(StringUtils.isEmpty(params.getSuffixDate()) && params.isHasSuffixDate()){
                 params.setSuffixDate(DateTypeEnum.DAY.getCode().equals(params.getDateType())?
-                    new SimpleDateFormat("yyyyMMdd").format(calendar.getTime()):new SimpleDateFormat("yyyyMM").format(calendar.getTime()));
+                    DateUtils.parseDateToStr(DATE_FORMAT_DAY, calendar.getTime()):
+                    DateUtils.parseDateToStr(DATE_FORMAT_MONTH, calendar.getTime()));
 
                 // 生成的文件账期后缀，作为 elt 账期保存
                 params.setFileEtlCycle(fileEtlCycle);

@@ -21,8 +21,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -48,8 +46,8 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     private static final int FIXED_FIELD_COUNT = 55;
 
 
-    private static final SimpleDateFormat FILE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-    private static final SimpleDateFormat DB_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final String FILE_DATE_FORMAT = "yyyyMMdd";
+    private static final String DB_DATE_FORMAT = "yyyy-MM-dd";
     private static final String FIELD_EXTENSION = "txt";
     private static final int BATCH_SIZE = 1000;
 
@@ -325,13 +323,10 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     }
 
     private Date parseDate(String s) {
-        if (StringUtils.isEmpty(s)) return null;
-        try {
-            return s.length() == 8 ? FILE_DATE_FORMAT.parse(s) : DB_DATE_FORMAT.parse(s);
-        } catch (ParseException e) {
-            log.warn("日期解析失败（{}），返回null", s);
+        if (StringUtils.isEmpty(s)) {
             return null;
         }
+        return s.length() == 8 ? DateUtils.dateTime(FILE_DATE_FORMAT,s) : DateUtils.dateTime(DB_DATE_FORMAT,s);
     }
 
     @Getter
