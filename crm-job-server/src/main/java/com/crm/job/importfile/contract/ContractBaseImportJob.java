@@ -3,6 +3,7 @@ package com.crm.job.importfile.contract;
 
 import cn.hutool.extra.ssh.Sftp;
 import com.crm.common.enums.DateTypeEnum;
+import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.domain.TaskParams;
 import com.crm.job.base.AbstractImportJob;
@@ -113,7 +114,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     @Override
     protected void processFileInBatches(TaskParams params) {
 
-        Date etl_date = new Date();
+        Date etl_date = DateUtils.getNowDate();
 
         List<String> fileNameList = params.getFileNameList();
 
