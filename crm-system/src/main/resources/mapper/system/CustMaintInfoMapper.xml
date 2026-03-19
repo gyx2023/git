@@ -97,8 +97,8 @@
     <select id="selectFirstPage" resultType="com.crm.system.domain.CustMaintInfo">
         SELECT * FROM CUST_MAINT_INFO
         WHERE STATUS = '1'
-        <if test="params != null and params.matches('\\d+')">
-            AND ETL_TIME &gt;= STR_TO_DATE(#{params}, '%Y-%m-%d')
+        <if test="params != null and params != ''">
+            AND ETL_TIME &gt;= TO_DATE(#{params}, 'YYYY-MM-dd')
         </if>
         ORDER BY ETL_TIME ASC, USER_ID ASC
         LIMIT #{size}
@@ -112,8 +112,8 @@
         (ETL_TIME > #{lastEtlTime})
         OR (ETL_TIME = #{lastEtlTime} AND USER_ID > #{lastUserId})
         )
-        <if test="params != null and params.matches('\\d+')">
-            AND ETL_TIME &gt;= STR_TO_DATE(#{params}, '%Y-%m-%d')
+        <if test="params != null and params != ''">
+            AND ETL_TIME &gt;= TO_DATE(#{params}, 'YYYY-MM-dd')
         </if>
         ORDER BY ETL_TIME ASC, USER_ID ASC
         LIMIT #{size}

@@ -1,10 +1,8 @@
 package com.crm.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import com.crm.common.utils.DateUtils;
+import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.CustMaintInfo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import com.crm.system.service.ICustMaintInfoService;
@@ -14,9 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -45,14 +41,16 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
         int batchSize = 1000; // 每批大小
         int totalCount = 0;
 
+        String startDate = StringUtils.isNotEmpty( params)?DateUtils.getBeforeNDays(Integer.parseInt( params)):"";
+
         while (hasMore) {
             List<CustMaintInfo> batch;
             if (lastEtlTime == null || lastUserId == null) {
                 // 第一页
-                batch = custMaintInfoMapper.selectFirstPage(batchSize, params);
+                batch = custMaintInfoMapper.selectFirstPage(batchSize, startDate);
             } else {
                 // 后续页
-                batch = custMaintInfoMapper.selectNextPage(lastEtlTime, lastUserId, batchSize, params);
+                batch = custMaintInfoMapper.selectNextPage(lastEtlTime, lastUserId, batchSize, startDate);
             }
 
             if (batch == null || batch.isEmpty()) {
