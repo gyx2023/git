@@ -66,7 +66,11 @@
             <groupId>com.crm</groupId>
             <artifactId>crm-common</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.6.1</version> <!-- 最新稳定版，可根据需求调整 -->
+        </dependency>
     </dependencies>
 
 </project>
