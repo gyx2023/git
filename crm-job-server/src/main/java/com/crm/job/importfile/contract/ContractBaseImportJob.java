@@ -3,6 +3,7 @@ package com.crm.job.importfile.contract;
 
 import cn.hutool.extra.ssh.Sftp;
 import com.crm.common.enums.DateTypeEnum;
+import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.domain.TaskParams;
 import com.crm.job.base.AbstractImportJob;
@@ -20,8 +21,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,11 +46,10 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     private static final int FIXED_FIELD_COUNT = 55;
 
 
-    private static final SimpleDateFormat FILE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-    private static final SimpleDateFormat DB_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final String FILE_DATE_FORMAT = "yyyyMMdd";
+    private static final String DB_DATE_FORMAT = "yyyy-MM-dd";
     private static final String FIELD_EXTENSION = "txt";
     private static final int BATCH_SIZE = 1000;
-    private static final Date ETL_DATE = new Date();
 
 
 
@@ -114,6 +112,8 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     @Override
     protected void processFileInBatches(TaskParams params) {
 
+        Date etl_date = DateUtils.getNowDate();
+
         List<String> fileNameList = params.getFileNameList();
 
         log.info("开始处理文件列表：{}", params.getFilePathList());
@@ -138,7 +138,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
 
             log.info("开始处理文件：{}，对应存储类型：{}，文件日期：{}", filePath, config.getStorageType(), params.getSuffixDate());
             // 处理单个文件，解析入库
-            processSingleFile(filePath.toString(), config, params.getBatchSize(), params.getFileEtlCycle());
+            processSingleFile(filePath.toString(), config, params.getBatchSize(), params.getFileEtlCycle(),etl_date);
         }
         log.info("所有文件处理完成，共处理 {} 个文件", fileNameList.size());
     }
@@ -152,7 +152,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     /**
      * 单文件处理
      */
-    private void processSingleFile(String path, FileConfig config, int batchSize, Date fileDate) {
+    private void processSingleFile(String path, FileConfig config, int batchSize, Date fileDate,Date etl_date) {
         Sftp sftp = null;
         long total = 0;
         long success = 0;
@@ -176,7 +176,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
                 while ((line = br.readLine()) != null) {
                     total++;
                     try {
-                        ZqztDwdContractsBo bo = parseLine(line, total, config, fileDate);
+                        ZqztDwdContractsBo bo = parseLine(line, total, config, fileDate,etl_date);
                         if (bo != null) {
                             batchList.add(bo);
                             success++;
@@ -217,7 +217,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
         }
     }
 
-    private ZqztDwdContractsBo parseLine(String line, long lineNum, FileConfig config, Date fileDate) {
+    private ZqztDwdContractsBo parseLine(String line, long lineNum, FileConfig config, Date fileDate, Date etl_date) {
         if (StringUtils.isEmpty(line)) {
             log.warn("第{}行数据为空，跳过", lineNum);
             return null;
@@ -233,7 +233,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
 
         try {
             bo.setStorageType(config.getStorageType());
-            bo.setStorageTime(ETL_DATE);
+            bo.setStorageTime(etl_date);
             bo.setCustumerCode(get(fields, 0));
             bo.setAreaName(get(fields, 1));
             bo.setCountyCode(get(fields, 2));
@@ -281,7 +281,7 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
             bo.setLastUpdatedBy(get(fields, 44));
             bo.setLastUpdateDate(parseDate(get(fields, 45)));
             bo.setEtlDataCycle(fileDate);
-            bo.setEtlTime(ETL_DATE);
+            bo.setEtlTime(etl_date);
             bo.setFixedAmount(get(fields, 46));
             bo.setOldArrairNo(get(fields, 47));
             bo.setFinalApprover(get(fields, 48));
@@ -323,13 +323,10 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     }
 
     private Date parseDate(String s) {
-        if (StringUtils.isEmpty(s)) return null;
-        try {
-            return s.length() == 8 ? FILE_DATE_FORMAT.parse(s) : DB_DATE_FORMAT.parse(s);
-        } catch (ParseException e) {
-            log.warn("日期解析失败（{}），返回null", s);
+        if (StringUtils.isEmpty(s)) {
             return null;
         }
+        return s.length() == 8 ? DateUtils.dateTime(FILE_DATE_FORMAT,s) : DateUtils.dateTime(DB_DATE_FORMAT,s);
     }
 
     @Getter
