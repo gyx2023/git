@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.param.SysParamMapper">
+
+    <resultMap type="com.crm.system.domain.param.SysParamDo" id="SysParamResult">
+        <result property="id" column="id_"/>
+        <result property="code" column="code_"/>
+        <result property="name" column="name_"/>
+        <result property="value" column="value_"/>
+        <result property="remark" column="remark_"/>
+        <result property="type" column="type_"/>
+        <result property="inputType" column="input_type"/>
+        <result property="isSystem" column="is_system"/>
+    </resultMap>
+
+    <select id="selectValueByType" resultType="java.lang.String">
+        select value_ from sys_param where type_ = #{type}
+    </select>
+</mapper>
