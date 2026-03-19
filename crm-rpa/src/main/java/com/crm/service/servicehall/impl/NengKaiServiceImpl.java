@@ -63,7 +63,7 @@ public class NengKaiServiceImpl implements NengKaiService {
     @Value("${ability.url.worksheetsComplete}")
     private String worksheetsCompleteURL;
 
-    @Value("${ability.url.UnmannedFactory}")
+    @Value("${ability.url.unmannedFactory}")
     private String UnmannedFactoryURL;
 
     @Resource
@@ -79,7 +79,7 @@ public class NengKaiServiceImpl implements NengKaiService {
         //rabbitMQProducerService.sendMessage(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
 
         log.info("接入无人工厂,接口开始调用");
-        String[] values = sysParam.selectValueByType(zqztJtNoticeRecordDo.getBizCode()).split(",");
+        String[] values = sysParam.selectValueByType("rpa_biz_code").split(",");
         log.info("业务类型: bizType = {};流水线: lineCode = {}", values[0], values[1]);
         BusinessMessageDTO businessMessageDTO = new BusinessMessageDTO();
         //获取唯一标识
