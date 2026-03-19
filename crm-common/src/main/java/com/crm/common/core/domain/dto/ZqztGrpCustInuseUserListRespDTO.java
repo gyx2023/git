@@ -1,5 +1,7 @@
 package com.crm.common.core.domain.dto;
 
+import com.crm.common.annotation.Sensitive;
+import com.crm.common.enums.SensitiveStrategy;
 import lombok.Data;
 
 @Data
@@ -18,10 +20,12 @@ public class ZqztGrpCustInuseUserListRespDTO {
     /**
      * 业务号码
      */
+    @Sensitive(strategy = SensitiveStrategy.PHONE)
     private String svcNum;
 
     /**
      * 集团名称
      */
+    @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
     private String custName;
 }

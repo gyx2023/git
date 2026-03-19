@@ -10,7 +10,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.generator.util.Desensitization;
+import com.crm.common.utils.Desensitization;
 import com.crm.system.domain.ZqztGrpCustInuse;
 import com.crm.system.domain.bo.ZqztGrpCustInuseBo;
 import com.crm.system.domain.param.SysParamDo;
@@ -157,44 +157,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         page.setRecords(list);
         page.setTotal(total);
 
-        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        boolean isSensitive = sensitiveRoles.stream()
-            .anyMatch(roleStr -> roles.stream()
-                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-        // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (!isSensitive) {
-            List<ZqztGrpCustInuseRespDTO> desensitizedList = page.getRecords().stream()
-                .map(this::desensitizeVo)
-                .collect(Collectors.toList());
-            page.setRecords(desensitizedList);
-        }
-
         return TableDataInfo.build(page);
-    }
-
-    /**
-     * 对ZqztGrpCustInuseRespDTO对象进行脱敏处理
-     *
-     * @param custInuseDTO 要脱敏的ZqztGrpCustInuseRespDTO对象
-     * @return 脱敏后的ZqztGrpCustInuseRespDTO对象
-     */
-    private ZqztGrpCustInuseRespDTO desensitizeVo(ZqztGrpCustInuseRespDTO custInuseDTO) {
-        if (custInuseDTO == null) {
-            return null;
-        }
-
-        // 对合同名称进行脱敏
-        custInuseDTO.setContractName(Desensitization.desensitizeCompanyName(custInuseDTO.getContractName()));
-        // 对签约集团名称进行脱敏
-        custInuseDTO.setGrpNameA(Desensitization.desensitizeName(custInuseDTO.getGrpNameA()));
-        // 对关联客户集团名称进行脱敏
-        custInuseDTO.setGrpNameB(Desensitization.desensitizeName(custInuseDTO.getGrpNameB()));
-
-        return custInuseDTO;
     }
 
     /**
@@ -244,42 +207,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         page.setRecords(pagedList);
         page.setTotal(total);
 
-        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        boolean isSensitive = sensitiveRoles.stream()
-            .anyMatch(roleStr -> roles.stream()
-                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-        // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (!isSensitive) {
-            List<ZqztGrpCustInuseUserListRespDTO> desensitizedList = page.getRecords().stream()
-                .map(this::desensitizeUserListVo)
-                .collect(Collectors.toList());
-            page.setRecords(desensitizedList);
-        }
-
         return TableDataInfo.build(page);
-    }
-
-    /**
-     * 对ZqztGrpCustInuseUserListRespDTO对象进行脱敏处理
-     *
-     * @param custInuseUserListDTO 要脱敏的ZqztGrpCustInuseUserListRespDTO对象
-     * @return 脱敏后的ZqztGrpCustInuseUserListRespDTO对象
-     */
-    private ZqztGrpCustInuseUserListRespDTO desensitizeUserListVo(ZqztGrpCustInuseUserListRespDTO custInuseUserListDTO) {
-        if (custInuseUserListDTO == null) {
-            return null;
-        }
-
-        // 对集团名称进行脱敏
-        custInuseUserListDTO.setCustName(Desensitization.desensitizeCompanyName(custInuseUserListDTO.getCustName()));
-        // 对业务号码进行脱敏
-        custInuseUserListDTO.setSvcNum(Desensitization.desensitizeCompanyName(custInuseUserListDTO.getSvcNum()));
-
-        return custInuseUserListDTO;
     }
 
     @Override
@@ -318,22 +246,6 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         // 设置分页数据
         page.setRecords(pagedList);
         page.setTotal(total);
-
-        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        boolean isSensitive = sensitiveRoles.stream()
-            .anyMatch(roleStr -> roles.stream()
-                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-        // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (!isSensitive) {
-            List<ZqztGrpCustInuseRespDTO> desensitizedList = page.getRecords().stream()
-                .map(this::desensitizeVo)
-                .collect(Collectors.toList());
-            page.setRecords(desensitizedList);
-        }
 
         return TableDataInfo.build(page);
     }
@@ -405,22 +317,6 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         // 设置分页数据
         page.setRecords(pagedList);
         page.setTotal(total);
-
-        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        boolean isSensitive = sensitiveRoles.stream()
-            .anyMatch(roleStr -> roles.stream()
-                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-        // 根据用户角色决定是否对查询结果进行脱敏处理
-        if (!isSensitive) {
-            List<ZqztGrpCustInuseUserListRespDTO> desensitizedList = page.getRecords().stream()
-                .map(this::desensitizeUserListVo)
-                .collect(Collectors.toList());
-            page.setRecords(desensitizedList);
-        }
 
         return TableDataInfo.build(page);
     }

@@ -69,7 +69,12 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         StopWatch stopWatch = invokeTimeTL.get();
-        stopWatch.stop();
+        if (stopWatch != null) {
+            stopWatch.stop();
+        } else {
+            log.warn("StopWatch 未初始化，无法记录耗时");
+            return;
+        }
         String url = request.getMethod() + " " + request.getRequestURI();
         String paramInfo = requestParamTL.get();
 

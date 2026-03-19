@@ -49,4 +49,12 @@ public interface IToppContractService {
     List<ToppContractVo> queryContractList(List<Long> ids);
 
     List<ToppContractVo>  findContractDetailById(Long oppoId);
+
+    /**
+     * 根据商机ID列表批量查询合同信息 - 优化版
+     * 替代N+1查询问题
+     * @param opportunityIds 商机ID列表
+     * @return 合同信息列表
+     */
+    List<ToppContractVo> selectByOpportunityIds(List<Long> opportunityIds);
 }

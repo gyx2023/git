@@ -3,7 +3,9 @@ package com.crm.system.domain.vo;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.crm.common.annotation.ExcelDictFormat;
+import com.crm.common.annotation.Sensitive;
 import com.crm.common.convert.ExcelDictConvert;
+import com.crm.common.enums.SensitiveStrategy;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -66,6 +68,7 @@ public class ZqztGrpContractInfoVo {
      * 合同名称
      */
     @ExcelProperty(value = "合同名称")
+    @Sensitive(strategy = SensitiveStrategy.CONTRACT_NAME)
     private String contractName;
 
     /**
