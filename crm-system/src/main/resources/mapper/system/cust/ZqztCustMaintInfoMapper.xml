@@ -56,7 +56,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 查询未签约用户列表 -->
     <select id="selectUncontractedUsersNoPage" resultType="com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo">
         SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME,SVC_NUM AS ENCRYPTED_SVC_NUM
-        FROM ZQZT_CUST_MAINT_INFO
+        FROM ZQZT_CUST_MAINT_INFO a
         WHERE STATUS = '1'
         AND (
         CUST_GRP_ID = #{hqGrpCode}
