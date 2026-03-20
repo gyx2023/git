@@ -452,6 +452,11 @@ public class OpportunityExport extends AbstractExportStrategy {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+            Set<Long> designers = batchData.stream()
+                .map(dto -> dto.getDesigner() != null ? Long.valueOf(dto.getDesigner()) : null)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
             // 并行预加载动态数据
             CompletableFuture<Void> contractFuture = CompletableFuture.runAsync(() -> {
                 context.contractMap = queryContractsByOpportunityIdsOptimized(new ArrayList<>(opportunityIds));
@@ -474,7 +479,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             }, executorService);
 
             CompletableFuture<Void> supportManagerFuture = CompletableFuture.runAsync(() -> {
-                context.supportManagerInfoMap = querySupportManagerInfoOptimized(new ArrayList<>(custManagerIds));
+                context.supportManagerInfoMap = querySupportManagerInfoOptimized(new ArrayList<>(designers));
             }, executorService);
 
             // 等待所有预加载完成
@@ -628,11 +633,11 @@ public class OpportunityExport extends AbstractExportStrategy {
             long startTime = System.currentTimeMillis();
 
             batchData.parallelStream().forEach(dto -> {
-                if (dto.getCustManagerId() != null) {
-                    Long managerId = Long.valueOf(dto.getCustManagerId());
+                if (StringUtils.isNotEmpty(dto.getDesigner())) {
+                    Long designerId = Long.valueOf(dto.getDesigner());
 
                     // 从缓存中获取支撑经理完整信息
-                    Map<String, Object> supportManagerInfo = context.supportManagerInfoMap.get(managerId);
+                    Map<String, Object> supportManagerInfo = context.supportManagerInfoMap.get(designerId);
                     if (supportManagerInfo != null) {
                         // 填充支撑经理姓名
                         String managerName = (String) supportManagerInfo.get("managerName");
@@ -680,10 +685,10 @@ public class OpportunityExport extends AbstractExportStrategy {
             });
 
             long endTime = System.currentTimeMillis();
-            log.debug("支撑经理信息补充完成，处理记录数: {}, 耗时: {}ms", batchData.size(), (endTime - startTime));
+            log.debug("支撑经理信息补充完成，处理记录数：{}, 耗时：{}ms", batchData.size(), (endTime - startTime));
 
         } catch (Exception e) {
-            log.warn("支撑经理信息补充失败: {}", e.getMessage(), e);
+            log.warn("支撑经理信息补充失败：{}", e.getMessage(), e);
         }
     }
 
@@ -1308,16 +1313,16 @@ public class OpportunityExport extends AbstractExportStrategy {
     /**
      * 查询支撑经理完整信息
      */
-    private Map<Long, Map<String, Object>> querySupportManagerInfoOptimized(List<Long> custManagerIds) {
+    private Map<Long, Map<String, Object>> querySupportManagerInfoOptimized(List<Long> designers) {
         Map<Long, Map<String, Object>> supportManagerInfoMap = new HashMap<>();
 
-        if (custManagerIds == null || custManagerIds.isEmpty()) {
+        if (designers == null || designers.isEmpty()) {
             return supportManagerInfoMap;
         }
 
         try {
             // 批量查询支撑经理完整信息
-            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectSupportManagerInfoBatch(custManagerIds);
+            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectSupportManagerInfoBatch(designers);
 
             if (batchResult != null && !batchResult.isEmpty()) {
                 for (Map<String, Object> row : batchResult) {
@@ -1331,7 +1336,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             }
 
         } catch (Exception e) {
-            log.warn("查询支撑经理信息失败: {}", e.getMessage(), e);
+            log.warn("查询支撑经理信息失败：{}", e.getMessage(), e);
         }
 
         return supportManagerInfoMap;
