@@ -883,17 +883,6 @@ public class OpportunityExport extends AbstractExportStrategy {
      */
     private StringBuffer buildBaseSql(Map<String, Object> params) {
         StringBuffer sql = new StringBuffer();
-        /*sql.append("select * from topp_opportunity op " +
-            "join sys_user su on su.id_ = op.cust_manager_id " +
-            "left join tcomm_customer customer on op.cust_id = customer.id_ where" +
-            " (1=2 or (1=1 and (1=2 or op.opp_area_id like '33%%' ) and" +
-            " op.unicom_type in('22','01','23','02','03','25','unicom_jr'," +
-            "'04','26','unicom_ygs','05','06','28','07','29','08','unicom_zy'," +
-            "'unicom_xy','30','10','13','15','16','17','18','19','unicom_dqy'," +
-            "'unicom_sq','unicom_zlkh','21')) or (op.cust_manager_id = " + userId + " or " +
-            "op.designer = " + userId + " or op.white_list like '%," + userId + ",%' or" +
-            " exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = " + userId
-            + "))) ");*/
         sql.append(getParamValue(params, "sql"));
         return sql;
     }
@@ -1074,8 +1063,6 @@ public class OpportunityExport extends AbstractExportStrategy {
         String isValid = getParamValue(params, "isValid");
         if (StringUtils.isNotEmpty(isValid)) {
             sql.append(" and op.is_valid = " + isValid);
-        }else {
-            sql.append(" and op.is_valid = 1");
         }
 
         // 20. 是否招投标查询
