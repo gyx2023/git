@@ -147,6 +147,12 @@ public class OldOpportunityDTO {
     /** SF产品名称 */
     private String sfProductName;
 
+    /** 创建人id */
+    private String creator;
+
     /** 产品经理id */
     private String custManagerId;
+
+    /** 支撑经理id */
+    private String designer;
 }
