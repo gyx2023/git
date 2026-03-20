@@ -394,8 +394,12 @@ public class OpportunityExport extends AbstractExportStrategy {
                 CompletableFuture<Void> supportManagerFuture = CompletableFuture.runAsync(() ->
                     enrichSupportManagerInfoOptimized(batchData, context), executorService);
 
+                // 并行处理创建人信息补充
+                CompletableFuture<Void> creatorFuture = CompletableFuture.runAsync(() ->
+                    enrichCreatorInfoOptimized(batchData, context), executorService);
+
                 // 等待所有并行任务完成
-                CompletableFuture.allOf(areaFuture, contractFuture, productFuture, supportManagerFuture).join();
+                CompletableFuture.allOf(areaFuture, contractFuture, productFuture, supportManagerFuture, creatorFuture).join();
 
                 // 进行翻译
                 translateSysCodeFieldsOptimized(batchData);
@@ -452,6 +456,16 @@ public class OpportunityExport extends AbstractExportStrategy {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+            Set<Long> designers = batchData.stream()
+                .map(dto -> dto.getDesigner() != null ? Long.valueOf(dto.getDesigner()) : null)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+            Set<Long> creators = batchData.stream()
+                .map(dto -> dto.getCreator() != null ? Long.valueOf(dto.getCreator()) : null)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
             // 并行预加载动态数据
             CompletableFuture<Void> contractFuture = CompletableFuture.runAsync(() -> {
                 context.contractMap = queryContractsByOpportunityIdsOptimized(new ArrayList<>(opportunityIds));
@@ -474,7 +488,11 @@ public class OpportunityExport extends AbstractExportStrategy {
             }, executorService);
 
             CompletableFuture<Void> supportManagerFuture = CompletableFuture.runAsync(() -> {
-                context.supportManagerInfoMap = querySupportManagerInfoOptimized(new ArrayList<>(custManagerIds));
+                context.supportManagerInfoMap = querySupportManagerInfoOptimized(new ArrayList<>(designers));
+            }, executorService);
+
+            CompletableFuture<Void> creatorFuture = CompletableFuture.runAsync(() -> {
+                context.creatorInfoMap = queryCreatorInfoOptimized(new ArrayList<>(creators));
             }, executorService);
 
             // 等待所有预加载完成
@@ -488,6 +506,35 @@ public class OpportunityExport extends AbstractExportStrategy {
         }
 
         return context;
+    }
+
+    private Map<Long, Map<String, Object>> queryCreatorInfoOptimized(List<Long> creators) {
+        Map<Long, Map<String, Object>> creatorInfoMap = new HashMap<>();
+
+        if (creators == null || creators.isEmpty()) {
+            return creatorInfoMap;
+        }
+
+        try {
+            // 批量查询创建人完整信息
+            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectCreatorInfoBatch(creators);
+
+            if (batchResult != null && !batchResult.isEmpty()) {
+                for (Map<String, Object> row : batchResult) {
+                    Object userIdObj = row.get("userId");
+                    Long userId = convertToLong(userIdObj);
+
+                    if (userId != null) {
+                        creatorInfoMap.put(userId, row);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            log.warn("查询创建人信息失败：{}", e.getMessage(), e);
+        }
+
+        return creatorInfoMap;
     }
 
     /**
@@ -536,12 +583,6 @@ public class OpportunityExport extends AbstractExportStrategy {
                     dto.setCustManagerCounty(personInfo.getCountyName());
                 }
 
-                // 复制给创建人
-                dto.setCreatorName(dto.getCustManagerName());
-                dto.setCreatorPhone(dto.getCustManagerTel());
-                dto.setCreatorCity(dto.getCustManagerCity());
-                dto.setCreatorCounty(dto.getCustManagerCounty());
-                dto.setCreatorOrg(dto.getCustManagerOrg());
             });
 
             long endTime = System.currentTimeMillis();
@@ -562,6 +603,77 @@ public class OpportunityExport extends AbstractExportStrategy {
 
         SysAreaVo parentArea = AREA_CACHE.get(parentId);
         return parentArea != null ? parentArea.getName() : "";
+    }
+
+    /**
+     * 创建人信息补充
+     */
+    private void enrichCreatorInfoOptimized(List<OldOpportunityDTO> batchData, BatchEnrichmentContext context) {
+        if (batchData == null || batchData.isEmpty()) {
+            return;
+        }
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            batchData.parallelStream().forEach(dto -> {
+                if (StringUtils.isNotEmpty(dto.getCreator())) {
+                    Long creatorId = Long.valueOf(dto.getCreator());
+
+                    // 从缓存中获取创建人完整信息
+                    Map<String, Object> creatorInfo = context.creatorInfoMap.get(creatorId);
+                    if (creatorInfo != null) {
+                        // 填充创建人姓名
+                        String creatorName = (String) creatorInfo.get("creatorName");
+                        if (StringUtils.isNotEmpty(creatorName)) {
+                            dto.setCreatorName(creatorName);
+                        }
+
+                        // 填充创建人电话
+                        String creatorPhone = (String) creatorInfo.get("creatorPhone");
+                        if (StringUtils.isNotEmpty(creatorPhone)) {
+                            dto.setCreatorPhone(creatorPhone);
+                        }
+
+                        // 填充创建人归属部门
+                        String orgName = (String) creatorInfo.get("orgName");
+                        if (StringUtils.isNotEmpty(orgName)) {
+                            dto.setCreatorOrg(orgName);
+                        }
+
+                        // 填充创建人地区信息
+                        Object areaIdObj = creatorInfo.get("areaId");
+                        String areaName = (String) creatorInfo.get("areaName");
+                        String areaType = (String) creatorInfo.get("areaType");
+                        Object parentAreaIdObj = creatorInfo.get("parentAreaId");
+
+                        if (areaIdObj != null && StringUtils.isNotEmpty(areaName) && StringUtils.isNotEmpty(areaType)) {
+                            Long areaId = convertToLong(areaIdObj);
+                            Long parentAreaId = convertToLong(parentAreaIdObj);
+
+                            // 根据地区类型设置地市和区县
+                            if ("一级".equals(areaType)) {
+                                dto.setCreatorCity("省本级");
+                                dto.setCreatorCounty("");
+                            } else if ("二级".equals(areaType)) {
+                                dto.setCreatorCity(areaName);
+                                dto.setCreatorCounty("市本级");
+                            } else if ("三级".equals(areaType)) {
+                                String parentAreaName = getCachedParentAreaName(parentAreaId);
+                                dto.setCreatorCity(parentAreaName);
+                                dto.setCreatorCounty(areaName);
+                            }
+                        }
+                    }
+                }
+            });
+
+            long endTime = System.currentTimeMillis();
+            log.debug("创建人信息补充完成，处理记录数：{}, 耗时：{}ms", batchData.size(), (endTime - startTime));
+
+        } catch (Exception e) {
+            log.warn("创建人信息补充失败：{}", e.getMessage(), e);
+        }
     }
 
     /**
@@ -628,11 +740,11 @@ public class OpportunityExport extends AbstractExportStrategy {
             long startTime = System.currentTimeMillis();
 
             batchData.parallelStream().forEach(dto -> {
-                if (dto.getCustManagerId() != null) {
-                    Long managerId = Long.valueOf(dto.getCustManagerId());
+                if (StringUtils.isNotEmpty(dto.getDesigner())) {
+                    Long designerId = Long.valueOf(dto.getDesigner());
 
                     // 从缓存中获取支撑经理完整信息
-                    Map<String, Object> supportManagerInfo = context.supportManagerInfoMap.get(managerId);
+                    Map<String, Object> supportManagerInfo = context.supportManagerInfoMap.get(designerId);
                     if (supportManagerInfo != null) {
                         // 填充支撑经理姓名
                         String managerName = (String) supportManagerInfo.get("managerName");
@@ -680,10 +792,10 @@ public class OpportunityExport extends AbstractExportStrategy {
             });
 
             long endTime = System.currentTimeMillis();
-            log.debug("支撑经理信息补充完成，处理记录数: {}, 耗时: {}ms", batchData.size(), (endTime - startTime));
+            log.debug("支撑经理信息补充完成，处理记录数：{}, 耗时：{}ms", batchData.size(), (endTime - startTime));
 
         } catch (Exception e) {
-            log.warn("支撑经理信息补充失败: {}", e.getMessage(), e);
+            log.warn("支撑经理信息补充失败：{}", e.getMessage(), e);
         }
     }
 
@@ -1308,16 +1420,16 @@ public class OpportunityExport extends AbstractExportStrategy {
     /**
      * 查询支撑经理完整信息
      */
-    private Map<Long, Map<String, Object>> querySupportManagerInfoOptimized(List<Long> custManagerIds) {
+    private Map<Long, Map<String, Object>> querySupportManagerInfoOptimized(List<Long> designers) {
         Map<Long, Map<String, Object>> supportManagerInfoMap = new HashMap<>();
 
-        if (custManagerIds == null || custManagerIds.isEmpty()) {
+        if (designers == null || designers.isEmpty()) {
             return supportManagerInfoMap;
         }
 
         try {
             // 批量查询支撑经理完整信息
-            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectSupportManagerInfoBatch(custManagerIds);
+            List<Map<String, Object>> batchResult = toppOpportunityMapper.selectSupportManagerInfoBatch(designers);
 
             if (batchResult != null && !batchResult.isEmpty()) {
                 for (Map<String, Object> row : batchResult) {
@@ -1331,7 +1443,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             }
 
         } catch (Exception e) {
-            log.warn("查询支撑经理信息失败: {}", e.getMessage(), e);
+            log.warn("查询支撑经理信息失败：{}", e.getMessage(), e);
         }
 
         return supportManagerInfoMap;
@@ -1403,5 +1515,6 @@ public class OpportunityExport extends AbstractExportStrategy {
         Map<Long, SysAreaVo> areaInfoMap = new HashMap<>();
         Map<String, DwdRepSysPersonDVo> personAreaMap = new HashMap<>();
         Map<Long, Map<String, Object>> supportManagerInfoMap = new HashMap<>();
+        Map<Long, Map<String, Object>> creatorInfoMap = new HashMap<>();
     }
 }
