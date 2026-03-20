@@ -62,4 +62,12 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      * @return 支撑经理完整信息列表
      */
     List<Map<String, Object>> selectSupportManagerInfoBatch(@Param("designers") List<Long> designers);
+
+
+    /**
+     * 批量查询创建人完整信息
+     * @param creators 创建人用户 ID 列表
+     * @return 创建人完整信息列表
+     */
+    List<Map<String, Object>> selectCreatorInfoBatch(@Param("creators") List<Long> creators);
 }

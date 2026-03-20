@@ -370,4 +370,27 @@
         </where>
     </select>
 
+    <!-- 批量查询创建人完整信息 -->
+    <select id="selectCreatorInfoBatch" resultType="map">
+        SELECT
+        u.id_ as userId,
+        u.name_ch as creatorName,
+        u.name_ as creatorPhone,
+        o.name_ as orgName,
+        a.id_ as areaId,
+        a.name_ as areaName,
+        a.type_ as areaType,
+        a.parent_ as parentAreaId
+        FROM sys_user u
+        LEFT JOIN sys_org o ON u.org_id = o.id_
+        LEFT JOIN sys_area a ON o.area_id = a.id_
+        <where>
+            <if test="creators != null and creators.size() > 0">
+                u.id_ IN
+                <foreach collection="creators" item="creators" open="(" separator="," close=")">
+                    #{creators}
+                </foreach>
+            </if>
+        </where>
+    </select>
 </mapper>
