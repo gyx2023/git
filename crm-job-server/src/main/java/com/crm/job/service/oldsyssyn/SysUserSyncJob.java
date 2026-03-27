@@ -1,5 +1,6 @@
 package com.crm.job.service.oldsyssyn;
 
+import cn.dev33.satoken.secure.BCrypt;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.enums.UserType;
@@ -41,6 +42,8 @@ public class SysUserSyncJob {
 
     @Resource
     private SysDeptMapper sysDeptMapper;
+
+    private static final String DEFAULT_PASSWORD = "Sjxt123!@#";
 
     /**
      * 系统用户同步任务
@@ -252,7 +255,8 @@ public class SysUserSyncJob {
         newUser.setUserId(Long.valueOf(oldUser.getId()));
         newUser.setUserName(oldUser.getOaAccount());
         newUser.setNickName(oldUser.getNameCh());
-        newUser.setPassword(oldUser.getPassword());
+//        newUser.setPassword(oldUser.getPassword());
+        newUser.setPassword(BCrypt.hashpw(DEFAULT_PASSWORD));
         newUser.setEmail(oldUser.getEmail());
         newUser.setPhonenumber(oldUser.getRelationTel());
         newUser.setDeptId(Long.valueOf(oldUser.getOrgId()));
