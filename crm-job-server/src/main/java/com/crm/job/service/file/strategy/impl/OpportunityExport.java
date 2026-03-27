@@ -1107,13 +1107,13 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 12. 审核时间左边界查询
         String auditTimeLeft = getParamValue(params, "auditTimeLeft");
         if (StringUtils.isNotEmpty(auditTimeLeft)) {
-            sql.append(" and op.audit_time >= '" + auditTimeLeft + "'");
+            sql.append(" and op.audit_time >= '").append(auditTimeLeft).append(" 00:00:00'");
         }
 
         // 13. 审核时间右边界查询
         String auditTimeRight = getParamValue(params, "auditTimeRight");
         if (StringUtils.isNotEmpty(auditTimeRight)) {
-            sql.append(" and op.audit_time <= '" + auditTimeRight + "'");
+            sql.append(" and op.audit_time <= '").append(auditTimeRight).append(" 23:59:59'");
         }
 
         // 14. 一级行业查询（支持多选）
@@ -1206,13 +1206,13 @@ public class OpportunityExport extends AbstractExportStrategy {
         // 24. 签约时间开始查询
         String signTimeStart = getParamValue(params, "signTimeStart");
         if (StringUtils.isNotEmpty(signTimeStart)) {
-            sql.append(" and op.sign_time >= '" + signTimeStart + "'");
+            sql.append(" and op.sign_time >= '").append(signTimeStart).append(" 00:00:00'");
         }
 
         // 25. 签约时间结束查询
         String signTimeEnd = getParamValue(params, "signTimeEnd");
         if (StringUtils.isNotEmpty(signTimeEnd)) {
-            sql.append(" and op.sign_time <= '" + signTimeEnd + "'");
+                sql.append(" and op.sign_time <= '").append(signTimeEnd).append(" 23:59:59'");
         }
 
         // 26. 商机赢率范围查询
