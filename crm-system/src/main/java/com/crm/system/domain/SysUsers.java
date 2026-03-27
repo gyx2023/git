@@ -208,6 +208,5 @@ public class SysUsers extends BaseEntity {
     /**
      * 更新时间
      */
-    @TableField(exist = false)
     private Date updateTime;
 }
