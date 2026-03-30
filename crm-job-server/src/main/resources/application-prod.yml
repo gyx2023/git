@@ -87,7 +87,7 @@ spring:
           driverClassName: oracle.jdbc.OracleDriver
           url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
           username: ps_uni_zyy
-          password: zyy_2026#
+          password: yz_2026#
           hikari:
             connectionTestQuery: SELECT 1 FROM DUAL
             connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
