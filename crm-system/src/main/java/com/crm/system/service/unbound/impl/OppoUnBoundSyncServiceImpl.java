@@ -244,7 +244,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             if (ObjectUtil.isNotEmpty(customerVo.getBbssCustId())) {
                 oppoMap.put("bbssCustId", customerVo.getBbssCustId());//客户中心对应集客custid
             }
-
+            oppoMap.put("isClearBudget","1");//是否清空预算，1是，0否
             //默认行业Z
             oppoMap.put("industry", "99");    //一级行业
             oppoMap.put("industryName", "其他");
