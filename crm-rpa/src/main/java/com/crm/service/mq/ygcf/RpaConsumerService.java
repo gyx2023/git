@@ -51,7 +51,7 @@ public class RpaConsumerService {
             response.setMessage("处理成功");
 
         } catch (Exception e) {
-            log.error("处理消息时发生错误：{}", e.getMessage());
+            log.error("处理消息时发生错误：{}", e.getMessage(),e);
             response.setStatus("failed");
             response.setMessage(e.getMessage());
         }
