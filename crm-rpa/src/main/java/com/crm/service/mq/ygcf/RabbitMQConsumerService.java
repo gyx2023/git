@@ -4,8 +4,6 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.mq.config.RabbitMQConfig;
 import com.crm.common.utils.StringUtils;
-import com.crm.dto.BusinessMessageDTO;
-import com.crm.dto.BusinessResponseDTO;
 import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
@@ -26,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -252,7 +249,7 @@ public class RabbitMQConsumerService {
                         }
                     }else {
                         Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                        if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                             setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
@@ -285,7 +282,7 @@ public class RabbitMQConsumerService {
 
                 }else {
                     Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                    if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                    if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                         setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                     }else if("String".equals(item.getValueType()) && valueByPath !=null){
                         setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
@@ -395,10 +392,12 @@ public class RabbitMQConsumerService {
                                 }
                             }else {
                                 Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                                if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                                if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                                     setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                                 }else if("String".equals(item.getValueType()) && valueByPath !=null){
                                     setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
+                                }else {
+                                    setValueByPath(messageMap, item.getFormKey(),valueByPath);
                                 }
                             }
                         }
@@ -406,7 +405,7 @@ public class RabbitMQConsumerService {
                     }
                     if(StringUtils.isNotEmpty(item.getSourceKey())){
                         Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                        if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                             setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
