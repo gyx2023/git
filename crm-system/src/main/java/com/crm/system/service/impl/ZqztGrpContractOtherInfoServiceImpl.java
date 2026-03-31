@@ -241,7 +241,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .map(item -> item.getInfoVal()) // 使用infoVal作为user_id
             .filter(userId -> userId != null && !userId.trim().isEmpty())
             .distinct()
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
         // 批量查询用户维护信息
         Map<String, String> svcNumMap = new HashMap<>();
@@ -255,7 +255,6 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 ));
         }
 
-
         // 处理每个数据项
         List<ZqztGrpContractOtherInfo> processedDataList = new ArrayList<>();
         for (ZqztGrpContractOtherInfo item : dataList) {
@@ -265,16 +264,23 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             processedItem.setInfoVal(item.getInfoVal());
             processedItem.setCreateTime(item.getCreateTime());
 
-            // 获取user_id并验证
-            String userId = item.getInfoVal();
-            if (userId != null && svcNumMap.containsKey(userId) && svcNumMap.get(userId) != null) {
+            // 如果不是 GRP_CONTRACT_USER_LIST 类型，直接设置状态为 1（有效）
+            if (!"GRP_CONTRACT_USER_LIST".equals(item.getInfoTag())) {
                 processedItem.setIsValid("1");
-                processedItem.setInfoVal2(svcNumMap.get(userId));
-            } else {
-                // 用户不存在或无效，入库时状态默认=99（迁移失效）
-                processedItem.setIsValid("99");
-                // 保留原始服务号码
                 processedItem.setInfoVal2(item.getInfoVal2());
+            }else {
+                // 如果是GRP_CONTRACT_USER_LIST 类型,执行入库逻辑判断
+                // 获取user_id并验证
+                String userId = item.getInfoVal();
+                if (userId != null && svcNumMap.containsKey(userId) && svcNumMap.get(userId) != null) {
+                    processedItem.setIsValid("1");
+                    processedItem.setInfoVal2(svcNumMap.get(userId));
+                } else {
+                    // 用户不存在或无效，入库时状态默认=99（迁移失效）
+                    processedItem.setIsValid("99");
+                    // 保留原始服务号码
+                    processedItem.setInfoVal2(item.getInfoVal2());
+                }
             }
 
             processedDataList.add(processedItem);
