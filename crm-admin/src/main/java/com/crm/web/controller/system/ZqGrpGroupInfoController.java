@@ -1,5 +1,7 @@
 package com.crm.web.controller.system;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
@@ -132,6 +134,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     @Log(title = "政企集团客户信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/edit")
+    @SaCheckPermission(value={"system:client:update","system:client:department","system:client:expandType","system:client:stock","system:client:customerType","system:client:contractManagement"},mode= SaMode.OR)
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody ZqGrpGroupInfoBo bo) {
         return toAjax(iZqGrpGroupInfoService.updateByBo(bo));
     }
@@ -142,6 +145,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     @Log(title = "政企集团客户经理信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/edits")
+    @SaCheckPermission("system:manager:distribute")
     public R<Void> edits(@RequestBody ZqGrpGroupInfoBo bo) {
         // 检查是否有需要更新的客户经理信息字段
         boolean hasUpdateFields = false;

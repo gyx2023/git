@@ -2,14 +2,13 @@ package com.crm.system.domain.vo;
 
 import java.util.Date;
 
-import com.alibaba.excel.annotation.ExcelIgnore;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.crm.common.annotation.Sensitive;
+import com.crm.common.enums.SensitiveStrategy;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
-import java.util.Date;
 
 
 
@@ -35,6 +34,7 @@ public class ZqGrpGroupInfoVo {
      * 集团名称
      */
     @ExcelProperty(value = "集团名称")
+    @Sensitive(strategy = SensitiveStrategy.COMPANY_NAME)
     private String grpName;
 
     /**
@@ -180,6 +180,7 @@ public class ZqGrpGroupInfoVo {
      * 省级客户名字（省分字段）
      */
     @ExcelProperty(value = "省级客户名字")
+    @Sensitive(strategy = SensitiveStrategy.NAME)
     private String provManagerName;
 
     /**
@@ -198,6 +199,7 @@ public class ZqGrpGroupInfoVo {
      * 市级客户名字（省分字段）
      */
     @ExcelProperty(value = "市级客户名字")
+    @Sensitive(strategy = SensitiveStrategy.NAME)
     private String cityManagerName;
 
     /**
@@ -216,6 +218,7 @@ public class ZqGrpGroupInfoVo {
      * 县级客户名字（省分字段）
      */
     @ExcelProperty(value = "县级客户名字")
+    @Sensitive(strategy = SensitiveStrategy.NAME)
     private String countyManagerName;
 
     /**

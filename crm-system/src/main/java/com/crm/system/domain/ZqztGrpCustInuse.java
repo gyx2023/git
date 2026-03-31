@@ -92,7 +92,7 @@ public class ZqztGrpCustInuse extends BaseEntity {
      */
     private String remark;
 
-    @TableField(exist = false)
+
     private Date createTime;
     @TableField(exist = false)
     private String updateBy;

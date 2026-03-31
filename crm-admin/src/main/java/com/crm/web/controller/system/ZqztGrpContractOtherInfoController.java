@@ -52,7 +52,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 查询集团合同扩展信息列表
      */
-    @SaCheckPermission("system:grpContractOtherInfo:list")
     @GetMapping("/list")
     public TableDataInfo<ZqztGrpContractOtherInfoVo> list(ZqztGrpContractOtherInfoBo bo, PageQuery pageQuery) {
         return iZqztGrpContractOtherInfoService.queryPageList(bo, pageQuery);
@@ -61,7 +60,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 导出集团合同扩展信息列表
      */
-    @SaCheckPermission("system:grpContractOtherInfo:export")
     @Log(title = "集团合同扩展信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ZqztGrpContractOtherInfoBo bo, HttpServletResponse response) {
@@ -74,7 +72,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      *
      * @param contractId 主键
      */
-    @SaCheckPermission("system:grpContractOtherInfo:query")
     @GetMapping("/{contractId}")
     public R<ZqztGrpContractOtherInfoVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable String contractId) {
@@ -84,7 +81,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 新增集团合同扩展信息
      */
-    @SaCheckPermission("system:grpContractOtherInfo:add")
     @Log(title = "集团合同扩展信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -95,7 +91,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 修改集团合同扩展信息
      */
-    @SaCheckPermission("system:grpContractOtherInfo:edit")
     @Log(title = "集团合同扩展信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -108,7 +103,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      *
      * @param contractIds 主键串
      */
-    @SaCheckPermission("system:grpContractOtherInfo:remove")
     @Log(title = "集团合同扩展信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{contractIds}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
@@ -122,32 +116,9 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      * @param contractId 合同ID
      * @return 集团合同扩展信息列表
      */
-    @SaCheckPermission("system:grpContractOtherInfo:list")
     @GetMapping("/contract/{contractId}")
     public R<List<ZqztGrpContractOtherInfoVo>> listByContractId(@PathVariable String contractId) {
         List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractId(contractId);
-        return R.ok(list);
-    }
-
-    /**
-     * 根据合同ID和服务号码查询集团合同扩展信息列表
-     *
-     * @param contractId 合同ID
-     * @param infoVal2 服务号码（可能为加密格式）
-     * @return 集团合同扩展信息列表
-     */
-    @SaCheckPermission("system:grpContractOtherInfo:list")
-    @GetMapping("/contract/{contractId}/infoVal2/{infoVal2}")
-    public R<List<ZqztGrpContractOtherInfoVo>> listByContractIdAndInfoVal2(@PathVariable String contractId, @PathVariable String infoVal2) {
-        // 解密infoVal2参数后再调用服务
-        String decryptedInfoVal2 = infoVal2;
-        try {
-            decryptedInfoVal2 = iZqztGrpContractOtherInfoService.decryptSvcNum(infoVal2);
-        } catch (Exception e) {
-            log.warn("infoVal2解密失败，使用原始值: {}", infoVal2);
-        }
-
-        List<ZqztGrpContractOtherInfoVo> list = iZqztGrpContractOtherInfoService.selectByContractIdAndInfoVal2(contractId, decryptedInfoVal2);
         return R.ok(list);
     }
 
@@ -157,24 +128,15 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      *
      * @param contractId 合同ID
      * @param infoVal2 服务号码（可选，可能为加密格式）
-     * @return 关联的客户信息列表
+     * @return 关联的客户信息分页列表
      */
-    @SaCheckPermission("system:grpContractOtherInfo:list")
-    @GetMapping({"/contract/{contractId}/userInfo", "/contract/{contractId}/infoVal2/{infoVal2}/userInfo"})
-    public R<List<Map<String, Object>>> listContractRelatedUserInfo(@PathVariable String contractId, @PathVariable(required = false) String infoVal2) {
-        // 解密infoVal2参数后再调用服务
-//        String decryptedInfoVal2 = infoVal2;
-//        if (infoVal2 != null && !infoVal2.isEmpty()) {
-//            try {
-//                decryptedInfoVal2 = iZqztGrpContractOtherInfoService.decryptSvcNum(infoVal2);
-//            } catch (Exception e) {
-//                log.warn("infoVal2解密失败，使用原始值: {}", infoVal2);
-//            }
-//        }
-//        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, decryptedInfoVal2);
+    @GetMapping({"/contract/userInfo"})
+    public TableDataInfo<ZqztGrpContractOtherInfoVo> listContractRelatedUserInfo(
+        String contractId,
+        String infoVal2,
+        PageQuery pageQuery) {
 
-        List<Map<String, Object>> list = iZqztGrpContractOtherInfoService.selectContractRelatedUserInfo(contractId, infoVal2);
-        return R.ok(list);
+        return iZqztGrpContractOtherInfoService.selectContractRelatedUserInfoPage(contractId, infoVal2, pageQuery);
     }
 
     /**
@@ -183,7 +145,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
      * @param ids 合同关联信息ID列表
      * @return 操作结果
      */
-    @SaCheckPermission("system:grpContractOtherInfo:edit")
     @Log(title = "合同关联用户", businessType = BusinessType.UPDATE)
     @PutMapping("/batchInvalidate")
     public R<Void> batchInvalidateContractUserRelation(@RequestBody List<Long> ids) {
@@ -193,7 +154,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 批量新增集团合同扩展信息
      */
-    @SaCheckPermission("system:grpContractOtherInfo:add")
     @Log(title = "集团合同扩展信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping("/batch")
@@ -204,7 +164,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 下载合同关联用户批量导入模板
      */
-    @SaCheckPermission("system:grpContractOtherInfo:add")
     @GetMapping("/downloadTemplate")
     public void downloadTemplate(HttpServletResponse response) {
         ExcelUtil.exportExcel(null, "合同关联用户批量导入模板", ContractUserTemplateVo.class, response);
@@ -213,7 +172,6 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 批量导入合同关联用户
      */
-    @SaCheckPermission("system:grpContractOtherInfo:add")
     @Log(title = "合同关联用户", businessType = BusinessType.IMPORT)
     @PostMapping("/batchImport")
     public R<Long> batchImport(@RequestParam("file") MultipartFile file, @RequestParam("contractId") String contractId, @RequestParam("hqGrpCode") String hqGrpCode) {

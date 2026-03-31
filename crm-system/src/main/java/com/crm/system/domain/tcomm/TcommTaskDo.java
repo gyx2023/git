@@ -182,7 +182,6 @@ public class TcommTaskDo extends BaseEntity {
     /**
      * 创建时间
      */
-    @TableField(exist = false)
     private Date createTime;
 
     /**

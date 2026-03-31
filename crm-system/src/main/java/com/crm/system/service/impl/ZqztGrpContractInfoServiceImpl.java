@@ -9,11 +9,12 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.enums.contract.ContractStatusEnum;
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.spring.SpringUtils;
-import com.crm.generator.util.Desensitization;
+import com.crm.common.utils.Desensitization;
 import com.crm.system.domain.ZqztGrpContractInfo;
 import com.crm.system.domain.ZqztGrpContractInfoLog;
 import com.crm.system.domain.ZqztGrpContractOtherInfo;
@@ -62,28 +63,9 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         // 构建查询条件，排除状态为7（作废）的合同
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(ZqztGrpContractInfo::getContractId, contractId);
-        lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除作废的合同
+        lqw.ne(ZqztGrpContractInfo::getContractStatus, ContractStatusEnum.CANCELLED_FINAL.getCode()); // 排除作废的合同
 
         ZqztGrpContractInfoVo vo = baseMapper.selectVoOne(lqw);
-
-        if (vo != null) {
-            // 获取业务类型
-            String businessTypes = getBusinessTypesByContractId(contractId);
-            vo.setBusinessTypes(businessTypes);
-
-            // 添加敏感角色判断
-            SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-            List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-            LoginUser loginUser = LoginHelper.getLoginUser();
-            List<RoleDTO> roles = loginUser.getRoles();
-            boolean isSensitive = sensitiveRoles.stream()
-                .anyMatch(roleStr -> roles.stream()
-                    .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-            if (!isSensitive) {
-                vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
-            }
-        }
 
         return vo;
     }
@@ -98,27 +80,10 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         lqw.orderByDesc(ZqztGrpContractInfo::getCreateTime);
         Page<ZqztGrpContractInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
-        // 添加敏感角色判断
-        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        boolean isSensitive = sensitiveRoles.stream()
-            .anyMatch(roleStr -> roles.stream()
-                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-        if (!isSensitive) {
-            List<ZqztGrpContractInfoVo> desensitizedList = result.getRecords().stream()
-                    .map(this::desensitizeVo)
-                    .map(this::addBusinessTypesToVo)
-                    .collect(Collectors.toList());
-            result.setRecords(desensitizedList);
-        } else {
-            List<ZqztGrpContractInfoVo> normalList = result.getRecords().stream()
-                    .map(this::addBusinessTypesToVo)
-                    .collect(Collectors.toList());
-            result.setRecords(normalList);
-        }
+        List<ZqztGrpContractInfoVo> normalList = result.getRecords().stream()
+            .map(this::addBusinessTypesToVo)
+            .collect(Collectors.toList());
+        result.setRecords(normalList);
 
         return TableDataInfo.build(result);
     }
@@ -157,25 +122,9 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = buildQueryWrapper(bo);
         List<ZqztGrpContractInfoVo> list = baseMapper.selectVoList(lqw);
 
-        // 添加敏感角色判断
-        SysParamDo sysParamDO = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "SENSITIVE_ROLE"));
-        List<String> sensitiveRoles = Arrays.asList(sysParamDO.getValue().split(","));
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        List<RoleDTO> roles = loginUser.getRoles();
-        boolean isSensitive = sensitiveRoles.stream()
-            .anyMatch(roleStr -> roles.stream()
-                .anyMatch(roleDTO -> roleStr.equals(String.valueOf(roleDTO.getRoleId()))));
-
-        if (!isSensitive) {
-            return list.stream()
-                    .map(this::desensitizeVo)
-                    .map(this::addBusinessTypesToVo)
-                    .collect(Collectors.toList());
-        } else {
-            return list.stream()
-                    .map(this::addBusinessTypesToVo)
-                    .collect(Collectors.toList());
-        }
+        return list.stream()
+            .map(this::addBusinessTypesToVo)
+            .collect(Collectors.toList());
     }
 
     private LambdaQueryWrapper<ZqztGrpContractInfo> buildQueryWrapper(ZqztGrpContractInfoBo bo) {
@@ -208,8 +157,8 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
         lqw.eq(bo.getContractMoney() != null, ZqztGrpContractInfo::getContractMoney, bo.getContractMoney());
         lqw.eq(bo.getContractSigndate() != null, ZqztGrpContractInfo::getContractSigndate, bo.getContractSigndate());
         // 如果用户没有特别指定合同状态为7（作废），则排除作废的合同
-        if (StringUtils.isBlank(bo.getContractStatus()) || !"7".equals(bo.getContractStatus())) {
-            lqw.ne(ZqztGrpContractInfo::getContractStatus, "7"); // 排除状态为7（作废）的合同
+        if (StringUtils.isBlank(bo.getContractStatus()) || !ContractStatusEnum.CANCELLED_FINAL.getCode().equals(bo.getContractStatus())) {
+            lqw.ne(ZqztGrpContractInfo::getContractStatus, ContractStatusEnum.CANCELLED_FINAL.getCode()); // 排除状态为7（作废）的合同
         } else {
             lqw.eq(ZqztGrpContractInfo::getContractStatus, bo.getContractStatus());
         }
@@ -245,7 +194,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         // 设置默认合同状态，如果未提供
         if (add.getContractStatus() == null || add.getContractStatus().isEmpty()) {
-            add.setContractStatus("9"); // 默认设置为"履行中"
+            add.setContractStatus(ContractStatusEnum.IN_PROGRESS.getCode()); // 默认设置为"履行中"
         }
 
         boolean flag = baseMapper.insert(add) > 0;
@@ -339,23 +288,6 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         return result;
     }
-
-    /**
-     * 对ZqztGrpContractInfoVo对象进行脱敏处理
-     * @param vo 要脱敏的ZqztGrpContractInfoVo对象
-     * @return 脱敏后的ZqztGrpContractInfoVo对象
-     */
-    private ZqztGrpContractInfoVo desensitizeVo(ZqztGrpContractInfoVo vo) {
-        if (vo == null) {
-            return null;
-        }
-
-        // 对合同名称进行脱敏
-        vo.setContractName(Desensitization.desensitizeContractName(vo.getContractName()));
-
-        return vo;
-    }
-
     /**
      * 批量删除集团合同信息（逻辑删除，将合同状态改为7作废）
      */
@@ -392,7 +324,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             // 更新合同状态为7（作废）
             ZqztGrpContractInfo updateRecord = new ZqztGrpContractInfo();
             updateRecord.setContractId(contractId);
-            updateRecord.setContractStatus("7"); // 7代表作废
+            updateRecord.setContractStatus(ContractStatusEnum.CANCELLED_FINAL.getCode()); // 7代表作废
             updateRecord.setUpdateBy(currentUser); // 记录操作人
             updateRecord.setUpdateTime(new Date()); // 记录操作时间
 
@@ -433,7 +365,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
     public List<ZqztGrpContractInfo> selectAllZqztGrpContractInfo() {
         // 排除状态为7（作废）的合同
         LambdaQueryWrapper<ZqztGrpContractInfo> lqw = Wrappers.lambdaQuery();
-        lqw.ne(ZqztGrpContractInfo::getContractStatus, "7");
+        lqw.ne(ZqztGrpContractInfo::getContractStatus, ContractStatusEnum.CANCELLED_FINAL.getCode());
         return baseMapper.selectList(lqw);
     }
 
@@ -533,7 +465,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
 
         // 判断合同状态是否为履行中（字符9）或办结（字符5）
         String contractStatus = contractInfo.getContractStatus();
-        boolean isStatusValid = "9".equals(contractStatus) || "5".equals(contractStatus);
+        boolean isStatusValid = ContractStatusEnum.IN_PROGRESS.getCode().equals(contractStatus) || ContractStatusEnum.COMPLETED.getCode().equals(contractStatus);
 
         // 获取合同失效时间
         Date contractExpdate = contractInfo.getContractExpdate();

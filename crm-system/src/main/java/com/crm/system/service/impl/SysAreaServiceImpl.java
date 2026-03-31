@@ -27,6 +27,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -93,8 +94,14 @@ public class SysAreaServiceImpl implements ISysAreaService {
     }
 
     private LambdaQueryWrapper<SysArea> buildQueryWrapper(SysAreaBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        
+        // 添加null检查保护
+        if (bo == null) {
+            return lqw;
+        }
+        
+        Map<String, Object> params = bo.getParams();
         lqw.eq(StringUtils.isNotBlank(bo.getName()), SysArea::getName, bo.getName());
         lqw.eq(StringUtils.isNotBlank(bo.getType()), SysArea::getType, bo.getType());
         lqw.eq(bo.getParent() != null, SysArea::getParent, bo.getParent());
@@ -229,7 +236,7 @@ public class SysAreaServiceImpl implements ISysAreaService {
             LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
             lqw.apply("id_ LIKE {0}", cityCodePrefix + "%")
                .eq(SysArea::getType, "三级");
-            
+
             List<SysAreaVo> counties = baseMapper.selectVoList(lqw);
             logger.info("查询到下属县市数量: {}", counties.size());
             return counties;
@@ -238,5 +245,12 @@ public class SysAreaServiceImpl implements ISysAreaService {
         }
 
         return new ArrayList<>();
+    }
+
+    @Override
+    public Map<Long, String> listAll() {
+        return baseMapper.selectList()
+            .stream()
+            .collect(Collectors.toMap(SysArea::getId, SysArea::getName));
     }
 }

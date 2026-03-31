@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,8 +64,8 @@ public class RabbitMQConsumerService {
      * @param message 消息内容
      * @param channel 通道
      */
-    @RabbitListener(queues = RabbitMQConfig.YgcfConfig.RPA_YGCF_QUEUE,
-                   ackMode = "MANUAL")
+//    @RabbitListener(queues = RabbitMQConfig.YgcfConfig.RPA_YGCF_QUEUE,
+//                   ackMode = "MANUAL")
     public void receiveTestMessage(Message message, Channel channel) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
 
@@ -250,7 +249,7 @@ public class RabbitMQConsumerService {
                         }
                     }else {
                         Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                        if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                             setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
@@ -266,6 +265,14 @@ public class RabbitMQConsumerService {
 //                    });
                 }
             }else {
+                //特殊处理rpa缴费期
+                if(item.getFormKey().equals("radioField_iYoB2Lrs")){
+                    String valueByPath = (String)getValueByPath(messageMap, item.getSourceKey());
+                    if(valueByPath.equals("4grckj2u1xz")){
+                        setValueByPath(messageMap, item.getFormKey(),"2");
+                        continue;
+                    }
+                }
                 if(StringUtils.isEmpty(item.getSourceKey()) && StringUtils.isNotEmpty(item.getDefaultValue())){
                     if("Integer".equals(item.getValueType())){
                         setValueByPath(messageMap, item.getFormKey(), Integer.valueOf(item.getDefaultValue()));
@@ -275,7 +282,7 @@ public class RabbitMQConsumerService {
 
                 }else {
                     Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                    if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                    if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                         setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                     }else if("String".equals(item.getValueType()) && valueByPath !=null){
                         setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
@@ -343,7 +350,7 @@ public class RabbitMQConsumerService {
                     //个性化处理我方主体
                     if(item.getComponentKey().equals("marketingContract1_Qu7n57Gt") && item.getFormKey().equals("subjectName")){
                         String wfzt = (String) getValueByPath(messageMap, item.getSourceKey());
-                        String[] parts = wfzt.split("-", 2);
+                        String[] parts = wfzt.split("-");
                         String result="";
                         if (parts.length > 1) {
                             result = parts[1]; // 结果为"湖州"
@@ -385,10 +392,12 @@ public class RabbitMQConsumerService {
                                 }
                             }else {
                                 Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                                if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                                if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                                     setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                                 }else if("String".equals(item.getValueType()) && valueByPath !=null){
                                     setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
+                                }else {
+                                    setValueByPath(messageMap, item.getFormKey(),valueByPath);
                                 }
                             }
                         }
@@ -396,7 +405,7 @@ public class RabbitMQConsumerService {
                     }
                     if(StringUtils.isNotEmpty(item.getSourceKey())){
                         Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if("Integer".equals(item.getValueType()) && valueByPath !=null){
+                        if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
                             setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());

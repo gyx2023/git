@@ -114,4 +114,11 @@ public interface IWfTaskService {
      * @param variables 流程参数
      */
     void startFirstTask(ProcessInstance processInstance, Map<String, Object> variables);
+
+    /**
+     * 设置第一个任务审批人
+     * @param processInstance 流程实例
+     * @param variables 流程参数
+     */
+    void assignFirstTask(ProcessInstance processInstance, Map<String, Object> variables);
 }
