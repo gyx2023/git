@@ -2,6 +2,9 @@ package com.crm.web.controller.servicehall;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.utils.StringUtils;
+import com.crm.dto.BusinessMessageDTO;
+import com.crm.dto.BusinessResponseDTO;
+import com.crm.service.mq.ygcf.RpaConsumerService;
 import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
@@ -9,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/capability/development")
@@ -17,6 +21,9 @@ public class NotificationsController {
 
     @Resource
     private NengKaiService nengKaiService;
+
+    @Resource
+    private RpaConsumerService rpaConsumerService;
 
 
 
@@ -40,5 +47,31 @@ public class NotificationsController {
             return NengKaiResponseVo.error("action异常：" + e.getMessage());
         }
 
+    }
+
+    /**
+     * 无人工厂消息消费接口
+     */
+    @PostMapping(value = "consume")
+    @ResponseBody
+    @SaIgnore
+    public BusinessResponseDTO consumeMessage(@RequestBody BusinessMessageDTO message) throws IOException {
+
+        BusinessResponseDTO response = new BusinessResponseDTO();
+
+        log.info("无人工厂消息消费接口 接收消息：{}", message);
+        if (message == null) {
+            response.setStatus("failed");
+            response.setMessage("所有参数为空");
+            return response;
+        }
+
+        if (StringUtils.isBlank(message.getMessageBody())) {
+            response.setStatus("failed");
+            response.setMessage("处理参数为空");
+            return response;
+        }
+
+        return rpaConsumerService.receiveRpaMessage(message);
     }
 }

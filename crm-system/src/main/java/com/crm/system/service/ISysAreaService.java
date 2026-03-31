@@ -7,6 +7,7 @@ import com.crm.system.domain.vo.SysAreaVo;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 【请填写功能名称】Service接口
@@ -73,4 +74,6 @@ public interface ISysAreaService {
      * @return 三级县市列表
      */
     List<SysAreaVo> getCountiesByCityCodePrefix(String cityCodePrefix);
+
+    Map<Long, String> listAll();
 }
