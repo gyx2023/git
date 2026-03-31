@@ -254,7 +254,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             .map(item -> item.getInfoVal()) // 使用infoVal作为user_id
             .filter(userId -> userId != null && !userId.trim().isEmpty())
             .distinct()
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
         // 批量查询用户维护信息
         Map<String, String> svcNumMap = new HashMap<>();
@@ -271,16 +271,23 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             processedItem.setInfoVal(item.getInfoVal());
             processedItem.setCreateTime(item.getCreateTime());
 
-            // 获取user_id并验证
-            String userId = item.getInfoVal();
-            if (userId != null && svcNumMap.containsKey(userId) && svcNumMap.get(userId) != null) {
+            // 如果不是 GRP_CONTRACT_USER_LIST 类型，直接设置状态为 1（有效）
+            if (!"GRP_CONTRACT_USER_LIST".equals(item.getInfoTag())) {
                 processedItem.setIsValid("1");
-                processedItem.setInfoVal2(svcNumMap.get(userId));
-            } else {
-                // 用户不存在或无效，入库时状态默认=99（迁移失效）
-                processedItem.setIsValid("99");
-                // 保留原始服务号码
                 processedItem.setInfoVal2(item.getInfoVal2());
+            }else {
+                // 如果是GRP_CONTRACT_USER_LIST 类型,执行入库逻辑判断
+                // 获取user_id并验证
+                String userId = item.getInfoVal();
+                if (userId != null && svcNumMap.containsKey(userId) && svcNumMap.get(userId) != null) {
+                    processedItem.setIsValid("1");
+                    processedItem.setInfoVal2(svcNumMap.get(userId));
+                } else {
+                    // 用户不存在或无效，入库时状态默认=99（迁移失效）
+                    processedItem.setIsValid("99");
+                    // 保留原始服务号码
+                    processedItem.setInfoVal2(item.getInfoVal2());
+                }
             }
 
             processedDataList.add(processedItem);
@@ -325,7 +332,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
         LambdaQueryWrapper<ZqztGrpContractOtherInfo> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ZqztGrpContractOtherInfo::getContractId, contractId);
         lqw.eq(ZqztGrpContractOtherInfo::getIsValid, "1"); // 只查询有效的记录
-        
+
         // 如果infoVal2不为空，先解密再查询
         String decryptedInfoVal2 = null;
         if (infoVal2 != null && !infoVal2.isEmpty()) {
@@ -337,7 +344,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 lqw.like(ZqztGrpContractOtherInfo::getInfoVal2, infoVal2); // 解密失败时使用原始值
             }
         }
-        
+
         List<ZqztGrpContractOtherInfoVo> contractOtherInfos = baseMapper.selectVoList(lqw);
         if (contractOtherInfos == null || contractOtherInfos.isEmpty()) {
             return new ArrayList<>();
@@ -372,7 +379,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 mergedInfo.put("id", contractOtherInfo.getId()); // 添加ID字段，用于删除操作
                 mergedInfo.put("infoTag", contractOtherInfo.getInfoTag());
                 mergedInfo.put("infoVal", contractOtherInfo.getInfoVal());
-                
+
                 // 对infoVal2进行加密后返回给前端
                 String originalInfoVal2 = contractOtherInfo.getInfoVal2();
                 if (originalInfoVal2 != null && !originalInfoVal2.isEmpty()) {
@@ -381,12 +388,12 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 } else {
                     mergedInfo.put("infoVal2", originalInfoVal2);
                 }
-                
+
                 mergedInfo.put("isValid", contractOtherInfo.getIsValid());
 
                 // 添加从客户维护信息查询到的字段
                 Map<String, Object> custInfo = custMaintInfoMap.get(userId);
-                
+
                 // 根据权限判断是否脱敏处理手机号码
                 String svcNum = (String) custInfo.get("svcNum");
                 if (needDesensitize) {
@@ -395,9 +402,9 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 } else {
                     mergedInfo.put("svcNum", svcNum); // 管理员不脱敏
                 }
-                
+
                 mergedInfo.put("userId", custInfo.get("userId"));
-                
+
                 // 根据权限判断是否脱敏处理客户名称
                 String custName = (String) custInfo.get("custName");
                 if (needDesensitize) {
@@ -406,7 +413,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
                 } else {
                     mergedInfo.put("custName", custName); // 管理员不脱敏
                 }
-                
+
                 // 根据权限判断是否脱敏处理收入归集集团名称
                 String custGrpName = (String) custInfo.get("custGrpName");
                 if (needDesensitize) {
@@ -644,7 +651,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
             String restored = encryptedInfoVal2.replace('_', '=').replace('-', '+').replace('/', '_');
             // 再将'_'换回'/'
             restored = restored.replace('_', '/');
-            
+
             // Base64解码
             byte[] decodedBytes = java.util.Base64.getDecoder().decode(restored);
             return new String(decodedBytes, "UTF-8");
@@ -733,7 +740,7 @@ public class ZqztGrpContractOtherInfoServiceImpl implements IZqztGrpContractOthe
 
                 // 直接返回原始服务号码，不进行脱敏
                 userMap.put("svcNum", svcNum); // 原始号码
-                
+
                 // 对SVC_NUM进行加密处理（用于后续匹配）
                 String encryptedSvcNum = encryptSvcNum(svcNum);
                 userMap.put("encryptedSvcNum", encryptedSvcNum); // 加密后的号码
