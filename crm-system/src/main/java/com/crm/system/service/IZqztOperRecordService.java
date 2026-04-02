@@ -1,5 +1,6 @@
 package com.crm.system.service;
 
+import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqztOperRecordVo;
 import com.crm.system.domain.bo.ZqztOperRecordBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -45,4 +46,15 @@ public interface IZqztOperRecordService {
      * 校验并批量删除系统操作记录信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 根据集团信息新增系统操作记录
+     *
+     * @param groupInfo 集团信息对象
+     * @param status 操作状态：0-成功，1-失败（可选，默认 0）
+     * @param errorMsg 错误信息（可选，默认空字符串）
+     * @return 新增结果
+     */
+    Boolean insertByGroupInfo(ZqGrpGroupInfo groupInfo, Integer status, String errorMsg);
+
 }

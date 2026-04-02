@@ -21,8 +21,10 @@ import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.*;
 import com.crm.system.service.IZqGrpGroupInfoService;
+import com.crm.system.service.IZqztOperRecordService;
 import com.crm.system.utils.ExcelDropdownHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +47,9 @@ import java.util.*;
 public class ZqGrpGroupInfoController extends BaseController {
 
     private final IZqGrpGroupInfoService iZqGrpGroupInfoService;
+
+    @Autowired
+    private IZqztOperRecordService iZqztOperRecordService;
 
     /**
      * 查询政企集团客户信息列表
@@ -127,8 +132,24 @@ public class ZqGrpGroupInfoController extends BaseController {
     @GetMapping("/detail/{grpId}")
     public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
                                                      @PathVariable Long grpId) {
-        ZqGrpGroupInfo info = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
-        return R.ok(info);
+        try {
+            ZqGrpGroupInfo info = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
+            // 正常查询则状态为 0，error_msg 为空
+            iZqztOperRecordService.insertByGroupInfo(info, null, null);
+            return R.ok(info);
+        } catch (Exception e) {
+            // 如果出现异常状态为 1，记录错误信息
+            try {
+                // 尝试查询集团信息用于记录操作日志
+                ZqGrpGroupInfo errorInfo = new ZqGrpGroupInfo();
+                errorInfo.setGrpId(grpId);
+                iZqztOperRecordService.insertByGroupInfo(errorInfo, 1, e.getMessage());
+            } catch (Exception ex) {
+                // 如果记录日志也失败，打印错误信息
+                ex.printStackTrace();
+            }
+            return R.fail(e.getMessage());
+        }
     }
 
     /**

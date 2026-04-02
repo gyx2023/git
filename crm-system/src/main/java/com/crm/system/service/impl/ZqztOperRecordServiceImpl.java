@@ -1,12 +1,16 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONUtil;
+import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.system.domain.ZqGrpGroupInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.ZqztOperRecordBo;
@@ -15,9 +19,7 @@ import com.crm.system.domain.ZqztOperRecord;
 import com.crm.system.mapper.ZqztOperRecordMapper;
 import com.crm.system.service.IZqztOperRecordService;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * 系统操作记录Service业务层处理
@@ -116,4 +118,41 @@ public class ZqztOperRecordServiceImpl implements IZqztOperRecordService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    /**
+     * 根据集团信息新增系统操作记录
+     *
+     * @param groupInfo 集团信息对象
+     * @param status 操作状态：0-成功，1-失败（可选，默认 0）
+     * @param errorMsg 错误信息（可选，默认空字符串）
+     * @return 新增结果
+     */
+    @Override
+    public Boolean insertByGroupInfo(ZqGrpGroupInfo groupInfo, Integer status, String errorMsg) {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        ZqztOperRecord record = new ZqztOperRecord();
+        record.setModuleCode("group");
+        record.setOperCode("group_info_desensitization");
+        record.setBusinessId(String.valueOf(groupInfo.getGrpId()));
+        // 将 GRP_ID 转为 JSON 格式存储到 request_params
+        Map<String, Object> requestParamsMap = new HashMap<>();
+        requestParamsMap.put("GRP_ID", groupInfo.getGrpId());
+        record.setRequestParams(JSONUtil.toJsonStr(requestParamsMap));
+        // 将 GRP_ID、GRP_NAME、GRP_CODE、HQ_GRP_CODE 四个字段转为 JSON 格式存储到 extra_info
+        Map<String, Object> extraInfoMap = new HashMap<>();
+        extraInfoMap.put("GRP_ID", groupInfo.getGrpId());
+        extraInfoMap.put("GRP_NAME", groupInfo.getGrpName());
+        extraInfoMap.put("GRP_CODE", groupInfo.getGrpCode());
+        extraInfoMap.put("HQ_GRP_CODE", groupInfo.getHqGrpCode());
+        record.setExtraInfo(JSONUtil.toJsonStr(extraInfoMap));
+        // 设置状态和错误信息（如果为 null 则使用默认值）
+        record.setStatus(status != null ? status : 0);
+        record.setErrorMsg(errorMsg != null ? errorMsg : "");
+        record.setOperUserId(loginUser.getUserId());
+        record.setOperUserName(loginUser.getUsername());
+        record.setOperTime(new Date());
+        record.setOperIp(loginUser.getIpaddr());
+        return baseMapper.insert(record) > 0;
+    }
+
 }
