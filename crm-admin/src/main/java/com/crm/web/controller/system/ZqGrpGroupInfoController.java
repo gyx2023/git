@@ -17,6 +17,7 @@ import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.file.FileUtils;
 import com.crm.common.utils.poi.ExcelUtil;
+import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.*;
 import com.crm.system.service.IZqGrpGroupInfoService;
@@ -116,6 +117,18 @@ public class ZqGrpGroupInfoController extends BaseController {
                                        @PathVariable Long grpId) {
         ZqGrpGroupInfoVo vo = iZqGrpGroupInfoService.queryById(grpId);
         return R.ok(vo);
+    }
+
+    /**
+     * 获取政企集团客户信息详细信息（不脱敏）
+     *
+     * @param grpId 主键
+     */
+    @GetMapping("/detail/{grpId}")
+    public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
+                                                     @PathVariable Long grpId) {
+        ZqGrpGroupInfo info = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
+        return R.ok(info);
     }
 
     /**

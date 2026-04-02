@@ -26,6 +26,11 @@ public interface IZqGrpGroupInfoService {
     ZqGrpGroupInfoVo queryById(Long grpId);
 
     /**
+     * 查询政企集团客户信息（不脱敏）
+     */
+    ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId);
+
+    /**
      * 根据总部集团编码查询政企集团客户信息
      *
      * @param hqGrpCode 总部集团编码

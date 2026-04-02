@@ -72,6 +72,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     }
 
     /**
+     * 查询政企集团客户信息（不脱敏）
+     */
+    @Override
+    public ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId){
+        ZqGrpGroupInfo info = baseMapper.selectById(grpId);
+        return info;
+    }
+
+    /**
      * 查询政企集团客户信息列表
      */
     @Override
