@@ -24,7 +24,7 @@ public class ZqztOperRecord extends BaseEntity {
     /**
      * 主键ID，自增生成
      */
-    @TableId(value = "id")
+    @TableId(value = "id", type = IdType.AUTO)
     private Long id;
     /**
      * 模块编码：商机/集团等大模块

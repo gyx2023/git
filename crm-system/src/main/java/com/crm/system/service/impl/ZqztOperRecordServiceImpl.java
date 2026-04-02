@@ -138,13 +138,16 @@ public class ZqztOperRecordServiceImpl implements IZqztOperRecordService {
         Map<String, Object> requestParamsMap = new HashMap<>();
         requestParamsMap.put("GRP_ID", groupInfo.getGrpId());
         record.setRequestParams(JSONUtil.toJsonStr(requestParamsMap));
-        // 将 GRP_ID、GRP_NAME、GRP_CODE、HQ_GRP_CODE 四个字段转为 JSON 格式存储到 extra_info
-        Map<String, Object> extraInfoMap = new HashMap<>();
-        extraInfoMap.put("GRP_ID", groupInfo.getGrpId());
-        extraInfoMap.put("GRP_NAME", groupInfo.getGrpName());
-        extraInfoMap.put("GRP_CODE", groupInfo.getGrpCode());
-        extraInfoMap.put("HQ_GRP_CODE", groupInfo.getHqGrpCode());
-        record.setExtraInfo(JSONUtil.toJsonStr(extraInfoMap));
+        // 只有成功状态（0）才记录 extra_info
+        if (status == null || status == 0) {
+            // 将 GRP_ID、GRP_NAME、GRP_CODE、HQ_GRP_CODE 四个字段转为 JSON 格式存储到 extra_info
+            Map<String, Object> extraInfoMap = new HashMap<>();
+            extraInfoMap.put("GRP_ID", groupInfo.getGrpId());
+            extraInfoMap.put("GRP_NAME", groupInfo.getGrpName());
+            extraInfoMap.put("GRP_CODE", groupInfo.getGrpCode());
+            extraInfoMap.put("HQ_GRP_CODE", groupInfo.getHqGrpCode());
+            record.setExtraInfo(JSONUtil.toJsonStr(extraInfoMap));
+        }
         // 设置状态和错误信息（如果为 null 则使用默认值）
         record.setStatus(status != null ? status : 0);
         record.setErrorMsg(errorMsg != null ? errorMsg : "");
