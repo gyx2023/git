@@ -71,4 +71,12 @@ public class ZqztOperRecord extends BaseEntity {
      */
     private String operIp;
 
+    @TableField(exist = false)
+    private String createBy;
+    @TableField(exist = false)
+    private Date createTime;
+    @TableField(exist = false)
+    private String updateBy;
+    @TableField(exist = false)
+    private Date updateTime;
 }

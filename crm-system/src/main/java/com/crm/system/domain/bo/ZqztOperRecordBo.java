@@ -1,5 +1,7 @@
 package com.crm.system.domain.bo;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import lombok.Data;
@@ -93,5 +95,12 @@ public class ZqztOperRecordBo extends BaseEntity {
     @NotBlank(message = "操作人IP不能为空", groups = { AddGroup.class, EditGroup.class })
     private String operIp;
 
-
+    @TableField(exist = false)
+    private String createBy;
+    @TableField(exist = false)
+    private Date createTime;
+    @TableField(exist = false)
+    private String updateBy;
+    @TableField(exist = false)
+    private Date updateTime;
 }
