@@ -40,7 +40,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  UNION ALL
                  SELECT a.SVC_NUM, a.USER_ID, a.TYPE_LVL2_NAME
                  FROM ZQZT_CUST_MAINT_INFO a
-                          INNER JOIN TF_F_CUST_GROUP_M b ON a.CUST_ID = b.CUST_ID
+                          INNER JOIN TF_F_CUST_GROUP_D b ON a.CUST_ID = b.CUST_ID
                      AND b.GROUP_ID = #{hqGrpCode}
                  WHERE a.STATUS = '1'
                    AND (a.CUST_GRP_ID != #{hqGrpCode} OR a.CUST_GRP_ID IS NULL)
@@ -61,7 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         AND (
         CUST_GRP_ID = #{hqGrpCode}
         OR EXISTS (
-        SELECT 1 FROM TF_F_CUST_GROUP_M b
+        SELECT 1 FROM TF_F_CUST_GROUP_D b
         WHERE b.CUST_ID = a.CUST_ID
         AND GROUP_ID = #{hqGrpCode}
         )
