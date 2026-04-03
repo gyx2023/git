@@ -192,7 +192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             a.svc_num,
             b.cust_name
         from zqzt_grp_cust_inuse_userlist a
-        left join tf_f_cust_group_m b on a.subscrbid = b.cust_id
+        left join tf_f_cust_group_d b on a.subscrbid = b.cust_id
         where a.is_valid = '1'
           and a.inuse_id = #{inuseId}
     </select>
@@ -215,7 +215,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     <select id="getCustId" resultType="java.lang.String">
-        select cust_id from tf_f_cust_group_m  where group_id = #{hqGrpCodeA}
+        select cust_id from tf_f_cust_group_d where group_id = #{hqGrpCodeA}
     </select>
     <select id="queryUserIdArray" resultType="java.lang.String">
         select subscrbid from zqzt_grp_cust_inuse_userlist where inuse_id = #{inuseId} and is_valid = '1'
