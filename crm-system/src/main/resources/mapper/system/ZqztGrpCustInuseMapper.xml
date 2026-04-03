@@ -215,7 +215,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     <select id="getCustId" resultType="java.lang.String">
-        select cust_id from tf_f_cust_group_m  where group_id = #{hqGrpCodeA}
+        select cust_id from tf_f_cust_group_d where group_id = #{hqGrpCodeA}
     </select>
     <select id="queryUserIdArray" resultType="java.lang.String">
         select subscrbid from zqzt_grp_cust_inuse_userlist where inuse_id = #{inuseId} and is_valid = '1'
