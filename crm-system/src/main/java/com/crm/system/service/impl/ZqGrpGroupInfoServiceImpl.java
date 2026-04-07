@@ -57,7 +57,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
     private final SysCategoryMapper sysCategoryMapper; // 添加行业分类Mapper
     @Resource
-    private SysParamMapper sysParamMapper;
+    private ISysParamService sysParamService;
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
@@ -131,7 +131,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 //    }
 
     /**
-     * 查询政企集团客户信息列表（不脱敏省市县经理姓名）
+     * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
      */
     @Override
     public TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
@@ -159,6 +159,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         Page<ZqGrpGroupInfoVo2> result = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+
+        // 根据 sys_param 表的配置决定是否脱敏
+        applyDesensitizationIfNeeded(result.getRecords());
 
         return TableDataInfo.build(result);
     }
@@ -378,6 +381,51 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     vo.setIndustryDetailKind(industryName);
                 }
             }
+        }
+    }
+
+    /**
+     * 根据 sys_param 表的配置决定是否对经理姓名进行脱敏
+     *
+     * @param list 需要处理的数据列表
+     */
+    private void applyDesensitizationIfNeeded(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 查询脱敏开关配置
+            SysParamDo sysParamDo = sysParamService.findByCode("manager_info_desensitization_switch");
+
+            // 如果配置不存在或 value 不是 "on"，则不进行脱敏
+            if (sysParamDo == null || !"on".equalsIgnoreCase(sysParamDo.getValue())) {
+                log.debug("经理信息脱敏开关未开启，不进行脱敏处理");
+                return;
+            }
+
+            log.debug("经理信息脱敏开关已开启，开始脱敏处理");
+
+            // 对列表中的每条数据进行脱敏处理
+            for (ZqGrpGroupInfoVo2 vo : list) {
+                // 脱敏省级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getProvManagerName())) {
+                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
+                }
+
+                // 脱敏市级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCityManagerName())) {
+                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
+                }
+
+                // 脱敏县级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCountyManagerName())) {
+                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+                }
+            }
+        } catch (Exception e) {
+            log.error("经理信息脱敏处理失败: {}", e.getMessage(), e);
+            // 脱敏失败不影响主流程，继续返回数据
         }
     }
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {

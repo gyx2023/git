@@ -52,7 +52,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     private IZqztOperRecordService iZqztOperRecordService;
 
     /**
-     * 查询政企集团客户信息列表（不脱敏省市县经理姓名）
+     * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
      */
     @GetMapping("/lists")
     public TableDataInfo<ZqGrpGroupInfoVo2> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
