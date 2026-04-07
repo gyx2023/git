@@ -15,11 +15,13 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.file.FileAsyncTaskBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.file.FileAsyncTaskVo;
 import com.crm.system.mapper.SysOssMapper;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
 import com.crm.system.service.ISysOssService;
+import com.crm.system.service.ISysParamService;
 import com.crm.system.service.file.IFileAsyncTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +59,9 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
 
     @Resource
     private SysOssMapper ossMapper;
+
+    @Resource
+    private ISysParamService sysParamService;
 
     /**
      * 查询任务管理
@@ -314,12 +319,21 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             // 判断当前用户是否为管理员
             boolean isAdmin = LoginHelper.isAdmin();
 
+            // 查询sys_param表中经理信息的脱敏开关配置
+            SysParamDo sysParamDo = sysParamService.findByCode("manager_info_desensitization_switch");
+
             // 解析原始请求参数
             JSONObject jsonObject = JSONUtil.parseObj(requestParams);
             // 添加areaCode到请求参数中
             jsonObject.set("areaCode", areaCode);
             // 添加isAdmin到请求参数中
             jsonObject.set("isAdmin", isAdmin);
+            // 判断开关是否开启，如果为on则需要脱敏，其他则不脱敏
+            if("on".equals(sysParamDo.getValue())){
+                jsonObject.set("isDesensitize", "true");
+            }else{
+                jsonObject.set("isDesensitize", "false");
+            }
             // 将修改后的参数转回字符串
             String modifiedRequestParams = jsonObject.toString();
 
