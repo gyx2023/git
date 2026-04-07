@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDictData;
@@ -42,7 +43,12 @@ public interface IZqGrpGroupInfoService {
      * 查询政企集团客户信息列表
      */
     TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
-    TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
+    //TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
+
+    /**
+     * 查询政企集团客户信息列表（不脱敏省市县经理姓名）
+     */
+    TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
 
     /**
      * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）

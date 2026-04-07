@@ -22,6 +22,7 @@ import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.SysCategoryMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
@@ -99,8 +100,41 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     /**
      * 查询政企集团客户信息列表
      */
+//    @Override
+//    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
+//        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+//        if(deptLevel>=1){
+//            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+//        }
+//        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据，如果不为空则按参数查询
+//        if (StringUtils.isBlank(bo.getGrpLevel())) {
+//            lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+//        }
+//        // 处理时间范围参数
+//        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+//            try {
+//                // 前端已传入完整的时间格式(yyyy-MM-dd HH:mm:ss)，直接解析使用
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                Date beginDate = sdf.parse(grpCreateTimeBegin);
+//                Date endDate = sdf.parse(grpCreateTimeEnd);
+//                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+//            } catch (Exception e) {
+//                log.warn("时间参数解析失败: {}", e.getMessage());
+//            }
+//        }
+//
+//        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+//
+//        return TableDataInfo.build(result);
+//    }
+
+    /**
+     * 查询政企集团客户信息列表（不脱敏省市县经理姓名）
+     */
     @Override
-    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
+    public TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         LoginUser loginUser = LoginHelper.getLoginUser();
         Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
@@ -124,7 +158,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
 
         return TableDataInfo.build(result);
     }
