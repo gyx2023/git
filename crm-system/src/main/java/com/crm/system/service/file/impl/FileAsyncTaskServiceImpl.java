@@ -329,9 +329,9 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             // 添加isAdmin到请求参数中
             jsonObject.set("isAdmin", isAdmin);
             // 判断开关是否开启，如果为on则需要脱敏，其他则不脱敏
-            if("on".equals(sysParamDo.getValue())){
+            if (sysParamDo != null && "on".equalsIgnoreCase(sysParamDo.getValue())) {
                 jsonObject.set("isDesensitize", "true");
-            }else{
+            } else {
                 jsonObject.set("isDesensitize", "false");
             }
             // 将修改后的参数转回字符串

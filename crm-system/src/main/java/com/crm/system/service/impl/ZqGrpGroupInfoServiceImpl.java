@@ -936,23 +936,23 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * @return 政企集团客户信息列表
      */
     @Override
-    public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
+    public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
         lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
 
-        List<ZqGrpGroupInfoVo> resultList;
+        List<ZqGrpGroupInfoVo2> resultList;
         if (page != null) {
-            // 执行分页查询
-            IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
+            // 执行分页查询，使用 ZqGrpGroupInfoVo2（没有 @Sensitive 注解）
+            IPage<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(page, lqw, ZqGrpGroupInfoVo2.class);
             resultList = resultPage.getRecords();
         } else {
             // 执行全量查询
-            resultList = baseMapper.selectVoList(lqw);
+            resultList = baseMapper.selectVoList(lqw, ZqGrpGroupInfoVo2.class);
         }
 
         // 进行字典翻译
-        translateDictLabels(resultList);
+        translateDictLabelsForVo2(resultList);
 
         return resultList;
     }
@@ -1007,4 +1007,60 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
     }
 
+    /**
+     * 对 ZqGrpGroupInfoVo2 进行字典翻译
+     */
+    private void translateDictLabelsForVo2(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        // 应用翻译结果
+        for (ZqGrpGroupInfoVo2 vo : list) {
+            if (StringUtils.isNotBlank(vo.getAreaId())) {
+                try {
+                    Long areaId = Long.valueOf(vo.getAreaId());
+                    SysAreaVo area = sysAreaService.queryById(areaId);
+                    if (area != null) {
+                        vo.setAreaId(area.getName());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("地市ID格式错误: {}", vo.getAreaId());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getCountyId())) {
+                try {
+                    Long countyId = Long.valueOf(vo.getCountyId());
+                    SysAreaVo county = sysAreaService.queryById(countyId);
+                    if (county != null) {
+                        vo.setCountyId(county.getName());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("县分ID格式错误: {}", vo.getCountyId());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
+                SysCategoryVo industryMajorKind = sysCategoryService.queryById(vo.getIndustryMajorKind());
+                if (industryMajorKind != null) {
+                    vo.setIndustryMajorKind(industryMajorKind.getName());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
+                SysCategoryVo industrySubKind = sysCategoryService.queryById(vo.getIndustrySubKind());
+                if (industrySubKind != null) {
+                    vo.setIndustrySubKind(industrySubKind.getName());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
+                SysCategoryVo industryDetailKind = sysCategoryService.queryById(vo.getIndustryDetailKind());
+                if (industryDetailKind != null) {
+                    vo.setIndustryDetailKind(industryDetailKind.getName());
+                }
+            }
+        }
+    }
 }

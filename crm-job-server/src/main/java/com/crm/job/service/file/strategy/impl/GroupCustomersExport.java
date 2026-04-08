@@ -7,12 +7,14 @@ import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.utils.Desensitization;
+import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
-import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import com.crm.system.service.ISysOssService;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -56,13 +58,17 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             // 从任务参数中获取areaCode
             String areaCode = parseAreaCode(task);
 
+            // 从任务参数中获取是否需要脱敏的标识
+            Boolean needDesensitize = parseIsDesensitize(task);
+            log.info("导出任务 - 是否需要脱敏: {}", needDesensitize);
+
             // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
             String prefix = "group_customers_export_" + System.currentTimeMillis();
             File tempFile = File.createTempFile(prefix, ".xlsx");
 
             try {
                 // 使用流式导出方法
-                boolean success = exportToExcelStream(queryParams, areaCode, tempFile);
+                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
                 if (!success) {
                     task.setRemark("导出失败");
                     return false;
@@ -107,10 +113,11 @@ public class GroupCustomersExport extends AbstractExportStrategy {
     /**
      * 流式导出到Excel文件
      */
-    private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode,
+    private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode, Boolean needDesensitize,
                                          File outputFile) throws Exception {
         // 使用 EasyExcel 分批写入数据
-        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo.class)
+        // 使用 ZqGrpGroupInfoVo2（没有 @Sensitive 注解），可以手动控制是否脱敏
+        try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo2.class)
             .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
             .build()) {
 
@@ -123,12 +130,17 @@ public class GroupCustomersExport extends AbstractExportStrategy {
 
             while (hasMoreData) {
                 Page<ZqGrpGroupInfo> page = new Page<>(currentPage, pageSize, false);
-                List<ZqGrpGroupInfoVo> batchData = iZqGrpGroupInfoService.exportPageList(
+                List<ZqGrpGroupInfoVo2> batchData = iZqGrpGroupInfoService.exportPageList(
                     queryParams, page, areaCode);
 
                 if (batchData == null || batchData.isEmpty()) {
                     hasMoreData = false;
                     break;
+                }
+
+                // 如果需要脱敏，对当前批次数据进行手动脱敏处理
+                if (Boolean.TRUE.equals(needDesensitize)) {
+                    applyDesensitization(batchData);
                 }
 
                 // 写入当前批次数据
@@ -149,11 +161,64 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             if (jsonObject.containsKey("areaCode")) {
                 areaCode = jsonObject.getStr("areaCode");
             }
-            // 处理时间范围参数...
         } catch (Exception e) {
             log.warn("解析areaCode失败，使用默认值: {}", e.getMessage());
         }
         return areaCode;
+    }
+
+    /**
+     * 解析是否需要脱敏
+     */
+    private Boolean parseIsDesensitize(FileAsyncTaskDo task) {
+        try {
+            JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+            if (jsonObject.containsKey("isDesensitize")) {
+                String isDesensitize = jsonObject.getStr("isDesensitize");
+                return "true".equalsIgnoreCase(isDesensitize);
+            }
+        } catch (Exception e) {
+            log.warn("解析isDesensitize失败，默认不脱敏: {}", e.getMessage());
+        }
+        return false; // 默认不脱敏
+    }
+
+    /**
+     * 对经理姓名进行脱敏处理
+     *
+     * @param list 需要处理的数据列表
+     */
+    private void applyDesensitization(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        try {
+            log.debug("开始对{}条数据进行脱敏处理", list.size());
+
+            // 对列表中的每条数据进行脱敏处理
+            for (ZqGrpGroupInfoVo2 vo : list) {
+                // 脱敏省级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getProvManagerName())) {
+                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
+                }
+
+                // 脱敏市级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCityManagerName())) {
+                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
+                }
+
+                // 脱敏县级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCountyManagerName())) {
+                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+                }
+            }
+
+            log.debug("脱敏处理完成");
+        } catch (Exception e) {
+            log.error("经理信息脱敏处理失败: {}", e.getMessage(), e);
+            // 脱敏失败不影响主流程，继续导出数据
+        }
     }
 
     private ZqGrpGroupInfoBo parseQueryParams(ZqGrpGroupInfoBo queryParams, FileAsyncTaskDo task) {

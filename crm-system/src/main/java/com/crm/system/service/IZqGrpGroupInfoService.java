@@ -76,7 +76,7 @@ public interface IZqGrpGroupInfoService {
      * @param areaCode 区域代码
      * @return 政企集团客户信息列表
      */
-    List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode);
+    List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode);
 
     /**
      * 新增政企集团客户信息
