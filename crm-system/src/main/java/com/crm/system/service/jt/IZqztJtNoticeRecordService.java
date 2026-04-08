@@ -4,6 +4,7 @@ package com.crm.system.service.jt;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.jt.ZqztJtNoticeRecordBo;
+import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.jt.ZqztJtNoticeRecordVo;
 
 import java.util.Collection;
@@ -36,6 +37,8 @@ public interface IZqztJtNoticeRecordService {
      * 新增集团任务前置通知接口记录表
      */
     Boolean insertByBo(ZqztJtNoticeRecordBo bo);
+
+    Boolean saveNoticeRecord(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo);
 
     /**
      * 修改集团任务前置通知接口记录表
