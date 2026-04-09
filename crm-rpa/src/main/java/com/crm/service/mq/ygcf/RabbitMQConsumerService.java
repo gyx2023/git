@@ -402,9 +402,9 @@ public class RabbitMQConsumerService {
                                 }else if("String".equals(item.getValueType()) && valueByPath !=null){
                                     setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
                                 }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
-                                    setValueByPath(messageMap, item.getFormKey(), new BigDecimal((String) valueByPath));
+                                    setValueByPath(componentMap, item.getFormKey(), new BigDecimal((String) valueByPath));
                                 } else {
-                                    setValueByPath(messageMap, item.getFormKey(),valueByPath);
+                                    setValueByPath(componentMap, item.getFormKey(),valueByPath);
                                 }
                             }
                         }
@@ -417,7 +417,7 @@ public class RabbitMQConsumerService {
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
                         }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
-                            setValueByPath(messageMap, item.getFormKey(), new BigDecimal((String) valueByPath));
+                            setValueByPath(componentMap, item.getFormKey(), new BigDecimal((String) valueByPath));
                         } else {
                             setValueByPath(componentMap, item.getFormKey(), valueByPath);
                         }
