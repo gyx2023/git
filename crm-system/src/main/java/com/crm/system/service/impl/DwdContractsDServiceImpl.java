@@ -213,7 +213,8 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
             eform.setEndTime(infoMap.getJSONObject("detail").getString("endTime"));
             eform.setTradeType(infoMap.getString("trade_type"));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("查询表单电子化合同异常:{}", e.getMessage());
+            return null;
         }
         return eform;
     }
