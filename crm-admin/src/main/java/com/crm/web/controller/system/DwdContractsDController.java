@@ -1,5 +1,6 @@
 package com.crm.web.controller.system;
 
+import com.alibaba.fastjson.JSONObject;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
@@ -8,6 +9,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.DwdContractsDBo;
+import com.crm.system.domain.vo.ContractEformRespVo;
 import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.service.IDwdContractsDService;
 import lombok.RequiredArgsConstructor;
@@ -57,5 +59,13 @@ public class DwdContractsDController extends BaseController {
     public void export(DwdContractsDBo bo, HttpServletResponse response) {
         List<DwdContractsDVo> list = dwdContractsDService.selectDwdContractsDList(bo);
         ExcelUtil.exportExcel(list, "DWD_CONTRACTS_D数据", DwdContractsDVo.class, response);
+    }
+
+    /**
+     * 查询电子表单接口信息
+     */
+    @GetMapping(value = "/getEformInfoByNo/{arrairNo}")
+    public R<ContractEformRespVo> getEformInfoByNo(@PathVariable String arrairNo) {
+        return R.ok(dwdContractsDService.getEformInfoByNo(arrairNo));
     }
 }
