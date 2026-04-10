@@ -1,5 +1,7 @@
 package com.crm.system.service;
 
+import com.alibaba.fastjson.JSONObject;
+import com.crm.system.domain.vo.ContractEformRespVo;
 import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.domain.bo.DwdContractsDBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -64,4 +66,6 @@ public interface IDwdContractsDService {
      * @return 结果
      */
     Boolean deleteWithValidByIds(List<String> ids, Boolean isValid);
+
+    ContractEformRespVo getEformInfoByNo(String eFormNo);
 }

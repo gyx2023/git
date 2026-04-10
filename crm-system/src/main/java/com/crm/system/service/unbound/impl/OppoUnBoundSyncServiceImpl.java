@@ -246,6 +246,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             }
 
             //默认行业Z
+            oppoMap.put("isClearBudget","1");//是否清空预算，1是，0否
             oppoMap.put("industry", "99");    //一级行业
             oppoMap.put("industryName", "其他");
             oppoMap.put("industry2", "9901");//二级行业

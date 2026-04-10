@@ -12,6 +12,7 @@ import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
+import com.crm.system.service.jt.IZqztJtNoticeRecordService;
 import com.crm.utils.HaoKaoSignUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -69,12 +70,14 @@ public class NengKaiServiceImpl implements NengKaiService {
     @Resource
     private RedissonClient redissonClient;
 
+    @Resource
+    private IZqztJtNoticeRecordService iZqztJtNoticeRecordService;
+
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public NengKaiResponseVo nengKaiNotice(NengKaiRequestVo requestVo) {
         //入集团通知记录表
         ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = convert(requestVo);
-        zqztJtNoticeRecordMapper.insert(zqztJtNoticeRecordDo);
+        iZqztJtNoticeRecordService.saveNoticeRecord(zqztJtNoticeRecordDo);
         //发送mq消息
         //rabbitMQProducerService.sendMessage(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
 
