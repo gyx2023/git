@@ -33,7 +33,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                    AND NOT EXISTS (
                      SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
                      WHERE c.INFO_VAL = a.USER_ID
-                       AND c.CONTRACT_ID = #{contractId}
                        AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
                        AND c.IS_VALID = 1
                  )
@@ -47,7 +46,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                    AND NOT EXISTS (
                      SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
                      WHERE c.INFO_VAL = a.USER_ID
-                       AND c.CONTRACT_ID = #{contractId}
                        AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
                        AND c.IS_VALID = 1
                  )
@@ -69,7 +67,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         AND NOT EXISTS (
         SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
         WHERE c.INFO_VAL = a.USER_ID
-        AND CONTRACT_ID = #{contractId}
         AND INFO_TAG = 'GRP_CONTRACT_USER_LIST'
         AND IS_VALID = 1
         )
