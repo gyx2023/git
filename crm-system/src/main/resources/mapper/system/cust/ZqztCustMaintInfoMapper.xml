@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.cust.ZqztCustMaintInfoMapper">
+
+    <resultMap type="com.crm.system.domain.cust.ZqztCustMaintInfo" id="ZqztCustMaintInfoResult">
+        <result property="statCycle" column="STAT_CYCLE"/>
+        <result property="etlTime" column="ETL_TIME"/>
+        <result property="operType" column="OPER_TYPE"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="svcNum" column="SVC_NUM"/>
+        <result property="typeLvl2" column="TYPE_LVL2"/>
+        <result property="typeLvl2Name" column="TYPE_LVL2_NAME"/>
+        <result property="custGrpId" column="CUST_GRP_ID"/>
+        <result property="custGrpName" column="CUST_GRP_NAME"/>
+        <result property="custGrpType" column="CUST_GRP_TYPE"/>
+        <result property="custId" column="CUST_ID"/>
+        <result property="custName" column="CUST_NAME"/>
+        <result property="status" column="STATUS"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="updateTime" column="UPDATE_TIME"/>
+    </resultMap>
+
+    <!-- 查询未签约用户列表 -->
+    <select id="selectUncontractedUsers" resultType="com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo">
+        SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME, SVC_NUM AS ENCRYPTED_SVC_NUM
+        FROM (
+                 SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME
+                 FROM ZQZT_CUST_MAINT_INFO a
+                 WHERE a.STATUS = '1'
+                   AND a.CUST_GRP_ID = #{hqGrpCode}
+                   AND NOT EXISTS (
+                     SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
+                     WHERE c.INFO_VAL = a.USER_ID
+                       AND c.CONTRACT_ID = #{contractId}
+                       AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
+                       AND c.IS_VALID = 1
+                 )
+                 UNION ALL
+                 SELECT a.SVC_NUM, a.USER_ID, a.TYPE_LVL2_NAME
+                 FROM ZQZT_CUST_MAINT_INFO a
+                          INNER JOIN TF_F_CUST_GROUP_D b ON a.CUST_ID = b.CUST_ID
+                     AND b.GROUP_ID = #{hqGrpCode}
+                 WHERE a.STATUS = '1'
+                   AND (a.CUST_GRP_ID != #{hqGrpCode} OR a.CUST_GRP_ID IS NULL)
+                   AND NOT EXISTS (
+                     SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
+                     WHERE c.INFO_VAL = a.USER_ID
+                       AND c.CONTRACT_ID = #{contractId}
+                       AND c.INFO_TAG = 'GRP_CONTRACT_USER_LIST'
+                       AND c.IS_VALID = 1
+                 )
+             ) t
+    </select>
+    <!-- 查询未签约用户列表 -->
+    <select id="selectUncontractedUsersNoPage" resultType="com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo">
+        SELECT SVC_NUM, USER_ID, TYPE_LVL2_NAME,SVC_NUM AS ENCRYPTED_SVC_NUM
+        FROM ZQZT_CUST_MAINT_INFO a
+        WHERE STATUS = '1'
+        AND (
+        CUST_GRP_ID = #{hqGrpCode}
+        OR EXISTS (
+        SELECT 1 FROM TF_F_CUST_GROUP_D b
+        WHERE b.CUST_ID = a.CUST_ID
+        AND GROUP_ID = #{hqGrpCode}
+        )
+        )
+        AND NOT EXISTS (
+        SELECT 1 FROM ZQZT_GRP_CONTRACT_OTHER_INFO c
+        WHERE c.INFO_VAL = a.USER_ID
+        AND CONTRACT_ID = #{contractId}
+        AND INFO_TAG = 'GRP_CONTRACT_USER_LIST'
+        AND IS_VALID = 1
+        )
+        <if test="svcNums != null and svcNums != ''">
+            AND SVC_NUM in
+            <foreach item="item" index="index" collection="svcNums" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+</mapper>

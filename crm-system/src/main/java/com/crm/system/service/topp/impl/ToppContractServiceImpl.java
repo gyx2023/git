@@ -196,4 +196,22 @@ public class ToppContractServiceImpl implements IToppContractService {
         lqw.and(wrapper -> wrapper.eq(ToppContractDo::getIsValid, "1").or().isNull(ToppContractDo::getIsValid));
         return baseMapper.selectVoList(lqw);
     }
+
+    /**
+     * 根据商机ID列表批量查询合同信息 - 优化版
+     * 替代N+1查询问题
+     */
+    @Override
+    public List<ToppContractVo> selectByOpportunityIds(List<Long> opportunityIds) {
+        if (opportunityIds == null || opportunityIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        LambdaQueryWrapper<ToppContractDo> lqw = Wrappers.lambdaQuery();
+        lqw.in(ToppContractDo::getProjectId, opportunityIds);
+        lqw.eq(ToppContractDo::getIsValid, "1"); // 只查询有效的合同
+        lqw.orderByDesc(ToppContractDo::getCreateTime);
+        
+        return baseMapper.selectVoList(lqw);
+    }
 }

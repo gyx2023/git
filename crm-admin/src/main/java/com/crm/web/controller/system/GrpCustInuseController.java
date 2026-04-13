@@ -42,7 +42,6 @@ public class GrpCustInuseController extends BaseController {
     /**
      * 查询政企实际使用客户类型列表
      */
-    @SaCheckPermission("system:custInuse:list")
     @GetMapping("/list")
     public TableDataInfo<GrpCustInuseVo> list(GrpCustInuseBo bo, PageQuery pageQuery) {
         return iGrpCustInuseService.queryPageList(bo, pageQuery);
