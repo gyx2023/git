@@ -411,24 +411,23 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeEnd());
         }
 
-        // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
+        // 数据权限处理 - 根据登录用户的区域代码进行数据权限过滤
         LoginUser loginUser = LoginHelper.getLoginUser();
         String areaCode = loginUser.getAreaCode();
-        // 如果不是省本级(330000)，则需要进行数据权限过滤
-        if (!"330000".equals(areaCode)) {
+        
+        if (StringUtils.isNotBlank(areaCode)) {
             // 判断区域代码级别
-            if (areaCode.endsWith("0000")) {
-                log.info("省本级");
-                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
-                // 不添加过滤条件，可查看全省数据
+            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+                log.info("省级用户，查看全省数据");
             } else if (areaCode.endsWith("00")) {
                 // 地市级用户(如330100)，只能查看本市数据
+                log.info("地市级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
             } else {
-                // 区县级用户(如330102)，可查看所属地市的所有数据
-                // 提取地市代码(前4位+00)
-                String cityCode = areaCode.substring(0, 4) + "00";
-                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+                // 区县级用户(如330102)，只能查看本县数据
+                log.info("区县级用户，areaCode: {}", areaCode);
+                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
         }
 
@@ -512,21 +511,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
-        // 如果不是省本级(330000)，则需要进行数据权限过滤
-        if (!"330000".equals(areaCode)) {
+        if (StringUtils.isNotBlank(areaCode)) {
             // 判断区域代码级别
-            if (areaCode.endsWith("0000")) {
-                log.info("省本级用户导出");
-                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
-                // 不添加过滤条件，可查看全省数据
+            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+                log.info("省级用户导出，查看全省数据");
             } else if (areaCode.endsWith("00")) {
                 // 地市级用户(如330100)，只能查看本市数据
+                log.info("地市级用户导出，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
             } else {
-                // 区县级用户(如330102)，可查看所属地市的所有数据
-                // 提取地市代码(前4位+00)
-                String cityCode = areaCode.substring(0, 4) + "00";
-                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+                // 区县级用户(如330102)，只能查看本县数据
+                log.info("区县级用户导出，areaCode: {}", areaCode);
+                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
         }
 
