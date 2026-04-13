@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -253,7 +254,9 @@ public class RabbitMQConsumerService {
                             setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
-                        }else {
+                        }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
+                            setValueByPath(messageMap, item.getFormKey(), new BigDecimal((String) valueByPath));
+                        } else {
                             setValueByPath(messageMap, item.getFormKey(),valueByPath);
                         }
                     }
@@ -286,7 +289,9 @@ public class RabbitMQConsumerService {
                         setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                     }else if("String".equals(item.getValueType()) && valueByPath !=null){
                         setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
-                    }else {
+                    }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
+                        setValueByPath(messageMap, item.getFormKey(), new BigDecimal((String) valueByPath));
+                    } else {
                         setValueByPath(messageMap, item.getFormKey(),valueByPath);
                     }
                 }
@@ -396,8 +401,10 @@ public class RabbitMQConsumerService {
                                     setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                                 }else if("String".equals(item.getValueType()) && valueByPath !=null){
                                     setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
-                                }else {
-                                    setValueByPath(messageMap, item.getFormKey(),valueByPath);
+                                }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
+                                    setValueByPath(componentMap, item.getFormKey(), new BigDecimal((String) valueByPath));
+                                } else {
+                                    setValueByPath(componentMap, item.getFormKey(),valueByPath);
                                 }
                             }
                         }
@@ -409,7 +416,9 @@ public class RabbitMQConsumerService {
                             setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
                         }else if("String".equals(item.getValueType()) && valueByPath !=null){
                             setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
-                        }else {
+                        }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
+                            setValueByPath(componentMap, item.getFormKey(), new BigDecimal((String) valueByPath));
+                        } else {
                             setValueByPath(componentMap, item.getFormKey(), valueByPath);
                         }
                     }else {

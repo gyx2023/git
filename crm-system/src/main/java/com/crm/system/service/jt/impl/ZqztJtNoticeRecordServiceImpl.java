@@ -14,6 +14,7 @@ import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.system.service.jt.IZqztJtNoticeRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -94,6 +95,12 @@ public class ZqztJtNoticeRecordServiceImpl implements IZqztJtNoticeRecordService
             bo.setId(add.getId());
         }
         return flag;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean saveNoticeRecord(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo) {
+        return baseMapper.insert(zqztJtNoticeRecordDo) > 0;
     }
 
     /**
