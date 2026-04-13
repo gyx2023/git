@@ -218,7 +218,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select cust_id from tf_f_cust_group_d where group_id = #{hqGrpCodeA}
     </select>
     <select id="queryUserIdArray" resultType="java.lang.String">
-        select subscrbid from zqzt_grp_cust_inuse_userlist where inuse_id = #{inuseId} and is_valid = '1'
+        select distinct subscrbid from zqzt_grp_cust_inuse_userlist where is_valid = '1'
     </select>
     <select id="queryPageAddUserList"
             resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
