@@ -158,25 +158,22 @@ public class GroupCustomersExport extends AbstractExportStrategy {
 
     private ZqGrpGroupInfoBo parseQueryParams(ZqGrpGroupInfoBo queryParams, FileAsyncTaskDo task) {
         try {
-            cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+            JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
             // 处理时间范围参数
-            if (jsonObject.containsKey("grpCreateTimeBegin") && jsonObject.containsKey("grpCreateTimeEnd")) {
+            if (jsonObject.containsKey("grpCreateTimeBegin")) {
                 String grpCreateTimeBegin = jsonObject.getStr("grpCreateTimeBegin");
+                if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty()) {
+                    queryParams.setGrpCreateTimeBegin(grpCreateTimeBegin);
+                }
+            }
+            if (jsonObject.containsKey("grpCreateTimeEnd")) {
                 String grpCreateTimeEnd = jsonObject.getStr("grpCreateTimeEnd");
-
-                if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty()
-                    && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
-                    try {
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        queryParams.setCreateTimeStart(sdf.parse(grpCreateTimeBegin));
-                        queryParams.setCreateTimeEnd(sdf.parse(grpCreateTimeEnd));
-                    } catch (Exception e) {
-                        log.warn("时间参数解析失败: {}", e.getMessage());
-                    }
+                if (grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+                    queryParams.setGrpCreateTimeEnd(grpCreateTimeEnd);
                 }
             }
         } catch (Exception e) {
-            log.warn("解析areaCode失败，使用默认值: {}", e.getMessage());
+            log.warn("解析时间参数失败，使用默认值: {}", e.getMessage());
         }
         return queryParams;
     }
