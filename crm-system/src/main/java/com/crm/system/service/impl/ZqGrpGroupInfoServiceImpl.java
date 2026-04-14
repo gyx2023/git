@@ -844,7 +844,11 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+        lqw.and(wrapper -> wrapper
+            .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+            .or()
+            .isNull(ZqGrpGroupInfo::getGrpLevel)
+        );
 
         List<ZqGrpGroupInfoVo> resultList;
         if (page != null) {
