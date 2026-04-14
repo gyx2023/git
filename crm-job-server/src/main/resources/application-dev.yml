@@ -197,3 +197,28 @@ sms:
 --- # flowable
 flowable:
   database-schema: zj_sj_test
+kafka:
+  # 集群地址
+  bootstrap-servers: 10.189.29.75:32005,10.189.29.80:32020,10.189.29.92:32011
+  # 接口日志主题名称
+  topic:
+    interface-log: test-interface-log
+
+  # 生产者核心参数
+  producer:
+    retries: 1
+    acks: -1                  # 对应您的示例 `acks: "-1"`，表示需要所有ISR副本确认
+    batch-size: 16384
+    linger-ms: 0              # 对应您的示例，不延迟发送
+    buffer-memory: 102400     # 对应您的示例，单位是KB，这里换算为字节 102400 * 1024? 但示例是102400，通常buffer.memory是字节，这里保持与示例一致
+    # 注意：示例中 `buffer.memory` 值较小，可能在生产环境下需调大，如 33554432 (32MB)
+
+  # SASL/SCRAM 安全认证配置 (必填，与您的示例匹配)
+  security:
+    # 安全协议，使用 SASL_PLAINTEXT 或 SASL_SSL (如果集群启用了SSL)
+    protocol: SASL_PLAINTEXT
+    sasl:
+      # 认证机制
+      mechanism: SCRAM-SHA-256
+      # JAAS 配置，包含用户名和密码
+      jaas-config: org.apache.kafka.common.security.scram.ScramLoginModule required username="test-interface-log-user" password="test##ZJlt1116";
