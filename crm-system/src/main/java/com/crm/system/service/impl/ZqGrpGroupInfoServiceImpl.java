@@ -598,12 +598,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 添加时间范围查询条件
         // 处理创建时间范围查询
-        if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
-            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
-        } else if (bo.getCreateTimeStart() != null) {
-            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
-        } else if (bo.getCreateTimeEnd() != null) {
-            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
+        if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin()) && StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
+                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
+                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+            } catch (Exception e) {
+                log.warn("集团创建时间参数解析失败: {}", e.getMessage());
+            }
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
