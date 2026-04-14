@@ -1,10 +1,10 @@
-package com.crm.framework.interfaceLog.aspectj;
+package com.crm.web.controller.interfaceLog.aspectj;
 
 import com.crm.common.helper.LoginHelper;
 import com.crm.common.interfaceLog.annotation.InterfaceMonitor;
 import com.crm.common.interfaceLog.domain.InterfaceLog;
-import com.crm.framework.interfaceLog.kafka.KafkaLogSender;
 import com.crm.system.service.ISysConfigService;
+import com.crm.web.controller.interfaceLog.kafka.KafkaLogSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;

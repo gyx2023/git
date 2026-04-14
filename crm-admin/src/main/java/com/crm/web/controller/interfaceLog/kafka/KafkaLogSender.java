@@ -1,4 +1,4 @@
-package com.crm.framework.interfaceLog.kafka;
+package com.crm.web.controller.interfaceLog.kafka;
 
 import com.crm.common.interfaceLog.domain.InterfaceLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,10 +9,13 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Kafka日志发送器
