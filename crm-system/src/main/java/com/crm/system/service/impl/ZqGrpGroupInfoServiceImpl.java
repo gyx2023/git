@@ -22,6 +22,7 @@ import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.SysCategoryMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
@@ -56,7 +57,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
     private final SysCategoryMapper sysCategoryMapper; // 添加行业分类Mapper
     @Resource
-    private SysParamMapper sysParamMapper;
+    private ISysParamService sysParamService;
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
 
@@ -69,6 +70,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public ZqGrpGroupInfoVo queryById(Long grpId){
         ZqGrpGroupInfoVo vo = baseMapper.selectVoById(grpId);
         return vo;
+    }
+
+    /**
+     * 查询政企集团客户信息（不脱敏）
+     */
+    @Override
+    public ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId){
+        ZqGrpGroupInfo info = baseMapper.selectById(grpId);
+        return info;
     }
 
     /**
@@ -90,13 +100,50 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     /**
      * 查询政企集团客户信息列表
      */
+//    @Override
+//    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
+//        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+//        if(deptLevel>=1){
+//            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+//        }
+//        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据，如果不为空则按参数查询
+//        if (StringUtils.isBlank(bo.getGrpLevel())) {
+//            lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+//        }
+//        // 处理时间范围参数
+//        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+//            try {
+//                // 前端已传入完整的时间格式(yyyy-MM-dd HH:mm:ss)，直接解析使用
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                Date beginDate = sdf.parse(grpCreateTimeBegin);
+//                Date endDate = sdf.parse(grpCreateTimeEnd);
+//                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+//            } catch (Exception e) {
+//                log.warn("时间参数解析失败: {}", e.getMessage());
+//            }
+//        }
+//
+//        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+//
+//        return TableDataInfo.build(result);
+//    }
+
+    /**
+     * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
+     */
     @Override
-    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
+    public TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         LoginUser loginUser = LoginHelper.getLoginUser();
         Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+        }
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据，如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
         }
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
@@ -111,7 +158,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+
+        // 根据 sys_param 表的配置决定是否脱敏
+        applyDesensitizationIfNeeded(result.getRecords());
 
         return TableDataInfo.build(result);
     }
@@ -331,6 +381,51 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
                     vo.setIndustryDetailKind(industryName);
                 }
             }
+        }
+    }
+
+    /**
+     * 根据 sys_param 表的配置决定是否对经理姓名进行脱敏
+     *
+     * @param list 需要处理的数据列表
+     */
+    private void applyDesensitizationIfNeeded(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 查询脱敏开关配置
+            SysParamDo sysParamDo = sysParamService.findByCode("manager_info_desensitization_switch");
+
+            // 如果配置不存在或 value 不是 "on"，则不进行脱敏
+            if (sysParamDo == null || !"on".equalsIgnoreCase(sysParamDo.getValue())) {
+                log.debug("经理信息脱敏开关未开启，不进行脱敏处理");
+                return;
+            }
+
+            log.debug("经理信息脱敏开关已开启，开始脱敏处理");
+
+            // 对列表中的每条数据进行脱敏处理
+            for (ZqGrpGroupInfoVo2 vo : list) {
+                // 脱敏省级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getProvManagerName())) {
+                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
+                }
+
+                // 脱敏市级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCityManagerName())) {
+                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
+                }
+
+                // 脱敏县级客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCountyManagerName())) {
+                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+                }
+            }
+        } catch (Exception e) {
+            log.error("经理信息脱敏处理失败: {}", e.getMessage(), e);
+            // 脱敏失败不影响主流程，继续返回数据
         }
     }
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
@@ -838,23 +933,27 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * @return 政企集团客户信息列表
      */
     @Override
-    public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
+    public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+        lqw.and(wrapper -> wrapper
+            .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+            .or()
+            .isNull(ZqGrpGroupInfo::getGrpLevel)
+        );
 
-        List<ZqGrpGroupInfoVo> resultList;
+        List<ZqGrpGroupInfoVo2> resultList;
         if (page != null) {
-            // 执行分页查询
-            IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
+            // 执行分页查询，使用 ZqGrpGroupInfoVo2（没有 @Sensitive 注解）
+            IPage<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(page, lqw, ZqGrpGroupInfoVo2.class);
             resultList = resultPage.getRecords();
         } else {
             // 执行全量查询
-            resultList = baseMapper.selectVoList(lqw);
+            resultList = baseMapper.selectVoList(lqw, ZqGrpGroupInfoVo2.class);
         }
 
         // 进行字典翻译
-        translateDictLabels(resultList);
+        translateDictLabelsForVo2(resultList);
 
         return resultList;
     }
@@ -909,4 +1008,60 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
     }
 
+    /**
+     * 对 ZqGrpGroupInfoVo2 进行字典翻译
+     */
+    private void translateDictLabelsForVo2(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        // 应用翻译结果
+        for (ZqGrpGroupInfoVo2 vo : list) {
+            if (StringUtils.isNotBlank(vo.getAreaId())) {
+                try {
+                    Long areaId = Long.valueOf(vo.getAreaId());
+                    SysAreaVo area = sysAreaService.queryById(areaId);
+                    if (area != null) {
+                        vo.setAreaId(area.getName());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("地市ID格式错误: {}", vo.getAreaId());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getCountyId())) {
+                try {
+                    Long countyId = Long.valueOf(vo.getCountyId());
+                    SysAreaVo county = sysAreaService.queryById(countyId);
+                    if (county != null) {
+                        vo.setCountyId(county.getName());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("县分ID格式错误: {}", vo.getCountyId());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
+                SysCategoryVo industryMajorKind = sysCategoryService.queryById(vo.getIndustryMajorKind());
+                if (industryMajorKind != null) {
+                    vo.setIndustryMajorKind(industryMajorKind.getName());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
+                SysCategoryVo industrySubKind = sysCategoryService.queryById(vo.getIndustrySubKind());
+                if (industrySubKind != null) {
+                    vo.setIndustrySubKind(industrySubKind.getName());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
+                SysCategoryVo industryDetailKind = sysCategoryService.queryById(vo.getIndustryDetailKind());
+                if (industryDetailKind != null) {
+                    vo.setIndustryDetailKind(industryDetailKind.getName());
+                }
+            }
+        }
+    }
 }

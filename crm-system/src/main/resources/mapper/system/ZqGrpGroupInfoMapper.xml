@@ -66,7 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="getUpdQuery" resultType="com.crm.system.domain.ZqGrpGroupInfo">
         select
             t1.grp_id,
-            t1.grp_name,
+            t2.cust_name as grp_name,
             t1.grp_code,
             t1.hq_grp_code,
             t1.cust_id,
@@ -77,16 +77,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 when t2.cust_state = '2' then '05'
                 when t2.cust_state = '3' then '06'
                 when t2.cust_state = '4' then '04'
-            end grp_status,
+                end grp_status,
             t1.area_id,
-            t1.county_id,
+            t2.b_city_code as county_id,
             t1.county_id2,
             t1.grid_id,
-            t1.industry_major_kind,
-            t1.industry_sub_kind,
-            t1.industry_detail_kind,
+            t2.first_calling_type_code as industry_major_kind,
+            t2.second_calling_type_code as industry_sub_kind,
+            t2.third_calling_type_code as industry_detail_kind,
             t1.busi_type,
-            t1.grp_cust_type,
+            t2.cust_class_type as grp_cust_type,
             t1.grp_expand_type,
             t1.grp_busi_dept_type,
             t1.province_newold_type,
@@ -105,22 +105,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             t1.create_time,
             t1.update_time
         from zqzt_grp_group_info t1
-        inner join tf_f_cust_group_d t2 on t1.hq_grp_code = t2.group_id
+                 inner join tf_f_cust_group_d t2 on t1.hq_grp_code = t2.group_id
         where date(t2.update_date) = date(#{createDate})
-        and date(t2.create_date) <![CDATA[ <> ]]> date(#{createDate})
-        and (
-                (t2.cust_state = '2' and t1.grp_level <![CDATA[ <> ]]> 'Y')
-                or
-                (t2.cust_state in ('0', '1', '2', '3', '4')
-                and coalesce(t1.grp_status, '') <![CDATA[ <> ]]>
-                case
-                    when t2.cust_state = '0' then '03'
-                    when t2.cust_state = '1' then '02'
-                    when t2.cust_state = '2' then '05'
-                    when t2.cust_state = '3' then '06'
-                    when t2.cust_state = '4' then '04'
-                end
-                )
+          and date(t2.create_date) <![CDATA[ <> ]]> date(#{createDate})
+          and (
+            (t2.cust_state = '2' and t1.grp_level <![CDATA[ <> ]]> 'Y')
+           or
+            (t2.cust_state in ('0', '1', '2', '3', '4')
+          and coalesce(t1.grp_status, '') <![CDATA[ <> ]]>
+            case
+            when t2.cust_state = '0' then '03'
+            when t2.cust_state = '1' then '02'
+            when t2.cust_state = '2' then '05'
+            when t2.cust_state = '3' then '06'
+            when t2.cust_state = '4' then '04'
+            end
+            )
+           or
+            coalesce(t1.county_id, '') <![CDATA[ <> ]]> coalesce(t2.b_city_code, '')
+           or
+            coalesce(t1.grp_cust_type, '') <![CDATA[ <> ]]> coalesce(t2.cust_class_type, '')
+           or
+            coalesce(t1.grp_name, '') <![CDATA[ <> ]]> coalesce(t2.cust_name, '')
+           or
+            coalesce(t1.industry_major_kind, '') <![CDATA[ <> ]]> coalesce(t2.first_calling_type_code, '')
+           or
+            coalesce(t1.industry_sub_kind, '') <![CDATA[ <> ]]> coalesce(t2.second_calling_type_code, '')
+           or
+            coalesce(t1.industry_detail_kind, '') <![CDATA[ <> ]]> coalesce(t2.third_calling_type_code, '')
             )
     </select>
 
