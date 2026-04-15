@@ -185,6 +185,19 @@ public class ZqGrpGroupInfoBo extends BaseEntity {
     private String countyManagerName;
 
     /**
+     * 实体客户经理工号
+     */
+    private String custManagerEmpId;
+    /**
+     * 实体客户经理OA账号
+     */
+    private String custManagerOauser;
+    /**
+     * 实体客户经理姓名
+     */
+    private String custManagerName;
+
+    /**
      * 分配时间开始
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
