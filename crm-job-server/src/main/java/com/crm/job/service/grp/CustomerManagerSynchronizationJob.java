@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +33,9 @@ public class CustomerManagerSynchronizationJob {
 
             log.info("查询到政企集团客户信息总数: {}", groupInfoList.size());
 
+            // 用于收集需要更新的数据
+            List<ZqGrpGroupInfo> needUpdateList = new ArrayList<>();
+
             // 遍历处理数据
             for (ZqGrpGroupInfo zqGrpGroupInfo : groupInfoList) {
                 String grpCustType = zqGrpGroupInfo.getGrpCustType();
@@ -43,6 +47,27 @@ public class CustomerManagerSynchronizationJob {
                     // 处理集团客户类别不为400的逻辑(包括null、空字符串、其他值)
                     fillCustomerManagerInfo(zqGrpGroupInfo);
                 }
+
+                // 检查是否需要更新(只要填充了客户经理信息就需要更新)
+                if (zqGrpGroupInfo.getCustManagerEmpId() != null || 
+                    zqGrpGroupInfo.getCustManagerOauser() != null || 
+                    zqGrpGroupInfo.getCustManagerName() != null) {
+                    needUpdateList.add(zqGrpGroupInfo);
+                }
+            }
+
+            log.info("需要更新的记录数: {}", needUpdateList.size());
+
+            // 批量更新数据
+            if (!needUpdateList.isEmpty()) {
+                int updateCount = 0;
+                for (ZqGrpGroupInfo groupInfo : needUpdateList) {
+                    int result = zqGrpGroupInfoMapper.updateById(groupInfo);
+                    if (result > 0) {
+                        updateCount++;
+                    }
+                }
+                log.info("成功更新记录数: {}", updateCount);
             }
 
             log.info("实体客户经理数据同步任务执行完成");
