@@ -20,7 +20,7 @@ public @interface InterfaceMonitor {
      * 系统标识，用于区分不同系统
      * 默认为 "intl"
      */
-    String system() default "test-interface-system";
+    String system() default "zqyy";
 
     /**
      * 是否记录请求体
