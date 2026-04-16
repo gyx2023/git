@@ -945,7 +945,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        
+
         // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
         if (StringUtils.isBlank(bo.getGrpLevel())) {
             lqw.and(wrapper -> wrapper
