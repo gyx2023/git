@@ -29,6 +29,8 @@ public class CustomerManagerSynchronizationJob {
         try {
             // 查询全部政企集团客户信息(不脱敏)
             LambdaQueryWrapper<ZqGrpGroupInfo> queryWrapper = new LambdaQueryWrapper<>();
+            //测试前十条
+            //queryWrapper.last("limit 10");
             List<ZqGrpGroupInfo> groupInfoList = zqGrpGroupInfoMapper.selectList(queryWrapper);
 
             log.info("查询到政企集团客户信息总数: {}", groupInfoList.size());
@@ -49,8 +51,8 @@ public class CustomerManagerSynchronizationJob {
                 }
 
                 // 检查是否需要更新(只要填充了客户经理信息就需要更新)
-                if (zqGrpGroupInfo.getCustManagerEmpId() != null || 
-                    zqGrpGroupInfo.getCustManagerOauser() != null || 
+                if (zqGrpGroupInfo.getCustManagerEmpId() != null ||
+                    zqGrpGroupInfo.getCustManagerOauser() != null ||
                     zqGrpGroupInfo.getCustManagerName() != null) {
                     needUpdateList.add(zqGrpGroupInfo);
                 }

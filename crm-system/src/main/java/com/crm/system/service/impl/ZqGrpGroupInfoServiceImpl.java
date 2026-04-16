@@ -408,19 +408,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
             // 对列表中的每条数据进行脱敏处理
             for (ZqGrpGroupInfoVo2 vo : list) {
-                // 脱敏省级客户经理姓名
-                if (StringUtils.isNotBlank(vo.getProvManagerName())) {
-                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
-                }
-
-                // 脱敏市级客户经理姓名
-                if (StringUtils.isNotBlank(vo.getCityManagerName())) {
-                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
-                }
-
-                // 脱敏县级客户经理姓名
-                if (StringUtils.isNotBlank(vo.getCountyManagerName())) {
-                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+                // 脱敏实体客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCustManagerName())) {
+                    vo.setCustManagerName(Desensitization.desensitizeName(vo.getCustManagerName()));
                 }
             }
         } catch (Exception e) {
