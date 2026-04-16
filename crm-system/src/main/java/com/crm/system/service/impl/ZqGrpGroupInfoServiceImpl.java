@@ -141,9 +141,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
-        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据，如果不为空则按参数查询
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
         if (StringUtils.isBlank(bo.getGrpLevel())) {
-            lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
         }
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
@@ -598,15 +604,12 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 添加时间范围查询条件
         // 处理创建时间范围查询
-        if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin()) && StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
-                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
-                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
-            } catch (Exception e) {
-                log.warn("集团创建时间参数解析失败: {}", e.getMessage());
-            }
+        if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
+            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+        } else if (bo.getCreateTimeStart() != null) {
+            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
+        } else if (bo.getCreateTimeEnd() != null) {
+            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
@@ -942,11 +945,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        lqw.and(wrapper -> wrapper
-            .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
-            .or()
-            .isNull(ZqGrpGroupInfo::getGrpLevel)
-        );
+
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
 
         List<ZqGrpGroupInfoVo2> resultList;
         if (page != null) {
