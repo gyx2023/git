@@ -445,29 +445,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
 
-        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
-        String provManagerOauser = bo.getProvManagerOauser();
-        String cityManagerOauser = bo.getCityManagerOauser();
-        String countyManagerOauser = bo.getCountyManagerOauser();
-
-        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
-            lqw.and(wrapper -> {
-                // 省级经理条件
-                if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
-                }
-
-                // 市级经理条件
-                if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
-                }
-
-                // 县区级经理条件
-                if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
-                }
-            });
-        }
+        // 实体客户经理OA账号模糊查询
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerOauser()), ZqGrpGroupInfo::getCustManagerOauser, bo.getCustManagerOauser());
 
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
@@ -553,29 +532,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
         lqw.in(bo.getGrpIds() != null && !bo.getGrpIds().isEmpty(), ZqGrpGroupInfo::getGrpId, bo.getGrpIds());
 
-        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
-        String provManagerOauser = bo.getProvManagerOauser();
-        String cityManagerOauser = bo.getCityManagerOauser();
-        String countyManagerOauser = bo.getCountyManagerOauser();
-
-        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
-            lqw.and(wrapper -> {
-                // 省级经理条件
-                if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
-                }
-
-                // 市级经理条件
-                if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
-                }
-
-                // 县区级经理条件
-                if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
-                }
-            });
-        }
+        // 实体客户经理OA账号模糊查询
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerOauser()), ZqGrpGroupInfo::getCustManagerOauser, bo.getCustManagerOauser());
 
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
