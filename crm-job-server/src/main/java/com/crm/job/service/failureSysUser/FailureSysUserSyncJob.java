@@ -56,6 +56,10 @@ public class FailureSysUserSyncJob {
      * 失效用户类型
      */
     private static final String IS_VALID_FAILURE = "0";
+    /**
+     * 用户超时备注信息
+     */
+    private static final String USER_FAILURE_REMARK = "长期不登录账号清理";
 
     @Resource
     private SysUsersMapper sysUsersMapper;
@@ -125,6 +129,7 @@ public class FailureSysUserSyncJob {
 
                 user.setIsValid(IS_VALID_FAILURE);
                 user.setUpdateTime(nowDate);
+                user.setRemark(USER_FAILURE_REMARK);
 
 
                 // 保存sysUser信息到List
