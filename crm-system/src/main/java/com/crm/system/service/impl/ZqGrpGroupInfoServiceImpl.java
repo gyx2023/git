@@ -627,26 +627,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
 
         if (originalInfo == null) {
-            return false; // 如果找不到原始记录，直接返回失败} else {
-        }
-
-        // 根据集团客户拓展类型进行校验
-        String expandType = originalInfo.getGrpExpandType();
-        if ("01".equals(expandType)) {
-            // 省直拓 - 省级客户经理不能为空
-            if (bo.getProvManagerOauser() == null || bo.getProvManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为省直拓，省级客户经理信息不能为空");
-            }
-        } else if ("02".equals(expandType)) {
-            // 市直拓 - 市级客户经理不能为空
-            if (bo.getCityManagerOauser() == null || bo.getCityManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为市直拓，市级客户经理信息不能为空");
-            }
-        } else if ("03".equals(expandType)) {
-            // 县直拓 - 县级客户经理不能为空
-            if (bo.getCountyManagerOauser() == null || bo.getCountyManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为县直拓，县级客户经理信息不能为空");
-            }
+            return false; // 如果找不到原始记录，直接返回失败
         }
 
         // 记录变更日志
@@ -658,28 +639,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 只更新非空的客户经理信息字段
         boolean hasUpdateFields = false;
-        if (bo.getProvManagerOauser() != null) {
-            update.setProvManagerOauser(bo.getProvManagerOauser());
+        if (bo.getCustManagerEmpId() != null) {
+            update.setCustManagerEmpId(bo.getCustManagerEmpId());
             hasUpdateFields = true;
         }
-        if (bo.getProvManagerName() != null) {
-            update.setProvManagerName(bo.getProvManagerName());
+        if (bo.getCustManagerOauser() != null) {
+            update.setCustManagerOauser(bo.getCustManagerOauser());
             hasUpdateFields = true;
         }
-        if (bo.getCityManagerOauser() != null) {
-            update.setCityManagerOauser(bo.getCityManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCityManagerName() != null) {
-            update.setCityManagerName(bo.getCityManagerName());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerOauser() != null) {
-            update.setCountyManagerOauser(bo.getCountyManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerName() != null) {
-            update.setCountyManagerName(bo.getCountyManagerName());
+        if (bo.getCustManagerName() != null) {
+            update.setCustManagerName(bo.getCustManagerName());
             hasUpdateFields = true;
         }
 
