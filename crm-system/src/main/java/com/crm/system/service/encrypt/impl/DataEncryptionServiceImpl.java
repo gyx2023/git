@@ -2,6 +2,7 @@ package com.crm.system.service.encrypt.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.encrypt.SensitiveFieldEncryptUtil;
@@ -79,9 +80,39 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
 
     @Override
     public Map<String, Object> executeEncryptionByTableAndField(String tableName, String fieldName) {
-        throw new UnsupportedOperationException(
-            "请使用配置ID执行加密任务，以确保 primary_key 配置和唯一性校验生效"
-        );
+        log.info("按表名和字段名执行加密任务，表名：{}，字段：{}", tableName, fieldName);
+        
+        // 根据表名和字段名查询配置（大小写不敏感）
+        LambdaQueryWrapper<SysFieldEncryptConfigDo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.apply("LOWER(table_name) = LOWER({0})", tableName)
+                   .apply("LOWER(field_name) = LOWER({0})", fieldName);
+        
+        SysFieldEncryptConfigVo config = configMapper.selectVoOne(queryWrapper);
+        
+        if (config == null) {
+            String errorMsg = String.format(
+                "未找到表 [%s] 字段 [%s] 的加密配置，请先在 sys_field_encrypt_config 表中添加配置",
+                tableName, fieldName
+            );
+            log.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
+        
+        log.info("找到配置，ID：{}，主键字段：{}", config.getId(), config.getPrimaryKey());
+        
+        // 校验 primary_key 不能为空
+        if (StringUtils.isBlank(config.getPrimaryKey())) {
+            throw new IllegalArgumentException(String.format(
+                "表 [%s] 的配置中 primary_key 不能为空，请指定能唯一标识行的字段（多个字段用逗号分隔）",
+                config.getTableName()
+            ));
+        }
+        
+        // 校验定位字段的唯一性
+        validatePrimaryKeyUniqueness(config);
+        
+        // 执行加密任务
+        return processEncryption(config);
     }
 
     /**
