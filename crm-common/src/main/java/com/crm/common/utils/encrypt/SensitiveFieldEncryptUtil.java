@@ -20,7 +20,7 @@ public class SensitiveFieldEncryptUtil {
      * 默认AES密钥（16位）
      * 生产环境建议从配置文件读取
      */
-    private static final String DEFAULT_AES_KEY = "1234567890123456";
+    private static final String DEFAULT_AES_KEY = "HcR#9mk$2pL@7qR!";
 
     /**
      * 使用默认密钥加密
