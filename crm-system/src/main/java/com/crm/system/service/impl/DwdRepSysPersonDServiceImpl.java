@@ -366,8 +366,8 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
     public List<Object> getManagersByLoginUser(){
         //先用当前登录用户到达梦库REP_SYS_PERSON_NEW_D表查询是否为省中心，如果为省中心则返回省中心下的所有有效的客户经理信息
         LoginUser loginUser = LoginHelper.getLoginUser();
-        Integer userCount = repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
-        if(userCount >= 1){
+        Integer deptLevel = repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel >= 1){
             List<RepSysPersonNewDDo> managers = repSysPersonNewDMapper.selectProvincialManagers();
             return new ArrayList<>(managers);
         }
