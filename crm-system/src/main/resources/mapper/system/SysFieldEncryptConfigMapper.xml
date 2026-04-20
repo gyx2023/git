@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.encrypt.SysFieldEncryptConfigMapper">
+
+    <!-- 动态单条更新加密字段 -->
+    <update id="updateEncryptedField">
+        UPDATE ${tableName}
+        SET ${fieldName} = #{record.encryptedValue}
+        WHERE
+        <foreach collection="primaryKey.split(',')" item="key" separator=" AND ">
+            ${key.trim()} = #{record[${key.trim()}]}
+        </foreach>
+    </update>
+
+</mapper>
