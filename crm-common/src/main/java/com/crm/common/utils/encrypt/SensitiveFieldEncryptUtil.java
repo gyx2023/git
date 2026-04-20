@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * 敏感字段加解密工具类
  * 基于AES算法实现字段的加密和解密
- * 
+ *
  * @author tjx
  */
 @Slf4j
@@ -43,11 +43,11 @@ public class SensitiveFieldEncryptUtil {
         if (StrUtil.isBlank(data)) {
             return data;
         }
-        
+
         if (StrUtil.isBlank(key)) {
             throw new IllegalArgumentException("AES密钥不能为空");
         }
-        
+
         // AES密钥长度校验：16位、24位、32位
         int keyLength = key.length();
         if (keyLength != 16 && keyLength != 24 && keyLength != 32) {
@@ -84,7 +84,7 @@ public class SensitiveFieldEncryptUtil {
         if (StrUtil.isBlank(encryptedData)) {
             return encryptedData;
         }
-        
+
         if (StrUtil.isBlank(key)) {
             throw new IllegalArgumentException("AES密钥不能为空");
         }
@@ -112,13 +112,13 @@ public class SensitiveFieldEncryptUtil {
         if (StrUtil.isBlank(data)) {
             return false;
         }
-        
+
         // 快速判断：加密后的数据通常是Base64编码，长度一般为4的倍数
         // 且包含Base64特征字符（A-Z, a-z, 0-9, +, /, =）
         if (!isBase64Format(data)) {
             return false;
         }
-        
+
         try {
             String decrypted = decrypt(data);
             // 如果解密成功且与原文不同，说明已加密
@@ -139,7 +139,7 @@ public class SensitiveFieldEncryptUtil {
         if (StrUtil.isBlank(str)) {
             return false;
         }
-        
+
         // Base64编码的特征：
         // 1. 长度是4的倍数
         // 2. 只包含 A-Z, a-z, 0-9, +, /, = 字符
@@ -147,7 +147,7 @@ public class SensitiveFieldEncryptUtil {
         if (str.length() % 4 != 0) {
             return false;
         }
-        
+
         // 正则表达式匹配Base64格式
         return str.matches("^[A-Za-z0-9+/]*={0,2}$");
     }
@@ -162,12 +162,36 @@ public class SensitiveFieldEncryptUtil {
         if (StrUtil.isBlank(data)) {
             return data;
         }
-        
+
         if (isEncrypted(data)) {
             log.debug("数据已加密，跳过加密操作");
             return data;
         }
-        
+
         return encrypt(data);
+    }
+
+    /**
+     * 解密测试
+     */
+    public static void main(String[] args) {
+        // 加密串（请在这里填入需要解密的字符串）
+        String encryptedStr = "/XQxj2Pb38d/RnbkEJZKvr71fuTmvbLIiutBq92tPUCiaDjnCua8DKDE/jSyAm/7tQHgkcf+/ehIQ3PW9+00Mg==";
+
+        System.out.println("========== 解密测试 ==========");
+        System.out.println("密钥：" + DEFAULT_AES_KEY);
+        System.out.println("加密字符串：" + encryptedStr);
+
+        try {
+            // 解密
+            String decryptedStr = decrypt(encryptedStr);
+            System.out.println("解密结果：" + decryptedStr);
+
+        } catch (Exception e) {
+            System.err.println("解密失败：" + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            System.out.println("========== 测试结束 ==========");
+        }
     }
 }
