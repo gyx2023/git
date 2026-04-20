@@ -1,6 +1,6 @@
 package com.crm.system.listener.manager;
 
-import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.common.core.domain.dto.GrpGroupImportDTO;
@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 客户经理导入监听器
@@ -51,10 +52,80 @@ public class CustomerManagerImportListener {
     private SysDeptServiceImpl sysDeptService;
     @Autowired
     private ISysAreaService sysAreaService;
+    @Autowired
+    private IZqGrpGroupInfoService zqGrpGroupInfoService;
+    
     public List<CustomerManagerImportResultVo> processImportData(List<CustomerManagerTemplateVo> dataList, Long createUserId) {
         List<GrpGroupImportDTO> canBindManagers = getCanBindManagers(createUserId);
-
-
+        
+        // 将可绑定的客户经理按OA用户名建立索引，提高查找效率
+        Map<String, GrpGroupImportDTO> canBindManagerMap = canBindManagers.stream()
+            .collect(Collectors.toMap(
+                GrpGroupImportDTO::getOaUserName, 
+                item -> item,
+                (existing, replacement) -> existing // 如果有重复键，保留第一个
+            ));
+        
+        List<CustomerManagerImportResultVo> results = new ArrayList<>();
+        
+        for (CustomerManagerTemplateVo templateVo : dataList) {
+            CustomerManagerImportResultVo result = new CustomerManagerImportResultVo();
+            result.setHqGrpCode(templateVo.getHqGrpCode());
+            result.setCustManagerOauser(templateVo.getCustManagerOauser());
+            
+            // 检查权限：custManagerOauser 是否在 canBindManagers 的 oaUserName 里
+            if (!canBindManagerMap.containsKey(templateVo.getCustManagerOauser())) {
+                result.setProcessResult("失败");
+                result.setErrorMessage("无权限绑定此客户经理:" + templateVo.getCustManagerOauser());
+                results.add(result);
+                continue;
+            }
+            
+            // 有权限，更新 zqzt_grp_group_info 表的 cust_manager 相关字段
+            try {
+                ZqGrpGroupInfo groupInfo = zqGrpGroupInfoService.selectByHqGrpCode(templateVo.getHqGrpCode());
+                if (groupInfo == null) {
+                    result.setProcessResult("失败");
+                    result.setErrorMessage("未找到总部集团编码对应的数据:" + templateVo.getHqGrpCode());
+                    results.add(result);
+                    continue;
+                }
+                
+                // 获取有权限的客户经理信息
+                GrpGroupImportDTO managerInfo = canBindManagerMap.get(templateVo.getCustManagerOauser());
+                
+                // 更新集团信息中的客户经理字段
+                groupInfo.setCustManagerEmpId(managerInfo.getEmpId());
+                groupInfo.setCustManagerOauser(managerInfo.getOaUserName());
+                groupInfo.setCustManagerName(managerInfo.getFullName());
+                
+                // 构建更新用的 BO 对象
+                ZqGrpGroupInfoBo updateBo = new ZqGrpGroupInfoBo();
+                updateBo.setGrpId(groupInfo.getGrpId());
+                updateBo.setCustManagerEmpId(groupInfo.getCustManagerEmpId());
+                updateBo.setCustManagerOauser(groupInfo.getCustManagerOauser());
+                updateBo.setCustManagerName(groupInfo.getCustManagerName());
+                
+                // 执行更新操作
+                Boolean updateSuccess = zqGrpGroupInfoService.updateByBo(updateBo);
+                
+                if (updateSuccess) {
+                    result.setProcessResult("成功");
+                    result.setErrorMessage("");
+                } else {
+                    result.setProcessResult("失败");
+                    result.setErrorMessage("更新数据库失败");
+                }
+            } catch (Exception e) {
+                log.error("处理客户经理导入时发生异常", e);
+                result.setProcessResult("失败");
+                result.setErrorMessage("系统异常:" + e.getMessage());
+            }
+            
+            results.add(result);
+        }
+        
+        return results;
     }
 
     /**
