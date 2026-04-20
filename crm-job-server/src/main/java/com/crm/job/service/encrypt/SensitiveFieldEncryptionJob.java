@@ -1,6 +1,8 @@
 package com.crm.job.service.encrypt;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.crm.system.domain.vo.encrypt.SysFieldEncryptConfigVo;
 import com.crm.system.service.encrypt.IDataEncryptionService;
 import com.crm.system.service.encrypt.ISysFieldEncryptConfigService;
@@ -168,6 +170,7 @@ public class SensitiveFieldEncryptionJob {
 
     /**
      * 解析任务参数
+     * 支持 JSON 格式：{"configId":"2"} 或 {"tableName":"user","fieldName":"phone"}
      */
     private EncryptionTaskParams parseTaskParams(String jobParam) {
         EncryptionTaskParams params = new EncryptionTaskParams();
@@ -178,32 +181,50 @@ public class SensitiveFieldEncryptionJob {
         }
 
         try {
-            // 简单的参数解析，支持 key=value 格式
-            String[] pairs = jobParam.split(",");
-            for (String pair : pairs) {
-                String[] kv = pair.split("=");
-                if (kv.length == 2) {
-                    String key = kv[0].trim();
-                    String value = kv[1].trim();
+            // 尝试解析为 JSON 格式
+            if (jobParam.trim().startsWith("{")) {
+                JSONObject jsonObject = JSONUtil.parseObj(jobParam);
+                
+                if (jsonObject.containsKey("configId")) {
+                    params.setConfigId(jsonObject.getLong("configId"));
+                }
+                if (jsonObject.containsKey("tableName")) {
+                    params.setTableName(jsonObject.getStr("tableName"));
+                }
+                if (jsonObject.containsKey("fieldName")) {
+                    params.setFieldName(jsonObject.getStr("fieldName"));
+                }
+                
+                log.info("解析 JSON 参数成功：{}", jsonObject);
+            } else {
+                // 兼容旧的 key=value 格式
+                String[] pairs = jobParam.split(",");
+                for (String pair : pairs) {
+                    String[] kv = pair.split("=");
+                    if (kv.length == 2) {
+                        String key = kv[0].trim();
+                        String value = kv[1].trim();
 
-                    switch (key) {
-                        case "configId":
-                            params.setConfigId(Long.parseLong(value));
-                            break;
-                        case "tableName":
-                            params.setTableName(value);
-                            break;
-                        case "fieldName":
-                            params.setFieldName(value);
-                            break;
-                        default:
-                            log.warn("未知的参数键：{}", key);
+                        switch (key) {
+                            case "configId":
+                                params.setConfigId(Long.parseLong(value));
+                                break;
+                            case "tableName":
+                                params.setTableName(value);
+                                break;
+                            case "fieldName":
+                                params.setFieldName(value);
+                                break;
+                            default:
+                                log.warn("未知的参数键：{}", key);
+                        }
                     }
                 }
+                log.info("解析 key=value 参数成功");
             }
         } catch (Exception e) {
             log.error("解析任务参数失败：{}", e.getMessage(), e);
-            throw new IllegalArgumentException("任务参数格式错误，请使用 configId=1 或 tableName=user,fieldName=phone 格式");
+            throw new IllegalArgumentException("任务参数格式错误，请使用 JSON 格式：{\"configId\":2} 或 {\"tableName\":\"user\",\"fieldName\":\"phone\"}");
         }
 
         return params;

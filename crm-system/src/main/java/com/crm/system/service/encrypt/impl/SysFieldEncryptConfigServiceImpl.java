@@ -46,6 +46,10 @@ public class SysFieldEncryptConfigServiceImpl implements ISysFieldEncryptConfigS
     @Override
     public List<SysFieldEncryptConfigVo> queryList(SysFieldEncryptConfigBo bo) {
         LambdaQueryWrapper<SysFieldEncryptConfigDo> lqw = buildQueryWrapper(bo);
+        // 默认只查询待执行(0)和失败(3)的配置，排除执行中(1)和已完成(2)
+        if (bo == null || StringUtils.isBlank(bo.getStatus())) {
+            lqw.in(SysFieldEncryptConfigDo::getStatus, "0", "3");
+        }
         return baseMapper.selectVoList(lqw);
     }
 
