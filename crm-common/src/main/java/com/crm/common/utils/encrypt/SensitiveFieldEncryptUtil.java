@@ -29,13 +29,32 @@ public class SensitiveFieldEncryptUtil {
     private static final Pattern BASE64_PATTERN = Pattern.compile("^[A-Za-z0-9+/]*={0,2}$");
 
     /**
+     * 线程局部变量：缓存AES对象，避免重复创建
+     * AES对象是线程安全的，可以在线程内复用
+     */
+    private static final ThreadLocal<AES> AES_CACHE = ThreadLocal.withInitial(() -> {
+        return SecureUtil.aes(DEFAULT_AES_KEY.getBytes(StandardCharsets.UTF_8));
+    });
+
+    /**
      * 使用默认密钥加密
      *
      * @param data 待加密数据
      * @return 加密后的字符串（Base64编码）
      */
     public static String encrypt(String data) {
-        return encrypt(data, DEFAULT_AES_KEY);
+        if (StrUtil.isBlank(data)) {
+            return data;
+        }
+
+        try {
+            // 复用线程内的AES对象，避免重复创建
+            AES aes = AES_CACHE.get();
+            return aes.encryptBase64(data, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("AES加密失败，数据：{}", data, e);
+            throw new RuntimeException("数据加密失败", e);
+        }
     }
 
     /**
@@ -193,6 +212,13 @@ public class SensitiveFieldEncryptUtil {
         }
 
         return encrypt(data);
+    }
+
+    /**
+     * 清理线程局部变量（在线程结束时调用，防止内存泄漏）
+     */
+    public static void clearCache() {
+        AES_CACHE.remove();
     }
 
     /**

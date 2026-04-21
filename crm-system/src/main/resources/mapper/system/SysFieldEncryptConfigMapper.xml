@@ -10,20 +10,23 @@
         GROUP BY TABLE_NAME
     </select>
 
-    <!-- 查询多字段的批次数据 -->
-    <select id="selectBatchDataForMultipleFields" resultType="java.util.HashMap">
+    <!-- 查询多字段的批次数据（使用游标分页，避免 OFFSET 性能问题） -->
+    <select id="selectBatchDataForMultipleFieldsWithoutWhere" resultType="java.util.HashMap">
         SELECT ${selectFields}
         FROM ${tableName}
-        WHERE ${whereClause}
+        <where>
+            <if test="lastId != null">
+                ${primaryKey} &gt; #{lastId}
+            </if>
+        </where>
         ORDER BY ${primaryKey} ASC
-        LIMIT #{limit} OFFSET #{offset}
+        LIMIT #{limit}
     </select>
 
-    <!-- 查询多字段的总数据量 -->
-    <select id="countTotalDataForMultipleFields" resultType="java.lang.Long">
+    <!-- 查询表的总数据量 -->
+    <select id="countTotalDataWithoutWhere" resultType="java.lang.Long">
         SELECT COUNT(*)
         FROM ${tableName}
-        WHERE ${whereClause}
     </select>
 
     <!-- 校验定位字段的唯一性 -->

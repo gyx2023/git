@@ -27,37 +27,31 @@ public interface SysFieldEncryptConfigMapper extends BaseMapperPlus<SysFieldEncr
     List<String> selectDistinctTableNamesWithPendingStatus();
 
     /**
-     * 查询多字段的批次数据
+     * 查询多字段的批次数据（使用游标分页）
      *
      * @param tableName 表名
      * @param selectFields 查询字段（逗号分隔）
-     * @param whereClause WHERE 条件
      * @param primaryKey 主键字段（用于 ORDER BY）
      * @param limit 限制条数
-     * @param offset 偏移量
+     * @param lastId 上一批次的最后一个主键值（用于游标分页，首次查询传 null）
      * @return 数据列表
      */
     @MapKey("id")
-    List<Map<String, Object>> selectBatchDataForMultipleFields(
+    List<Map<String, Object>> selectBatchDataForMultipleFieldsWithoutWhere(
         @Param("tableName") String tableName,
         @Param("selectFields") String selectFields,
-        @Param("whereClause") String whereClause,
         @Param("primaryKey") String primaryKey,
         @Param("limit") int limit,
-        @Param("offset") int offset
+        @Param("lastId") Object lastId
     );
 
     /**
-     * 查询多字段的总数据量
+     * 查询表的总数据量
      *
      * @param tableName 表名
-     * @param whereClause WHERE 条件
      * @return 总数量
      */
-    Long countTotalDataForMultipleFields(
-        @Param("tableName") String tableName,
-        @Param("whereClause") String whereClause
-    );
+    Long countTotalDataWithoutWhere(@Param("tableName") String tableName);
 
     /**
      * 校验定位字段的唯一性

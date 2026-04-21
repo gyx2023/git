@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -179,6 +180,8 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
         AtomicLong totalUpdated = new AtomicLong(0);
+        // 用于跟踪线程异常
+        AtomicReference<Exception> exceptionRef = new AtomicReference<>();
 
         try {
             // 计算每个线程处理的数据量
@@ -199,16 +202,19 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
                 executorService.submit(() -> {
                     try {
                         log.info("线程 [{}] 开始处理，偏移量: {}, 数量: {}", threadIndex, offset, limit);
-                        
+
                         // 每个线程使用独立的 SqlSession
                         int updated = processChunkWithSqlSession(tableName, fieldNames, primaryKey, batchSize, offset, (int) limit);
-                        
+
                         totalUpdated.addAndGet(updated);
                         log.info("线程 [{}] 处理完成，更新: {} 条", threadIndex, updated);
                     } catch (Exception e) {
                         log.error("线程 [{}] 处理失败", threadIndex, e);
-                        throw new RuntimeException("线程处理失败", e);
+                        // 记录第一个异常
+                        exceptionRef.compareAndSet(null, e);
                     } finally {
+                        // 清理线程局部变量，释放AES对象
+                        SensitiveFieldEncryptUtil.clearCache();
                         latch.countDown();
                     }
                 });
@@ -216,6 +222,14 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
 
             // 等待所有线程完成
             latch.await();
+
+            // 检查是否有线程异常
+            Exception exception = exceptionRef.get();
+            if (exception != null) {
+                log.error("多线程处理中存在线程失败，已更新: {} 条", totalUpdated.get());
+                throw new RuntimeException("多线程处理失败，部分线程异常", exception);
+            }
+
             log.info("所有线程处理完成，总计更新: {} 条", totalUpdated.get());
 
         } catch (InterruptedException e) {
@@ -235,41 +249,86 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
     private int processChunkWithSqlSession(String tableName, List<String> fieldNames,
                                             String primaryKey, int batchSize, long startOffset, int totalLimit) {
         int totalUpdated = 0;
-        int batchCommitSize = 50; // 每 50 个批次提交一次
+        int batchCommitSize = 1;
         int processedLimit = 0;
 
         try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
             long totalBatches = (long) Math.ceil((double) totalLimit / batchSize);
-            log.debug("分片批次数: {}", totalBatches);
+            log.info("分片批次数: {}, 每 {} 批次提交一次", totalBatches, batchCommitSize);
 
-            for (long i = 0; i < totalBatches; i++) {
-                int offset = (int) (startOffset + i * batchSize);
-                int currentBatchSize = Math.min(batchSize, totalLimit - processedLimit);
+            // 构造 UPDATE SQL（只构造一次）
+            StringBuilder setClause = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                if (i > 0) setClause.append(", ");
+                setClause.append(fieldNames.get(i)).append(" = ?");
+            }
 
-                if (currentBatchSize <= 0) {
-                    break;
+            String[] keys = primaryKey.split(",");
+            StringBuilder whereClause = new StringBuilder();
+            for (int i = 0; i < keys.length; i++) {
+                if (i > 0) whereClause.append(" AND ");
+                whereClause.append(keys[i].trim()).append(" = ?");
+            }
+
+            String sql = String.format("UPDATE %s SET %s WHERE %s",
+                tableName, setClause.toString(), whereClause.toString());
+
+            // 获取 JDBC Connection 和 PreparedStatement（只创建一次）
+            Connection connection = sqlSession.getConnection();
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                Object lastId = null; // 游标分页：上一批次的最后一个主键值
+
+                for (long i = 0; i < totalBatches; i++) {
+                    long batchStartTime = System.currentTimeMillis();
+                    int currentBatchSize = Math.min(batchSize, totalLimit - processedLimit);
+
+                    if (currentBatchSize <= 0) {
+                        break;
+                    }
+
+                    // 查询批次数据（使用游标分页）
+                    long queryStartTime = System.currentTimeMillis();
+                    log.debug("查询批次: {}, lastId: {}, limit: {}", i + 1, lastId, currentBatchSize);
+                    List<Map<String, Object>> records = queryBatchDataForMultipleFields(
+                        tableName, fieldNames, primaryKey, lastId, currentBatchSize
+                    );
+                    long queryCost = System.currentTimeMillis() - queryStartTime;
+
+                    if (CollUtil.isEmpty(records)) {
+                        break;
+                    }
+
+                    // 加密并添加到批处理（复用 PreparedStatement）
+                    long encryptStartTime = System.currentTimeMillis();
+                    int updated = encryptRecordsToBatch(ps, fieldNames, keys, records);
+                    long encryptCost = System.currentTimeMillis() - encryptStartTime;
+
+                    totalUpdated += updated;
+                    processedLimit += records.size();
+
+                    // 更新游标：记录本批次最后一个主键值
+                    Object lastRecordId = records.get(records.size() - 1).get(keys[0].trim());
+                    lastId = lastRecordId;
+
+                    long batchCost = System.currentTimeMillis() - batchStartTime;
+                    log.info("批次 [{}/{}] 完成: 查询={}ms, 加密更新={}ms, 总耗时={}ms, 已处理={}条",
+                        i + 1, totalBatches, queryCost, encryptCost, batchCost, totalUpdated);
+
+                    // 定期提交（更频繁地提交，避免连接超时）
+                    if ((i + 1) % batchCommitSize == 0 || i == totalBatches - 1) {
+                        long commitStartTime = System.currentTimeMillis();
+                        // 先执行批处理
+                        ps.executeBatch();
+                        // 再提交事务
+                        sqlSession.commit();
+                        sqlSession.clearCache();
+                        long commitCost = System.currentTimeMillis() - commitStartTime;
+                        log.info("分片已提交批次: {}/{}, 已处理: {} 条, 提交耗时: {}ms", i + 1, totalBatches, totalUpdated, commitCost);
+                    }
                 }
-
-                // 查询批次数据
-                List<Map<String, Object>> records = queryBatchDataForMultipleFields(
-                    tableName, fieldNames, primaryKey, offset, currentBatchSize
-                );
-
-                if (CollUtil.isEmpty(records)) {
-                    break;
-                }
-
-                // 加密并批量更新
-                int updated = encryptAndBatchUpdate(sqlSession, tableName, fieldNames, primaryKey, records);
-                totalUpdated += updated;
-                processedLimit += records.size();
-
-                // 定期提交
-                if ((i + 1) % batchCommitSize == 0 || i == totalBatches - 1) {
-                    sqlSession.commit();
-                    sqlSession.clearCache();
-                    log.debug("分片已提交批次: {}/{}, 已处理: {} 条", i + 1, totalBatches, totalUpdated);
-                }
+            } catch (SQLException e) {
+                log.error("批量更新失败: {}", e.getMessage(), e);
+                throw new RuntimeException("批量更新数据库失败", e);
             }
         }
 
@@ -282,34 +341,73 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
     private int processWithSqlSessionBatch(String tableName, List<String> fieldNames,
                                             String primaryKey, int batchSize, long totalCount) {
         int totalUpdated = 0;
-        int batchCommitSize = 100; // 每 100 个批次提交一次
+        int batchCommitSize = 5; // 每 5 个批次提交一次
+        int processedLimit = 0;
 
         try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
             long totalBatches = (long) Math.ceil((double) totalCount / batchSize);
             log.info("总批次数: {}, 每 {} 批次提交一次", totalBatches, batchCommitSize);
 
-            for (long i = 0; i < totalBatches; i++) {
-                int offset = (int) (i * batchSize);
+            // 构造 UPDATE SQL（只构造一次）
+            StringBuilder setClause = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                if (i > 0) setClause.append(", ");
+                setClause.append(fieldNames.get(i)).append(" = ?");
+            }
 
-                // 查询批次数据
-                List<Map<String, Object>> records = queryBatchDataForMultipleFields(
-                    tableName, fieldNames, primaryKey, offset, batchSize
-                );
+            String[] keys = primaryKey.split(",");
+            StringBuilder whereClause = new StringBuilder();
+            for (int i = 0; i < keys.length; i++) {
+                if (i > 0) whereClause.append(" AND ");
+                whereClause.append(keys[i].trim()).append(" = ?");
+            }
 
-                if (CollUtil.isEmpty(records)) {
-                    continue;
+            String sql = String.format("UPDATE %s SET %s WHERE %s",
+                tableName, setClause.toString(), whereClause.toString());
+
+            // 获取 JDBC Connection 和 PreparedStatement（只创建一次）
+            Connection connection = sqlSession.getConnection();
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                Object lastId = null; // 游标分页：上一批次的最后一个主键值
+
+                for (long i = 0; i < totalBatches; i++) {
+                    int currentBatchSize = Math.min(batchSize, (int) (totalCount - processedLimit));
+
+                    if (currentBatchSize <= 0) {
+                        break;
+                    }
+
+                    // 查询批次数据（使用游标分页）
+                    List<Map<String, Object>> records = queryBatchDataForMultipleFields(
+                        tableName, fieldNames, primaryKey, lastId, currentBatchSize
+                    );
+
+                    if (CollUtil.isEmpty(records)) {
+                        continue;
+                    }
+
+                    // 加密并添加到批处理（复用 PreparedStatement）
+                    int updated = encryptRecordsToBatch(ps, fieldNames, keys, records);
+                    totalUpdated += updated;
+                    processedLimit += records.size();
+
+                    // 更新游标：记录本批次最后一个主键值
+                    Object lastRecordId = records.get(records.size() - 1).get(keys[0].trim());
+                    lastId = lastRecordId;
+
+                    // 每 batchCommitSize 个批次提交一次
+                    if ((i + 1) % batchCommitSize == 0 || i == totalBatches - 1) {
+                        // 先执行批处理
+                        ps.executeBatch();
+                        // 再提交事务
+                        sqlSession.commit();
+                        sqlSession.clearCache();
+                        log.info("已提交批次: {}/{}, 已处理: {} 条", i + 1, totalBatches, totalUpdated);
+                    }
                 }
-
-                // 加密并批量更新
-                int updated = encryptAndBatchUpdate(sqlSession, tableName, fieldNames, primaryKey, records);
-                totalUpdated += updated;
-
-                // 每 batchCommitSize 个批次提交一次
-                if ((i + 1) % batchCommitSize == 0 || i == totalBatches - 1) {
-                    sqlSession.commit();
-                    sqlSession.clearCache();
-                    log.info("已提交批次: {}/{}, 已处理: {} 条", i + 1, totalBatches, totalUpdated);
-                }
+            } catch (SQLException e) {
+                log.error("批量更新失败: {}", e.getMessage(), e);
+                throw new RuntimeException("批量更新数据库失败", e);
             }
         }
 
@@ -317,120 +415,74 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
     }
 
     /**
-     * 加密并批量更新（使用原生 SQL + PreparedStatement）
+     * 加密记录并添加到批处理（复用 PreparedStatement）
      */
-    private int encryptAndBatchUpdate(SqlSession sqlSession, String tableName, List<String> fieldNames,
-                                       String primaryKey, List<Map<String, Object>> records) {
-        // 构造动态 UPDATE SQL
-        StringBuilder setClause = new StringBuilder();
-        for (int i = 0; i < fieldNames.size(); i++) {
-            if (i > 0) setClause.append(", ");
-            setClause.append(fieldNames.get(i)).append(" = ?");
-        }
-
-        String[] keys = primaryKey.split(",");
-        StringBuilder whereClause = new StringBuilder();
-        for (int i = 0; i < keys.length; i++) {
-            if (i > 0) whereClause.append(" AND ");
-            whereClause.append(keys[i].trim()).append(" = ?");
-        }
-
-        String sql = String.format("UPDATE %s SET %s WHERE %s",
-            tableName, setClause.toString(), whereClause.toString());
-
+    private int encryptRecordsToBatch(PreparedStatement ps, List<String> fieldNames,
+                                       String[] keys, List<Map<String, Object>> records) throws SQLException {
         int updatedCount = 0;
 
-        try {
-            // 获取 JDBC Connection
-            Connection connection = sqlSession.getConnection();
+        for (Map<String, Object> record : records) {
+            List<Object> params = new ArrayList<>();
+            boolean hasUpdate = false;
 
-            try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                for (Map<String, Object> record : records) {
-                    List<Object> params = new ArrayList<>();
-                    boolean hasUpdate = false;
+            // 添加加密后的字段值
+            for (String fieldName : fieldNames) {
+                Object fieldValue = record.get(fieldName);
 
-                    // 添加加密后的字段值
-                    for (String fieldName : fieldNames) {
-                        Object fieldValue = record.get(fieldName);
-
-                        if (fieldValue == null || StrUtil.isBlank(fieldValue.toString())) {
-                            params.add(null);  // NULL 会被 COALESCE 忽略，保持原值
-                            continue;
-                        }
-
-                        String originalValue = fieldValue.toString();
-
-                        // 跳过已加密数据
-                        if (SensitiveFieldEncryptUtil.isEncrypted(originalValue)) {
-                            params.add(null);  // 已加密的也传 NULL，保持原值
-                            continue;
-                        }
-
-                        // 加密
-                        try {
-                            String encryptedValue = SensitiveFieldEncryptUtil.encrypt(originalValue);
-                            params.add(encryptedValue);
-                            hasUpdate = true;
-                        } catch (Exception e) {
-                            log.error("加密失败 - 表: {}, 字段: {}, 主键: {}, 原始值: {}, 错误: {}",
-                                tableName, fieldName, record.get(primaryKey), originalValue, e.getMessage());
-                            throw new RuntimeException(
-                                String.format("加密失败 - 表: %s, 字段: %s", tableName, fieldName), e);
-                        }
-                    }
-
-                    // 添加主键值
-                    for (String key : keys) {
-                        params.add(record.get(key.trim()));
-                    }
-
-                    if (hasUpdate) {
-                        // 设置参数
-                        for (int i = 0; i < params.size(); i++) {
-                            ps.setObject(i + 1, params.get(i));
-                        }
-
-                        // 添加到批处理
-                        ps.addBatch();
-                        updatedCount++;
-                    }
+                if (fieldValue == null || StrUtil.isBlank(fieldValue.toString())) {
+                    params.add(null);  // NULL 会被 COALESCE 忽略，保持原值
+                    continue;
                 }
 
-                // 执行批处理
-                if (updatedCount > 0) {
-                    ps.executeBatch();
+                String originalValue = fieldValue.toString();
+
+                // 直接加密（不再判断是否已加密）
+                try {
+                    String encryptedValue = SensitiveFieldEncryptUtil.encrypt(originalValue);
+                    params.add(encryptedValue);
+                    hasUpdate = true;
+                } catch (Exception e) {
+                    log.error("加密失败 - 表: {}, 字段: {}, 主键: {}, 原始值: {}, 错误: {}",
+                        record.get(keys[0].trim()), fieldName, record.get(keys[0].trim()), originalValue, e.getMessage());
+                    throw new RuntimeException(
+                        String.format("加密失败 - 字段: %s", fieldName), e);
                 }
             }
-        } catch (SQLException e) {
-            log.error("批量更新失败: {}", e.getMessage(), e);
-            throw new RuntimeException("批量更新数据库失败", e);
+
+            // 添加主键值
+            for (String key : keys) {
+                params.add(record.get(key.trim()));
+            }
+
+            if (hasUpdate) {
+                // 设置参数
+                for (int i = 0; i < params.size(); i++) {
+                    ps.setObject(i + 1, params.get(i));
+                }
+
+                // 添加到批处理
+                ps.addBatch();
+                updatedCount++;
+            }
         }
 
         return updatedCount;
     }
 
     /**
-     * 查询多字段的批次数据
+     * 查询多字段的批次数据（使用游标分页，提升查询性能）
      */
     private List<Map<String, Object>> queryBatchDataForMultipleFields(String tableName, List<String> fieldNames,
-                                                                        String primaryKey, int offset, int limit) {
+                                                                        String primaryKey, Object lastId, int limit) {
         // 构造查询字段
         StringBuilder selectFields = new StringBuilder(primaryKey);
         for (String field : fieldNames) {
             selectFields.append(", ").append(field);
         }
 
-        // 构造 WHERE 条件（使用 OR 连接）
-        StringBuilder whereClause = new StringBuilder("(");
-        for (int i = 0; i < fieldNames.size(); i++) {
-            if (i > 0) whereClause.append(" OR ");
-            whereClause.append(fieldNames.get(i)).append(" IS NOT NULL AND ").append(fieldNames.get(i)).append(" != ''");
-        }
-        whereClause.append(")");
-
         try {
-            return configMapper.selectBatchDataForMultipleFields(
-                tableName, selectFields.toString(), whereClause.toString(), primaryKey, limit, offset
+            return configMapper.selectBatchDataForMultipleFieldsWithoutWhere(
+                tableName, selectFields.toString(), primaryKey, limit, lastId
             );
         } catch (Exception e) {
             log.error("查询批次数据失败: {}", e.getMessage(), e);
@@ -442,16 +494,8 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
      * 查询多字段的总数据量
      */
     private long getTotalCountForMultipleFields(String tableName, List<String> fieldNames) {
-        // 构造 WHERE 条件（使用 OR 连接）
-        StringBuilder whereClause = new StringBuilder("(");
-        for (int i = 0; i < fieldNames.size(); i++) {
-            if (i > 0) whereClause.append(" OR ");
-            whereClause.append(fieldNames.get(i)).append(" IS NOT NULL AND ").append(fieldNames.get(i)).append(" != ''");
-        }
-        whereClause.append(")");
-
         try {
-            Long count = configMapper.countTotalDataForMultipleFields(tableName, whereClause.toString());
+            Long count = configMapper.countTotalDataWithoutWhere(tableName);
             return count != null ? count : 0;
         } catch (Exception e) {
             log.error("查询数据总量失败: {}", e.getMessage(), e);
