@@ -1,6 +1,5 @@
 package com.crm.system.listener.manager;
 
-import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.common.core.domain.dto.GrpGroupImportDTO;
@@ -16,18 +15,15 @@ import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
-import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.ISysDeptService;
 import com.crm.system.service.ISysUserService;
 import com.crm.system.service.IZqGrpGroupInfoService;
-import com.crm.system.service.impl.SysDeptServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,7 +45,7 @@ public class CustomerManagerImportListener {
     @Autowired
     private ISysUserService userService;
     @Autowired
-    private SysDeptServiceImpl sysDeptService;
+    private ISysDeptService sysDeptService;
     @Autowired
     private ISysAreaService sysAreaService;
     @Autowired
