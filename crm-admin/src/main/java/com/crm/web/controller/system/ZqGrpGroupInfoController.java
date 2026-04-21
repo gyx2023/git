@@ -130,6 +130,7 @@ public class ZqGrpGroupInfoController extends BaseController {
      * @param grpId 主键
      */
     @GetMapping("/detail/{grpId}")
+    @SaCheckPermission(value={"system:client:viewDetail"})
     public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
                                                      @PathVariable Long grpId) {
         try {
