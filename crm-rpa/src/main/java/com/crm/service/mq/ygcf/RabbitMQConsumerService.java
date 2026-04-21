@@ -72,6 +72,9 @@ public class RabbitMQConsumerService {
     @Resource
     private RpaMappingScriptEngine rpaMappingScriptEngine;
 
+    @Resource
+    private RpaFormMappingCacheService rpaFormMappingCacheService;
+
     /**
      * 消费测试队列的消息（使用手动确认）
      *
@@ -243,7 +246,8 @@ public class RabbitMQConsumerService {
         // 完全转换为Map结构，确保嵌套的JSON对象和数组也被正确转换
         Map<String, Object> messageMap = convertJsonToMap(jsonObject);
 
-        List<ZqztRpaFormMappingDo> zqztRpaFormMappingDos = zqztRpaFormMappingMapper.selectList(new LambdaQueryWrapper<ZqztRpaFormMappingDo>().eq(ZqztRpaFormMappingDo::getBizCode, bizCode));
+//        List<ZqztRpaFormMappingDo> zqztRpaFormMappingDos = zqztRpaFormMappingMapper.selectList(new LambdaQueryWrapper<ZqztRpaFormMappingDo>().eq(ZqztRpaFormMappingDo::getBizCode, bizCode));
+        List<ZqztRpaFormMappingDo> zqztRpaFormMappingDos = rpaFormMappingCacheService.getByBizCode(bizCode);
         Map<String, ZqztRpaScriptDefDo> scriptDefMap = this.loadScriptDefMap(zqztRpaFormMappingDos);
         //普通表单处理
         List<ZqztRpaFormMappingDo> formList = zqztRpaFormMappingDos.stream()
