@@ -32,6 +32,7 @@ public interface SysFieldEncryptConfigMapper extends BaseMapperPlus<SysFieldEncr
      * @param tableName 表名
      * @param selectFields 查询字段（逗号分隔）
      * @param whereClause WHERE 条件
+     * @param primaryKey 主键字段（用于 ORDER BY）
      * @param limit 限制条数
      * @param offset 偏移量
      * @return 数据列表
@@ -41,6 +42,7 @@ public interface SysFieldEncryptConfigMapper extends BaseMapperPlus<SysFieldEncr
         @Param("tableName") String tableName,
         @Param("selectFields") String selectFields,
         @Param("whereClause") String whereClause,
+        @Param("primaryKey") String primaryKey,
         @Param("limit") int limit,
         @Param("offset") int offset
     );

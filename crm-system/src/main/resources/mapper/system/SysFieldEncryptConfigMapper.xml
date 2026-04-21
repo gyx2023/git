@@ -15,6 +15,7 @@
         SELECT ${selectFields}
         FROM ${tableName}
         WHERE ${whereClause}
+        ORDER BY ${primaryKey} ASC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 

@@ -21,6 +21,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -96,11 +100,14 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         // 校验主键唯一性
         validatePrimaryKeyUniqueness(tableName, primaryKey);
 
-        // 获取批次大小（取第一个配置的批次大小）
+        // 获取批次大小和线程数
         int batchSize = Optional.ofNullable(configs.get(0).getBatchSize()).orElse(10000);
+        int threadCount = Optional.ofNullable(configs.get(0).getThreadCount()).orElse(4);
+        // 限制最大线程数为 8，避免过度并发
+        threadCount = Math.min(threadCount, 8);
 
-        log.info("========== 开始处理表 [{}] ==========");
-        log.info("字段列表: {}, 主键: {}, 批次大小: {}", fieldNames, primaryKey, batchSize);
+        log.info("========== 开始处理表 [{}] ==========", tableName);
+        log.info("字段列表: {}, 主键: {}, 批次大小: {}, 线程数: {}", fieldNames, primaryKey, batchSize, threadCount);
 
         try {
             // 更新所有相关配置的状态为执行中
@@ -120,8 +127,15 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
 
             log.info("表 [{}] 查询到总数据量: {}", tableName, totalCount);
 
-            // 使用 SqlSession BATCH 模式批量处理
-            int totalUpdated = processWithSqlSessionBatch(tableName, fieldNames, primaryKey, batchSize, totalCount);
+            // 根据线程数决定使用多线程还是单线程
+            int totalUpdated;
+            if (threadCount > 1) {
+                // 多线程处理
+                totalUpdated = processWithMultiThreads(tableName, fieldNames, primaryKey, batchSize, totalCount, threadCount);
+            } else {
+                // 单线程处理（原有逻辑）
+                totalUpdated = processWithSqlSessionBatch(tableName, fieldNames, primaryKey, batchSize, totalCount);
+            }
 
             long costTime = System.currentTimeMillis() - startTime;
 
@@ -155,7 +169,115 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
     }
 
     /**
-     * 使用 SqlSession BATCH 模式批量处理
+     * 多线程批量处理（按主键范围分片）
+     */
+    private int processWithMultiThreads(String tableName, List<String> fieldNames,
+                                         String primaryKey, int batchSize, long totalCount, int threadCount) {
+        log.info("启动多线程处理，线程数: {}, 总数据量: {}", threadCount, totalCount);
+
+        // 创建固定大小的线程池
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        AtomicLong totalUpdated = new AtomicLong(0);
+
+        try {
+            // 计算每个线程处理的数据量
+            long chunkSize = (long) Math.ceil((double) totalCount / threadCount);
+            log.info("数据分片：每线程处理约 {} 条数据", chunkSize);
+
+            // 启动多个线程
+            for (int i = 0; i < threadCount; i++) {
+                final int threadIndex = i;
+                final long offset = (long) i * chunkSize;
+                final long limit = Math.min(chunkSize, totalCount - offset);
+
+                if (limit <= 0) {
+                    latch.countDown();
+                    continue;
+                }
+
+                executorService.submit(() -> {
+                    try {
+                        log.info("线程 [{}] 开始处理，偏移量: {}, 数量: {}", threadIndex, offset, limit);
+                        
+                        // 每个线程使用独立的 SqlSession
+                        int updated = processChunkWithSqlSession(tableName, fieldNames, primaryKey, batchSize, offset, (int) limit);
+                        
+                        totalUpdated.addAndGet(updated);
+                        log.info("线程 [{}] 处理完成，更新: {} 条", threadIndex, updated);
+                    } catch (Exception e) {
+                        log.error("线程 [{}] 处理失败", threadIndex, e);
+                        throw new RuntimeException("线程处理失败", e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            // 等待所有线程完成
+            latch.await();
+            log.info("所有线程处理完成，总计更新: {} 条", totalUpdated.get());
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("多线程处理被中断", e);
+            throw new RuntimeException("多线程处理被中断", e);
+        } finally {
+            executorService.shutdown();
+        }
+
+        return (int) totalUpdated.get();
+    }
+
+    /**
+     * 处理一个数据分片（使用 SqlSession BATCH 模式）
+     */
+    private int processChunkWithSqlSession(String tableName, List<String> fieldNames,
+                                            String primaryKey, int batchSize, long startOffset, int totalLimit) {
+        int totalUpdated = 0;
+        int batchCommitSize = 50; // 每 50 个批次提交一次
+        int processedLimit = 0;
+
+        try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            long totalBatches = (long) Math.ceil((double) totalLimit / batchSize);
+            log.debug("分片批次数: {}", totalBatches);
+
+            for (long i = 0; i < totalBatches; i++) {
+                int offset = (int) (startOffset + i * batchSize);
+                int currentBatchSize = Math.min(batchSize, totalLimit - processedLimit);
+
+                if (currentBatchSize <= 0) {
+                    break;
+                }
+
+                // 查询批次数据
+                List<Map<String, Object>> records = queryBatchDataForMultipleFields(
+                    tableName, fieldNames, primaryKey, offset, currentBatchSize
+                );
+
+                if (CollUtil.isEmpty(records)) {
+                    break;
+                }
+
+                // 加密并批量更新
+                int updated = encryptAndBatchUpdate(sqlSession, tableName, fieldNames, primaryKey, records);
+                totalUpdated += updated;
+                processedLimit += records.size();
+
+                // 定期提交
+                if ((i + 1) % batchCommitSize == 0 || i == totalBatches - 1) {
+                    sqlSession.commit();
+                    sqlSession.clearCache();
+                    log.debug("分片已提交批次: {}/{}, 已处理: {} 条", i + 1, totalBatches, totalUpdated);
+                }
+            }
+        }
+
+        return totalUpdated;
+    }
+
+    /**
+     * 使用 SqlSession BATCH 模式批量处理（单线程版本）
      */
     private int processWithSqlSessionBatch(String tableName, List<String> fieldNames,
                                             String primaryKey, int batchSize, long totalCount) {
@@ -245,9 +367,16 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
                         }
 
                         // 加密
-                        String encryptedValue = SensitiveFieldEncryptUtil.encrypt(originalValue);
-                        params.add(encryptedValue);
-                        hasUpdate = true;
+                        try {
+                            String encryptedValue = SensitiveFieldEncryptUtil.encrypt(originalValue);
+                            params.add(encryptedValue);
+                            hasUpdate = true;
+                        } catch (Exception e) {
+                            log.error("加密失败 - 表: {}, 字段: {}, 主键: {}, 原始值: {}, 错误: {}",
+                                tableName, fieldName, record.get(primaryKey), originalValue, e.getMessage());
+                            throw new RuntimeException(
+                                String.format("加密失败 - 表: %s, 字段: %s", tableName, fieldName), e);
+                        }
                     }
 
                     // 添加主键值
@@ -300,7 +429,9 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         whereClause.append(")");
 
         try {
-            return configMapper.selectBatchDataForMultipleFields(tableName, selectFields.toString(), whereClause.toString(), limit, offset);
+            return configMapper.selectBatchDataForMultipleFields(
+                tableName, selectFields.toString(), whereClause.toString(), primaryKey, limit, offset
+            );
         } catch (Exception e) {
             log.error("查询批次数据失败: {}", e.getMessage(), e);
             return Collections.emptyList();

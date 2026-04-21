@@ -99,8 +99,9 @@ public class SensitiveFieldEncryptUtil {
             AES aes = SecureUtil.aes(key.getBytes(StandardCharsets.UTF_8));
             return aes.decryptStr(encryptedData, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            log.error("AES解密失败，可能数据未加密或密钥错误，数据：{}", encryptedData, e);
-            // 解密失败时返回原数据，避免影响业务流程
+            // 静默返回原数据，不打印日志避免刷屏
+            // 如果需要调试，可以临时开启下面的日志
+            // log.debug("AES解密失败，可能数据未加密或密钥错误，数据长度: {}", encryptedData.length());
             return encryptedData;
         }
     }
@@ -199,7 +200,7 @@ public class SensitiveFieldEncryptUtil {
      */
     public static void main(String[] args) {
         // 加密串（请在这里填入需要解密的字符串）
-        String encryptedStr = "+N+4cTL7B8are6n8SPFDJw==";
+        String encryptedStr = "mLWUSOnV+1UhVOAwbjerGg==";
 
         System.out.println("========== 解密测试 ==========");
         System.out.println("密钥：" + DEFAULT_AES_KEY);
@@ -216,22 +217,6 @@ public class SensitiveFieldEncryptUtil {
         } finally {
             System.out.println("========== 测试结束 ==========");
         }
-
-        // 测试加密后的字符串特征
-        System.out.println("\n========== 加密字符串特征测试 ==========");
-        String[] testCases = {"张三", "13800138000", "test", "ABCDEF", "123456"};
-        for (String plain : testCases) {
-            String encrypted = encrypt(plain);
-            boolean isPureLetters = encrypted.matches("^[a-zA-Z]+$");
-            boolean hasNumbers = encrypted.matches(".*\\d.*");
-            boolean hasSpecial = encrypted.matches(".*[+/=].*");
-            
-            System.out.println("明文: " + plain);
-            System.out.println("密文: " + encrypted);
-            System.out.println("纯字母: " + isPureLetters);
-            System.out.println("包含数字: " + hasNumbers);
-            System.out.println("包含特殊字符(+/=): " + hasSpecial);
-            System.out.println("---");
-        }
     }
+
 }
