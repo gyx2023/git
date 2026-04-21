@@ -149,6 +149,18 @@ public class ZqGrpGroupInfo extends BaseEntity {
      * 县级客户名字（省分字段）
      */
     private String countyManagerName;
+    /**
+     * 实体客户经理工号
+     */
+    private String custManagerEmpId;
+    /**
+     * 实体客户经理OA账号
+     */
+    private String custManagerOauser;
+    /**
+     * 实体客户经理姓名
+     */
+    private String custManagerName;
 
     @TableField(exist = false)
     private String createBy;

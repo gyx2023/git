@@ -414,19 +414,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
             // 对列表中的每条数据进行脱敏处理
             for (ZqGrpGroupInfoVo2 vo : list) {
-                // 脱敏省级客户经理姓名
-                if (StringUtils.isNotBlank(vo.getProvManagerName())) {
-                    vo.setProvManagerName(Desensitization.desensitizeName(vo.getProvManagerName()));
-                }
-
-                // 脱敏市级客户经理姓名
-                if (StringUtils.isNotBlank(vo.getCityManagerName())) {
-                    vo.setCityManagerName(Desensitization.desensitizeName(vo.getCityManagerName()));
-                }
-
-                // 脱敏县级客户经理姓名
-                if (StringUtils.isNotBlank(vo.getCountyManagerName())) {
-                    vo.setCountyManagerName(Desensitization.desensitizeName(vo.getCountyManagerName()));
+                // 脱敏实体客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCustManagerName())) {
+                    vo.setCustManagerName(Desensitization.desensitizeName(vo.getCustManagerName()));
                 }
             }
         } catch (Exception e) {
@@ -461,29 +451,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
 
-        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
-        String provManagerOauser = bo.getProvManagerOauser();
-        String cityManagerOauser = bo.getCityManagerOauser();
-        String countyManagerOauser = bo.getCountyManagerOauser();
-
-        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
-            lqw.and(wrapper -> {
-                // 省级经理条件
-                if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
-                }
-
-                // 市级经理条件
-                if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
-                }
-
-                // 县区级经理条件
-                if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
-                }
-            });
-        }
+        // 实体客户经理OA账号模糊查询
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerOauser()), ZqGrpGroupInfo::getCustManagerOauser, bo.getCustManagerOauser());
 
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
@@ -512,24 +481,23 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeEnd());
         }
 
-        // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
+        // 数据权限处理 - 根据登录用户的区域代码进行数据权限过滤
         LoginUser loginUser = LoginHelper.getLoginUser();
         String areaCode = loginUser.getAreaCode();
-        // 如果不是省本级(330000)，则需要进行数据权限过滤
-        if (!"330000".equals(areaCode)) {
+        
+        if (StringUtils.isNotBlank(areaCode)) {
             // 判断区域代码级别
-            if (areaCode.endsWith("0000")) {
-                log.info("省本级");
-                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
-                // 不添加过滤条件，可查看全省数据
+            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+                log.info("省级用户，查看全省数据");
             } else if (areaCode.endsWith("00")) {
                 // 地市级用户(如330100)，只能查看本市数据
+                log.info("地市级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
             } else {
-                // 区县级用户(如330102)，可查看所属地市的所有数据
-                // 提取地市代码(前4位+00)
-                String cityCode = areaCode.substring(0, 4) + "00";
-                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+                // 区县级用户(如330102)，只能查看本县数据
+                log.info("区县级用户，areaCode: {}", areaCode);
+                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
         }
 
@@ -570,29 +538,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
         lqw.in(bo.getGrpIds() != null && !bo.getGrpIds().isEmpty(), ZqGrpGroupInfo::getGrpId, bo.getGrpIds());
 
-        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
-        String provManagerOauser = bo.getProvManagerOauser();
-        String cityManagerOauser = bo.getCityManagerOauser();
-        String countyManagerOauser = bo.getCountyManagerOauser();
-
-        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
-            lqw.and(wrapper -> {
-                // 省级经理条件
-                if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
-                }
-
-                // 市级经理条件
-                if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
-                }
-
-                // 县区级经理条件
-                if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
-                }
-            });
-        }
+        // 实体客户经理OA账号模糊查询
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerOauser()), ZqGrpGroupInfo::getCustManagerOauser, bo.getCustManagerOauser());
 
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
@@ -613,21 +560,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
-        // 如果不是省本级(330000)，则需要进行数据权限过滤
-        if (!"330000".equals(areaCode)) {
+        if (StringUtils.isNotBlank(areaCode)) {
             // 判断区域代码级别
-            if (areaCode.endsWith("0000")) {
-                log.info("省本级用户导出");
-                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
-                // 不添加过滤条件，可查看全省数据
+            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+                log.info("省级用户导出，查看全省数据");
             } else if (areaCode.endsWith("00")) {
                 // 地市级用户(如330100)，只能查看本市数据
+                log.info("地市级用户导出，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
             } else {
-                // 区县级用户(如330102)，可查看所属地市的所有数据
-                // 提取地市代码(前4位+00)
-                String cityCode = areaCode.substring(0, 4) + "00";
-                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+                // 区县级用户(如330102)，只能查看本县数据
+                log.info("区县级用户导出，areaCode: {}", areaCode);
+                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
         }
 
@@ -688,26 +633,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
 
         if (originalInfo == null) {
-            return false; // 如果找不到原始记录，直接返回失败} else {
-        }
-
-        // 根据集团客户拓展类型进行校验
-        String expandType = originalInfo.getGrpExpandType();
-        if ("01".equals(expandType)) {
-            // 省直拓 - 省级客户经理不能为空
-            if (bo.getProvManagerOauser() == null || bo.getProvManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为省直拓，省级客户经理信息不能为空");
-            }
-        } else if ("02".equals(expandType)) {
-            // 市直拓 - 市级客户经理不能为空
-            if (bo.getCityManagerOauser() == null || bo.getCityManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为市直拓，市级客户经理信息不能为空");
-            }
-        } else if ("03".equals(expandType)) {
-            // 县直拓 - 县级客户经理不能为空
-            if (bo.getCountyManagerOauser() == null || bo.getCountyManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为县直拓，县级客户经理信息不能为空");
-            }
+            return false; // 如果找不到原始记录，直接返回失败
         }
 
         // 记录变更日志
@@ -719,28 +645,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 只更新非空的客户经理信息字段
         boolean hasUpdateFields = false;
-        if (bo.getProvManagerOauser() != null) {
-            update.setProvManagerOauser(bo.getProvManagerOauser());
+        if (bo.getCustManagerEmpId() != null) {
+            update.setCustManagerEmpId(bo.getCustManagerEmpId());
             hasUpdateFields = true;
         }
-        if (bo.getProvManagerName() != null) {
-            update.setProvManagerName(bo.getProvManagerName());
+        if (bo.getCustManagerOauser() != null) {
+            update.setCustManagerOauser(bo.getCustManagerOauser());
             hasUpdateFields = true;
         }
-        if (bo.getCityManagerOauser() != null) {
-            update.setCityManagerOauser(bo.getCityManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCityManagerName() != null) {
-            update.setCityManagerName(bo.getCityManagerName());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerOauser() != null) {
-            update.setCountyManagerOauser(bo.getCountyManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerName() != null) {
-            update.setCountyManagerName(bo.getCountyManagerName());
+        if (bo.getCustManagerName() != null) {
+            update.setCustManagerName(bo.getCustManagerName());
             hasUpdateFields = true;
         }
 

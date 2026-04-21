@@ -184,9 +184,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     public R<Void> edits(@RequestBody ZqGrpGroupInfoBo bo) {
         // 检查是否有需要更新的客户经理信息字段
         boolean hasUpdateFields = false;
-        if (bo.getProvManagerOauser() != null || bo.getProvManagerName() != null ||
-            bo.getCityManagerOauser() != null || bo.getCityManagerName() != null ||
-            bo.getCountyManagerOauser() != null || bo.getCountyManagerName() != null) {
+        if (bo.getCustManagerEmpId() != null || bo.getCustManagerOauser() != null || bo.getCustManagerName() != null) {
             hasUpdateFields = true;
         }
 
@@ -200,23 +198,14 @@ public class ZqGrpGroupInfoController extends BaseController {
         managerBo.setGrpId(bo.getGrpId());
 
         // 只设置非空的客户经理信息
-        if (bo.getProvManagerOauser() != null) {
-            managerBo.setProvManagerOauser(bo.getProvManagerOauser());
+        if (bo.getCustManagerEmpId() != null) {
+            managerBo.setCustManagerEmpId(bo.getCustManagerEmpId());
         }
-        if (bo.getProvManagerName() != null) {
-            managerBo.setProvManagerName(bo.getProvManagerName());
+        if (bo.getCustManagerOauser() != null) {
+            managerBo.setCustManagerOauser(bo.getCustManagerOauser());
         }
-        if (bo.getCityManagerOauser() != null) {
-            managerBo.setCityManagerOauser(bo.getCityManagerOauser());
-        }
-        if (bo.getCityManagerName() != null) {
-            managerBo.setCityManagerName(bo.getCityManagerName());
-        }
-        if (bo.getCountyManagerOauser() != null) {
-            managerBo.setCountyManagerOauser(bo.getCountyManagerOauser());
-        }
-        if (bo.getCountyManagerName() != null) {
-            managerBo.setCountyManagerName(bo.getCountyManagerName());
+        if (bo.getCustManagerName() != null) {
+            managerBo.setCustManagerName(bo.getCustManagerName());
         }
 
         try {
