@@ -5,14 +5,19 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.mq.config.RabbitMQConfig;
 import com.crm.common.utils.StringUtils;
 import com.crm.service.servicehall.NengKaiService;
+import com.crm.service.script.RpaMappingScriptEngine;
+import com.crm.service.script.RpaScriptExecutionContext;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.rpa.ZqztRpaScriptDefDo;
 import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.rpa.ZqztRpaFormMappingMapper;
+import com.crm.system.mapper.rpa.ZqztRpaScriptDefMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -23,11 +28,13 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.crm.utils.DealMapUtil.getValueByPath;
 import static com.crm.utils.DealMapUtil.setValueByPath;
@@ -58,6 +65,12 @@ public class RabbitMQConsumerService {
 
     @Resource
     private ZqztJtNoticeRecordMapper zqztJtNoticeRecordMapper;
+
+    @Resource
+    private ZqztRpaScriptDefMapper zqztRpaScriptDefMapper;
+
+    @Resource
+    private RpaMappingScriptEngine rpaMappingScriptEngine;
 
     /**
      * 消费测试队列的消息（使用手动确认）
@@ -231,10 +244,13 @@ public class RabbitMQConsumerService {
         Map<String, Object> messageMap = convertJsonToMap(jsonObject);
 
         List<ZqztRpaFormMappingDo> zqztRpaFormMappingDos = zqztRpaFormMappingMapper.selectList(new LambdaQueryWrapper<ZqztRpaFormMappingDo>().eq(ZqztRpaFormMappingDo::getBizCode, bizCode));
+        Map<String, ZqztRpaScriptDefDo> scriptDefMap = this.loadScriptDefMap(zqztRpaFormMappingDos);
         //普通表单处理
         List<ZqztRpaFormMappingDo> formList = zqztRpaFormMappingDos.stream()
             .filter(item -> "0".equals(item.getIsComponent()))
-            .collect(java.util.stream.Collectors.toList());
+            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getScriptOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
+            .collect(Collectors.toList());
 
         for (ZqztRpaFormMappingDo item : formList) {
             //判断是否条件展示
@@ -242,72 +258,19 @@ public class RabbitMQConsumerService {
                 String conditionsValue = item.getConditionsValue();
                 boolean res = evaluateCondition(conditionsValue, messageMap);
                 if(res){
-                    if(StringUtils.isEmpty(item.getSourceKey()) && StringUtils.isNotEmpty(item.getDefaultValue())){
-                        if("Integer".equals(item.getValueType())){
-                            setValueByPath(messageMap, item.getFormKey(), Integer.valueOf(item.getDefaultValue()));
-                        }else {
-                            setValueByPath(messageMap, item.getFormKey(),item.getDefaultValue());
-                        }
-                    }else {
-                        Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
-                            setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
-                        }else if("String".equals(item.getValueType()) && valueByPath !=null){
-                            setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
-                        }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
-                            setValueByPath(messageMap, item.getFormKey(), new BigDecimal((String) valueByPath));
-                        } else {
-                            setValueByPath(messageMap, item.getFormKey(),valueByPath);
-                        }
-                    }
-//                    String[] split = item.getSourceKey().split("\\|");
-//                    Arrays.asList(split).forEach(key -> {
-//                        if(messageMap.get(key) !=null && messageMap.get(key) !=""){
-//                            messageMap.put(item.getFormKey(), messageMap.get(key));
-//                        }
-//                    });
+                    this.applyMappingValue(messageMap, item, messageMap);
+                    this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, messageMap);
                 }
             }else {
-                //特殊处理rpa缴费期
-                if(item.getFormKey().equals("radioField_iYoB2Lrs")){
-                    String valueByPath = (String)getValueByPath(messageMap, item.getSourceKey());
-                    if(valueByPath.equals("4grckj2u1xz")){
-                        setValueByPath(messageMap, item.getFormKey(),"2");
-                        continue;
-                    }
-                }
-                if(StringUtils.isEmpty(item.getSourceKey()) && StringUtils.isNotEmpty(item.getDefaultValue())){
-                    if("Integer".equals(item.getValueType())){
-                        setValueByPath(messageMap, item.getFormKey(), Integer.valueOf(item.getDefaultValue()));
-                    }else {
-                        setValueByPath(messageMap, item.getFormKey(), item.getDefaultValue());
-                    }
-
-                }else {
-                    Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                    if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
-                        setValueByPath(messageMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
-                    }else if("String".equals(item.getValueType()) && valueByPath !=null){
-                        setValueByPath(messageMap, item.getFormKey(),valueByPath.toString());
-                    }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
-                        setValueByPath(messageMap, item.getFormKey(), new BigDecimal((String) valueByPath));
-                    } else {
-                        setValueByPath(messageMap, item.getFormKey(),valueByPath);
-                    }
-                }
-//                String[] split = item.getSourceKey().split("\\|");
-//                Arrays.asList(split).forEach(key -> {
-//                    if(messageMap.get(key) !=null && messageMap.get(key) !=""){
-//                        messageMap.put(item.getFormKey(), messageMap.get(key));
-//                    }
-//                });
+                this.applyMappingValue(messageMap, item, messageMap);
+                this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, messageMap);
             }
         }
 
         //处理组件表单
         List<ZqztRpaFormMappingDo> componentList = zqztRpaFormMappingDos.stream()
             .filter(item -> "1".equals(item.getIsComponent()))
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
         Map<String, List<ZqztRpaFormMappingDo>> ComponentMap = componentList.stream()
             .collect(java.util.stream.Collectors.groupingBy(ZqztRpaFormMappingDo::getComponentKey));
@@ -319,8 +282,9 @@ public class RabbitMQConsumerService {
                 messageMap.put(entry.getKey(), componentMap);
             }else {
                 List<ZqztRpaFormMappingDo> sortedValues = values.stream()
-                    .sorted((a, b) -> Long.compare(a.getId(), b.getId()))  // 按ID升序排列
-                    .collect(java.util.stream.Collectors.toList());
+                    .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getScriptOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
+                    .collect(Collectors.toList());
                 String componentTemplate = sortedValues.get(0).getComponentTemplate();
                 // 将JSON字符串转换为Map
                 // 先将JSON字符串转换为JSONObject
@@ -335,100 +299,17 @@ public class RabbitMQConsumerService {
                         componentMap.putAll(contractInfo);
                         continue;
                     }
-                    //个性化处理合同期
-                    if(item.getComponentKey().equals("marketingContract1_Qu7n57Gt") && item.getFormKey().equals("contract.endTime")){
-                        String startTime = (String)getValueByPath(messageMap, "dateField_BBlT1ons");
-                        Integer monthsToAdd = (Integer)getValueByPath(messageMap, item.getSourceKey());
-
-                        // 定义日期格式（假设为常见的年月日格式）
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-                        // 解析开始日期
-                        assert startTime != null;
-                        LocalDate startLocalDate = LocalDate.parse(startTime, formatter);
-
-                        // 添加月数
-                        LocalDate endLocalDate = startLocalDate.plusMonths(monthsToAdd);
-                        setValueByPath(componentMap, item.getFormKey(), endLocalDate.format(formatter));
-                        continue;
-                    }
-                    //个性化处理我方主体
-                    if(item.getComponentKey().equals("marketingContract1_Qu7n57Gt") && item.getFormKey().equals("subjectName")){
-                        String wfzt = (String) getValueByPath(messageMap, item.getSourceKey());
-                        String[] parts = wfzt.split("-");
-                        String result="";
-                        if (parts.length > 1) {
-                            result = parts[1]; // 结果为"湖州"
-                        }
-                        if(!result.equals("浙江")){
-                            result = "中国联合网络通信有限公司"+result+"市分公司";
-                        }else {
-                            result = "中国联合网络通信有限公司浙江省分公司";
-                        }
-                        setValueByPath(componentMap, item.getFormKey(),result);
-                        continue;
-                    }
-                    //个性化处理盖章模式
-                    if(item.getComponentKey().equals("marketingContract1_Qu7n57Gt") && item.getFormKey().equals("paperlessSign")){
-                        Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if(valueByPath !=null){
-                            SysParamDo paperlessSign = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "paperlessSign").eq(SysParamDo::getCode, (String) valueByPath));
-                            setValueByPath(componentMap, item.getFormKey(), paperlessSign.getValue() !=null?Integer.valueOf(paperlessSign.getValue()):null);
-                        }
-                        continue;
-                    }
                     if("1".equals(item.getConditionsShow())){
                         String conditionsValue = item.getConditionsValue();
                         boolean res = evaluateCondition(conditionsValue, messageMap);
                         if(res){
-                            //个性化处理延展期限
-                            if(item.getComponentKey().equals("marketingContract1_Qu7n57Gt") && item.getFormKey().equals("contract.timeLimit")){
-                                String valueByPath = (String) getValueByPath(messageMap, item.getSourceKey());
-                                SysParamDo timeLimit = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "timeLimit")
-                                    .eq(SysParamDo::getCode, valueByPath));
-                                setValueByPath(componentMap, item.getFormKey(), Integer.valueOf(timeLimit.getValue()));
-                                continue;
-                            }
-                            if(StringUtils.isEmpty(item.getSourceKey()) && StringUtils.isNotEmpty(item.getDefaultValue())){
-                                if("Integer".equals(item.getValueType())){
-                                    setValueByPath(componentMap, item.getFormKey(), Integer.valueOf(item.getDefaultValue()));
-                                }else if("String".equals(item.getValueType())){
-                                    setValueByPath(componentMap, item.getFormKey(), item.getDefaultValue());
-                                }
-                            }else {
-                                Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                                if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
-                                    setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
-                                }else if("String".equals(item.getValueType()) && valueByPath !=null){
-                                    setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
-                                }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
-                                    setValueByPath(componentMap, item.getFormKey(), new BigDecimal((String) valueByPath));
-                                } else {
-                                    setValueByPath(componentMap, item.getFormKey(),valueByPath);
-                                }
-                            }
+                            this.applyMappingValue(messageMap, item, componentMap);
+                            this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, componentMap);
                         }
                         continue;
                     }
-                    if(StringUtils.isNotEmpty(item.getSourceKey())){
-                        Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-                        if("Integer".equals(item.getValueType()) && valueByPath instanceof String){
-                            setValueByPath(componentMap, item.getFormKey(), Integer.valueOf((String) valueByPath));
-                        }else if("String".equals(item.getValueType()) && valueByPath !=null){
-                            setValueByPath(componentMap, item.getFormKey(), valueByPath.toString());
-                        }else if("BigDecimal".equals(item.getValueType()) && valueByPath instanceof String){
-                            setValueByPath(componentMap, item.getFormKey(), new BigDecimal((String) valueByPath));
-                        } else {
-                            setValueByPath(componentMap, item.getFormKey(), valueByPath);
-                        }
-                    }else {
-                        if("Integer".equals(item.getValueType())){
-                            setValueByPath(componentMap, item.getFormKey(), Integer.valueOf(item.getDefaultValue()));
-                        } else {
-                            setValueByPath(componentMap, item.getFormKey(), item.getDefaultValue());
-                        }
-
-                    }
+                    this.applyMappingValue(messageMap, item, componentMap);
+                    this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, componentMap);
                 }
                 messageMap.put(entry.getKey(),componentMap);
             }
@@ -459,6 +340,95 @@ public class RabbitMQConsumerService {
         }
 
         return messageId;
+    }
+
+    private Map<String, ZqztRpaScriptDefDo> loadScriptDefMap(List<ZqztRpaFormMappingDo> mappings) {
+        Set<String> scriptCodes = mappings.stream()
+            .filter(item -> "1".equals(item.getScriptEnabled()))
+            .map(ZqztRpaFormMappingDo::getScriptCode)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.toSet());
+        if (scriptCodes.isEmpty()) {
+            return new HashMap<>();
+        }
+        List<ZqztRpaScriptDefDo> defs = zqztRpaScriptDefMapper.selectList(new LambdaQueryWrapper<ZqztRpaScriptDefDo>()
+            .in(ZqztRpaScriptDefDo::getScriptCode, scriptCodes)
+            .eq(ZqztRpaScriptDefDo::getStatus, "1"));
+        return defs.stream().collect(Collectors.toMap(ZqztRpaScriptDefDo::getScriptCode, item -> item, (left, right) -> right));
+    }
+
+    private void applyMappingValue(Map<String, Object> messageMap, ZqztRpaFormMappingDo item, Map<String, Object> targetMap) {
+        if(StringUtils.isEmpty(item.getSourceKey()) && StringUtils.isNotEmpty(item.getDefaultValue())){
+            Object finalValue = convertValueType(item.getValueType(), item.getDefaultValue());
+            setValueByPath(targetMap, item.getFormKey(), finalValue);
+            log.info("RPA映射赋值 bizCode={} scope={} mappingId={} targetKey={} sourceType=default defaultValue={} finalValue={}",
+                item.getBizCode(), resolveScope(item), item.getId(), item.getFormKey(), item.getDefaultValue(), finalValue);
+            return;
+        }
+        if (StringUtils.isEmpty(item.getSourceKey())) {
+            log.info("RPA映射跳过 bizCode={} scope={} mappingId={} targetKey={} reason=sourceKey与defaultValue均为空",
+                item.getBizCode(), resolveScope(item), item.getId(), item.getFormKey());
+            return;
+        }
+        Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
+        Object finalValue = convertValueType(item.getValueType(), valueByPath);
+        setValueByPath(targetMap, item.getFormKey(), finalValue);
+        log.info("RPA映射赋值 bizCode={} scope={} mappingId={} targetKey={} sourceType=sourceKey sourceKey={} sourceValue={} finalValue={}",
+            item.getBizCode(), resolveScope(item), item.getId(), item.getFormKey(), item.getSourceKey(), valueByPath, finalValue);
+    }
+
+    private Object convertValueType(String valueType, Object sourceValue) {
+        if (sourceValue == null) {
+            return null;
+        }
+        if ("Integer".equals(valueType)) {
+            if (sourceValue instanceof Number) {
+                return ((Number) sourceValue).intValue();
+            }
+            return Integer.valueOf(String.valueOf(sourceValue));
+        }
+        if ("String".equals(valueType)) {
+            return String.valueOf(sourceValue);
+        }
+        if ("BigDecimal".equals(valueType)) {
+            if (sourceValue instanceof BigDecimal) {
+                return sourceValue;
+            }
+            return new BigDecimal(String.valueOf(sourceValue));
+        }
+        return sourceValue;
+    }
+
+    private void executeMappingScriptIfNeeded(ZqztRpaFormMappingDo mapping,
+                                              String bizCode,
+                                              Map<String, ZqztRpaScriptDefDo> scriptDefMap,
+                                              Map<String, Object> messageMap,
+                                              Map<String, Object> targetMap) {
+        if (!"1".equals(mapping.getScriptEnabled()) || StringUtils.isBlank(mapping.getScriptCode())) {
+            return;
+        }
+        ZqztRpaScriptDefDo scriptDefDo = scriptDefMap.get(mapping.getScriptCode());
+        if (scriptDefDo == null || StringUtils.isBlank(scriptDefDo.getScriptContent())) {
+            return;
+        }
+        log.info("RPA脚本开始 bizCode={} scope={} mappingId={} targetKey={} scriptCode={} scriptVersion={}",
+            bizCode, resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), scriptDefDo.getScriptVersion());
+        rpaMappingScriptEngine.execute(RpaScriptExecutionContext.builder()
+            .bizCode(bizCode)
+            .scriptCode(scriptDefDo.getScriptCode())
+            .scriptVersion(scriptDefDo.getScriptVersion())
+            .scriptContent(scriptDefDo.getScriptContent())
+            .messageMap(messageMap)
+            .targetMap(targetMap)
+            .mapping(mapping)
+            .build());
+        Object finalValue = getValueByPath(targetMap, mapping.getFormKey());
+        log.info("RPA脚本结束 bizCode={} scope={} mappingId={} targetKey={} scriptCode={} finalValue={}",
+            bizCode, resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), finalValue);
+    }
+
+    private String resolveScope(ZqztRpaFormMappingDo item) {
+        return "1".equals(item.getIsComponent()) ? "component:" + item.getComponentKey() : "form";
     }
 
     private Boolean checekData(ZqztJtNoticeRecordDo recordDo){

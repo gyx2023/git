@@ -77,4 +77,19 @@ public class ZqztRpaFormMappingDo extends BaseEntity {
 
     private String valueType;
 
+    /**
+     * 脚本编码
+     */
+    private String scriptCode;
+
+    /**
+     * 脚本是否启用，0-否，1-是
+     */
+    private String scriptEnabled;
+
+    /**
+     * 脚本执行顺序
+     */
+    private Integer scriptOrder;
+
 }
