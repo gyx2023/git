@@ -52,4 +52,12 @@ public interface ISysFieldEncryptConfigService {
      * @return 配置信息
      */
     SysFieldEncryptConfigVo queryById(Long id);
+
+    /**
+     * 获取状态为待执行(0)或失败(3)的表名列表（去重）
+     * SELECT TABLE_NAME FROM SYS_FIELD_ENCRYPT_CONFIG WHERE STATUS IN ('0','3') GROUP BY TABLE_NAME
+     *
+     * @return 表名列表
+     */
+    List<String> getDistinctTableNamesWithPendingStatus();
 }

@@ -84,6 +84,11 @@ public class SysFieldEncryptConfigServiceImpl implements ISysFieldEncryptConfigS
         return baseMapper.selectVoById(id);
     }
 
+    @Override
+    public List<String> getDistinctTableNamesWithPendingStatus() {
+        return baseMapper.selectDistinctTableNamesWithPendingStatus();
+    }
+
     /**
      * 构建查询条件
      */

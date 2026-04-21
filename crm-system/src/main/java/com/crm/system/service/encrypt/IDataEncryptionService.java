@@ -11,18 +11,10 @@ import java.util.Map;
 public interface IDataEncryptionService {
 
     /**
-     * 根据配置ID执行加密任务
-     *
-     * @param configId 配置ID
-     * @return 执行结果
-     */
-    Map<String, Object> executeEncryption(Long configId);
-
-    /**
      * 根据表名和字段名执行加密任务
      *
-     * @param tableName 表名
-     * @param fieldName 字段名
+     * @param tableName 表名（必填）
+     * @param fieldName 字段名（可选，不传则加密该表所有配置的字段）
      * @return 执行结果
      */
     Map<String, Object> executeEncryptionByTableAndField(String tableName, String fieldName);

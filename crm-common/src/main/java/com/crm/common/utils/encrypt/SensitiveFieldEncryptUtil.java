@@ -6,6 +6,7 @@ import cn.hutool.crypto.symmetric.AES;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 /**
  * 敏感字段加解密工具类
@@ -21,6 +22,11 @@ public class SensitiveFieldEncryptUtil {
      * 生产环境建议从配置文件读取
      */
     private static final String DEFAULT_AES_KEY = "HcR#9mk$2pL@7qR!";
+
+    /**
+     * Base64格式正则表达式（预编译，提高性能）
+     */
+    private static final Pattern BASE64_PATTERN = Pattern.compile("^[A-Za-z0-9+/]*={0,2}$");
 
     /**
      * 使用默认密钥加密
@@ -113,6 +119,12 @@ public class SensitiveFieldEncryptUtil {
             return false;
         }
 
+        // 快速过滤：明文数据通常不会这么长且符合Base64特征
+        // AES加密后的Base64字符串通常至少24字符以上
+        if (data.length() < 16) {
+            return false;
+        }
+
         // 快速判断：加密后的数据通常是Base64编码，长度一般为4的倍数
         // 且包含Base64特征字符（A-Z, a-z, 0-9, +, /, =）
         if (!isBase64Format(data)) {
@@ -124,7 +136,7 @@ public class SensitiveFieldEncryptUtil {
             // 如果解密成功且与原文不同，说明已加密
             return decrypted != null && !decrypted.equals(data);
         } catch (Exception e) {
-            // 解密失败说明未加密
+            // 解密失败说明未加密，静默返回false，不打印日志避免刷屏
             return false;
         }
     }
@@ -140,16 +152,27 @@ public class SensitiveFieldEncryptUtil {
             return false;
         }
 
-        // Base64编码的特征：
-        // 1. 长度是4的倍数
-        // 2. 只包含 A-Z, a-z, 0-9, +, /, = 字符
-        // 3. 可能以1-2个'='结尾作为填充
-        if (str.length() % 4 != 0) {
+        try {
+            // Base64编码的特征：
+            // 1. 长度是4的倍数
+            // 2. 只包含 A-Z, a-z, 0-9, +, /, = 字符
+            // 3. 可能以1-2个'='结尾作为填充
+            if (str.length() % 4 != 0) {
+                return false;
+            }
+
+            // 排除纯数字的情况（明文手机号、身份证等通常是纯数字）
+            if (str.matches("^\\d+$")) {
+                return false;
+            }
+
+            // 使用预编译的正则表达式进行匹配，避免异常
+            return BASE64_PATTERN.matcher(str).matches();
+        } catch (Exception e) {
+            // 捕获所有可能的异常（如栈溢出、内存不足等），避免影响业务流程
+            log.debug("Base64格式判断异常，数据：{}", str, e);
             return false;
         }
-
-        // 正则表达式匹配Base64格式
-        return str.matches("^[A-Za-z0-9+/]*={0,2}$");
     }
 
     /**
@@ -176,7 +199,7 @@ public class SensitiveFieldEncryptUtil {
      */
     public static void main(String[] args) {
         // 加密串（请在这里填入需要解密的字符串）
-        String encryptedStr = "/XQxj2Pb38d/RnbkEJZKvr71fuTmvbLIiutBq92tPUCiaDjnCua8DKDE/jSyAm/7tQHgkcf+/ehIQ3PW9+00Mg==";
+        String encryptedStr = "+N+4cTL7B8are6n8SPFDJw==";
 
         System.out.println("========== 解密测试 ==========");
         System.out.println("密钥：" + DEFAULT_AES_KEY);
@@ -192,6 +215,23 @@ public class SensitiveFieldEncryptUtil {
             e.printStackTrace();
         } finally {
             System.out.println("========== 测试结束 ==========");
+        }
+
+        // 测试加密后的字符串特征
+        System.out.println("\n========== 加密字符串特征测试 ==========");
+        String[] testCases = {"张三", "13800138000", "test", "ABCDEF", "123456"};
+        for (String plain : testCases) {
+            String encrypted = encrypt(plain);
+            boolean isPureLetters = encrypted.matches("^[a-zA-Z]+$");
+            boolean hasNumbers = encrypted.matches(".*\\d.*");
+            boolean hasSpecial = encrypted.matches(".*[+/=].*");
+            
+            System.out.println("明文: " + plain);
+            System.out.println("密文: " + encrypted);
+            System.out.println("纯字母: " + isPureLetters);
+            System.out.println("包含数字: " + hasNumbers);
+            System.out.println("包含特殊字符(+/=): " + hasSpecial);
+            System.out.println("---");
         }
     }
 }
