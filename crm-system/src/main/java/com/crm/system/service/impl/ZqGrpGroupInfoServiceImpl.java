@@ -92,7 +92,23 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
-        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 先查询为 ZqGrpGroupInfoVo2
+        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+
+        // 根据 sys_param 表的配置决定是否脱敏
+        applyDesensitizationIfNeeded(resultPage.getRecords());
+
+        // 转换为 ZqGrpGroupInfoVo 返回
+        List<ZqGrpGroupInfoVo> voList = resultPage.getRecords().stream()
+            .map(vo2 -> {
+                ZqGrpGroupInfoVo vo = new ZqGrpGroupInfoVo();
+                BeanUtil.copyProperties(vo2, vo);
+                return vo;
+            })
+            .collect(Collectors.toList());
+
+        Page<ZqGrpGroupInfoVo> result = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
+        result.setRecords(voList);
 
         return TableDataInfo.build(result);
     }
