@@ -48,4 +48,23 @@
         </foreach>
     </update>
 
+    <!-- 查询指定主键范围内的批次数据（多线程安全） -->
+    <select id="selectBatchDataInRange" resultType="java.util.HashMap">
+        SELECT ${selectFields}
+        FROM ${tableName}
+        WHERE ${primaryKey} &gt;= #{startId}
+        AND ${primaryKey} &lt;= #{endId}
+        <if test="lastId != null">
+            AND ${primaryKey} &gt; #{lastId}
+        </if>
+        ORDER BY ${primaryKey} ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询主键的最小值和最大值 -->
+    <select id="getMinMaxPrimaryKey" resultType="java.util.HashMap">
+        SELECT MIN(${primaryKey}) as minId, MAX(${primaryKey}) as maxId
+        FROM ${tableName}
+    </select>
+
 </mapper>

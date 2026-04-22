@@ -78,4 +78,39 @@ public interface SysFieldEncryptConfigMapper extends BaseMapperPlus<SysFieldEncr
                               @Param("fieldName") String fieldName,
                               @Param("primaryKey") String primaryKey,
                               @Param("record") Map<String, Object> record);
+
+    /**
+     * 查询指定主键范围内的批次数据
+     *
+     * @param tableName 表名
+     * @param selectFields 查询字段（逗号分隔）
+     * @param primaryKey 主键字段
+     * @param startId 当前线程处理的主键范围起始值
+     * @param endId 当前线程处理的主键范围结束值
+     * @param lastId 上一批次的最后一个主键值（游标分页起点）
+     * @param limit 限制条数
+     * @return 数据列表
+     */
+    @MapKey("id")
+    List<Map<String, Object>> selectBatchDataInRange(
+        @Param("tableName") String tableName,
+        @Param("selectFields") String selectFields,
+        @Param("primaryKey") String primaryKey,
+        @Param("startId") Object startId,
+        @Param("endId") Object endId,
+        @Param("lastId") Object lastId,
+        @Param("limit") int limit
+    );
+
+    /**
+     * 查询主键的最小值和最大值
+     *
+     * @param tableName 表名
+     * @param primaryKey 主键字段
+     * @return 包含 minId 和 maxId 的 Map
+     */
+    Map<String, Object> getMinMaxPrimaryKey(
+        @Param("tableName") String tableName,
+        @Param("primaryKey") String primaryKey
+    );
 }

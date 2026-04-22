@@ -184,27 +184,35 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         AtomicReference<Exception> exceptionRef = new AtomicReference<>();
 
         try {
-            // 计算每个线程处理的数据量
-            long chunkSize = (long) Math.ceil((double) totalCount / threadCount);
-            log.info("数据分片：每线程处理约 {} 条数据", chunkSize);
+            // 先查询最小和最大主键值
+            Map<String, Object> minMaxResult = getMinMaxPrimaryKey(tableName, primaryKey);
+            if (minMaxResult == null || minMaxResult.get("minId") == null || minMaxResult.get("maxId") == null) {
+                log.warn("表 [{}] 没有数据需要处理", tableName);
+                return 0;
+            }
+
+            Object minId = minMaxResult.get("minId");
+            Object maxId = minMaxResult.get("maxId");
+            log.info("主键范围: [{}, {}]", minId, maxId);
+
+            // 计算每个线程处理的主键范围
+            long rangeSize = calculateRangeSize(minId, maxId, threadCount);
+            log.info("数据分片：每线程处理约 {} 的主键范围", rangeSize);
 
             // 启动多个线程
             for (int i = 0; i < threadCount; i++) {
                 final int threadIndex = i;
-                final long offset = (long) i * chunkSize;
-                final long limit = Math.min(chunkSize, totalCount - offset);
+                final Object startId = calculateStartId(minId, rangeSize, i);
+                final Object endId = calculateEndId(minId, maxId, rangeSize, i);
 
-                if (limit <= 0) {
-                    latch.countDown();
-                    continue;
-                }
+                log.info("线程 [{}] 分配范围: [{}, {}]", threadIndex, startId, endId);
 
                 executorService.submit(() -> {
                     try {
-                        log.info("线程 [{}] 开始处理，偏移量: {}, 数量: {}", threadIndex, offset, limit);
+                        log.info("线程 [{}] 开始处理，范围: [{}, {}]", threadIndex, startId, endId);
 
-                        // 每个线程使用独立的 SqlSession
-                        int updated = processChunkWithSqlSession(tableName, fieldNames, primaryKey, batchSize, offset, (int) limit);
+                        // 每个线程使用独立的 SqlSession，按主键范围处理
+                        int updated = processChunkWithKeyRange(tableName, fieldNames, primaryKey, batchSize, startId, endId);
 
                         totalUpdated.addAndGet(updated);
                         log.info("线程 [{}] 处理完成，更新: {} 条", threadIndex, updated);
@@ -241,6 +249,190 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         }
 
         return (int) totalUpdated.get();
+    }
+
+    /**
+     * 处理一个主键范围分片
+     */
+    private int processChunkWithKeyRange(String tableName, List<String> fieldNames,
+                                          String primaryKey, int batchSize, Object startId, Object endId) {
+        int totalUpdated = 0;
+        int batchCommitSize = 1;
+        int processedLimit = 0;
+
+        try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            // 构造 UPDATE SQL（只构造一次）
+            StringBuilder setClause = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                if (i > 0) setClause.append(", ");
+                setClause.append(fieldNames.get(i)).append(" = ?");
+            }
+
+            String[] keys = primaryKey.split(",");
+            StringBuilder whereClause = new StringBuilder();
+            for (int i = 0; i < keys.length; i++) {
+                if (i > 0) whereClause.append(" AND ");
+                whereClause.append(keys[i].trim()).append(" = ?");
+            }
+
+            String sql = String.format("UPDATE %s SET %s WHERE %s",
+                tableName, setClause.toString(), whereClause.toString());
+
+            // 获取 JDBC Connection 和 PreparedStatement（只创建一次）
+            Connection connection = sqlSession.getConnection();
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                Object lastId = null; // 游标分页：初始为 null，查询第一条记录
+                int batchIndex = 0;
+                boolean hasMoreData = true;
+
+                while (hasMoreData) {
+                    long batchStartTime = System.currentTimeMillis();
+
+                    // 查询批次数据（在主键范围内，使用游标分页）
+                    long queryStartTime = System.currentTimeMillis();
+                    log.debug("查询批次: {}, startId: {}, lastId: {}, endId: {}, limit: {}", batchIndex + 1, startId, lastId, endId, batchSize);
+                    List<Map<String, Object>> records = queryBatchDataInRange(
+                        tableName, fieldNames, primaryKey, startId, lastId, endId, batchSize
+                    );
+                    long queryCost = System.currentTimeMillis() - queryStartTime;
+
+                    if (CollUtil.isEmpty(records)) {
+                        log.info("线程分片处理完成，没有更多数据，batchIndex: {}", batchIndex);
+                        break;
+                    }
+
+                    // 加密并添加到批处理（复用 PreparedStatement）
+                    long encryptStartTime = System.currentTimeMillis();
+                    int updated = encryptRecordsToBatch(ps, fieldNames, keys, records);
+                    long encryptCost = System.currentTimeMillis() - encryptStartTime;
+
+                    totalUpdated += updated;
+                    processedLimit += records.size();
+
+                    // 更新游标：记录本批次最后一个主键值
+                    Object lastRecordId = records.get(records.size() - 1).get(keys[0].trim());
+                    lastId = lastRecordId;
+
+                    long batchCost = System.currentTimeMillis() - batchStartTime;
+                    batchIndex++;
+                    log.info("批次 [{}] 完成: 查询={}ms, 加密更新={}ms, 总耗时={}ms, 已处理={}条",
+                        batchIndex, queryCost, encryptCost, batchCost, totalUpdated);
+
+                    // 定期提交
+                    if (batchIndex % batchCommitSize == 0) {
+                        long commitStartTime = System.currentTimeMillis();
+                        ps.executeBatch();
+                        sqlSession.commit();
+                        sqlSession.clearCache();
+                        long commitCost = System.currentTimeMillis() - commitStartTime;
+                        log.info("分片已提交批次: {}, 已处理: {} 条, 提交耗时: {}ms", batchIndex, totalUpdated, commitCost);
+                    }
+
+                    // 如果本批次数据少于 batchSize，说明已经是最后一批
+                    if (records.size() < batchSize) {
+                        hasMoreData = false;
+                        log.info("检测到最后一批数据，records.size: {} < batchSize: {}", records.size(), batchSize);
+                    }
+                }
+
+                // 提交剩余数据
+                if (totalUpdated > 0) {
+                    ps.executeBatch();
+                    sqlSession.commit();
+                    sqlSession.clearCache();
+                    log.info("分片最终提交，总计处理: {} 条", totalUpdated);
+                }
+            } catch (SQLException e) {
+                log.error("批量更新失败: {}", e.getMessage(), e);
+                throw new RuntimeException("批量更新数据库失败", e);
+            }
+        }
+
+        return totalUpdated;
+    }
+
+    /**
+     * 查询指定主键范围内的批次数据
+     */
+    private List<Map<String, Object>> queryBatchDataInRange(String tableName, List<String> fieldNames,
+                                                              String primaryKey, Object startId, Object lastId, Object endId, int limit) {
+        // 构造查询字段
+        StringBuilder selectFields = new StringBuilder(primaryKey);
+        for (String field : fieldNames) {
+            selectFields.append(", ").append(field);
+        }
+
+        try {
+            return configMapper.selectBatchDataInRange(
+                tableName, selectFields.toString(), primaryKey, startId, endId, lastId, limit
+            );
+        } catch (Exception e) {
+            log.error("查询批次数据失败: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 查询主键的最小值和最大值
+     */
+    private Map<String, Object> getMinMaxPrimaryKey(String tableName, String primaryKey) {
+        try {
+            return configMapper.getMinMaxPrimaryKey(tableName, primaryKey);
+        } catch (Exception e) {
+            log.error("查询主键范围失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 计算主键范围大小
+     */
+    private long calculateRangeSize(Object minId, Object maxId, int threadCount) {
+        if (minId instanceof Number && maxId instanceof Number) {
+            long min = ((Number) minId).longValue();
+            long max = ((Number) maxId).longValue();
+            return (long) Math.ceil((double) (max - min + 1) / threadCount);
+        }
+        // 对于非数字类型的主键，返回一个默认值
+        return 10000;
+    }
+
+    /**
+     * 计算线程的起始ID
+     */
+    private Object calculateStartId(Object minId, long rangeSize, int threadIndex) {
+        if (minId instanceof Number) {
+            return ((Number) minId).longValue() + rangeSize * threadIndex;
+        }
+        return minId;
+    }
+
+    /**
+     * 计算线程的结束ID
+     */
+    private Object calculateEndId(Object minId, Object maxId, long rangeSize, int threadIndex) {
+        if (minId instanceof Number && maxId instanceof Number) {
+            long calculated = ((Number) minId).longValue() + rangeSize * (threadIndex + 1) - 1;
+            return Math.min(calculated, ((Number) maxId).longValue());
+        }
+        return maxId;
+    }
+
+    /**
+     * 比较两个ID的大小
+     * @return -1: id1 < id2, 0: id1 == id2, 1: id1 > id2
+     */
+    private int compareIds(Object id1, Object id2) {
+        if (id1 == null && id2 == null) return 0;
+        if (id1 == null) return -1;
+        if (id2 == null) return 1;
+
+        if (id1 instanceof Comparable && id1.getClass().equals(id2.getClass())) {
+            return ((Comparable) id1).compareTo(id2);
+        }
+
+        // 默认转为字符串比较
+        return id1.toString().compareTo(id2.toString());
     }
 
     /**

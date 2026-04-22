@@ -226,7 +226,7 @@ public class SensitiveFieldEncryptUtil {
      */
     public static void main(String[] args) {
         // 加密串（请在这里填入需要解密的字符串）
-        String encryptedStr = "mLWUSOnV+1UhVOAwbjerGg==";
+        String encryptedStr = "yvcZXLjR4K6JpF8BV6lyyQ==";
 
         System.out.println("========== 解密测试 ==========");
         System.out.println("密钥：" + DEFAULT_AES_KEY);
