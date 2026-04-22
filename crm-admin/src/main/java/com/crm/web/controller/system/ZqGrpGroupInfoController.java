@@ -132,18 +132,13 @@ public class ZqGrpGroupInfoController extends BaseController {
      */
     @GetMapping("/detail/{grpId}")
     @SaCheckPermission(value={"system:client:viewDetail"})
-    public R<ZqGrpGroupInfoVo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
+    public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
                                                        @PathVariable Long grpId) {
         try {
-            ZqGrpGroupInfoVo infoVo = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
-
-            // 将 VO 转换为 Entity 用于记录操作日志
-            ZqGrpGroupInfo info = new ZqGrpGroupInfo();
-            BeanUtil.copyProperties(infoVo, info);
-
+            ZqGrpGroupInfo info = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
             // 正常查询则状态为 0，error_msg 为空
             iZqztOperRecordService.insertByGroupInfo(info, null, null);
-            return R.ok(infoVo);
+            return R.ok(info);
         } catch (Exception e) {
             // 如果出现异常状态为 1，记录错误信息
             try {
