@@ -29,7 +29,7 @@ public interface IZqGrpGroupInfoService {
     /**
      * 查询政企集团客户信息（不脱敏）
      */
-    ZqGrpGroupInfoVo queryByIdWithoutSensitive(Long grpId);
+    ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId);
 
     /**
      * 根据总部集团编码查询政企集团客户信息
