@@ -2,11 +2,11 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.encrypt.SysFieldEncryptConfigMapper">
 
-    <!-- 获取状态为待执行(0)或失败(3)的表名列表（去重） -->
+    <!-- 获取状态为待执行(0)的表名列表（去重） -->
     <select id="selectDistinctTableNamesWithPendingStatus" resultType="java.lang.String">
         SELECT TABLE_NAME 
         FROM SYS_FIELD_ENCRYPT_CONFIG 
-        WHERE STATUS IN ('0', '3') 
+        WHERE STATUS = '0'
         GROUP BY TABLE_NAME
     </select>
 
