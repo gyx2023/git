@@ -222,6 +222,22 @@ public class ZqGrpGroupInfoVo {
     private String countyManagerName;
 
     /**
+     * 实体客户经理工号
+     */
+    @ExcelProperty(value = "实体客户经理工号")
+    private String custManagerEmpId;
+    /**
+     * 实体客户经理OA账号
+     */
+    @ExcelProperty(value = "实体客户经理OA账号")
+    private String custManagerOauser;
+    /**
+     * 实体客户经理姓名
+     */
+    @ExcelProperty(value = "实体客户经理姓名")
+    private String custManagerName;
+
+    /**
      * 创建时间
      */
     @ExcelProperty(value = "创建时间")

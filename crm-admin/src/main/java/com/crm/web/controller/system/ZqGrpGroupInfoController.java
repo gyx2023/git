@@ -17,11 +17,14 @@ import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.file.FileUtils;
 import com.crm.common.utils.poi.ExcelUtil;
+import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.*;
 import com.crm.system.service.IZqGrpGroupInfoService;
+import com.crm.system.service.IZqztOperRecordService;
 import com.crm.system.utils.ExcelDropdownHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,14 +48,17 @@ public class ZqGrpGroupInfoController extends BaseController {
 
     private final IZqGrpGroupInfoService iZqGrpGroupInfoService;
 
+    @Autowired
+    private IZqztOperRecordService iZqztOperRecordService;
+
     /**
-     * 查询政企集团客户信息列表
+     * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
      */
     @GetMapping("/lists")
-    public TableDataInfo<ZqGrpGroupInfoVo> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
+    public TableDataInfo<ZqGrpGroupInfoVo2> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
                                                 @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
                                                 @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
-        return iZqGrpGroupInfoService.queryPageList(bo, pageQuery, grpCreateTimeBegin, grpCreateTimeEnd);
+        return iZqGrpGroupInfoService.queryPageListWithoutSensitive(bo, pageQuery, grpCreateTimeBegin, grpCreateTimeEnd);
     }
 
 
@@ -119,6 +125,35 @@ public class ZqGrpGroupInfoController extends BaseController {
     }
 
     /**
+     * 获取政企集团客户信息详细信息（不脱敏）
+     *
+     * @param grpId 主键
+     */
+    @GetMapping("/detail/{grpId}")
+    @SaCheckPermission(value={"system:client:viewDetail"})
+    public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
+                                                     @PathVariable Long grpId) {
+        try {
+            ZqGrpGroupInfo info = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
+            // 正常查询则状态为 0，error_msg 为空
+            iZqztOperRecordService.insertByGroupInfo(info, null, null);
+            return R.ok(info);
+        } catch (Exception e) {
+            // 如果出现异常状态为 1，记录错误信息
+            try {
+                // 尝试查询集团信息用于记录操作日志
+                ZqGrpGroupInfo errorInfo = new ZqGrpGroupInfo();
+                errorInfo.setGrpId(grpId);
+                iZqztOperRecordService.insertByGroupInfo(errorInfo, 1, e.getMessage());
+            } catch (Exception ex) {
+                // 如果记录日志也失败，打印错误信息
+                ex.printStackTrace();
+            }
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
      * 新增政企集团客户信息
      */
     @Log(title = "政企集团客户信息", businessType = BusinessType.INSERT)
@@ -149,9 +184,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     public R<Void> edits(@RequestBody ZqGrpGroupInfoBo bo) {
         // 检查是否有需要更新的客户经理信息字段
         boolean hasUpdateFields = false;
-        if (bo.getProvManagerOauser() != null || bo.getProvManagerName() != null ||
-            bo.getCityManagerOauser() != null || bo.getCityManagerName() != null ||
-            bo.getCountyManagerOauser() != null || bo.getCountyManagerName() != null) {
+        if (bo.getCustManagerEmpId() != null || bo.getCustManagerOauser() != null || bo.getCustManagerName() != null) {
             hasUpdateFields = true;
         }
 
@@ -165,23 +198,14 @@ public class ZqGrpGroupInfoController extends BaseController {
         managerBo.setGrpId(bo.getGrpId());
 
         // 只设置非空的客户经理信息
-        if (bo.getProvManagerOauser() != null) {
-            managerBo.setProvManagerOauser(bo.getProvManagerOauser());
+        if (bo.getCustManagerEmpId() != null) {
+            managerBo.setCustManagerEmpId(bo.getCustManagerEmpId());
         }
-        if (bo.getProvManagerName() != null) {
-            managerBo.setProvManagerName(bo.getProvManagerName());
+        if (bo.getCustManagerOauser() != null) {
+            managerBo.setCustManagerOauser(bo.getCustManagerOauser());
         }
-        if (bo.getCityManagerOauser() != null) {
-            managerBo.setCityManagerOauser(bo.getCityManagerOauser());
-        }
-        if (bo.getCityManagerName() != null) {
-            managerBo.setCityManagerName(bo.getCityManagerName());
-        }
-        if (bo.getCountyManagerOauser() != null) {
-            managerBo.setCountyManagerOauser(bo.getCountyManagerOauser());
-        }
-        if (bo.getCountyManagerName() != null) {
-            managerBo.setCountyManagerName(bo.getCountyManagerName());
+        if (bo.getCustManagerName() != null) {
+            managerBo.setCustManagerName(bo.getCustManagerName());
         }
 
         try {
