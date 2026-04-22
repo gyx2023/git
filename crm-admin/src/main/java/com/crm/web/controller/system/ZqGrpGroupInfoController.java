@@ -2,6 +2,7 @@ package com.crm.web.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
+import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
@@ -132,7 +133,7 @@ public class ZqGrpGroupInfoController extends BaseController {
     @GetMapping("/detail/{grpId}")
     @SaCheckPermission(value={"system:client:viewDetail"})
     public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
-                                                     @PathVariable Long grpId) {
+                                                       @PathVariable Long grpId) {
         try {
             ZqGrpGroupInfo info = iZqGrpGroupInfoService.queryByIdWithoutSensitive(grpId);
             // 正常查询则状态为 0，error_msg 为空
@@ -152,6 +153,7 @@ public class ZqGrpGroupInfoController extends BaseController {
             return R.fail(e.getMessage());
         }
     }
+
 
     /**
      * 新增政企集团客户信息

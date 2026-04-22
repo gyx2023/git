@@ -84,6 +84,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId){
         ZqGrpGroupInfo info = baseMapper.selectById(grpId);
+        if (StringUtils.isNotBlank(info.getCustManagerName())) {
+            info.setCustManagerName(Desensitization.desensitizeName(info.getCustManagerName()));
+        }
         return info;
     }
 
