@@ -10,6 +10,7 @@ import com.crm.common.core.domain.dto.ContractStatisticsRespDTO;
 import com.crm.common.core.domain.dto.ContractStatisticsUserRespDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
+import com.crm.common.interfaceLog.annotation.InterfaceMonitor;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.topp.SignContractOrgExportVo;
 import com.crm.system.domain.vo.topp.SignContractUserExportVo;
@@ -37,6 +38,7 @@ public class StatisticsContractController {
     /**
      * 获取用户列表
      */
+    @InterfaceMonitor
     @GetMapping("/list")
     public TableDataInfo<ContractStatisticsRespDTO> list(ContractStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsContractService.selectPageList(reqDTO, pageQuery);
