@@ -141,16 +141,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
-        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
-        if (StringUtils.isBlank(bo.getGrpLevel())) {
-            lqw.and(wrapper -> wrapper
-                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
-                .or()
-                .isNull(ZqGrpGroupInfo::getGrpLevel)
-                .or()
-                .eq(ZqGrpGroupInfo::getGrpLevel, "")
-            );
-        }
+
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
             try {
@@ -433,6 +424,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
@@ -520,6 +521,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
@@ -862,17 +873,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        
-        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
-        if (StringUtils.isBlank(bo.getGrpLevel())) {
-            lqw.and(wrapper -> wrapper
-                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
-                .or()
-                .isNull(ZqGrpGroupInfo::getGrpLevel)
-                .or()
-                .eq(ZqGrpGroupInfo::getGrpLevel, "")
-            );
-        }
+
+
 
         List<ZqGrpGroupInfoVo2> resultList;
         if (page != null) {
