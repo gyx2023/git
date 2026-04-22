@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.encrypt.SysFieldEncryptConfigMapper">
+
+    <!-- 获取状态为待执行(0)或失败(3)的表名列表（去重） -->
+    <select id="selectDistinctTableNamesWithPendingStatus" resultType="java.lang.String">
+        SELECT TABLE_NAME 
+        FROM SYS_FIELD_ENCRYPT_CONFIG 
+        WHERE STATUS IN ('0', '3') 
+        GROUP BY TABLE_NAME
+    </select>
+
+    <!-- 查询多字段的批次数据（使用游标分页，避免 OFFSET 性能问题） -->
+    <select id="selectBatchDataForMultipleFieldsWithoutWhere" resultType="java.util.HashMap">
+        SELECT ${selectFields}
+        FROM ${tableName}
+        <where>
+            <if test="lastId != null">
+                ${primaryKey} &gt; #{lastId}
+            </if>
+        </where>
+        ORDER BY ${primaryKey} ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询表的总数据量 -->
+    <select id="countTotalDataWithoutWhere" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM ${tableName}
+    </select>
+
+    <!-- 校验定位字段的唯一性 -->
+    <select id="validatePrimaryKeyUniqueness" resultType="java.util.HashMap">
+        SELECT ${primaryKey}, count(1) as cnt
+        FROM ${tableName}
+        GROUP BY ${primaryKey}
+        HAVING cnt > 1
+        LIMIT 1
+    </select>
+
+    <!-- 动态单条更新加密字段 -->
+    <update id="updateEncryptedField">
+        UPDATE ${tableName}
+        SET ${fieldName} = #{record.encryptedValue}
+        WHERE
+        <foreach collection="primaryKey.split(',')" item="key" separator=" AND ">
+            ${key.trim()} = #{record[${key.trim()}]}
+        </foreach>
+    </update>
+
+    <!-- 查询指定主键范围内的批次数据（多线程安全） -->
+    <select id="selectBatchDataInRange" resultType="java.util.HashMap">
+        SELECT ${selectFields}
+        FROM ${tableName}
+        WHERE ${primaryKey} &gt;= #{startId}
+        AND ${primaryKey} &lt;= #{endId}
+        <if test="lastId != null">
+            AND ${primaryKey} &gt; #{lastId}
+        </if>
+        ORDER BY ${primaryKey} ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询主键的最小值和最大值 -->
+    <select id="getMinMaxPrimaryKey" resultType="java.util.HashMap">
+        SELECT MIN(${primaryKey}) as minId, MAX(${primaryKey}) as maxId
+        FROM ${tableName}
+    </select>
+
+</mapper>
