@@ -53,8 +53,8 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
             queryWrapper.apply("LOWER(field_name) = LOWER({0})", fieldName);
         }
 
-        // 只查询状态不为 1(执行中) 和 2(已完成) 的配置
-        queryWrapper.notIn(SysFieldEncryptConfigDo::getStatus, "1", "2");
+        // 只查询状态为 0(待执行) 的配置
+        queryWrapper.eq(SysFieldEncryptConfigDo::getStatus, "0");
 
         List<SysFieldEncryptConfigVo> configs = configMapper.selectVoList(queryWrapper);
 
@@ -111,7 +111,7 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         log.info("字段列表: {}, 主键: {}, 批次大小: {}, 线程数: {}", fieldNames, primaryKey, batchSize, threadCount);
 
         try {
-            // 更新所有相关配置的状态为执行中
+            // 更新所有相关配置的状态为执行中（同时更新 create_time）
             updateConfigsStatus(configs, "1");
 
             // 查询总数据量
@@ -140,8 +140,8 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
 
             long costTime = System.currentTimeMillis() - startTime;
 
-            // 更新所有配置的状态为已完成
-            updateConfigsStatus(configs, "2", (long) totalUpdated, totalCount);
+            // 更新所有配置的状态为已完成（同时更新 update_time 和 remark）
+            updateConfigsStatus(configs, "2", (long) totalUpdated, totalCount, costTime);
 
             result.put("success", true);
             result.put("totalCount", totalCount);
@@ -156,8 +156,8 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
             long costTime = System.currentTimeMillis() - startTime;
             log.error("========== 表 [{}] 处理失败 ==========", tableName, e);
 
-            // 更新所有配置的状态为失败
-            updateConfigsStatus(configs, "3", null, null);
+            // 更新所有配置的状态为失败（同时更新 update_time 和 remark）
+            updateConfigsStatus(configs, "3", null, null, costTime);
 
             result.put("success", false);
             result.put("error", e.getMessage());
@@ -722,18 +722,40 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
      * 批量更新配置状态
      */
     private void updateConfigsStatus(List<SysFieldEncryptConfigVo> configs, String status) {
-        updateConfigsStatus(configs, status, null, null);
+        updateConfigsStatus(configs, status, null, null, null);
     }
 
     /**
-     * 批量更新配置状态和计数
+     * 批量更新配置状态和计数（同时更新时间字段）
      */
     private void updateConfigsStatus(List<SysFieldEncryptConfigVo> configs, String status,
                                       Long processedCount, Long totalCount) {
+        updateConfigsStatus(configs, status, processedCount, totalCount, null);
+    }
+
+    /**
+     * 批量更新配置状态、计数和执行时长（同时更新时间字段和remark）
+     */
+    private void updateConfigsStatus(List<SysFieldEncryptConfigVo> configs, String status,
+                                      Long processedCount, Long totalCount, Long costTime) {
+        Date now = new Date();
         for (SysFieldEncryptConfigVo config : configs) {
             LambdaUpdateWrapper<SysFieldEncryptConfigDo> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.eq(SysFieldEncryptConfigDo::getId, config.getId());
             updateWrapper.set(SysFieldEncryptConfigDo::getStatus, status);
+
+            // 状态为 1(执行中) 时，更新 create_time
+            if ("1".equals(status)) {
+                updateWrapper.set(SysFieldEncryptConfigDo::getCreateTime, now);
+            }
+            // 状态为 2(已完成) 或 3(失败) 时，更新 update_time 和 remark
+            else if ("2".equals(status) || "3".equals(status)) {
+                updateWrapper.set(SysFieldEncryptConfigDo::getUpdateTime, now);
+                // 将执行时长（毫秒）更新到 remark 字段
+                if (costTime != null) {
+                    updateWrapper.set(SysFieldEncryptConfigDo::getRemark, costTime + "ms");
+                }
+            }
 
             if (processedCount != null) {
                 updateWrapper.set(SysFieldEncryptConfigDo::getProcessedCount, processedCount);
