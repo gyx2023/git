@@ -82,9 +82,17 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * 查询政企集团客户信息（不脱敏）
      */
     @Override
-    public ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId){
+    public ZqGrpGroupInfoVo queryByIdWithoutSensitive(Long grpId){
         ZqGrpGroupInfo info = baseMapper.selectById(grpId);
-        return info;
+        if (info == null) {
+            return null;
+        }
+        ZqGrpGroupInfoVo vo = new ZqGrpGroupInfoVo();
+        BeanUtil.copyProperties(info, vo);
+        if (StringUtils.isNotBlank(vo.getCustManagerName())) {
+            vo.setCustManagerName(Desensitization.desensitizeName(vo.getCustManagerName()));
+        }
+        return vo;
     }
 
     /**
