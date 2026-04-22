@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.RoleDTO;
+import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.GrpExpandTypeenum;
@@ -60,6 +62,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private ISysParamService sysParamService;
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
+    @Resource
+    private ISysUserService sysUserService;
+    @Resource
+    private ISysDeptService sysDeptService;
 
 
 
@@ -499,20 +505,41 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         // 数据权限处理 - 根据登录用户的区域代码进行数据权限过滤
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        String areaCode = loginUser.getAreaCode();
+//
+//        if (StringUtils.isNotBlank(areaCode)) {
+//            // 判断区域代码级别
+//            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+//                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+//                log.info("省级用户，查看全省数据");
+//            } else if (areaCode.endsWith("00")) {
+//                // 地市级用户(如330100)，只能查看本市数据
+//                log.info("地市级用户，areaCode: {}", areaCode);
+//                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+//            } else {
+//                // 区县级用户(如330102)，只能查看本县数据
+//                log.info("区县级用户，areaCode: {}", areaCode);
+//                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
+//            }
+//        }
         LoginUser loginUser = LoginHelper.getLoginUser();
-        String areaCode = loginUser.getAreaCode();
-        
+        SysUser user = sysUserService.selectUserById(loginUser.getUserId());
+        SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
+        SysAreaVo area = sysAreaService.queryById(Long.valueOf(dept.getAreaCode()));
+        String areaCode = String.valueOf(area.getId());
+        String areaType = area.getType();
+
         if (StringUtils.isNotBlank(areaCode)) {
-            // 判断区域代码级别
-            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
-                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+            if(areaCode.endsWith("0000") || "一级".equals(areaType)){
+                // 省级用户，可查看全省数据，不添加过滤条件
                 log.info("省级用户，查看全省数据");
-            } else if (areaCode.endsWith("00")) {
-                // 地市级用户(如330100)，只能查看本市数据
+            }else if("二级".equals(areaType)){
+                // 地市级用户，只能查看本市数据
                 log.info("地市级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
-            } else {
-                // 区县级用户(如330102)，只能查看本县数据
+            }else{
+                // 区县级用户，只能查看本县数据
                 log.info("区县级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
