@@ -221,8 +221,6 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
                         // 记录第一个异常
                         exceptionRef.compareAndSet(null, e);
                     } finally {
-                        // 清理线程局部变量，释放AES对象
-                        SensitiveFieldEncryptUtil.clearCache();
                         latch.countDown();
                     }
                 });

@@ -1,11 +1,15 @@
 package com.crm.common.utils.encrypt;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.AES;
 import lombok.extern.slf4j.Slf4j;
+import sun.misc.BASE64Encoder;
 
-import java.nio.charset.StandardCharsets;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.regex.Pattern;
 
 /**
@@ -21,20 +25,12 @@ public class SensitiveFieldEncryptUtil {
      * 默认AES密钥（16位）
      * 生产环境建议从配置文件读取
      */
-    private static final String DEFAULT_AES_KEY = "HcR#9mk$2pL@7qR!";
+    private static final String DEFAULT_AES_KEY = "HcR#9mK$2pL@7qR!";
 
     /**
      * Base64格式正则表达式（预编译，提高性能）
      */
     private static final Pattern BASE64_PATTERN = Pattern.compile("^[A-Za-z0-9+/]*={0,2}$");
-
-    /**
-     * 线程局部变量：缓存AES对象，避免重复创建
-     * AES对象是线程安全的，可以在线程内复用
-     */
-    private static final ThreadLocal<AES> AES_CACHE = ThreadLocal.withInitial(() -> {
-        return SecureUtil.aes(DEFAULT_AES_KEY.getBytes(StandardCharsets.UTF_8));
-    });
 
     /**
      * 使用默认密钥加密
@@ -48,13 +44,37 @@ public class SensitiveFieldEncryptUtil {
         }
 
         try {
-            // 复用线程内的AES对象，避免重复创建
-            AES aes = AES_CACHE.get();
-            return aes.encryptBase64(data, StandardCharsets.UTF_8);
+            return aesEncrypt(data, DEFAULT_AES_KEY);
         } catch (Exception e) {
             log.error("AES加密失败，数据：{}", data, e);
             throw new RuntimeException("数据加密失败", e);
         }
+    }
+
+    /**
+     * AES加密为base 64 code（与参考工程保持一致）
+     *
+     * @param content    待加密的内容
+     * @param encryptKey 加密密钥
+     * @return 加密后的base 64 code
+     * @throws Exception
+     */
+    private static String aesEncrypt(String content, String encryptKey) throws Exception {
+        KeyGenerator kgen = KeyGenerator.getInstance("AES");
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        random.setSeed(encryptKey.getBytes("UTF-8"));
+        kgen.init(128, random);
+        SecretKey secretKey = new SecretKeySpec(kgen.generateKey().getEncoded(), "AES");
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        byte[] encryptedBytes = cipher.doFinal(content.getBytes("UTF-8"));
+
+        // 使用 BASE64Encoder 进行编码（与参考工程保持一致）
+        BASE64Encoder encoder = new BASE64Encoder();
+        String result = encoder.encode(encryptedBytes);
+        // 移除换行符
+        result = result.replaceAll("\\r|\\n|\\r\\n", "");
+        return result;
     }
 
     /**
@@ -80,8 +100,7 @@ public class SensitiveFieldEncryptUtil {
         }
 
         try {
-            AES aes = SecureUtil.aes(key.getBytes(StandardCharsets.UTF_8));
-            return aes.encryptBase64(data, StandardCharsets.UTF_8);
+            return aesEncrypt(data, key);
         } catch (Exception e) {
             log.error("AES加密失败，数据：{}", data, e);
             throw new RuntimeException("数据加密失败", e);
@@ -115,14 +134,36 @@ public class SensitiveFieldEncryptUtil {
         }
 
         try {
-            AES aes = SecureUtil.aes(key.getBytes(StandardCharsets.UTF_8));
-            return aes.decryptStr(encryptedData, StandardCharsets.UTF_8);
+            return aesDecrypt(encryptedData, key);
         } catch (Exception e) {
             // 静默返回原数据，不打印日志避免刷屏
             // 如果需要调试，可以临时开启下面的日志
             // log.debug("AES解密失败，可能数据未加密或密钥错误，数据长度: {}", encryptedData.length());
             return encryptedData;
         }
+    }
+
+    /**
+     * AES解密（与参考工程保持一致）
+     *
+     * @param encryptStr 待解密的base 64 code
+     * @param decryptKey 解密密钥
+     * @return 解密后的string
+     * @throws Exception
+     */
+    private static String aesDecrypt(String encryptStr, String decryptKey) throws Exception {
+        KeyGenerator kgen = KeyGenerator.getInstance("AES");
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        random.setSeed(decryptKey.getBytes("UTF-8"));
+        kgen.init(128, random);
+        SecretKey secretKey = new SecretKeySpec(kgen.generateKey().getEncoded(), "AES");
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+
+        // 使用 Base64 解码
+        byte[] encryptedBytes = Base64.getDecoder().decode(encryptStr);
+        byte[] decryptBytes = cipher.doFinal(encryptedBytes);
+        return new String(decryptBytes, "UTF-8");
     }
 
     /**
@@ -215,27 +256,24 @@ public class SensitiveFieldEncryptUtil {
     }
 
     /**
-     * 清理线程局部变量（在线程结束时调用，防止内存泄漏）
-     */
-    public static void clearCache() {
-        AES_CACHE.remove();
-    }
-
-    /**
      * 解密测试
      */
     public static void main(String[] args) {
         // 加密串（请在这里填入需要解密的字符串）
-        String encryptedStr = "yvcZXLjR4K6JpF8BV6lyyQ==";
+//        String encryptedStr = "yvcZXLjR4K6JpF8BV6lyyQ==";
+//
+//        System.out.println("========== 解密测试 ==========");
+//        System.out.println("密钥：" + DEFAULT_AES_KEY);
+//        System.out.println("加密字符串：" + encryptedStr);
+        String str = "韩国天热色专卖店";
 
-        System.out.println("========== 解密测试 ==========");
-        System.out.println("密钥：" + DEFAULT_AES_KEY);
-        System.out.println("加密字符串：" + encryptedStr);
 
         try {
             // 解密
-            String decryptedStr = decrypt(encryptedStr);
-            System.out.println("解密结果：" + decryptedStr);
+//            String decryptedStr = decrypt(encryptedStr);
+//            System.out.println("解密结果：" + decryptedStr);
+            String s = encrypt( str);
+            System.out.println(s);
 
         } catch (Exception e) {
             System.err.println("解密失败：" + e.getMessage());
