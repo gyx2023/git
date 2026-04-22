@@ -54,10 +54,10 @@ public class CustomerManagerImportListener {
     public List<CustomerManagerImportResultVo> processImportData(List<CustomerManagerTemplateVo> dataList, Long createUserId) {
         List<GrpGroupImportDTO> canBindManagers = getCanBindManagers(createUserId);
 
-        // 将可绑定的客户经理按OA用户名建立索引，提高查找效率
+        // 将可绑定的客户经理按OA用户名建立索引（统一转为小写），提高查找效率并实现大小写兼容
         Map<String, GrpGroupImportDTO> canBindManagerMap = canBindManagers.stream()
             .collect(Collectors.toMap(
-                GrpGroupImportDTO::getOaUserName,
+                item -> item.getOaUserName().toLowerCase(),
                 item -> item,
                 (existing, replacement) -> existing // 如果有重复键，保留第一个
             ));
@@ -69,8 +69,11 @@ public class CustomerManagerImportListener {
             result.setHqGrpCode(templateVo.getHqGrpCode());
             result.setCustManagerOauser(templateVo.getCustManagerOauser());
 
-            // 检查权限：custManagerOauser 是否在 canBindManagers 的 oaUserName 里
-            if (!canBindManagerMap.containsKey(templateVo.getCustManagerOauser())) {
+            // 检查权限：custManagerOauser 是否在 canBindManagers 的 oaUserName 里（大小写兼容）
+            String oaUserNameLower = templateVo.getCustManagerOauser() != null ? 
+                templateVo.getCustManagerOauser().toLowerCase() : "";
+            
+            if (!canBindManagerMap.containsKey(oaUserNameLower)) {
                 result.setProcessResult("失败");
                 result.setErrorMessage("无权限绑定此客户经理或该经理不存在:" + templateVo.getCustManagerOauser());
                 results.add(result);
@@ -87,12 +90,12 @@ public class CustomerManagerImportListener {
                     continue;
                 }
 
-                // 获取有权限的客户经理信息
-                GrpGroupImportDTO managerInfo = canBindManagerMap.get(templateVo.getCustManagerOauser());
+                // 获取有权限的客户经理信息（使用小写key查找）
+                GrpGroupImportDTO managerInfo = canBindManagerMap.get(oaUserNameLower);
 
-                // 更新集团信息中的客户经理字段
+                // 更新集团信息中的客户经理字段（OA账号统一使用小写）
                 groupInfo.setCustManagerEmpId(managerInfo.getEmpId());
-                groupInfo.setCustManagerOauser(managerInfo.getOaUserName());
+                groupInfo.setCustManagerOauser(managerInfo.getOaUserName().toLowerCase());
                 groupInfo.setCustManagerName(managerInfo.getFullName());
 
                 // 构建更新用的 BO 对象

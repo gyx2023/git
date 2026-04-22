@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.RoleDTO;
+import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.GrpExpandTypeenum;
@@ -60,6 +62,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private ISysParamService sysParamService;
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
+    @Resource
+    private ISysUserService sysUserService;
+    @Resource
+    private ISysDeptService sysDeptService;
 
 
 
@@ -92,7 +98,23 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
-        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 先查询为 ZqGrpGroupInfoVo2
+        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+
+        // 根据 sys_param 表的配置决定是否脱敏
+        applyDesensitizationIfNeeded(resultPage.getRecords());
+
+        // 转换为 ZqGrpGroupInfoVo 返回
+        List<ZqGrpGroupInfoVo> voList = resultPage.getRecords().stream()
+            .map(vo2 -> {
+                ZqGrpGroupInfoVo vo = new ZqGrpGroupInfoVo();
+                BeanUtil.copyProperties(vo2, vo);
+                return vo;
+            })
+            .collect(Collectors.toList());
+
+        Page<ZqGrpGroupInfoVo> result = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
+        result.setRecords(voList);
 
         return TableDataInfo.build(result);
     }
@@ -141,16 +163,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
-        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
-        if (StringUtils.isBlank(bo.getGrpLevel())) {
-            lqw.and(wrapper -> wrapper
-                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
-                .or()
-                .isNull(ZqGrpGroupInfo::getGrpLevel)
-                .or()
-                .eq(ZqGrpGroupInfo::getGrpLevel, "")
-            );
-        }
+
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
             try {
@@ -433,6 +446,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
@@ -482,20 +505,41 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         // 数据权限处理 - 根据登录用户的区域代码进行数据权限过滤
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        String areaCode = loginUser.getAreaCode();
+//
+//        if (StringUtils.isNotBlank(areaCode)) {
+//            // 判断区域代码级别
+//            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+//                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+//                log.info("省级用户，查看全省数据");
+//            } else if (areaCode.endsWith("00")) {
+//                // 地市级用户(如330100)，只能查看本市数据
+//                log.info("地市级用户，areaCode: {}", areaCode);
+//                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+//            } else {
+//                // 区县级用户(如330102)，只能查看本县数据
+//                log.info("区县级用户，areaCode: {}", areaCode);
+//                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
+//            }
+//        }
         LoginUser loginUser = LoginHelper.getLoginUser();
-        String areaCode = loginUser.getAreaCode();
-        
+        SysUser user = sysUserService.selectUserById(loginUser.getUserId());
+        SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
+        SysAreaVo area = sysAreaService.queryById(Long.valueOf(dept.getAreaCode()));
+        String areaCode = String.valueOf(area.getId());
+        String areaType = area.getType();
+
         if (StringUtils.isNotBlank(areaCode)) {
-            // 判断区域代码级别
-            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
-                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+            if(areaCode.endsWith("0000") || "一级".equals(areaType)){
+                // 省级用户，可查看全省数据，不添加过滤条件
                 log.info("省级用户，查看全省数据");
-            } else if (areaCode.endsWith("00")) {
-                // 地市级用户(如330100)，只能查看本市数据
+            }else if("二级".equals(areaType)){
+                // 地市级用户，只能查看本市数据
                 log.info("地市级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
-            } else {
-                // 区县级用户(如330102)，只能查看本县数据
+            }else{
+                // 区县级用户，只能查看本县数据
                 log.info("区县级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
@@ -520,6 +564,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
@@ -860,16 +914,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
 
-        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
-        if (StringUtils.isBlank(bo.getGrpLevel())) {
-            lqw.and(wrapper -> wrapper
-                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
-                .or()
-                .isNull(ZqGrpGroupInfo::getGrpLevel)
-                .or()
-                .eq(ZqGrpGroupInfo::getGrpLevel, "")
-            );
-        }
 
         List<ZqGrpGroupInfoVo2> resultList;
         if (page != null) {
