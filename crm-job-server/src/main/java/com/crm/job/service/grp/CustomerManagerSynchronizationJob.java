@@ -1,6 +1,7 @@
 package com.crm.job.service.grp;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -27,52 +28,76 @@ public class CustomerManagerSynchronizationJob {
         log.info("开始执行实体客户经理数据同步任务");
 
         try {
-            // 查询全部政企集团客户信息(不脱敏)
-            LambdaQueryWrapper<ZqGrpGroupInfo> queryWrapper = new LambdaQueryWrapper<>();
-            //测试前十条
-            //queryWrapper.last("limit 10");
-            List<ZqGrpGroupInfo> groupInfoList = zqGrpGroupInfoMapper.selectList(queryWrapper);
+            // 分批处理参数
+            int batchSize = 1000; // 每批处理1000条
+            int currentPage = 1;
+            int totalProcessed = 0;
+            int totalUpdated = 0;
 
-            log.info("查询到政企集团客户信息总数: {}", groupInfoList.size());
+            while (true) {
+                // 分页查询数据
+                Page<ZqGrpGroupInfo> page = new Page<>(currentPage, batchSize);
+                LambdaQueryWrapper<ZqGrpGroupInfo> queryWrapper = new LambdaQueryWrapper<>();
+                Page<ZqGrpGroupInfo> resultPage = zqGrpGroupInfoMapper.selectPage(page, queryWrapper);
+                List<ZqGrpGroupInfo> groupInfoList = resultPage.getRecords();
 
-            // 用于收集需要更新的数据
-            List<ZqGrpGroupInfo> needUpdateList = new ArrayList<>();
-
-            // 遍历处理数据
-            for (ZqGrpGroupInfo zqGrpGroupInfo : groupInfoList) {
-                String grpCustType = zqGrpGroupInfo.getGrpCustType();
-
-                if ("400".equals(grpCustType)) {
-                    // 处理集团客户类别为400(大客户)的逻辑
-                    fillCustomerManagerInfoForBigCustomer(zqGrpGroupInfo);
-                } else {
-                    // 处理集团客户类别不为400的逻辑(包括null、空字符串、其他值)
-                    fillCustomerManagerInfo(zqGrpGroupInfo);
+                // 如果没有数据，退出循环
+                if (groupInfoList == null || groupInfoList.isEmpty()) {
+                    break;
                 }
 
-                // 检查是否需要更新(只要填充了客户经理信息就需要更新)
-                if (zqGrpGroupInfo.getCustManagerEmpId() != null ||
-                    zqGrpGroupInfo.getCustManagerOauser() != null ||
-                    zqGrpGroupInfo.getCustManagerName() != null) {
-                    needUpdateList.add(zqGrpGroupInfo);
-                }
-            }
+                log.info("正在处理第 {} 批数据，本批数量: {}", currentPage, groupInfoList.size());
 
-            log.info("需要更新的记录数: {}", needUpdateList.size());
+                // 用于收集需要更新的数据
+                List<ZqGrpGroupInfo> needUpdateList = new ArrayList<>();
 
-            // 批量更新数据
-            if (!needUpdateList.isEmpty()) {
-                int updateCount = 0;
-                for (ZqGrpGroupInfo groupInfo : needUpdateList) {
-                    int result = zqGrpGroupInfoMapper.updateById(groupInfo);
-                    if (result > 0) {
-                        updateCount++;
+                // 遍历处理数据
+                for (ZqGrpGroupInfo zqGrpGroupInfo : groupInfoList) {
+                    String grpCustType = zqGrpGroupInfo.getGrpCustType();
+
+                    if ("400".equals(grpCustType)) {
+                        // 处理集团客户类别为400(大客户)的逻辑
+                        fillCustomerManagerInfoForBigCustomer(zqGrpGroupInfo);
+                    } else {
+                        // 处理集团客户类别不为400的逻辑(包括null、空字符串、其他值)
+                        fillCustomerManagerInfo(zqGrpGroupInfo);
+                    }
+
+                    // 检查是否需要更新(只要填充了客户经理信息就需要更新)
+                    if (zqGrpGroupInfo.getCustManagerEmpId() != null ||
+                        zqGrpGroupInfo.getCustManagerOauser() != null ||
+                        zqGrpGroupInfo.getCustManagerName() != null) {
+                        needUpdateList.add(zqGrpGroupInfo);
                     }
                 }
-                log.info("成功更新记录数: {}", updateCount);
+
+                log.info("第 {} 批需要更新的记录数: {}", currentPage, needUpdateList.size());
+
+                // 批量更新当前批次的数据
+                if (!needUpdateList.isEmpty()) {
+                    int updateCount = 0;
+                    for (ZqGrpGroupInfo groupInfo : needUpdateList) {
+                        int result = zqGrpGroupInfoMapper.updateById(groupInfo);
+                        if (result > 0) {
+                            updateCount++;
+                        }
+                    }
+                    totalUpdated += updateCount;
+                    log.info("第 {} 批成功更新记录数: {}", currentPage, updateCount);
+                }
+
+                totalProcessed += groupInfoList.size();
+                log.info("累计已处理: {} 条，累计已更新: {} 条", totalProcessed, totalUpdated);
+
+                // 判断是否还有下一页
+                if (currentPage >= resultPage.getPages()) {
+                    break;
+                }
+
+                currentPage++;
             }
 
-            log.info("实体客户经理数据同步任务执行完成");
+            log.info("实体客户经理数据同步任务执行完成，总计处理: {} 条，总计更新: {} 条", totalProcessed, totalUpdated);
         } catch (Exception e) {
             log.error("实体客户经理数据同步任务执行异常", e);
             throw new RuntimeException("任务执行失败", e);
