@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.SysUserOperateLogMapper">
+
+    <resultMap id="SysUserOperateLogResult" type="com.crm.system.domain.SysUserOperateLog">
+        <result column="log_id" property="logId"/>
+        <result column="name_" property="name"/>
+        <result column="name_ch" property="nameCh"/>
+        <result column="relation_tel" property="relationTel"/>
+        <result column="type_" property="type"/>
+        <result column="org_id" property="orgId"/>
+        <result column="password_" property="password"/>
+        <result column="password_salt" property="passwordSalt"/>
+        <result column="function_list" property="functionList"/>
+        <result column="role_list" property="roleList"/>
+        <result column="remark_" property="remark"/>
+        <result column="creator_" property="creator"/>
+        <result column="create_time" property="createTime"/>
+        <result column="modifier_" property="modifier"/>
+        <result column="modify_time" property="modifyTime"/>
+        <result column="is_valid" property="isValid"/>
+        <result column="wx_user_flag" property="wxUserFlag"/>
+        <result column="wx_phone" property="wxPhone"/>
+        <result column="wx_no" property="wxNo"/>
+        <result column="wx_email" property="wxEmail"/>
+        <result column="wx_flag" property="wxFlag"/>
+        <result column="stealth" property="stealth"/>
+        <result column="customer_no" property="customerNo"/>
+        <result column="oa_account" property="oaAccount"/>
+        <result column="email_" property="email"/>
+        <result column="first_login" property="firstLogin"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="include_type" property="includeType"/>
+        <result column="unicom_type" property="unicomType"/>
+        <result column="unicom_type2" property="unicomType2"/>
+        <result column="data_" property="data"/>
+        <result column="token_" property="token"/>
+        <result column="markunits" property="markunits"/>
+        <result column="developer_codes" property="developerCodes"/>
+        <result column="card_number" property="cardNumber"/>
+        <result column="staff_type" property="staffType"/>
+        <result column="user_role_yx" property="userRoleYx"/>
+        <result column="zqbusiness_flag" property="zqbusinessFlag"/>
+        <result column="info_id" property="infoId"/>
+        <result column="operate_time" property="operateTime"/>
+        <result column="operator_" property="operator"/>
+        <result column="operate_type" property="operateType"/>
+    </resultMap>
+
+</mapper>
