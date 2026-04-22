@@ -17,7 +17,6 @@ import com.crm.system.mapper.rpa.ZqztRpaScriptDefMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
-import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -48,6 +47,8 @@ import static com.crm.utils.EvaluateUtil.evaluateCondition;
 @Slf4j
 @Service
 public class RabbitMQConsumerService {
+    private static final String SCRIPT_STAGE_ROW = "ROW";
+    private static final String SCRIPT_STAGE_POST_ALL = "POST_ALL";
 
     @Resource
     private RabbitTemplate rabbitTemplate;
@@ -296,13 +297,6 @@ public class RabbitMQConsumerService {
                 // 完全转换为Map结构，确保嵌套的JSON对象和数组也被正确转换
                 Map<String, Object> componentMap = convertJsonToMap(componentObject);
                 for (ZqztRpaFormMappingDo item : sortedValues) {
-                    //个性化处理电子表单组件
-                    if(item.getComponentKey().equals("marketingContract1_Qu7n57Gt") && StringUtils.isNotEmpty(item.getComponentTemplate())){
-                        Map<String,Object> goodsMsg = (Map<String,Object> )messageMap.get("GOODS_MSG");
-                        Map<String,Object> contractInfo = (Map<String,Object> )goodsMsg.get("contractInfo");
-                        componentMap.putAll(contractInfo);
-                        continue;
-                    }
                     if("1".equals(item.getConditionsShow())){
                         String conditionsValue = item.getConditionsValue();
                         boolean res = evaluateCondition(conditionsValue, messageMap);
@@ -318,10 +312,7 @@ public class RabbitMQConsumerService {
                 messageMap.put(entry.getKey(),componentMap);
             }
         }
-
-        //将电子表单组件的数据，复制到GOODS_MSG.contractInfo中，不知道这样对不对，问集团，集团让我自己去页面抓，那我就只能凭感觉写了
-        Map<String,Object> goodsMsg = (Map<String,Object>)messageMap.get("GOODS_MSG");
-        goodsMsg.put("contractInfo",messageMap.get("marketingContract1_Qu7n57Gt"));
+        this.executePostAllScripts(zqztRpaFormMappingDos, bizCode, scriptDefMap, messageMap);
         recordDo.setBody(JSONUtil.toJsonStr(messageMap));
         String response = nengKaiService.worksheetsComplete(recordDo, "RPA-YGCF");
         recordDo.setResBody(response);
@@ -408,6 +399,9 @@ public class RabbitMQConsumerService {
                                               Map<String, ZqztRpaScriptDefDo> scriptDefMap,
                                               Map<String, Object> messageMap,
                                               Map<String, Object> targetMap) {
+        if (!shouldExecuteAtStage(mapping, SCRIPT_STAGE_ROW)) {
+            return;
+        }
         if (!"1".equals(mapping.getScriptEnabled()) || StringUtils.isBlank(mapping.getScriptCode())) {
             return;
         }
@@ -415,8 +409,8 @@ public class RabbitMQConsumerService {
         if (scriptDefDo == null || StringUtils.isBlank(scriptDefDo.getScriptContent())) {
             return;
         }
-        log.info("RPA脚本开始 bizCode={} scope={} mappingId={} targetKey={} scriptCode={} scriptVersion={}",
-            bizCode, resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), scriptDefDo.getScriptVersion());
+        log.info("RPA脚本开始 bizCode={} scriptStage={} scope={} mappingId={} targetKey={} scriptCode={} scriptVersion={}",
+            bizCode, resolveScriptStage(mapping), resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), scriptDefDo.getScriptVersion());
         rpaMappingScriptEngine.execute(RpaScriptExecutionContext.builder()
             .bizCode(bizCode)
             .scriptCode(scriptDefDo.getScriptCode())
@@ -427,8 +421,49 @@ public class RabbitMQConsumerService {
             .mapping(mapping)
             .build());
         Object finalValue = getValueByPath(targetMap, mapping.getFormKey());
-        log.info("RPA脚本结束 bizCode={} scope={} mappingId={} targetKey={} scriptCode={} finalValue={}",
-            bizCode, resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), finalValue);
+        log.info("RPA脚本结束 bizCode={} scriptStage={} scope={} mappingId={} targetKey={} scriptCode={} finalValue={}",
+            bizCode, resolveScriptStage(mapping), resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), finalValue);
+    }
+
+    private void executePostAllScripts(List<ZqztRpaFormMappingDo> mappings,
+                                       String bizCode,
+                                       Map<String, ZqztRpaScriptDefDo> scriptDefMap,
+                                       Map<String, Object> messageMap) {
+        List<ZqztRpaFormMappingDo> postScripts = mappings.stream()
+            .filter(item -> shouldExecuteAtStage(item, SCRIPT_STAGE_POST_ALL))
+            .filter(item -> "1".equals(item.getScriptEnabled()))
+            .filter(item -> StringUtils.isNotBlank(item.getScriptCode()))
+            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getScriptOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
+            .collect(Collectors.toList());
+        for (ZqztRpaFormMappingDo mapping : postScripts) {
+            ZqztRpaScriptDefDo scriptDefDo = scriptDefMap.get(mapping.getScriptCode());
+            if (scriptDefDo == null || StringUtils.isBlank(scriptDefDo.getScriptContent())) {
+                continue;
+            }
+            log.info("RPA后置脚本开始 bizCode={} scriptStage={} mappingId={} scriptCode={} scriptVersion={}",
+                bizCode, resolveScriptStage(mapping), mapping.getId(), scriptDefDo.getScriptCode(), scriptDefDo.getScriptVersion());
+            rpaMappingScriptEngine.execute(RpaScriptExecutionContext.builder()
+                .bizCode(bizCode)
+                .scriptCode(scriptDefDo.getScriptCode())
+                .scriptVersion(scriptDefDo.getScriptVersion())
+                .scriptContent(scriptDefDo.getScriptContent())
+                .messageMap(messageMap)
+                .targetMap(messageMap)
+                .mapping(mapping)
+                .build());
+            log.info("RPA后置脚本结束 bizCode={} scriptStage={} mappingId={} scriptCode={}",
+                bizCode, resolveScriptStage(mapping), mapping.getId(), scriptDefDo.getScriptCode());
+        }
+    }
+
+    private boolean shouldExecuteAtStage(ZqztRpaFormMappingDo mapping, String expectedStage) {
+        String stage = resolveScriptStage(mapping);
+        return expectedStage.equalsIgnoreCase(stage);
+    }
+
+    private String resolveScriptStage(ZqztRpaFormMappingDo mapping) {
+        return StringUtils.isBlank(mapping.getScriptStage()) ? SCRIPT_STAGE_ROW : mapping.getScriptStage();
     }
 
     private String resolveScope(ZqztRpaFormMappingDo item) {
