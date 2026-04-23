@@ -161,59 +161,59 @@ public class ZqGrpGroupInfoVo2 {
     @ExcelProperty(value = "资料录入时间")
     private Date grpCreateTime;
 
-    /**
-     * 省级客户经理（省分字段）
-     */
-    @ExcelProperty(value = "省级客户经理")
-    private String provManagerEmpId;
-
-    /**
-     * 省级客户经理OA账号（省分字段）
-     */
-    @ExcelProperty(value = "省级客户经理OA账号")
-    private String provManagerOauser;
-
-    /**
-     * 省级客户名字（省分字段）
-     */
-    @ExcelProperty(value = "省级客户名字")
-    private String provManagerName;
-
-    /**
-     * 市级客户经理（省分字段）
-     */
-    @ExcelProperty(value = "市级客户经理")
-    private String cityManagerEmpId;
-
-    /**
-     * 市级客户经理OA账号（省分字段）
-     */
-    @ExcelProperty(value = "市级客户经理OA账号")
-    private String cityManagerOauser;
-
-    /**
-     * 市级客户名字（省分字段）
-     */
-    @ExcelProperty(value = "市级客户名字")
-    private String cityManagerName;
-
-    /**
-     * 县级客户经理（省分字段）
-     */
-    @ExcelProperty(value = "县级客户经理")
-    private String countyManagerEmpId;
-
-    /**
-     * 县级客户经理OA账号（省分字段）
-     */
-    @ExcelProperty(value = "县级客户经理OA账号")
-    private String countyManagerOauser;
-
-    /**
-     * 县级客户名字（省分字段）
-     */
-    @ExcelProperty(value = "县级客户名字")
-    private String countyManagerName;
+//    /**
+//     * 省级客户经理（省分字段）
+//     */
+//    @ExcelProperty(value = "省级客户经理")
+//    private String provManagerEmpId;
+//
+//    /**
+//     * 省级客户经理OA账号（省分字段）
+//     */
+//    @ExcelProperty(value = "省级客户经理OA账号")
+//    private String provManagerOauser;
+//
+//    /**
+//     * 省级客户名字（省分字段）
+//     */
+//    @ExcelProperty(value = "省级客户名字")
+//    private String provManagerName;
+//
+//    /**
+//     * 市级客户经理（省分字段）
+//     */
+//    @ExcelProperty(value = "市级客户经理")
+//    private String cityManagerEmpId;
+//
+//    /**
+//     * 市级客户经理OA账号（省分字段）
+//     */
+//    @ExcelProperty(value = "市级客户经理OA账号")
+//    private String cityManagerOauser;
+//
+//    /**
+//     * 市级客户名字（省分字段）
+//     */
+//    @ExcelProperty(value = "市级客户名字")
+//    private String cityManagerName;
+//
+//    /**
+//     * 县级客户经理（省分字段）
+//     */
+//    @ExcelProperty(value = "县级客户经理")
+//    private String countyManagerEmpId;
+//
+//    /**
+//     * 县级客户经理OA账号（省分字段）
+//     */
+//    @ExcelProperty(value = "县级客户经理OA账号")
+//    private String countyManagerOauser;
+//
+//    /**
+//     * 县级客户名字（省分字段）
+//     */
+//    @ExcelProperty(value = "县级客户名字")
+//    private String countyManagerName;
 
     /**
      * 实体客户经理工号
