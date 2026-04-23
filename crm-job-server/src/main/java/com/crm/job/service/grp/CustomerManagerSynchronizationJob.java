@@ -75,15 +75,13 @@ public class CustomerManagerSynchronizationJob {
 
                 // 批量更新当前批次的数据
                 if (!needUpdateList.isEmpty()) {
-                    int updateCount = 0;
-                    for (ZqGrpGroupInfo groupInfo : needUpdateList) {
-                        int result = zqGrpGroupInfoMapper.updateById(groupInfo);
-                        if (result > 0) {
-                            updateCount++;
-                        }
+                    boolean result = zqGrpGroupInfoMapper.updateBatchById(needUpdateList);
+                    if (result) {
+                        totalUpdated += needUpdateList.size();
+                        log.info("第 {} 批成功更新记录数: {}", currentPage, needUpdateList.size());
+                    } else {
+                        log.error("第 {} 批批量更新失败", currentPage);
                     }
-                    totalUpdated += updateCount;
-                    log.info("第 {} 批成功更新记录数: {}", currentPage, updateCount);
                 }
 
                 totalProcessed += groupInfoList.size();
