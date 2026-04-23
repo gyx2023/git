@@ -83,10 +83,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             t1.county_id2,
             t1.grid_id,
             t2.first_calling_type_code as industry_major_kind,
-            t2.second_calling_type_code as industry_sub_kind,
+            CONCAT(t2.second_calling_type_code, 'AA') as industry_sub_kind,
             t2.third_calling_type_code as industry_detail_kind,
             t1.busi_type,
-            t2.cust_class_type as grp_cust_type,
+            case
+                when t2.cust_class_type = '1' then '600'
+                when t2.cust_class_type = '2' then '500'
+                when t2.cust_class_type = '3' then '400'
+                else t2.cust_class_type
+                end as grp_cust_type,
             t1.grp_expand_type,
             t1.grp_busi_dept_type,
             t1.province_newold_type,
@@ -124,13 +129,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
            or
             coalesce(t1.county_id, '') <![CDATA[ <> ]]> coalesce(t2.b_city_code, '')
            or
-            coalesce(t1.grp_cust_type, '') <![CDATA[ <> ]]> coalesce(t2.cust_class_type, '')
+            coalesce(t1.grp_cust_type, '') <![CDATA[ <> ]]> coalesce(
+                case
+                    when t2.cust_class_type = '1' then '600'
+                    when t2.cust_class_type = '2' then '500'
+                    when t2.cust_class_type = '3' then '400'
+                    else t2.cust_class_type
+                end, '')
            or
             coalesce(t1.grp_name, '') <![CDATA[ <> ]]> coalesce(t2.cust_name, '')
            or
             coalesce(t1.industry_major_kind, '') <![CDATA[ <> ]]> coalesce(t2.first_calling_type_code, '')
            or
-            coalesce(t1.industry_sub_kind, '') <![CDATA[ <> ]]> coalesce(t2.second_calling_type_code, '')
+            coalesce(t1.industry_sub_kind, '') <![CDATA[ <> ]]> coalesce(CONCAT(t2.second_calling_type_code, 'AA'), '')
            or
             coalesce(t1.industry_detail_kind, '') <![CDATA[ <> ]]> coalesce(t2.third_calling_type_code, '')
             )
