@@ -6,10 +6,12 @@ import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
 import com.crm.common.enums.BusinessType;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
@@ -128,5 +130,13 @@ public class DwdRepSysPersonDController extends BaseController {
             e.printStackTrace();
             return R.fail("查询客户经理信息失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 根据当前登录用户来查询自己部门下的客户经理信息
+     */
+    @GetMapping("/getManagersByLoginUser")
+    public R<List<Object>> getManagersByLoginUser(){
+        return R.ok(iDwdRepSysPersonDService.getManagersByLoginUser());
     }
 }

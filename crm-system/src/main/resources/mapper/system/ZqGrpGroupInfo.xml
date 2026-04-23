@@ -35,13 +35,16 @@
         <result property="countyManagerEmpId" column="COUNTY_MANAGER_EMP_ID"/>
         <result property="countyManagerOauser" column="COUNTY_MANAGER_OAUSER"/>
         <result property="countyManagerName" column="COUNTY_MANAGER_NAME"/>
+        <result property="custManagerEmpId" column="CUST_MANAGER_EMP_ID"/>
+        <result property="custManagerOauser" column="CUST_MANAGER_OAUSER"/>
+        <result property="custManagerName" column="CUST_MANAGER_NAME"/>
         <result property="createTime" column="CREATE_TIME"/>
         <result property="updateTime" column="UPDATE_TIME"/>
     </resultMap>
     
     <!-- 通用查询结果列 -->
     <sql id="selectZqGrpGroupInfoVo">
-        select GRP_ID, GRP_NAME, GRP_CODE, HQ_GRP_CODE, CUST_ID, GRP_LEVEL, GRP_STATUS, AREA_ID, COUNTY_ID, COUNTY_ID2, GRID_ID, INDUSTRY_MAJOR_KIND, INDUSTRY_SUB_KIND, INDUSTRY_DETAIL_KIND, BUSI_TYPE, GRP_CUST_TYPE, GRP_EXPAND_TYPE, GRP_BUSI_DEPT_TYPE, PROVINCE_NEWOLD_TYPE, MANAGER_ID, GRP_CREATOR, GRP_CREATE_TIME, PROV_MANAGER_EMP_ID, PROV_MANAGER_OAUSER, PROV_MANAGER_NAME, CITY_MANAGER_EMP_ID, CITY_MANAGER_OAUSER, CITY_MANAGER_NAME, COUNTY_MANAGER_EMP_ID, COUNTY_MANAGER_OAUSER, COUNTY_MANAGER_NAME, CREATE_TIME, UPDATE_TIME from zq_grp_group_info
+        select GRP_ID, GRP_NAME, GRP_CODE, HQ_GRP_CODE, CUST_ID, GRP_LEVEL, GRP_STATUS, AREA_ID, COUNTY_ID, COUNTY_ID2, GRID_ID, INDUSTRY_MAJOR_KIND, INDUSTRY_SUB_KIND, INDUSTRY_DETAIL_KIND, BUSI_TYPE, GRP_CUST_TYPE, GRP_EXPAND_TYPE, GRP_BUSI_DEPT_TYPE, PROVINCE_NEWOLD_TYPE, MANAGER_ID, GRP_CREATOR, GRP_CREATE_TIME, PROV_MANAGER_EMP_ID, PROV_MANAGER_OAUSER, PROV_MANAGER_NAME, CITY_MANAGER_EMP_ID, CITY_MANAGER_OAUSER, CITY_MANAGER_NAME, COUNTY_MANAGER_EMP_ID, COUNTY_MANAGER_OAUSER, COUNTY_MANAGER_NAME, CUST_MANAGER_EMP_ID, CUST_MANAGER_OAUSER, CUST_MANAGER_NAME, CREATE_TIME, UPDATE_TIME from zq_grp_group_info
     </sql>
     
     <!-- 查询所有 -->
@@ -89,6 +92,9 @@
             <if test="countyManagerEmpId != null and countyManagerEmpId != ''">COUNTY_MANAGER_EMP_ID = #{countyManagerEmpId},</if>
             <if test="countyManagerOauser != null and countyManagerOauser != ''">COUNTY_MANAGER_OAUSER = #{countyManagerOauser},</if>
             <if test="countyManagerName != null and countyManagerName != ''">COUNTY_MANAGER_NAME = #{countyManagerName},</if>
+            <if test="custManagerEmpId != null and custManagerEmpId != ''">CUST_MANAGER_EMP_ID = #{custManagerEmpId},</if>
+            <if test="custManagerOauser != null and custManagerOauser != ''">CUST_MANAGER_OAUSER = #{custManagerOauser},</if>
+            <if test="custManagerName != null and custManagerName != ''">CUST_MANAGER_NAME = #{custManagerName},</if>
             <if test="createTime != null">CREATE_TIME = #{createTime},</if>
             <if test="updateTime != null">UPDATE_TIME = #{updateTime},</if>
         </set>
@@ -130,6 +136,9 @@
             <if test="countyManagerEmpId != null and countyManagerEmpId != ''">COUNTY_MANAGER_EMP_ID,</if>
             <if test="countyManagerOauser != null and countyManagerOauser != ''">COUNTY_MANAGER_OAUSER,</if>
             <if test="countyManagerName != null and countyManagerName != ''">COUNTY_MANAGER_NAME,</if>
+            <if test="custManagerEmpId != null and custManagerEmpId != ''">CUST_MANAGER_EMP_ID,</if>
+            <if test="custManagerOauser != null and custManagerOauser != ''">CUST_MANAGER_OAUSER,</if>
+            <if test="custManagerName != null and custManagerName != ''">CUST_MANAGER_NAME,</if>
             <if test="createTime != null">CREATE_TIME,</if>
             <if test="updateTime != null">UPDATE_TIME,</if>
         </trim>
@@ -166,6 +175,9 @@
             <if test="countyManagerEmpId != null and countyManagerEmpId != ''">#{countyManagerEmpId},</if>
             <if test="countyManagerOauser != null and countyManagerOauser != ''">#{countyManagerOauser},</if>
             <if test="countyManagerName != null and countyManagerName != ''">#{countyManagerName},</if>
+            <if test="custManagerEmpId != null and custManagerEmpId != ''">#{custManagerEmpId},</if>
+            <if test="custManagerOauser != null and custManagerOauser != ''">#{custManagerOauser},</if>
+            <if test="custManagerName != null and custManagerName != ''">#{custManagerName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
         </trim>
@@ -211,6 +223,9 @@
             <if test="countyManagerEmpId != null and countyManagerEmpId != ''">COUNTY_MANAGER_EMP_ID = #{countyManagerEmpId},</if>
             <if test="countyManagerOauser != null and countyManagerOauser != ''">COUNTY_MANAGER_OAUSER = #{countyManagerOauser},</if>
             <if test="countyManagerName != null and countyManagerName != ''">COUNTY_MANAGER_NAME = #{countyManagerName},</if>
+            <if test="custManagerEmpId != null and custManagerEmpId != ''">CUST_MANAGER_EMP_ID = #{custManagerEmpId},</if>
+            <if test="custManagerOauser != null and custManagerOauser != ''">CUST_MANAGER_OAUSER = #{custManagerOauser},</if>
+            <if test="custManagerName != null and custManagerName != ''">CUST_MANAGER_NAME = #{custManagerName},</if>
             <if test="createTime != null">CREATE_TIME = #{createTime},</if>
             <if test="updateTime != null">UPDATE_TIME = #{updateTime},</if>
         </set>

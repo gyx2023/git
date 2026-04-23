@@ -113,7 +113,11 @@
 <!--            <artifactId>apm-toolkit-trace</artifactId>-->
 <!--            <version>${与你的agent探针版本保持一致}</version>-->
 <!--        </dependency>-->
-
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.6.1</version> <!-- 最新稳定版，可根据需求调整 -->
+        </dependency>
     </dependencies>
 
     <build>

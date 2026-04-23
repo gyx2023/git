@@ -6,16 +6,23 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.core.domain.entity.SysUser;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.DwdRepSysPersonD;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
+import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,7 +39,15 @@ import java.util.stream.Collectors;
 public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
 
     private final DwdRepSysPersonDMapper baseMapper;
-    private final ISysAreaService sysAreaService;
+
+    @Autowired
+    private RepSysPersonNewDMapper repSysPersonNewDMapper;
+    @Autowired
+    private SysUserServiceImpl sysUserService;
+    @Autowired
+    private SysDeptServiceImpl sysDeptService;
+    @Autowired
+    private ISysAreaService sysAreaService;
 
     /**
      * 查询【请填写功能名称】
@@ -345,5 +360,47 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
     @Override
     public List<DwdRepSysPersonDVo> selectAreaAndCounty(List<Map<String, String>> personInfos) {
         return baseMapper.selectAreaAndCounty(personInfos);
+    }
+
+    @Override
+    public List<Object> getManagersByLoginUser(){
+        //先用当前登录用户到达梦库REP_SYS_PERSON_NEW_D表查询是否为省中心，如果为省中心则返回省中心下的所有有效的客户经理信息
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        Integer deptLevel = repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel >= 1){
+            List<RepSysPersonNewDDo> managers = repSysPersonNewDMapper.selectProvincialManagers();
+            return new ArrayList<>(managers);
+        }
+
+        //如果不是省中心，再从省、市、县依次判断
+        //获取当前登录用户对象
+        SysUser user = sysUserService.selectUserById(loginUser.getUserId());
+        //获取当前登录用户部门对象
+        SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
+        //获取部门归属的地市对象
+        SysAreaVo area = sysAreaService.queryById(Long.valueOf(dept.getAreaCode()));
+        if("一级".equals(area.getType())){
+            //省级返回dwd_rep_sys_person_d表全部有效的客户经理信息
+            LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
+            lqw.eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            List<DwdRepSysPersonDVo> managers = baseMapper.selectVoList(lqw);
+            return new ArrayList<>(managers);
+        }else if("二级".equals(area.getType())){
+            //市级返回当前地市的所有客户经理信息
+            LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
+            lqw.eq(DwdRepSysPersonD::getAreaId, area.getEmpAreaId())
+                .eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            List<DwdRepSysPersonDVo> managers = baseMapper.selectVoList(lqw);
+            return new ArrayList<>(managers);
+        }else if("三级".equals(area.getType())){
+            //县级返回当前县的所有客户经理信息
+            LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
+            lqw.eq(DwdRepSysPersonD::getCountyId, area.getEmpCountyId())
+                .eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            List<DwdRepSysPersonDVo> managers = baseMapper.selectVoList(lqw);
+            return new ArrayList<>(managers);
+        }
+
+        return new ArrayList<>();
     }
 }
