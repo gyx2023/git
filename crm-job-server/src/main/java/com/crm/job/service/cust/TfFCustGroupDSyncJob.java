@@ -343,10 +343,9 @@ public class TfFCustGroupDSyncJob {
             newGroup.setAreaId(custGroup.getEparchyCode());
             newGroup.setCountyId(custGroup.getBCityCode());
             newGroup.setIndustryMajorKind(custGroup.getFirstCallingTypeCode());
-            String secondCallingTypeCode = custGroup.getSecondCallingTypeCode();
-            newGroup.setIndustrySubKind(StringUtils.isNotBlank(secondCallingTypeCode) ? secondCallingTypeCode + "AA" : null);
+            newGroup.setIndustrySubKind(custGroup.getSecondCallingTypeCode());
             newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
-            newGroup.setGrpCustType(convertGrpCustType(custGroup.getCustClassType()));
+            newGroup.setGrpCustType(custGroup.getCustClassType());
             newGroup.setGrpLevel(CustStateEnum.CUST_STATE_2.getCode().equals(custGroup.getCustState()) ? GRP_LEVEL_IDENTIFIER : null);
             //资料创建人
             newGroup.setGrpCreator(custGroup.getCreateOaUserCode());

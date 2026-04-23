@@ -53,4 +53,7 @@ public interface IToppOrderService {
      * 校验并批量删除【请填写功能名称】信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+   void updateByOppoId(Long oppoId,String endOppTypeMemo);
+
 }
