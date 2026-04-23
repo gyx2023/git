@@ -58,9 +58,13 @@ public class GroupCustomersExport extends AbstractExportStrategy {
             // 从任务参数中获取areaCode
             String areaCode = parseAreaCode(task);
 
-            // 从任务参数中获取是否需要脱敏的标识
+            // 从任务参数中获取实体客户经理姓名是否需要脱敏的标识
             Boolean needDesensitize = parseIsDesensitize(task);
-            log.info("导出任务 - 是否需要脱敏: {}", needDesensitize);
+            log.info("导出任务 - 实体客户经理姓名是否需要脱敏: {}", needDesensitize);
+
+            //从任务参数中解析是否为管理员
+            Boolean isAdmin = parseIsAdmin(task);
+            log.info("导出任务 - 当前用户是否为管理员: {}", isAdmin);
 
             // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
             String prefix = "group_customers_export_" + System.currentTimeMillis();
@@ -68,7 +72,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
 
             try {
                 // 使用流式导出方法
-                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile);
+                boolean success = exportToExcelStream(queryParams, areaCode, needDesensitize, tempFile,isAdmin);
                 if (!success) {
                     task.setRemark("导出失败");
                     return false;
@@ -114,7 +118,7 @@ public class GroupCustomersExport extends AbstractExportStrategy {
      * 流式导出到Excel文件
      */
     private boolean exportToExcelStream(ZqGrpGroupInfoBo queryParams, String areaCode, Boolean needDesensitize,
-                                         File outputFile) throws Exception {
+                                         File outputFile, Boolean isAdmin) throws Exception {
         // 使用 EasyExcel 分批写入数据
         // 使用 ZqGrpGroupInfoVo2（没有 @Sensitive 注解），可以手动控制是否脱敏
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, ZqGrpGroupInfoVo2.class)
@@ -138,9 +142,14 @@ public class GroupCustomersExport extends AbstractExportStrategy {
                     break;
                 }
 
-                // 如果需要脱敏，对当前批次数据进行手动脱敏处理
+                // 如果客户经理姓名需要脱敏，对当前批次数据进行手动脱敏处理
                 if (Boolean.TRUE.equals(needDesensitize)) {
                     applyDesensitization(batchData);
+                }
+
+                //如果不是管理员则集团名称脱敏
+                if(!isAdmin){
+                    groupNameDesensitization(batchData);
                 }
 
                 // 写入当前批次数据
@@ -168,7 +177,42 @@ public class GroupCustomersExport extends AbstractExportStrategy {
     }
 
     /**
+     * 解析是否为管理员
+     */
+    private Boolean parseIsAdmin(FileAsyncTaskDo task){
+        try {
+            JSONObject jsonObject = JSONUtil.parseObj(task.getRequestParams());
+            if (jsonObject.containsKey("isAdmin")) {
+                String isAdmin = jsonObject.getStr("isAdmin");
+                return "true".equalsIgnoreCase(isAdmin);
+            }
+        } catch (Exception e) {
+            log.warn("解析是否为管理员失败， {}", e.getMessage());
+        }
+        return false; // 默认不是管理员
+    }
+
+    /**
+     * 集团名称脱敏
+     */
+    private void groupNameDesensitization(List<ZqGrpGroupInfoVo2> list){
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        try {
+            for (ZqGrpGroupInfoVo2 vo : list) {
+                if (StringUtils.isNotBlank(vo.getGrpName())) {
+                    vo.setGrpName(Desensitization.desensitizeCompanyName(vo.getGrpName()));
+                }
+            }
+        } catch (Exception e) {
+            log.error("集团名称脱敏处理失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * 解析是否需要脱敏
+     * 当前控制实体客户经理姓名是否需要脱敏
      */
     private Boolean parseIsDesensitize(FileAsyncTaskDo task) {
         try {
