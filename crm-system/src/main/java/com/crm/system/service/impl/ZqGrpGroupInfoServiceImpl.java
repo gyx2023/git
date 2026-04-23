@@ -84,8 +84,30 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     @Override
     public ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId){
         ZqGrpGroupInfo info = baseMapper.selectById(grpId);
-        if (StringUtils.isNotBlank(info.getCustManagerName())) {
-            info.setCustManagerName(Desensitization.desensitizeName(info.getCustManagerName()));
+
+        if (info == null) {
+            return null;
+        }
+
+        try {
+            // 查询脱敏开关配置
+            SysParamDo sysParamDo = sysParamService.findByCode("manager_info_desensitization_switch");
+
+            // 如果配置不存在或 value 不是 "on"，则不进行脱敏
+            if (sysParamDo == null || !"on".equalsIgnoreCase(sysParamDo.getValue())) {
+                log.debug("经理信息脱敏开关未开启，不进行脱敏处理");
+                return info;
+            }
+
+            log.debug("经理信息脱敏开关已开启，开始脱敏处理");
+
+            // 脱敏实体客户经理姓名
+            if (StringUtils.isNotBlank(info.getCustManagerName())) {
+                info.setCustManagerName(Desensitization.desensitizeName(info.getCustManagerName()));
+            }
+        } catch (Exception e) {
+            log.error("经理信息脱敏处理失败: {}", e.getMessage(), e);
+            // 脱敏失败不影响主流程，继续返回数据
         }
         return info;
     }
