@@ -11,7 +11,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * 异步配置
@@ -23,15 +22,16 @@ import java.util.concurrent.ScheduledExecutorService;
 public class AsyncConfig extends AsyncConfigurerSupport {
 
     @Autowired
-    @Qualifier("scheduledExecutorService")
-    private ScheduledExecutorService scheduledExecutorService;
+    @Qualifier("mdcTaskExecutor")
+    private Executor mdcTaskExecutor;
 
     /**
-     * 自定义 @Async 注解使用系统线程池
+     * 自定义 @Async 注解使用带 MDC 传递的线程池
+     * 确保异步方法中 TraceID/SessionID 可正常获取
      */
     @Override
     public Executor getAsyncExecutor() {
-        return scheduledExecutorService;
+        return mdcTaskExecutor;
     }
 
     /**
