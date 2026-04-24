@@ -88,11 +88,6 @@ public class ZqztRpaFormMappingDo extends BaseEntity {
     private String scriptEnabled;
 
     /**
-     * 脚本执行顺序
-     */
-    private Integer scriptOrder;
-
-    /**
      * 脚本执行阶段：ROW-行内执行，POST_ALL-全量后执行
      */
     private String scriptStage;

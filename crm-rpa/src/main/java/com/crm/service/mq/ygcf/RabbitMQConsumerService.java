@@ -253,8 +253,7 @@ public class RabbitMQConsumerService {
         //普通表单处理
         List<ZqztRpaFormMappingDo> formList = zqztRpaFormMappingDos.stream()
             .filter(item -> "0".equals(item.getIsComponent()))
-            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getScriptOrder, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
+            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
             .collect(Collectors.toList());
 
         for (ZqztRpaFormMappingDo item : formList) {
@@ -287,8 +286,7 @@ public class RabbitMQConsumerService {
                 messageMap.put(entry.getKey(), componentMap);
             }else {
                 List<ZqztRpaFormMappingDo> sortedValues = values.stream()
-                    .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getScriptOrder, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
+                    .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
                     .collect(Collectors.toList());
                 String componentTemplate = sortedValues.get(0).getComponentTemplate();
                 // 将JSON字符串转换为Map
@@ -433,8 +431,7 @@ public class RabbitMQConsumerService {
             .filter(item -> shouldExecuteAtStage(item, SCRIPT_STAGE_POST_ALL))
             .filter(item -> "1".equals(item.getScriptEnabled()))
             .filter(item -> StringUtils.isNotBlank(item.getScriptCode()))
-            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getScriptOrder, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
+            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
             .collect(Collectors.toList());
         for (ZqztRpaFormMappingDo mapping : postScripts) {
             ZqztRpaScriptDefDo scriptDefDo = scriptDefMap.get(mapping.getScriptCode());
