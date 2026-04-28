@@ -47,7 +47,7 @@ public class Resilience4jConfig {
             .build();
 
         CircuitBreakerRegistry cbRegistry = CircuitBreakerRegistry.of(config);
-        // 注册 toolCall 写断器实例 (BE-07)
+        // 注册 toolCall 熔断器实例 (BE-07)
         CircuitBreakerConfig toolCallCbConfig = CircuitBreakerConfig.custom()
             .failureRateThreshold(50)
             .waitDurationInOpenState(Duration.ofSeconds(10))
@@ -95,7 +95,7 @@ public class Resilience4jConfig {
         TimeLimiterConfig config = TimeLimiterConfig.custom()
             // 超时时间 (与 readTimeout 一致)
             .timeoutDuration(properties.getReadTimeout())
-            // 超时是否取消未来
+            // 超时是否取消
             .cancelRunningFuture(true)
             .build();
 

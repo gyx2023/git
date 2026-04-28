@@ -58,12 +58,20 @@ public class RouterService {
     @Value("${hiagent.intent-agent-id:intent_agent}")
     private String intentAgentId;
 
-    /** SSE 异步执行线程池 */
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "sse-worker");
-        t.setDaemon(true);
-        return t;
-    });
+    /** SSE 异步执行线程池（有界配置，防止资源耗尽） */
+    private final ExecutorService sseExecutor = new java.util.concurrent.ThreadPoolExecutor(
+        4,                                      // 核心线程数
+        16,                                     // 最大线程数
+        60L,                                    // 空闲线程存活时间
+        java.util.concurrent.TimeUnit.SECONDS,
+        new java.util.concurrent.LinkedBlockingQueue<>(100),  // 有界队列
+        r -> {
+            Thread t = new Thread(r, "sse-worker");
+            t.setDaemon(true);
+            return t;
+        },
+        new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()  // 拒绝策略：由调用线程执行
+    );
 
     /**
      * 处理用户请求主流程（SSE 流式）
@@ -110,104 +118,29 @@ public class RouterService {
                 // 将 HiAgent messageId 写入 IntentResult，便于后续反馈
                 intentResult.setHiagentRequestId(chatResponse.getMessageId());
 
-                // 6. 澄清逻辑（多轮追问，文案完全由 Agent 生成，状态机对齐 BE-10）
+                // 6. 统一澄清处理流程（提取公共逻辑）
                 log.info("traceId={} check clarify: needClarify={}, toolName={}, intent={}, confidence={}",
                     traceId, intentResult.getNeedClarify(), intentResult.getToolName(),
                     intentResult.getIntent(), intentResult.getConfidenceSafe());
                 if (Boolean.TRUE.equals(intentResult.getNeedClarify())) {
-                    // 获取或初始化会话
-                    ConversationSession session = getOrInitSession(sessionId, userId, traceId);
+                    ClarificationResult clarifyResult = handleClarification(
+                        intentResult, query, sessionId, userId, traceId, startTime);
 
-                    // 超时检查（BE-10：300s 无操作则重置）
-                    if (session.checkTimeout()) {
-                        log.info("traceId={} session timeout, resetting", traceId);
-                        session = resetSession(session, userId);
-                    }
-
-                    // 意图切换检测（在澄清分支入口）：CLARIFYING 状态下收到不同 toolName，说明用户切换了问题
-                    // 此处先于 incrementTurn 执行，确保新问题从零开始，不受旧锁定/历史污染
-                    if (session.getStatus() == ConversationSession.ConversationStatus.CLARIFYING
-                            && session.getLockedToolName() != null
-                            && intentResult.getToolName() != null
-                            && !intentResult.getToolName().equals(session.getLockedToolName())) {
-                        log.info("traceId={} intent switched in clarify branch: old={}, new={}, resetting session",
-                            traceId, session.getLockedToolName(), intentResult.getToolName());
-                        session.setCurrentTurnCount(0);
-                        session.setLockedToolName(null);
-                        session.setLockedStrategy(null);
-                        // session.setLockedEntities(null);  // 保留已收集参数，Agent toolName 误判不应导致参数丢失
-                        session.setDialogueHistory(null);
-                        session.setStatus(ConversationSession.ConversationStatus.INITIAL);
-                    }
-
-                    // 更新轮次和缺失要素
-                    session.incrementTurn();
-                    session.setMissingSlots(intentResult.getMissingSlots());
-                    session.setStatus(ConversationSession.ConversationStatus.CLARIFYING);
-
-                    // 策略锁定：首轮识别到 tool_name 时立即存入 session，防止后续大模型重判漂移
-                    // 每轮都合并最新 entities（大模型随对话积累实体，每轮可能补全新字段）
-                    if (session.getLockedToolName() == null && intentResult.getToolName() != null) {
-                        session.setLockedToolName(intentResult.getToolName());
-                        session.setLockedStrategy(RoutingStrategy.TOOL_CALL.name());
-                        log.info("traceId={} toolName locked on clarify turn {}: {}",
-                            traceId, session.getCurrentTurnCount(), intentResult.getToolName());
-                    }
-                    // 每轮合并 entities（后轮覆盖前轮，实现增量补全）
-                    if (intentResult.getEntities() != null && !intentResult.getEntities().isEmpty()) {
-                        Map<String, Object> merged = session.getLockedEntities() != null
-                            ? new java.util.HashMap<>(session.getLockedEntities())
-                            : new java.util.HashMap<>();
-                        merged.putAll(intentResult.getEntities());
-                        session.setLockedEntities(merged);
-                    }
-
-                    // 记录对话历史（BE-10）
-                    // 如果已有历史（说明是澄清第 N+1 轮），先回填上一轮的 userAnswer
-                    List<DialogueTurn> existHistory = session.getDialogueHistory();
-                    if (existHistory != null && !existHistory.isEmpty()) {
-                        DialogueTurn lastTurn = existHistory.get(existHistory.size() - 1);
-                        if (lastTurn.getUserAnswer() == null) {
-                            lastTurn.setUserAnswer(query);  // 本轮输入就是对上一轮追问的回答
-                        }
-                    }
-                    DialogueTurn turn = new DialogueTurn();
-                    turn.setTurnNumber(session.getCurrentTurnCount());
-                    turn.setUserQuery(query);
-                    turn.setNeedClarify(true);
-                    turn.setClarifyQuestion(intentResult.getClarifyQuestion());
-                    turn.setClarifyOptions(intentResult.getClarifyOptions());
-                    turn.setCreateTime(java.time.LocalDateTime.now());
-                    turn.setLatencyMs(System.currentTimeMillis() - startTime);
-                    session.addDialogueTurn(turn);
-                    contextManager.saveSession(session);
-
-                    // 超过最大轮次（BE-10：5 轮 → FAILED 降级，强制执行查询）
-                    if (session.isMaxTurnsReached()) {
-                        log.warn("traceId={} max clarify turns({}) reached, forcing query",
-                            traceId, session.getCurrentTurnCount());
-                        session.setStatus(ConversationSession.ConversationStatus.FAILED);
-                        contextManager.saveSession(session);
-                        // 不 return，继续执行后续路由（降级处理）
-                    } else {
-                        // 直接透传 Agent 生成的文案（无硬编码）
-                        String clarifyQuestion = intentResult.getClarifyQuestion();
-                        if (clarifyQuestion == null || clarifyQuestion.isEmpty()) {
-                            clarifyQuestion = "请补充更多信息以便查询";   // 最小兜底
-                        }
-                        List<String> clarifyOptions = intentResult.getClarifyOptions();
-                        if (clarifyOptions == null || clarifyOptions.isEmpty()) {
-                            clarifyOptions = Collections.singletonList("请输入补充说明");
-                        }
+                    if (clarifyResult.shouldReturn()) {
+                        // 返回澄清提示，结束本次请求
                         sendSseEvent(emitter, SseMessage.clarify(
-                            traceId, messageId, clarifyQuestion, clarifyOptions
+                            traceId, messageId,
+                            clarifyResult.getClarifyQuestion(),
+                            clarifyResult.getClarifyOptions()
                         ));
                         sendSseEvent(emitter, SseMessage.end(traceId, messageId,
-                            intentResult.getHiagentRequestId(), "CLARIFY",
+                            intentResult.getHiagentRequestId(),
+                            clarifyResult.getEndType(),
                             System.currentTimeMillis() - startTime, Collections.emptyList()));
                         emitter.complete();
                         return;
                     }
+                    // shouldReturn=false 表示达到最大轮次，继续执行后续路由（降级处理）
                 }
 
                 // 澄清完成或首次直接执行：更新状态为 EXECUTING
@@ -215,24 +148,8 @@ public class RouterService {
                 if (existSession != null
                         && existSession.getStatus() == ConversationSession.ConversationStatus.CLARIFYING) {
 
-                    // 意图切换检测：仅当 Agent 明确返回了不同的（非 null）tool_name 才认为切换
-                    // null 表示 Agent 没有识别到工具（如孤立回答有时无法解析），不设为切换
-                    // 开启 buildEnrichedQuery 后此场景大幅减少，但保留上次不切换却清除锁定的防御
-                    boolean intentChanged = false;
-                    if (existSession.getLockedToolName() != null) {
-                        String newToolName = intentResult.getToolName();
-                        if (newToolName != null && !newToolName.equals(existSession.getLockedToolName())) {
-                            intentChanged = true;
-                            log.info("traceId={} intent switched during clarify: locked={}, new={}, resetting session lock",
-                                traceId, existSession.getLockedToolName(), newToolName);
-                            existSession.setLockedToolName(null);
-                            existSession.setLockedStrategy(null);
-                            existSession.setLockedEntities(null);
-                        } else if (newToolName == null) {
-                            log.debug("traceId={} tool_name=null in clarify turn, keeping locked: {}",
-                                traceId, existSession.getLockedToolName());
-                        }
-                    }
+                    // 意图切换检测（统一逻辑）：仅当 Agent 明确返回了不同的（非 null）tool_name 才认为切换
+                    detectAndHandleIntentSwitch(existSession, intentResult, traceId);
 
                     existSession.setStatus(ConversationSession.ConversationStatus.EXECUTING);
                     existSession.setMissingSlots(Collections.emptyList());
@@ -457,94 +374,21 @@ public class RouterService {
                 query != null ? query.length() : 0);
             intentResult.setConfidence(calibrated);
 
-            // 5. 澄清逻辑（与 processStream 对齐）
+            // 5. 统一澄清处理流程（与 processStream 对齐）
             if (Boolean.TRUE.equals(intentResult.getNeedClarify())) {
-                ConversationSession session = getOrInitSession(sessionId, userId, traceId);
+                ClarificationResult clarifyResult = handleClarification(
+                    intentResult, query, sessionId, userId, traceId, startTime);
 
-                // 超时检查
-                if (session.checkTimeout()) {
-                    log.info("traceId={} session timeout, resetting", traceId);
-                    session = resetSession(session, userId);
-                }
-
-                // 意图切换检测（在澄清分支入口）：CLARIFYING 状态下收到不同 toolName，说明用户切换了问题
-                // 此处先于 incrementTurn 执行，确保新问题从零开始，不受旧锁定/历史污染
-                if (session.getStatus() == ConversationSession.ConversationStatus.CLARIFYING
-                        && session.getLockedToolName() != null
-                        && intentResult.getToolName() != null
-                        && !intentResult.getToolName().equals(session.getLockedToolName())) {
-                    log.info("traceId={} intent switched in clarify branch: old={}, new={}, resetting session",
-                        traceId, session.getLockedToolName(), intentResult.getToolName());
-                    session.setCurrentTurnCount(0);
-                    session.setLockedToolName(null);
-                    session.setLockedStrategy(null);
-                    // session.setLockedEntities(null);  // 保留已收集参数，Agent toolName 误判不应导致参数丢失
-                    session.setDialogueHistory(null);
-                    session.setStatus(ConversationSession.ConversationStatus.INITIAL);
-                }
-
-                // 更新轮次和缺失要素
-                session.incrementTurn();
-                session.setMissingSlots(intentResult.getMissingSlots());
-                session.setStatus(ConversationSession.ConversationStatus.CLARIFYING);
-
-                // 策略锁定：首轮识别到 tool_name 时写入 session
-                if (session.getLockedToolName() == null && intentResult.getToolName() != null) {
-                    session.setLockedToolName(intentResult.getToolName());
-                    session.setLockedStrategy(RoutingStrategy.TOOL_CALL.name());
-                    log.info("traceId={} toolName locked on clarify turn {}: {}",
-                        traceId, session.getCurrentTurnCount(), intentResult.getToolName());
-                }
-                // 每轮合并 entities
-                if (intentResult.getEntities() != null && !intentResult.getEntities().isEmpty()) {
-                    Map<String, Object> merged = session.getLockedEntities() != null
-                        ? new java.util.HashMap<>(session.getLockedEntities())
-                        : new java.util.HashMap<>();
-                    merged.putAll(intentResult.getEntities());
-                    session.setLockedEntities(merged);
-                }
-
-                // 记录对话历史
-                // 如果已有历史（说明是澄清第 N+1 轮），先回填上一轮的 userAnswer
-                List<DialogueTurn> existHistory2 = session.getDialogueHistory();
-                if (existHistory2 != null && !existHistory2.isEmpty()) {
-                    DialogueTurn lastTurn2 = existHistory2.get(existHistory2.size() - 1);
-                    if (lastTurn2.getUserAnswer() == null) {
-                        lastTurn2.setUserAnswer(query);
-                    }
-                }
-                DialogueTurn turn = new DialogueTurn();
-                turn.setTurnNumber(session.getCurrentTurnCount());
-                turn.setUserQuery(query);
-                turn.setNeedClarify(true);
-                turn.setClarifyQuestion(intentResult.getClarifyQuestion());
-                turn.setClarifyOptions(intentResult.getClarifyOptions());
-                turn.setCreateTime(java.time.LocalDateTime.now());
-                turn.setLatencyMs(System.currentTimeMillis() - startTime);
-                session.addDialogueTurn(turn);
-                contextManager.saveSession(session);
-
-                // 超过最大轮次：降级强制执行
-                if (session.isMaxTurnsReached()) {
-                    log.warn("traceId={} max clarify turns({}) reached, forcing query",
-                        traceId, session.getCurrentTurnCount());
-                    session.setStatus(ConversationSession.ConversationStatus.FAILED);
-                    contextManager.saveSession(session);
-                    // 不 return，继续执行后续路由
-                } else {
+                if (clarifyResult.shouldReturn()) {
                     // 返回澄清结果，调用方展示澄清卡片
-                    String clarifyQuestion = intentResult.getClarifyQuestion();
-                    if (clarifyQuestion == null || clarifyQuestion.isEmpty()) {
-                        clarifyQuestion = "请补充更多信息以便查询";
-                    }
-                    List<String> clarifyOptions = intentResult.getClarifyOptions();
-                    if (clarifyOptions == null || clarifyOptions.isEmpty()) {
-                        clarifyOptions = Collections.singletonList("请输入补充说明");
-                    }
-                    log.info("traceId={} returning clarify result, turn={}",
-                        traceId, session.getCurrentTurnCount());
-                    return QueryResult.clarify(clarifyQuestion, clarifyOptions);
+                    log.info("traceId={} returning clarify result, type={}, turn={}",
+                        traceId, clarifyResult.getEndType(), clarifyResult.getTurnCount());
+                    return QueryResult.clarify(
+                        clarifyResult.getClarifyQuestion(),
+                        clarifyResult.getClarifyOptions()
+                    );
                 }
+                // shouldReturn=false 表示达到最大轮次，继续执行后续路由（降级处理）
             }
 
             // 澄清完成或首次直接执行：更新状态为 EXECUTING
@@ -552,20 +396,8 @@ public class RouterService {
             if (existSession != null
                     && existSession.getStatus() == ConversationSession.ConversationStatus.CLARIFYING) {
 
-                // 意图切换检测：返回的 tool_name 与锁定的不一致或为 null，重置锁定状态
-                if (existSession.getLockedToolName() != null) {
-                    String newToolName = intentResult.getToolName();
-                    if (newToolName != null && !newToolName.equals(existSession.getLockedToolName())) {
-                        log.info("traceId={} intent switched during clarify: locked={}, new={}, resetting session lock",
-                            traceId, existSession.getLockedToolName(), newToolName);
-                        existSession.setLockedToolName(null);
-                        existSession.setLockedStrategy(null);
-                        existSession.setLockedEntities(null);
-                    } else if (newToolName == null) {
-                        log.debug("traceId={} tool_name=null in clarify turn, keeping locked: {}",
-                            traceId, existSession.getLockedToolName());
-                    }
-                }
+                // 意图切换检测（统一逻辑）
+                detectAndHandleIntentSwitch(existSession, intentResult, traceId);
 
                 existSession.setStatus(ConversationSession.ConversationStatus.EXECUTING);
                 existSession.setMissingSlots(Collections.emptyList());
@@ -693,9 +525,9 @@ public class RouterService {
                     String toolName = intent.getToolName();
                     List<String> missingSlots = intent.getMissingSlots();
                     boolean hasMissing = missingSlots != null && !missingSlots.isEmpty();
-        
+
                     if (hasMissing) {
-                        // 高置信度但缺少必填参数：降级知识库（正常应由 needClarify=true 分支拦截，此处为安全内殨）
+                        // 高置信度但缺少必填参数：降级知识库（正常应由 needClarify=true 分支拦截，此处为安全兜底）
                         strategy = RoutingStrategy.FALLBACK_KB;
                         reason = "data_query 高置信度但缺少必填参数 " + missingSlots + "，应由 needClarify 拦截";
                         candidates.add("FALLBACK_KB");
@@ -705,13 +537,13 @@ public class RouterService {
                             traceId, missingSlots);
                     } else if (toolName != null && !toolName.isEmpty()) {
                         strategy = RoutingStrategy.TOOL_CALL;
-                        reason = "data_query \u9ad8\u7f6e\u4fe1\u5ea6 (" + confidence + ")，\u5339\u914d\u5de5\u5177: " + toolName;
+                        reason = "data_query 高置信度 (" + confidence + ")，匹配工具: " + toolName;
                         candidates.add("TOOL_CALL");
                         scores.put("TOOL_CALL", confidence);
                     } else {
                         // Intent Agent 未返回工具名，降级到语义查询
                         strategy = RoutingStrategy.SEMANTIC_QUERY;
-                        reason = "data_query \u9ad8\u7f6e\u4fe1\u5ea6 (" + confidence + ")，\u672a\u5339\u914d\u5de5\u5177，执行语义查询";
+                        reason = "data_query 高置信度 (" + confidence + ")，未匹配工具，执行语义查询";
                         candidates.add("TOOL_CALL");
                         candidates.add("SEMANTIC_QUERY");
                         scores.put("SEMANTIC_QUERY", confidence);
@@ -995,6 +827,221 @@ public class RouterService {
             if (query.contains(marker)) return true;
         }
         return false;
+    }
+
+    /**
+     * 统一的澄清处理流程（提取公共逻辑，消除重复代码）
+     * <p>
+     * 处理步骤：
+     * 1. 获取或初始化会话
+     * 2. 超时检查与重置
+     * 3. 意图切换检测
+     * 4. 更新轮次和状态
+     * 5. 策略锁定与实体合并
+     * 6. 记录对话历史
+     * 7. 检查最大轮次，决定是返回澄清还是继续执行
+     *
+     * @param intent    本轮意图结果
+     * @param query     用户原始输入
+     * @param sessionId 会话 ID
+     * @param userId    用户 ID
+     * @param traceId   追踪 ID
+     * @param startTime 请求开始时间
+     * @return 澄清处理结果
+     */
+    private ClarificationResult handleClarification(IntentResult intent, String query,
+                                                     String sessionId, String userId,
+                                                     String traceId, long startTime) {
+        // 1. 获取或初始化会话
+        ConversationSession session = getOrInitSession(sessionId, userId, traceId);
+
+        // 2. 超时检查（BE-10：300s 无操作则重置）
+        if (session.checkTimeout()) {
+            log.info("traceId={} session timeout, resetting", traceId);
+            session = resetSession(session, userId);
+        }
+
+        // 3. 意图切换检测：CLARIFYING 状态下收到不同 toolName，说明用户切换了问题
+        detectAndHandleIntentSwitch(session, intent, traceId);
+
+        // 4. 更新轮次和缺失要素
+        session.incrementTurn();
+        session.setMissingSlots(intent.getMissingSlots());
+        session.setStatus(ConversationSession.ConversationStatus.CLARIFYING);
+
+        // 5. 策略锁定与实体合并
+        lockStrategyIfFirstTime(session, intent, traceId);
+        mergeEntities(session, intent);
+
+        // 6. 记录对话历史
+        recordDialogueHistory(session, query, intent, startTime);
+        contextManager.saveSession(session);
+
+        // 7. 检查最大轮次，决定处理方式
+        if (session.isMaxTurnsReached()) {
+            // 达到最大轮次：设置 FAILED 状态，但仍返回澄清提示让前端决定
+            log.warn("traceId={} max clarify turns({}) reached, marking FAILED",
+                traceId, session.getCurrentTurnCount());
+            session.setStatus(ConversationSession.ConversationStatus.FAILED);
+            contextManager.saveSession(session);
+
+            String clarifyQuestion = intent.getClarifyQuestion();
+            if (clarifyQuestion == null || clarifyQuestion.isEmpty()) {
+                clarifyQuestion = "参数仍不完整，是否使用默认值继续查询？";
+            }
+            List<String> clarifyOptions = intent.getClarifyOptions();
+            if (clarifyOptions == null || clarifyOptions.isEmpty()) {
+                clarifyOptions = Arrays.asList("使用默认值查询", "重新输入");
+            }
+
+            return ClarificationResult.maxTurnsReached(clarifyQuestion, clarifyOptions,
+                session.getCurrentTurnCount());
+        } else {
+            // 正常澄清：返回澄清提示
+            String clarifyQuestion = intent.getClarifyQuestion();
+            if (clarifyQuestion == null || clarifyQuestion.isEmpty()) {
+                clarifyQuestion = "请补充更多信息以便查询";
+            }
+            List<String> clarifyOptions = intent.getClarifyOptions();
+            if (clarifyOptions == null || clarifyOptions.isEmpty()) {
+                clarifyOptions = Collections.singletonList("请输入补充说明");
+            }
+
+            return ClarificationResult.normalClarify(clarifyQuestion, clarifyOptions,
+                session.getCurrentTurnCount());
+        }
+    }
+
+    /**
+     * 澄清处理结果封装
+     */
+    private static class ClarificationResult {
+        private final boolean shouldReturn;
+        private final String clarifyQuestion;
+        private final List<String> clarifyOptions;
+        private final String endType;
+        private final int turnCount;
+
+        private ClarificationResult(boolean shouldReturn, String clarifyQuestion,
+                                   List<String> clarifyOptions, String endType, int turnCount) {
+            this.shouldReturn = shouldReturn;
+            this.clarifyQuestion = clarifyQuestion;
+            this.clarifyOptions = clarifyOptions;
+            this.endType = endType;
+            this.turnCount = turnCount;
+        }
+
+        static ClarificationResult normalClarify(String question, List<String> options, int turnCount) {
+            return new ClarificationResult(true, question, options, "CLARIFY", turnCount);
+        }
+
+        static ClarificationResult maxTurnsReached(String question, List<String> options, int turnCount) {
+            return new ClarificationResult(true, question, options, "CLARIFY_MAX_TURNS", turnCount);
+        }
+
+        boolean shouldReturn() { return shouldReturn; }
+        String getClarifyQuestion() { return clarifyQuestion; }
+        List<String> getClarifyOptions() { return clarifyOptions; }
+        String getEndType() { return endType; }
+        int getTurnCount() { return turnCount; }
+    }
+
+    /**
+     * 统一的意图切换检测与处理逻辑
+     * <p>
+     * 在 CLARIFYING 状态下，如果检测到 toolName 变化，说明用户切换了问题。
+     * 此时重置会话状态，但保留已收集的参数（lockedEntities），避免用户重复输入。
+     *
+     * @param session    当前会话
+     * @param intent     本轮意图结果
+     * @param traceId    追踪 ID
+     */
+    private void detectAndHandleIntentSwitch(ConversationSession session, IntentResult intent, String traceId) {
+        if (session.getStatus() != ConversationSession.ConversationStatus.CLARIFYING
+                || session.getLockedToolName() == null) {
+            return;
+        }
+
+        String newToolName = intent.getToolName();
+        // 仅当新 toolName 非空且与锁定值不同时，才判定为意图切换
+        if (newToolName != null && !newToolName.equals(session.getLockedToolName())) {
+            log.info("traceId={} intent switched: locked={}, new={}, resetting session (keeping entities)",
+                traceId, session.getLockedToolName(), newToolName);
+
+            // 统一重置策略：保留已收集参数，清除其他状态
+            session.setCurrentTurnCount(0);
+            session.setLockedToolName(null);
+            session.setLockedStrategy(null);
+            // 注意：不清除 lockedEntities，保留已确认参数
+            session.setDialogueHistory(null);
+            session.setStatus(ConversationSession.ConversationStatus.INITIAL);
+        } else if (newToolName == null) {
+            log.debug("traceId={} tool_name=null in clarify turn, keeping locked: {}",
+                traceId, session.getLockedToolName());
+        }
+    }
+
+    /**
+     * 首轮策略锁定：仅在 lockedToolName 为空且本轮有 toolName 时锁定
+     *
+     * @param session 当前会话
+     * @param intent  本轮意图结果
+     * @param traceId 追踪 ID
+     */
+    private void lockStrategyIfFirstTime(ConversationSession session, IntentResult intent, String traceId) {
+        if (session.getLockedToolName() == null && intent.getToolName() != null) {
+            session.setLockedToolName(intent.getToolName());
+            session.setLockedStrategy(RoutingStrategy.TOOL_CALL.name());
+            log.info("traceId={} toolName locked on turn {}: {}",
+                traceId, session.getCurrentTurnCount(), intent.getToolName());
+        }
+    }
+
+    /**
+     * 合并实体：将本轮实体增量合并到 session 的 lockedEntities 中
+     *
+     * @param session 当前会话
+     * @param intent  本轮意图结果
+     */
+    private void mergeEntities(ConversationSession session, IntentResult intent) {
+        if (intent.getEntities() == null || intent.getEntities().isEmpty()) {
+            return;
+        }
+        Map<String, Object> merged = session.getLockedEntities() != null
+            ? new java.util.HashMap<>(session.getLockedEntities())
+            : new java.util.HashMap<>();
+        merged.putAll(intent.getEntities());
+        session.setLockedEntities(merged);
+    }
+
+    /**
+     * 记录对话历史：回填上一轮 userAnswer，添加本轮记录
+     *
+     * @param session   当前会话
+     * @param query     用户本轮输入
+     * @param intent    本轮意图结果
+     * @param startTime 请求开始时间
+     */
+    private void recordDialogueHistory(ConversationSession session, String query,
+                                       IntentResult intent, long startTime) {
+        // 如果已有历史（说明是澄清第 N+1 轮），先回填上一轮的 userAnswer
+        List<DialogueTurn> existHistory = session.getDialogueHistory();
+        if (existHistory != null && !existHistory.isEmpty()) {
+            DialogueTurn lastTurn = existHistory.get(existHistory.size() - 1);
+            if (lastTurn.getUserAnswer() == null) {
+                lastTurn.setUserAnswer(query);  // 本轮输入就是对上一轮追问的回答
+            }
+        }
+
+        DialogueTurn turn = new DialogueTurn();
+        turn.setTurnNumber(session.getCurrentTurnCount());
+        turn.setUserQuery(query);
+        turn.setNeedClarify(true);
+        turn.setClarifyQuestion(intent.getClarifyQuestion());
+        turn.setClarifyOptions(intent.getClarifyOptions());
+        turn.setCreateTime(java.time.LocalDateTime.now());
+        turn.setLatencyMs(System.currentTimeMillis() - startTime);
+        session.addDialogueTurn(turn);
     }
 
     /**
