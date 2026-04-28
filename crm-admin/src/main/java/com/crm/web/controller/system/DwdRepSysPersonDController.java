@@ -133,10 +133,10 @@ public class DwdRepSysPersonDController extends BaseController {
     }
 
     /**
-     * 根据当前登录用户来查询自己部门下的客户经理信息
+     * 分页查询客户经理列表
      */
-    @GetMapping("/getManagersByLoginUser")
-    public R<List<Object>> getManagersByLoginUser(){
-        return R.ok(iDwdRepSysPersonDService.getManagersByLoginUser());
+    @GetMapping("/getManagerPageList")
+    public TableDataInfo<DwdRepSysPersonDVo> getManagerPageList(PageQuery pageQuery,String keyword){
+        return iDwdRepSysPersonDService.getManagerPageListByLoginUser(pageQuery,keyword);
     }
 }

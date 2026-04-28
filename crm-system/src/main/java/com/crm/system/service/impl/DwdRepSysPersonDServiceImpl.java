@@ -363,44 +363,42 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
     }
 
     @Override
-    public List<Object> getManagersByLoginUser(){
-        //先用当前登录用户到达梦库REP_SYS_PERSON_NEW_D表查询是否为省中心，如果为省中心则返回省中心下的所有有效的客户经理信息
+    public TableDataInfo<DwdRepSysPersonDVo> getManagerPageListByLoginUser(PageQuery pageQuery, String keyword) {
         LoginUser loginUser = LoginHelper.getLoginUser();
+
+        LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
+
         Integer deptLevel = repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
-        if(deptLevel >= 1){
-            List<RepSysPersonNewDDo> managers = repSysPersonNewDMapper.selectProvincialManagers();
-            return new ArrayList<>(managers);
-        }
-
-        //如果不是省中心，再从省、市、县依次判断
-        //获取当前登录用户对象
-        SysUser user = sysUserService.selectUserById(loginUser.getUserId());
-        //获取当前登录用户部门对象
-        SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
-        //获取部门归属的地市对象
-        SysAreaVo area = sysAreaService.queryById(Long.valueOf(dept.getAreaCode()));
-        if("一级".equals(area.getType())){
-            //省级返回dwd_rep_sys_person_d表全部有效的客户经理信息
-            LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
+        if (deptLevel >= 1) {
             lqw.eq(DwdRepSysPersonD::getOnjobFlag, 0);
-            List<DwdRepSysPersonDVo> managers = baseMapper.selectVoList(lqw);
-            return new ArrayList<>(managers);
-        }else if("二级".equals(area.getType())){
-            //市级返回当前地市的所有客户经理信息
-            LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
-            lqw.eq(DwdRepSysPersonD::getAreaId, area.getEmpAreaId())
-                .eq(DwdRepSysPersonD::getOnjobFlag, 0);
-            List<DwdRepSysPersonDVo> managers = baseMapper.selectVoList(lqw);
-            return new ArrayList<>(managers);
-        }else if("三级".equals(area.getType())){
-            //县级返回当前县的所有客户经理信息
-            LambdaQueryWrapper<DwdRepSysPersonD> lqw = Wrappers.lambdaQuery();
-            lqw.eq(DwdRepSysPersonD::getCountyId, area.getEmpCountyId())
-                .eq(DwdRepSysPersonD::getOnjobFlag, 0);
-            List<DwdRepSysPersonDVo> managers = baseMapper.selectVoList(lqw);
-            return new ArrayList<>(managers);
-        }
+        } else {
+            SysUser user = sysUserService.selectUserById(loginUser.getUserId());
+            SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
+            SysAreaVo area = sysAreaService.queryById(Long.valueOf(dept.getAreaCode()));
 
-        return new ArrayList<>();
+            if ("一级".equals(area.getType())) {
+                lqw.eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            } else if ("二级".equals(area.getType())) {
+                lqw.eq(DwdRepSysPersonD::getAreaId, area.getEmpAreaId())
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            } else if ("三级".equals(area.getType())) {
+                lqw.eq(DwdRepSysPersonD::getCountyId, area.getEmpCountyId())
+                    .eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            } else {
+                return TableDataInfo.build();
+            }
+        }
+        if (StringUtils.isNotBlank(keyword)) {
+            lqw.and(wrapper -> wrapper
+                .like(DwdRepSysPersonD::getOaUserName, keyword)
+                .or()
+                .like(DwdRepSysPersonD::getFullName, keyword)
+            );
+        }
+        lqw.orderByAsc(DwdRepSysPersonD::getFullName);
+
+        Page<DwdRepSysPersonDVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+
+        return TableDataInfo.build(page);
     }
 }
