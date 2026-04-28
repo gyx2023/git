@@ -12,6 +12,7 @@ import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
+import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.ISequenceService;
 import com.crm.system.service.ISysDeptService;
 import com.crm.system.service.ISysParamService;
@@ -28,6 +29,7 @@ import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
@@ -134,7 +136,7 @@ public class OppoUnboundSyncJob {
                 log.info("查询到超过3个月+7天未拜访的商机数量：{}", longUnvisitedOppos != null ? longUnvisitedOppos.size() : 0);
                 // 添加超过3个月+7天未拜访的商机
                 if (longUnvisitedOppos != null && !longUnvisitedOppos.isEmpty()) {
-                    longUnvisitedOppos.forEach(oppo -> oppo.setFinalEndOppTypeMemo("超过三个月未拜访未转化商机，系统自动关闭"));
+                    longUnvisitedOppos.forEach(oppo -> oppo.setFinalEndOppTypeMemo("超过三个月未拜访未转化商机，系统自动关闭！"));
                     resultOppoList.addAll(longUnvisitedOppos);
                 }
             }
@@ -176,6 +178,11 @@ public class OppoUnboundSyncJob {
                     log.info("同步商机状态结果：{}", result);
                     Boolean flag = toppOpportunityService.upppUnbound(toppOpportunityVo.getId(), toppOpportunityVo.getFinalEndOppTypeMemo());
                     log.info("更新商机 {} 的状态为终止结果：{}", toppOpportunityVo.getId(), flag);
+                    if(ObjectUtil.equal("预计签约时间到期后7天，系统自动关闭！", toppOpportunityVo.getFinalEndOppTypeMemo())){
+                        toppOrderService.updateByOppoId(toppOpportunityVo.getId(),"4");
+                    }else{
+                        toppOrderService.updateByOppoId(toppOpportunityVo.getId(),"5");
+                    }
                 }
             });
 
@@ -272,8 +279,8 @@ public class OppoUnboundSyncJob {
         return signedOppoIdList;
     }
 
-
-    private Boolean saveOrder(ToppOpportunityVo oppotunity) {
+     @Transactional
+     public Boolean saveOrder(ToppOpportunityVo oppotunity) {
         SysUsersBo usersBo = new SysUsersBo();
         usersBo.setName("systemUser");
         SysUsersVo su = usersService.queryList(usersBo).get(0);
@@ -304,8 +311,13 @@ public class OppoUnboundSyncJob {
         order.setCreateTime(new Date());
         order.setUpdateTime(new Date());
         order.setCreator(su.getId());
-        //结束原因 0:客户经理已处理 1:未处理但已续约 2:用户离网 3:工单超时  对应码表end_reason类型
-        order.setEndReason("3");
+        //结束原因 0:客户经理已处理 1:未处理但已续约 2:用户离网 3:工单超时 4:预计签约时间到期未转化商机作废 5:未拜访未转化商机作废 6：三个月未支撑商机作废 7:客户经理做商机终止
+         // 对应码表end_reason类型
+         if(ObjectUtil.equal("预计签约时间到期后7天，系统自动关闭！", oppotunity.getFinalEndOppTypeMemo())){
+             order.setEndReason("4");
+         }else{
+             order.setEndReason("5");
+         }
         return toppOrderService.insertByBo(order);
     }
 }

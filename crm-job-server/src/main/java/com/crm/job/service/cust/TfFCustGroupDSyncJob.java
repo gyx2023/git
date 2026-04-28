@@ -347,6 +347,8 @@ public class TfFCustGroupDSyncJob {
             newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
             newGroup.setGrpCustType(custGroup.getCustClassType());
             newGroup.setGrpLevel(CustStateEnum.CUST_STATE_2.getCode().equals(custGroup.getCustState()) ? GRP_LEVEL_IDENTIFIER : null);
+            //资料创建人
+            newGroup.setGrpCreator(custGroup.getCreateOaUserCode());
 
             // 转换字符串日期为Date类型
             if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
@@ -492,4 +494,31 @@ public class TfFCustGroupDSyncJob {
         return sb.toString();
     }
 
+    /**
+     * tf_f_cust_group_d表的cust_class_type字段同步到zqzt_grp_group_info表的GRP_CUST_TYPE字段映射
+     * 转换集团客户类型
+     * 1 -> 600 (普通客户)
+     * 2 -> 500 (中小企业客户)
+     * 3 -> 400 (大客户)
+     *
+     * @param custClassType 客户分类类型
+     * @return 集团客户类型编码
+     */
+    private String convertGrpCustType(String custClassType) {
+        if (StringUtils.isBlank(custClassType)) {
+            return null;
+        }
+
+        switch (custClassType) {
+            case "1":
+                return "600"; // 普通客户
+            case "2":
+                return "500"; // 中小企业客户
+            case "3":
+                return "400"; // 大客户
+            default:
+                log.warn("未知的客户分类类型: {}", custClassType);
+                return custClassType; // 未知类型保留原值
+        }
+    }
 }

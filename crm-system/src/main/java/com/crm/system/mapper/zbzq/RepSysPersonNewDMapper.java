@@ -13,4 +13,6 @@ public interface RepSysPersonNewDMapper extends BaseMapperPlus<RepSysPersonNewDM
     Integer getDeptLevel(String oaUserName);
 
     List<GrpGroupImportDTO> selectGrpDto();
+
+    List<RepSysPersonNewDDo> selectProvincialManagers();
 }

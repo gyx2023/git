@@ -63,4 +63,9 @@ public interface IDwdRepSysPersonDService {
      * @return 人员地区信息列表
      */
     List<DwdRepSysPersonDVo> selectAreaAndCounty(List<Map<String, String>> personInfos);
+
+    /**
+     * 根据登录用户查询客户经理信息
+     */
+    List<Object> getManagersByLoginUser();
 }

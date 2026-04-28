@@ -22,4 +22,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     </select>
 
+    <!--查询REP_SYS_PERSON_NEW_D表中全部有效的省中心客户经理-->
+    <select id="selectProvincialManagers" resultType="com.crm.system.domain.zbzq.RepSysPersonNewDDo">
+        select a.EMP_ID as empId,
+               LOWER(a.OA_USER_NAME) as oaUserName,
+               a.FULL_NAME as fullName
+        from REP_SYS_PERSON_NEW_D a
+                 inner join DIM_ORG_ZQ b on a.HX_ZONE_ID = b.ORG_CODE
+        where a.onjob_flag = 0
+          and b.ORG_BUSINESS_LINE_NAME_1 = '政企线'
+          and b.ORG_BUSINESS_LINE_NAME_2 = '政企要客网格'
+          and b.CITY_CODE = '000'
+    </select>
+
 </mapper>

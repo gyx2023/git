@@ -79,8 +79,8 @@ public class CustomerManagerImportStrategy extends AbstractImportStrategy {
                 .sheet()
                 .doReadSync();
 
-        // 处理数据并生成结果列表
-        List<CustomerManagerImportResultVo> resultList = customerManagerImportListener.processImportData(dataList);
+        // 处理数据并生成结果列表，传入任务创建用户ID
+        List<CustomerManagerImportResultVo> resultList = customerManagerImportListener.processImportData(dataList, task.getCreateUserId());
 
         // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
         String prefix = "customer_manager_import_" + System.currentTimeMillis();

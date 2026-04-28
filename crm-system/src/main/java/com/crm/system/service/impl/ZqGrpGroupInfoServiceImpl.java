@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.dto.RoleDTO;
+import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysDictData;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.GrpExpandTypeenum;
@@ -22,6 +24,7 @@ import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import com.crm.system.mapper.SysAreaMapper;
 import com.crm.system.mapper.SysCategoryMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
@@ -56,9 +59,13 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private final ISysCategoryService sysCategoryService; // 添加行业分类服务
     private final SysCategoryMapper sysCategoryMapper; // 添加行业分类Mapper
     @Resource
-    private SysParamMapper sysParamMapper;
+    private ISysParamService sysParamService;
     @Resource
     private RepSysPersonNewDMapper repSysPersonNewDMapper;
+    @Resource
+    private ISysUserService sysUserService;
+    @Resource
+    private ISysDeptService sysDeptService;
 
 
 
@@ -72,6 +79,40 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     }
 
     /**
+     * 查询政企集团客户信息（不脱敏）
+     */
+    @Override
+    public ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId){
+        ZqGrpGroupInfo info = baseMapper.selectById(grpId);
+
+        if (info == null) {
+            return null;
+        }
+
+        try {
+            // 查询脱敏开关配置
+            SysParamDo sysParamDo = sysParamService.findByCode("manager_info_desensitization_switch");
+
+            // 如果配置不存在或 value 不是 "on"，则不进行脱敏
+            if (sysParamDo == null || !"on".equalsIgnoreCase(sysParamDo.getValue())) {
+                log.debug("经理信息脱敏开关未开启，不进行脱敏处理");
+                return info;
+            }
+
+            log.debug("经理信息脱敏开关已开启，开始脱敏处理");
+
+            // 脱敏实体客户经理姓名
+            if (StringUtils.isNotBlank(info.getCustManagerName())) {
+                info.setCustManagerName(Desensitization.desensitizeName(info.getCustManagerName()));
+            }
+        } catch (Exception e) {
+            log.error("经理信息脱敏处理失败: {}", e.getMessage(), e);
+            // 脱敏失败不影响主流程，继续返回数据
+        }
+        return info;
+    }
+
+    /**
      * 查询政企集团客户信息列表
      */
     @Override
@@ -82,7 +123,23 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
-        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 先查询为 ZqGrpGroupInfoVo2
+        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+
+        // 根据 sys_param 表的配置决定是否脱敏
+        applyDesensitizationIfNeeded(resultPage.getRecords());
+
+        // 转换为 ZqGrpGroupInfoVo 返回
+        List<ZqGrpGroupInfoVo> voList = resultPage.getRecords().stream()
+            .map(vo2 -> {
+                ZqGrpGroupInfoVo vo = new ZqGrpGroupInfoVo();
+                BeanUtil.copyProperties(vo2, vo);
+                return vo;
+            })
+            .collect(Collectors.toList());
+
+        Page<ZqGrpGroupInfoVo> result = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
+        result.setRecords(voList);
 
         return TableDataInfo.build(result);
     }
@@ -90,14 +147,48 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     /**
      * 查询政企集团客户信息列表
      */
+//    @Override
+//    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
+//        LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+//        if(deptLevel>=1){
+//            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+//        }
+//        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据，如果不为空则按参数查询
+//        if (StringUtils.isBlank(bo.getGrpLevel())) {
+//            lqw.ne(ZqGrpGroupInfo::getGrpLevel, "Y");
+//        }
+//        // 处理时间范围参数
+//        if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
+//            try {
+//                // 前端已传入完整的时间格式(yyyy-MM-dd HH:mm:ss)，直接解析使用
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                Date beginDate = sdf.parse(grpCreateTimeBegin);
+//                Date endDate = sdf.parse(grpCreateTimeEnd);
+//                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
+//            } catch (Exception e) {
+//                log.warn("时间参数解析失败: {}", e.getMessage());
+//            }
+//        }
+//
+//        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+//
+//        return TableDataInfo.build(result);
+//    }
+
+    /**
+     * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
+     */
     @Override
-    public TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
+    public TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         LoginUser loginUser = LoginHelper.getLoginUser();
         Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
         if(deptLevel>=1){
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
+
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
             try {
@@ -111,7 +202,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-        Page<ZqGrpGroupInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+
+        // 根据 sys_param 表的配置决定是否脱敏
+        applyDesensitizationIfNeeded(result.getRecords());
 
         return TableDataInfo.build(result);
     }
@@ -333,6 +427,41 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
     }
+
+    /**
+     * 根据 sys_param 表的配置决定是否对经理姓名进行脱敏
+     *
+     * @param list 需要处理的数据列表
+     */
+    private void applyDesensitizationIfNeeded(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 查询脱敏开关配置
+            SysParamDo sysParamDo = sysParamService.findByCode("manager_info_desensitization_switch");
+
+            // 如果配置不存在或 value 不是 "on"，则不进行脱敏
+            if (sysParamDo == null || !"on".equalsIgnoreCase(sysParamDo.getValue())) {
+                log.debug("经理信息脱敏开关未开启，不进行脱敏处理");
+                return;
+            }
+
+            log.debug("经理信息脱敏开关已开启，开始脱敏处理");
+
+            // 对列表中的每条数据进行脱敏处理
+            for (ZqGrpGroupInfoVo2 vo : list) {
+                // 脱敏实体客户经理姓名
+                if (StringUtils.isNotBlank(vo.getCustManagerName())) {
+                    vo.setCustManagerName(Desensitization.desensitizeName(vo.getCustManagerName()));
+                }
+            }
+        } catch (Exception e) {
+            log.error("经理信息脱敏处理失败: {}", e.getMessage(), e);
+            // 脱敏失败不影响主流程，继续返回数据
+        }
+    }
     private LambdaQueryWrapper<ZqGrpGroupInfo> buildQueryWrapper(ZqGrpGroupInfoBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = Wrappers.lambdaQuery();
@@ -342,6 +471,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
@@ -360,29 +499,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         // 注意：这里移除了对 grpCreateTime 的精确匹配，因为时间范围查询在 queryPageList 方法中处理
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
 
-        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
-        String provManagerOauser = bo.getProvManagerOauser();
-        String cityManagerOauser = bo.getCityManagerOauser();
-        String countyManagerOauser = bo.getCountyManagerOauser();
-
-        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
-            lqw.and(wrapper -> {
-                // 省级经理条件
-                if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
-                }
-
-                // 市级经理条件
-                if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
-                }
-
-                // 县区级经理条件
-                if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.like(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
-                }
-            });
-        }
+        // 实体客户经理OA账号模糊查询
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerOauser()), ZqGrpGroupInfo::getCustManagerOauser, bo.getCustManagerOauser());
 
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
@@ -411,24 +529,44 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.le(ZqGrpGroupInfo::getGrpCreateTime, bo.getCreateTimeEnd());
         }
 
-        // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
+        // 数据权限处理 - 根据登录用户的区域代码进行数据权限过滤
+//        LoginUser loginUser = LoginHelper.getLoginUser();
+//        String areaCode = loginUser.getAreaCode();
+//
+//        if (StringUtils.isNotBlank(areaCode)) {
+//            // 判断区域代码级别
+//            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+//                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+//                log.info("省级用户，查看全省数据");
+//            } else if (areaCode.endsWith("00")) {
+//                // 地市级用户(如330100)，只能查看本市数据
+//                log.info("地市级用户，areaCode: {}", areaCode);
+//                lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
+//            } else {
+//                // 区县级用户(如330102)，只能查看本县数据
+//                log.info("区县级用户，areaCode: {}", areaCode);
+//                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
+//            }
+//        }
         LoginUser loginUser = LoginHelper.getLoginUser();
-        String areaCode = loginUser.getAreaCode();
-        // 如果不是省本级(330000)，则需要进行数据权限过滤
-        if (!"330000".equals(areaCode)) {
-            // 判断区域代码级别
-            if (areaCode.endsWith("0000")) {
-                log.info("省本级");
-                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
-                // 不添加过滤条件，可查看全省数据
-            } else if (areaCode.endsWith("00")) {
-                // 地市级用户(如330100)，只能查看本市数据
+        SysUser user = sysUserService.selectUserById(loginUser.getUserId());
+        SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
+        SysAreaVo area = sysAreaService.queryById(Long.valueOf(dept.getAreaCode()));
+        String areaCode = String.valueOf(area.getId());
+        String areaType = area.getType();
+
+        if (StringUtils.isNotBlank(areaCode)) {
+            if(areaCode.endsWith("0000") || "一级".equals(areaType)){
+                // 省级用户，可查看全省数据，不添加过滤条件
+                log.info("省级用户，查看全省数据");
+            }else if("二级".equals(areaType)){
+                // 地市级用户，只能查看本市数据
+                log.info("地市级用户，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
-            } else {
-                // 区县级用户(如330102)，可查看所属地市的所有数据
-                // 提取地市代码(前4位+00)
-                String cityCode = areaCode.substring(0, 4) + "00";
-                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+            }else{
+                // 区县级用户，只能查看本县数据
+                log.info("区县级用户，areaCode: {}", areaCode);
+                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
         }
 
@@ -451,6 +589,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getHqGrpCode()), ZqGrpGroupInfo::getHqGrpCode, bo.getHqGrpCode());
         lqw.eq(StringUtils.isNotBlank(bo.getCustId()), ZqGrpGroupInfo::getCustId, bo.getCustId());
         lqw.eq(StringUtils.isNotBlank(bo.getGrpLevel()), ZqGrpGroupInfo::getGrpLevel, bo.getGrpLevel());
+        // 处理集团级别查询条件：如果 grplevel 为空则查询不等于 Y 的数据（包括 null 和空字符串），如果不为空则按参数查询
+        if (StringUtils.isBlank(bo.getGrpLevel())) {
+            lqw.and(wrapper -> wrapper
+                .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
+                .or()
+                .isNull(ZqGrpGroupInfo::getGrpLevel)
+                .or()
+                .eq(ZqGrpGroupInfo::getGrpLevel, "")
+            );
+        }
         lqw.eq(StringUtils.isNotBlank(bo.getGrpStatus()), ZqGrpGroupInfo::getGrpStatus, bo.getGrpStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getAreaId()), ZqGrpGroupInfo::getAreaId, bo.getAreaId());
         lqw.eq(StringUtils.isNotBlank(bo.getCountyId()), ZqGrpGroupInfo::getCountyId, bo.getCountyId());
@@ -469,29 +617,8 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getProvManagerEmpId()), ZqGrpGroupInfo::getProvManagerEmpId, bo.getProvManagerEmpId());
         lqw.in(bo.getGrpIds() != null && !bo.getGrpIds().isEmpty(), ZqGrpGroupInfo::getGrpId, bo.getGrpIds());
 
-        // 构建 provManagerOauser、cityManagerOauser 和 countyManagerOauser 的 OR 条件
-        String provManagerOauser = bo.getProvManagerOauser();
-        String cityManagerOauser = bo.getCityManagerOauser();
-        String countyManagerOauser = bo.getCountyManagerOauser();
-
-        if (StringUtils.isNotBlank(provManagerOauser) || StringUtils.isNotBlank(cityManagerOauser) || StringUtils.isNotBlank(countyManagerOauser)) {
-            lqw.and(wrapper -> {
-                // 省级经理条件
-                if (StringUtils.isNotBlank(provManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getProvManagerOauser, provManagerOauser));
-                }
-
-                // 市级经理条件
-                if (StringUtils.isNotBlank(cityManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCityManagerOauser, cityManagerOauser));
-                }
-
-                // 县区级经理条件
-                if (StringUtils.isNotBlank(countyManagerOauser)) {
-                    wrapper.or(w -> w.eq(ZqGrpGroupInfo::getCountyManagerOauser, countyManagerOauser));
-                }
-            });
-        }
+        // 实体客户经理OA账号模糊查询
+        lqw.like(StringUtils.isNotBlank(bo.getCustManagerOauser()), ZqGrpGroupInfo::getCustManagerOauser, bo.getCustManagerOauser());
 
         lqw.like(StringUtils.isNotBlank(bo.getProvManagerName()), ZqGrpGroupInfo::getProvManagerName, bo.getProvManagerName());
         lqw.eq(StringUtils.isNotBlank(bo.getCityManagerEmpId()), ZqGrpGroupInfo::getCityManagerEmpId, bo.getCityManagerEmpId());
@@ -515,21 +642,19 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
-        // 如果不是省本级(330000)，则需要进行数据权限过滤
-        if (!"330000".equals(areaCode)) {
+        if (StringUtils.isNotBlank(areaCode)) {
             // 判断区域代码级别
-            if (areaCode.endsWith("0000")) {
-                log.info("省本级用户导出");
-                // 省级用户(虽然前面已经排除了330000，但为了完整性保留此判断)
-                // 不添加过滤条件，可查看全省数据
+            if ("330000".equals(areaCode) || areaCode.endsWith("0000")) {
+                // 省级用户(330000)，可查看全省数据，不添加过滤条件
+                log.info("省级用户导出，查看全省数据");
             } else if (areaCode.endsWith("00")) {
                 // 地市级用户(如330100)，只能查看本市数据
+                log.info("地市级用户导出，areaCode: {}", areaCode);
                 lqw.eq(ZqGrpGroupInfo::getAreaId, areaCode);
             } else {
-                // 区县级用户(如330102)，可查看所属地市的所有数据
-                // 提取地市代码(前4位+00)
-                String cityCode = areaCode.substring(0, 4) + "00";
-                lqw.eq(ZqGrpGroupInfo::getAreaId, cityCode);
+                // 区县级用户(如330102)，只能查看本县数据
+                log.info("区县级用户导出，areaCode: {}", areaCode);
+                lqw.eq(ZqGrpGroupInfo::getCountyId, areaCode);
             }
         }
 
@@ -590,26 +715,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         ZqGrpGroupInfo originalInfo = baseMapper.selectById(bo.getGrpId());
 
         if (originalInfo == null) {
-            return false; // 如果找不到原始记录，直接返回失败} else {
-        }
-
-        // 根据集团客户拓展类型进行校验
-        String expandType = originalInfo.getGrpExpandType();
-        if ("01".equals(expandType)) {
-            // 省直拓 - 省级客户经理不能为空
-            if (bo.getProvManagerOauser() == null || bo.getProvManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为省直拓，省级客户经理信息不能为空");
-            }
-        } else if ("02".equals(expandType)) {
-            // 市直拓 - 市级客户经理不能为空
-            if (bo.getCityManagerOauser() == null || bo.getCityManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为市直拓，市级客户经理信息不能为空");
-            }
-        } else if ("03".equals(expandType)) {
-            // 县直拓 - 县级客户经理不能为空
-            if (bo.getCountyManagerOauser() == null || bo.getCountyManagerName() == null) {
-                throw new RuntimeException("集团客户拓展类型为县直拓，县级客户经理信息不能为空");
-            }
+            return false; // 如果找不到原始记录，直接返回失败
         }
 
         // 记录变更日志
@@ -621,28 +727,16 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 只更新非空的客户经理信息字段
         boolean hasUpdateFields = false;
-        if (bo.getProvManagerOauser() != null) {
-            update.setProvManagerOauser(bo.getProvManagerOauser());
+        if (bo.getCustManagerEmpId() != null) {
+            update.setCustManagerEmpId(bo.getCustManagerEmpId());
             hasUpdateFields = true;
         }
-        if (bo.getProvManagerName() != null) {
-            update.setProvManagerName(bo.getProvManagerName());
+        if (bo.getCustManagerOauser() != null) {
+            update.setCustManagerOauser(bo.getCustManagerOauser());
             hasUpdateFields = true;
         }
-        if (bo.getCityManagerOauser() != null) {
-            update.setCityManagerOauser(bo.getCityManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCityManagerName() != null) {
-            update.setCityManagerName(bo.getCityManagerName());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerOauser() != null) {
-            update.setCountyManagerOauser(bo.getCountyManagerOauser());
-            hasUpdateFields = true;
-        }
-        if (bo.getCountyManagerName() != null) {
-            update.setCountyManagerName(bo.getCountyManagerName());
+        if (bo.getCustManagerName() != null) {
+            update.setCustManagerName(bo.getCustManagerName());
             hasUpdateFields = true;
         }
 
@@ -844,27 +938,24 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      * @return 政企集团客户信息列表
      */
     @Override
-    public List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
+    public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-        lqw.and(wrapper -> wrapper
-            .ne(ZqGrpGroupInfo::getGrpLevel, "Y")
-            .or()
-            .isNull(ZqGrpGroupInfo::getGrpLevel)
-        );
 
-        List<ZqGrpGroupInfoVo> resultList;
+
+
+        List<ZqGrpGroupInfoVo2> resultList;
         if (page != null) {
-            // 执行分页查询
-            IPage<ZqGrpGroupInfoVo> resultPage = baseMapper.selectVoPage(page, lqw);
+            // 执行分页查询，使用 ZqGrpGroupInfoVo2（没有 @Sensitive 注解）
+            IPage<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(page, lqw, ZqGrpGroupInfoVo2.class);
             resultList = resultPage.getRecords();
         } else {
             // 执行全量查询
-            resultList = baseMapper.selectVoList(lqw);
+            resultList = baseMapper.selectVoList(lqw, ZqGrpGroupInfoVo2.class);
         }
 
         // 进行字典翻译
-        translateDictLabels(resultList);
+        translateDictLabelsForVo2(resultList);
 
         return resultList;
     }
@@ -919,4 +1010,60 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         }
     }
 
+    /**
+     * 对 ZqGrpGroupInfoVo2 进行字典翻译
+     */
+    private void translateDictLabelsForVo2(List<ZqGrpGroupInfoVo2> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        // 应用翻译结果
+        for (ZqGrpGroupInfoVo2 vo : list) {
+            if (StringUtils.isNotBlank(vo.getAreaId())) {
+                try {
+                    Long areaId = Long.valueOf(vo.getAreaId());
+                    SysAreaVo area = sysAreaService.queryById(areaId);
+                    if (area != null) {
+                        vo.setAreaId(area.getName());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("地市ID格式错误: {}", vo.getAreaId());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getCountyId())) {
+                try {
+                    Long countyId = Long.valueOf(vo.getCountyId());
+                    SysAreaVo county = sysAreaService.queryById(countyId);
+                    if (county != null) {
+                        vo.setCountyId(county.getName());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("县分ID格式错误: {}", vo.getCountyId());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustryMajorKind())) {
+                SysCategoryVo industryMajorKind = sysCategoryService.queryById(vo.getIndustryMajorKind());
+                if (industryMajorKind != null) {
+                    vo.setIndustryMajorKind(industryMajorKind.getName());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustrySubKind())) {
+                SysCategoryVo industrySubKind = sysCategoryService.queryById(vo.getIndustrySubKind());
+                if (industrySubKind != null) {
+                    vo.setIndustrySubKind(industrySubKind.getName());
+                }
+            }
+
+            if (StringUtils.isNotBlank(vo.getIndustryDetailKind())) {
+                SysCategoryVo industryDetailKind = sysCategoryService.queryById(vo.getIndustryDetailKind());
+                if (industryDetailKind != null) {
+                    vo.setIndustryDetailKind(industryDetailKind.getName());
+                }
+            }
+        }
+    }
 }
