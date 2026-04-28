@@ -1,5 +1,6 @@
 package com.crm.askdata.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
@@ -33,21 +34,26 @@ public class IntentResult {
     private Map<String, Object> entities = Collections.emptyMap();
 
     /** 缺失的必填参数 */
+    @JsonAlias({"missing_slots"})
     private List<String> missingSlots = Collections.emptyList();
 
     /** 匹配的工具名称 */
+    @JsonAlias({"tool_name"})
     private String toolName;
 
     /** AI 生成的 SQL (仅 TEXT_TO_SQL 策略) */
     private String generatedSql;
 
-    /** 是否需要澄清 */
+    /** 是否需要澄清（兼容 needs_clarification / needClarify / need_clarify 三种命名） */
+    @JsonAlias({"needs_clarification", "needClarify", "need_clarify"})
     private Boolean needClarify = false;
 
     /** 澄清问题 */
+    @JsonAlias({"clarify_question", "clarifyQuestion"})
     private String clarifyQuestion;
 
     /** 澄清选项 */
+    @JsonAlias({"clarify_options", "clarifyOptions"})
     private List<String> clarifyOptions = Collections.emptyList();
 
     /** HiAgent 侧请求 ID (用于排查) */

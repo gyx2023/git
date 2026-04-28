@@ -22,8 +22,11 @@ public class SseMessage {
     /** 链路追踪 ID */
     private String traceId;
 
-    /** 消息 ID */
+    /** 消息 ID（本地 SSE 消息 ID） */
     private String messageId;
+
+    /** HiAgent 消息 ID（用于反馈接口，end 事件中携带） */
+    private String hiagentMessageId;
 
     /**
      * 消息类型：
@@ -121,11 +124,12 @@ public class SseMessage {
             .build();
     }
 
-    public static SseMessage end(String traceId, String messageId, String strategy,
-                                 Long latencyMs, List<String> suggestions) {
+    public static SseMessage end(String traceId, String messageId, String hiagentMessageId,
+                                 String strategy, Long latencyMs, List<String> suggestions) {
         return SseMessage.builder()
             .traceId(traceId)
             .messageId(messageId)
+            .hiagentMessageId(hiagentMessageId)
             .type("end")
             .strategy(strategy)
             .latencyMs(latencyMs)

@@ -17,29 +17,28 @@ import java.util.Map;
  * <p>
  * 职责：将 HiAgent blocking 模式下 answer 字段中的结构化 JSON 解析为 IntentResult。
  * <p>
- * 约定：Agent 工作流 Prompt 要求输出以下 JSON 结构（纯 JSON，不含其他文本）：
+ * HiAgent 实际返回结构：
+ * answer 字段是一个 JSON 字符串，其中 output 字段才是真正的意图 JSON。
+ * <pre>{@code
+ * answer = "{\"output\": \"{\\\"intent\\\": \\\"data_query\\\", ...}\"}"
+ * 解析路径：answer(JSON字符串) → output 字段(JSON字符串) → 意图 JSON 对象
+ * }</pre>
+ * <p>
+ * 最终意图 JSON 约定格式：
  * <pre>{@code
  * {
- *   "intent": "QUERY_SALES",
- *   "confidence": 0.92,
+ *   "intent": "data_query",
+ *   "confidence": 0.9,
+ *   "needs_clarification": false,
  *   "recommendedStrategy": "TEXT_TO_SQL",
- *   "entities": {
- *     "region": "华东区",
- *     "metric": "销售额",
- *     "timePeriod": "上月"
- *   },
+ *   "entities": {...},
  *   "missingSlots": [],
  *   "toolName": null,
- *   "generatedSql": null,
  *   "needClarify": false,
  *   "clarifyQuestion": null,
  *   "clarifyOptions": []
  * }
  * }</pre>
- * <p>
- * 容错处理：
- * - 若 answer 不是合法 JSON，则返回降级 IntentResult
- * - 若 JSON 缺字段，使用 @JsonIgnoreProperties 默认值填充
  *
  * @author crm
  */
@@ -51,8 +50,13 @@ public class IntentParser {
 
     /**
      * 解析 HiAgent answer 为 IntentResult
+     * <p>
+     * 解析路径：
+     * 1. answer 本身是 JSON 字符串，取其中 output 字段
+     * 2. output 字段又是一个转义的 JSON 字符串，再次解析获得意图 JSON
+     * 3. 最终反序列化为 IntentResult
      *
-     * @param answer  HiAgent blocking 响应中 message_end 事件的完整 answer 文本
+     * @param answer  HiAgent blocking 响应中的 answer 字段内容
      * @param traceId 链路 ID（用于日志）
      * @return 解析后的 IntentResult
      */
@@ -62,12 +66,16 @@ public class IntentParser {
             return buildFallback("answer 为空");
         }
 
-        String jsonStr = extractJson(answer.trim());
-
         try {
-            IntentResult result = objectMapper.readValue(jsonStr, IntentResult.class);
-            log.info("traceId={} parsed intent: intent={}, confidence={}, strategy={}",
-                traceId, result.getIntent(), result.getConfidenceSafe(), result.getRecommendedStrategy());
+            // 第一层：解析 answer 字符串为 JSON，取 output 字段
+            String intentJson = extractIntentJson(answer.trim(), traceId);
+
+            // 第二层：将 intentJson 反序列化为 IntentResult
+            IntentResult result = objectMapper.readValue(intentJson, IntentResult.class);
+            log.info("traceId={} parsed intent: intent={}, confidence={}, needClarify={}, toolName={}, missingSlots={}, entities={}",
+                traceId, result.getIntent(), result.getConfidenceSafe(),
+                result.getNeedClarify(), result.getToolName(),
+                result.getMissingSlots(), result.getEntities());
             return result;
         } catch (Exception e) {
             log.warn("traceId={} failed to parse answer as IntentResult, answer={}, error={}",
@@ -77,28 +85,55 @@ public class IntentParser {
     }
 
     /**
-     * 尝试从文本中提取 JSON 块
+     * 从 HiAgent answer 中提取最终意图 JSON 字符串
      * <p>
-     * 兼容 Agent 输出前后可能带有说明文字的情况，
-     * 例如："以下是意图分析结果：\n{...}"
-     *
-     * @param text 原始文本
-     * @return 提取的 JSON 字符串（提取失败则返回原始文本）
+     * HiAgent 返回结构为双层嵌套：
+     * answer = "{\"output\": \"{\\\"intent\\\": ...}\"}"
+     * 解析路径： answer(JSON str) → output(JSON str) → 意图 JSON
      */
-    private String extractJson(String text) {
-        int start = text.indexOf('{');
-        int end = text.lastIndexOf('}');
+    private String extractIntentJson(String answer, String traceId) throws Exception {
+        // 第一层：尝试将 answer 解析为 JSON 节点
+        JsonNode answerNode;
+        try {
+            answerNode = objectMapper.readTree(answer);
+        } catch (Exception e) {
+            // answer 本身不是 JSON，直接当为意图 JSON 处理
+            log.debug("traceId={} answer is not JSON, treating as raw intent JSON", traceId);
+            return extractJsonBlock(answer);
+        }
+
+        // 第二层：取 output 字段
+        JsonNode outputNode = answerNode.path("output");
+        if (!outputNode.isMissingNode() && !outputNode.isNull()) {
+            String outputStr = outputNode.isTextual() ? outputNode.asText() : outputNode.toString();
+            log.debug("traceId={} found output field in answer, extracting intent from output", traceId);
+            // output 可能又是一个 JSON 字符串，再次提取
+            return extractJsonBlock(outputStr);
+        }
+
+        // 没有 output 字段，尝试直接将 answerNode 当作意图 JSON
+        log.debug("traceId={} no output field found, using answer JSON directly", traceId);
+        return answer;
+    }
+
+    /**
+     * 从文本中提取 JSON 块（居中匹配第一个 { 到最后一个 })
+     */
+    private String extractJsonBlock(String text) {
+        if (text == null || text.trim().isEmpty()) return text;
+        String trimmed = text.trim();
+        int start = trimmed.indexOf('{');
+        int end = trimmed.lastIndexOf('}');
         if (start >= 0 && end > start) {
-            String json = text.substring(start, end + 1);
+            String candidate = trimmed.substring(start, end + 1);
             try {
-                // 验证是否合法 JSON
-                objectMapper.readTree(json);
-                return json;
+                objectMapper.readTree(candidate); // 验证合法性
+                return candidate;
             } catch (Exception e) {
-                log.debug("extracted json is invalid, fallback to full text");
+                log.debug("extracted json block is invalid: {}", e.getMessage());
             }
         }
-        return text;
+        return trimmed;
     }
 
     /**

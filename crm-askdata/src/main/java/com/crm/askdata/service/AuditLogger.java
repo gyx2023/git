@@ -1,7 +1,9 @@
 package com.crm.askdata.service;
 
 import com.crm.askdata.model.RoutingDecision;
+import com.crm.askdata.model.ToolCallAuditLog;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -51,5 +53,29 @@ public class AuditLogger {
     public void logQueryExecution(String traceId, String strategy, boolean success, long latency) {
         log.info("traceId={} query execution: strategy={}, success={}, latency={}ms",
             traceId, strategy, success, latency);
+    }
+
+    /**
+     * 异步记录工具调用审计日志 (BE-07)
+     * <p>
+     * 桩实现：使用日志记录，BE-09 实现后写入审计库
+     * 注意：使用 @Async 防止审计日志阻塞主流程
+     *
+     * @param auditLog 工具调用审计日志
+     */
+    @Async
+    public void logToolCallAuditAsync(ToolCallAuditLog auditLog) {
+        if (auditLog == null) {
+            return;
+        }
+        log.info("traceId={} toolCall audit: tool={}, status={}, latency={}ms, rows={}, fallback={}, risk={}",
+            auditLog.getTraceId(),
+            auditLog.getToolName(),
+            auditLog.getStatus(),
+            auditLog.getExecutionLatencyMs(),
+            auditLog.getReturnedRows(),
+            auditLog.getIsFallback(),
+            auditLog.getRiskLevel());
+        // BE-09 实现后写入审计库/消息队列
     }
 }

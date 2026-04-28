@@ -46,7 +46,18 @@ public class Resilience4jConfig {
             .recordExceptions(Exception.class)
             .build();
 
-        return CircuitBreakerRegistry.of(config);
+        CircuitBreakerRegistry cbRegistry = CircuitBreakerRegistry.of(config);
+        // 注册 toolCall 写断器实例 (BE-07)
+        CircuitBreakerConfig toolCallCbConfig = CircuitBreakerConfig.custom()
+            .failureRateThreshold(50)
+            .waitDurationInOpenState(Duration.ofSeconds(10))
+            .permittedNumberOfCallsInHalfOpenState(3)
+            .slidingWindowSize(10)
+            .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
+            .recordExceptions(Exception.class)
+            .build();
+        cbRegistry.circuitBreaker("toolCall", toolCallCbConfig);
+        return cbRegistry;
     }
 
     /**
@@ -66,6 +77,13 @@ public class Resilience4jConfig {
         RetryRegistry registry = RetryRegistry.of(config);
         // 注册 hiagent 实例
         registry.retry("hiagent", config);
+        // 注册 toolCall 实例 (BE-07)
+        RetryConfig toolCallRetryConfig = RetryConfig.custom()
+            .maxAttempts(2)
+            .waitDuration(Duration.ofMillis(1000))
+            .retryExceptions(RuntimeException.class)
+            .build();
+        registry.retry("toolCall", toolCallRetryConfig);
         return registry;
     }
 

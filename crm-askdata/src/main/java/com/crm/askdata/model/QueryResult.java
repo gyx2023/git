@@ -2,6 +2,7 @@ package com.crm.askdata.model;
 
 import lombok.Data;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,6 +33,32 @@ public class QueryResult {
 
     /** 重试次数 */
     private int retryCount;
+
+    // ==================== 澄清相关字段（同步接口返回澄清卡片）====================
+
+    /**
+     * 是否需要澄清（true 时调用方应展示澄清卡片，不得直接展示结果）
+     */
+    private boolean needClarify = false;
+
+    /** 澄清问题文案（由 Intent Agent 生成） */
+    private String clarifyQuestion;
+
+    /** 澄清快捷选项（由 Intent Agent 生成） */
+    private List<String> clarifyOptions;
+
+    /**
+     * 创建澄清结果
+     */
+    public static QueryResult clarify(String clarifyQuestion, List<String> clarifyOptions) {
+        QueryResult result = new QueryResult();
+        result.setSuccess(true);
+        result.setStrategy("CLARIFY");
+        result.setNeedClarify(true);
+        result.setClarifyQuestion(clarifyQuestion);
+        result.setClarifyOptions(clarifyOptions);
+        return result;
+    }
 
     /**
      * 创建成功结果

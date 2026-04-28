@@ -1,4 +1,4 @@
-package com.crm.web.controller.healthe;
+package com.crm.web.health;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;

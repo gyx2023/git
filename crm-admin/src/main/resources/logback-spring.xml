@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <springProfile name="dev">
-        <!-- 开发环境：带颜色的日志格式 -->
+        <!-- 开发环境：带颜色的日志格式（含 traceId/sessionId） -->
         <property name="console.log.pattern"
-                  value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}) - %msg%n"/>
+                  value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}) - [%X{traceId},%X{sessionId}] %msg%n"/>
     </springProfile>
 
     <springProfile name="prod|test|pre">
-        <!-- 生产环境：普通日志格式 -->
+        <!-- 生产环境：普通日志格式（含 traceId/sessionId） -->
         <property name="console.log.pattern"
-                  value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+                  value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{traceId},%X{sessionId}] %msg%n"/>
     </springProfile>
 
     <property name="log.path" value="./logs"/>
-    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{traceId},%X{sessionId}] %msg%n"/>
 
     <!-- 控制台输出 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">

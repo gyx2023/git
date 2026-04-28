@@ -126,13 +126,16 @@ public class HiAgentClient {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode root = response.getBody();
-                // blocking 模式直接返回 MessageInfo 结构
-                String answer = root.path("AnswerInfo").path("Answer").asText("");
-                String messageId = root.path("AnswerInfo").path("MessageID").asText("");
-                String taskId = root.path("AnswerInfo").path("TaskID").asText("");
 
-                log.info("traceId={} agentId={} chatQueryBlocking done: answerLen={}, latency={}ms",
-                    traceId, agentId, answer.length(), latency);
+                // 真实响应结构：answer/id/task_id/conversation_id 均在根层
+                // 示例: {"answer":"{\"output\":\"...\"}" ,"id":"...","task_id":"...","conversation_id":"..."}
+                String answer = root.path("answer").asText("");
+                String messageId = root.path("id").asText("");
+                String taskId = root.path("task_id").asText("");
+
+                log.info("traceId={} agentId={} chatQueryBlocking done: answerLen={}, messageId={}, latency={}ms",
+                    traceId, agentId, answer.length(), messageId, latency);
+                log.debug("traceId={} agentId={} raw response: {}", traceId, agentId, root.toString());
 
                 HiAgentChatResponse result = new HiAgentChatResponse();
                 result.setAnswer(answer);
