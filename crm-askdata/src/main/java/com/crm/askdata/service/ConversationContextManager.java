@@ -1,17 +1,18 @@
 package com.crm.askdata.service;
 
 import com.crm.askdata.model.ConversationSession;
+import com.crm.common.utils.redis.RedisUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
+import java.util.Collection;
 
 /**
- * 会话上下文管理器 (BE-10 桩实现)
+ * 会话上下文管理器 (BE-10)
  * <p>
- * 该服务将在 BE-10 (上下文管理) 中完善实现
- * 当前为桩实现，使用内存存储，仅用于开发调试
+ * 使用 Redis 持久化会话数据，TTL 2 小时（与 HiAgent 会话生命周期对齐），
+ * 服务重启后会话不丢失。
  *
  * @author crm
  */
@@ -19,8 +20,21 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class ConversationContextManager {
 
-    /** 内存存储 (桩实现，生产环境应使用 Redis) */
-    private final Map<String, ConversationSession> sessionStore = new ConcurrentHashMap<>();
+    /** Redis Key 前缀 */
+    private static final String KEY_PREFIX = "askdata:session:";
+
+    /** 会话 TTL（2 小时，与 HiAgentConversationManager 对齐）*/
+    private static final Duration SESSION_TTL = Duration.ofHours(2);
+
+    /**
+     * 构建 Redis Key
+     *
+     * @param sessionId 会话 ID
+     * @return Redis Key
+     */
+    private String buildKey(String sessionId) {
+        return KEY_PREFIX + sessionId;
+    }
 
     /**
      * 获取会话
@@ -32,7 +46,7 @@ public class ConversationContextManager {
         if (sessionId == null) {
             return null;
         }
-        return sessionStore.get(sessionId);
+        return RedisUtils.getCacheObject(buildKey(sessionId));
     }
 
     /**
@@ -42,8 +56,7 @@ public class ConversationContextManager {
      */
     public void saveSession(ConversationSession session) {
         if (session != null && session.getSessionId() != null) {
-            sessionStore.put(session.getSessionId(), session);
-            log.debug("Session saved: sessionId={}, version={}", session.getSessionId(), session.getVersion());
+            RedisUtils.setCacheObject(buildKey(session.getSessionId()), session, SESSION_TTL);
         }
     }
 
@@ -54,10 +67,11 @@ public class ConversationContextManager {
      * @return 新版本号
      */
     public Long incrementVersion(String sessionId) {
-        ConversationSession session = sessionStore.get(sessionId);
+        ConversationSession session = getSession(sessionId);
         if (session != null) {
             long newVersion = session.getVersion() + 1;
             session.setVersion(newVersion);
+            saveSession(session);
             return newVersion;
         }
         return null;
@@ -70,7 +84,7 @@ public class ConversationContextManager {
      */
     public void removeSession(String sessionId) {
         if (sessionId != null) {
-            sessionStore.remove(sessionId);
+            RedisUtils.deleteObject(buildKey(sessionId));
         }
     }
 
@@ -87,11 +101,16 @@ public class ConversationContextManager {
         if (entityType == null || entityCode == null) {
             return;
         }
+        Collection<String> keys = RedisUtils.keys(KEY_PREFIX + "*");
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
         int count = 0;
-        for (ConversationSession session : sessionStore.values()) {
+        for (String key : keys) {
+            ConversationSession session = RedisUtils.getCacheObject(key);
             if (session != null) {
-                // 标记该会话的元数据已变更，下次查询时将重新加载
                 session.markMetadataStale(entityType, entityCode);
+                RedisUtils.setCacheObject(key, session, SESSION_TTL);
                 count++;
             }
         }

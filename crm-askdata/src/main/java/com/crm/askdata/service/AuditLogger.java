@@ -30,14 +30,14 @@ public class AuditLogger {
             return;
         }
 
-        log.info("traceId={} decision reasoning: strategy={}, reason={}, candidates={}, scores={}, rejections={}",
-            decision.getTraceId(),
-            decision.getStrategy(),
-            decision.getDecisionReason(),
-            decision.getCandidateStrategies(),
-            decision.getStrategyScores(),
-            decision.getRejectionReasons()
-        );
+//        log.info("traceId={} decision reasoning: strategy={}, reason={}, candidates={}, scores={}, rejections={}",
+//            decision.getTraceId(),
+//            decision.getStrategy(),
+//            decision.getDecisionReason(),
+//            decision.getCandidateStrategies(),
+//            decision.getStrategyScores(),
+//            decision.getRejectionReasons()
+//        );
 
         // 生产环境应写入审计数据库/消息队列
     }
@@ -68,14 +68,14 @@ public class AuditLogger {
         if (auditLog == null) {
             return;
         }
-        log.info("traceId={} toolCall audit: tool={}, status={}, latency={}ms, rows={}, fallback={}, risk={}",
-            auditLog.getTraceId(),
-            auditLog.getToolName(),
-            auditLog.getStatus(),
-            auditLog.getExecutionLatencyMs(),
-            auditLog.getReturnedRows(),
-            auditLog.getIsFallback(),
-            auditLog.getRiskLevel());
+//        log.info("traceId={} toolCall audit: tool={}, status={}, latency={}ms, rows={}, fallback={}, risk={}",
+//            auditLog.getTraceId(),
+//            auditLog.getToolName(),
+//            auditLog.getStatus(),
+//            auditLog.getExecutionLatencyMs(),
+//            auditLog.getReturnedRows(),
+//            auditLog.getIsFallback(),
+//            auditLog.getRiskLevel());
         // BE-09 实现后写入审计库/消息队列
     }
 }

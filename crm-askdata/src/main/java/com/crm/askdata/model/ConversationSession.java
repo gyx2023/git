@@ -2,6 +2,7 @@ package com.crm.askdata.model;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,7 +20,9 @@ import java.util.Set;
  * @author crm
  */
 @Data
-public class ConversationSession {
+public class ConversationSession implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /** 会话 ID */
     private String sessionId;

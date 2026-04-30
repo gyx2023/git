@@ -116,10 +116,10 @@ public class ToolCallExecutor implements QueryExecutor {
             auditLog.setRiskLevel("LOW");
             auditLogger.logToolCallAuditAsync(auditLog);
 
-            log.info("traceId={} tool execution completed: tool={}, latency={}ms, rows={}",
-                traceId, toolName,
-                auditLog.getExecutionLatencyMs(),
-                auditLog.getReturnedRows());
+//            log.info("traceId={} tool execution completed: tool={}, latency={}ms, rows={}",
+//                traceId, toolName,
+//                auditLog.getExecutionLatencyMs(),
+//                auditLog.getReturnedRows());
 
             // 确保 strategy 字段已设置
             if (result.getStrategy() == null) {

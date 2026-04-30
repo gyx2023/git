@@ -48,18 +48,18 @@ public class SalesReportTool implements ReportTool {
         }
         // 将规范化后的参数写回 context，供 execute 直接使用
         context.setRawParams(params);
-    
+
         // 必填参数校验
         if (!params.containsKey("timeValue")) {
             throw new IllegalArgumentException("缺少必填参数：timeValue");
         }
-    
+
         // 枚举值校验（防止 AI 参数幻觉）
         String region = (String) params.get("region");
-        if (region != null && !ALLOWED_REGIONS.contains(region)) {
-            throw new IllegalArgumentException("非法地区参数（允许值：" + ALLOWED_REGIONS + "）：" + region);
-        }
-    
+//        if (region != null && !ALLOWED_REGIONS.contains(region)) {
+//            throw new IllegalArgumentException("非法地区参数（允许值：" + ALLOWED_REGIONS + "）：" + region);
+//        }
+
         // 指标列表校验
         Object metricsObj = params.get("metrics");
         if (metricsObj == null) {
@@ -69,7 +69,7 @@ public class SalesReportTool implements ReportTool {
             throw new IllegalArgumentException("指标列表不能为空");
         }
     }
-    
+
     /**
      * 将 Agent 返回的通用命名规范化为工具内部命名
      * <p>
@@ -83,12 +83,12 @@ public class SalesReportTool implements ReportTool {
     private Map<String, Object> normalizeParams(Map<String, Object> raw) {
         if (raw == null) return null;
         Map<String, Object> normalized = new HashMap<>(raw);
-    
+
         // time_range → timeValue
         if (!normalized.containsKey("timeValue") && normalized.containsKey("time_range")) {
             normalized.put("timeValue", normalized.remove("time_range"));
         }
-    
+
         // metric(单字段) → metrics，将字符串包装成 List
         if (!normalized.containsKey("metrics") && normalized.containsKey("metric")) {
             Object metricVal = normalized.remove("metric");
@@ -98,7 +98,7 @@ public class SalesReportTool implements ReportTool {
                 normalized.put("metrics", java.util.Collections.singletonList(metricVal));
             }
         }
-    
+
         return normalized;
     }
 

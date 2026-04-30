@@ -2,6 +2,7 @@ package com.crm.askdata.model;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,7 +14,9 @@ import java.util.List;
  * @author crm
  */
 @Data
-public class DialogueTurn {
+public class DialogueTurn implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /** 轮次序号 */
     private Integer turnNumber;

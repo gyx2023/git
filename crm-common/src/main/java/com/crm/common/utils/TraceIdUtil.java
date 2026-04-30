@@ -84,7 +84,7 @@ public class TraceIdUtil {
         MDC.put(SESSION_ID_MDC_KEY, sessionId);
         SESSION_ID_HOLDER.set(sessionId);
 
-        log.debug("TraceID set: traceId={}, sessionId={}", traceId, sessionId);
+//        log.debug("TraceID set: traceId={}, sessionId={}", traceId, sessionId);
     }
 
     /**

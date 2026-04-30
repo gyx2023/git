@@ -72,10 +72,10 @@ public class IntentParser {
 
             // 第二层：将 intentJson 反序列化为 IntentResult
             IntentResult result = objectMapper.readValue(intentJson, IntentResult.class);
-            log.info("traceId={} parsed intent: intent={}, confidence={}, needClarify={}, toolName={}, missingSlots={}, entities={}",
-                traceId, result.getIntent(), result.getConfidenceSafe(),
-                result.getNeedClarify(), result.getToolName(),
-                result.getMissingSlots(), result.getEntities());
+//            log.info("traceId={} parsed intent: intent={}, confidence={}, needClarify={}, toolName={}, missingSlots={}, entities={}",
+//                traceId, result.getIntent(), result.getConfidenceSafe(),
+//                result.getNeedClarify(), result.getToolName(),
+//                result.getMissingSlots(), result.getEntities());
             return result;
         } catch (Exception e) {
             log.warn("traceId={} failed to parse answer as IntentResult, answer={}, error={}",
@@ -106,13 +106,13 @@ public class IntentParser {
         JsonNode outputNode = answerNode.path("output");
         if (!outputNode.isMissingNode() && !outputNode.isNull()) {
             String outputStr = outputNode.isTextual() ? outputNode.asText() : outputNode.toString();
-            log.debug("traceId={} found output field in answer, extracting intent from output", traceId);
+//            log.debug("traceId={} found output field in answer, extracting intent from output", traceId);
             // output 可能又是一个 JSON 字符串，再次提取
             return extractJsonBlock(outputStr);
         }
 
         // 没有 output 字段，尝试直接将 answerNode 当作意图 JSON
-        log.debug("traceId={} no output field found, using answer JSON directly", traceId);
+//        log.debug("traceId={} no output field found, using answer JSON directly", traceId);
         return answer;
     }
 

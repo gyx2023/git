@@ -48,6 +48,11 @@ public class QueryResult {
     private List<String> clarifyOptions;
 
     /**
+     * HiAgent 请求 ID（用于前端反馈）
+     */
+    private String hiagentRequestId;
+
+    /**
      * 创建澄清结果
      */
     public static QueryResult clarify(String clarifyQuestion, List<String> clarifyOptions) {
