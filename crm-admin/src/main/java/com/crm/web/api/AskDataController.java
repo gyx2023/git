@@ -53,8 +53,8 @@ public class AskDataController extends BaseController {
         @RequestParam(required = false) Long sessionVersion,
         @RequestParam(required = false) String traceId
     ) {
-        String resolvedTraceId = (traceId != null && !traceId.isEmpty()) ? traceId : TraceIdUtil.getTraceId();
-        String resolvedSessionId = (sessionId != null && !sessionId.isEmpty()) ? sessionId : TraceIdUtil.getSessionId();
+        String resolvedTraceId = TraceIdUtil.getTraceId();
+        String resolvedSessionId = TraceIdUtil.getSessionId();
         String userId = String.valueOf(getUserId());
 
         log.info("traceId={} askdata stream request: queryLength={}, sessionId={}",
@@ -83,7 +83,7 @@ public class AskDataController extends BaseController {
     @PostMapping("/query")
     public R<QueryResult> query(@Validated @RequestBody AskDataRequest request) {
         String traceId = TraceIdUtil.getTraceId();
-        String sessionId = request.getSessionId() != null ? request.getSessionId() : TraceIdUtil.getSessionId();
+        String sessionId = TraceIdUtil.getSessionId();
         String userId = String.valueOf(getUserId());
 
         log.info("traceId={} askdata query request: queryLength={}", traceId,
