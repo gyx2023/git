@@ -25,4 +25,6 @@ public interface RedisKeyConstants {
      */
     String EXECUTE_IDENTIFY_SCORE_TASK = PREFIX + "identify:score";
 
+    String CUST_TROSTER_NATURE_RELATION_TASK= PREFIX + "cust:roster:nature:relation:task";
+
 }
