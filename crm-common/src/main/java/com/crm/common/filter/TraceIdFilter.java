@@ -59,8 +59,8 @@ public class TraceIdFilter extends OncePerRequestFilter {
         response.setHeader(TraceIdUtil.SESSION_ID_HEADER, sessionId);
 
         // 7. 记录入口日志
-        log.info("traceId={} sessionId={} method={} uri={} isNewTrace={} isNewSession={}",
-            traceId, sessionId, request.getMethod(), request.getRequestURI(),
+        log.info("method={} uri={} isNewTrace={} isNewSession={}",
+            request.getMethod(), request.getRequestURI(),
             isNewTrace, isNewSession);
 
         try {

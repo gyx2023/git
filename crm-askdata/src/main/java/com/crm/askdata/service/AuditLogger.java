@@ -51,8 +51,8 @@ public class AuditLogger {
      * @param latency  耗时
      */
     public void logQueryExecution(String traceId, String strategy, boolean success, long latency) {
-        log.info("traceId={} query execution: strategy={}, success={}, latency={}ms",
-            traceId, strategy, success, latency);
+        log.info("query execution: strategy={}, success={}, latency={}ms",
+            strategy, success, latency);
     }
 
     /**

@@ -76,15 +76,15 @@ public class HiAgentClient {
                 if (convId == null || convId.isEmpty()) {
                     throw new RuntimeException("CreateConversation 返回的 AppConversationID 为空");
                 }
-                log.info("traceId={} agentId={} created convId={}, latency={}ms",
-                    traceId, agentId, convId, System.currentTimeMillis() - startTime);
+                log.info("agentId={} created convId={}, latency={}ms",
+                    agentId, convId, System.currentTimeMillis() - startTime);
                 return convId;
             } else {
                 throw new RuntimeException("CreateConversation 失败，status=" + response.getStatusCode());
             }
         } catch (Exception e) {
-            log.error("traceId={} agentId={} createConversation failed, latency={}ms",
-                traceId, agentId, System.currentTimeMillis() - startTime, e);
+            log.error("agentId={} createConversation failed, latency={}ms",
+                agentId, System.currentTimeMillis() - startTime, e);
             throw e;
         }
     }
@@ -133,9 +133,9 @@ public class HiAgentClient {
                 String messageId = root.path("id").asText("");
                 String taskId = root.path("task_id").asText("");
 
-                log.info("traceId={} agentId={} chatQueryBlocking done: answerLen={}, messageId={}, latency={}ms",
-                    traceId, agentId, answer.length(), messageId, latency);
-                log.debug("traceId={} agentId={} raw response: {}", traceId, agentId, root.toString());
+                log.info("agentId={} chatQueryBlocking done: answerLen={}, messageId={}, latency={}ms",
+                    agentId, answer.length(), messageId, latency);
+                log.debug("agentId={} raw response: {}", agentId, root.toString());
 
                 HiAgentChatResponse result = new HiAgentChatResponse();
                 result.setAnswer(answer);
@@ -147,8 +147,8 @@ public class HiAgentClient {
                 throw new RuntimeException("chatQueryBlocking 失败，status=" + response.getStatusCode());
             }
         } catch (Exception e) {
-            log.error("traceId={} agentId={} chatQueryBlocking failed, latency={}ms",
-                traceId, agentId, System.currentTimeMillis() - startTime, e);
+            log.error("agentId={} chatQueryBlocking failed, latency={}ms",
+                agentId, System.currentTimeMillis() - startTime, e);
             throw e;
         }
     }
@@ -176,10 +176,10 @@ public class HiAgentClient {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
             restTemplate.exchange(url, HttpMethod.POST, entity, JsonNode.class);
-            log.info("traceId={} feedback submitted: messageId={}, likeType={}", traceId, messageId, likeType);
+            log.info("feedback submitted: messageId={}, likeType={}", messageId, likeType);
         } catch (Exception e) {
             // 反馈失败不影响主流程，仅记录日志
-            log.warn("traceId={} feedback failed: messageId={}, error={}", traceId, messageId, e.getMessage());
+            log.warn("feedback failed: messageId={}, error={}", messageId, e.getMessage());
         }
     }
 
@@ -224,7 +224,7 @@ public class HiAgentClient {
      * 熔断降级：createConversation
      */
     public String fallbackCreateConversation(String userId, String agentId, String traceId, Throwable e) {
-        log.error("traceId={} agentId={} createConversation fallback triggered", traceId, agentId, e);
+        log.error("agentId={} createConversation fallback triggered", agentId, e);
         throw new RuntimeException("HiAgent 创建会话失败，服务暂不可用", e);
     }
 
@@ -234,7 +234,7 @@ public class HiAgentClient {
     public HiAgentChatResponse fallbackChatQuery(String userId, String agentId,
                                                   String convId, String query,
                                                   String traceId, Throwable e) {
-        log.error("traceId={} agentId={} chatQueryBlocking fallback triggered", traceId, agentId, e);
+        log.error("agentId={} chatQueryBlocking fallback triggered", agentId, e);
         // 返回降级结果，由 IntentParser 解析为 FALLBACK_KB
         HiAgentChatResponse fallback = new HiAgentChatResponse();
         fallback.setAnswer("{\"intent\":\"unknown\",\"confidence\":0.0,\"recommendedStrategy\":\"FALLBACK_KB\",\"needClarify\":true,\"clarifyQuestion\":\"智能服务暂时不可用，请稍后重试\"}");

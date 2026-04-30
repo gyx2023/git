@@ -57,17 +57,17 @@ public class AskDataController extends BaseController {
         String resolvedSessionId = TraceIdUtil.getSessionId();
         String userId = String.valueOf(getUserId());
 
-        log.info("traceId={} askdata stream request: queryLength={}, sessionId={}",
-            resolvedTraceId, query.length(), resolvedSessionId);
+        log.info("askdata stream request: queryLength={}, sessionId={}",
+            query.length(), resolvedSessionId);
 
         // 超时设置 5 分钟（SSE 长连接）
         SseEmitter emitter = new SseEmitter(5 * 60 * 1000L);
 
         emitter.onTimeout(() -> {
-            log.warn("traceId={} sse emitter timeout", resolvedTraceId);
+            log.warn("sse emitter timeout");
             emitter.complete();
         });
-        emitter.onError(e -> log.error("traceId={} sse emitter error", resolvedTraceId, e));
+        emitter.onError(e -> log.error("sse emitter error", e));
 
         routerService.processStream(query, resolvedTraceId, resolvedSessionId,
             sessionVersion, userId, emitter);
@@ -86,7 +86,7 @@ public class AskDataController extends BaseController {
         String sessionId = TraceIdUtil.getSessionId();
         String userId = String.valueOf(getUserId());
 
-        log.info("traceId={} askdata query request: queryLength={}", traceId,
+        log.info("askdata query request: queryLength={}",
             request.getQuery() != null ? request.getQuery().length() : 0);
 
         QueryResult result = routerService.process(
@@ -113,8 +113,8 @@ public class AskDataController extends BaseController {
         String traceId = TraceIdUtil.getTraceId();
         String userId = String.valueOf(getUserId());
 
-        log.info("traceId={} feedback request: messageId={}, feedback={}",
-            traceId, request.getMessageId(), request.getFeedback());
+        log.info("feedback request: messageId={}, feedback={}",
+            request.getMessageId(), request.getFeedback());
 
         // 异步提交到 HiAgent（内部已实现失败静默处理）
         hiAgentClient.feedback(

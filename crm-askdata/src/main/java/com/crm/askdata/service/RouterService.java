@@ -82,7 +82,7 @@ public class RouterService {
                 streamResultToClient(result, traceId, messageId, emitter, startTime);
                 emitter.complete();
             } catch (Exception e) {
-                log.error("traceId={} stream processing failed", traceId, e);
+                log.error("stream processing failed", e);
                 handleStreamError(e, traceId, messageId, emitter, startTime);
             }
         });
@@ -97,7 +97,7 @@ public class RouterService {
         try {
             return processInternal(query, traceId, sessionId, sessionVersion, userId, startTime);
         } catch (Exception e) {
-            log.error("traceId={} sync processing failed", traceId, e);
+            log.error("sync processing failed", e);
             clearSessionLock(sessionId, traceId);
             return QueryResult.fail("FALLBACK_GLOBAL", "系统繁忙，请稍后重试 (" + e.getMessage() + ")");
         }
@@ -163,12 +163,12 @@ public class RouterService {
         // 改造后：Intent Agent 也复用会话，让 Agent 管理多轮对话历史
         String convId = conversationManager.getConversationId(userId, agentId);
         if (convId == null) {
-            log.info("traceId={} userId={} agentId={} creating new conversation",
-                traceId, userId, agentId);
+            log.info("userId={} agentId={} creating new conversation",
+                userId, agentId);
             convId = hiAgentClient.createConversation(userId, agentId, traceId);
             conversationManager.saveConversationId(userId, agentId, convId);
         } else {
-            log.debug("traceId={} reusing conversation: convId={}", traceId, convId);
+            log.debug("reusing conversation: convId={}", convId);
         }
         return convId;
     }
@@ -203,7 +203,7 @@ public class RouterService {
         String convId = getOrCreateConversation(userId, intentAgentId, traceId);
 
         // 1.2 直接透传用户原始输入，让 Agent 从会话历史中获取上下文
-        log.debug("traceId={} sending raw query to agent: [{}]", traceId, query);
+        log.debug("sending raw query to agent: [{}]", query);
 
         // 1.3 调用 HiAgent
         HiAgentChatResponse chatResponse = hiAgentClient.chatQueryBlocking(
@@ -223,8 +223,8 @@ public class RouterService {
         long latency = System.currentTimeMillis() - start;
         checkBudget("intent_recognition", latency);
 
-        log.info("traceId={} intent recognized: type={}, confidence={}, toolName={}, needClarify={}",
-            traceId, intentResult.getIntent(), calibrated,
+        log.info("intent recognized: type={}, confidence={}, toolName={}, needClarify={}",
+            intentResult.getIntent(), calibrated,
             intentResult.getToolName(), intentResult.getNeedClarify());
 
         return new IntentRecognitionResult(convId, intentResult, latency);
@@ -273,8 +273,7 @@ public class RouterService {
             return ClarificationOutcome.continueExecution();
         }
 
-        log.info("traceId={} entering clarification flow, question: {}",
-            traceId, intent.getClarifyQuestion());
+        log.info("entering clarification flow, question: {}", intent.getClarifyQuestion());
 
         // 改造后：仅记录简单的会话状态（用于超时检测和轮次限制）
         if (sessionId != null) {
@@ -282,7 +281,7 @@ public class RouterService {
 
             // 超时检查（保留）
             if (session.checkTimeout()) {
-                log.info("traceId={} session timeout, resetting", traceId);
+                log.info("session timeout, resetting");
                 session = resetSession(session, userId);
             }
 
@@ -293,8 +292,8 @@ public class RouterService {
 
             // 后端兜底：检查最大轮次
             if (session.isMaxTurnsReached()) {
-                log.warn("traceId={} max clarify turns({}) reached, forcing fallback",
-                    traceId, session.getCurrentTurnCount());
+                log.warn("max clarify turns({}) reached, forcing fallback",
+                    session.getCurrentTurnCount());
 
                 // 返回特殊提示，让用户重新输入
                 return ClarificationOutcome.returnClarify(
@@ -332,7 +331,7 @@ public class RouterService {
         session.setStatus(ConversationSession.ConversationStatus.EXECUTING);
         contextManager.saveSession(session);
 
-        log.info("traceId={} session transitioned to EXECUTING", traceId);
+        log.info("session transitioned to EXECUTING");
     }
 
     // ==================== 阶段4：版本校验 ====================
@@ -360,8 +359,8 @@ public class RouterService {
         if (session != null && session.getStatus() == ConversationSession.ConversationStatus.INITIAL) {
             if (session.getLockedToolName() == null && intent.getToolName() != null) {
                 session.setLockedToolName(intent.getToolName());
-                log.info("traceId={} locked toolName on first turn: {}",
-                    traceId, intent.getToolName());
+                log.info("locked toolName on first turn: {}",
+                    intent.getToolName());
                 contextManager.saveSession(session);
             }
         }
@@ -388,8 +387,8 @@ public class RouterService {
         if (session != null && session.getLockedToolName() != null) {
             if (intent.getToolName() == null || intent.getToolName().isEmpty()) {
                 intent.setToolName(session.getLockedToolName());
-                log.warn("traceId={} toolName fallback from session lock: {}",
-                    traceId, session.getLockedToolName());
+                log.warn("toolName fallback from session lock: {}",
+                    session.getLockedToolName());
             }
         }
     }
@@ -414,13 +413,13 @@ public class RouterService {
             return result;
         } catch (Exception e) {
             if (decision.canRetry()) {
-                log.warn("traceId={} execution failed, retrying... count={}",
-                    traceId, decision.getRetryCount());
+                log.warn("xecution failed, retrying... count={}",
+                    decision.getRetryCount());
                 decision.incrementRetry();
                 decision.setStrategy(RoutingStrategy.FALLBACK_KB);
                 return executeQuery(decision, traceId);
             } else {
-                log.error("traceId={} execution failed, max retries exceeded", traceId, e);
+                log.error("execution failed, max retries exceeded", e);
                 return QueryResult.fail(decision.getStrategy().name(),
                     "执行失败：" + e.getMessage());
             }
@@ -447,8 +446,8 @@ public class RouterService {
         // 检查必填参数（根据实际业务调整）
         Map<String, Object> entities = intent.getEntities();
         if (entities == null || entities.isEmpty()) {
-            log.warn("traceId={} data_query with toolName={} but entities is empty, possible hallucination",
-                traceId, intent.getToolName());
+            log.warn("data_query with toolName={} but entities is empty, possible hallucination",
+                intent.getToolName());
             throw new IllegalArgumentException("缺少必填参数，请补充更多信息");
         }
 
@@ -463,13 +462,13 @@ public class RouterService {
 //        }
 //
 //        if (!missingParams.isEmpty()) {
-//            log.warn("traceId={} data_query with toolName={} missing required params: {}, entities={}",
-//                traceId, intent.getToolName(), missingParams, entities);
+//            log.warn("data_query with toolName={} missing required params: {}, entities={}",
+//                intent.getToolName(), missingParams, entities);
 //            throw new IllegalArgumentException("缺少必填参数：" + String.join("、", missingParams));
 //        }
 
-        log.debug("traceId={} parameters validation passed: toolName={}, entities={}",
-            traceId, intent.getToolName(), entities);
+        log.debug("parameters validation passed: toolName={}, entities={}",
+            intent.getToolName(), entities);
     }
 
     // ==================== 阶段7：会话清理 ====================
@@ -489,7 +488,7 @@ public class RouterService {
         session.touch();
 
         contextManager.saveSession(session);
-        log.info("traceId={} session marked COMPLETED", traceId);
+        log.info("session marked COMPLETED");
     }
 
     // ==================== SSE 特有方法 ====================
@@ -572,7 +571,7 @@ public class RouterService {
             String json = objectMapper.writeValueAsString(message);
             emitter.send(SseEmitter.event().data(json));
         } catch (Exception e) {
-            log.warn("traceId={} failed to send sse event: {}", message.getTraceId(), e.getMessage());
+            log.warn("failed to send sse event: {}", e.getMessage());
             throw e;
         }
     }
@@ -584,7 +583,7 @@ public class RouterService {
         try {
             sendSseEvent(emitter, message);
         } catch (Exception ex) {
-            log.warn("traceId={} safe send sse event failed", message.getTraceId());
+            log.warn("safe send sse event failed");
         }
     }
 
@@ -609,8 +608,8 @@ public class RouterService {
             ? intent.getIntent().toLowerCase() : "unknown";
         RouterProperties.ConfidenceThresholds thresholds = properties.getConfidenceThresholds();
 
-        log.info("traceId={} decideStrategy: intentType={}, confidence={}, toolName={}, needClarify={}, missingSlots={}",
-            traceId, intentType, confidence,
+        log.info("decideStrategy: intentType={}, confidence={}, toolName={}, needClarify={}, missingSlots={}",
+            intentType, confidence,
             intent != null ? intent.getToolName() : null,
             intent != null ? intent.getNeedClarify() : null,
             intent != null ? intent.getMissingSlots() : null);
@@ -643,8 +642,8 @@ public class RouterService {
                         candidates.add("FALLBACK_KB");
                         scores.put("FALLBACK_KB", confidence);
                         rejections.add("必填参数缺失: " + missingSlots);
-                        log.warn("traceId={} data_query has missing slots but needClarify was false, fallback: {}",
-                            traceId, missingSlots);
+                        log.warn("data_query has missing slots but needClarify was false, fallback: {}",
+                            missingSlots);
                     } else if (toolName != null && !toolName.isEmpty()) {
                         strategy = RoutingStrategy.TOOL_CALL;
                         reason = "data_query 高置信度 (" + confidence + ")，匹配工具: " + toolName;
@@ -668,8 +667,8 @@ public class RouterService {
                         reason = "data_query 中置信度 (" + confidence + ")，toolName 非空走 TOOL_CALL: " + toolNameMedium;
                         candidates.add("TOOL_CALL");
                         scores.put("TOOL_CALL", confidence);
-                        log.info("traceId={} medium confidence but toolName present, routing to TOOL_CALL: {}",
-                            traceId, toolNameMedium);
+                        log.info("medium confidence but toolName present, routing to TOOL_CALL: {}",
+                            toolNameMedium);
                     } else if (properties.getSecurity().getEnableSqlSandbox()
                         && permissionService.hasSqlSandboxPermission(userId)) {
                         strategy = RoutingStrategy.TEXT_TO_SQL;
@@ -722,8 +721,8 @@ public class RouterService {
         decision.setRejectionReasons(rejections);
         decision.setReversible(strategy.isReversible());
 
-        log.info("traceId={} routing decision: intent={}, confidence={}, strategy={}, reason={}",
-            traceId, intentType, confidence, strategy, reason);
+        log.info("routing decision: intent={}, confidence={}, strategy={}, reason={}",
+            intentType, confidence, strategy, reason);
 
         return decision;
     }
@@ -767,7 +766,7 @@ public class RouterService {
      */
     private ConversationSession getOrInitSession(String sessionId, String userId, String traceId) {
         if (sessionId == null) {
-            log.debug("traceId={} sessionId is null, creating transient session", traceId);
+            log.debug("sessionId is null, creating transient session");
             ConversationSession s = new ConversationSession();
             s.setUserId(userId);
             return s;
@@ -778,7 +777,7 @@ public class RouterService {
             session.setSessionId(sessionId);
             session.setUserId(userId);
             contextManager.saveSession(session);
-            log.debug("traceId={} created new session: sessionId={}", traceId, sessionId);
+            log.debug("created new session: sessionId={}", sessionId);
             return session;
         }
 
@@ -800,14 +799,14 @@ public class RouterService {
             if (inactiveMs > clarifyTimeoutMs) {
                 needsReset = true;
                 resetReason = "clarify timeout (" + inactiveMs + "ms > " + clarifyTimeoutMs + "ms), likely page refresh";
-                log.info("traceId={} session stuck in CLARIFYING for {}ms, resetting (likely page refresh): sessionId={}",
-                    traceId, inactiveMs, sessionId);
+                log.info("session stuck in CLARIFYING for {}ms, resetting (likely page refresh): sessionId={}",
+                    inactiveMs, sessionId);
             }
         }
 
         if (needsReset) {
-            log.info("traceId={} session {}, resetting turn count for new question: sessionId={}",
-                traceId, resetReason, sessionId);
+            log.info("session {}, resetting turn count for new question: sessionId={}",
+                resetReason, sessionId);
             session.setCurrentTurnCount(0);
             session.setStatus(ConversationSession.ConversationStatus.INITIAL);
             session.setMissingSlots(null);
@@ -858,10 +857,10 @@ public class RouterService {
                     s.setStatus(ConversationSession.ConversationStatus.FAILED);
                 }
                 contextManager.saveSession(s);
-                log.info("traceId={} session lock cleared (on error), status={}", traceId, s.getStatus());
+                log.info("session lock cleared (on error), status={}", s.getStatus());
             }
         } catch (Exception ex) {
-            log.warn("traceId={} failed to clear session lock: {}", traceId, ex.getMessage());
+            log.warn("failed to clear session lock: {}", ex.getMessage());
         }
     }
 }
