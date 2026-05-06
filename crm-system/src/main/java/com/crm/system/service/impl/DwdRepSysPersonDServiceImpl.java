@@ -370,7 +370,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
 
         Integer deptLevel = repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
         if (deptLevel >= 1) {
-            lqw.eq(DwdRepSysPersonD::getOnjobFlag, 0);
+            return getProvincialManagersPage(pageQuery, keyword);
         } else {
             SysUser user = sysUserService.selectUserById(loginUser.getUserId());
             SysDept dept = sysDeptService.selectDeptById(user.getDeptId());
@@ -400,5 +400,23 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
         Page<DwdRepSysPersonDVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
 
         return TableDataInfo.build(page);
+    }
+    private TableDataInfo<DwdRepSysPersonDVo> getProvincialManagersPage(PageQuery pageQuery, String keyword) {
+        Page<RepSysPersonNewDDo> page = pageQuery.build();
+        Page<RepSysPersonNewDDo> resultPage = repSysPersonNewDMapper.selectProvincialManagers(page, keyword);
+
+        List<DwdRepSysPersonDVo> voList = new ArrayList<>();
+        for (RepSysPersonNewDDo record : resultPage.getRecords()) {
+            DwdRepSysPersonDVo vo = new DwdRepSysPersonDVo();
+            vo.setEmpId(record.getEmpId());
+            vo.setOaUserName(record.getOaUserName());
+            vo.setFullName(record.getFullName());
+            voList.add(vo);
+        }
+
+        Page<DwdRepSysPersonDVo> voPage = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
+        voPage.setRecords(voList);
+
+        return TableDataInfo.build(voPage);
     }
 }

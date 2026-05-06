@@ -1,9 +1,11 @@
 package com.crm.system.mapper.zbzq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.dto.GrpGroupImportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -14,5 +16,5 @@ public interface RepSysPersonNewDMapper extends BaseMapperPlus<RepSysPersonNewDM
 
     List<GrpGroupImportDTO> selectGrpDto();
 
-    List<RepSysPersonNewDDo> selectProvincialManagers();
+    Page<RepSysPersonNewDDo> selectProvincialManagers(Page<RepSysPersonNewDDo> page, @Param("keyword") String keyword);
 }
