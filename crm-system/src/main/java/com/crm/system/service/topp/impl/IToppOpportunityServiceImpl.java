@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.ClueStateEnum;
@@ -331,6 +332,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return list;
     }
 
+
     @Override
     public List<ToppOpportunityVo> queryListByOppoCodes(Set<String> oppoCodes) {
         return baseMapper.selectVoList(new LambdaQueryWrapper<ToppOpportunityDo>().in(ToppOpportunityDo::getOppCode, oppoCodes)
@@ -359,5 +361,10 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
 
         return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public List<OpportunityDTO> getToppOpportunityPut(String areaId) {
+        return baseMapper.listOpportunity(areaId);
     }
 }

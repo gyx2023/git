@@ -1,6 +1,8 @@
 package com.crm.job.service.cust;
 
 import com.crm.common.enums.RedisKeyConstants;
+import com.crm.common.utils.BeanCopyUtils;
+import com.crm.system.domain.CustRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.service.cust.CustTRosterCustomerNatureMemberProvinceService;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -8,12 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,7 +33,6 @@ public class CustTRosterNatureRelationJob {
     private static final int BATCH_SIZE = 100;
 
     @XxlJob("custTRosterNatureRelationJob")
-    @Transactional(rollbackFor = Exception.class)
     public void syncOppoUnbound() {
         log.info("【名单制自然客户关系同步】任务开始");
         long startTime = System.currentTimeMillis();
@@ -49,28 +48,33 @@ public class CustTRosterNatureRelationJob {
             log.info("【名单制自然客户关系同步】清空历史数据完成");
 
             // 2. 查询源数据
-            List<Map<String, Object>> dataList = customerNatureService.getCustCustomerNatureList();
+            List<CustRosterCustomerNatureMemberProvinceDo> dataList = customerNatureService.getCustCustomerNatureList();
             if (dataList == null || dataList.isEmpty()) {
                 log.warn("【名单制自然客户关系同步】未查询到待同步数据");
                 return;
             }
             log.info("【名单制自然客户关系同步】待同步数据总条数：{}", dataList.size());
 
-            // 3. 分批插入
+            // 3. 分批插入（正确写法）
             List<CustTRosterCustomerNatureMemberProvinceDo> batchList = new ArrayList<>(BATCH_SIZE);
-            for (Map<String, Object> itemMap : dataList) {
-                CustTRosterCustomerNatureMemberProvinceDo entity = mapToEntity(itemMap);
-                batchList.add(entity);
 
+            for (CustRosterCustomerNatureMemberProvinceDo source : dataList) {
+                // 对象拷贝
+                CustTRosterCustomerNatureMemberProvinceDo target = BeanCopyUtils.copy(source, CustTRosterCustomerNatureMemberProvinceDo.class);
+                batchList.add(target);
+
+                // 达到批次大小 → 批量插入
                 if (batchList.size() >= BATCH_SIZE) {
                     customerNatureService.insertBatch(batchList);
+                    log.info("【名单制自然客户关系同步】已插入 {} 条", batchList.size());
                     batchList.clear();
                 }
             }
 
-            // 插入剩余数据
+            // 4. 插入最后一批不足100的数据
             if (!batchList.isEmpty()) {
                 customerNatureService.insertBatch(batchList);
+                log.info("【名单制自然客户关系同步】插入最后一批 {} 条", batchList.size());
             }
 
             long cost = System.currentTimeMillis() - startTime;
@@ -78,28 +82,13 @@ public class CustTRosterNatureRelationJob {
 
         } catch (Exception e) {
             log.error("【名单制自然客户关系同步】任务执行异常", e);
-            throw new RuntimeException("同步任务异常，事务已回滚");
+            throw new RuntimeException("同步任务异常", e);
         } finally {
             // 释放锁
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
+                log.info("【名单制自然客户关系同步】分布式锁已释放");
             }
         }
-    }
-
-    /**
-     * Map 转实体（防空指针）
-     */
-    private CustTRosterCustomerNatureMemberProvinceDo mapToEntity(Map<String, Object> map) {
-        CustTRosterCustomerNatureMemberProvinceDo entity = new CustTRosterCustomerNatureMemberProvinceDo();
-
-        // 安全取值，防止空指针
-        Object natureCustId = map.get("nature_cust_id");
-        Object rosterCustomerId = map.get("roster_customer_id");
-
-        entity.setNatureCustId(natureCustId != null ? natureCustId.toString() : null);
-        entity.setRosterCustomerId(rosterCustomerId != null ? rosterCustomerId.toString() : null);
-
-        return entity;
     }
 }
