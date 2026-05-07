@@ -18,9 +18,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import org.slf4j.MDC;
 
 /**
  * 路由决策引擎
@@ -67,22 +66,55 @@ public class RouterService {
      */
     public void processStream(String query, String traceId, String sessionId,
                               String userId, SseEmitter emitter) {
-        sseExecutor.execute(() -> {
+        // 捕获当前线程的 MDC 上下文，用于异步线程恢复
+        Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+
+        Future<?> future = sseExecutor.submit(() -> {
+            // 恢复 MDC 上下文
+            if (mdcContext != null && !mdcContext.isEmpty()) {
+                MDC.setContextMap(mdcContext);
+            }
             long startTime = System.currentTimeMillis();
             String messageId = traceId + "_" + System.currentTimeMillis();
             try {
-                // 发送处理中提示
                 sendSseEvent(emitter, SseMessage.text(traceId, messageId, "正在识别意图...", 0.0));
 
-                // 核心流程：统一调用内部方法
                 QueryResult result = processInternal(query, traceId, sessionId, userId, startTime);
 
-                // SSE 特有：流式推送结果
                 streamResultToClient(result, traceId, messageId, emitter, startTime);
                 emitter.complete();
             } catch (Exception e) {
-                log.error("stream processing failed", e);
+                if (e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
+                    log.warn("stream processing was cancelled, sessionId={}", sessionId);
+                } else {
+                    log.error("stream processing failed", e);
+                }
+                clearSessionLock(sessionId, traceId);
                 handleStreamError(e, traceId, messageId, emitter, startTime);
+            } finally {
+                if (mdcContext != null && !mdcContext.isEmpty()) {
+                    MDC.clear();
+                }
+            }
+        });
+
+        // 注册取消回调：SSE 连接关闭时中断后台任务线程
+        emitter.onTimeout(() -> {
+            log.warn("sse emitter timeout, cancelling background task");
+            if (!future.isDone()) {
+                future.cancel(true);
+            }
+            emitter.complete();
+        });
+        emitter.onError(e -> {
+            log.error("sse emitter error, cancelling background task", e);
+            if (!future.isDone()) {
+                future.cancel(true);
+            }
+        });
+        emitter.onCompletion(() -> {
+            if (!future.isDone()) {
+                future.cancel(true);
             }
         });
     }
@@ -126,13 +158,13 @@ public class RouterService {
             );
         }
 
-        // 阶段3：状态转换（CLARIFYING → EXECUTING）
-        transitionToExecuting(sessionId, intentRecog.intentResult, traceId);
-
-        // 阶段4：路由决策
+        // 阶段3：路由决策
         RoutingDecision decision = makeRoutingDecision(
             intentRecog.intentResult, query, sessionId, userId, traceId);
         auditLogger.logDecisionReasoning(decision);
+
+        // 阶段4：状态转换（CLARIFYING → EXECUTING）
+        transitionToExecuting(sessionId, intentRecog.intentResult, traceId);
 
         // 阶段5：执行查询
         QueryResult result = executeQuery(decision, sessionId, traceId);
@@ -801,6 +833,16 @@ public class RouterService {
                 needsReset = true;
                 resetReason = "clarify timeout (" + inactiveMs + "ms > " + clarifyTimeoutMs + "ms), likely page refresh";
                 log.info("session stuck in CLARIFYING for {}ms, resetting (likely page refresh): sessionId={}",
+                    inactiveMs, sessionId);
+            }
+        } else if (status == ConversationSession.ConversationStatus.EXECUTING) {
+            // 检测长时间停留在 EXECUTING 状态的会话（可能是上次请求异常中断导致）
+            long inactiveMs = java.time.Duration.between(session.getLastActiveTime(), java.time.LocalDateTime.now()).toMillis();
+            long execTimeoutMs = (session.getTimeoutSeconds() != null ? session.getTimeoutSeconds() : 300) * 1000L;
+            if (inactiveMs > execTimeoutMs) {
+                needsReset = true;
+                resetReason = "executing timeout (" + inactiveMs + "ms > " + execTimeoutMs + "ms), likely previous request crashed";
+                log.info("session stuck in EXECUTING for {}ms, resetting (previous request may have crashed): sessionId={}",
                     inactiveMs, sessionId);
             }
         }
