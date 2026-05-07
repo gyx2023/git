@@ -152,7 +152,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE
         to2.order_type = #{orderType}
         AND to2.create_time >= '2024-01-01 00:00:00'
-        AND to2.create_time <= CONCAT(#{yyMMdd}, ' 23:59:59')
+        AND to2.create_time &lt;= CONCAT(#{yyMMdd}, ' 23:59:59')
     </select>
 
 
