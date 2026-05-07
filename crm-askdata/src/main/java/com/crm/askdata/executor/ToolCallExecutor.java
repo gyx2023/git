@@ -1,15 +1,15 @@
 package com.crm.askdata.executor;
 
 import com.crm.askdata.config.ToolCallProperties;
-import com.crm.askdata.executor.tool.ReportTool;
-import com.crm.askdata.executor.tool.ToolRegistry;
+import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
 import com.crm.askdata.model.ToolCallAuditLog;
-import com.crm.askdata.model.ToolContext;
+import com.crm.askdata.model.ToolConfigWithParams;
 import com.crm.askdata.router.RoutingStrategy;
 import com.crm.askdata.security.ToolCallLimiter;
 import com.crm.askdata.service.AuditLogger;
+import com.crm.askdata.service.ToolConfigService;
 import com.crm.askdata.service.UserPermissionService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +23,12 @@ import java.util.Map;
 /**
  * 工具调用执行器
  * <p>
+ * 职责：负责横切关注点（权限、限流、审计、熔断）
+ * <p>
  * 关键防护点:
- * 1. 工具白名单校验
+ * 1. 工具配置获取与校验
  * 2. 权限强制校验
- * 3. 参数校验转换
+ * 3. 调用次数限制
  * 4. 熔断降级处理
  * 5. 完整审计日志
  *
@@ -37,7 +39,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ToolCallExecutor implements QueryExecutor {
 
-    private final ToolRegistry toolRegistry;
+    private final ToolConfigService configService;
+    private final DatabaseDrivenApiTool databaseDrivenApiTool;
     private final ToolCallProperties properties;
     private final UserPermissionService permissionService;
     private final ToolCallLimiter callLimiter;
@@ -62,27 +65,31 @@ public class ToolCallExecutor implements QueryExecutor {
                 return QueryResult.fail(RoutingStrategy.TOOL_CALL.name(), "工具名称为空");
             }
 
-            // ========== 第二步：工具白名单校验 ==========
-            if (!toolRegistry.isToolEnabled(toolName, properties.getSecurity().getEnabledTools())) {
-                log.warn("traceId={} tool not in whitelist: {}", traceId, toolName);
+            // ========== 第二步：获取工具配置（一次性获取，避免重复查询）==========
+            ToolConfigWithParams fullConfig;
+            try {
+                fullConfig = configService.getToolConfigWithParams(toolName);
+            } catch (IllegalArgumentException e) {
+                // 工具配置不存在
+                log.warn("traceId={} tool config not found: {}", traceId, toolName);
                 auditLog.setStatus("REJECT");
-                auditLog.setErrorMessage("工具未在白名单中");
+                auditLog.setErrorMessage("工具配置不存在");
+                auditLog.setExecutionLatencyMs(System.currentTimeMillis() - startTime);
                 auditLogger.logToolCallAuditAsync(auditLog);
-                return QueryResult.fail(RoutingStrategy.TOOL_CALL.name(), "工具未启用：" + toolName);
+                return QueryResult.fail(RoutingStrategy.TOOL_CALL.name(), "工具配置不存在：" + toolName);
             }
 
-            // ========== 第三步：获取工具实例（未实现则友好提示）==========
-            ReportTool tool = toolRegistry.findTool(toolName);
-            if (tool == null) {
-                log.warn("traceId={} tool not implemented: {}", traceId, toolName);
+            ToolConfig config = fullConfig.getConfig();
+
+            // ========== 第三步：检查工具是否启用 ==========
+            if (!Boolean.TRUE.equals(config.getIsEnabled())) {
+                log.warn("traceId={} tool is disabled: {}", traceId, toolName);
                 auditLog.setStatus("REJECT");
-                auditLog.setErrorMessage("工具暂未实现：" + toolName);
+                auditLog.setErrorMessage("工具已禁用");
+                auditLog.setExecutionLatencyMs(System.currentTimeMillis() - startTime);
                 auditLogger.logToolCallAuditAsync(auditLog);
-                return QueryResult.fail(
-                    RoutingStrategy.TOOL_CALL.name(),
-                    "暂不支持查询「" + toolName + "」相关指标，请尝试描述您的问题，我将尝试通过其他方式解答");
+                return QueryResult.fail(RoutingStrategy.TOOL_CALL.name(), "工具已禁用：" + toolName);
             }
-            log.info("traceId={} executing tool: {}", traceId, toolName);
 
             // ========== 第四步：调用次数限制 ==========
             String sessionId = intent.getSessionVersion() != null
@@ -90,36 +97,25 @@ public class ToolCallExecutor implements QueryExecutor {
                 : null;
             callLimiter.checkLimit(toolName, sessionId);
 
-            // ========== 第五步：构建上下文 ==========
-            ToolContext context = buildContext(intent, traceId, sessionId);
-
-            // ========== 第六步：权限校验 ==========
+            // ========== 第五步：权限校验 ==========
             if (Boolean.TRUE.equals(properties.getSecurity().getEnforcePermission())) {
-                permissionService.checkToolPermission(context.getUserId(), toolName);
+                UserPermissionService.CurrentUserInfo currentUser = permissionService.getCurrentUser();
+                permissionService.checkToolPermission(currentUser.getId(), toolName);
 
-                // 敏感工具需额外授权
-                if (tool.isSensitive()) {
-                    permissionService.checkSensitiveToolPermission(context.getUserId(), toolName);
+                if (Boolean.TRUE.equals(config.getIsSensitive())) {
+                    permissionService.checkSensitiveToolPermission(currentUser.getId(), toolName);
                 }
             }
 
-            // ========== 第七步：参数校验 ==========
-            tool.validateParams(context);
+            // ========== 第六步：执行数据库驱动的工具（参数校验、API调用、结果格式化）==========
+            QueryResult result = databaseDrivenApiTool.execute(intent, fullConfig, traceId);
 
-            // ========== 第八步：执行查询 ==========
-            QueryResult result = tool.execute(context);
-
-            // ========== 第九步：记录审计日志 ==========
+            // ========== 第七步：记录成功审计日志 ==========
             auditLog.setStatus("SUCCESS");
             auditLog.setExecutionLatencyMs(System.currentTimeMillis() - startTime);
             auditLog.setReturnedRows(extractRowCount(result));
             auditLog.setRiskLevel("LOW");
             auditLogger.logToolCallAuditAsync(auditLog);
-
-//            log.info("traceId={} tool execution completed: tool={}, latency={}ms, rows={}",
-//                traceId, toolName,
-//                auditLog.getExecutionLatencyMs(),
-//                auditLog.getReturnedRows());
 
             // 确保 strategy 字段已设置
             if (result.getStrategy() == null) {
@@ -128,7 +124,18 @@ public class ToolCallExecutor implements QueryExecutor {
 
             return result;
 
+        } catch (IllegalArgumentException e) {
+            // 参数校验或转换错误
+            log.warn("traceId={} tool validation failed: {}", traceId, e.getMessage());
+            auditLog.setStatus("FAILURE");
+            auditLog.setErrorMessage(e.getMessage());
+            auditLog.setExecutionLatencyMs(System.currentTimeMillis() - startTime);
+            auditLog.setRiskLevel("MEDIUM");
+            auditLogger.logToolCallAuditAsync(auditLog);
+            throw e;
+
         } catch (Exception e) {
+            // 其他执行错误（API调用失败、结果格式化失败等）
             log.error("traceId={} tool execution failed: tool={}, error={}",
                 traceId, toolName, e.getMessage(), e);
 
@@ -174,7 +181,7 @@ public class ToolCallExecutor implements QueryExecutor {
         if (e instanceof IllegalArgumentException && e.getMessage() != null
                 && e.getMessage().contains("缺少必填参数")) {
             // 参数不完整
-            userFriendlyMsg = "查询信息不完整，请补充具体的时间范围和指标名称后重试。例如：查询“本月销售额”。";
+            userFriendlyMsg = "查询信息不完整，请补充具体的时间范围和指标名称后重试。例如：查询 本月销售额。 ";
         } else if (e instanceof IllegalArgumentException && e.getMessage() != null
                 && e.getMessage().contains("未找到工具")) {
             // 工具尚未实现
@@ -189,31 +196,6 @@ public class ToolCallExecutor implements QueryExecutor {
         fallbackResult.setStrategy("FALLBACK_" + properties.getFallback().getStrategy());
         fallbackResult.setContent(userFriendlyMsg);
         return fallbackResult;
-    }
-
-    /**
-     * 构建工具调用上下文
-     *
-     * @param intent    意图识别结果
-     * @param traceId   链路追踪 ID
-     * @param sessionId 会话 ID
-     * @return 工具调用上下文
-     */
-    private ToolContext buildContext(IntentResult intent, String traceId, String sessionId) {
-        ToolContext context = new ToolContext();
-        context.setTraceId(traceId);
-        context.setSessionId(sessionId);
-        context.setSessionVersion(intent.getSessionVersion());
-        context.setRawParams(intent.getEntities());
-        context.setTimeoutMs(properties.getPerformance().getTimeoutSeconds() * 1000L);
-
-        // 获取当前用户信息（桩实现，BE-06 后接入真实权限）
-        UserPermissionService.CurrentUserInfo currentUser = permissionService.getCurrentUser();
-        context.setUserId(currentUser.getId());
-        context.setDeptId(currentUser.getDeptId());
-        context.setUserRole(currentUser.getRole());
-
-        return context;
     }
 
     /**

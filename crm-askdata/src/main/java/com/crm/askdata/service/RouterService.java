@@ -2,7 +2,6 @@ package com.crm.askdata.service;
 
 import com.crm.askdata.client.HiAgentClient;
 import com.crm.askdata.config.RouterProperties;
-import com.crm.askdata.exception.StateConflictException;
 import com.crm.askdata.executor.FallbackQueryExecutor;
 import com.crm.askdata.executor.QueryExecutor;
 import com.crm.askdata.executor.ToolCallExecutor;
@@ -278,6 +277,12 @@ public class RouterService {
         // 改造后：仅记录简单的会话状态（用于超时检测和轮次限制）
         if (sessionId != null) {
             ConversationSession session = getOrInitSession(sessionId, userId, traceId);
+
+            // 【新增】检测意图切换：如果用户在新问题中提供了完整的 toolName，说明转移了话题
+            if (detectIntentSwitch(session, intent, query)) {
+                log.info("intent switch detected during clarification, resetting session: sessionId={}", sessionId);
+                session = resetSessionForNewTopic(session, userId);
+            }
 
             // 超时检查（保留）
             if (session.checkTimeout()) {
@@ -809,16 +814,67 @@ public class RouterService {
                 resetReason, sessionId);
             session.setCurrentTurnCount(0);
             session.setStatus(ConversationSession.ConversationStatus.INITIAL);
-            session.setMissingSlots(null);
             session.setLockedToolName(null);
-            session.setLockedStrategy(null);
-            session.setLockedEntities(null);
-            session.setDialogueHistory(null);  // 清除旧问题的对话历史，防止污染新问题上下文
             session.touch();
             contextManager.saveSession(session);
         }
 
         return session;
+    }
+
+    /**
+     * 检测意图切换（用户是否转移了话题）
+     * <p>
+     * 判断条件：
+     * 1. 会话处于 CLARIFYING 状态
+     * 2. 本轮识别出新的 toolName，且与锁定的 toolName 不同
+     * 3. 或者本轮 intent 类型发生根本变化（如 data_query → knowledge）
+     *
+     * @param session 当前会话
+     * @param intent  本轮意图识别结果
+     * @param query   用户原始输入
+     * @return true 表示检测到意图切换
+     */
+    private boolean detectIntentSwitch(ConversationSession session, IntentResult intent, String query) {
+        if (session == null || session.getStatus() != ConversationSession.ConversationStatus.CLARIFYING) {
+            return false;
+        }
+
+        String lockedToolName = session.getLockedToolName();
+        String newToolName = intent.getToolName();
+
+        // 条件1：toolName 发生变化（从 A 工具切换到 B 工具）
+        if (lockedToolName != null && newToolName != null && !lockedToolName.equals(newToolName)) {
+            log.info("toolName changed from '{}' to '{}', possible topic switch",
+                lockedToolName, newToolName);
+            return true;
+        }
+
+        // 条件2：从有 toolName 变为无 toolName，且用户输入看起来像新问题
+        // （例如：澄清期间用户突然问"今天天气怎么样"）
+        if (lockedToolName != null && (newToolName == null || newToolName.isEmpty())) {
+            // 可以通过简单启发式判断：用户输入不包含原话题关键词
+            // 这里暂时保守处理，不触发重置，依赖 Agent 自主管理
+            log.debug("toolName disappeared during clarification, but not forcing reset");
+        }
+
+        return false;
+    }
+
+    /**
+     * 为新话题重置会话（保留 sessionId，清空所有锁定状态）
+     *
+     * @param old    旧会话
+     * @param userId 用户 ID
+     * @return 重置后的会话
+     */
+    private ConversationSession resetSessionForNewTopic(ConversationSession old, String userId) {
+        old.setCurrentTurnCount(0);
+        old.setStatus(ConversationSession.ConversationStatus.INITIAL);
+        old.setLockedToolName(null);
+        old.touch();
+        contextManager.saveSession(old);
+        return old;
     }
 
     /**

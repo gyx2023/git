@@ -37,17 +37,6 @@ public class ToolCallProperties {
 
     @Data
     public static class SecurityConfig {
-        /** 启用的工具白名单 */
-        private List<String> enabledTools = new ArrayList<>(Arrays.asList(
-            "get_sales_report",
-            "get_user_growth",
-            "get_operation_report"
-        ));
-        /** 敏感工具列表 (需额外授权) */
-        private List<String> sensitiveTools = new ArrayList<>(Arrays.asList(
-            "get_finance_report",
-            "export_data"
-        ));
         /** 强制权限校验 */
         private Boolean enforcePermission = true;
     }

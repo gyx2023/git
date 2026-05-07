@@ -34,6 +34,12 @@ public class QueryResult {
     /** 重试次数 */
     private int retryCount;
 
+    /** 总数 */
+    private Number total;
+
+    /** 图表类型 */
+    private String chartType;
+
     // ==================== 澄清相关字段（同步接口返回澄清卡片）====================
 
     /**

@@ -63,11 +63,6 @@ public class ConversationSession implements Serializable {
     /** 超时秒数 */
     private Integer timeoutSeconds = 300;
 
-    /** 当前缺失的槽位列表 */
-    private List<String> missingSlots;
-
-    /** 对话历史（最近 10 轮，BE-10） */
-    private List<DialogueTurn> dialogueHistory;
 
     // ==================== 策略锁定（防止 confidence 漂移）====================
 
@@ -79,17 +74,6 @@ public class ConversationSession implements Serializable {
      */
     private String lockedToolName;
 
-    /**
-     * 澄清期间锁定的路由策略
-     */
-    private String lockedStrategy;
-
-    /**
-     * 澄清期间每轮合并的实体参数快照
-     * <p>
-     * 每轮澄清答复后增量写入，澄清完成时与本轮最新 entities 合并传给执行器。
-     */
-    private Map<String, Object> lockedEntities;
 
     // ==================== 方法 ====================
 
@@ -123,21 +107,6 @@ public class ConversationSession implements Serializable {
      */
     public boolean isMaxTurnsReached() {
         return currentTurnCount >= MAX_TURN_COUNT;
-    }
-
-    /**
-     * 添加对话历史（最多保留 10 轮，BE-10）
-     *
-     * @param turn 单轮对话
-     */
-    public void addDialogueTurn(DialogueTurn turn) {
-        if (dialogueHistory == null) {
-            dialogueHistory = new ArrayList<>();
-        }
-        dialogueHistory.add(turn);
-        if (dialogueHistory.size() > 10) {
-            dialogueHistory.remove(0);
-        }
     }
 
     /**

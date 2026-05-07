@@ -21,6 +21,10 @@ import java.util.Map;
  * answer 字段是一个 JSON 字符串，其中 output 字段才是真正的意图 JSON。
  * <pre>{@code
  * answer = "{\"output\": \"{\\\"intent\\\": \\\"data_query\\\", ...}\"}"
+ *  * 1. 单层（理想）：{"intent":"data_query",...}
+ *  * 2. 双层（常见）：{"output": "{\"intent\":\"data_query\",...}"}
+ *  * 3. 三层（极端）：{"output": "{\"output\": \"{\\\"intent\\\":...}\"}"}
+ *
  * 解析路径：answer(JSON字符串) → output 字段(JSON字符串) → 意图 JSON 对象
  * }</pre>
  * <p>
@@ -67,11 +71,14 @@ public class IntentParser {
         }
 
         try {
-            // 第一层：解析 answer 字符串为 JSON，取 output 字段
-            String intentJson = extractIntentJson(answer.trim(), traceId);
+            // 第1步：标准化 answer（处理多层嵌套）
+            String normalizedAnswer = normalizeAnswer(answer.trim(), traceId);
+
+//            // 第一层：解析 answer 字符串为 JSON，取 output 字段
+//            String intentJson = extractIntentJson(answer.trim(), traceId);
 
             // 第二层：将 intentJson 反序列化为 IntentResult
-            IntentResult result = objectMapper.readValue(intentJson, IntentResult.class);
+            IntentResult result = objectMapper.readValue(normalizedAnswer, IntentResult.class);
 //            log.info("traceId={} parsed intent: intent={}, confidence={}, needClarify={}, toolName={}, missingSlots={}, entities={}",
 //                traceId, result.getIntent(), result.getConfidenceSafe(),
 //                result.getNeedClarify(), result.getToolName(),
@@ -160,5 +167,124 @@ public class IntentParser {
     private String truncate(String s, int maxLen) {
         if (s == null) return null;
         return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
+    }
+
+    /**
+     * 标准化 answer 输出格式（最多处理3层嵌套）
+     * <p>
+     * 处理场景：
+     * 1. 单层：answer 直接是意图 JSON → 原样返回
+     * 2. 双层：{"output": "{\"intent\":...}"} → 提取 output
+     * 3. 三层：{"output": "{\"output\": \"{\\\"intent\\\":...}\"}"} → 提取两层 output
+     *
+     * @param answer 原始 answer 字符串
+     * @param traceId 链路 ID
+     * @return 标准化后的意图 JSON 字符串
+     */
+    private String normalizeAnswer(String answer, String traceId) {
+        String current = answer;
+
+        // 最多处理3层嵌套
+        for (int depth = 0; depth < 3; depth++) {
+            try {
+                JsonNode node = objectMapper.readTree(current);
+
+                // 检查是否有 output 字段
+                JsonNode outputNode = node.path("output");
+                if (outputNode.isMissingNode() || outputNode.isNull()) {
+                    // 没有 output 字段，检查是否包含 intent 字段
+                    if (node.has("intent")) {
+                        log.debug("traceId={} found intent at depth {}, stopping extraction", traceId, depth);
+                        return current;
+                    }
+                    // 既没有 output 也没有 intent，可能是其他格式
+                    log.warn("traceId={} no output or intent field at depth {}", traceId, depth);
+                    return current;
+                }
+
+                // 有 output 字段，提取并继续下一层
+                if (outputNode.isTextual()) {
+                    current = outputNode.asText();
+                    log.debug("traceId={} extracted output at depth {}, continuing...", traceId, depth);
+                } else {
+                    // output 是对象/数组，直接转为字符串
+                    current = outputNode.toString();
+                    log.debug("traceId={} output is object at depth {}", traceId, depth);
+
+                    // 检查是否包含 intent 字段
+                    if (node.has("intent")) {
+                        return current;
+                    }
+                }
+
+            } catch (Exception e) {
+                // 不是合法 JSON，尝试提取 JSON 块
+                log.debug("traceId={} parse failed at depth {}, attempting json block extraction", traceId, depth);
+                String extracted = extractJsonBlockFromText(current);
+
+                // 验证提取的 JSON 是否包含 intent
+                try {
+                    JsonNode extractedNode = objectMapper.readTree(extracted);
+                    if (extractedNode.has("intent")) {
+                        log.info("traceId={} successfully extracted json block at depth {}", traceId, depth);
+                        return extracted;
+                    }
+                } catch (Exception ex) {
+                    log.debug("traceId={} extracted block validation failed", traceId);
+                }
+
+                return extracted;
+            }
+        }
+
+        // 达到最大层数，返回当前结果
+        log.warn("traceId={} reached max depth (3), returning current result", traceId);
+        return current;
+    }
+
+    /**
+     * 从文本中提取 JSON 块（居中匹配第一个 { 到最后一个 }）
+     * 支持 Markdown 代码块格式
+     *
+     * @param text 原始文本
+     * @return 提取的 JSON 字符串
+     */
+    private String extractJsonBlockFromText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return text;
+        }
+
+        String trimmed = text.trim();
+
+        // 尝试去除 Markdown 代码块标记
+        if (trimmed.startsWith("json")) { trimmed = trimmed.substring(7); } else if (trimmed.startsWith("\n")) {
+            trimmed = trimmed.substring(3);
+        }
+        if (trimmed.endsWith("\n")) { trimmed = trimmed.substring(0, trimmed.length() - 3); }
+        trimmed = trimmed.trim();
+
+        // 提取第一个 { 到最后一个 }
+        int start = trimmed.indexOf('{');
+        int end = trimmed.lastIndexOf('}');
+
+        if (start >= 0 && end > start) {
+            String candidate = trimmed.substring(start, end + 1);
+            try {
+                objectMapper.readTree(candidate); // 验证合法性
+                log.debug("successfully extracted json block from text");
+                return candidate;
+            } catch (Exception e) {
+                log.debug("extracted json block is invalid: {}", e.getMessage());
+            }
+        }
+
+        return trimmed;
+    }
+
+    public static void main(String[] args) {
+        IntentParser parser = new IntentParser();
+        String test = "{\"output\": \"{\\\"output\\\": \\\"{\\\\\\\"intent\\\\\\\": \\\\\\\"data_query\\\\\\\"}\\\"}\"}";
+        IntentResult result = parser.parse(test, "test-trace-id");
+        System.out.println(result.getIntent());
     }
 }

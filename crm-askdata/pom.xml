@@ -67,6 +67,13 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- JSONPath 用于解析 JSON 响应 -->
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>2.8.0</version>
+        </dependency>
+
         <!-- Configuration Processor -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
