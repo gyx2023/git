@@ -6,7 +6,6 @@ import com.crm.askdata.service.HiAgentConversationManager;
 import com.crm.askdata.service.RouterService;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
-import com.crm.common.helper.LoginHelper;
 import com.crm.common.utils.TraceIdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,17 +40,11 @@ public class AskDataController extends BaseController {
      * 消息类型： text / chart / clarify / error / end
      *
      * @param query          用户提问
-     * @param sessionId      会话 ID（多轮对话时传入）
-     * @param sessionVersion 会话版本
-     * @param traceId        预留，如不传则自动从 MDC 取
      * @return SseEmitter
      */
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
-        @RequestParam String query,
-        @RequestParam(required = false) String sessionId,
-        @RequestParam(required = false) Long sessionVersion,
-        @RequestParam(required = false) String traceId
+        @RequestParam String query
     ) {
         String resolvedTraceId = TraceIdUtil.getTraceId();
         String resolvedSessionId = TraceIdUtil.getSessionId();
@@ -70,7 +63,7 @@ public class AskDataController extends BaseController {
         emitter.onError(e -> log.error("sse emitter error", e));
 
         routerService.processStream(query, resolvedTraceId, resolvedSessionId,
-            sessionVersion, userId, emitter);
+            userId, emitter);
 
         return emitter;
     }
@@ -93,7 +86,6 @@ public class AskDataController extends BaseController {
             request.getQuery(),
             traceId,
             sessionId,
-            request.getSessionVersion(),
             userId
         );
 
