@@ -48,7 +48,7 @@ public class ToolCallExecutor implements QueryExecutor {
 
     @Override
     @CircuitBreaker(name = "toolCall", fallbackMethod = "fallbackExecute")
-    public QueryResult execute(IntentResult intent, String traceId) {
+    public QueryResult execute(IntentResult intent, String sessionId, String traceId) {
         String toolName = intent != null ? intent.getToolName() : null;
         long startTime = System.currentTimeMillis();
 
@@ -92,9 +92,6 @@ public class ToolCallExecutor implements QueryExecutor {
             }
 
             // ========== 第四步：调用次数限制 ==========
-            String sessionId = intent.getSessionVersion() != null
-                ? "session_" + intent.getSessionVersion()
-                : null;
             callLimiter.checkLimit(toolName, sessionId);
 
             // ========== 第五步：权限校验 ==========
@@ -159,7 +156,7 @@ public class ToolCallExecutor implements QueryExecutor {
      * @param e       触发降级的异常
      * @return 降级结果
      */
-    public QueryResult fallbackExecute(IntentResult intent, String traceId, Throwable e) {
+    public QueryResult fallbackExecute(IntentResult intent, String sessionId, String traceId, Throwable e) {
         String toolName = intent != null ? intent.getToolName() : "unknown";
         log.warn("traceId={} tool call circuit breaker triggered, fallback: tool={}, error={}",
             traceId, toolName, e.getMessage());

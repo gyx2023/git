@@ -23,5 +23,5 @@ public interface QueryExecutor {
      * @param traceId      链路追踪 ID
      * @return 查询结果
      */
-    QueryResult execute(IntentResult intentResult, String traceId);
+    QueryResult execute(IntentResult intentResult, String sessionId, String traceId);
 }

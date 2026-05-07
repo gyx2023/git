@@ -66,7 +66,7 @@ public class RouterService {
      * SSE 流式接口（异步）
      */
     public void processStream(String query, String traceId, String sessionId,
-                              Long sessionVersion, String userId, SseEmitter emitter) {
+                              String userId, SseEmitter emitter) {
         sseExecutor.execute(() -> {
             long startTime = System.currentTimeMillis();
             String messageId = traceId + "_" + System.currentTimeMillis();
@@ -75,7 +75,7 @@ public class RouterService {
                 sendSseEvent(emitter, SseMessage.text(traceId, messageId, "正在识别意图...", 0.0));
 
                 // 核心流程：统一调用内部方法
-                QueryResult result = processInternal(query, traceId, sessionId, sessionVersion, userId, startTime);
+                QueryResult result = processInternal(query, traceId, sessionId, userId, startTime);
 
                 // SSE 特有：流式推送结果
                 streamResultToClient(result, traceId, messageId, emitter, startTime);
@@ -91,10 +91,10 @@ public class RouterService {
      * 同步接口
      */
     public QueryResult process(String query, String traceId, String sessionId,
-                               Long sessionVersion, String userId) {
+                               String userId) {
         long startTime = System.currentTimeMillis();
         try {
-            return processInternal(query, traceId, sessionId, sessionVersion, userId, startTime);
+            return processInternal(query, traceId, sessionId, userId, startTime);
         } catch (Exception e) {
             log.error("sync processing failed", e);
             clearSessionLock(sessionId, traceId);
@@ -110,7 +110,7 @@ public class RouterService {
      * @return QueryResult（可能包含澄清提示或最终结果）
      */
     private QueryResult processInternal(String query, String traceId, String sessionId,
-                                        Long sessionVersion, String userId, long startTime) {
+                                        String userId, long startTime) {
         // 阶段1：意图识别
         IntentRecognitionResult intentRecog = recognizeIntent(query, sessionId, userId, traceId);
 
@@ -129,19 +129,16 @@ public class RouterService {
         // 阶段3：状态转换（CLARIFYING → EXECUTING）
         transitionToExecuting(sessionId, intentRecog.intentResult, traceId);
 
-        // 阶段4：版本校验
-        validateSessionVersion(sessionId, sessionVersion, traceId);
-
-        // 阶段5：路由决策
+        // 阶段4：路由决策
         RoutingDecision decision = makeRoutingDecision(
-            intentRecog.intentResult, query, sessionId, sessionVersion, userId, traceId);
+            intentRecog.intentResult, query, sessionId, userId, traceId);
         auditLogger.logDecisionReasoning(decision);
 
-        // 阶段6：执行查询
-        QueryResult result = executeQuery(decision, traceId);
+        // 阶段5：执行查询
+        QueryResult result = executeQuery(decision, sessionId, traceId);
         result.setLatencyMs(System.currentTimeMillis() - startTime);
 
-        // 阶段7：清理会话状态
+        // 阶段6：清理会话状态
         resetSessionAfterCompletion(sessionId, traceId);
 
         return result;
@@ -354,7 +351,7 @@ public class RouterService {
      * 阶段5：路由决策
      */
     private RoutingDecision makeRoutingDecision(IntentResult intent, String query,
-                                                String sessionId, Long sessionVersion,
+                                                String sessionId,
                                                 String userId, String traceId) {
         long start = System.currentTimeMillis();
 
@@ -373,7 +370,7 @@ public class RouterService {
         // 应用简化的兜底逻辑
         applyStrategyLockFallback(session, intent, traceId);
 
-        RoutingDecision decision = decideStrategy(intent, query, session, traceId, sessionId, sessionVersion, userId);
+        RoutingDecision decision = decideStrategy(intent, query, session, traceId, sessionId, userId);
 
         long latency = System.currentTimeMillis() - start;
         decision.setDecisionLatencyMs(latency);
@@ -403,13 +400,13 @@ public class RouterService {
     /**
      * 阶段6：执行查询（带回退机制）
      */
-    private QueryResult executeQuery(RoutingDecision decision, String traceId) {
+    private QueryResult executeQuery(RoutingDecision decision, String sessionId,String traceId) {
         try {
             // 改造后：增加后端兜底校验，防止 Agent 跳过必要的追问
             validateParametersBeforeExecute(decision.getIntentResult(), traceId);
 
             QueryExecutor executor = getExecutor(decision.getStrategy());
-            QueryResult result = executor.execute(decision.getIntentResult(), traceId);
+            QueryResult result = executor.execute(decision.getIntentResult(), sessionId, traceId);
 
             if (result.isSuccess()) {
                 decision.markIrreversible();
@@ -418,11 +415,11 @@ public class RouterService {
             return result;
         } catch (Exception e) {
             if (decision.canRetry()) {
-                log.warn("xecution failed, retrying... count={}",
+                log.warn("excution failed, retrying... count={}",
                     decision.getRetryCount());
                 decision.incrementRetry();
                 decision.setStrategy(RoutingStrategy.FALLBACK_KB);
-                return executeQuery(decision, traceId);
+                return executeQuery(decision, sessionId, traceId);
             } else {
                 log.error("execution failed, max retries exceeded", e);
                 return QueryResult.fail(decision.getStrategy().name(),
@@ -607,7 +604,7 @@ public class RouterService {
      */
     public RoutingDecision decideStrategy(IntentResult intent, String originalQuery,
                                           ConversationSession session,
-                                          String traceId, String sessionId, Long sessionVersion, String userId) {
+                                          String traceId, String sessionId,String userId) {
         double confidence = intent != null ? intent.getConfidenceSafe() : 0.0;
         String intentType = intent != null && intent.getIntent() != null
             ? intent.getIntent().toLowerCase() : "unknown";
@@ -622,7 +619,6 @@ public class RouterService {
         RoutingDecision decision = new RoutingDecision();
         decision.setTraceId(traceId);
         decision.setSessionId(sessionId);
-        decision.setSessionVersion(sessionVersion);
         decision.setIntentResult(intent);
 
         List<String> candidates = new ArrayList<>();
