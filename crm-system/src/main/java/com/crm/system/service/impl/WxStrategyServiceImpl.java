@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,8 +64,20 @@ public class WxStrategyServiceImpl implements WxStrategyService {
     }
 
     @Override
-    public  List<WorkOrderDTO>  queryWorkOrder(String orderType, String yyMMdd) {
-        return toppOrderMapper.queryWorkOrder(orderType, yyMMdd);
+    public List<WorkOrderDTO> queryWorkOrder(String orderType, String ymd) {
+        return toppOrderMapper.queryWorkOrder(orderType, ymd);
+    }
+
+    @Override
+    public String queryCustCount(String orderType, String ymd) {
+        String date = ymd + " 23:59:59";
+        return toppOrderMapper.getToppOrderCount(orderType, date).toString();
+    }
+
+    @Override
+    public String queryOrderCount(String orderType, String ymd) {
+        String date = ymd + " 23:59:59";
+        return toppOrderMapper.countByOrderTypeAndDate(orderType, date).toString();
     }
 
 

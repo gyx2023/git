@@ -25,4 +25,12 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
     List<ToppOrder> selectSupportOrders();
 
     List<WorkOrderDTO> queryWorkOrder(@Param("orderType") String orderType, @Param("yyMMdd") String yyMMdd);
+
+    Integer getToppOrderCount(@Param("orderType") String orderType,
+                              @Param("endTime") String endTime);
+
+    Integer countByOrderTypeAndDate(
+        @Param("orderType") String orderType,
+        @Param("date") String date
+    );
 }

@@ -155,5 +155,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         AND to2.create_time &lt;= CONCAT(#{yyMMdd}, ' 23:59:59')
     </select>
 
+    <select id="getToppOrderCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM topp_order to2
+        WHERE order_type = #{orderType}
+          AND create_time >= '2024-01-01 00:00:00'
+          AND create_time &lt;= #{endTime}
+    </select>
 
+    <select id="countByOrderTypeAndDate" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM topp_order to2
+        WHERE order_type = #{orderType}
+          AND create_time >= '2024-01-01 00:00:00'
+          AND create_time &lt;= #{date}
+    </select>
 </mapper>

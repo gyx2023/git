@@ -9,4 +9,8 @@ import java.util.Map;
 public interface WxStrategyService {
     Map<String, JSONObject> queryStrategyInfo();
     List<WorkOrderDTO>  queryWorkOrder(String orderType, String yyMMdd);
+
+    String queryCustCount(String orderType, String yyMMdd);
+
+    String queryOrderCount(String orderType, String yyMMdd);
 }
