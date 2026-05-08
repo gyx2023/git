@@ -33,4 +33,12 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
         @Param("orderType") String orderType,
         @Param("date") String date
     );
+
+    /**
+     * 查询闭环工单数量
+     */
+    Integer queryClosedOrderCount(
+        @Param("orderType") String orderType,
+        @Param("date") String date
+    );
 }

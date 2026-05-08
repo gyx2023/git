@@ -170,4 +170,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND create_time >= '2024-01-01 00:00:00'
           AND create_time &lt;= #{date}
     </select>
+
+    <select id="queryClosedOrderCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM topp_order to2
+        WHERE order_type = #{orderType}
+          AND create_time >= '2024-01-01 00:00:00'
+          AND create_time &lt;= #{date}
+          AND status_ = 'end'
+    </select>
 </mapper>

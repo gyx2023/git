@@ -1,20 +1,12 @@
 package com.crm.job.utils;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
+import com.amazonaws.util.IOUtils;
+import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -26,7 +18,7 @@ import java.util.Vector;
  */
 @Slf4j
 @Component
-public class SftpWebUtil {
+public class SftpWebUtil implements AutoCloseable {
 
     private ChannelSftp sftp;
     private Session session;
@@ -42,7 +34,7 @@ public class SftpWebUtil {
     /** SFTP 端口 */
     private int port;
 
-    // -------------------------- 构造器（保留原有） --------------------------
+    // -------------------------- 构造器 --------------------------
     public SftpWebUtil(String username, String password, String host, int port) {
         this.username = username;
         this.password = password;
@@ -57,15 +49,11 @@ public class SftpWebUtil {
         this.privateKey = privateKey;
     }
 
-    public SftpWebUtil() {}
+    public SftpWebUtil() {
+    }
 
-    // -------------------------- 【重点】从数据库配置创建实例 --------------------------
-    /**
-     * 从 sys_param 数据库加载 ftp_xxx 配置，创建 SFTP 实例
-     * @param configType 配置类型：tc_wx_strategy
-     */
+    // -------------------------- 从数据库配置创建实例 --------------------------
     public static SftpWebUtil createByDbConfig(String configType) {
-        // 这里复用你之前 SftpUtil 的数据库读取逻辑（直接调即可）
         SftpUtil sftpUtil = new SftpUtil();
         sftpUtil.setActiveConfigType(configType);
 
@@ -77,25 +65,37 @@ public class SftpWebUtil {
         return new SftpWebUtil(username, password, host, port);
     }
 
-    // -------------------------- 连接/关闭 --------------------------
+    // -------------------------- 连接 / 关闭 --------------------------
     public void login() {
+        if (session != null && session.isConnected()) {
+            log.debug("SFTP 已连接，无需重复登录");
+            return;
+        }
+
         try {
             JSch jsch = new JSch();
             if (privateKey != null) {
                 jsch.addIdentity(privateKey);
             }
+
             session = jsch.getSession(username, host, port);
             log.info("SFTP 开始登录：host={}, port={}, username={}", host, port, username);
+
             if (password != null) {
                 session.setPassword(password);
             }
+
             Properties config = new Properties();
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
-            session.connect(5000); // 超时5秒
+
+            // 连接超时 5s
+            session.connect(5000);
+
             Channel channel = session.openChannel("sftp");
             channel.connect(5000);
             sftp = (ChannelSftp) channel;
+
             log.info("SFTP 登录成功");
         } catch (JSchException e) {
             log.error("SFTP 登录失败：{}", e.getMessage(), e);
@@ -103,61 +103,54 @@ public class SftpWebUtil {
         }
     }
 
+    /**
+     * 登出并释放资源（安全关闭）
+     */
     public void logout() {
         if (sftp != null && sftp.isConnected()) {
             sftp.disconnect();
+            log.debug("sftp channel 已断开");
         }
         if (session != null && session.isConnected()) {
             session.disconnect();
+            log.debug("ssh session 已断开");
         }
-        log.info("SFTP 连接已关闭");
+        log.info("SFTP 连接已完全关闭");
     }
 
-    // -------------------------- 上传（适配你数据库的 ftp_directory） --------------------------
-    /**
-     * 上传文件（自动使用数据库配置的 ftp_directory）
-     * @param sftpFileName 远程文件名
-     * @param input 输入流
-     */
-    public void upload(String basePath,String directory, String sftpFileName, InputStream input) throws SftpException{
+    // -------------------------- 上传文件（自动创建目录） --------------------------
+    public void upload(String basePath, String directory, String sftpFileName, InputStream input) throws SftpException {
+        if (sftp == null || !sftp.isConnected()) {
+            throw new IllegalStateException("SFTP 未连接，请先调用 login()");
+        }
+
         try {
             sftp.cd(basePath);
             sftp.cd(directory);
         } catch (SftpException e) {
-            //目录不存在，则创建文件夹
-            String [] dirs=directory.split("/");
-            String tempPath=basePath;
-            for(String dir:dirs){
-                if(null== dir || "".equals(dir)) continue;
-                tempPath+="/"+dir;
-                try{
+            // 目录不存在 → 递归创建
+            String[] dirs = directory.split("/");
+            String tempPath = basePath;
+            for (String dir : dirs) {
+                if (ObjectUtil.isEmpty(dir)) {
+                    continue;
+                }
+                tempPath += "/" + dir;
+                try {
                     sftp.cd(tempPath);
-                }catch(SftpException ex){
+                } catch (SftpException ex) {
                     sftp.mkdir(tempPath);
                     sftp.cd(tempPath);
+                    log.debug("创建SFTP目录：{}", tempPath);
                 }
             }
         }
-        sftp.put(input, sftpFileName);  //上传文件
+
+        sftp.put(input, sftpFileName);
+        log.info("SFTP 文件上传成功：{}", sftpFileName);
     }
 
-    // 递归创建目录
-    private void mkdirs(String dir) throws SftpException {
-        String[] dirs = dir.split("/");
-        String temp = "";
-        for (String d : dirs) {
-            if (ObjectUtil.isEmpty(d)) continue;
-            temp += "/" + d;
-            try {
-                sftp.cd(temp);
-            } catch (SftpException e) {
-                sftp.mkdir(temp);
-                sftp.cd(temp);
-            }
-        }
-    }
-
-    // -------------------------- 下载 --------------------------
+    // -------------------------- 下载文件 --------------------------
     public void download(String directory, String downloadFile, String saveFile) throws SftpException, IOException {
         if (ObjectUtil.isNotEmpty(directory)) {
             sftp.cd(directory);
@@ -184,7 +177,7 @@ public class SftpWebUtil {
         return sftp.get(fullName);
     }
 
-    // -------------------------- 删除/重命名/列表/存在性判断 --------------------------
+    // -------------------------- 文件操作 --------------------------
     public void delete(String directory, String deleteFile) throws SftpException {
         sftp.cd(directory);
         sftp.rm(deleteFile);
@@ -208,8 +201,17 @@ public class SftpWebUtil {
         }
     }
 
-    // -------------------------- 对外获取连接（可选） --------------------------
+    // -------------------------- getter --------------------------
     public ChannelSftp getSftp() {
         return sftp;
+    }
+
+    /**
+     * 【关键】AutoCloseable 自动关闭
+     * 配合 try-with-resources 自动调用 logout()
+     */
+    @Override
+    public void close() {
+        logout();
     }
 }

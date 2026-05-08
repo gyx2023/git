@@ -80,5 +80,15 @@ public class WxStrategyServiceImpl implements WxStrategyService {
         return toppOrderMapper.countByOrderTypeAndDate(orderType, date).toString();
     }
 
+    @Override
+    public String queryClosedOrderCount(String orderType, String ymd) {
+        // 1. 参数拼接日期
+        String date = ymd + " 23:59:59";
+
+        // 2. 调用 MyBatis 查询
+        Integer count = toppOrderMapper.queryClosedOrderCount(orderType, date);
+        return count.toString();
+    }
+
 
 }

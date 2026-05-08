@@ -13,4 +13,6 @@ public interface WxStrategyService {
     String queryCustCount(String orderType, String yyMMdd);
 
     String queryOrderCount(String orderType, String yyMMdd);
+
+    String queryClosedOrderCount(String orderType, String yyMMdd);
 }
