@@ -74,4 +74,5 @@ public interface IToppOpportunityService {
 
     List<SignOppoFileExportDTO> selectOpportunityUnbound();
 
+    List<ToppOpportunityVo> queryOpportunityByCreateTime(String bfStartTime, String bfEndTime);
 }
