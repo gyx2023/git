@@ -30,7 +30,7 @@ public class CustTRosterNatureRelationJob {
     private RedissonClient redissonClient;
 
     /** 每批次插入条数 */
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 1000;
 
     @XxlJob("custTRosterNatureRelationJob")
     public void syncOppoUnbound() {
@@ -60,7 +60,9 @@ public class CustTRosterNatureRelationJob {
 
             for (CustRosterCustomerNatureMemberProvinceDo source : dataList) {
                 // 对象拷贝
-                CustTRosterCustomerNatureMemberProvinceDo target = BeanCopyUtils.copy(source, CustTRosterCustomerNatureMemberProvinceDo.class);
+                CustTRosterCustomerNatureMemberProvinceDo target = new CustTRosterCustomerNatureMemberProvinceDo();
+                target.setNatureCustId(source.getNatureCustId().toString());
+                target.setRosterCustomerId(source.getRosterCustomerId().toString());
                 batchList.add(target);
 
                 // 达到批次大小 → 批量插入
