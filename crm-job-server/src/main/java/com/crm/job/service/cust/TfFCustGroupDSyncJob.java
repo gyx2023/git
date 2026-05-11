@@ -56,7 +56,7 @@ public class TfFCustGroupDSyncJob {
     /**
      * 默认提前天数
      */
-    private static final int DEFAULT_DAYS_BEFORE = 2;
+    private static final int DEFAULT_DAYS_BEFORE = 1;
     /**
      * 布尔字符串true
      */
@@ -89,6 +89,10 @@ public class TfFCustGroupDSyncJob {
      * XXL传递是否入库参数
      */
     private static final String IS_IN_GRP = "isInGrp";
+    /**
+     * XXL传递T-x账期参数
+     */
+    private static final String DEFAULT_DAYS_BEFORE_STR = "defaultDaysBefore";
 
     private final Map<String, String> cityMap = new HashMap<>();
 
@@ -126,7 +130,8 @@ public class TfFCustGroupDSyncJob {
      * 1. 仅配置类型：configType: - 指定配置类型，使用当前日期 - 例：grp_group_info_syn
      * 2. 单日期参数：targetDate：yyyyMMdd - 指定日期 - 例：20260228
      * 3. 否入库zqzt_grp_group_info表：isInGrp：isInGrp - 指定是否入库 - 例：true
-     * 参数样例：{"configType": "zqzt_cust_group_syn", "targetDate": "20260228", "isInGrp": "true"}
+     * 4. T-x账期：defaultDaysBefore： - 指定读取T-x账期，且传递账期不为负数 - 例：1
+     * 参数样例：{"configType": "zqzt_cust_group_syn", "targetDate": "20260228", "isInGrp": "true", defaultDaysBefore: "1"}
      */
     @XxlJob("tfFCustGroupDSyncJobHandler")
     public void execute() {
@@ -147,6 +152,7 @@ public class TfFCustGroupDSyncJob {
         String sftpConfigType = JF_COMMON_FTP; // 默认配置类型
         Date targetDate = DateUtils.parseDate(DateUtils.getBeforeNDays(DEFAULT_DAYS_BEFORE)); // 默认T-2账期
         boolean isInGrp = false; // 默认是否入库类型
+        int defaultDaysBefore = DEFAULT_DAYS_BEFORE;// 默认T-x账期
 
         // 获取定时任务传入参数
         String jobStr = XxlJobHelper.getJobParam();
@@ -162,6 +168,8 @@ public class TfFCustGroupDSyncJob {
 
             // 指定日期
             String targetDateStr = json.getStr(TARGET_DATE, "");
+            // 指定获取T-x日期
+            int defaultDaysBeforeInt = json.getInt(DEFAULT_DAYS_BEFORE_STR, -1);
             if (StringUtils.isNotBlank(targetDateStr)) {
                 try {
                     targetDate = DateUtils.dateTime(SIMPLE_DATE_FORMAT, targetDateStr);
@@ -169,6 +177,15 @@ public class TfFCustGroupDSyncJob {
                 } catch (Exception e) {
                     log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", targetDateStr, e.getMessage());
                     XxlJobHelper.log("日期参数格式错误，使用当前日期");
+                }
+            } else if (defaultDaysBeforeInt > -1) {
+                try {
+                    defaultDaysBefore = defaultDaysBeforeInt;
+                    targetDate = DateUtils.parseDate(DateUtils.getBeforeNDays(defaultDaysBefore)); // 传参T-x账期
+                    log.info("成功解析T-" + defaultDaysBeforeInt + "日期参数: {}", DateUtils.parseDateToStr(SIMPLE_DATE_FORMAT, targetDate));
+                } catch (Exception e) {
+                    log.warn("日期参数格式错误，使用当前日期。参数: {}, 错误: {}", defaultDaysBeforeInt, e.getMessage());
+                    XxlJobHelper.log("解析T-x参数错误，使用当前T-1日期");
                 }
             }
 
@@ -179,7 +196,8 @@ public class TfFCustGroupDSyncJob {
                 log.info("使用指定的否入库类型: {}", isInGrp);
             }
         }
-        log.info("数据参数：1.配置类型：{}, 2.日期参数：{}, 3.是否入库：{}", sftpConfigType, DateUtils.parseDateToStr(SIMPLE_DATE_FORMAT, targetDate), isInGrp);
+        log.info("数据参数：1.配置类型：{}, 2.日期参数：{}, 3.是否入库：{}, T-x账期:{}",
+            sftpConfigType, DateUtils.parseDateToStr(SIMPLE_DATE_FORMAT, targetDate), isInGrp, defaultDaysBefore);
 
 
         try {
@@ -347,6 +365,8 @@ public class TfFCustGroupDSyncJob {
             newGroup.setIndustryDetailKind(custGroup.getThirdCallingTypeCode());
             newGroup.setGrpCustType(custGroup.getCustClassType());
             newGroup.setGrpLevel(CustStateEnum.CUST_STATE_2.getCode().equals(custGroup.getCustState()) ? GRP_LEVEL_IDENTIFIER : null);
+            //资料创建人
+            newGroup.setGrpCreator(custGroup.getCreateOaUserCode());
 
             // 转换字符串日期为Date类型
             if (StringUtils.isNotBlank(custGroup.getCreateDate())) {
@@ -492,4 +512,31 @@ public class TfFCustGroupDSyncJob {
         return sb.toString();
     }
 
+    /**
+     * tf_f_cust_group_d表的cust_class_type字段同步到zqzt_grp_group_info表的GRP_CUST_TYPE字段映射
+     * 转换集团客户类型
+     * 1 -> 600 (普通客户)
+     * 2 -> 500 (中小企业客户)
+     * 3 -> 400 (大客户)
+     *
+     * @param custClassType 客户分类类型
+     * @return 集团客户类型编码
+     */
+    private String convertGrpCustType(String custClassType) {
+        if (StringUtils.isBlank(custClassType)) {
+            return null;
+        }
+
+        switch (custClassType) {
+            case "1":
+                return "600"; // 普通客户
+            case "2":
+                return "500"; // 中小企业客户
+            case "3":
+                return "400"; // 大客户
+            default:
+                log.warn("未知的客户分类类型: {}", custClassType);
+                return custClassType; // 未知类型保留原值
+        }
+    }
 }

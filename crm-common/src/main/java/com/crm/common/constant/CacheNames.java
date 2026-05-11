@@ -80,4 +80,8 @@ public interface CacheNames {
      */
     String SYS_PARAM_CACHE = "SYS_PARAM_CACHE";
 
+    /**
+     * rpa映射表参数
+     */
+    String ZQZT_RPA_FORM_MAPPING = "zqzt_rpa_form_mapping";
 }

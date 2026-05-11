@@ -18,23 +18,13 @@ public class CustomerManagerImportResultVo {
     @ExcelProperty(value = "总部集团编码")
     private String hqGrpCode;
 
-    /**
-     * 省级客户经理OA
-     */
-    @ExcelProperty(value = "省级客户经理OA")
-    private String provManagerOauser;
 
     /**
-     * 市级客户经理OA
+     * 实体客户经理OA账号
      */
-    @ExcelProperty(value = "市级客户经理OA")
-    private String cityManagerOauser;
+    @ExcelProperty(value = "实体客户经理OA账号")
+    private String custManagerOauser;
 
-    /**
-     * 区县级客户经理OA
-     */
-    @ExcelProperty(value = "区县级客户经理OA")
-    private String countyManagerOauser;
 
     /**
      * 处理结果

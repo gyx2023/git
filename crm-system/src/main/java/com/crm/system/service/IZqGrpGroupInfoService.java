@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDictData;
@@ -26,6 +27,11 @@ public interface IZqGrpGroupInfoService {
     ZqGrpGroupInfoVo queryById(Long grpId);
 
     /**
+     * 查询政企集团客户信息（不脱敏）
+     */
+    ZqGrpGroupInfo queryByIdWithoutSensitive(Long grpId);
+
+    /**
      * 根据总部集团编码查询政企集团客户信息
      *
      * @param hqGrpCode 总部集团编码
@@ -37,7 +43,12 @@ public interface IZqGrpGroupInfoService {
      * 查询政企集团客户信息列表
      */
     TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery);
-    TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
+    //TableDataInfo<ZqGrpGroupInfoVo> queryPageList(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
+
+    /**
+     * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
+     */
+    TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd);
 
     /**
      * 根据areaCode查询政企集团客户信息列表（用于异步任务导出）
@@ -65,7 +76,7 @@ public interface IZqGrpGroupInfoService {
      * @param areaCode 区域代码
      * @return 政企集团客户信息列表
      */
-    List<ZqGrpGroupInfoVo> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode);
+    List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode);
 
     /**
      * 新增政企集团客户信息
