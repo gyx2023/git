@@ -2,6 +2,7 @@ package com.crm.job.service.file;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.core.domain.dto.OpportunityDTO;
+import com.crm.common.enums.RedisKeyConstants;
 import com.crm.job.utils.FilePath;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.service.ISysParamService;
@@ -11,6 +12,8 @@ import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -20,9 +23,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
- * 商机数据推送Job
+ * 温州商机数据推送
  *
  * @author yn
  * date 2021/5/26 10:21
@@ -33,27 +37,44 @@ public class WzToppOpportunityPutJob {
     private static final Log log = LogFactory.getLog(WzToppOpportunityPutJob.class);
 
     @Resource
-    ISysParamService sysParamService;
+    private ISysParamService sysParamService;
     @Resource
-    protected IToppOpportunityService opportunityService;
+    private IToppOpportunityService opportunityService;
+    @Resource
+    private RedissonClient redissonClient;
 
     /**
      * 每日凌晨1点
      */
     @XxlJob(value = "WzToppOpportunityPutJob")
     public void start() {
-        //获取昨天的日期
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, -1);
-        Date d = cal.getTime();
-        SimpleDateFormat sp = new SimpleDateFormat("yyyyMMdd");
-        String yesterday = sp.format(d);
+        String redisKey = RedisKeyConstants.WZ_TOPP_OPPORTUNITY_PUT_TASK;
+        RLock lock = redissonClient.getLock(redisKey);
+        try {
+            // 加分布式锁，防止多节点重复执行
+            lock.lock(RedisKeyConstants.MAX_LOCK_TIME, TimeUnit.SECONDS);
+            //获取昨天的日期
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DATE, -1);
+            Date d = cal.getTime();
+            SimpleDateFormat sp = new SimpleDateFormat("yyyyMMdd");
+            String yesterday = sp.format(d);
 
-        String jobparam = XxlJobHelper.getJobParam();
-        if (ObjectUtil.isNotEmpty(jobparam)) {
-            yesterday = jobparam;
+            String jobparam = XxlJobHelper.getJobParam();
+            if (ObjectUtil.isNotEmpty(jobparam)) {
+                yesterday = jobparam;
+            }
+            creatFile(yesterday);
+        } catch (Exception e) {
+            log.error("【温州商机数据推送】任务执行异常", e);
+            throw new RuntimeException("同步任务异常", e);
+        } finally {
+            // 释放锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.info("【温州商机数据推送】分布式锁已释放");
+            }
         }
-        creatFile(yesterday);
     }
 
     public void creatFile(String yesterday) {

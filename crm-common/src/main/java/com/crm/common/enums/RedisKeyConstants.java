@@ -27,4 +27,5 @@ public interface RedisKeyConstants {
 
     String CUST_TROSTER_NATURE_RELATION_TASK= PREFIX + "cust:roster:nature:relation:task";
 
+    String WZ_TOPP_OPPORTUNITY_PUT_TASK = PREFIX + "wz:topp:opportunity:put:task";
 }

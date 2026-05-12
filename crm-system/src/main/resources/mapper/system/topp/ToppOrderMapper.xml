@@ -84,7 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ctnr.nature_cust_id custom_id,
         to2.cust_name custom_name,
         to2.create_time gmt_create,
-        case to2.status_ when 'running' then '' else to2.update_time end back_time,
+        case to2.status_ when 'running' then NULL else to2.update_time end back_time,
         LEFT(to2.area_id , 4) as areaId,
 
         <choose>
@@ -98,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 '' as buildId,
                 '' as buildName,
                 '' as category,
-                '' as business_end_date
+                null as business_end_date
             </otherwise>
         </choose>
 

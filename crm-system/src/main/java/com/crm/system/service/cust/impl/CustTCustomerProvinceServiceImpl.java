@@ -19,10 +19,7 @@ public class CustTCustomerProvinceServiceImpl implements CustTCustomerProvinceSe
         String customerProperty = "2";
         List<String> list=  custTCustomerProvinceMapper.getCustomerProperty(natureCustId);
         if (ObjectUtil.isNotEmpty(list)) {
-            String majorFlag = list.get(0);
-            if ("1".equals(majorFlag)) {
-                customerProperty = "1";
-            }
+            customerProperty = list.get(0);
         }
         return customerProperty;
     }

@@ -18,10 +18,13 @@ import javax.annotation.Resource;
 import java.io.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 维系策略任务文件下发 Job
+ *
  * @Author: gaoyy
  * @DateTime: 2023/04/01 17:55
  */
@@ -85,6 +88,7 @@ public class WxStrategyJob {
 
     // 地市编码映射
     public static final Map<String, String> COUNTRY_CODE_MAP;
+
     static {
         COUNTRY_CODE_MAP = new HashMap<>();
         COUNTRY_CODE_MAP.put("3300", "");
@@ -187,6 +191,7 @@ public class WxStrategyJob {
                 ftpUtil.login();
                 ftpUtil.upload("/", ftDirectory, fileName, input);
                 log.info("任务工单文件上传成功：" + fileName);
+                ftpUtil.close();
             }
         } catch (Exception e) {
             log.error("任务工单文件下发异常", e);
@@ -209,6 +214,7 @@ public class WxStrategyJob {
                 ftpUtil.login();
                 ftpUtil.upload("/", ftDirectory, fileName, input);
                 log.info("策略主文件上传成功：" + fileName);
+                ftpUtil.close();
             }
         } catch (Exception e) {
             log.error("策略主文件下发异常", e);
@@ -231,6 +237,7 @@ public class WxStrategyJob {
                 ftpUtil.login();
                 ftpUtil.upload("/", ftDirectory, fileName, input);
                 log.info("策略监控文件上传成功：" + fileName);
+                ftpUtil.close();
             }
         } catch (Exception e) {
             log.error("策略监控文件下发异常", e);
