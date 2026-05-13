@@ -6,15 +6,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.HaoKaoSignUtil;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.PolicyCenterProduct;
-import com.crm.system.domain.PolicyCenterTask;
-import com.crm.system.domain.SysLog;
-import com.crm.system.domain.SysUsers;
+import com.crm.system.domain.*;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.ISysLogService;
 import com.crm.system.service.ISysParamService;
 import com.crm.system.service.PolicyCenterProductService;
 import com.crm.system.service.PolicyCenterTaskService;
+import com.crm.system.service.FtpCustBaseInfoNewService;
+import com.crm.system.service.send.ISendDMessageService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +62,12 @@ public class PolicyCenterTaskJob {
 
     @Resource
     private ISysParamService sysParamService;
+
+    @Resource
+    private ISendDMessageService sendDMessageService;
+
+    @Resource
+    private FtpCustBaseInfoNewService ftpCustBaseInfoNewService;
 
     // 缓存配置参数
     private String POLICY_CENTER_GET_TASK_URL;
@@ -422,8 +427,8 @@ public class PolicyCenterTaskJob {
             }
         }
         log.info("策略任务有错误，发送错误短信内容:{}", msg);
-        // TODO: 实现短信发送逻辑
-        // sendDMessageService.initNoticeMessage(userIds, msg);
+        //实现短信发送逻辑
+        sendDMessageService.initNoticeMessage(userIds, msg);
     }
 
     /**
@@ -503,9 +508,51 @@ public class PolicyCenterTaskJob {
                 policyCenterTask.setIsListCust(item.get("CUST_LABEL_ATTR_NAME"));
             }
         }
-        // TODO: 需要实现saveCustBaseNewInfo逻辑
-        // saveCustBaseNewInfo(policyCenterTask);
+        saveCustBaseNewInfo(policyCenterTask);
         policyCenterTaskService.updateById(policyCenterTask);
+    }
+
+    /**
+     * 保存客户基础信息
+     */
+    public FtpCustBaseInfoNew saveCustBaseNewInfo(PolicyCenterTask policyCenterTask) {
+        SysUsers su = null;
+        if (policyCenterTask.getMangerId() != null) {
+            su = sysUsersMapper.selectById(policyCenterTask.getMangerId().longValue());
+        }
+
+        if (su == null) {
+            log.error("策略任务保存客户基础信息失败，无此用户");
+            return null;
+        }
+
+        String custNo = String.valueOf(policyCenterTask.getCustId());
+        // 客户名称
+        String custName = policyCenterTask.getCustName();
+        // 客户行业
+        String unicomType = policyCenterTask.getCustIndustry();
+        // 判断是否存在新客户表中，不存在就新建
+        String custType = policyCenterTask.getCustType();
+
+        FtpCustBaseInfoNew custBaseNewInfo = ftpCustBaseInfoNewService.getCustBaseNewInfo(su, custName, custNo);
+
+        if (custBaseNewInfo == null) {
+            if (StringUtils.isEmpty(custType) || custType.indexOf("潜在") != -1) {
+                //    总部类型是空或者是潜在客户 新建成新客户
+                custBaseNewInfo = ftpCustBaseInfoNewService.saveCustBaseInfo(su, custName, unicomType, custNo, "0");
+            } else {
+                //    总部是存量类型的客户 存储 自然人客户存量3
+                custBaseNewInfo = ftpCustBaseInfoNewService.saveCustBaseInfo(su, custName, unicomType, custNo, "3");
+            }
+
+        } else {
+            if (StringUtils.isEmpty(custType) || custType.indexOf("潜在") != -1) {
+                custBaseNewInfo.setCustType("0");
+            } else {
+                custBaseNewInfo.setCustType("2");
+            }
+        }
+        return custBaseNewInfo;
     }
 
     /**
