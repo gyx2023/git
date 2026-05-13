@@ -45,27 +45,19 @@ import java.util.*;
 @Service
 @Component
 public class PolicyCenterTaskJob {
-
     private static final Integer TOUCH_ID = 888887; // 触点ID
-
     @Resource
     private PolicyCenterTaskService policyCenterTaskService;
-
     @Resource
     private ISysLogService sysLogService;
-
     @Resource
     private PolicyCenterProductService policyCenterProductService;
-
     @Resource
     private SysUsersMapper sysUsersMapper;
-
     @Resource
     private ISysParamService sysParamService;
-
     @Resource
     private ISendDMessageService sendDMessageService;
-
     @Resource
     private FtpCustBaseInfoNewService ftpCustBaseInfoNewService;
 

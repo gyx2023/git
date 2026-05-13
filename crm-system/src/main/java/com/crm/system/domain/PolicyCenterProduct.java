@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.apache.ibatis.annotations.Many;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -20,7 +21,7 @@ public class PolicyCenterProduct implements Serializable {
     /**
      * 主键ID
      */
-    @TableId(value = "id_", type = IdType.AUTO)
+    @TableId(value = "id_")
     private Integer id;
 
     /**
