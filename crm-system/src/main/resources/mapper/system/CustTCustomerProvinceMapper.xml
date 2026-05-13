@@ -12,5 +12,20 @@
         order by b.id_ desc limit 1
     </select>
 
+    <!-- 批量查询客户属性 -->
+    <select id="listCustomerPropertyBatch" resultType="java.util.Map">
+        SELECT
+        b.nature_cust_id AS natureCustId,
+        IFNULL(a.major_flag, '2') AS majorFlag
+        FROM cust_t_roster_customer_province a
+        INNER JOIN cust_t_roster_customer_nature_member_province b
+        ON a.roster_customer_id = b.roster_customer_id
+        WHERE b.nature_cust_id IN
+        <foreach collection="natureCustIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ORDER BY b.id_ DESC
+    </select>
+
 
 </mapper>

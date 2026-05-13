@@ -16,11 +16,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 维系策略任务文件下发 Job
@@ -254,102 +253,122 @@ public class WxStrategyJob {
         File file = new File(path);
 
         try {
+            // 1. 解析日期（提前处理）
+            String dateStr = LocalDate.parse(yyyyMMdd, DateTimeFormatter.BASIC_ISO_DATE).toString();
+
+            // 2. 获取策略
+            Map<String, JSONObject> strategyMap = wxStrategyService.queryStrategyInfo();
+            if (ObjectUtil.isEmpty(strategyMap)) {
+                log.warn("策略信息为空");
+                return 0;
+            }
+
+            // ======================== 核心优化 ========================
+            // 3. 一次性查询所有工单 & 收集客户ID（只查1轮库，不重复查）
+            Map<String, List<WorkOrderDTO>> strategyWorkOrderMap = new HashMap<>();
+            Set<String> customIdSet = new HashSet<>();
+
+            for (Map.Entry<String, JSONObject> entry : strategyMap.entrySet()) {
+                String key = entry.getKey();
+                JSONObject strategy = entry.getValue();
+                if (strategy == null) {
+                    continue;
+                }
+
+                // 每个策略只查一次！！！
+                List<WorkOrderDTO> workOrderList = wxStrategyService.queryWorkOrder(key, dateStr);
+                if (ObjectUtil.isEmpty(workOrderList)) {
+                    continue;
+                }
+
+                // 放入缓存
+                strategyWorkOrderMap.put(key, workOrderList);
+
+                // 收集客户ID，用于后续批量查属性
+                for (WorkOrderDTO dto : workOrderList) {
+                    if (ObjectUtil.isNotEmpty(dto.getCustomId())) {
+                        customIdSet.add(dto.getCustomId());
+                    }
+                }
+            }
+
+            // 4. 批量查询客户属性（只查1次库）
+            Map<String, String> custPropMap = customerProvinceService.getCustomerPropertyBatch(new ArrayList<>(customIdSet));
+
+            // ======================== 文件写入 ========================
+            // 安全创建文件
             if (file.exists()) {
                 file.delete();
             }
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
             file.createNewFile();
 
-            Map<String, JSONObject> strategyMap = wxStrategyService.queryStrategyInfo();
-            String dateStr = LocalDate.parse(yyyyMMdd, DateTimeFormatter.BASIC_ISO_DATE).toString();
+            // UTF-8 编码写入
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
 
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
                 for (Map.Entry<String, JSONObject> entry : strategyMap.entrySet()) {
+                    String key = entry.getKey();
                     JSONObject strategy = entry.getValue();
                     if (strategy == null) {
                         continue;
                     }
 
-                    String key = entry.getKey();
-                    String topPolicyCode = strategy.getString("top_policy_code");
-                    String businessScene = strategy.getString("business_scene");
-                    List<WorkOrderDTO> list = wxStrategyService.queryWorkOrder(key, dateStr);
-
-                    if (ObjectUtil.isEmpty(list)) {
+                    // 从内存取，不再查库！
+                    List<WorkOrderDTO> workOrderList = strategyWorkOrderMap.get(key);
+                    if (ObjectUtil.isEmpty(workOrderList)) {
                         continue;
                     }
-                    log.info("策略类型【" + key + "】，待下发工单数：" + list.size());
 
-                    for (WorkOrderDTO workOrder : list) {
-                        String customerProperty = customerProvinceService.getCustomerProperty(workOrder.getCustomId());
+                    log.info("策略类型【" + key + "】，待下发工单数：" + workOrderList.size());
+
+
+                    String topPolicyCode = strategy.getString("top_policy_code");
+                    String businessScene = strategy.getString("business_scene");
+
+                    for (WorkOrderDTO workOrder : workOrderList) {
+                        // 内存取值
+                        String customerProperty = custPropMap.getOrDefault(workOrder.getCustomId(), "2");
+
                         StringBuilder sb = new StringBuilder();
-
-                        // 任务编码 | 任务状态 | 活动名称
                         sb.append(ifNull(workOrder.getWorkOrderCode())).append(SPLIT_STR)
                             .append(ifNull(workOrder.getWorkOrderStatus())).append(SPLIT_STR)
-                            .append(ifNull(workOrder.getWorkOrderName())).append(SPLIT_STR);
-
-                        // 顶级策略编码 | 任务创建时间 | 任务截止时间
-                        sb.append(ifNull(topPolicyCode)).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getWorkOrderName())).append(SPLIT_STR)
+                            .append(ifNull(topPolicyCode)).append(SPLIT_STR)
                             .append(ifNull(workOrder.getWorkOrderTime())).append(SPLIT_STR)
-                            .append(DEADLINE).append(SPLIT_STR);
-
-                        // 备注 | 省分编码 | 地市编码
-                        sb.append("").append(SPLIT_STR)
+                            .append(DEADLINE).append(SPLIT_STR)
+                            .append("").append(SPLIT_STR)
                             .append(PROV_CODE).append(SPLIT_STR)
-                            .append(COUNTRY_CODE_MAP.getOrDefault(workOrder.getAreaId(), "")).append(SPLIT_STR);
-
-                        // 区县编码 | 网格编码
-                        sb.append(ifNull(workOrder.getOrgName())).append(SPLIT_STR)
-                            .append("").append(SPLIT_STR);
-
-                        // 客户地域信息（空）
-                        sb.append("").append(SPLIT_STR).append("").append(SPLIT_STR)
-                            .append("").append(SPLIT_STR).append("").append(SPLIT_STR);
-
-                        // 归属组织
-                        sb.append("").append(SPLIT_STR).append("").append(SPLIT_STR);
-
-                        // 执行人信息
-                        sb.append(ifNull(workOrder.getManagerNo())).append(SPLIT_STR)
+                            .append(COUNTRY_CODE_MAP.getOrDefault(workOrder.getAreaId(), "")).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getOrgName())).append(SPLIT_STR)
+                            .append("").append(SPLIT_STR)
+                            .append("").append(SPLIT_STR).append("").append(SPLIT_STR)
+                            .append("").append(SPLIT_STR).append("").append(SPLIT_STR)
+                            .append("").append(SPLIT_STR).append("").append(SPLIT_STR)
+                            .append(ifNull(workOrder.getManagerNo())).append(SPLIT_STR)
                             .append(ifNull(workOrder.getManagerName())).append(SPLIT_STR)
-                            .append(ifNull(workOrder.getManagerMobile())).append(SPLIT_STR);
-
-                        // 客户经理信息
-                        sb.append(ifNull(workOrder.getActualManagerNo())).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getManagerMobile())).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getActualManagerNo())).append(SPLIT_STR)
                             .append(ifNull(workOrder.getActualManagerName())).append(SPLIT_STR)
-                            .append(ifNull(workOrder.getActualManagerMobile())).append(SPLIT_STR);
-
-                        // 楼宇信息
-                        sb.append(ifNull(workOrder.getBuildId())).append(SPLIT_STR)
-                            .append(ifNull(workOrder.getBuildName())).append(SPLIT_STR);
-
-                        // 客户信息
-                        sb.append(ifNull(workOrder.getCustomId())).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getActualManagerMobile())).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getBuildId())).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getBuildName())).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getCustomId())).append(SPLIT_STR)
                             .append(ifNull(workOrder.getCustomName())).append(SPLIT_STR)
-                            .append(ifNull(customerProperty)).append(SPLIT_STR);
-
-                        // 创建/修改时间
-                        sb.append(ifNull(workOrder.getGmtCreate())).append(SPLIT_STR)
-                            .append("").append(SPLIT_STR);
-
-                        // 创建/修改人
-                        sb.append(CREATE_USER_ID).append(SPLIT_STR).append(CREATE_USER_NAME).append(SPLIT_STR);
-                        sb.append(UPDATE_USER_ID).append(SPLIT_STR).append(UPDATE_USER_NAME).append(SPLIT_STR);
-
-                        // 反馈时间 | 是否成功
-                        sb.append(ifNull(workOrder.getBackTime())).append(SPLIT_STR).append("1").append(SPLIT_STR);
-
-                        // 业务信息
-                        sb.append("12".equals(businessScene) ? "" : businessScene).append(SPLIT_STR)
+                            .append(ifNull(customerProperty)).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getGmtCreate())).append(SPLIT_STR)
+                            .append("").append(SPLIT_STR)
+                            .append(CREATE_USER_ID).append(SPLIT_STR).append(CREATE_USER_NAME).append(SPLIT_STR)
+                            .append(UPDATE_USER_ID).append(SPLIT_STR).append(UPDATE_USER_NAME).append(SPLIT_STR)
+                            .append(ifNull(workOrder.getBackTime())).append(SPLIT_STR).append("1").append(SPLIT_STR)
+                            .append("12".equals(businessScene) ? "" : businessScene).append(SPLIT_STR)
                             .append(ifNull(workOrder.getCategory())).append(SPLIT_STR)
-                            .append(ifNull(workOrder.getBusinessEndDate())).append(SPLIT_STR);
-
-                        // 合同信息
-                        sb.append("10000").append(SPLIT_STR)
+                            .append(ifNull(workOrder.getBusinessEndDate())).append(SPLIT_STR)
+                            .append("10000").append(SPLIT_STR)
                             .append("htdq_warn".equals(key) ? ifNull(workOrder.getContractName()) : "").append(SPLIT_STR)
-                            .append("htdq_warn".equals(key) ? ifNull(workOrder.getCustNo()) : "").append(SPLIT_STR);
-
-                        sb.append("htdq_warn".equals(key) ? ifNull(workOrder.getCustomName()) : "").append(SPLIT_STR)
+                            .append("htdq_warn".equals(key) ? ifNull(workOrder.getCustNo()) : "").append(SPLIT_STR)
+                            .append("htdq_warn".equals(key) ? ifNull(workOrder.getCustomName()) : "").append(SPLIT_STR)
                             .append("terminal_contract_warn".equals(key) ? ifNull(workOrder.getSvcNum()) : "").append(SPLIT_STR)
                             .append("htdq_warn".equals(key) ? ifNull(workOrder.getContractCode()) : "");
 
@@ -358,6 +377,7 @@ public class WxStrategyJob {
                     }
                 }
             }
+            log.info("工单文件生成成功");
         } catch (Exception e) {
             flag = 1;
             log.error("生成任务工单文件异常", e);
