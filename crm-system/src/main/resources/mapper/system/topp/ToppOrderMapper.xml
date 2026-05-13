@@ -156,11 +156,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="getToppOrderCount" resultType="java.lang.Integer">
-        SELECT COUNT(1)
-        FROM topp_order to2
+        SELECT COUNT(*)
+        FROM (
+        SELECT DISTINCT cust_id
+        FROM topp_order
         WHERE order_type = #{orderType}
-          AND create_time >= '2024-01-01 00:00:00'
-          AND create_time &lt;= #{endTime}
+        AND create_time >= '2024-01-01 00:00:00'
+        AND create_time &lt;= #{endTime}
+        ) a
     </select>
 
     <select id="countByOrderTypeAndDate" resultType="java.lang.Integer">
