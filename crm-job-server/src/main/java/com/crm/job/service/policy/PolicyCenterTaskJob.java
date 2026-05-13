@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.HaoKaoSignUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.PolicyCenterProduct;
 import com.crm.system.domain.PolicyCenterTask;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -276,32 +278,15 @@ public class PolicyCenterTaskJob {
     /**
      * 设置头部节点
      */
-    private Map<String, Object> setHead() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    private Map<String, Object> setHead() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnsupportedEncodingException {
         Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
         Map<String, Object> headMap = new HashMap<>();
         UNI_BSS_HEAD.put("APP_ID", POLICY_CENTER_GET_TASK_APPID);
         UNI_BSS_HEAD.put("key", POLICY_CENTER_GET_TASK_APPKEY);
-        buildAppParams(UNI_BSS_HEAD);
+        HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
         UNI_BSS_HEAD.put("RESERVED", new ArrayList<>());
         headMap.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
         return headMap;
-    }
-
-    /**
-     * 构建签名参数
-     */
-    private void buildAppParams(Map<String, Object> params) throws NoSuchAlgorithmException {
-        // 简化版签名逻辑,实际需要根据老框架的HaoKaoSignUtil实现
-        params.put("timestamp", System.currentTimeMillis());
-        params.put("sign", generateSign(params));
-    }
-
-    /**
-     * 生成签名
-     */
-    private String generateSign(Map<String, Object> params) throws NoSuchAlgorithmException {
-        // TODO: 根据老框架的签名算法实现
-        return "mock_sign";
     }
 
     /**
