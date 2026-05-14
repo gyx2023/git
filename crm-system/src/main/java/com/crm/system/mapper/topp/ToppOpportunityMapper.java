@@ -2,6 +2,7 @@ package com.crm.system.mapper.topp;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.crm.common.core.domain.dto.OldOpportunityDTO;
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.topp.ToppOpportunityDo;
@@ -66,4 +67,7 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      * @return 创建人完整信息列表
      */
     List<Map<String, Object>> selectCreatorInfoBatch(@Param("creators") List<Long> creators);
+
+    List<OpportunityDTO> listOpportunity(@Param("areaId") String areaId);
+
 }

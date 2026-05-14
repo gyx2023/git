@@ -393,4 +393,32 @@
             </if>
         </where>
     </select>
+
+    <select id="listOpportunity" resultType="com.crm.common.core.domain.dto.OpportunityDTO">
+        SELECT
+            oppo.opp_code,
+            oppo.opp_name,
+            oppo.opp_type,
+            oppo.expect_contract_money,
+            oppo.contract_month,
+            oppo.cust_no,
+            oppo.cust_name,
+            oppo.create_time,
+            oppo.oppo_state,
+            a.name_ AS area_name,
+            o.name_ AS org_name,
+            oppo.cust_manager_name,
+            oppo.cust_manager_tel
+        FROM
+            topp_opportunity oppo
+                INNER JOIN sys_user u ON u.id_ = oppo.creator
+                INNER JOIN sys_org o ON u.org_id = o.id_
+                INNER JOIN sys_area a ON a.id_ = o.area_id
+        WHERE
+            a.id_ LIKE CONCAT(#{areaId}, '%')
+        ORDER BY
+            oppo.create_time DESC
+    </select>
+
+
 </mapper>

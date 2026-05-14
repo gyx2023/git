@@ -1,4 +1,5 @@
 package com.crm.system.service.topp;
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
@@ -75,4 +76,5 @@ public interface IToppOpportunityService {
     List<SignOppoFileExportDTO> selectOpportunityUnbound();
 
     List<ToppOpportunityVo> queryOpportunityByCreateTime(String bfStartTime, String bfEndTime);
+    List<OpportunityDTO> getToppOpportunityPut(String areaId);
 }
