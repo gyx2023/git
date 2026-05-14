@@ -360,4 +360,25 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
 
         return baseMapper.selectVoList(lqw);
     }
+
+    /**
+     * 查询创建时间超过3个月+7天的商机，并且无拜访时间
+     * @param bfStartTime
+     * @param bfEndTime
+     * @return
+     */
+    @Override
+    public List<ToppOpportunityVo> queryOpportunityByCreateTime(String bfStartTime, String bfEndTime) {
+
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<>();
+        // 查询createTime小于3个月+7天前的时间，并且无拜访时间，即最后拜访时间超过3个月+7天的商机
+
+        lqw.ge(ToppOpportunityDo::getCreateTime, bfStartTime);
+        lqw.le(ToppOpportunityDo::getCreateTime, bfEndTime);
+        lqw.isNull(ToppOpportunityDo::getLastVisitTime);
+        lqw.ne(ToppOpportunityDo::getOppPhase, Constants.OPP_PHASE_NEW_CREATE);
+        lqw.eq(ToppOpportunityDo::getIsValid, 1);
+
+        return baseMapper.selectVoList(lqw);
+    }
 }

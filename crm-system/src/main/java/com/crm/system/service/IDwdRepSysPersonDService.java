@@ -65,7 +65,7 @@ public interface IDwdRepSysPersonDService {
     List<DwdRepSysPersonDVo> selectAreaAndCounty(List<Map<String, String>> personInfos);
 
     /**
-     * 根据登录用户查询客户经理信息
+     * 分页查询客户经理列表
      */
-    List<Object> getManagersByLoginUser();
+    TableDataInfo<DwdRepSysPersonDVo> getManagerPageListByLoginUser(PageQuery pageQuery, String keyword);
 }
