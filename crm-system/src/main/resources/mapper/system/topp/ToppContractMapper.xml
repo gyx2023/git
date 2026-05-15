@@ -81,6 +81,47 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="payInfo" column="pay_info"/>
     </resultMap>
 
+    <!-- 查询合同收入数据列表 -->
+    <select id="getContractIncomeList" resultType="com.crm.system.domain.vo.ContractIncomeExcelVo">
+        SELECT
+            c.contract_no AS contractNo,
+            c.ict_plan_income AS ictPlanIncome,
+            c.norm_date AS normDate,
+            ROUND(c.norm_plan_income / 10000, 6) AS normPlanIncome,
+            c.plan_cycle AS planCycle,
+            ROUND(c.expect_income, 6) AS expectIncome,
+            include_type.include_type_value AS includeTypeValue
+        FROM
+            topp_contract c
+            LEFT JOIN topp_income inc ON c.id_ = inc.contract_id AND c.is_valid = '1'
+            LEFT JOIN topp_opportunity oppo ON oppo.id_ = c.project_id
+            LEFT JOIN tcomm_customer customer ON oppo.cust_id = customer.id_
+            LEFT JOIN (
+                SELECT
+                    GROUP_CONCAT(concat(name_, ':', include_type_value)) AS include_type_value,
+                    topp_contract_include_type_money.contract_id
+                FROM
+                    `topp_contract_include_type_money`
+                    INNER JOIN sys_code ON topp_contract_include_type_money.include_type = sys_code.code_
+                GROUP BY
+                    topp_contract_include_type_money.contract_id
+            ) AS include_type ON include_type.contract_id = c.id_,
+            sys_org o,
+            sys_area a1,
+            sys_area a2,
+            sys_user u1
+        WHERE
+            u1.org_id = o.id_
+            AND o.area_id = a1.id_
+            AND a1.parent_ = a2.id_
+            AND oppo.cust_manager_id = u1.id_
+            AND a1.id_ LIKE CONCAT(#{areaId}, '%')
+        GROUP BY
+            c.id_
+        ORDER BY
+            c.audit_time DESC
+    </select>
+
 
 
 </mapper>
