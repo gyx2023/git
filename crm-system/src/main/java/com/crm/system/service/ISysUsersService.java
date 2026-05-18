@@ -1,5 +1,6 @@
 package com.crm.system.service;
 
+import com.crm.system.domain.SysUsers;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -15,6 +16,11 @@ import java.util.List;
  * @date 2025-12-23
  */
 public interface ISysUsersService {
+
+    /**
+     * 同步亚信用户信息
+     */
+    String doPostForYxUser(SysUsers user, String operType);
 
     /**
      * 查询用户(客户的员工)

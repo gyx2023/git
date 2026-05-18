@@ -15,6 +15,7 @@ import com.crm.system.mapper.SysOrgMapper;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.ISysParamService;
 import com.crm.system.service.PersonnelInfoService;
+import com.crm.system.service.SysUserOperateLogService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,9 @@ public class PersonnelInfoSyncJob {
 
     @Resource
     private PersonnelInfoService personnelInfoService;
+
+    @Resource
+    private SysUserOperateLogService sysUserOperateLogService;
 
     @Resource
     private SysUsersMapper sysUsersMapper;
@@ -262,7 +266,7 @@ public class PersonnelInfoSyncJob {
                     }
 
                     sysUsersMapper.updateById(user);
-                    //sysUserOperateLogService.synUserOperate(userList2.get(j), operateType);
+                    sysUserOperateLogService.synUserOperate(user, operateType);
                 }
             } else if (StringUtils.isNotEmpty(personnelInfo.getMobileTel())) {
                 // 如果该手机号未注册，但手机号不为空
@@ -285,13 +289,13 @@ public class PersonnelInfoSyncJob {
                         }
 
                         sysUsersMapper.updateById(user);
-                        //sysUserOperateLogService.synUserOperate(userList2.get(j), operateType);
+                        sysUserOperateLogService.synUserOperate(user, operateType);
                     }
                 } else {
                     // 如果都找不到，则新增用户
                     SysUsers user = setNewUser(personnelInfo);
                     sysUsersMapper.insert(user);
-                    //sysUserOperateLogService.synUserOperate(user, "add");
+                    sysUserOperateLogService.synUserOperate(user, "add");
                 }
             }
         } catch (Exception e) {
