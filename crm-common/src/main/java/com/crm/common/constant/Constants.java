@@ -72,5 +72,9 @@ public interface Constants {
      */
     String TOKEN = "token";
 
+    // 日期年月日格式，长度8
+    String YEAR_MONTH_DAY_PATTERN = "yyyyMMdd";
+
+
 }
 
