@@ -130,4 +130,33 @@ public class SysCodeServiceImpl implements ISysCodeService {
         }
         return sysCodeVo;
     }
+
+    @Override
+    public String findNameByCodes(String type, String codes) {
+        if (StringUtils.isEmpty(codes)) {
+            return "";
+        }
+        
+        // 将codes按逗号分割成数组
+        String[] codeArray = codes.split(",");
+        
+        // 构建IN查询条件
+        LambdaQueryWrapper<SysCode> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(type), SysCode::getType, type);
+        lqw.in(ObjectUtil.isNotEmpty(codeArray), SysCode::getCode, (Object[]) codeArray);
+        
+        List<SysCode> list = baseMapper.selectList(lqw);
+        
+        StringBuilder names = new StringBuilder();
+        for (SysCode code : list) {
+            names.append(code.getName()).append(",");
+        }
+        
+        String result = names.toString();
+        if (result.length() > 0) {
+            result = result.substring(0, result.length() - 1);
+        }
+        
+        return result;
+    }
 }

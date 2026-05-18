@@ -48,4 +48,6 @@ public interface ISysCodeService {
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
     SysCodeVo findCode(String type, String code);
+
+    String findNameByCodes(String type, String codes);
 }
