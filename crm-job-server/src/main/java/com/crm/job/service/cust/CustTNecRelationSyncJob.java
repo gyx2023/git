@@ -108,9 +108,16 @@ public class CustTNecRelationSyncJob {
                 cost, batchNum, zTotalNum, zSuccessNum, zFailureNum);
             XxlJobHelper.log("【实体客户id与自然客户id对应关系同步】任务结束：耗时：{}，总批次：{}，总条数：{}，总成功数：{}，总失败数：{}",
                 cost, batchNum, zTotalNum, zSuccessNum, zFailureNum);
+
+            String successMsg = String.format("任务结束：耗时：%d，总批次：%d，总条数：%d，总成功数：%d，总失败数：%d",
+                cost, batchNum, zTotalNum, zSuccessNum, zFailureNum);
+            XxlJobHelper.handleSuccess(successMsg);
         } catch (Exception e) {
             log.error("【实体客户id与自然客户id对应关系同步】任务执行异常", e);
             XxlJobHelper.log("【实体客户id与自然客户id对应关系同步】任务执行异常: {}", e.getMessage());
+
+            String errorMsg = String.format("任务执行异常:" + e .getMessage());
+            XxlJobHelper.handleFail(errorMsg);
         }
     }
 
