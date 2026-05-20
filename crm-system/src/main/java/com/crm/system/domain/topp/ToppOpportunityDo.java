@@ -594,4 +594,5 @@ public class ToppOpportunityDo extends BaseEntity {
      */
     private String oppoConversionState;
 
+    private Date createTime;
 }

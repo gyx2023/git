@@ -2,6 +2,7 @@ package com.crm.system.listener.manager;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.dto.GrpGroupImportDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
@@ -70,9 +71,9 @@ public class CustomerManagerImportListener {
             result.setCustManagerOauser(templateVo.getCustManagerOauser());
 
             // 检查权限：custManagerOauser 是否在 canBindManagers 的 oaUserName 里（大小写兼容）
-            String oaUserNameLower = templateVo.getCustManagerOauser() != null ? 
+            String oaUserNameLower = templateVo.getCustManagerOauser() != null ?
                 templateVo.getCustManagerOauser().toLowerCase() : "";
-            
+
             if (!canBindManagerMap.containsKey(oaUserNameLower)) {
                 result.setProcessResult("失败");
                 result.setErrorMessage("无权限绑定此客户经理或该经理不存在:" + templateVo.getCustManagerOauser());
@@ -139,7 +140,9 @@ public class CustomerManagerImportListener {
         Integer deptLevel = repSysPersonNewDMapper.getDeptLevel(user.getUserName());
 
         if(deptLevel >= 1){
-            List<RepSysPersonNewDDo> managers = repSysPersonNewDMapper.selectProvincialManagers();
+            Page<RepSysPersonNewDDo> page = new Page<>(1, Integer.MAX_VALUE);
+            Page<RepSysPersonNewDDo> managersPage = repSysPersonNewDMapper.selectProvincialManagers(page, null);
+            List<RepSysPersonNewDDo> managers = managersPage.getRecords();
             for (RepSysPersonNewDDo manager : managers) {
                 GrpGroupImportDTO dto = new GrpGroupImportDTO();
                 dto.setEmpId(manager.getEmpId());

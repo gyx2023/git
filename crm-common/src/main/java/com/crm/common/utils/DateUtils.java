@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -170,5 +171,28 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
      */
     public static String getBeforeNDays(int n) {
         return DateUtils.dateTime(DateUtils.addDays(new Date(), -n));
+    }
+
+    /**
+     * 判断指定日期是否为当月最后一天
+     *
+     * @param dateStr 日期字符串，格式为yyyyMMdd
+     * @return 如果是当月最后一天返回true，否则返回false
+     * @throws ParseException 日期解析异常
+     */
+    public static boolean isLastDayOfMonth(String dateStr) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        Date date = sdf.parse(dateStr);
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        // 获取当月最大天数
+        int maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+        // 获取当前日期是当月第几天
+        int currentDay = calendar.get(Calendar.DAY_OF_MONTH);
+
+        return currentDay == maxDay;
     }
 }

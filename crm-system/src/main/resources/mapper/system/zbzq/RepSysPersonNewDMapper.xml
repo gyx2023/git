@@ -33,6 +33,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and b.ORG_BUSINESS_LINE_NAME_1 = '政企线'
           and b.ORG_BUSINESS_LINE_NAME_2 = '政企要客网格'
           and b.CITY_CODE = '000'
+        <if test="keyword != null and keyword != ''">
+            and (LOWER(a.OA_USER_NAME) LIKE CONCAT('%', #{keyword}, '%')
+            or a.FULL_NAME LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
     </select>
 
 </mapper>
