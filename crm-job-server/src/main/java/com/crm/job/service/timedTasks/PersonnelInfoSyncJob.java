@@ -39,6 +39,7 @@ import java.util.*;
 public class PersonnelInfoSyncJob {
 
     private static final String FTP_DOWNLOAD_NAME = "REP_UC_EMP_ADD_";
+    // 下载的文件名扩展名
     private static final String FTP_DOWNLOAD_END_FIX = ".txt";
 
     @Resource
