@@ -1859,4 +1859,7 @@ public class Constants {
 
     //经分文件订购 sftp 配置类型
     public static final String JF_COMMON_FTP = "jf_common_ftp";
+
+    //管理中台文件 sftp 配置
+    public static final String PERSONNEL_FILE_FTP_INFO = "personnel_file_ftp_info";
 }
