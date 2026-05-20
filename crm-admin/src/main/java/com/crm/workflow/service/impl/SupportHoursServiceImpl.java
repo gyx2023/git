@@ -32,7 +32,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
     @Override
     public TableDataInfo<SupportHoursVO> querySupportHoursList(SupportHoursQueryDTO queryDTO) {
         log.info("查询支撑工时统计，参数：{}", queryDTO);
-        
+
         List<SupportHoursVO> list;
         if (queryDTO.getTabType() == null || queryDTO.getTabType() == 1) {
             // 商机支撑人日统计
@@ -41,21 +41,21 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             // 个人支撑商机统计
             list = querySupportHoursListByManager(queryDTO);
         }
-        
+
         // 手动分页
         Page<SupportHoursVO> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         int total = list.size();
         int fromIndex = (queryDTO.getPageNum() - 1) * queryDTO.getPageSize();
         int toIndex = Math.min(fromIndex + queryDTO.getPageSize(), total);
-        
+
         List<SupportHoursVO> pageList = fromIndex < total ? list.subList(fromIndex, toIndex) : new ArrayList<>();
-        
+
         TableDataInfo<SupportHoursVO> tableDataInfo = new TableDataInfo<>();
         tableDataInfo.setRows(pageList);
         tableDataInfo.setTotal(total);
         tableDataInfo.setCode(200);
         tableDataInfo.setMsg("查询成功");
-        
+
         return tableDataInfo;
     }
 
@@ -65,7 +65,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
     @Override
     public List<SupportHoursVO> exportSupportHoursList(SupportHoursQueryDTO queryDTO) {
         log.info("导出支撑工时统计，参数：{}", queryDTO);
-        
+
         if (queryDTO.getTabType() == null || queryDTO.getTabType() == 1) {
             // 商机支撑人日统计
             return querySupportHoursListByOpportunity(queryDTO);
@@ -80,22 +80,22 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
      */
     private List<SupportHoursVO> querySupportHoursListByOpportunity(SupportHoursQueryDTO queryDTO) {
         log.info("开始查询商机支撑人日统计，参数：{}", queryDTO);
-        
+
         List<SupportHoursVO> resultList = new ArrayList<>();
-        
+
         try {
             // 1. 构建查询商机的SQL
             String opportunitySql = buildOpportunityQuerySql(queryDTO);
             log.info("商机查询SQL: {}", opportunitySql);
-            
+
             // 2. 查询商机列表
             List<Map<String, Object>> opportunityList = jdbcTemplate.queryForList(opportunitySql);
             log.info("查询到商机数量: {}", opportunityList.size());
-            
+
             // 3. 对每个商机，查询其关联的支撑任务工时数据
             for (Map<String, Object> opp : opportunityList) {
                 SupportHoursVO vo = new SupportHoursVO();
-                
+
                 // 设置基础信息
                 vo.setOppId(getIntValue(opp.get("id")));
                 vo.setOppCode(getStringValue(opp.get("oppCode")));
@@ -108,11 +108,11 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                 vo.setFirstManagetName(getStringValue(opp.get("firstManagerName")));
                 vo.setSecondManagetName(getStringValue(opp.get("secondManagerName")));
                 vo.setSupportStage(getStringValue(opp.get("supportStage")));
-                
+
                 // 获取支撑阶段名称
                 String supportStageCode = getStringValue(opp.get("supportStage"));
                 vo.setTaskName(getSupportStageName(supportStageCode));
-                
+
                 // 4. 查询该商机的工时数据（tcomm_task表）
                 Integer oppId = getIntValue(opp.get("id"));
                 if (oppId != null) {
@@ -120,26 +120,26 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                     List<Map<String, Object>> taskHoursList = queryTaskHours(oppId, queryDTO);
                     // 查询技术解析评审工时数据
                     List<Map<String, Object>> projectTechHoursList = queryProjectTechHours(oppId, queryDTO);
-                    
+
                     // 5. 聚合工时数据
                     LinkedHashMap<String, Double> monthHourMap = new LinkedHashMap<>();
                     LinkedHashMap<String, Double> weeklyHourMap = new LinkedHashMap<>();
                     double totalHours = 0.0;
-                    
+
                     // 初始化月份和周周期
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                     Date leftDate = sdf.parse(queryDTO.getLeftTime());
                     Date rightDate = sdf.parse(queryDTO.getRightTime());
                     List<String> yearMonths = getYearMonthsBetween(leftDate, rightDate);
                     List<String> weekCycles = getWeeklyCycles(leftDate, rightDate);
-                    
+
                     for (String month : yearMonths) {
                         monthHourMap.put(month, 0.0);
                     }
                     for (String cycle : weekCycles) {
                         weeklyHourMap.put(cycle, 0.0);
                     }
-                    
+
                     // 处理task工时数据
                     Set<String> taskCodes = new HashSet<>();
                     for (Map<String, Object> taskHours : taskHoursList) {
@@ -148,23 +148,23 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                         if ("onlineProgram".equals(taskCode)) {
                             continue;
                         }
-                        
+
                         Integer taskId = getIntValue(taskHours.get("taskId"));
                         // 判断流程是否结束
                         if (isTaskFlowEnded(taskId)) {
                             Double hours = getDoubleValue(taskHours.get("supportHours"));
                             String createTime = getStringValue(taskHours.get("createTime"));
-                            
+
                             if (hours != null && hours > 0) {
                                 totalHours += hours;
-                                
+
                                 // 按月聚合
                                 if (createTime != null && !createTime.isEmpty()) {
                                     String month = createTime.substring(0, 7); // yyyy-MM
                                     if (monthHourMap.containsKey(month)) {
                                         monthHourMap.put(month, monthHourMap.get(month) + hours);
                                     }
-                                    
+
                                     // 按周聚合
                                     String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
                                     if (cycle != null && weeklyHourMap.containsKey(cycle)) {
@@ -173,30 +173,30 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                                 }
                             }
                         }
-                        
+
                         if (taskCode != null && !taskCode.isEmpty()) {
                             taskCodes.add(taskCode);
                         }
                     }
-                    
+
                     // 处理技术解析评审工时数据
                     for (Map<String, Object> techHours : projectTechHoursList) {
-                        Integer projectTechId = getIntValue(techHours.get("projectTechId"));
+                        Integer projectTechId = getIntValue(techHours.get("orderNum"));
                         // 判断流程是否结束
                         if (isProjectTechFlowEnded(projectTechId)) {
                             Double hours = getDoubleValue(techHours.get("supportHours"));
                             String createTime = getStringValue(techHours.get("createTime"));
-                            
+
                             if (hours != null && hours > 0) {
                                 totalHours += hours;
-                                
+
                                 // 按月聚合
                                 if (createTime != null && !createTime.isEmpty()) {
                                     String month = createTime.substring(0, 7); // yyyy-MM
                                     if (monthHourMap.containsKey(month)) {
                                         monthHourMap.put(month, monthHourMap.get(month) + hours);
                                     }
-                                    
+
                                     // 按周聚合
                                     String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
                                     if (cycle != null && weeklyHourMap.containsKey(cycle)) {
@@ -206,20 +206,20 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                             }
                         }
                     }
-                    
+
                     vo.setMonthHour(monthHourMap);
                     vo.setWeeklyHours(weeklyHourMap);
                     vo.setTotalHours(totalHours);
                 }
-                
+
                 resultList.add(vo);
             }
-            
+
             log.info("商机支撑人日统计查询完成，结果数量: {}", resultList.size());
         } catch (Exception e) {
             log.error("查询商机支撑人日统计失败", e);
         }
-        
+
         return resultList;
     }
 
@@ -228,38 +228,38 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
      */
     private List<SupportHoursVO> querySupportHoursListByManager(SupportHoursQueryDTO queryDTO) {
         log.info("开始查询个人支撑商机统计，参数：{}", queryDTO);
-        
+
         List<SupportHoursVO> resultList = new ArrayList<>();
-        
+
         try {
             // 1. 查询支撑经理参与的商机列表（userId + oppoId组合）
             String managerSql = buildManagerQuerySql(queryDTO);
             log.info("支撑经理查询SQL: {}", managerSql);
-            
+
             List<Map<String, Object>> managerList = jdbcTemplate.queryForList(managerSql);
             log.info("查询到支撑经理-商机组合数量: {}", managerList.size());
-            
+
             // 2. 对每个支撑经理和商机的组合，统计工时数据
             for (Map<String, Object> managerData : managerList) {
                 Integer userId = getIntValue(managerData.get("userId"));
                 Integer oppoId = getIntValue(managerData.get("oppoId"));
-                
+
                 if (userId == null || oppoId == null) {
                     continue;
                 }
-                
+
                 // 查询商机详细信息
                 Map<String, Object> oppInfo = queryOpportunityById(oppoId);
                 if (oppInfo == null) {
                     continue;
                 }
-                
+
                 SupportHoursVO vo = new SupportHoursVO();
-                
+
                 // 设置支撑经理姓名
                 String supportManagerName = queryUserName(userId);
                 vo.setSupportManagerName(supportManagerName);
-                
+
                 // 设置商机基础信息
                 vo.setOppId(getIntValue(oppInfo.get("id")));
                 vo.setOppCode(getStringValue(oppInfo.get("oppCode")));
@@ -273,45 +273,46 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                 vo.setSecondManagetName(getStringValue(oppInfo.get("secondManagerName")));
                 vo.setSupportStage(getStringValue(oppInfo.get("supportStage")));
                 vo.setTaskName(getSupportStageName(getStringValue(oppInfo.get("supportStage"))));
-                
+
                 // 3. 查询该支撑经理在该商机下的工时数据
                 List<Map<String, Object>> taskHoursList = queryTaskHoursByManager(oppoId, userId, queryDTO);
                 List<Map<String, Object>> projectTechHoursList = queryProjectTechHoursByManager(oppoId, userId, queryDTO);
-                
+
                 // 4. 聚合工时数据
                 LinkedHashMap<String, Double> monthHourMap = new LinkedHashMap<>();
                 LinkedHashMap<String, Double> weeklyHourMap = new LinkedHashMap<>();
                 double totalHours = 0.0;
-                
+
                 // 初始化月份和周周期
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 Date leftDate = sdf.parse(queryDTO.getLeftTime());
                 Date rightDate = sdf.parse(queryDTO.getRightTime());
                 List<String> yearMonths = getYearMonthsBetween(leftDate, rightDate);
                 List<String> weekCycles = getWeeklyCycles(leftDate, rightDate);
-                
+
                 for (String month : yearMonths) {
                     monthHourMap.put(month, 0.0);
                 }
                 for (String cycle : weekCycles) {
                     weeklyHourMap.put(cycle, 0.0);
                 }
-                
+
                 // 处理task工时数据
                 for (Map<String, Object> taskHours : taskHoursList) {
                     Double hours = getDoubleValue(taskHours.get("supportHours"));
                     String createTime = getStringValue(taskHours.get("createTime"));
-                    
+
                     if (hours != null && hours > 0) {
                         totalHours += hours;
-                        
+
                         // 按月聚合
                         if (createTime != null && !createTime.isEmpty()) {
-                            String month = createTime.substring(0, 7); // yyyy-MM
+                            // yyyy-MM
+                            String month = createTime.substring(0, 7);
                             if (monthHourMap.containsKey(month)) {
                                 monthHourMap.put(month, monthHourMap.get(month) + hours);
                             }
-                            
+
                             // 按周聚合
                             String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
                             if (cycle != null && weeklyHourMap.containsKey(cycle)) {
@@ -320,22 +321,22 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                         }
                     }
                 }
-                
+
                 // 处理技术解析评审工时数据
                 for (Map<String, Object> techHours : projectTechHoursList) {
                     Double hours = getDoubleValue(techHours.get("supportHours"));
                     String createTime = getStringValue(techHours.get("createTime"));
-                    
+
                     if (hours != null && hours > 0) {
                         totalHours += hours;
-                        
+
                         // 按月聚合
                         if (createTime != null && !createTime.isEmpty()) {
-                            String month = createTime.substring(0, 7); // yyyy-MM
+                            String month = createTime.substring(0, 7);
                             if (monthHourMap.containsKey(month)) {
                                 monthHourMap.put(month, monthHourMap.get(month) + hours);
                             }
-                            
+
                             // 按周聚合
                             String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
                             if (cycle != null && weeklyHourMap.containsKey(cycle)) {
@@ -344,19 +345,19 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                         }
                     }
                 }
-                
+
                 vo.setMonthHour(monthHourMap);
                 vo.setWeeklyHours(weeklyHourMap);
                 vo.setTotalHours(totalHours);
-                
+
                 resultList.add(vo);
             }
-            
+
             log.info("个人支撑商机统计查询完成，结果数量: {}", resultList.size());
         } catch (Exception e) {
             log.error("查询个人支撑商机统计失败", e);
         }
-        
+
         return resultList;
     }
 
@@ -366,26 +367,26 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
     @Override
     public List<List<String>> generateExportHeaders(SupportHoursQueryDTO queryDTO) {
         List<List<String>> headList = new ArrayList<>();
-        
+
         // 基础表头
         String[] baseHeaders = {"商机编号", "商机名称", "客户名称", "预期合同(万元)", "客户行业",
                 "客户经理", "主责支撑经理", "非主责支撑经理", "支撑阶段", "合计"};
-        
+
         for (String header : baseHeaders) {
             headList.add(Collections.singletonList(header));
         }
-        
+
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             Date leftDate = sdf.parse(queryDTO.getLeftTime());
             Date rightDate = sdf.parse(queryDTO.getRightTime());
-            
+
             // 获取年月列表
             List<String> yearMonths = getYearMonthsBetween(leftDate, rightDate);
             for (String month : yearMonths) {
                 headList.add(Collections.singletonList(month));
             }
-            
+
             // 如果包含周统计，添加周周期表头
             if (queryDTO.getOptions() != null && queryDTO.getOptions().contains("week")) {
                 List<String> cycles = getWeeklyCycles(leftDate, rightDate);
@@ -393,15 +394,15 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                     headList.add(Collections.singletonList(cycle));
                 }
             }
-            
+
             // 添加最后两个固定表头
             headList.add(Collections.singletonList("商机到达时间"));
             headList.add(Collections.singletonList("支撑情况"));
-            
+
         } catch (Exception e) {
             log.error("生成导出表头失败", e);
         }
-        
+
         return headList;
     }
 
@@ -515,7 +516,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             return "0";
         }
     }
-    
+
     /**
      * 构建商机查询SQL
      */
@@ -540,7 +541,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" FROM topp_opportunity oppo ");
         sql.append(" left join sys_user u1 ON u1.id_ = oppo.designer ");
         sql.append(" WHERE 1=1 ");
-        
+
         // 支撑阶段条件
         if (queryDTO.getSupportStage() != null && !queryDTO.getSupportStage().isEmpty()) {
             if ("1".equals(queryDTO.getSupportStage())) {
@@ -554,7 +555,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                 sql.append(" AND oppo.support_stage = '").append(queryDTO.getSupportStage()).append("'");
             }
         }
-        
+
         // 商机到达时间条件
         if (queryDTO.getOpportunityLeftTime() != null && !queryDTO.getOpportunityLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(oppo.designer_time, '%Y-%m-%d') >= '").append(queryDTO.getOpportunityLeftTime()).append("'");
@@ -562,17 +563,17 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         if (queryDTO.getOpportunityRightTime() != null && !queryDTO.getOpportunityRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(oppo.designer_time, '%Y-%m-%d') <= '").append(queryDTO.getOpportunityRightTime()).append("'");
         }
-        
+
         // 区域ID条件
         if (queryDTO.getAreaId() != null && !queryDTO.getAreaId().isEmpty()) {
             sql.append(" AND u1.org_id = '").append(queryDTO.getAreaId()).append("'");
         }
-        
+
         sql.append(" ORDER BY oppo.designer_time DESC");
-        
+
         return sql.toString();
     }
-    
+
     /**
      * 查询task工时数据
      */
@@ -591,23 +592,23 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" AND u.name_ch is not null ");
         sql.append(" AND u.is_valid = '1' ");
         sql.append(" AND t.support_hours != '' and t.support_hours is not null and CAST(t.support_hours AS DECIMAL) > 0 ");
-        
+
         if (oppId != null) {
             sql.append(" AND t.info_id = '").append(oppId).append("'");
         }
-        
+
         if (queryDTO.getLeftTime() != null && !queryDTO.getLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.create_time, '%Y-%m-%d') >= '").append(queryDTO.getLeftTime()).append("'");
         }
         if (queryDTO.getRightTime() != null && !queryDTO.getRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.create_time, '%Y-%m-%d') <= '").append(queryDTO.getRightTime()).append("'");
         }
-        
+
         sql.append(" ORDER BY t.create_time DESC");
-        
+
         return jdbcTemplate.queryForList(sql.toString());
     }
-    
+
     /**
      * 查询技术解析评审工时数据
      */
@@ -623,23 +624,23 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" WHERE t.create_person is not null ");
         sql.append(" AND u.name_ch is not null ");
         sql.append(" AND u.is_valid = '1' ");
-        
+
         if (oppId != null) {
             sql.append(" AND t.oppo_id = '").append(oppId).append("'");
         }
-        
+
         if (queryDTO.getLeftTime() != null && !queryDTO.getLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.created_at, '%Y-%m-%d') >= '").append(queryDTO.getLeftTime()).append("'");
         }
         if (queryDTO.getRightTime() != null && !queryDTO.getRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.created_at, '%Y-%m-%d') <= '").append(queryDTO.getRightTime()).append("'");
         }
-        
+
         sql.append(" ORDER BY t.created_at DESC");
-        
+
         return jdbcTemplate.queryForList(sql.toString());
     }
-    
+
     /**
      * 判断task流程是否结束
      */
@@ -647,16 +648,16 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         if (taskId == null) {
             return false;
         }
-        String sql = "SELECT count(1) FROM topp_order WHERE order_type='support_order' AND task_id = ? AND status_ = 'end'";
+        String sql = "SELECT status_ FROM topp_order WHERE order_type='support_order' AND task_id = ? ORDER BY create_time DESC LIMIT 1";
         try {
-            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, taskId);
-            return count != null && count > 0;
+            String status = jdbcTemplate.queryForObject(sql, String.class, taskId);
+            return "end".equals(status);
         } catch (Exception e) {
             log.error("判断task流程状态失败，taskId: {}", taskId, e);
             return false;
         }
     }
-    
+
     /**
      * 判断技术解析评审流程是否结束
      */
@@ -673,7 +674,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             return false;
         }
     }
-    
+
     /**
      * 获取支撑阶段名称
      */
@@ -696,7 +697,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                 return "未知";
         }
     }
-    
+
     /**
      * 查找日期所属的周周期
      */
@@ -705,20 +706,20 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         Calendar startCal = Calendar.getInstance();
         startCal.setTime(leftDate);
         startCal.setFirstDayOfWeek(Calendar.SUNDAY);
-        
+
         Calendar targetCal = Calendar.getInstance();
         targetCal.setTime(targetDate);
-        
+
         // 找到该周的周日和周六
         Calendar cycleStart = (Calendar) targetCal.clone();
         cycleStart.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
-        
+
         Calendar cycleEnd = (Calendar) targetCal.clone();
         cycleEnd.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
-        
+
         return sdf.format(cycleStart.getTime()) + "/" + sdf.format(cycleEnd.getTime());
     }
-    
+
     /**
      * 安全获取String值
      */
@@ -728,7 +729,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         }
         return value.toString();
     }
-    
+
     /**
      * 安全获取Integer值
      */
@@ -746,7 +747,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             return null;
         }
     }
-    
+
     /**
      * 安全获取Double值
      */
@@ -764,7 +765,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             return null;
         }
     }
-    
+
     /**
      * 构建支撑经理查询SQL
      */
@@ -772,29 +773,29 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT b.userId, b.oppoId FROM (");
         sql.append(" SELECT oppo.id_ as oppoId, a.userId, max(oppo.designer_time) as designerTime FROM (");
-        
+
         // tcomm_task表查询
         sql.append(buildTcommTaskSupportSql(queryDTO));
         sql.append(" UNION ALL ");
         // project_tech_review表查询
         sql.append(buildProjectTechReviewSupportSql(queryDTO));
-        
+
         sql.append(" ) a ");
         sql.append(" LEFT JOIN topp_opportunity oppo ON oppo.id_ = a.oppoId ");
         sql.append(" LEFT JOIN sys_user u1 ON u1.id_ = oppo.designer ");
         sql.append(" WHERE 1=1 ");
-        
+
         // 区域ID条件
         if (queryDTO.getAreaId() != null && !queryDTO.getAreaId().isEmpty()) {
             sql.append(" AND u1.org_id = '").append(queryDTO.getAreaId()).append("'");
         }
-        
+
         sql.append(" GROUP BY a.userId, a.oppoId ) b ");
         sql.append(" ORDER BY b.designerTime DESC");
-        
+
         return sql.toString();
     }
-    
+
     /**
      * 构建tcomm_task支撑查询SQL
      */
@@ -812,12 +813,12 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" AND t.info_id IS NOT NULL ");
         sql.append(" AND t.create_ IS NOT NULL ");
         sql.append(" AND ord.id_ IS NOT NULL ");
-        
+
         // 支撑经理姓名条件
         if (queryDTO.getSupportManagerName() != null && !queryDTO.getSupportManagerName().isEmpty()) {
             sql.append(" AND u.name_ch = '").append(queryDTO.getSupportManagerName()).append("'");
         }
-        
+
         // 工时统计时间条件
         if (queryDTO.getLeftTime() != null && !queryDTO.getLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.create_time, '%Y-%m-%d') >= '").append(queryDTO.getLeftTime()).append("'");
@@ -825,10 +826,10 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         if (queryDTO.getRightTime() != null && !queryDTO.getRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.create_time, '%Y-%m-%d') <= '").append(queryDTO.getRightTime()).append("'");
         }
-        
+
         return sql.toString();
     }
-    
+
     /**
      * 构建project_tech_review支撑查询SQL
      */
@@ -843,12 +844,12 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" AND u.name_ch IS NOT NULL ");
         sql.append(" AND u.is_valid = '1' ");
         sql.append(" AND ord.id_ IS NOT NULL ");
-        
+
         // 支撑经理姓名条件
         if (queryDTO.getSupportManagerName() != null && !queryDTO.getSupportManagerName().isEmpty()) {
             sql.append(" AND u.name_ch = '").append(queryDTO.getSupportManagerName()).append("'");
         }
-        
+
         // 工时统计时间条件
         if (queryDTO.getLeftTime() != null && !queryDTO.getLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(p.created_at, '%Y-%m-%d') >= '").append(queryDTO.getLeftTime()).append("'");
@@ -856,10 +857,10 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         if (queryDTO.getRightTime() != null && !queryDTO.getRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(p.created_at, '%Y-%m-%d') <= '").append(queryDTO.getRightTime()).append("'");
         }
-        
+
         return sql.toString();
     }
-    
+
     /**
      * 查询商机详细信息
      */
@@ -884,7 +885,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" FROM topp_opportunity oppo ");
         sql.append(" LEFT JOIN sys_user u1 ON u1.id_ = oppo.designer ");
         sql.append(" WHERE oppo.id_ = ?");
-        
+
         try {
             List<Map<String, Object>> list = jdbcTemplate.queryForList(sql.toString(), oppoId);
             return list.isEmpty() ? null : list.get(0);
@@ -893,7 +894,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             return null;
         }
     }
-    
+
     /**
      * 查询用户姓名
      */
@@ -909,7 +910,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
             return null;
         }
     }
-    
+
     /**
      * 查询task工时数据（按支撑经理）
      */
@@ -930,23 +931,23 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" AND t.actor_ = ? ");
         sql.append(" AND ord.id_ IS NOT NULL ");
         sql.append(" AND t.support_hours != '' AND t.support_hours IS NOT NULL AND CAST(t.support_hours AS DECIMAL) > 0 ");
-        
+
         if (queryDTO.getSupportManagerName() != null && !queryDTO.getSupportManagerName().isEmpty()) {
             sql.append(" AND u.name_ch = '").append(queryDTO.getSupportManagerName()).append("'");
         }
-        
+
         if (queryDTO.getLeftTime() != null && !queryDTO.getLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.create_time, '%Y-%m-%d') >= '").append(queryDTO.getLeftTime()).append("'");
         }
         if (queryDTO.getRightTime() != null && !queryDTO.getRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.create_time, '%Y-%m-%d') <= '").append(queryDTO.getRightTime()).append("'");
         }
-        
+
         sql.append(" ORDER BY t.create_time DESC");
-        
+
         return jdbcTemplate.queryForList(sql.toString(), oppId, userId);
     }
-    
+
     /**
      * 查询技术解析评审工时数据（按支撑经理）
      */
@@ -965,20 +966,20 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
         sql.append(" AND t.create_person = ? ");
         sql.append(" AND ord.id_ IS NOT NULL ");
         sql.append(" AND t.support_hours != '' AND t.support_hours IS NOT NULL AND CAST(t.support_hours AS DECIMAL) > 0 ");
-        
+
         if (queryDTO.getSupportManagerName() != null && !queryDTO.getSupportManagerName().isEmpty()) {
             sql.append(" AND u.name_ch = '").append(queryDTO.getSupportManagerName()).append("'");
         }
-        
+
         if (queryDTO.getLeftTime() != null && !queryDTO.getLeftTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.created_at, '%Y-%m-%d') >= '").append(queryDTO.getLeftTime()).append("'");
         }
         if (queryDTO.getRightTime() != null && !queryDTO.getRightTime().isEmpty()) {
             sql.append(" AND DATE_FORMAT(t.created_at, '%Y-%m-%d') <= '").append(queryDTO.getRightTime()).append("'");
         }
-        
+
         sql.append(" ORDER BY t.created_at DESC");
-        
+
         return jdbcTemplate.queryForList(sql.toString(), oppId, userId);
     }
 }
