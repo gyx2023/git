@@ -110,7 +110,7 @@ public class FieldAnnotaionUtil {
                 field.set(obj, (isBlank(val) ? null : new BigDecimal(val)));
             } else if (t == Date.class) {//
                 FieldAnnotaion dv = field.getAnnotation(FieldAnnotaion.class);
-                if (dv == null) {
+                if (dv == null || StringUtils.isBlank(dv.dateFormat())) {
                     // 不使用注解时 慎用yyyyMMdd放在最后
                     if(StringUtils.isNotEmpty(val)){
                         Date date = DateUtils.parseDate(val, "yyyyMMddHHmmss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss");
