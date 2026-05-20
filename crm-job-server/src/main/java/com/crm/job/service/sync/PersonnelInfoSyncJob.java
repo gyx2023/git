@@ -144,6 +144,19 @@ public class PersonnelInfoSyncJob {
         log.info("数据参数：1.日期参数：{}", targetDate);
         XxlJobHelper.log("数据参数：1.日期参数：{}", targetDate);
 
+        File dir = new File(LOCAL_PATH);
+        if (!dir.exists()) {
+            boolean mkdirsResult = dir.mkdirs();
+            if (!mkdirsResult) {
+                log.error("创建本地目录失败：{}", LOCAL_PATH);
+                XxlJobHelper.log("创建本地目录失败：{}", LOCAL_PATH);
+                XxlJobHelper.handleFail("创建本地目录失败：" + LOCAL_PATH);
+                return;
+            }
+            log.info("创建本地目录成功：{}", LOCAL_PATH);
+            XxlJobHelper.log("创建本地目录成功：{}", LOCAL_PATH);
+        }
+
         SftpWebUtil ftpUtil = null;
 
         String saveFile = FTP_DOWNLOAD_NAME + targetDate + FTP_DOWNLOAD_END_FIX;
@@ -161,11 +174,25 @@ public class PersonnelInfoSyncJob {
             log.info("localFile:{}", localFile);
             XxlJobHelper.log("localFile:{}", localFile);
 
-            ftpUtil.download(FTP_DIRECTORY, saveFile, localFile);
-            log.info("ob库人员增量同步文件接口download完成：{}", localFile);
-            XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
+            try {
+                ftpUtil.download(FTP_DIRECTORY, saveFile, localFile);
+                log.info("ob库人员增量同步文件接口download完成：{}", localFile);
+                XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
+            } catch (Exception e) {
+                log.error("ob库人员增量同步文件接口download异常", e);
+                XxlJobHelper.log("ob库人员增量同步文件接口download异常：{}", e.getMessage());
+                XxlJobHelper.handleFail("ob库人员增量同步文件接口download异常：" + e.getMessage());
+                return;
+            }
 
             File file = new File(localFile);
+            if (!file.exists() || file.length() == 0) {
+                log.error("人员增量文件下载失败或文件为空：{}", localFile);
+                XxlJobHelper.log("人员增量文件下载失败或文件为空：{}", localFile);
+                XxlJobHelper.handleFail("人员增量文件下载失败或文件为空：" + localFile);
+                return;
+            }
+
             Scanner scanner = new Scanner(file, GBK);
             File fileNew = new File(localFileNew);
             PrintWriter out = new PrintWriter(fileNew);
@@ -214,6 +241,7 @@ public class PersonnelInfoSyncJob {
                     XxlJobHelper.log("人员增量更新完成");
                 } catch (Exception e) {
                     e.printStackTrace();
+                    XxlJobHelper.handleFail("人员增量更新失败：" + e.getMessage());
                 } finally {
                     // 关闭流
                     bufferedReader.close();
@@ -229,9 +257,11 @@ public class PersonnelInfoSyncJob {
 
             log.info("【管理中台人员信息同步文件】任务结束");
             XxlJobHelper.log("【管理中台人员信息同步文件】任务结束");
+            XxlJobHelper.handleSuccess("【管理中台人员信息同步文件】任务结束");
         } catch (Exception e) {
-            log.info("【管理中台人员信息同步文件】任务失败", e);
+            log.error("【管理中台人员信息同步文件】任务失败：", e);
             XxlJobHelper.log("【管理中台人员信息同步文件】任务失败：{}", e.getMessage());
+            XxlJobHelper.handleFail("【管理中台人员信息同步文件】任务失败：" + e.getMessage());
         } finally {
             if (ftpUtil != null) {
                 try {
