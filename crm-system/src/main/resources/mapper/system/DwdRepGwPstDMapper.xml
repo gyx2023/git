@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.DwdRepGwPstDMapper">
+
+    <resultMap type="com.crm.system.domain.DwdRepGwPstD" id="DwdRepGwPstDResult">
+        <result property="id" column="id_"/>
+        <result property="empId" column="EMP_ID"/>
+        <result property="hrCode" column="HR_CODE"/>
+        <result property="mdmOrgCode" column="MDM_ORG_CODE"/>
+        <result property="orgName" column="ORG_NAME"/>
+        <result property="posCode" column="POS_CODE"/>
+        <result property="etlDataCycle" column="ETL_DATA_CYCLE"/>
+        <result property="etlTime" column="ETL_TIME"/>
+    </resultMap>
+
+    <!-- 从IOB数据库查询人员职位列表 -->
+    <select id="selectDwdRepGwPstListFromIob" resultType="java.util.Map">
+        SELECT * FROM IOB_DATA.DWD_REP_GW_PST_D
+    </select>
+
+    <!-- 批量插入人员职位数据 -->
+    <insert id="insertBatch">
+        INSERT INTO dwd_rep_gw_pst_d (EMP_ID, HR_CODE, MDM_ORG_CODE, ORG_NAME, POS_CODE, ETL_DATA_CYCLE, ETL_TIME)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.empId}, #{item.hrCode}, #{item.mdmOrgCode}, #{item.orgName}, #{item.posCode}, #{item.etlDataCycle}, #{item.etlTime})
+        </foreach>
+    </insert>
+
+</mapper>

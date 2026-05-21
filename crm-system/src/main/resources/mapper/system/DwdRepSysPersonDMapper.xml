@@ -57,4 +57,45 @@
         </foreach>
     </select>
 
+    <!-- 从IOB数据库分页查询人员信息列表(在职标志为0) -->
+    <select id="selectDwdRepSysPersonListFromIob" resultType="java.util.Map">
+        SELECT * FROM (
+            SELECT a.*, ROWNUM RN FROM (
+                SELECT * FROM IOB_DATA.REP_SYS_PERSON_NEW_D
+                WHERE ONJOB_FLAG = '0'
+                ORDER BY EMP_ID ASC
+            ) a WHERE ROWNUM &lt;= #{endRow}
+        ) WHERE RN &gt;= #{startRow}
+    </select>
+
+    <!-- 从IOB数据库查询人员总数(在职标志为0) -->
+    <select id="selectPersonCountFromIob" resultType="int">
+        SELECT COUNT(*) FROM IOB_DATA.REP_SYS_PERSON_NEW_D WHERE ONJOB_FLAG = '0'
+    </select>
+
+    <!-- 批量插入人员信息数据 -->
+    <insert id="insertBatch">
+        INSERT INTO dwd_rep_sys_person_d (
+            EMP_ID, HR_CODE, FULL_NAME, OA_USER_NAME, ONJOB_FLAG, USER_IDENTITY_CODE,
+            MOBILE, USER_PERSON_TYPE_CODE, LABEL_CATEGORY_CODE, ELEMENT_NAME3_MAP_CODE,
+            PERSON_BIG_TYPE, AREA_ID, AREA_NAME, COUNTY_ID, COUNTY_NAME, HX_ZONE_ID,
+            HX_ZONE_NAME, DEPT_TYPE_CODE, BAK_COLUMN1, BAK_COLUMN2, BAK_COLUMN3,
+            BAK_COLUMN4, BAK_COLUMN5, BAK_COLUMN6, QUIT_DATE, CREATED_BY,
+            CREATION_DATE, LAST_UPDATED_BY, LAST_UPDATE_DATE, ETL_DATA_CYCLE,
+            ETL_TIME, BAK_COLUMN7, BAK_COLUMN8, BAK_COLUMN9
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.empId}, #{item.hrCode}, #{item.fullName}, #{item.oaUserName}, #{item.onjobFlag},
+                #{item.userIdentityCode}, #{item.mobile}, #{item.userPersonTypeCode}, #{item.labelCategoryCode},
+                #{item.elementName3MapCode}, #{item.personBigType}, #{item.areaId}, #{item.areaName},
+                #{item.countyId}, #{item.countyName}, #{item.hxZoneId}, #{item.hxZoneName},
+                #{item.deptTypeCode}, #{item.bakColumn1}, #{item.bakColumn2}, #{item.bakColumn3},
+                #{item.bakColumn4}, #{item.bakColumn5}, #{item.bakColumn6}, #{item.quitDate},
+                #{item.createdBy}, #{item.creationDate}, #{item.lastUpdatedBy}, #{item.lastUpdateDate},
+                #{item.etlDataCycle}, #{item.etlTime}, #{item.bakColumn7}, #{item.bakColumn8}, #{item.bakColumn9}
+            )
+        </foreach>
+    </insert>
+
 </mapper>

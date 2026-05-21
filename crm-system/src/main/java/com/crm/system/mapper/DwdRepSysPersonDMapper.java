@@ -1,5 +1,6 @@
 package com.crm.system.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.system.domain.DwdRepSysPersonD;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
@@ -22,4 +23,21 @@ public interface DwdRepSysPersonDMapper extends BaseMapperPlus<DwdRepSysPersonDM
      * @return 人员地区信息列表
      */
     List<DwdRepSysPersonDVo> selectAreaAndCounty(@Param("personInfos") List<Map<String, String>> personInfos);
+
+    /**
+     * 从IOB数据库分页查询人员信息列表(在职标志为0)
+     */
+    @DS("slave_2")
+    List<Map<String, Object>> selectDwdRepSysPersonListFromIob(@Param("startRow") Integer startRow, @Param("endRow") Integer endRow);
+
+    /**
+     * 从IOB数据库查询人员总数(在职标志为0)
+     */
+    @DS("slave_2")
+    int selectPersonCountFromIob();
+
+    /**
+     * 批量插入人员信息数据
+     */
+    int insertBatch(@Param("list") List<DwdRepSysPersonD> list);
 }
