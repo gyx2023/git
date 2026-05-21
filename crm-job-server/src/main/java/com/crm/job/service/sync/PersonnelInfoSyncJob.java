@@ -18,6 +18,7 @@ import com.crm.system.mapper.SysUserOperateLogMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.*;
 import com.crm.system.utils.SSLClient;
+import com.jcraft.jsch.ChannelSftp;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -161,6 +162,7 @@ public class PersonnelInfoSyncJob {
 
         String saveFile = FTP_DOWNLOAD_NAME + targetDate + FTP_DOWNLOAD_END_FIX;
         String saveFileNew = FTP_DOWNLOAD_NAME + targetDate + "_new" + FTP_DOWNLOAD_END_FIX;
+        String ftpFile = FTP_DIRECTORY + File.separator + saveFile;
         String localFile = LOCAL_PATH + File.separator + saveFile;
         String localFileNew = LOCAL_PATH + File.separator + saveFileNew;
 
@@ -173,6 +175,35 @@ public class PersonnelInfoSyncJob {
             XxlJobHelper.log("saveFile:{}", saveFile);
             log.info("localFile:{}", localFile);
             XxlJobHelper.log("localFile:{}", localFile);
+
+            try {
+                // 列出目录下的所有文件
+                Vector<?> files = ftpUtil.listFiles(FTP_DIRECTORY);
+
+                if (files != null) {
+                    for (Object obj : files) {
+                        ChannelSftp.LsEntry entry = (ChannelSftp.LsEntry) obj;
+                        String filename = entry.getFilename();
+                        // 过滤 . 和 ..
+                        if (".".equals(filename) || "..".equals(filename)) {
+                            continue;
+                        }
+                        log.info("发现文件/文件夹: {}", filename);
+                        XxlJobHelper.log("发现文件/文件夹: {}", filename);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("列出文件失败：", e);
+                XxlJobHelper.log("列出文件失败：{}", e.getMessage());
+            }
+
+            boolean fileExists = ftpUtil.existFile(ftpFile);
+            if (!fileExists) {
+                log.error("SFTP服务器上文件不存在：{}", ftpFile);
+                XxlJobHelper.log("SFTP服务器上文件不存在：{}", ftpFile);
+                XxlJobHelper.handleFail("SFTP服务器上文件不存在：" + ftpFile);
+                return;
+            }
 
             try {
                 ftpUtil.download(FTP_DIRECTORY, saveFile, localFile);
