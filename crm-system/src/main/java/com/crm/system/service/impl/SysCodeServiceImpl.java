@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -129,5 +131,46 @@ public class SysCodeServiceImpl implements ISysCodeService {
             sysCodeVo = list.get(0);
         }
         return sysCodeVo;
+    }
+
+    /**
+     * 根据类型查询编码列表并转换为LinkedHashMap
+     */
+    @Override
+    public LinkedHashMap<String, String> getCodeMapByType(String type) {
+        LambdaQueryWrapper<SysCode> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysCode::getType, type);
+        lqw.orderByAsc(SysCode::getOrder);
+        List<SysCode> list = baseMapper.selectList(lqw);
+        
+        LinkedHashMap<String, String> codeMap = new LinkedHashMap<>();
+        if (ObjectUtil.isNotEmpty(list)) {
+            for (SysCode sysCode : list) {
+                if (StringUtils.isNotBlank(sysCode.getCode())) {
+                    codeMap.put(sysCode.getCode(), sysCode.getName());
+                }
+            }
+        }
+        return codeMap;
+    }
+
+    /**
+     * 根据类型查询编码的settingStr1映射
+     */
+    @Override
+    public HashMap<String, String> getCodeSettingStr1MapByType(String type) {
+        LambdaQueryWrapper<SysCode> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysCode::getType, type);
+        List<SysCode> list = baseMapper.selectList(lqw);
+        
+        HashMap<String, String> codeMap = new HashMap<>();
+        if (ObjectUtil.isNotEmpty(list)) {
+            for (SysCode sysCode : list) {
+                if (StringUtils.isNotBlank(sysCode.getCode()) && StringUtils.isNotBlank(sysCode.getSettingStr1())) {
+                    codeMap.put(sysCode.getCode(), sysCode.getSettingStr1());
+                }
+            }
+        }
+        return codeMap;
     }
 }
