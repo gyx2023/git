@@ -16,12 +16,6 @@ import java.util.List;
  * @date 2025-12-23
  */
 public interface ISysUsersService {
-
-    /**
-     * 同步亚信用户信息
-     */
-    String doPostForYxUser(SysUsers user, String operType);
-
     /**
      * 查询用户(客户的员工)
      */
