@@ -9,7 +9,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
+import com.crm.job.utils.HttpClientUtil;
 import com.crm.job.utils.SftpWebUtil;
+import com.crm.job.utils.SignUtil;
 import com.crm.system.domain.*;
 import com.crm.system.domain.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.vo.SysUsersVo;
@@ -17,30 +19,17 @@ import com.crm.system.mapper.SysLogYxMapper;
 import com.crm.system.mapper.SysUserOperateLogMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.*;
-import com.crm.system.utils.SSLClient;
-import com.jcraft.jsch.ChannelSftp;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.crm.common.constant.Constants.GBK;
 import static com.crm.system.utils.Constants.PERSONNEL_FILE_FTP_INFO;
@@ -694,7 +683,7 @@ public class PersonnelInfoSyncJob {
                 String url = getYxSyncUrl(jsonStr);
                 log.info("亚信同步url信息:" + url);
                 log.info("亚信同步信息:" + jsonStr);
-                String msg = doPost(url, jsonStr, "utf-8");
+                String msg = HttpClientUtil.doPost(url, jsonStr, "utf-8");
                 log.info("亚信同步返回信息:" + msg);
                 retObj = JSONObject.parseObject(msg);
                 //调用亚信结果
@@ -729,6 +718,10 @@ public class PersonnelInfoSyncJob {
 
     public String getYxSyncUrl(String jsonStr) throws Exception {
         Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
+        if (param == null || param.isEmpty()) {
+            throw new Exception("未配置亚信同步参数");
+        }
+
         String url = param.get("doPostUrl");
         String appKey = param.get("appKey");
         String method = param.get("method");
@@ -737,77 +730,18 @@ public class PersonnelInfoSyncJob {
         String timestamp = System.currentTimeMillis() + "";
         String random = ((int) (Math.random() * 9999) + 1000) + "";
         String busiSerial = timestamp + random;
+
         param.put("timestamp", timestamp);
         param.put("busiSerial", busiSerial);
-        param.put("content", jsonStr);
         param.remove("doPostUrl");
         param.remove("appKey");
-        String sign = sign(param, "HmacSHA256", appKey);
-        log.info(param.toString());
+
+        // 调用签名方法，传入jsonStr作为业务参数
+        String sign = SignUtil.sign(param, jsonStr, "HmacSHA256", appKey);
+        log.info("亚信同步签名参数:{}", param.toString());
+
         url += "?method=" + method + "&format=" + format + "&appId=" + appId + "&timestamp=" + timestamp + "&busiSerial=" + busiSerial + "&sign=" + sign;
         return url;
     }
-
-    public static String sign(Map<String, String> params, String algorithm, String secret) {
-        String signStr = params.entrySet().stream()
-            .filter(e -> e.getValue() != null && !"sign".equals(e.getKey()))
-            .sorted(Map.Entry.comparingByKey())
-            .map(e -> e.getKey() + "=" + e.getValue())
-            .collect(Collectors.joining("&"));
-
-        return hmacSign(signStr, secret, algorithm);
-    }
-
-    private static String hmacSign(String data, String key, String algorithm) {
-        try {
-            Mac mac = Mac.getInstance(algorithm);
-            SecretKeySpec spec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm);
-            mac.init(spec);
-            byte[] raw = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(raw);
-        } catch (Exception e) {
-            throw new RuntimeException("签名失败", e);
-        }
-    }
-
-    public static String doPost(String url, String jsonstr, String charset) {
-        HttpClient httpClient = null;
-        HttpPost httpPost = null;
-        String result = null;
-        try {
-            httpClient = new SSLClient();
-            httpPost = new HttpPost(url);
-            httpPost.addHeader("Content-Type", "application/json");
-            if (StringUtils.isNotEmpty(jsonstr)) {
-                StringEntity se = new StringEntity(jsonstr, "utf-8");
-                se.setContentType("text/json");
-                se.setContentEncoding(new BasicHeader("Content-Type", "application/json"));
-                se.setContentEncoding(new BasicHeader("ticket", "接口获取得值"));
-                httpPost.setEntity(se);
-            }
-            HttpResponse response = httpClient.execute(httpPost);
-            if (response != null) {
-                HttpEntity resEntity = response.getEntity();
-                if (resEntity != null) {
-                    result = EntityUtils.toString(resEntity, charset);
-                    // 释放资源
-                    resEntity.consumeContent();
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            if (httpClient != null) {
-                try {
-                    // 关闭连接器管理
-                    httpClient.getConnectionManager().shutdown();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return result;
-    }
-
 
 }
