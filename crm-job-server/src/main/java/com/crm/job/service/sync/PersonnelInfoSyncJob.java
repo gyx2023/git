@@ -176,27 +176,6 @@ public class PersonnelInfoSyncJob {
             log.info("localFile:{}", localFile);
             XxlJobHelper.log("localFile:{}", localFile);
 
-            try {
-                // 列出目录下的所有文件
-                Vector<?> files = ftpUtil.listFiles(FTP_DIRECTORY);
-
-                if (files != null) {
-                    for (Object obj : files) {
-                        ChannelSftp.LsEntry entry = (ChannelSftp.LsEntry) obj;
-                        String filename = entry.getFilename();
-                        // 过滤 . 和 ..
-                        if (".".equals(filename) || "..".equals(filename)) {
-                            continue;
-                        }
-                        log.info("发现文件/文件夹: {}", filename);
-                        XxlJobHelper.log("发现文件/文件夹: {}", filename);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("列出文件失败：", e);
-                XxlJobHelper.log("列出文件失败：{}", e.getMessage());
-            }
-
             boolean fileExists = ftpUtil.existFile(ftpFile);
             if (!fileExists) {
                 log.error("SFTP服务器上文件不存在：{}", ftpFile);
@@ -227,6 +206,7 @@ public class PersonnelInfoSyncJob {
             Scanner scanner = new Scanner(file, GBK);
             File fileNew = new File(localFileNew);
             PrintWriter out = new PrintWriter(fileNew);
+            int lineCount = 0;
             // 换行符是0x06 需要下载完文件根据换行符重新生成一份文件，方便按照行读取数据,否则下载下来的文件换行不对
             while (scanner.hasNext()) {
                 String str = scanner.nextLine();
@@ -234,22 +214,34 @@ public class PersonnelInfoSyncJob {
                 for (String s : ss) {
                     out.write(s + FILE_SEPARATOR_ROW_NEW);//在子字符串后加上换行符并输出文本
                 }
+                lineCount++;
             }
             // 处理好换行文件写出
-            scanner.close();
             out.flush();
             out.close();
+            scanner.close();
 
+            log.info("文件预处理完成，共处理 {} 行，生成文件：{}", lineCount, localFileNew);
+            XxlJobHelper.log("文件预处理完成，共处理 {} 行", lineCount);
 
+            // 验证新文件是否成功创建
+            if (!fileNew.exists() || fileNew.length() == 0) {
+                log.error("文件预处理失败，生成的文件不存在或为空：{}", localFileNew);
+                XxlJobHelper.log("文件预处理失败，生成的文件不存在或为空：{}", localFileNew);
+                XxlJobHelper.handleFail("文件预处理失败，生成的文件不存在或为空");
+                return;
+            }
+
+            FileReader reader = null;
+            BufferedReader bufferedReader = null;
             if (fileNew.exists()) {
-                FileReader reader = null;
-                BufferedReader bufferedReader = null;
                 try {
                     // 获取数据并入库
                     reader = new FileReader(fileNew);
                     bufferedReader = new BufferedReader(reader);
                     //获取当前文件的长度
                     String currentLine;
+                    int processedCount = 0;
                     while ((currentLine = bufferedReader.readLine()) != null) {
                         PersonnelInfo personnelInfo = new PersonnelInfo();
                         String[] strs = currentLine.split(FILE_SEPARATOR_LIST, -1);
@@ -267,20 +259,37 @@ public class PersonnelInfoSyncJob {
 
                         //更新或新增sysuser表数据
                         updateSysUserByPersonnelInfo(personnelInfo);
+                        processedCount++;
                     }
-                    log.info("人员增量更新完成。。。。。。。。。。。。。。。。。");
-                    XxlJobHelper.log("人员增量更新完成");
+                    log.info("人员增量更新完成，共处理{}条记录", processedCount);
+                    XxlJobHelper.log("人员增量更新完成，共处理{}条记录", processedCount);
                 } catch (Exception e) {
+                    log.error("人员增量更新失败", e);
                     e.printStackTrace();
+                    XxlJobHelper.log("人员增量更新失败：{}", e.getMessage());
                     XxlJobHelper.handleFail("人员增量更新失败：" + e.getMessage());
                 } finally {
                     // 关闭流
-                    bufferedReader.close();
-                    reader.close();
+                    if (bufferedReader != null) {
+                        try {
+                            bufferedReader.close();
+                        } catch (IOException e) {
+                            log.error("关闭BufferedReader失败", e);
+                        }
+                    }
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (IOException e) {
+                            log.error("关闭FileReader失败", e);
+                        }
+                    }
                 }
                 // 删除下载和生成文件
-                file.delete();
-                fileNew.delete();
+                boolean deleted1 = file.delete();
+                boolean deleted2 = fileNew.delete();
+                log.info("临时文件删除结果：原文件 = {}, 新文件 = {}", deleted1, deleted2);
+                XxlJobHelper.log("临时文件删除结果：原文件 = {}, 新文件 = {}", deleted1, deleted2);
             } else {
                 log.info("人员增量文件接口 下载更新失败 文件未找到 error>>>>>>>>>>>>");
                 XxlJobHelper.log("人员增量文件接口 下载更新失败 文件未找到 error>>>>>>>>>>>>");
