@@ -15,50 +15,6 @@ import java.util.Map;
 public class FieldAnnotaionUtil {
 
     /**
-     * 把valuse根据其下标插入到存在注解Field的域中且values的下标跟注解中的index向对应
-     */
-    @SuppressWarnings("rawtypes")
-    public static boolean setFiledValFromValuesByIndex(Object obj, String[] values) {
-        if (null == obj) return false;
-        if (null == values || values.length < 1) return false;
-
-        boolean flag = true;
-        Class clazz = obj.getClass();
-        //获得所有字段
-        Field[] fields = clazz.getDeclaredFields();
-        if (fields.length < 1) return false;
-
-        Map<Integer, Field> indexFieldMap = new HashMap<Integer, Field>();
-        for (Field f : fields) {
-            if (f.isAnnotationPresent(FieldAnnotaion.class)) {
-                FieldAnnotaion dv = f.getAnnotation(FieldAnnotaion.class);
-                int i = dv.index();
-                if (i >= 0) {
-                    if (null != indexFieldMap.get(i)) {
-                        System.out.println("error---------------注解index重复");
-                        return false;
-                    } else {
-                        indexFieldMap.put(i, f);
-                    }
-                }
-            }
-        }
-
-        if (indexFieldMap.size() != values.length) {
-            System.out.println("error---------------字段数与values个数不一致");
-            return false;
-        }
-        for (int i = 0; i < values.length; i++) {
-            Field f = indexFieldMap.get(i);
-            if (!setFieldValueFromObject(obj, f, values[i])) {
-                System.out.println("error---------------value在插入属性时因类型不一致导致异常");
-                return false;
-            }
-        }
-        return flag;
-    }
-
-    /**
      * 向指定对象的属性中插入值
      */
     @SuppressWarnings("rawtypes")
@@ -157,5 +113,42 @@ public class FieldAnnotaionUtil {
         } catch (Exception e) {
             return new Date();
         }
+    }
+
+    /**
+     * 按自然顺序赋值(跳过前extraColumn个字段)
+     *
+     * @param obj         目标对象
+     * @param values      值数组
+     * @param extraColumn 需要跳过的字段数(如id、创建时间等额外字段)
+     * @return 是否成功
+     */
+    @SuppressWarnings("rawtypes")
+    public static boolean setFiledValFromValuesByOrder(Object obj, String[] values, Integer extraColumn) {
+        if (null == obj) return false;
+        if (null == values || values.length < 1) return false;
+        if (extraColumn == null) extraColumn = 0;
+
+        boolean flag = true;
+        Class<?> clazz = obj.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+        if (fields.length < 1) return false;
+
+        // 验证字段数与values个数是否匹配(考虑跳过的字段)
+        if (fields.length != values.length + extraColumn) {
+            log.error("字段数与values个数不一致, fields.length={}, values.length={}, extraColumn={}",
+                    fields.length, values.length, extraColumn);
+            return false;
+        }
+
+        // 从第extraColumn个字段开始映射
+        for (int i = 0; i < values.length; i++) {
+            Field f = fields[i + extraColumn];
+            if (!setFieldValueFromObject(obj, f, values[i])) {
+                log.error("value在插入属性时因类型不一致导致异常, field={}, value={}", f.getName(), values[i]);
+                return false;
+            }
+        }
+        return flag;
     }
 }
