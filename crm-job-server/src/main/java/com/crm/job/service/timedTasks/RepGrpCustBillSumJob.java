@@ -98,7 +98,6 @@ public class RepGrpCustBillSumJob {
         } catch (Exception e) {
             log.error("集团客户账单汇总预警数据下载Job执行异常", e);
             XxlJobHelper.log("集团客户账单汇总预警数据下载Job执行异常:{}", e.getMessage());
-            XxlJobHelper.handleFail("集团客户账单汇总预警数据下载Job执行异常:" + e.getMessage());
         }
     }
 
