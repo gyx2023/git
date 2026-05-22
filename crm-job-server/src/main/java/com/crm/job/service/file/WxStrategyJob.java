@@ -1,5 +1,6 @@
 package com.crm.job.service.file;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.core.domain.dto.WorkOrderDTO;
@@ -250,9 +251,10 @@ public class WxStrategyJob {
      */
     public int createWorkOrderFile(String path, String yyyyMMdd) {
         int flag = 0;
-        File file = new File(path);
 
         try {
+            // 自动创建父目录 + 新建文件，已存在则覆盖
+            File file = FileUtil.touch(path);
             // 1. 解析日期（提前处理）
             String dateStr = LocalDate.parse(yyyyMMdd, DateTimeFormatter.BASIC_ISO_DATE).toString();
 
@@ -390,14 +392,10 @@ public class WxStrategyJob {
      */
     public int createStrategyInfoFile(String path, String yyyyMMdd) {
         int flag = 0;
-        File file = new File(path);
 
         try {
-            if (file.exists()) {
-                file.delete();
-            }
-            file.createNewFile();
-
+            // 自动创建父目录 + 新建文件，已存在则覆盖
+            File file = FileUtil.touch(path);
             Map<String, JSONObject> strategyMap = wxStrategyService.queryStrategyInfo();
             String dateStr = LocalDate.parse(yyyyMMdd, DateTimeFormatter.BASIC_ISO_DATE).toString();
 
@@ -458,14 +456,10 @@ public class WxStrategyJob {
      */
     public int createStrategyMonitorFile(String path, String yyyyMMdd) {
         int flag = 0;
-        File file = new File(path);
 
         try {
-            if (file.exists()) {
-                file.delete();
-            }
-            file.createNewFile();
-
+            // 自动创建父目录 + 新建文件，已存在则覆盖
+            File file = FileUtil.touch(path);
             Map<String, JSONObject> strategyMap = wxStrategyService.queryStrategyInfo();
             String dateStr = LocalDate.parse(yyyyMMdd, DateTimeFormatter.BASIC_ISO_DATE).toString();
             String acctDate = dateStr + " 00:00:00";
