@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class CustTRosterCustomerNatureMemberProvinceServiceImpl implements CustTRosterCustomerNatureMemberProvinceService {
@@ -21,12 +20,12 @@ public class CustTRosterCustomerNatureMemberProvinceServiceImpl implements CustT
 
     @Override
     public void deleteBatch() {
-        custTRosterCustomerNatureMemberProvinceMapper.delete(null);
+        custTRosterCustomerNatureMemberProvinceMapper.truncateTable();
     }
 
     @Override
-    public List<CustRosterCustomerNatureMemberProvinceDo> getCustCustomerNatureList() {
-        return custRosterCustomerNatureMemberProvinceMapper.getCustCustomerNatureList();
+    public List<CustRosterCustomerNatureMemberProvinceDo> getCustCustomerNatureList(int pageNum,int pageSize) {
+        return custRosterCustomerNatureMemberProvinceMapper.getCustCustomerNatureList(pageNum, pageSize);
     }
 
     @Override

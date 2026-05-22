@@ -130,8 +130,8 @@ public class WxStrategyJob {
         ftpPassword = param.get("ftp_password");
         ftpHost = param.get("ftp_host");
         ftpPort = param.get("ftp_port");
-        ftDirectory = param.get("ftp_directory");
-        localPath = param.get("ftp_local");
+        ftDirectory = param.get("ftp_directory_new");
+        localPath = param.get("ftp_local_new");
         log.info("SFTP 配置初始化完成：host=" + ftpHost + ", dir=" + ftDirectory);
     }
 
