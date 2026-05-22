@@ -1,7 +1,6 @@
 package com.crm.job.service.cust;
 
 import com.crm.common.enums.RedisKeyConstants;
-import com.crm.common.utils.BeanCopyUtils;
 import com.crm.system.domain.CustRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.service.cust.CustTRosterCustomerNatureMemberProvinceService;
@@ -17,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 名单制和自然客户关系表 同步定时任务
+ * 名单制和自然客户关系表 同步定时任务（优化版：分页 + 批量插入 + 无OOM）
  */
 @Slf4j
 @Component
@@ -29,8 +28,14 @@ public class CustTRosterNatureRelationJob {
     @Resource
     private RedissonClient redissonClient;
 
-    /** 每批次插入条数 */
+    /**
+     * / 每批次插入大小（推荐 500~1000，性能最优）
+     */
     private static final int BATCH_SIZE = 1000;
+    /***
+     * 分页查询大小
+     */
+    private static final int PAGE_SIZE = 1000;
 
     @XxlJob("custTRosterNatureRelationJob")
     public void syncOppoUnbound() {
@@ -40,53 +45,64 @@ public class CustTRosterNatureRelationJob {
         RLock lock = redissonClient.getLock(redisKey);
 
         try {
-            // 加分布式锁，防止多节点重复执行
-            lock.lock(RedisKeyConstants.MAX_LOCK_TIME, TimeUnit.SECONDS);
+            // 加锁：防止多节点重复执行
+            boolean lockSuccess = lock.tryLock(RedisKeyConstants.MAX_LOCK_TIME, TimeUnit.SECONDS);
+            if (!lockSuccess) {
+                log.info("【名单制自然客户关系同步】其他节点正在执行，本次跳过");
+                return;
+            }
 
-            // 1. 清空表旧数据
+            // 1. 清空旧数据
             customerNatureService.deleteBatch();
             log.info("【名单制自然客户关系同步】清空历史数据完成");
 
-            // 2. 查询源数据
-            List<CustRosterCustomerNatureMemberProvinceDo> dataList = customerNatureService.getCustCustomerNatureList();
-            if (dataList == null || dataList.isEmpty()) {
-                log.warn("【名单制自然客户关系同步】未查询到待同步数据");
-                return;
-            }
-            log.info("【名单制自然客户关系同步】待同步数据总条数：{}", dataList.size());
+            int pageNum = 1;
+            long totalInsert = 0;
 
-            // 3. 分批插入（正确写法）
-            List<CustTRosterCustomerNatureMemberProvinceDo> batchList = new ArrayList<>(BATCH_SIZE);
+            // 2. 分页查询 + 分批插入
+            while (true) {
+                List<CustRosterCustomerNatureMemberProvinceDo> dataList =
+                    customerNatureService.getCustCustomerNatureList(pageNum, PAGE_SIZE);
 
-            for (CustRosterCustomerNatureMemberProvinceDo source : dataList) {
-                // 对象拷贝
-                CustTRosterCustomerNatureMemberProvinceDo target = new CustTRosterCustomerNatureMemberProvinceDo();
-                target.setNatureCustId(source.getNatureCustId().toString());
-                target.setRosterCustomerId(source.getRosterCustomerId().toString());
-                batchList.add(target);
+                if (dataList == null || dataList.isEmpty()) {
+                    break;
+                }
 
-                // 达到批次大小 → 批量插入
-                if (batchList.size() >= BATCH_SIZE) {
+                // 3. 转换对象
+                List<CustTRosterCustomerNatureMemberProvinceDo> batchList = new ArrayList<>(BATCH_SIZE);
+                for (CustRosterCustomerNatureMemberProvinceDo source : dataList) {
+                    CustTRosterCustomerNatureMemberProvinceDo target = new CustTRosterCustomerNatureMemberProvinceDo();
+                    target.setNatureCustId(source.getNatureCustId().toString());
+                    target.setRosterCustomerId(source.getRosterCustomerId().toString());
+                    batchList.add(target);
+
+                    // 达到批次大小 → 批量插入
+                    if (batchList.size() >= BATCH_SIZE) {
+                        customerNatureService.insertBatch(batchList);
+                        totalInsert += batchList.size();
+                        log.info("【名单制自然客户关系同步】已插入累计：{} 条", totalInsert);
+                        batchList.clear();
+                    }
+                }
+
+                // 最后一批不足1000的也要插入
+                if (!batchList.isEmpty()) {
                     customerNatureService.insertBatch(batchList);
-                    log.info("【名单制自然客户关系同步】已插入 {} 条", batchList.size());
+                    totalInsert += batchList.size();
                     batchList.clear();
                 }
-            }
 
-            // 4. 插入最后一批不足100的数据
-            if (!batchList.isEmpty()) {
-                customerNatureService.insertBatch(batchList);
-                log.info("【名单制自然客户关系同步】插入最后一批 {} 条", batchList.size());
+                pageNum++;
             }
 
             long cost = System.currentTimeMillis() - startTime;
-            log.info("【名单制自然客户关系同步】任务执行完成，总耗时：{} ms", cost);
+            log.info("【名单制自然客户关系同步】任务全部完成！总插入：{} 条，总耗时：{} ms", totalInsert, cost);
 
         } catch (Exception e) {
             log.error("【名单制自然客户关系同步】任务执行异常", e);
             throw new RuntimeException("同步任务异常", e);
         } finally {
-            // 释放锁
+            // 安全释放锁
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
                 log.info("【名单制自然客户关系同步】分布式锁已释放");

@@ -5,4 +5,5 @@ import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
 
 public interface CustTRosterCustomerNatureMemberProvinceMapper extends BaseMapperPlus<CustTRosterCustomerNatureMemberProvinceMapper, CustTRosterCustomerNatureMemberProvinceDo, CustTRosterCustomerNatureMemberProvinceDo> {
 
+    void truncateTable();
 }
