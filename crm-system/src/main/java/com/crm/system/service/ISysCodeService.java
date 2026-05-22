@@ -7,6 +7,8 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -50,4 +52,18 @@ public interface ISysCodeService {
     SysCodeVo findCode(String type, String code);
 
     String findNameByCodes(String type, String codes);
+
+    /**
+     * 根据类型查询编码列表并转换为LinkedHashMap
+     * @param type 编码类型
+     * @return LinkedHashMap，key为code，value为name
+     */
+    LinkedHashMap<String, String> getCodeMapByType(String type);
+
+    /**
+     * 根据类型查询编码的settingStr1映射
+     * @param type 编码类型
+     * @return HashMap，key为code，value为settingStr1
+     */
+    HashMap<String, String> getCodeSettingStr1MapByType(String type);
 }
