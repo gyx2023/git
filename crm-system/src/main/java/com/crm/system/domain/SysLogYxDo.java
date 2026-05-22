@@ -1,5 +1,6 @@
 package com.crm.system.domain;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -11,7 +12,7 @@ import java.util.Date;
 @TableName("sys_log_yx")
 public class SysLogYxDo {
 
-    @TableId("id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Integer id;
 
     @TableField("type_")

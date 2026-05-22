@@ -113,6 +113,7 @@ public class PersonnelInfoSyncJob {
 
     /**
      * 管理中台人员信息同步文件定时任务
+     * 每天凌晨四点下发文件，四点半执行定时任务(管理中台提供的新文件接口)
      * 在xxl-job调度中心配置JobHandler为：personnelInfoSyncJobNew
      * 支持传入参数格式：
      * 1. 单日期参数：yyyyMMdd - 指定日期 - 例：20260519
@@ -650,7 +651,7 @@ public class PersonnelInfoSyncJob {
         if (StringUtils.isEmpty(org.getOrgIdYx()) || StringUtils.isEmpty(org.getOrgNameYx())) {
             SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "人员组织结构数据错误", operType);
             sysLogYxMapper.insertOrUpdate(logYx);
-            return false;
+            return true;
         }
         return false;
     }
