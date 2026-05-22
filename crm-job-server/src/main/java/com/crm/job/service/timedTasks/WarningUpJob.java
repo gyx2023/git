@@ -18,10 +18,6 @@ import java.util.Map;
 
 /**
  * 升级预警定时任务
- *
- * @Author: gaoyy
- * @Description: 升级预警数据同步定时任务
- * @DateTime: 2022/08/10 17:55
  */
 @Slf4j
 @Component
