@@ -14,7 +14,7 @@ public interface CustRosterCustomerNatureMemberProvinceMapper extends BaseMapper
     /**
      * 获取客户性质列表
      */
-    @Select("select ctcn.nature_cust_id,ctcn.roster_customer_id from cust_t_roster_customer_nature_member_province ctcn where ctcn.state=1 LIMIT #{pageNum}, #{pageSize}")
+    @Select("select ctcn.nature_cust_id,ctcn.roster_customer_id from cust_t_roster_customer_nature_member_province ctcn where ctcn.state=1 ORDER BY ctcn.id ASC LIMIT #{pageNum}, #{pageSize}")
     List<CustRosterCustomerNatureMemberProvinceDo> getCustCustomerNatureList(
         @Param("pageNum") int pageNum,
         @Param("pageSize") int pageSize
