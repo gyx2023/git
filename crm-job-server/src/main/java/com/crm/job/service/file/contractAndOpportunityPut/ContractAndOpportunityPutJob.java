@@ -76,9 +76,9 @@ public class ContractAndOpportunityPutJob {
             String areaEng = contractAndOpportunityPutConfig.getAreaEng();
             Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-            contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";
-            contract = areaEng + "Contract" + currentDate + ".xls";
-            opportunity = areaEng + "Opportunity" + currentDate + ".xls";
+            contractIncome = areaEng + "ContractIncome" + currentDate + ".xlsx";
+            contract = areaEng + "Contract" + currentDate + ".xlsx";
+            opportunity = areaEng + "Opportunity" + currentDate + ".xlsx";
 
             // 创建合同收入文件并上传
             createContractIncomeFile(areaId, areaEng, currentDate);
