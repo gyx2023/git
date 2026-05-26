@@ -133,11 +133,11 @@ public class FieldAnnotaionUtil {
     }
 
     /**
-     * 按自然顺序赋值(跳过前extraColumn个字段)
+     * 按自然顺序赋值
      *
      * @param obj         目标对象
      * @param values      值数组
-     * @param extraColumn 需要跳过的字段数(如id、创建时间等额外字段)
+     * @param extraColumn 数据库额外字段数 如id、创建时间
      * @return 是否成功
      */
     public static boolean setFiledValFromValuesByOrder(Object obj, String[] values, Integer extraColumn) {

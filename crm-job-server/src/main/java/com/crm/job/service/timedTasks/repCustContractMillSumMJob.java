@@ -139,7 +139,6 @@ public class repCustContractMillSumMJob {
                 while ((currentLine = bufferedReader.readLine()) != null) {
                     count++;
                     RepCustContractMillSumM data = new RepCustContractMillSumM();
-                    // 跳过前3个字段(id、createDate等额外字段)
                     FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 3);
                     data.setCreateDate(new Date());
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMM");

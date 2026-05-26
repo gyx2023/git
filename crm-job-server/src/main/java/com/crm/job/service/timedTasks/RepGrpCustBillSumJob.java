@@ -151,7 +151,7 @@ public class RepGrpCustBillSumJob {
                     while ((currentLine = bufferedReader.readLine()) != null) {
                         count++;
                         RepGrpCustBillSumWarning data = new RepGrpCustBillSumWarning();
-                        // 使用分隔符\x1b分割字段，从第2个字段开始映射(跳过id和create_date)
+                        // 使用分隔符\x1b分割字段，从第2个字段开始映射
                         FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 2);
                         data.setCreateDate(date);
                         dataList.add(data);
