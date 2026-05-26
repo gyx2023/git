@@ -11,7 +11,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.HttpClientUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.job.utils.SignUtil;
+import com.crm.common.utils.signutil.SignUtil;
 import com.crm.system.domain.*;
 import com.crm.system.domain.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.vo.SysUsersVo;
@@ -709,7 +709,7 @@ public class PersonnelInfoSyncJob {
                 }
             } catch (Exception e) {
                 yxReturnMsg = returnMsg;
-                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "接口调用失败", operType);
+                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "接口调用失败：" + retObj, operType);
                 sysLogYxMapper.insertOrUpdate(logYx);
                 break;
             }

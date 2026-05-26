@@ -158,7 +158,7 @@ public class ConOpenSendShortMsgJob implements InitializingBean, DisposableBean 
                     log.info("【短信发送任务】发送成功：{}", conOpenResult.getMsg());
                     XxlJobHelper.log("【短信发送任务】发送成功：{}", conOpenResult.toString());
                 } else {
-                    message.setShortSend("0");
+                    message.setShortSend("2");
                     log.error("【短信发送任务】发送失败：{}", conOpenResult.getMsg());
                     XxlJobHelper.log("【短信发送任务】发送失败：{}", conOpenResult.toString());
                 }
