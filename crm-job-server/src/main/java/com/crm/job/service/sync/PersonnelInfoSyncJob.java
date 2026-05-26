@@ -110,7 +110,6 @@ public class PersonnelInfoSyncJob {
     }
 
 
-
     /**
      * 管理中台人员信息同步文件定时任务
      * 每天凌晨四点下发文件，四点半执行定时任务(管理中台提供的新文件接口)
@@ -684,15 +683,17 @@ public class PersonnelInfoSyncJob {
                 String url = getYxSyncUrl(jsonStr);
                 log.info("亚信同步url信息:" + url);
                 log.info("亚信同步信息:" + jsonStr);
+                XxlJobHelper.log("亚信同步信息：{}", jsonStr);
                 String msg = HttpClientUtil.doPost(url, jsonStr, "utf-8");
                 log.info("亚信同步返回信息:" + msg);
+                XxlJobHelper.log("亚信同步返回信息：{}", msg);
                 retObj = JSONObject.parseObject(msg);
                 //调用亚信结果
                 if (!"00000".equals(retObj.getString("respCode")) || !"00000".equals(retObj.getJSONObject("result").getString("code"))) {
                     yxReturnMsg = "修改成功,同步楼宇信息失败!";
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", 
-                        "亚信接口返回失败：respCode=" + retObj.getString("respCode") + ", result.code=" + retObj.getJSONObject("result").getString("code") + 
-                        ", respDesc=" + retObj.getString("respDesc"), operType);
+                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2",
+                        "亚信接口返回失败：respCode=" + retObj.getString("respCode") + ", result.code=" + retObj.getJSONObject("result").getString("code") +
+                            ", respDesc=" + retObj.getString("respDesc"), operType);
                     sysLogYxMapper.insertOrUpdate(logYx);
                     break;
                 }
@@ -708,16 +709,20 @@ public class PersonnelInfoSyncJob {
                 i++;
                 if (i == 5) {
                     yxReturnMsg = returnMsg;
-                    String errorMsg = "重试5次后仍然失败，最后返回：respCode=" + (retObj != null ? retObj.getString("respCode") : "null") + 
-                        ", respDesc=" + (retObj != null ? retObj.getString("respDesc") : "null");
+                    String errorMsg = "重试5次后仍然失败，最后返回：respCode=" + retObj.getString("respCode") +
+                        ", respDesc=" + retObj.getString("respDesc");
                     log.error("亚信同步接口重试5次失败，用户ID：{}，错误详情：{}", user.getId(), errorMsg);
                     SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
                     sysLogYxMapper.insertOrUpdate(logYx);
                 }
             } catch (Exception e) {
                 yxReturnMsg = returnMsg;
-                String errorMsg = "接口调用失败：" + (retObj != null ? retObj.toJSONString() : "null") + ", 异常信息：" + e.getMessage();
-                log.error("亚信同步接口调用异常，用户ID：{}，异常详情：", user.getId(), e);
+                String exceptionType = e.getClass().getName();
+                String exceptionMsg = e.getMessage() != null ? e.getMessage() : "无详细消息";
+                String errorMsg = "接口调用失败：" + (retObj != null ? retObj.toJSONString() : "null") +
+                    ", 异常类型：" + exceptionType + ", 异常信息：" + exceptionMsg;
+                log.error("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
+                XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
                 SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
                 sysLogYxMapper.insertOrUpdate(logYx);
                 break;
@@ -729,6 +734,7 @@ public class PersonnelInfoSyncJob {
     public String getYxSyncUrl(String jsonStr) throws Exception {
         Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
         if (param == null || param.isEmpty()) {
+            XxlJobHelper.log("未配置亚信同步参数");
             throw new Exception("未配置亚信同步参数");
         }
 
@@ -749,6 +755,7 @@ public class PersonnelInfoSyncJob {
         // 调用签名方法，传入jsonStr作为业务参数
         String sign = SignUtil.sign(param, jsonStr, "HmacSHA256", appKey);
         log.info("亚信同步签名参数:{}", param.toString());
+        XxlJobHelper.log("亚信同步参数：{}", param);
 
         url += "?method=" + method + "&format=" + format + "&appId=" + appId + "&timestamp=" + timestamp + "&busiSerial=" + busiSerial + "&sign=" + sign;
         return url;
