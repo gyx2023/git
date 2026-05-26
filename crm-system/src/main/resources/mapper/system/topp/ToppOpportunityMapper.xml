@@ -216,6 +216,62 @@
         <result property="eformNos" column="eform_nos"/>
     </resultMap>
 
+    <!-- 商机导出结果映射 -->
+    <resultMap id="OpportunityExcelVoResult" type="com.crm.system.domain.vo.topp.ToppOpportunityExcelVo">
+        <result column="opp_code" property="oppCode"/>
+        <result column="opp_name" property="oppName"/>
+        <result column="opp_type" property="oppType"/>
+        <result column="opp_include_type" property="oppIncludeType"/>
+        <result column="unicom_type" property="unicomType"/>
+        <result column="unicom_type2" property="unicomType2"/>
+        <result column="develop_flag" property="developFlag"/>
+        <result column="opp_source" property="oppSource"/>
+        <result column="expect_contract_money" property="expectContractMoney"/>
+        <result column="month_income_contribution" property="monthIncomeContribution"/>
+        <result column="contract_month" property="contractMonth"/>
+        <result column="is_bidding" property="isBidding"/>
+        <result column="is_need_external_resources" property="isNeedExternalResources"/>
+        <result column="is_have_innovate" property="isHaveInnovate"/>
+        <result column="cust_no" property="custNo"/>
+        <result column="cust_name" property="custName"/>
+        <result column="customer_unicom_type" property="customerUnicomType"/>
+        <result column="department_code" property="departmentCode"/>
+        <result column="create_time" property="createTime"/>
+        <result column="oppo_state" property="oppoState"/>
+        <result column="creator_name_ch" property="creatorNameCh"/>
+        <result column="creator_phone" property="creatorPhone"/>
+        <result column="creator_city" property="creatorCity"/>
+        <result column="creator_district" property="creatorDistrict"/>
+        <result column="creator_dept" property="creatorDept"/>
+        <result column="cust_manager_name_ch" property="custManagerNameCh"/>
+        <result column="cust_manager_phone" property="custManagerPhone"/>
+        <result column="cust_manager_city" property="custManagerCity"/>
+        <result column="cust_manager_district" property="custManagerDistrict"/>
+        <result column="cust_manager_dept" property="custManagerDept"/>
+        <result column="designer_name_ch" property="designerNameCh"/>
+        <result column="designer_phone" property="designerPhone"/>
+        <result column="designer_city" property="designerCity"/>
+        <result column="designer_district" property="designerDistrict"/>
+        <result column="designer_dept" property="designerDept"/>
+        <result column="clue_id" property="clueId"/>
+        <result column="bid_body" property="bidBody"/>
+        <result column="bid_result" property="bidResult"/>
+        <result column="bid_result_time" property="bidResultTime"/>
+        <result column="bid_money" property="bidMoney"/>
+        <result column="match_bid_money" property="matchBidMoney"/>
+        <result column="bid_create_time" property="bidCreateTime"/>
+        <result column="contract_count" property="contractCount"/>
+        <result column="contract_total_money" property="contractTotalMoney"/>
+        <result column="contract_sign_date" property="contractSignDate"/>
+        <result column="contract_start_date" property="contractStartDate"/>
+        <result column="contract_period_start" property="contractPeriodStart"/>
+        <result column="contract_end_date" property="contractEndDate"/>
+        <result column="is_valid" property="isValid"/>
+        <result column="cust_need" property="custNeed"/>
+        <result column="sign_time" property="signTime"/>
+        <result column="bg_type" property="bgType"/>
+    </resultMap>
+
     <!-- 核心修改：SQL改为单行无换行，消除解析敏感点 -->
     <select id="selectToppOpportunity" resultMap="resultOpp">
         SELECT op.opp_code,
@@ -392,6 +448,123 @@
                 </foreach>
             </if>
         </where>
+    </select>
+
+    <!-- 查询商机导出数据（一次性JOIN所有关联表，查原始值） -->
+    <select id="selectOpportunityExportList" resultMap="OpportunityExcelVoResult">
+        SELECT
+            -- ==================== 商机基础字段 ====================
+            op.opp_code,
+            op.opp_name,
+            op.opp_type,
+            op.opp_include_type,
+            op.unicom_type,
+            op.unicom_type2,
+            op.opp_source,
+            op.expect_contract_money,
+            op.month_income_contribution,
+            op.contract_month,
+            CAST(op.is_bidding AS CHAR) as is_bidding,
+            CAST(op.is_need_external_resources AS CHAR) as is_need_external_resources,
+            CAST(op.is_have_innovate AS CHAR) as is_have_innovate,
+            op.cust_no,
+            op.cust_name,
+            DATE_FORMAT(op.create_time, '%Y/%m/%d') as create_time,
+            op.oppo_state,
+            CAST(op.is_valid AS CHAR) as is_valid,
+            op.cust_need,
+            DATE_FORMAT(op.sign_time, '%Y/%m/%d') as sign_time,
+            op.bg_type,
+            op.clue_id,
+
+            -- ==================== 客户相关字段 ====================
+            cust.develop_flag,
+            cust.department_code,
+            unicom_type_setting.setting_str1 as customer_unicom_type,
+
+            -- ==================== 创建人信息 ====================
+            creator.name_ch as creator_name_ch,
+            creator.phone as creator_phone,
+            creator_area_parent.name as creator_city,
+            creator_area.name as creator_district,
+            creator_org.name as creator_dept,
+
+            -- ==================== 客户经理信息 ====================
+            manager.name_ch as cust_manager_name_ch,
+            manager.phone as cust_manager_phone,
+            manager_area_parent.name as cust_manager_city,
+            manager_area.name as cust_manager_district,
+            manager_org.name as cust_manager_dept,
+
+            -- ==================== 支撑经理信息 ====================
+            designer.name_ch as designer_name_ch,
+            designer.phone as designer_phone,
+            designer_area_parent.name as designer_city,
+            designer_area.name as designer_district,
+            designer_org.name as designer_dept,
+
+            -- ==================== 投标信息 ====================
+            bid.bid_body,
+            bid.result as bid_result,
+            DATE_FORMAT(bid.result_time, '%Y/%m/%d') as bid_result_time,
+            bid.bid_money,
+            bid.match_bid_money,
+            DATE_FORMAT(bid.create_time, '%Y/%m/%d') as bid_create_time,
+
+            -- ==================== 合同聚合信息（子查询） ====================
+            IFNULL(contract_agg.contract_count, 0) as contract_count,
+            contract_agg.contract_total_money,
+            DATE_FORMAT(contract_agg.min_sign_date, '%Y/%m/%d') as contract_sign_date,
+            DATE_FORMAT(contract_agg.min_start_date, '%Y/%m/%d') as contract_start_date,
+            DATE_FORMAT(contract_agg.min_start_date, '%Y/%m/%d') as contract_period_start,
+            DATE_FORMAT(contract_agg.max_end_date, '%Y/%m/%d') as contract_end_date
+
+        FROM topp_opportunity op
+
+                 -- ==================== 关联客户表 ====================
+                 LEFT JOIN tcomm_customer cust ON op.cust_id = cust.id_
+
+            -- ==================== 关联客户行业字典配置 ====================
+                 LEFT JOIN sys_dict_data unicom_type_setting
+                           ON cust.department_code = unicom_type_setting.dict_value
+                               AND unicom_type_setting.dict_type = 'unicom_type_2'
+
+            -- ==================== 关联创建人及其组织信息 ====================
+                 LEFT JOIN sys_user creator ON op.creator = creator.id_
+                 LEFT JOIN sys_org creator_org ON creator.org_id = creator_org.id_
+                 LEFT JOIN sys_area creator_area ON creator_org.area_id = creator_area.id_
+                 LEFT JOIN sys_area creator_area_parent ON creator_area.parent_ = creator_area_parent.id_
+
+            -- ==================== 关联客户经理及其组织信息 ====================
+                 LEFT JOIN sys_user manager ON op.cust_manager_id = manager.id_
+                 LEFT JOIN sys_org manager_org ON manager.org_id = manager_org.id_
+                 LEFT JOIN sys_area manager_area ON manager_org.area_id = manager_area.id_
+                 LEFT JOIN sys_area manager_area_parent ON manager_area.parent_ = manager_area_parent.id_
+
+            -- ==================== 关联支撑经理及其组织信息 ====================
+                 LEFT JOIN sys_user designer ON op.designer = designer.id_
+                 LEFT JOIN sys_org designer_org ON designer.org_id = designer_org.id_
+                 LEFT JOIN sys_area designer_area ON designer_org.area_id = designer_area.id_
+                 LEFT JOIN sys_area designer_area_parent ON designer_area.parent_ = designer_area_parent.id_
+
+            -- ==================== 关联投标信息 ====================
+                 LEFT JOIN topp_bid bid ON op.bid_id = bid.id_
+
+            -- ==================== 关联合同聚合信息（子查询） ====================
+                 LEFT JOIN (
+            SELECT
+                project_id,
+                COUNT(*) as contract_count,
+                SUM(total_money) as contract_total_money,
+                MIN(sign_date) as min_sign_date,
+                MIN(start_date) as min_start_date,
+                MAX(end_date) as max_end_date
+            FROM topp_contract
+            GROUP BY project_id
+        ) contract_agg ON op.id_ = contract_agg.project_id
+
+        WHERE op.opp_area_id LIKE CONCAT(#{areaId}, '%')
+        ORDER BY op.id_ DESC
     </select>
 
     <select id="listOpportunity" resultType="com.crm.common.core.domain.dto.OpportunityDTO">
