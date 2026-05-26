@@ -677,7 +677,7 @@ public class PersonnelInfoSyncJob {
 
     public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
         String yxReturnMsg = "";
-        JSONObject retObj = new JSONObject();
+        JSONObject retObj = null;
         int i = 0;
         do {
             try {
@@ -690,6 +690,10 @@ public class PersonnelInfoSyncJob {
                 //调用亚信结果
                 if (!"00000".equals(retObj.getString("respCode")) || !"00000".equals(retObj.getJSONObject("result").getString("code"))) {
                     yxReturnMsg = "修改成功,同步楼宇信息失败!";
+                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", 
+                        "亚信接口返回失败：respCode=" + retObj.getString("respCode") + ", result.code=" + retObj.getJSONObject("result").getString("code") + 
+                        ", respDesc=" + retObj.getString("respDesc"), operType);
+                    sysLogYxMapper.insertOrUpdate(logYx);
                     break;
                 }
                 if ("00000".equals(retObj.getString("respCode")) && "00000".equals(retObj.getJSONObject("result").getString("code"))) {
@@ -704,12 +708,17 @@ public class PersonnelInfoSyncJob {
                 i++;
                 if (i == 5) {
                     yxReturnMsg = returnMsg;
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", retObj.getString("respDesc"), operType);
+                    String errorMsg = "重试5次后仍然失败，最后返回：respCode=" + (retObj != null ? retObj.getString("respCode") : "null") + 
+                        ", respDesc=" + (retObj != null ? retObj.getString("respDesc") : "null");
+                    log.error("亚信同步接口重试5次失败，用户ID：{}，错误详情：{}", user.getId(), errorMsg);
+                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
                     sysLogYxMapper.insertOrUpdate(logYx);
                 }
             } catch (Exception e) {
                 yxReturnMsg = returnMsg;
-                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "接口调用失败：" + retObj, operType);
+                String errorMsg = "接口调用失败：" + (retObj != null ? retObj.toJSONString() : "null") + ", 异常信息：" + e.getMessage();
+                log.error("亚信同步接口调用异常，用户ID：{}，异常详情：", user.getId(), e);
+                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
                 sysLogYxMapper.insertOrUpdate(logYx);
                 break;
             }
