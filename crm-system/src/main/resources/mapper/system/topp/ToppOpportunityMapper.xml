@@ -576,7 +576,7 @@
             oppo.contract_month,
             oppo.cust_no,
             oppo.cust_name,
-            oppo.create_time,
+            CAST(CONCAT(IFNULL(DATE_FORMAT(oppo.create_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as create_time,
             oppo.oppo_state,
             a.name_ AS area_name,
             o.name_ AS org_name,
