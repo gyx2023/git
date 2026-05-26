@@ -73,43 +73,44 @@ public class PolicyCenterTaskJob {
 
     /**
      * 定时扫描策略任务表（状态是未同步的任务）去查询任务详情，客户详情和产品详情(每隔五分钟)
+     * 这个job不用了,已注释
      */
-    @XxlJob(value = "PolicyCenterTaskJob")
-    public void syncPolicyCenterTaskAllMsg() {
-        long startTime = System.currentTimeMillis();
-        XxlJobHelper.log("开始执行策略中心任务同步Job");
-        log.info("开始执行策略中心任务同步Job");
-
-        try {
-            // 初始化配置参数
-            initConfig();
-
-            // 查询未同步的任务
-            List<PolicyCenterTask> notSyncPolicyTask = policyCenterTaskService.getNotSyncPolicyTask();
-            log.info("开始同步策略任务信息,共{}条", notSyncPolicyTask.size());
-            XxlJobHelper.log("开始同步策略任务信息,共{}条", notSyncPolicyTask.size());
-
-            for (PolicyCenterTask policyCenterTask : notSyncPolicyTask) {
-                log.info("处理任务编码:{}", policyCenterTask.getTaskCode());
-                try {
-                    syncPolicyTaskMsg(policyCenterTask);
-                } catch (Exception e) {
-                    log.error("处理任务异常,任务编码:{},异常信息:{}", policyCenterTask.getTaskCode(), e.getMessage(), e);
-                    XxlJobHelper.log("处理任务异常,任务编码:{},异常信息:{}", policyCenterTask.getTaskCode(), e.getMessage());
-                }
-            }
-
-            long endTime = System.currentTimeMillis();
-            long costTime = endTime - startTime;
-            log.info("策略中心任务同步Job执行完成,耗时:{}ms", costTime);
-            XxlJobHelper.log("策略中心任务同步Job执行完成,耗时:{}ms", costTime);
-
-        } catch (Exception e) {
-            log.error("策略中心任务同步Job执行异常", e);
-            XxlJobHelper.log("策略中心任务同步Job执行异常:{}", e.getMessage());
-            XxlJobHelper.handleFail("策略中心任务同步Job执行异常:" + e.getMessage());
-        }
-    }
+//    @XxlJob(value = "PolicyCenterTaskJob")
+//    public void syncPolicyCenterTaskAllMsg() {
+//        long startTime = System.currentTimeMillis();
+//        XxlJobHelper.log("开始执行策略中心任务同步Job");
+//        log.info("开始执行策略中心任务同步Job");
+//
+//        try {
+//            // 初始化配置参数
+//            initConfig();
+//
+//            // 查询未同步的任务
+//            List<PolicyCenterTask> notSyncPolicyTask = policyCenterTaskService.getNotSyncPolicyTask();
+//            log.info("开始同步策略任务信息,共{}条", notSyncPolicyTask.size());
+//            XxlJobHelper.log("开始同步策略任务信息,共{}条", notSyncPolicyTask.size());
+//
+//            for (PolicyCenterTask policyCenterTask : notSyncPolicyTask) {
+//                log.info("处理任务编码:{}", policyCenterTask.getTaskCode());
+//                try {
+//                    syncPolicyTaskMsg(policyCenterTask);
+//                } catch (Exception e) {
+//                    log.error("处理任务异常,任务编码:{},异常信息:{}", policyCenterTask.getTaskCode(), e.getMessage(), e);
+//                    XxlJobHelper.log("处理任务异常,任务编码:{},异常信息:{}", policyCenterTask.getTaskCode(), e.getMessage());
+//                }
+//            }
+//
+//            long endTime = System.currentTimeMillis();
+//            long costTime = endTime - startTime;
+//            log.info("策略中心任务同步Job执行完成,耗时:{}ms", costTime);
+//            XxlJobHelper.log("策略中心任务同步Job执行完成,耗时:{}ms", costTime);
+//
+//        } catch (Exception e) {
+//            log.error("策略中心任务同步Job执行异常", e);
+//            XxlJobHelper.log("策略中心任务同步Job执行异常:{}", e.getMessage());
+//            XxlJobHelper.handleFail("策略中心任务同步Job执行异常:" + e.getMessage());
+//        }
+//    }
 
     /**
      * 初始化配置参数
