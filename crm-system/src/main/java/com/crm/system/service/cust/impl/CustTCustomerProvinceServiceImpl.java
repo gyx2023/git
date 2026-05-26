@@ -49,8 +49,12 @@ public class CustTCustomerProvinceServiceImpl implements CustTCustomerProvinceSe
         List<Map<String, String>> dataList = custTCustomerProvinceMapper.listCustomerPropertyBatch(idList);
         for (Map<String, String> map : dataList) {
             String custId = map.get("natureCustId");
-            String flag = map.getOrDefault("majorFlag", "2");
-            resultMap.put(custId, flag);
+            String flag = map.get("majorFlag");
+            if ("1".equals(flag)) {
+                resultMap.put(custId,"1");
+            }else{
+                resultMap.put(custId,"2");
+            }
         }
         return resultMap;
     }
