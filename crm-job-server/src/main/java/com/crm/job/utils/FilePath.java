@@ -17,12 +17,12 @@ public class FilePath {
     /**
      * 从yml读取配置
      */
-//    @Value("${attach.root}")
+    @Value("${attach.root}")
     private String root;
 
     private Long maxSize;
 
-//    @Value("${path.temp}")
+    @Value("${path.temp}")
     private String temp;
 
     /**
