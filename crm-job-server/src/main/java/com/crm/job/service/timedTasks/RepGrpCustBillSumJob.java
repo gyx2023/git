@@ -68,7 +68,6 @@ public class RepGrpCustBillSumJob {
     /**
      * 集团客户账单汇总预警数据下载定时任务
      */
-    @SuppressWarnings("resource")
     @XxlJob(value = "repGrpCustBillSumJob")
     public void download() {
         long startTime = System.currentTimeMillis();
