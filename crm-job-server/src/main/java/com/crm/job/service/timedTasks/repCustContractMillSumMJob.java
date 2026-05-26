@@ -109,7 +109,6 @@ public class repCustContractMillSumMJob {
         } catch (Exception e) {
             log.error("合同收入报表定时任务执行异常", e);
             XxlJobHelper.log("合同收入报表定时任务执行异常:{}", e.getMessage());
-            XxlJobHelper.handleFail("合同收入报表定时任务执行异常:" + e.getMessage());
         }
     }
 

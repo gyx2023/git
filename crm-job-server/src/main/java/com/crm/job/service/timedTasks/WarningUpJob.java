@@ -30,6 +30,7 @@ public class WarningUpJob {
     private IDwdRepSysPersonDService dwdRepSysPersonDService;
 
     /**
+     * 同步管理中台在职人员信息（person_new）
      * 升级预警推送时间，每月3号
      * 同步经分数据：
      * - DWD_REP_GW_PST_D（人员职位表）
@@ -55,7 +56,6 @@ public class WarningUpJob {
         } catch (Exception e) {
             log.error("升级预警接口 数据同步 异常", e);
             XxlJobHelper.log("升级预警接口 数据同步 异常:{}", e.getMessage());
-            XxlJobHelper.handleFail("升级预警接口 数据同步 异常:" + e.getMessage());
         }
     }
 

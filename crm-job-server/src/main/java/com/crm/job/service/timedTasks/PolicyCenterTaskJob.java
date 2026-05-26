@@ -275,7 +275,7 @@ public class PolicyCenterTaskJob {
     /**
      * 设置头部节点
      */
-    private Map<String, Object> setHead() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnsupportedEncodingException {
+    private Map<String, Object> setHead() throws NoSuchAlgorithmException, UnsupportedEncodingException {
         Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
         Map<String, Object> headMap = new HashMap<>();
         UNI_BSS_HEAD.put("APP_ID", POLICY_CENTER_GET_TASK_APPID);
