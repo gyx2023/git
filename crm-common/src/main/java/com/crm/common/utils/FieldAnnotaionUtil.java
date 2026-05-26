@@ -10,9 +10,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class FieldAnnotaionUtil {
+
+    /**
+     * 反射操作耗时 缓存
+     */
+    private static ConcurrentHashMap<Class<?>, Field[]> classFieldsMap = new ConcurrentHashMap<>();
 
     /**
      * 向指定对象的属性中插入值
@@ -116,6 +122,17 @@ public class FieldAnnotaionUtil {
     }
 
     /**
+     * 按自然顺序赋值
+     *
+     * @param obj    目标对象
+     * @param values 值数组
+     * @return 是否成功
+     */
+    public static boolean setFiledValFromValuesByOrder(Object obj, String[] values) {
+        return setFiledValFromValuesByOrder(obj, values, 0);
+    }
+
+    /**
      * 按自然顺序赋值(跳过前extraColumn个字段)
      *
      * @param obj         目标对象
@@ -123,7 +140,6 @@ public class FieldAnnotaionUtil {
      * @param extraColumn 需要跳过的字段数(如id、创建时间等额外字段)
      * @return 是否成功
      */
-    @SuppressWarnings("rawtypes")
     public static boolean setFiledValFromValuesByOrder(Object obj, String[] values, Integer extraColumn) {
         if (null == obj) return false;
         if (null == values || values.length < 1) return false;
@@ -131,7 +147,11 @@ public class FieldAnnotaionUtil {
 
         boolean flag = true;
         Class<?> clazz = obj.getClass();
-        Field[] fields = clazz.getDeclaredFields();
+        Field[] fields = classFieldsMap.get(clazz);
+        if (fields == null) {
+            fields = clazz.getDeclaredFields();
+            classFieldsMap.put(clazz, fields);
+        }
         if (fields.length < 1) return false;
 
         // 验证字段数与values个数是否匹配(考虑跳过的字段)
@@ -141,14 +161,15 @@ public class FieldAnnotaionUtil {
             return false;
         }
 
-        // 从第extraColumn个字段开始映射
+        log.info("===开始赋值===");
         for (int i = 0; i < values.length; i++) {
-            Field f = fields[i + extraColumn];
+            Field f = fields[i];
             if (!setFieldValueFromObject(obj, f, values[i])) {
                 log.error("value在插入属性时因类型不一致导致异常, field={}, value={}", f.getName(), values[i]);
                 return false;
             }
         }
+        log.info("===赋值结束===");
         return flag;
     }
 }
