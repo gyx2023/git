@@ -524,7 +524,7 @@ public class PersonnelInfoSyncJob {
                 String msg = doPostForYxUser(sysUsers, operateType);
                 XxlJobHelper.log("用户：{}，同步结果：{}", sysUsers.getNameCh(), msg);
             } catch (Exception e) {
-                XxlJobHelper.log("用户：{}，同步亚信接口异常，详情见日志！", operateLog.getNameCh());
+                XxlJobHelper.log("用户：{}，同步亚信接口异常，详情见日志！错误信息：{}", operateLog.getNameCh(), e.getMessage());
                 e.printStackTrace();
             }
         }
