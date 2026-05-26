@@ -1,6 +1,8 @@
 package com.crm.system.domain;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -18,7 +20,7 @@ public class CustTRosterCustomerProvinceDo {
     /**
      * 主键ID
      */
-    @TableField("id_")
+    @TableId(value = "id_",type = IdType.AUTO)
     private Integer id;
 
     /**
