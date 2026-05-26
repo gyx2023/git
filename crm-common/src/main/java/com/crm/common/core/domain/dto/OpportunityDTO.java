@@ -48,7 +48,7 @@ public class OpportunityDTO {
     /**
      * 创建时间
      */
-    private Date createTime;
+    private String createTime;
 
     /**
      * 商机状态

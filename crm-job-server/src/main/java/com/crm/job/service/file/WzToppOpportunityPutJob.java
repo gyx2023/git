@@ -10,6 +10,7 @@ import com.crm.system.service.topp.IToppOpportunityService;
 import com.jcraft.jsch.SftpException;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.redisson.api.RLock;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -31,10 +33,9 @@ import java.util.concurrent.TimeUnit;
  * @author yn
  * date 2021/5/26 10:21
  */
+@Slf4j
 @Component
 public class WzToppOpportunityPutJob {
-
-    private static final Log log = LogFactory.getLog(WzToppOpportunityPutJob.class);
 
     @Resource
     private ISysParamService sysParamService;
@@ -76,18 +77,27 @@ public class WzToppOpportunityPutJob {
             }
         }
     }
-
     public void creatFile(String yesterday) {
         log.info("商机推送Job 开始  >>>>>>>>>>>> : ");
         String filePath = FilePath.rootPath;
         String fileName = yesterday + "_toppOpportunity.txt";
+
+        // ====================== 自动创建目录 ======================
+        File dir = new File(filePath);
+        if (!dir.exists()) {
+            boolean mkdirSuccess = dir.mkdirs();
+            log.info("创建目录结果：{}，路径：{}", mkdirSuccess, filePath);
+        }
+
+        // ====================== 生成文件（UTF-8 无乱码） ======================
+        File file = new File(filePath, fileName);
         List<OpportunityDTO> list = opportunityService.getToppOpportunityPut("3303");//温州
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath + "/" + fileName, true))) {
+        try (BufferedWriter writer = new BufferedWriter(
+            new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)
+        )) {
             for (OpportunityDTO dto : list) {
                 StringBuilder content = new StringBuilder();
-
-                // 按顺序拼接字段，用 & 分隔
                 content.append(dto.getOppCode()).append("&")
                     .append(dto.getOppName()).append("&")
                     .append(dto.getOppType()).append("&")
@@ -102,38 +112,40 @@ public class WzToppOpportunityPutJob {
                     .append(dto.getCustManagerName()).append("&")
                     .append(dto.getCustManagerTel());
 
-                // 写入一行
                 writer.write(content.toString());
                 writer.newLine();
             }
+            log.info("商机文件写入完成，条数：{}，文件：{}", list.size(), file.getAbsolutePath());
+
+
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("商机文件写入失败", e);
+            return; // 写入失败直接退出，不执行上传
         }
 
+        // ====================== FTP 上传 ======================
         Map<String, String> param = sysParamService.findValueMapsByType("wz_cust_signin_opportunity_contract_put");
-        //用户名
         String ftpUsername = param.get("ftp_username");
-        //密码
         String ftpPassword = param.get("ftp_password");
-        //ip地址
         String ftpHost = param.get("ftp_host");
-        //端口号
         String ftpPort = param.get("ftp_port");
 
-        InputStream input = null;
-        try {
-            File file = new File(filePath + "/" + fileName);
-            input = new FileInputStream(file);
+        // 自动关闭流：try-with-resources
+        try (InputStream input = new FileInputStream(file)) {
+            log.info("开始上传文件到FTP：{}", fileName);
             putFile(ftpUsername, ftpPassword, ftpHost, ftpPort, fileName, input);
-            //删除文件
+            log.info("FTP上传成功：{}", fileName);
+
+            // 上传成功后再删除文件
             if (file.exists()) {
-                file.delete();
+                boolean deleteSuccess = file.delete();
+                log.info("文件删除结果：{}，文件：{}", deleteSuccess, file.getAbsolutePath());
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("FTP上传或文件操作失败：{}", fileName, e);
+            // 上传失败，不删除文件，方便排查
         }
-
     }
 
     public void putFile(String ftpUsername, String ftpPassword, String ftpHost, String ftpPort, String fileName, InputStream input) {
