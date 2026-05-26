@@ -190,6 +190,6 @@ flowable:
   database-schema: zj_sj
 # 文件上传临时根目录
 attach:
-  root: C:/data/fileResource/temp
+  root: /tmp/wz
 path:
-  temp: C:/data/fileResource/temp
+  temp: /tmp/wz

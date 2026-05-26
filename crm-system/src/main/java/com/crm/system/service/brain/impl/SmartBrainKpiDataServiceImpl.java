@@ -118,7 +118,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getDataQuery(cycleDate, cycleType, "today", false, AREA_TYPE_PROVINCE);
         String compare1 = getDataQuery(compare[0], cycleType, "compare1", false, AREA_TYPE_PROVINCE);
-        String compare2 = getDataQuery(compare[1], cycleType, "compare2", false, AREA_TYPE_PROVINCE);
+        String compare2 =null;
+        if(!"Y".equals(cycleType)){
+            compare2 = getDataQuery(compare[1], cycleType, "compare2", false, AREA_TYPE_PROVINCE);
+        }
         return mapper.buildProvinceKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -137,7 +140,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getDataQuery(cycleDate, cycleType, "today", false, AREA_TYPE_CITY);
         String compare1 = getDataQuery(compare[0], cycleType, "compare1", false, AREA_TYPE_CITY);
-        String compare2 = getDataQuery(compare[1], cycleType, "compare2", false, AREA_TYPE_CITY);
+        String compare2 =null;
+        if(!"Y".equals(cycleType)){
+            compare2=getDataQuery(compare[1], cycleType, "compare2", false, AREA_TYPE_CITY);
+        }
         return mapper.buildCityKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -145,7 +151,7 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
 
     /**
      * 维系预警工单数-区县级统计
-     *
+     * 【修复点】原代码错误传入 AREA_TYPE_PROVINCE，改为 AREA_TYPE_COUNTY
      * @param cycleDate 统计周期日期（日格式：yyyy-MM-dd，月格式：yyyy-MM）
      * @param cycleType 统计周期类型（D-日，M-月）
      * @param kpiId     指标编码
@@ -154,12 +160,15 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
     @Override
     public int buildCountyKpiInsertSql(String cycleDate, String cycleType, String kpiId) {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
-        String allToday = getDataQuery(cycleDate, cycleType, "all_today", false, AREA_TYPE_PROVINCE);
-        String today = getDataQuery(cycleDate, cycleType, "today", true, AREA_TYPE_PROVINCE);
-        String compare1 = getDataQuery(compare[0], cycleType, "compare1", true, AREA_TYPE_PROVINCE);
-        String compare2 = getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_PROVINCE);
-        return mapper.buildProvinceClosedLoopKpiInsertSql(
-            cycleDate, cycleType, kpiId, allToday, today, compare1, compare2
+        // 【核心修复】子查询使用区县级别 AREA_TYPE_COUNTY，不是省级
+        String today = getDataQuery(cycleDate, cycleType, "today", false, AREA_TYPE_COUNTY);
+        String compare1 = getDataQuery(compare[0], cycleType, "compare1", false, AREA_TYPE_COUNTY);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2=getDataQuery(compare[1], cycleType, "compare2", false, AREA_TYPE_COUNTY);
+        }
+        return mapper.buildCountyKpiInsertSql(
+            cycleDate, cycleType, kpiId, today, compare1, compare2
         );
     }
 
@@ -219,7 +228,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String allToday = getDataQuery(cycleDate, cycleType, "all_today", false, AREA_TYPE_PROVINCE);
         String today = getDataQuery(cycleDate, cycleType, "today", true, AREA_TYPE_PROVINCE);
         String compare1 = getDataQuery(compare[0], cycleType, "compare1", true, AREA_TYPE_PROVINCE);
-        String compare2 = getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_PROVINCE);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_PROVINCE);
+        }
         return mapper.buildProvinceClosedLoopKpiInsertSql(
             cycleDate, cycleType, kpiId, allToday, today, compare1, compare2
         );
@@ -239,7 +251,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String allToday = getDataQuery(cycleDate, cycleType, "all_today", false, AREA_TYPE_CITY);
         String today = getDataQuery(cycleDate, cycleType, "today", true, AREA_TYPE_CITY);
         String compare1 = getDataQuery(compare[0], cycleType, "compare1", true, AREA_TYPE_CITY);
-        String compare2 = getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_CITY);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_CITY);
+        }
         return mapper.buildCityClosedLoopKpiInsertSql(
             cycleDate, cycleType, kpiId, allToday, today, compare1, compare2
         );
@@ -256,10 +271,14 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
     @Override
     public int buildCountyClosedLoopKpiInsertSql(String cycleDate, String cycleType, String kpiId) {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
+        // 【修复】全部使用区县级别
         String allToday = getDataQuery(cycleDate, cycleType, "all_today", false, AREA_TYPE_COUNTY);
         String today = getDataQuery(cycleDate, cycleType, "today", true, AREA_TYPE_COUNTY);
         String compare1 = getDataQuery(compare[0], cycleType, "compare1", true, AREA_TYPE_COUNTY);
-        String compare2 = getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_COUNTY);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2=getDataQuery(compare[1], cycleType, "compare2", true, AREA_TYPE_COUNTY);
+        }
         return mapper.buildCountyClosedLoopKpiInsertSql(
             cycleDate, cycleType, kpiId, allToday, today, compare1, compare2
         );
@@ -295,12 +314,11 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
                 cal.add(Calendar.YEAR, -1);
                 compareDate2 = sdf.format(cal.getTime());
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("日周期日期计算异常", e);
             }
         } else if (CYCLE_TYPE_MONTH.equals(cycleType)) {
             // 月统计逻辑
             try {
-                // 处理不同格式的日期
                 String yearMonth;
                 if (currentDate.contains("-")) {
                     yearMonth = currentDate.replace("-", "");
@@ -324,7 +342,7 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
                 cal.add(Calendar.YEAR, -1);
                 compareDate2 = sdf.format(cal.getTime());
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("月周期日期计算异常", e);
             }
         } else if ("Y".equals(cycleType)) {
             // 年统计逻辑
@@ -338,14 +356,11 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
                     yearStr = currentDate.substring(0, 4);
                 }
 
-                // 上一年
                 int lastYear = Integer.parseInt(yearStr) - 1;
                 compareDate1 = String.valueOf(lastYear);
-
-                // 暂时没有同比逻辑，设为空字符串或者默认值
                 compareDate2 = "";
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("年周期日期计算异常", e);
             }
         }
 
@@ -367,7 +382,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getAvgDealTimeDataQuery(cycleDate, cycleType, "today", 0);
         String compare1 = getAvgDealTimeDataQuery(compare[0], cycleType, "compare1", 0);
-        String compare2 = getAvgDealTimeDataQuery(compare[1], cycleType, "compare2", 0);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2=getAvgDealTimeDataQuery(compare[1], cycleType, "compare2", 0);
+        }
         return mapper.buildProvinceAvgDealTimeKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -386,7 +404,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getAvgDealTimeDataQuery(cycleDate, cycleType, "today", 1);
         String compare1 = getAvgDealTimeDataQuery(compare[0], cycleType, "compare1", 1);
-        String compare2 = getAvgDealTimeDataQuery(compare[1], cycleType, "compare2", 1);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getAvgDealTimeDataQuery(compare[1], cycleType, "compare2", 1);
+        }
         return mapper.buildCityAvgDealTimeKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -405,7 +426,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getAvgDealTimeDataQuery(cycleDate, cycleType, "today", 2);
         String compare1 = getAvgDealTimeDataQuery(compare[0], cycleType, "compare1", 2);
-        String compare2 = getAvgDealTimeDataQuery(compare[1], cycleType, "compare2", 2);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getAvgDealTimeDataQuery(compare[1], cycleType, "compare2", 2);
+        }
         return mapper.buildCountyAvgDealTimeKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -465,7 +489,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getDailyActiveUsersByAreaQuery(cycleDate, cycleType, "today", AREA_TYPE_PROVINCE);
         String compare1 = getDailyActiveUsersByAreaQuery(compare[0], cycleType, "compare1", AREA_TYPE_PROVINCE);
-        String compare2 = getDailyActiveUsersByAreaQuery(compare[1], cycleType, "compare2", AREA_TYPE_PROVINCE);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getDailyActiveUsersByAreaQuery(compare[1], cycleType, "compare2", AREA_TYPE_PROVINCE);
+        }
         return mapper.buildProvinceDailyActiveUsersKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -484,7 +511,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getDailyActiveUsersByAreaQuery(cycleDate, cycleType, "today", AREA_TYPE_CITY);
         String compare1 = getDailyActiveUsersByAreaQuery(compare[0], cycleType, "compare1", AREA_TYPE_CITY);
-        String compare2 = getDailyActiveUsersByAreaQuery(compare[1], cycleType, "compare2", AREA_TYPE_CITY);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getDailyActiveUsersByAreaQuery(compare[1], cycleType, "compare2", AREA_TYPE_CITY);
+        }
         return mapper.buildCityDailyActiveUsersKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -503,7 +533,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getDailyActiveUsersByAreaQuery(cycleDate, cycleType, "today", AREA_TYPE_COUNTY);
         String compare1 = getDailyActiveUsersByAreaQuery(compare[0], cycleType, "compare1", AREA_TYPE_COUNTY);
-        String compare2 = getDailyActiveUsersByAreaQuery(compare[1], cycleType, "compare2", AREA_TYPE_COUNTY);
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2=getDailyActiveUsersByAreaQuery(compare[1], cycleType, "compare2", AREA_TYPE_COUNTY);
+        }
         return mapper.buildCountyDailyActiveUsersKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );
@@ -568,7 +601,10 @@ public class SmartBrainKpiDataServiceImpl implements SmartBrainKpiDataService {
         String[] compare = calculateCompareDates(cycleDate, cycleType);
         String today = getLogCountQuery(cycleDate, cycleType, "today");
         String compare1 = getLogCountQuery(compare[0], cycleType, "compare1");
-        String compare2 = getLogCountQuery(compare[1], cycleType, "compare2");
+        String compare2 = null;
+        if(!"Y".equals(cycleType)){
+            compare2= getLogCountQuery(compare[1], cycleType, "compare2");
+        }
         return mapper.buildProvinceLogCountKpiInsertSql(
             cycleDate, cycleType, kpiId, today, compare1, compare2
         );

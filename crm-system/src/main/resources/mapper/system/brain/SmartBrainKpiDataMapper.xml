@@ -48,7 +48,7 @@
         kpi_business.busi_type_type_par as busiTypeTypePar,
         kpi_business.kpi_name as kpiName,
         kpi_business.kpi_desc as kpiDesc,
-        kpi_business.busi_order as busiOrder,
+        CAST(kpi_business.busi_order AS CHAR) AS busiOrder,
         kpi_business.is_display as isDisplay,
         kpi_business.busi_display_district as busiDisplayDistrict,
         kpi_business.kpi_add1_name as kpiAdd1Name,
@@ -184,10 +184,13 @@
         null as kpi_val_add1,
         null as kpi_val_add2
         FROM (
+        -- 全量区县，不遗漏任何一个
         SELECT DISTINCT id_ as county_id,id_ as area_id FROM sys_area WHERE parent_ ='330000'
         union
-        SELECT DISTINCT id_ as county_id, parent_ as area_id FROM sys_area where parent_ BETWEEN '330100' and '331100' and bss_code !=''
+        SELECT DISTINCT id_ as county_id, parent_ as area_id FROM sys_area
+        where parent_ BETWEEN '330100' and '331100' and bss_code !=''
         ) area
+        -- 左连接，无工单自动为0
         LEFT JOIN ${todaySql} ON area.county_id = today.area_id
         LEFT JOIN ${compare1Sql} ON area.county_id = compare1.area_id
         <if test='cycleType != "Y"'>
@@ -676,7 +679,7 @@
         '0' as data_level,
             #{cycleType} as data_requency,
             #{kpiId} as kpi_id,
-            COALESCE(today.today_count,0) as kpi_value,
+            null as kpi_value,
             null as month_val,
             null as month_ratio,
             null as year_val,

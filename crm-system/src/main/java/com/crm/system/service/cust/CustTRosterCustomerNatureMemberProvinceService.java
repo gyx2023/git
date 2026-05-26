@@ -8,6 +8,6 @@ import java.util.List;
 
 public interface CustTRosterCustomerNatureMemberProvinceService {
     void deleteBatch();
-    List<CustRosterCustomerNatureMemberProvinceDo> getCustCustomerNatureList();
+    List<CustRosterCustomerNatureMemberProvinceDo> getCustCustomerNatureList(int pageNum,int pageSize);
     void insertBatch(List<CustTRosterCustomerNatureMemberProvinceDo> list);
 }
