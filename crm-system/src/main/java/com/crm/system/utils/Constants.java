@@ -1864,4 +1864,8 @@ public class Constants {
 
     //管理中台文件 sftp 配置
     public static final String PERSONNEL_FILE_FTP_INFO = "personnel_file_ftp_info";
+
+    //短信接口配置
+    public static final String SEND_MSG_INTERFACE = "send_msg_interface";
+
 }
