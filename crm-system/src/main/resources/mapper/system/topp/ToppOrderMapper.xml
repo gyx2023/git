@@ -84,7 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ctnr.nature_cust_id custom_id,
         to2.cust_name custom_name,
         CAST(CONCAT(IFNULL(DATE_FORMAT(to2.create_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as gmt_create,
-        case to2.status_ when 'running' then NULL else DATE_FORMAT(to2.update_time ,'%Y-%m-%d %H:%i:%s')  end back_time,
+        case to2.status_ when 'running' then NULL else  CAST(CONCAT(IFNULL(DATE_FORMAT(to2.update_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) end back_time,
         LEFT(to2.area_id , 4) as areaId,
 
         <choose>
@@ -92,7 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.ZB_BUILD_ID as buildId,
                 b.BUILDING_NAME as buildName,
                 'GWJC' as category,
-                DATE_FORMAT(b.exp_time, '%Y-%m-%d %H:%i:%s') as business_end_date
+                 CAST(CONCAT(IFNULL(DATE_FORMAT(b.exp_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as business_end_date
 
             </when>
             <otherwise>
