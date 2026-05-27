@@ -1,6 +1,7 @@
 package com.crm.system.domain.oldsyssyn;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -36,6 +37,7 @@ public class OldSysUserPositionDo {
     /**
      * 是否有效
      */
+    @TableField(value = "valid_")
     private String valid;
 
     /**
