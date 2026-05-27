@@ -2,7 +2,6 @@ package com.crm.job.service.file.contractAndOpportunityPut;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
-import com.crm.job.utils.SftpUtil;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
@@ -14,7 +13,6 @@ import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.ISysCodeService;
 import com.crm.system.service.ISysParamService;
-import com.crm.system.service.impl.SysCodeServiceImpl;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +21,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
-import java.text.SimpleDateFormat;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -36,6 +36,8 @@ public class ContractAndOpportunityPutJob {
     private static String ftpHost;
     private static String ftpPort;
     private static String ftpDirectory;
+
+    private static final String LOCAL_SAVE_PATH = "C:/Users/12139/Desktop";
 
     //完整的文件名+扩展名
     static String contractIncome;//合同收入
@@ -112,13 +114,7 @@ public class ContractAndOpportunityPutJob {
             // 1. 查询数据
             List<ContractIncomeExcelVo> contractIncomeList = toppContractMapper.getContractIncomeList(areaId);
 
-            // 2. 检查数据是否为空
-            if (contractIncomeList == null || contractIncomeList.isEmpty()) {
-                log.warn("合同收入数据为空，areaId: {}", areaId);
-                return;
-            }
-
-            log.info("查询到合同收入数据 {} 条", contractIncomeList.size());
+            log.info("查询到合同收入数据 {} 条", contractIncomeList != null ? contractIncomeList.size() : 0);
 
             // 3. 创建临时文件
             String fileName = areaEng + "ContractIncome" + currentDate + ".xlsx";
@@ -139,8 +135,11 @@ public class ContractAndOpportunityPutJob {
             log.info("合同收入数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 6. 上传到SFTP服务器
-            uploadToSftp(tempFile, contractIncome,currentDate);
+            // 6. 保存到本地
+            saveToLocal(tempFile, contractIncome);
+
+            // 7. 上传到SFTP服务器
+            //uploadToSftp(tempFile, contractIncome,currentDate);
 
         } catch (Exception e) {
             log.error("合同收入数据导出任务执行失败,areaId: {}", areaId, e);
@@ -188,13 +187,7 @@ public class ContractAndOpportunityPutJob {
             List<ToppContractExcelVo> contractList = toppContractMapper.exportContractList(
                     areaId, nowYear, lastYear, nowYearMonth, lastYearMonth);
 
-            // 3. 检查数据是否为空
-            if (contractList == null || contractList.isEmpty()) {
-                log.warn("合同统计数据为空，areaId: {}", areaId);
-                return;
-            }
-
-            log.info("查询到合同统计数据 {} 条", contractList.size());
+            log.info("查询到合同统计数据 {} 条", contractList != null ? contractList.size() : 0);
 
             //进行数据格式转换
             translateAndFormatContractStatisticsData(contractList);
@@ -206,7 +199,7 @@ public class ContractAndOpportunityPutJob {
             // 5. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ToppContractExcelVo.class)
                     .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("合同统计数据")
+                    .sheet("合同查询统计")
                     .doWrite(contractList);
 
             // 6. 验证文件是否创建成功
@@ -218,8 +211,11 @@ public class ContractAndOpportunityPutJob {
             log.info("合同统计数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 7. 上传到SFTP服务器
-            uploadToSftp(tempFile, contract,currentDate);
+            // 7. 保存到本地
+            saveToLocal(tempFile, contract);
+
+            // 8. 上传到SFTP服务器
+            //uploadToSftp(tempFile, contract,currentDate);
 
         } catch (Exception e) {
             log.error("合同统计数据导出任务执行失败,areaId: {}", areaId, e);
@@ -240,6 +236,9 @@ public class ContractAndOpportunityPutJob {
      * 将合同统计数据进行转换和格式化
      */
     private void translateAndFormatContractStatisticsData(List<ToppContractExcelVo> contractList) {
+        if (contractList == null || contractList.isEmpty()) {
+            return;
+        }
         for (ToppContractExcelVo contract : contractList){
             //业务类型（主）
             String oppType = contract.getOppType();
@@ -402,15 +401,9 @@ public class ContractAndOpportunityPutJob {
             // 1. 查询数据
             List<ToppOpportunityExcelVo> opportunityList = toppOpportunityMapper.selectOpportunityExportList(areaId);
 
-            // 2. 检查数据是否为空
-            if (opportunityList == null || opportunityList.isEmpty()) {
-                log.warn("商机数据为空，areaId: {}", areaId);
-                return;
-            }
+            log.info("查询到商机数据 {} 条", opportunityList != null ? opportunityList.size() : 0);
 
-            log.info("查询到商机数据 {} 条", opportunityList.size());
-
-            // 3. 进行数据格式转换
+            // 2. 进行数据格式转换
             processingOpportunityData(opportunityList);
 
             // 4. 创建临时文件
@@ -420,7 +413,7 @@ public class ContractAndOpportunityPutJob {
             // 5. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
                     .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("商机数据")
+                    .sheet("商机查询统计")
                     .doWrite(opportunityList);
 
             // 6. 验证文件是否创建成功
@@ -432,8 +425,11 @@ public class ContractAndOpportunityPutJob {
             log.info("商机数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 7. 上传到SFTP服务器
-            uploadToSftp(tempFile, opportunity,currentDate);
+            // 7. 保存到本地
+            saveToLocal(tempFile, opportunity);
+
+            // 8. 上传到SFTP服务器
+            //uploadToSftp(tempFile, opportunity,currentDate);
 
         } catch (Exception e) {
             log.error("商机数据导出任务执行失败,areaId: {}", areaId, e);
@@ -454,6 +450,9 @@ public class ContractAndOpportunityPutJob {
      * 对查询到的商机数据进行处理
      */
     private void processingOpportunityData(List<ToppOpportunityExcelVo> List){
+        if (List == null || List.isEmpty()) {
+            return;
+        }
         //业务类型（主）map
         Map<String,String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
         //所属一级行业map
@@ -519,13 +518,13 @@ public class ContractAndOpportunityPutJob {
             String developFlag = opportunity.getDevelopFlag();
             if (developFlag != null) {
                 switch (developFlag) {
-                    case "1":
+                    case "01":
                         opportunity.setDevelopFlag("省直拓");
                         break;
-                    case "2":
+                    case "02":
                         opportunity.setDevelopFlag("市直拓");
                         break;
-                    case "3":
+                    case "03":
                         opportunity.setDevelopFlag("县直拓");
                         break;
                     default:
@@ -588,6 +587,21 @@ public class ContractAndOpportunityPutJob {
             //商机行业 BU打标
             String bgType = opportunity.getBgType();
             opportunity.setBgType(bgType != null ? bgTypeResultMap.get(bgType) : "");
+        }
+    }
+
+    /**
+     * 保存文件到本地
+     *
+     * @param file 源文件
+     * @param fileName 文件名
+     */
+    private void saveToLocal(File file, String fileName) {
+        try {
+            Files.copy(file.toPath(), Paths.get(LOCAL_SAVE_PATH, fileName), StandardCopyOption.REPLACE_EXISTING);
+            log.info("文件已保存到本地: {}/{}", LOCAL_SAVE_PATH, fileName);
+        } catch (Exception e) {
+            log.error("文件保存到本地失败: {}", fileName, e);
         }
     }
 
