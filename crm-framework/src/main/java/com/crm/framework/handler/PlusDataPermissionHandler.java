@@ -78,6 +78,10 @@ public class PlusDataPermissionHandler {
             currentUser = LoginHelper.getLoginUser();
             DataPermissionHelper.setVariable("user", currentUser);
         }
+        // 如果没有登录信息，则不进行数据权限控制（定时任务等场景）
+        if (ObjectUtil.isNull(currentUser)) {
+            return where;
+        }
         // 如果是超级管理员，则不过滤数据
         if (LoginHelper.isAdmin()) {
             return where;
