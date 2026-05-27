@@ -11,7 +11,7 @@ import com.crm.common.constant.UserConstants;
 import com.crm.common.core.domain.entity.SysMenu;
 import com.crm.common.core.domain.entity.SysRole;
 import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.TreeBuildUtils;

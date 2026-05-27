@@ -1,6 +1,7 @@
 package com.crm.common.enums;
 
 import com.crm.common.utils.StringUtils;
+import com.crm.common.utils.helper.DataPermissionHelper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,7 +11,7 @@ import lombok.Getter;
  * 语法支持 spel 模板表达式
  * <p>
  * 内置数据 user 当前用户 内容参考 LoginUser
- * 如需扩展数据 可使用 {@link com.crm.common.helper.DataPermissionHelper} 操作
+ * 如需扩展数据 可使用 {@link DataPermissionHelper} 操作
  * 内置服务 sdss 系统数据权限服务 内容参考 SysDataScopeService
  * 如需扩展更多自定义服务 可以参考 sdss 自行编写
  *

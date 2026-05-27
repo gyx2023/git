@@ -1,7 +1,7 @@
 package com.crm.job.service.identifyScore;
 
 import com.crm.common.core.domain.entity.SysUser;
-import com.crm.common.enums.RedisKeyConstants;
+import com.crm.common.constant.RedisKeyConstants;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
 import com.crm.system.domain.identify.IdentifyScoreDo;

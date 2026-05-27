@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.core.domain.entity.SysDept;
-import com.crm.common.helper.DataBaseHelper;
+import com.crm.common.utils.helper.DataBaseHelper;
 import com.crm.common.utils.StreamUtils;
 import com.crm.system.domain.SysRoleDept;
 import com.crm.system.mapper.SysDeptMapper;

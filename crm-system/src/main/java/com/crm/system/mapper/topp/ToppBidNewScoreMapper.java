@@ -1,9 +1,9 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.common.core.domain.dto.BiddingListReqDTO;
-import com.crm.common.core.domain.dto.BiddingListRespDTO;
-import com.crm.common.core.domain.dto.ContractUserReqDTO;
-import com.crm.common.core.domain.dto.ContractUserRespDTO;
+import com.crm.system.domain.dto.BiddingListReqDTO;
+import com.crm.system.domain.dto.BiddingListRespDTO;
+import com.crm.system.domain.dto.ContractUserReqDTO;
+import com.crm.system.domain.dto.ContractUserRespDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.topp.ToppBidNewScoreDo;
 import com.crm.system.domain.vo.topp.ToppBidNewScoreVo;

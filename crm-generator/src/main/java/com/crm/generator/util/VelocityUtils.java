@@ -5,7 +5,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.constant.GenConstants;
-import com.crm.common.helper.DataBaseHelper;
+import com.crm.common.utils.helper.DataBaseHelper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
 import com.crm.common.utils.StringUtils;

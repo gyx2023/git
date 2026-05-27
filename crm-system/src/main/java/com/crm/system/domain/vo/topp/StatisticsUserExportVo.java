@@ -1,13 +1,10 @@
 package com.crm.system.domain.vo.topp;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.crm.common.annotation.ExcelDictFormat;
-import com.crm.common.convert.ExcelDictConvert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * 用户对象导出VO

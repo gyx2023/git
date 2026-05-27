@@ -5,7 +5,7 @@ import cn.hutool.extra.ssh.Sftp;
 import com.crm.common.enums.DateTypeEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
-import com.crm.domain.TaskParams;
+import com.crm.job.domain.TaskParams;
 import com.crm.job.base.AbstractImportJob;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.bo.ZqztDwdContractsBo;

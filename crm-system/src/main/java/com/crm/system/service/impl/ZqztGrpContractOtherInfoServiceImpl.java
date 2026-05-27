@@ -1,7 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.encrypt.DataEncryptionUtil;
+import com.crm.common.utils.encrypt.DataEncryptionUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -22,7 +22,7 @@ import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
-import com.crm.common.enums.InfoTagEnum;
+import com.crm.system.enums.InfoTagEnum;
 
 import javax.annotation.Resource;
 import java.util.*;

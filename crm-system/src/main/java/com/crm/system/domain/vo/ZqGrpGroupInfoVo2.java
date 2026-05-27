@@ -4,7 +4,7 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.annotation.Sensitive;
-import com.crm.common.convert.ExcelDictConvert;
+import com.crm.common.utils.convert.ExcelDictConvert;
 import com.crm.common.enums.SensitiveStrategy;
 import lombok.Data;
 
