@@ -133,7 +133,6 @@ public class WarningUpJob {
 
             for (int i = 1; i <= cycleNum; i++) {
                 log.info("开始处理第{}/{}批次", i, cycleNum);
-                XxlJobHelper.log("开始处理第{}/{}批次", i, cycleNum);
 
                 // 分页查询数据，每次10000条
                 List<Map<String, Object>> dwdRepSysPersonMapList = dwdRepSysPersonDService.getDwdRepSysPersonListFromIob(i, 10000);
@@ -167,7 +166,6 @@ public class WarningUpJob {
                 }
 
                 log.info("第{}批次处理完成，共{}条", i, dwdRepSysPersonMapList.size());
-                XxlJobHelper.log("第{}批次处理完成，共{}条", i, dwdRepSysPersonMapList.size());
             }
 
             log.info("DWD_REP_SYS_PERSON_D表数据同步完成，共{}条", personCount);
