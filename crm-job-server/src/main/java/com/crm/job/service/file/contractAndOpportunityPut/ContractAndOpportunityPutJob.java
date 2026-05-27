@@ -239,148 +239,92 @@ public class ContractAndOpportunityPutJob {
         if (contractList == null || contractList.isEmpty()) {
             return;
         }
-        for (ToppContractExcelVo contract : contractList){
-            //业务类型（主）
-            String oppType = contract.getOppType();
-            if (oppType != null){
-                SysCodeVo sysCode1 = sysCodeService.findCode("opp_type", oppType);
-                if (sysCode1 != null) {
-                    contract.setOppType(sysCode1.getName());
-                }else{
-                    contract.setOppType("");
-                }
-            }else{
-                contract.setOppType("");
-            }
 
-            //业务类型（全）
+        // 一次性批量查询所有字典，存入Map缓存
+        // 业务类型 opp_type
+        Map<String,String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
+        // 一级行业 unicom_type
+        Map<String,String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
+        // 二级行业 unicom_type_2
+        Map<String,String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
+        // 商机来源 clue_source
+        Map<String,String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
+        // 合同种类 contractAdd_type
+        Map<String,String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
+        // 合同类型 contract_type
+        Map<String,String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
+        // 计收类型 income_type
+        Map<String,String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
+
+        // 循环中直接从Map取值，0次数据库查询
+        for (ToppContractExcelVo contract : contractList){
+            // 1.业务类型（主）
+            String oppType = contract.getOppType();
+            contract.setOppType(oppType != null ? oppTypeMap.get(oppType) : "");
+
+            // 2.业务类型（全）
             String oppIncludeType = contract.getOppIncludeType();
-            //截取掉首尾的括号
-            if(oppIncludeType != null){
-                oppIncludeType = oppIncludeType.substring(1).substring(0, oppIncludeType.length() - 2);
-                //如果是多个
-                if(oppIncludeType.contains(",")){
-                    String[] oppIncludeTypeArr = oppIncludeType.split(",");
-                    for(int i = 0; i < oppIncludeTypeArr.length; i++){
-                        String oppIncludeType1 = oppIncludeTypeArr[i];
-                        SysCodeVo sysCode2 = sysCodeService.findCode("opp_type", oppIncludeType1);
-                        if(sysCode2 != null){
-                            oppIncludeTypeArr[i] = sysCode2.getName();
-                        }else{
-                            oppIncludeTypeArr[i] = "";
+            if (oppIncludeType != null && oppIncludeType.length() > 2) {
+                // 统一截取首尾括号
+                String cleanedType = oppIncludeType.substring(1, oppIncludeType.length() - 1);
+                if(cleanedType.contains(",")){
+                    // 多个业务类型：分割后翻译
+                    String[] oppIncludeTypeArr = cleanedType.split(",");
+                    StringBuilder sb = new StringBuilder();
+                    for (String type : oppIncludeTypeArr) {
+                        String trimType = type.trim();
+                        String name = oppTypeMap.get(trimType);
+                        if (name != null) {
+                            sb.append(name).append(" ");
                         }
                     }
-                    contract.setOppIncludeType(String.join(" ", oppIncludeTypeArr));
+                    contract.setOppIncludeType(sb.toString().trim());
                 }else{
-                    //单个逻辑
-                    SysCodeVo sysCode2 = sysCodeService.findCode("opp_type", oppIncludeType);
-                    if(sysCode2 != null){
-                        contract.setOppIncludeType(sysCode2.getName());
-                    }else{
-                        contract.setOppIncludeType("");
-                    }
+                    // 单个业务类型
+                    String trimType = cleanedType.trim();
+                    contract.setOppIncludeType(oppTypeMap.getOrDefault(trimType, ""));
                 }
+            }else{
+                contract.setOppIncludeType("");
             }
 
-            //一级行业
+            // 3.一级行业
             String unicomType = contract.getUnicomType();
-            if(unicomType != null){
-                SysCodeVo sysCode3 = sysCodeService.findCode("unicom_type", unicomType);
-                if(sysCode3 != null){
-                    contract.setUnicomType(sysCode3.getName());
-                }else{
-                    contract.setUnicomType("");
-                }
-            }else{
-                contract.setUnicomType("");
-            }
+            contract.setUnicomType(unicomType != null ? unicomTypeMap.get(unicomType) : "");
 
-            //二级行业
+            // 4.二级行业
             String unicomType2 = contract.getUnicomType2();
-            if(unicomType2 != null){
-                SysCodeVo sysCode4 = sysCodeService.findCode("unicom_type_2", unicomType2);
-                if(sysCode4 != null){
-                    contract.setUnicomType2(sysCode4.getName());
-                }else{
-                    contract.setUnicomType2("");
-                }
-            }else{
-                contract.setUnicomType2("");
-            }
+            contract.setUnicomType2(unicomType2 != null ? unicomType2Map.get(unicomType2) : "");
 
-            //商机来源
+            // 5.商机来源
             String oppSource = contract.getOppSource();
-            if(oppSource != null){
-                SysCodeVo sysCode5 = sysCodeService.findCode("clue_source", oppSource);
-                if(sysCode5 != null){
-                    contract.setOppSource(sysCode5.getName());
-                }else{
-                    contract.setOppSource("");
-                }
-            }else{
-                contract.setOppSource("");
-            }
+            contract.setOppSource(oppSource != null ? clueSourceMap.get(oppSource) : "");
 
-            //合同种类
+            // 6.合同种类
             String contractAddType = contract.getContractAddType();
-            if(contractAddType != null){
-                SysCodeVo sysCode6 = sysCodeService.findCode("contractAdd_type", contractAddType);
-                if(sysCode6 != null){
-                    contract.setContractAddType(sysCode6.getName());
-                }else{
-                    contract.setContractAddType("");
-                }
-            }else{
-                contract.setContractAddType("");
-            }
+            contract.setContractAddType(contractAddType != null ? contractAddTypeMap.get(contractAddType) : "");
 
-            //合同类型
+            // 7.合同类型
             String contractType = contract.getContractType();
-            if(contractType != null){
-                SysCodeVo sysCode7 = sysCodeService.findCode("contract_type", contractType);
-                if(sysCode7 != null){
-                    contract.setContractType(sysCode7.getName());
-                }else{
-                    contract.setContractType("");
-                }
-            }else{
-                contract.setContractType("");
-            }
+            contract.setContractType(contractType != null ? contractTypeMap.get(contractType) : "");
 
-            //计收类型
+            // 8.计收类型
             String incomeType = contract.getIncomeType();
-            if (incomeType != null){
-                SysCodeVo sysCode8 = sysCodeService.findCode("income_type", incomeType);
-                if(sysCode8 != null){
-                    contract.setIncomeType(sysCode8.getName());
-                }else{
-                    contract.setIncomeType("");
-                }
-            }else{
-                contract.setIncomeType("");
-            }
+            contract.setIncomeType(incomeType != null ? incomeTypeMap.get(incomeType) : "");
 
-            //是否有效
+            // 9.是否有效
             String isValid = contract.getIsValid();
-            if (isValid == null){
-                contract.setIsValid("暂未设置");
-            }else{
-                if("1".equals(isValid)){
-                    contract.setIsValid("有效");
-                }else{
-                    contract.setIsValid("无效");
-                }
-            }
+            contract.setIsValid(isValid == null ? "暂未设置" : "1".equals(isValid) ? "有效" : "无效");
 
-            //合同分类
+            // 10.合同分类
             String contractCategory = contract.getContractCategory();
             if(contractCategory == null){
                 contract.setContractCategory("");
             }else{
-                if("1".equals(contractCategory)){
-                    contract.setContractCategory("新增合同");
-                } else if ("2".equals(contractCategory)) {
-                    contract.setContractCategory("续约合同");
+                switch (contractCategory) {
+                    case "1": contract.setContractCategory("新增合同"); break;
+                    case "2": contract.setContractCategory("续约合同"); break;
+                    default: contract.setContractCategory("");
                 }
             }
         }
