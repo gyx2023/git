@@ -515,18 +515,18 @@ public class PersonnelInfoSyncJob {
         operateLog.setOperateTime(new Date());
         operateLog.setOperator(Math.toIntExact(operator.getId()));
         operateLog.setInfoId(sysUsers.getId());
-        String userRoleYx = sysUsers.getUserRoleYx();
+//        String userRoleYx = sysUsers.getUserRoleYx();
         sysUserOperateLogMapper.insertOrUpdate(operateLog);
 
-        if (StringUtils.isNotEmpty(userRoleYx) && !VALID_FALSE.equals(userRoleYx) && operateType.equals(OPERATE_TYPE_DEL)) {
-            try {
-                String msg = doPostForYxUser(sysUsers, operateType);
-                XxlJobHelper.log("用户：{}，同步结果：{}", sysUsers.getNameCh(), msg);
-            } catch (Exception e) {
-                XxlJobHelper.log("用户：{}，同步亚信接口异常，详情见日志！错误信息：{}", operateLog.getNameCh(), e.getMessage());
-                e.printStackTrace();
-            }
-        }
+//        if (StringUtils.isNotEmpty(userRoleYx) && !VALID_FALSE.equals(userRoleYx) && operateType.equals(OPERATE_TYPE_DEL)) {
+//            try {
+//                String msg = doPostForYxUser(sysUsers, operateType);
+//                XxlJobHelper.log("用户：{}，同步结果：{}", sysUsers.getNameCh(), msg);
+//            } catch (Exception e) {
+//                XxlJobHelper.log("用户：{}，同步亚信接口异常，详情见日志！错误信息：{}", operateLog.getNameCh(), e.getMessage());
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     /**
