@@ -1,4 +1,4 @@
-package com.crm.job.service.file.contractAndOpportunityPut;
+package com.crm.job.service.file;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
@@ -98,7 +98,7 @@ public class ContractAndOpportunityPutJob {
             log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
 
             log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
-            log.info("任务结束");
+            log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
         }
     }
 
