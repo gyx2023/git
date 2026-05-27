@@ -124,15 +124,15 @@ public class WxStrategyJob {
     /**
      * 初始化静态参数
      */
-    @PostConstruct
+
     public void initStaticParam() {
         Map<String, String> param = sysParamService.findValueMapsByType("tc_wx_strategy");
         ftpUsername = param.get("ftp_username");
         ftpPassword = param.get("ftp_password");
         ftpHost = param.get("ftp_host");
         ftpPort = param.get("ftp_port");
-        ftDirectory = param.get("ftp_directory_new");
         localPath = param.get("ftp_local_new");
+        ftDirectory = param.get("ftp_directory");
         log.info("SFTP 配置初始化完成：host=" + ftpHost + ", dir=" + ftDirectory);
     }
 
@@ -143,6 +143,7 @@ public class WxStrategyJob {
      */
     @XxlJob(value = "sendWorkOrderJob")
     public void sendWorkOrder() {
+        initStaticParam();
         String yyyyMMdd = getJobDate();
         log.info("====== 任务工单文件下发开始，日期：" + yyyyMMdd + " ======");
         sendsendWorkOrder(yyyyMMdd);
@@ -154,6 +155,7 @@ public class WxStrategyJob {
      */
     @XxlJob(value = "sendStrategyInfoJob")
     public void sendStrategy() {
+        initStaticParam();
         String yyyyMMdd = getJobDate();
         log.info("====== 策略主信息文件下发开始，日期：" + yyyyMMdd + " ======");
         sendStrategyInfo(yyyyMMdd);
@@ -165,6 +167,7 @@ public class WxStrategyJob {
      */
     @XxlJob(value = "sendStrategyMonitorJob")
     public void sendMonitor() {
+        initStaticParam();
         String yyyyMMdd = getJobDate();
         log.info("====== 策略监控文件下发开始，日期：" + yyyyMMdd + " ======");
         sendStrategyMonitor(yyyyMMdd);
