@@ -11,7 +11,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.HttpClientUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.job.utils.SignUtil;
+import com.crm.common.utils.signutil.SignUtil;
 import com.crm.system.domain.*;
 import com.crm.system.domain.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.vo.SysUsersVo;
@@ -108,7 +108,6 @@ public class PersonnelInfoSyncJob {
         FTP_DIRECTORY = param.get("ftp_directory");  //文件存放目录
         LOCAL_PATH = param.get("ftp_local");  //本地下载目录
     }
-
 
 
     /**
@@ -516,18 +515,18 @@ public class PersonnelInfoSyncJob {
         operateLog.setOperateTime(new Date());
         operateLog.setOperator(Math.toIntExact(operator.getId()));
         operateLog.setInfoId(sysUsers.getId());
-        String userRoleYx = sysUsers.getUserRoleYx();
+//        String userRoleYx = sysUsers.getUserRoleYx();
         sysUserOperateLogMapper.insertOrUpdate(operateLog);
 
-        if (StringUtils.isNotEmpty(userRoleYx) && !VALID_FALSE.equals(userRoleYx) && operateType.equals(OPERATE_TYPE_DEL)) {
-            try {
-                String msg = doPostForYxUser(sysUsers, operateType);
-                XxlJobHelper.log("用户：{}，同步结果：{}", sysUsers.getNameCh(), msg);
-            } catch (Exception e) {
-                XxlJobHelper.log("用户：{}，同步亚信接口异常，详情见日志！错误信息：{}", operateLog.getNameCh(), e.getMessage());
-                e.printStackTrace();
-            }
-        }
+//        if (StringUtils.isNotEmpty(userRoleYx) && !VALID_FALSE.equals(userRoleYx) && operateType.equals(OPERATE_TYPE_DEL)) {
+//            try {
+//                String msg = doPostForYxUser(sysUsers, operateType);
+//                XxlJobHelper.log("用户：{}，同步结果：{}", sysUsers.getNameCh(), msg);
+//            } catch (Exception e) {
+//                XxlJobHelper.log("用户：{}，同步亚信接口异常，详情见日志！错误信息：{}", operateLog.getNameCh(), e.getMessage());
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     /**
@@ -677,19 +676,25 @@ public class PersonnelInfoSyncJob {
 
     public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
         String yxReturnMsg = "";
-        JSONObject retObj = new JSONObject();
+        JSONObject retObj = null;
         int i = 0;
         do {
             try {
                 String url = getYxSyncUrl(jsonStr);
                 log.info("亚信同步url信息:" + url);
                 log.info("亚信同步信息:" + jsonStr);
+                XxlJobHelper.log("亚信同步信息：{}", jsonStr);
                 String msg = HttpClientUtil.doPost(url, jsonStr, "utf-8");
                 log.info("亚信同步返回信息:" + msg);
+                XxlJobHelper.log("亚信同步返回信息：{}", msg);
                 retObj = JSONObject.parseObject(msg);
                 //调用亚信结果
                 if (!"00000".equals(retObj.getString("respCode")) || !"00000".equals(retObj.getJSONObject("result").getString("code"))) {
                     yxReturnMsg = "修改成功,同步楼宇信息失败!";
+                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2",
+                        "亚信接口返回失败：respCode=" + retObj.getString("respCode") + ", result.code=" + retObj.getJSONObject("result").getString("code") +
+                            ", respDesc=" + retObj.getString("respDesc"), operType);
+                    sysLogYxMapper.insertOrUpdate(logYx);
                     break;
                 }
                 if ("00000".equals(retObj.getString("respCode")) && "00000".equals(retObj.getJSONObject("result").getString("code"))) {
@@ -704,12 +709,21 @@ public class PersonnelInfoSyncJob {
                 i++;
                 if (i == 5) {
                     yxReturnMsg = returnMsg;
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", retObj.getString("respDesc"), operType);
+                    String errorMsg = "重试5次后仍然失败，最后返回：respCode=" + retObj.getString("respCode") +
+                        ", respDesc=" + retObj.getString("respDesc");
+                    log.error("亚信同步接口重试5次失败，用户ID：{}，错误详情：{}", user.getId(), errorMsg);
+                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
                     sysLogYxMapper.insertOrUpdate(logYx);
                 }
             } catch (Exception e) {
                 yxReturnMsg = returnMsg;
-                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "接口调用失败", operType);
+                String exceptionType = e.getClass().getName();
+                String exceptionMsg = e.getMessage() != null ? e.getMessage() : "无详细消息";
+                String errorMsg = "接口调用失败：" + (retObj != null ? retObj.toJSONString() : "null") +
+                    ", 异常类型：" + exceptionType + ", 异常信息：" + exceptionMsg;
+                log.error("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
+                XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
+                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
                 sysLogYxMapper.insertOrUpdate(logYx);
                 break;
             }
@@ -720,6 +734,7 @@ public class PersonnelInfoSyncJob {
     public String getYxSyncUrl(String jsonStr) throws Exception {
         Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
         if (param == null || param.isEmpty()) {
+            XxlJobHelper.log("未配置亚信同步参数");
             throw new Exception("未配置亚信同步参数");
         }
 
@@ -740,6 +755,7 @@ public class PersonnelInfoSyncJob {
         // 调用签名方法，传入jsonStr作为业务参数
         String sign = SignUtil.sign(param, jsonStr, "HmacSHA256", appKey);
         log.info("亚信同步签名参数:{}", param.toString());
+        XxlJobHelper.log("亚信同步参数：{}", param);
 
         url += "?method=" + method + "&format=" + format + "&appId=" + appId + "&timestamp=" + timestamp + "&busiSerial=" + busiSerial + "&sign=" + sign;
         return url;

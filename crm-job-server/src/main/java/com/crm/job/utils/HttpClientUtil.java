@@ -19,7 +19,7 @@ public class HttpClientUtil {
      * POST请求（使用SSL）
      */
     @SuppressWarnings("resource")
-    public static String doPost(String url, String jsonstr, String charset) {
+    public static String doPost(String url, String jsonstr, String charset) throws Exception {
         HttpClient httpClient = null;
         HttpPost httpPost = null;
         String result = null;
@@ -44,7 +44,8 @@ public class HttpClientUtil {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            // 记录错误日志并抛出异常，让调用方处理
+            throw new Exception("HTTP请求失败，URL: " + url + ", 错误信息: " + ex.getMessage(), ex);
         } finally {
             if (httpClient != null) {
                 try {

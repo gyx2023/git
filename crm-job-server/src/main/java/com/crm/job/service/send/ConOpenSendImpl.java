@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.utils.DateUtils;
 import com.crm.job.utils.HttpClientUtil;
-import com.crm.job.utils.SignUtil;
+import com.crm.common.utils.signutil.SignUtil;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.domain.vo.send.ConOpenSend;
 import com.crm.system.service.ISysParamService;
@@ -99,7 +99,12 @@ public class ConOpenSendImpl {
         }
         String reqPostUrl = POST_URL + sign + "&timestamp=" + timestamp;
         log.info("发送短信请求地址:" + reqPostUrl + ",业务参数:" + JSONObject.toJSONString(busiParamMap));
-        String respStr = HttpClientUtil.doPost(reqPostUrl, JSONObject.toJSONString(busiParamMap), "UTF-8");
+        String respStr = null;
+        try {
+            respStr = HttpClientUtil.doPost(reqPostUrl, JSONObject.toJSONString(busiParamMap), "UTF-8");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         log.info("发送短信返回消息:" + respStr);
 
         return JSON.parseObject(respStr, ConOpenSend.class);

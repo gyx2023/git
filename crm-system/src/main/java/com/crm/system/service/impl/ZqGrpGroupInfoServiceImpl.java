@@ -202,7 +202,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectPageList(pageQuery.build(), lqw);
 
         // 根据 sys_param 表的配置决定是否脱敏
         applyDesensitizationIfNeeded(result.getRecords());
