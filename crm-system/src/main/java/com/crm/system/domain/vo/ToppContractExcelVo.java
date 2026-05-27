@@ -129,13 +129,13 @@ public class ToppContractExcelVo {
      * 合同税率
      */
     @ExcelProperty(value = "合同税率", index = 19)
-    private BigDecimal zzsSl;
+    private String zzsSl;
 
     /**
      * 不含增值税合同额
      */
     @ExcelProperty(value = "不含增值税合同额", index = 20)
-    private BigDecimal bhZzsMoney;
+    private String bhZzsMoney;
 
     /**
      * 计收类型
@@ -285,19 +285,19 @@ public class ToppContractExcelVo {
      * 服务性收入金额
      */
     @ExcelProperty(value = "服务性收入金额", index = 45)
-    private BigDecimal serviceInMoney;
+    private String serviceInMoney;
 
     /**
      * 项目毛利率/效益比
      */
     @ExcelProperty(value = "项目毛利率/效益比", index = 46)
-    private BigDecimal grossProfitMargin;
+    private String grossProfitMargin;
 
     /**
      * 预计本年完成收入
      */
     @ExcelProperty(value = "预计本年完成收入", index = 47)
-    private BigDecimal expectIncome;
+    private String expectIncome;
 
     /**
      * 创建时间
