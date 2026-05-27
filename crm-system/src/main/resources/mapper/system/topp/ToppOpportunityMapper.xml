@@ -484,24 +484,24 @@
 
             -- ==================== 创建人信息 ====================
             creator.name_ch as creator_name_ch,
-            creator.phone as creator_phone,
-            creator_area_parent.name as creator_city,
-            creator_area.name as creator_district,
-            creator_org.name as creator_dept,
+            creator.relation_tel as creator_phone,
+            creator_area_parent.name_ as creator_city,
+            creator_area.name_ as creator_district,
+            creator_org.name_ as creator_dept,
 
             -- ==================== 客户经理信息 ====================
             manager.name_ch as cust_manager_name_ch,
-            manager.phone as cust_manager_phone,
-            manager_area_parent.name as cust_manager_city,
-            manager_area.name as cust_manager_district,
-            manager_org.name as cust_manager_dept,
+            manager.relation_tel as cust_manager_phone,
+            manager_area_parent.name_ as cust_manager_city,
+            manager_area.name_ as cust_manager_district,
+            manager_org.name_ as cust_manager_dept,
 
             -- ==================== 支撑经理信息 ====================
             designer.name_ch as designer_name_ch,
-            designer.phone as designer_phone,
-            designer_area_parent.name as designer_city,
-            designer_area.name as designer_district,
-            designer_org.name as designer_dept,
+            designer.relation_tel as designer_phone,
+            designer_area_parent.name_ as designer_city,
+            designer_area.name_ as designer_district,
+            designer_org.name_ as designer_dept,
 
             -- ==================== 投标信息 ====================
             bid.bid_body,
@@ -525,9 +525,9 @@
                  LEFT JOIN tcomm_customer cust ON op.cust_id = cust.id_
 
             -- ==================== 关联客户行业字典配置 ====================
-                 LEFT JOIN sys_dict_data unicom_type_setting
-                           ON cust.department_code = unicom_type_setting.dict_value
-                               AND unicom_type_setting.dict_type = 'unicom_type_2'
+                 LEFT JOIN sys_code unicom_type_setting
+                           ON cust.department_code = unicom_type_setting.code_
+                               AND unicom_type_setting.type_ = 'unicom_type_2'
 
             -- ==================== 关联创建人及其组织信息 ====================
                  LEFT JOIN sys_user creator ON op.creator = creator.id_

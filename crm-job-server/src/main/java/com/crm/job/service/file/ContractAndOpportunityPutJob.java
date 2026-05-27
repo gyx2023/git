@@ -1,12 +1,10 @@
-package com.crm.job.service.file.contractAndOpportunityPut;
+package com.crm.job.service.file;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
-import com.crm.job.utils.SftpUtil;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
-import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.domain.vo.ToppContractExcelVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;
 import com.crm.system.mapper.ContractAndOpportunityPutConfigMapper;
@@ -14,7 +12,6 @@ import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.ISysCodeService;
 import com.crm.system.service.ISysParamService;
-import com.crm.system.service.impl.SysCodeServiceImpl;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +20,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
-import java.text.SimpleDateFormat;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -36,6 +35,9 @@ public class ContractAndOpportunityPutJob {
     private static String ftpHost;
     private static String ftpPort;
     private static String ftpDirectory;
+
+    //文件的本地保存测试路径
+    private static final String LOCAL_SAVE_PATH = "C:/Users/12139/Desktop";
 
     //完整的文件名+扩展名
     static String contractIncome;//合同收入
@@ -94,6 +96,9 @@ public class ContractAndOpportunityPutJob {
             createOpportunityFile(areaId, areaEng, currentDate);
             long l4 = System.currentTimeMillis();
             log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
+
+            log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
+            log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
         }
     }
 
@@ -112,16 +117,9 @@ public class ContractAndOpportunityPutJob {
             // 1. 查询数据
             List<ContractIncomeExcelVo> contractIncomeList = toppContractMapper.getContractIncomeList(areaId);
 
-            // 2. 检查数据是否为空
-            if (contractIncomeList == null || contractIncomeList.isEmpty()) {
-                log.warn("合同收入数据为空，areaId: {}", areaId);
-                return;
-            }
-
-            log.info("查询到合同收入数据 {} 条", contractIncomeList.size());
+            log.info("查询到合同收入数据 {} 条", contractIncomeList != null ? contractIncomeList.size() : 0);
 
             // 3. 创建临时文件
-            String fileName = areaEng + "ContractIncome" + currentDate + ".xlsx";
             tempFile = File.createTempFile("contract_income_", ".xlsx");
 
             // 4. 使用EasyExcel写入数据
@@ -139,7 +137,9 @@ public class ContractAndOpportunityPutJob {
             log.info("合同收入数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 6. 上传到SFTP服务器
+            // 6. 保存到本地
+            //saveToLocal(tempFile, contractIncome);
+            // 7. 上传到SFTP服务器
             uploadToSftp(tempFile, contractIncome,currentDate);
 
         } catch (Exception e) {
@@ -188,25 +188,18 @@ public class ContractAndOpportunityPutJob {
             List<ToppContractExcelVo> contractList = toppContractMapper.exportContractList(
                     areaId, nowYear, lastYear, nowYearMonth, lastYearMonth);
 
-            // 3. 检查数据是否为空
-            if (contractList == null || contractList.isEmpty()) {
-                log.warn("合同统计数据为空，areaId: {}", areaId);
-                return;
-            }
-
-            log.info("查询到合同统计数据 {} 条", contractList.size());
+            log.info("查询到合同统计数据 {} 条", contractList != null ? contractList.size() : 0);
 
             //进行数据格式转换
             translateAndFormatContractStatisticsData(contractList);
 
             // 4. 创建临时文件
-            String fileName = areaEng + "Contract" + currentDate + ".xlsx";
             tempFile = File.createTempFile("contract_statistics_", ".xlsx");
 
             // 5. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ToppContractExcelVo.class)
                     .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("合同统计数据")
+                    .sheet("合同查询统计")
                     .doWrite(contractList);
 
             // 6. 验证文件是否创建成功
@@ -218,7 +211,9 @@ public class ContractAndOpportunityPutJob {
             log.info("合同统计数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 7. 上传到SFTP服务器
+            // 7. 保存到本地
+            //saveToLocal(tempFile, contract);
+            // 8. 上传到SFTP服务器
             uploadToSftp(tempFile, contract,currentDate);
 
         } catch (Exception e) {
@@ -240,148 +235,95 @@ public class ContractAndOpportunityPutJob {
      * 将合同统计数据进行转换和格式化
      */
     private void translateAndFormatContractStatisticsData(List<ToppContractExcelVo> contractList) {
-        for (ToppContractExcelVo contract : contractList){
-            //业务类型（主）
-            String oppType = contract.getOppType();
-            if (oppType != null){
-                SysCodeVo sysCode1 = sysCodeService.findCode("opp_type", oppType);
-                if (sysCode1 != null) {
-                    contract.setOppType(sysCode1.getName());
-                }else{
-                    contract.setOppType("");
-                }
-            }else{
-                contract.setOppType("");
-            }
+        if (contractList == null || contractList.isEmpty()) {
+            return;
+        }
 
-            //业务类型（全）
+        // 一次性批量查询所有字典，存入Map缓存
+        // 业务类型 opp_type
+        Map<String,String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
+        // 一级行业 unicom_type
+        Map<String,String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
+        // 二级行业 unicom_type_2
+        Map<String,String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
+        // 商机来源 clue_source
+        Map<String,String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
+        // 合同种类 contractAdd_type
+        Map<String,String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
+        // 合同类型 contract_type
+        Map<String,String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
+        // 计收类型 income_type
+        Map<String,String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
+
+        // 循环中直接从Map取值，0次数据库查询
+        for (ToppContractExcelVo contract : contractList){
+            // 1.业务类型（主）
+            String oppType = contract.getOppType();
+            contract.setOppType(oppType != null ? oppTypeMap.get(oppType) : "");
+
+            // 2.业务类型（全）
             String oppIncludeType = contract.getOppIncludeType();
-            //截取掉首尾的括号
-            if(oppIncludeType != null){
-                oppIncludeType = oppIncludeType.substring(1).substring(0, oppIncludeType.length() - 2);
-                //如果是多个
-                if(oppIncludeType.contains(",")){
-                    String[] oppIncludeTypeArr = oppIncludeType.split(",");
-                    for(int i = 0; i < oppIncludeTypeArr.length; i++){
-                        String oppIncludeType1 = oppIncludeTypeArr[i];
-                        SysCodeVo sysCode2 = sysCodeService.findCode("opp_type", oppIncludeType1);
-                        if(sysCode2 != null){
-                            oppIncludeTypeArr[i] = sysCode2.getName();
-                        }else{
-                            oppIncludeTypeArr[i] = "";
+            if (oppIncludeType != null && oppIncludeType.length() > 2) {
+                // 统一截取首尾括号
+                String cleanedType = oppIncludeType.substring(1, oppIncludeType.length() - 1);
+                if(cleanedType.contains(",")){
+                    // 多个业务类型：分割后翻译
+                    String[] oppIncludeTypeArr = cleanedType.split(",");
+                    StringBuilder sb = new StringBuilder();
+                    for (String type : oppIncludeTypeArr) {
+                        String trimType = type.trim();
+                        String name = oppTypeMap.get(trimType);
+                        if (name != null) {
+                            sb.append(name).append(" ");
                         }
                     }
-                    contract.setOppIncludeType(String.join(" ", oppIncludeTypeArr));
+                    contract.setOppIncludeType(sb.toString().trim());
                 }else{
-                    //单个逻辑
-                    SysCodeVo sysCode2 = sysCodeService.findCode("opp_type", oppIncludeType);
-                    if(sysCode2 != null){
-                        contract.setOppIncludeType(sysCode2.getName());
-                    }else{
-                        contract.setOppIncludeType("");
-                    }
+                    // 单个业务类型
+                    String trimType = cleanedType.trim();
+                    contract.setOppIncludeType(oppTypeMap.getOrDefault(trimType, ""));
                 }
+            }else{
+                contract.setOppIncludeType("");
             }
 
-            //一级行业
+            // 3.一级行业
             String unicomType = contract.getUnicomType();
-            if(unicomType != null){
-                SysCodeVo sysCode3 = sysCodeService.findCode("unicom_type", unicomType);
-                if(sysCode3 != null){
-                    contract.setUnicomType(sysCode3.getName());
-                }else{
-                    contract.setUnicomType("");
-                }
-            }else{
-                contract.setUnicomType("");
-            }
+            contract.setUnicomType(unicomType != null ? unicomTypeMap.get(unicomType) : "");
 
-            //二级行业
+            // 4.二级行业
             String unicomType2 = contract.getUnicomType2();
-            if(unicomType2 != null){
-                SysCodeVo sysCode4 = sysCodeService.findCode("unicom_type_2", unicomType2);
-                if(sysCode4 != null){
-                    contract.setUnicomType2(sysCode4.getName());
-                }else{
-                    contract.setUnicomType2("");
-                }
-            }else{
-                contract.setUnicomType2("");
-            }
+            contract.setUnicomType2(unicomType2 != null ? unicomType2Map.get(unicomType2) : "");
 
-            //商机来源
+            // 5.商机来源
             String oppSource = contract.getOppSource();
-            if(oppSource != null){
-                SysCodeVo sysCode5 = sysCodeService.findCode("clue_source", oppSource);
-                if(sysCode5 != null){
-                    contract.setOppSource(sysCode5.getName());
-                }else{
-                    contract.setOppSource("");
-                }
-            }else{
-                contract.setOppSource("");
-            }
+            contract.setOppSource(oppSource != null ? clueSourceMap.get(oppSource) : "");
 
-            //合同种类
+            // 6.合同种类
             String contractAddType = contract.getContractAddType();
-            if(contractAddType != null){
-                SysCodeVo sysCode6 = sysCodeService.findCode("contractAdd_type", contractAddType);
-                if(sysCode6 != null){
-                    contract.setContractAddType(sysCode6.getName());
-                }else{
-                    contract.setContractAddType("");
-                }
-            }else{
-                contract.setContractAddType("");
-            }
+            contract.setContractAddType(contractAddType != null ? contractAddTypeMap.get(contractAddType) : "");
 
-            //合同类型
+            // 7.合同类型
             String contractType = contract.getContractType();
-            if(contractType != null){
-                SysCodeVo sysCode7 = sysCodeService.findCode("contract_type", contractType);
-                if(sysCode7 != null){
-                    contract.setContractType(sysCode7.getName());
-                }else{
-                    contract.setContractType("");
-                }
-            }else{
-                contract.setContractType("");
-            }
+            contract.setContractType(contractType != null ? contractTypeMap.get(contractType) : "");
 
-            //计收类型
+            // 8.计收类型
             String incomeType = contract.getIncomeType();
-            if (incomeType != null){
-                SysCodeVo sysCode8 = sysCodeService.findCode("income_type", incomeType);
-                if(sysCode8 != null){
-                    contract.setIncomeType(sysCode8.getName());
-                }else{
-                    contract.setIncomeType("");
-                }
-            }else{
-                contract.setIncomeType("");
-            }
+            contract.setIncomeType(incomeType != null ? incomeTypeMap.get(incomeType) : "");
 
-            //是否有效
+            // 9.是否有效
             String isValid = contract.getIsValid();
-            if (isValid == null){
-                contract.setIsValid("暂未设置");
-            }else{
-                if("1".equals(isValid)){
-                    contract.setIsValid("有效");
-                }else{
-                    contract.setIsValid("无效");
-                }
-            }
+            contract.setIsValid(isValid == null ? "暂未设置" : "1".equals(isValid) ? "有效" : "无效");
 
-            //合同分类
+            // 10.合同分类
             String contractCategory = contract.getContractCategory();
             if(contractCategory == null){
                 contract.setContractCategory("");
             }else{
-                if("1".equals(contractCategory)){
-                    contract.setContractCategory("新增合同");
-                } else if ("2".equals(contractCategory)) {
-                    contract.setContractCategory("续约合同");
+                switch (contractCategory) {
+                    case "1": contract.setContractCategory("新增合同"); break;
+                    case "2": contract.setContractCategory("续约合同"); break;
+                    default: contract.setContractCategory("");
                 }
             }
         }
@@ -402,25 +344,18 @@ public class ContractAndOpportunityPutJob {
             // 1. 查询数据
             List<ToppOpportunityExcelVo> opportunityList = toppOpportunityMapper.selectOpportunityExportList(areaId);
 
-            // 2. 检查数据是否为空
-            if (opportunityList == null || opportunityList.isEmpty()) {
-                log.warn("商机数据为空，areaId: {}", areaId);
-                return;
-            }
+            log.info("查询到商机数据 {} 条", opportunityList != null ? opportunityList.size() : 0);
 
-            log.info("查询到商机数据 {} 条", opportunityList.size());
-
-            // 3. 进行数据格式转换
+            // 2. 进行数据格式转换
             processingOpportunityData(opportunityList);
 
             // 4. 创建临时文件
-            String fileName = areaEng + "Opportunity" + currentDate + ".xlsx";
             tempFile = File.createTempFile("opportunity_", ".xlsx");
 
             // 5. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
                     .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("商机数据")
+                    .sheet("商机查询统计")
                     .doWrite(opportunityList);
 
             // 6. 验证文件是否创建成功
@@ -432,7 +367,9 @@ public class ContractAndOpportunityPutJob {
             log.info("商机数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 7. 上传到SFTP服务器
+            // 7. 保存到本地
+            //saveToLocal(tempFile, opportunity);
+            // 8. 上传到SFTP服务器
             uploadToSftp(tempFile, opportunity,currentDate);
 
         } catch (Exception e) {
@@ -454,6 +391,9 @@ public class ContractAndOpportunityPutJob {
      * 对查询到的商机数据进行处理
      */
     private void processingOpportunityData(List<ToppOpportunityExcelVo> List){
+        if (List == null || List.isEmpty()) {
+            return;
+        }
         //业务类型（主）map
         Map<String,String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
         //所属一级行业map
@@ -519,13 +459,13 @@ public class ContractAndOpportunityPutJob {
             String developFlag = opportunity.getDevelopFlag();
             if (developFlag != null) {
                 switch (developFlag) {
-                    case "1":
+                    case "01":
                         opportunity.setDevelopFlag("省直拓");
                         break;
-                    case "2":
+                    case "02":
                         opportunity.setDevelopFlag("市直拓");
                         break;
-                    case "3":
+                    case "03":
                         opportunity.setDevelopFlag("县直拓");
                         break;
                     default:
@@ -560,12 +500,12 @@ public class ContractAndOpportunityPutJob {
                 opportunity.setIsHaveInnovate("");
             }
 
-            //集团客户二级行业
+            //集团客户一级行业: departmentCode → setting_str1 → unicomTypeMap
             String departmentCode = opportunity.getDepartmentCode();
-            opportunity.setCustomerUnicomType(departmentCode != null ? unicomType2Map.get(departmentCode) : "");
-            //集团客户一级行业
-            String customerUnicomType = unicomType2Settingstr1Map.get(departmentCode);
-            opportunity.setDepartmentCode(customerUnicomType != null ? unicomTypeMap.get(customerUnicomType) : "");
+            String settingStr1 = unicomType2Settingstr1Map.get(departmentCode);
+            opportunity.setCustomerUnicomType(settingStr1 != null ? unicomTypeMap.get(settingStr1) : "");
+            //集团客户二级行业: departmentCode → unicomType2Map
+            opportunity.setDepartmentCode(departmentCode != null ? unicomType2Map.get(departmentCode) : "");
 
             //创建时间 - SQL中已使用DATE_FORMAT格式化为 yyyy/MM/dd 格式，无需额外处理
 
@@ -588,6 +528,21 @@ public class ContractAndOpportunityPutJob {
             //商机行业 BU打标
             String bgType = opportunity.getBgType();
             opportunity.setBgType(bgType != null ? bgTypeResultMap.get(bgType) : "");
+        }
+    }
+
+    /**
+     * 保存文件到本地(本地测试用)
+     *
+     * @param file 源文件
+     * @param fileName 文件名
+     */
+    private void saveToLocal(File file, String fileName) {
+        try {
+            Files.copy(file.toPath(), Paths.get(LOCAL_SAVE_PATH, fileName), StandardCopyOption.REPLACE_EXISTING);
+            log.info("文件已保存到本地: {}/{}", LOCAL_SAVE_PATH, fileName);
+        } catch (Exception e) {
+            log.error("文件保存到本地失败: {}", fileName, e);
         }
     }
 
