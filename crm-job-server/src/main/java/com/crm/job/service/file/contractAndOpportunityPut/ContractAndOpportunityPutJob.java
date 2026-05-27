@@ -5,7 +5,6 @@ import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
-import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.domain.vo.ToppContractExcelVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;
 import com.crm.system.mapper.ContractAndOpportunityPutConfigMapper;
@@ -37,6 +36,7 @@ public class ContractAndOpportunityPutJob {
     private static String ftpPort;
     private static String ftpDirectory;
 
+    //文件的本地保存测试路径
     private static final String LOCAL_SAVE_PATH = "C:/Users/12139/Desktop";
 
     //完整的文件名+扩展名
@@ -96,6 +96,9 @@ public class ContractAndOpportunityPutJob {
             createOpportunityFile(areaId, areaEng, currentDate);
             long l4 = System.currentTimeMillis();
             log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
+
+            log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
+            log.info("任务结束");
         }
     }
 
@@ -117,7 +120,6 @@ public class ContractAndOpportunityPutJob {
             log.info("查询到合同收入数据 {} 条", contractIncomeList != null ? contractIncomeList.size() : 0);
 
             // 3. 创建临时文件
-            String fileName = areaEng + "ContractIncome" + currentDate + ".xlsx";
             tempFile = File.createTempFile("contract_income_", ".xlsx");
 
             // 4. 使用EasyExcel写入数据
@@ -136,10 +138,9 @@ public class ContractAndOpportunityPutJob {
                     tempFile.getAbsolutePath(), tempFile.length());
 
             // 6. 保存到本地
-            saveToLocal(tempFile, contractIncome);
-
+            //saveToLocal(tempFile, contractIncome);
             // 7. 上传到SFTP服务器
-            //uploadToSftp(tempFile, contractIncome,currentDate);
+            uploadToSftp(tempFile, contractIncome,currentDate);
 
         } catch (Exception e) {
             log.error("合同收入数据导出任务执行失败,areaId: {}", areaId, e);
@@ -193,7 +194,6 @@ public class ContractAndOpportunityPutJob {
             translateAndFormatContractStatisticsData(contractList);
 
             // 4. 创建临时文件
-            String fileName = areaEng + "Contract" + currentDate + ".xlsx";
             tempFile = File.createTempFile("contract_statistics_", ".xlsx");
 
             // 5. 使用EasyExcel写入数据
@@ -212,10 +212,9 @@ public class ContractAndOpportunityPutJob {
                     tempFile.getAbsolutePath(), tempFile.length());
 
             // 7. 保存到本地
-            saveToLocal(tempFile, contract);
-
+            //saveToLocal(tempFile, contract);
             // 8. 上传到SFTP服务器
-            //uploadToSftp(tempFile, contract,currentDate);
+            uploadToSftp(tempFile, contract,currentDate);
 
         } catch (Exception e) {
             log.error("合同统计数据导出任务执行失败,areaId: {}", areaId, e);
@@ -351,7 +350,6 @@ public class ContractAndOpportunityPutJob {
             processingOpportunityData(opportunityList);
 
             // 4. 创建临时文件
-            String fileName = areaEng + "Opportunity" + currentDate + ".xlsx";
             tempFile = File.createTempFile("opportunity_", ".xlsx");
 
             // 5. 使用EasyExcel写入数据
@@ -370,10 +368,9 @@ public class ContractAndOpportunityPutJob {
                     tempFile.getAbsolutePath(), tempFile.length());
 
             // 7. 保存到本地
-            saveToLocal(tempFile, opportunity);
-
+            //saveToLocal(tempFile, opportunity);
             // 8. 上传到SFTP服务器
-            //uploadToSftp(tempFile, opportunity,currentDate);
+            uploadToSftp(tempFile, opportunity,currentDate);
 
         } catch (Exception e) {
             log.error("商机数据导出任务执行失败,areaId: {}", areaId, e);
@@ -503,12 +500,12 @@ public class ContractAndOpportunityPutJob {
                 opportunity.setIsHaveInnovate("");
             }
 
-            //集团客户二级行业
+            //集团客户一级行业: departmentCode → setting_str1 → unicomTypeMap
             String departmentCode = opportunity.getDepartmentCode();
-            opportunity.setCustomerUnicomType(departmentCode != null ? unicomType2Map.get(departmentCode) : "");
-            //集团客户一级行业
-            String customerUnicomType = unicomType2Settingstr1Map.get(departmentCode);
-            opportunity.setDepartmentCode(customerUnicomType != null ? unicomTypeMap.get(customerUnicomType) : "");
+            String settingStr1 = unicomType2Settingstr1Map.get(departmentCode);
+            opportunity.setCustomerUnicomType(settingStr1 != null ? unicomTypeMap.get(settingStr1) : "");
+            //集团客户二级行业: departmentCode → unicomType2Map
+            opportunity.setDepartmentCode(departmentCode != null ? unicomType2Map.get(departmentCode) : "");
 
             //创建时间 - SQL中已使用DATE_FORMAT格式化为 yyyy/MM/dd 格式，无需额外处理
 
@@ -535,7 +532,7 @@ public class ContractAndOpportunityPutJob {
     }
 
     /**
-     * 保存文件到本地
+     * 保存文件到本地(本地测试用)
      *
      * @param file 源文件
      * @param fileName 文件名
