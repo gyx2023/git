@@ -379,6 +379,7 @@ public class WxStrategyJob {
                         bw.write(sb.toString());
                         bw.write("\r\n");
                     }
+                    bw.flush();
                 }
             }
             log.info("工单文件生成成功");
@@ -445,6 +446,7 @@ public class WxStrategyJob {
                     bw.write(line);
                     bw.write("\r\n");
                 }
+                bw.flush();
             }
         } catch (Exception e) {
             flag = 1;
@@ -526,6 +528,7 @@ public class WxStrategyJob {
                     bw.write(line);
                     bw.write("\r\n");
                 }
+                bw.flush();
             }
         } catch (Exception e) {
             flag = 1;
