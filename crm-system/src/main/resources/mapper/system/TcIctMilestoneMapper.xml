@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.TcIctMilestoneMapper">
+
+    <resultMap type="com.crm.system.domain.TcIctMilestone" id="TcIctMilestoneResult">
+        <result property="id" column="id_"/>
+        <result property="comName" column="com_name"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="auditDate" column="audit_date"/>
+        <result property="contractAmount" column="contract_amount"/>
+        <result property="contractNumber" column="contract_number"/>
+        <result property="termNumber" column="term_number"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectNumber" column="project_number"/>
+        <result property="projectStatus" column="project_status"/>
+        <result property="pmUserName" column="pm_user_name"/>
+        <result property="pmAttra" column="pm_attra"/>
+        <result property="salesUserName" column="sales_user_name"/>
+        <result property="salesAttra" column="sales_attra"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="termAmount" column="term_amount"/>
+        <result property="projectIncomeType" column="project_income_type"/>
+        <result property="taxRate" column="tax_rate"/>
+        <result property="budgetPercent" column="budget_percent"/>
+        <result property="receiptType" column="receipt_type"/>
+        <result property="milestoneName" column="milestone_name"/>
+        <result property="milestoneDate" column="milestone_date"/>
+        <result property="budgetAmount" column="budget_amount"/>
+        <result property="incomedAmount" column="incomed_amount"/>
+        <result property="cashLagMonths" column="cash_lag_months"/>
+        <result property="predictCashDate" column="predict_cash_date"/>
+        <result property="createDate" column="create_date"/>
+        <result property="productLine" column="product_line"/>
+    </resultMap>
+
+    <!-- 清空合同里程碑表 -->
+    <delete id="clearMilestoneTable">
+        TRUNCATE TABLE tc_ict_milestone
+    </delete>
+</mapper>

@@ -31,7 +31,7 @@ public class RoleDTO implements Serializable {
     private String roleKey;
 
     /**
-     * 数据范围（1：所有数据权限；2：自定义数据权限；3：本部门数据权限；4：本部门及以下数据权限；5：仅本人数据权限）
+     * 数据范围（1：所有数据权限；2：自定义数据权限；3：本部门数据权限；4：本部门及以下数据权限；5：仅本人数据权限；6：客户经理数据权限）
      */
     private String dataScope;
 

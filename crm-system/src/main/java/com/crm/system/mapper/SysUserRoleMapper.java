@@ -2,6 +2,7 @@ package com.crm.system.mapper;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.SysUserRole;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -16,4 +17,11 @@ public interface SysUserRoleMapper extends BaseMapperPlus<SysUserRoleMapper, Sys
 
     void deleteByUserId(Long userId);
 
+    /**
+     * 根据用户ID和角色ID列表删除用户角色关联记录
+     *
+     * @param userId 用户ID
+     * @param roleIds 角色ID列表
+     */
+    void deleteByUserIdAndRoleIds(@Param("userId") Long userId, @Param("roleIds") List<Long> roleIds);
 }
