@@ -310,8 +310,7 @@ public class WxStrategyJob {
             }
             file.createNewFile();
 
-            // UTF-8 编码写入
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))) {
 
                 for (Map.Entry<String, JSONObject> entry : strategyMap.entrySet()) {
                     String key = entry.getKey();
@@ -378,7 +377,7 @@ public class WxStrategyJob {
                             .append("htdq_warn".equals(key) ? ifNull(workOrder.getContractCode()) : "");
 
                         bw.write(sb.toString());
-                        bw.newLine();
+                        bw.write("\r\n");
                     }
                 }
             }
@@ -444,7 +443,7 @@ public class WxStrategyJob {
                     );
 
                     bw.write(line);
-                    bw.newLine();
+                    bw.write("\r\n");
                 }
             }
         } catch (Exception e) {
@@ -525,7 +524,7 @@ public class WxStrategyJob {
                     );
 
                     bw.write(line);
-                    bw.newLine();
+                    bw.write("\r\n");
                 }
             }
         } catch (Exception e) {
