@@ -57,66 +57,77 @@ public class ContractAndOpportunityPutJob {
 
     @XxlJob("contractAndOpportunityPutJob")
     public void execute(){
-        Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
-        ftpUsername = param.get("ftp_username");  //用户名
-        ftpPassword = param.get("ftp_password");  //密码
-        ftpHost = param.get("ftp_host");  //ip地址
-        ftpPort = param.get("ftp_port");  //端口号
+        try{
+            Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
+            ftpUsername = param.get("ftp_username");  //用户名
+            ftpPassword = param.get("ftp_password");  //密码
+            ftpHost = param.get("ftp_host");  //ip地址
+            ftpPort = param.get("ftp_port");  //端口号
 
-        String currentDate = null;
-        String jobParam = XxlJobHelper.getJobParam();
-        if (jobParam != null && !jobParam.trim().isEmpty()) {
-            currentDate = jobParam;
-        } else {
-            currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        }
-
-        List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
-        for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
-            long l1 = System.currentTimeMillis();
-            ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
-            String areaEng = contractAndOpportunityPutConfig.getAreaEng();
-            Integer areaId = contractAndOpportunityPutConfig.getAreaId();
-
-            contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";
-            contract = areaEng + "Contract" + currentDate + ".xls";
-            opportunity = areaEng + "Opportunity" + currentDate + ".xls";
-
-            Map<File, String> fileMap = new LinkedHashMap<>();
-
-            // 创建合同收入文件
-            File incomeFile = createContractIncomeFile(areaId, areaEng, currentDate);
-            long l2 = System.currentTimeMillis();
-            log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
-            if (incomeFile != null) { fileMap.put(incomeFile, contractIncome); }
-
-            // 创建合同统计数据文件
-            File contractFile = createContractStatisticsFile(areaId, areaEng, currentDate);
-            long l3 = System.currentTimeMillis();
-            log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
-            if (contractFile != null) { fileMap.put(contractFile, contract); }
-
-            // 创建商机数据文件
-            File opportunityFile = createOpportunityFile(areaId, areaEng, currentDate);
-            long l4 = System.currentTimeMillis();
-            log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
-            if (opportunityFile != null) { fileMap.put(opportunityFile, opportunity); }
-
-            // 一次性上传所有文件到SFTP
-            if (!fileMap.isEmpty()) {
-                batchUploadToSftp(fileMap, currentDate);
+            String currentDate = null;
+            String jobParam = XxlJobHelper.getJobParam();
+            if (jobParam != null && !jobParam.trim().isEmpty()) {
+                currentDate = jobParam;
+            } else {
+                currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             }
 
-            // 清理所有临时文件
-            for (File f : fileMap.keySet()) {
-                if (f.exists()) {
-                    f.delete();
-                    log.info("临时文件已删除: {}", f.getAbsolutePath());
+            List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
+            for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
+                long l1 = System.currentTimeMillis();
+                ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
+                String areaEng = contractAndOpportunityPutConfig.getAreaEng();
+                Integer areaId = contractAndOpportunityPutConfig.getAreaId();
+
+                contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";
+                contract = areaEng + "Contract" + currentDate + ".xls";
+                opportunity = areaEng + "Opportunity" + currentDate + ".xls";
+
+                Map<File, String> fileMap = new LinkedHashMap<>();
+
+                // 创建合同收入文件
+                File incomeFile = createContractIncomeFile(areaId, areaEng, currentDate);
+                long l2 = System.currentTimeMillis();
+                log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
+                if (incomeFile != null) { fileMap.put(incomeFile, contractIncome); }
+
+                // 创建合同统计数据文件
+                File contractFile = createContractStatisticsFile(areaId, areaEng, currentDate);
+                long l3 = System.currentTimeMillis();
+                log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
+                if (contractFile != null) { fileMap.put(contractFile, contract); }
+
+                // 创建商机数据文件
+                File opportunityFile = createOpportunityFile(areaId, areaEng, currentDate);
+                long l4 = System.currentTimeMillis();
+                log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
+                if (opportunityFile != null) { fileMap.put(opportunityFile, opportunity); }
+
+                // 一次性上传所有文件到SFTP
+                if (!fileMap.isEmpty()) {
+                    batchUploadToSftp(fileMap, currentDate);
                 }
-            }
 
-            log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
-            log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
+                // 批量保存文件到本地
+//            if (!fileMap.isEmpty()) {
+//                for (Map.Entry<File, String> entry : fileMap.entrySet()) {
+//                    saveToLocal(entry.getKey(), entry.getValue());
+//                }
+//            }
+
+                // 清理所有临时文件
+                for (File f : fileMap.keySet()) {
+                    if (f.exists()) {
+                        f.delete();
+                        log.info("临时文件已删除: {}", f.getAbsolutePath());
+                    }
+                }
+
+                log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
+                log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
+            }
+        }catch(Exception e){
+            log.error("任务执行异常", e);
         }
     }
 
