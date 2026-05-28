@@ -110,21 +110,24 @@ public class FieldAnnotaionUtil {
                 field.set(obj, (isBlank(val) ? null : new BigDecimal(val)));
             } else if (t == Date.class) {//
                 FieldAnnotaion dv = field.getAnnotation(FieldAnnotaion.class);
-                if (dv == null || StringUtils.isBlank(dv.dateFormat())) {
+                // 先检查值是否为空，避免解析空字符串导致异常日期
+                if (StringUtils.isBlank(val)) {
+                    field.set(obj, null);
+                } else if (dv == null || StringUtils.isBlank(dv.dateFormat())) {
                     // 不使用注解时 慎用yyyyMMdd放在最后
-                    if(StringUtils.isNotEmpty(val)){
+                    try {
                         Date date = DateUtils.parseDate(val, "yyyyMMddHHmmss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss");
                         field.set(obj, date);
-                    }else{
+                    } catch (Exception e) {
                         field.set(obj, null);
                     }
                 } else {
                     String format = dv.dateFormat();
-                    if (isBlank(val) || isBlank(format)) {
-                        field.set(obj, null);
-                    } else {
+                    try {
                         Date date = DateUtils.parseDate(val, format);
                         field.set(obj, date);
+                    } catch (Exception e) {
+                        field.set(obj, null);
                     }
                 }
                 //基本类型
