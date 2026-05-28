@@ -124,7 +124,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
         // 先查询为 ZqGrpGroupInfoVo2
-        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectPageList(pageQuery.build(), lqw);
 
         // 根据 sys_param 表的配置决定是否脱敏
         applyDesensitizationIfNeeded(resultPage.getRecords());
