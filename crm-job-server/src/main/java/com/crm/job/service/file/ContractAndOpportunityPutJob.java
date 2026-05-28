@@ -78,9 +78,9 @@ public class ContractAndOpportunityPutJob {
             String areaEng = contractAndOpportunityPutConfig.getAreaEng();
             Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-            contractIncome = areaEng + "ContractIncome" + currentDate + ".xlsx";
-            contract = areaEng + "Contract" + currentDate + ".xlsx";
-            opportunity = areaEng + "Opportunity" + currentDate + ".xlsx";
+            contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";
+            contract = areaEng + "Contract" + currentDate + ".xls";
+            opportunity = areaEng + "Opportunity" + currentDate + ".xls";
 
             Map<File, String> fileMap = new LinkedHashMap<>();
 
@@ -138,7 +138,7 @@ public class ContractAndOpportunityPutJob {
             log.info("查询到合同收入数据 {} 条", contractIncomeList != null ? contractIncomeList.size() : 0);
 
             // 3. 创建临时文件
-            tempFile = File.createTempFile("contract_income_", ".xlsx");
+            tempFile = File.createTempFile("contract_income_", ".xls");
 
             // 4. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
@@ -202,7 +202,7 @@ public class ContractAndOpportunityPutJob {
             translateAndFormatContractStatisticsData(contractList);
 
             // 4. 创建临时文件
-            tempFile = File.createTempFile("contract_statistics_", ".xlsx");
+            tempFile = File.createTempFile("contract_statistics_", ".xls");
 
             // 5. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ToppContractExcelVo.class)
@@ -348,7 +348,7 @@ public class ContractAndOpportunityPutJob {
             processingOpportunityData(opportunityList);
 
             // 4. 创建临时文件
-            tempFile = File.createTempFile("opportunity_", ".xlsx");
+            tempFile = File.createTempFile("opportunity_", ".xls");
 
             // 5. 使用EasyExcel写入数据
             EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
