@@ -82,20 +82,38 @@ public class ContractAndOpportunityPutJob {
             contract = areaEng + "Contract" + currentDate + ".xlsx";
             opportunity = areaEng + "Opportunity" + currentDate + ".xlsx";
 
-            // 创建合同收入文件并上传
-            createContractIncomeFile(areaId, areaEng, currentDate);
+            Map<File, String> fileMap = new LinkedHashMap<>();
+
+            // 创建合同收入文件
+            File incomeFile = createContractIncomeFile(areaId, areaEng, currentDate);
             long l2 = System.currentTimeMillis();
             log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
+            if (incomeFile != null) { fileMap.put(incomeFile, contractIncome); }
 
-            // 创建合同统计数据文件并上传
-            createContractStatisticsFile(areaId, areaEng, currentDate);
+            // 创建合同统计数据文件
+            File contractFile = createContractStatisticsFile(areaId, areaEng, currentDate);
             long l3 = System.currentTimeMillis();
             log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
+            if (contractFile != null) { fileMap.put(contractFile, contract); }
 
-            // 创建商机数据文件并上传
-            createOpportunityFile(areaId, areaEng, currentDate);
+            // 创建商机数据文件
+            File opportunityFile = createOpportunityFile(areaId, areaEng, currentDate);
             long l4 = System.currentTimeMillis();
             log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
+            if (opportunityFile != null) { fileMap.put(opportunityFile, opportunity); }
+
+            // 一次性上传所有文件到SFTP
+            if (!fileMap.isEmpty()) {
+                batchUploadToSftp(fileMap, currentDate);
+            }
+
+            // 清理所有临时文件
+            for (File f : fileMap.keySet()) {
+                if (f.exists()) {
+                    f.delete();
+                    log.info("临时文件已删除: {}", f.getAbsolutePath());
+                }
+            }
 
             log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
             log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
@@ -103,13 +121,13 @@ public class ContractAndOpportunityPutJob {
     }
 
     /**
-     * 创建合同收入数据Excel文件并上传到SFTP服务器
+     * 创建合同收入数据Excel文件
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
      * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private void createContractIncomeFile(Integer areaId, String areaEng, String currentDate) {
+    private File createContractIncomeFile(Integer areaId, String areaEng, String currentDate) {
         log.info("开始执行合同收入数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -131,40 +149,30 @@ public class ContractAndOpportunityPutJob {
             // 5. 验证文件是否创建成功
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同收入数据导出文件创建失败");
-                return;
+                return null;
             }
 
             log.info("合同收入数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 6. 保存到本地
-            //saveToLocal(tempFile, contractIncome);
-            // 7. 上传到SFTP服务器
-            uploadToSftp(tempFile, contractIncome,currentDate);
-
+            return tempFile;
         } catch (Exception e) {
             log.error("合同收入数据导出任务执行失败,areaId: {}", areaId, e);
-        } finally {
-            // 7. 删除临时文件
             if (tempFile != null && tempFile.exists()) {
-                boolean deleted = tempFile.delete();
-                if (deleted) {
-                    log.info("临时文件已删除: {}", tempFile.getAbsolutePath());
-                } else {
-                    log.warn("临时文件删除失败: {}", tempFile.getAbsolutePath());
-                }
+                tempFile.delete();
             }
+            return null;
         }
     }
 
     /**
-     * 创建合同统计数据Excel文件并上传到SFTP服务器
+     * 创建合同统计数据Excel文件
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
      * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private void createContractStatisticsFile(Integer areaId, String areaEng, String currentDate) {
+    private File createContractStatisticsFile(Integer areaId, String areaEng, String currentDate) {
         log.info("开始执行合同统计数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -205,29 +213,19 @@ public class ContractAndOpportunityPutJob {
             // 6. 验证文件是否创建成功
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同统计数据导出文件创建失败");
-                return;
+                return null;
             }
 
             log.info("合同统计数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 7. 保存到本地
-            //saveToLocal(tempFile, contract);
-            // 8. 上传到SFTP服务器
-            uploadToSftp(tempFile, contract,currentDate);
-
+            return tempFile;
         } catch (Exception e) {
             log.error("合同统计数据导出任务执行失败,areaId: {}", areaId, e);
-        } finally {
-            // 8. 删除临时文件
             if (tempFile != null && tempFile.exists()) {
-                boolean deleted = tempFile.delete();
-                if (deleted) {
-                    log.info("临时文件已删除: {}", tempFile.getAbsolutePath());
-                } else {
-                    log.warn("临时文件删除失败: {}", tempFile.getAbsolutePath());
-                }
+                tempFile.delete();
             }
+            return null;
         }
     }
 
@@ -330,13 +328,13 @@ public class ContractAndOpportunityPutJob {
     }
 
     /**
-     * 创建商机查询数据Excel文件并上传到SFTP服务器
+     * 创建商机查询数据Excel文件
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
      * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private void createOpportunityFile(Integer areaId, String areaEng, String currentDate) {
+    private File createOpportunityFile(Integer areaId, String areaEng, String currentDate) {
         log.info("开始执行商机数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -361,29 +359,19 @@ public class ContractAndOpportunityPutJob {
             // 6. 验证文件是否创建成功
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("商机数据导出文件创建失败");
-                return;
+                return null;
             }
 
             log.info("商机数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
                     tempFile.getAbsolutePath(), tempFile.length());
 
-            // 7. 保存到本地
-            //saveToLocal(tempFile, opportunity);
-            // 8. 上传到SFTP服务器
-            uploadToSftp(tempFile, opportunity,currentDate);
-
+            return tempFile;
         } catch (Exception e) {
             log.error("商机数据导出任务执行失败,areaId: {}", areaId, e);
-        } finally {
-            // 8. 删除临时文件
             if (tempFile != null && tempFile.exists()) {
-                boolean deleted = tempFile.delete();
-                if (deleted) {
-                    log.info("临时文件已删除: {}", tempFile.getAbsolutePath());
-                } else {
-                    log.warn("临时文件删除失败: {}", tempFile.getAbsolutePath());
-                }
+                tempFile.delete();
             }
+            return null;
         }
     }
 
@@ -547,37 +535,30 @@ public class ContractAndOpportunityPutJob {
     }
 
     /**
-     * 上传文件到SFTP服务器
+     * 批量上传文件到SFTP服务器（使用同一个SFTP连接）
      *
-     * @param file 要上传的文件
-     * @param fileName 文件名
+     * @param fileMap 文件到文件名的映射
      * @param dateSubDir 日期子目录（yyyyMMdd格式）
      */
-    private void uploadToSftp(File file, String fileName, String dateSubDir) {
+    private void batchUploadToSftp(Map<File, String> fileMap, String dateSubDir) {
         SftpWebUtil sftpUtil = null;
-        FileInputStream fis = null;
         try {
-            // 创建SFTP连接
             sftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
             sftpUtil.login();
 
-            // 读取文件并上传，使用日期作为子目录
-            fis = new FileInputStream(file);
-            sftpUtil.upload(ftpDirectory, dateSubDir, fileName, fis);
-
-            log.info("文件上传成功: {}", fileName);
-        } catch (Exception e) {
-            log.error("文件上传失败: {}", fileName, e);
-        } finally {
-            // 关闭输入流
-            if (fis != null) {
-                try {
-                    fis.close();
+            for (Map.Entry<File, String> entry : fileMap.entrySet()) {
+                File file = entry.getKey();
+                String fileName = entry.getValue();
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    sftpUtil.upload(ftpDirectory, dateSubDir, fileName, fis);
+                    log.info("文件上传成功: {}", fileName);
                 } catch (Exception e) {
-                    log.warn("关闭输入流失败", e);
+                    log.error("文件上传失败: {}", fileName, e);
                 }
             }
-            // 断开SFTP连接
+        } catch (Exception e) {
+            log.error("SFTP连接或批量上传失败", e);
+        } finally {
             if (sftpUtil != null) {
                 try {
                     sftpUtil.logout();
