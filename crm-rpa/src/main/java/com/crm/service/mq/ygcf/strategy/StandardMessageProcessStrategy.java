@@ -1,0 +1,37 @@
+package com.crm.service.mq.ygcf.strategy;
+
+import com.crm.service.mq.ygcf.RpaFormMappingEngine;
+import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+
+/**
+ * 默认消息处理策略（通用流程：表单映射→脚本执行→通知回调）
+ * 直接委托给引擎的 processFullFlow，与生产代码行为完全一致。
+ *
+ * @author crm
+ */
+@Slf4j
+@Component
+public class StandardMessageProcessStrategy implements RpaMessageProcessStrategy {
+
+    @Resource
+    private RpaFormMappingEngine engine;
+
+    @Override
+    public String getBizCode() {
+        return null; // 兜底策略
+    }
+
+    @Override
+    public boolean isDefault() {
+        return true;
+    }
+
+    @Override
+    public ZqztJtNoticeRecordDo process(ZqztJtNoticeRecordDo recordDo) throws Exception {
+        return engine.processFullFlow(recordDo);
+    }
+}

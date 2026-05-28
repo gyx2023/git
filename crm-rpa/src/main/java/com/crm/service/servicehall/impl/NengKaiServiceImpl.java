@@ -13,7 +13,7 @@ import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.system.service.jt.IZqztJtNoticeRecordService;
-import com.crm.utils.HaoKaoSignUtil;
+import com.crm.system.service.servicehall.INengKaiCallbackService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -30,8 +30,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import static com.crm.utils.HttpClientUtil.doPost_nlpt;
 
 @Service
 @Slf4j
@@ -72,6 +70,9 @@ public class NengKaiServiceImpl implements NengKaiService {
 
     @Resource
     private IZqztJtNoticeRecordService iZqztJtNoticeRecordService;
+
+    @Resource
+    private INengKaiCallbackService nengKaiCallbackCoreService;
 
     @Override
     public NengKaiResponseVo nengKaiNotice(NengKaiRequestVo requestVo) {
@@ -157,88 +158,8 @@ public class NengKaiServiceImpl implements NengKaiService {
 
 
     @Override
-    public String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo,String scene) {
-
-        // 请求
-        Map<String, Object> data = new HashMap<String, Object>();
-
-        // 相应体
-        String responseBody = "";
-        try {
-            // 获取当前年月日
-            String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-
-            // 获取序号
-            String sequenceId = getCode(scene);
-
-            // 租户ID
-            String nlpt_wm_tenant = "UC";
-
-            // 触点编码
-            String nlpt_wm_touchpoint = "37";
-
-            // 请求流水
-            String nlpt_wm_serial = "0" + nlpt_wm_touchpoint + today + sequenceId;
-
-            // 请求头参数
-            Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
-            UNI_BSS_HEAD.put("APP_ID", APP_ID);
-            UNI_BSS_HEAD.put("key", APP_SECRET);
-            HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
-
-            // 报文体
-            Map<String, Object> UNI_BSS_BODY = new HashMap<String, Object>();
-            // 构建请求参数 - 符合指定的JSON格式
-            Map<String, Object> WORKSHEETS_COMPLETE_REQ = new HashMap<>();
-
-            // 构建worksheets数组
-            List<Map<String, Object>> worksheetsList = new ArrayList<>();
-
-            // 示例数据，您可以根据实际需求填充
-            Map<String, Object> worksheetItem = new HashMap<>();
-            worksheetItem.put("worksheetId", zqztJtNoticeRecordDo.getWorksheetId());
-            worksheetItem.put("dealUser", zqztJtNoticeRecordDo.getDealUserCode());
-            worksheetItem.put("dealResultCode", zqztJtNoticeRecordDo.getDealResultCode());
-            if(!"0".equals(zqztJtNoticeRecordDo.getDealResultCode())){
-                worksheetItem.put("failReason", zqztJtNoticeRecordDo.getFailReason());
-            }
-
-            // 构建orderUpdate对象
-            Map<String, Object> orderUpdate = new HashMap<>();
-            Map<String, Object> order = new HashMap<>();
-            Map<String, Object> body = new HashMap<>();
-            body = JSONUtil.toBean(zqztJtNoticeRecordDo.getBody(), Map.class);
-            order.put("body", body);
-            orderUpdate.put("order", order);
-            worksheetItem.put("orderUpdate", orderUpdate);
-
-            worksheetsList.add(worksheetItem);
-
-            // 将worksheets列表添加到请求参数中
-            WORKSHEETS_COMPLETE_REQ.put("worksheets", worksheetsList);
-
-            UNI_BSS_BODY.put("WORKSHEETS_COMPLETE_REQ", WORKSHEETS_COMPLETE_REQ);
-
-            // 拼接整个报文
-            data.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
-            data.put("UNI_BSS_BODY", UNI_BSS_BODY);
-
-            String jsonString = JSONUtil.toJsonStr(data);
-            log.info("请求报文参数:{}", jsonString);
-
-            String url = worksheetsCompleteURL;
-            log.info("请求地址:{}", url);
-
-            responseBody = doPost_nlpt(url, jsonString, "utf-8", nlpt_wm_serial);
-            log.info("响应报文:{}", responseBody);
-            return responseBody;
-
-        } catch (Exception e) {
-            log.error("服务大厅_申请单提交标准化接口", e);
-            return responseBody;
-
-
-        }
+    public String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo, String scene) {
+        return nengKaiCallbackCoreService.callWorksheetsComplete(zqztJtNoticeRecordDo, scene);
     }
 
 

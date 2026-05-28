@@ -1,19 +1,11 @@
 package com.crm.service.mq.ygcf;
 
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.mq.config.RabbitMQConfig;
 import com.crm.common.utils.StringUtils;
-import com.crm.service.servicehall.NengKaiService;
-import com.crm.service.script.RpaMappingScriptEngine;
-import com.crm.service.script.RpaScriptExecutionContext;
-import com.crm.system.domain.param.SysParamDo;
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
-import com.crm.system.domain.rpa.ZqztRpaScriptDefDo;
+import com.crm.service.mq.ygcf.strategy.MessageStrategyFactory;
+import com.crm.service.mq.ygcf.strategy.RpaMessageProcessStrategy;
 import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
-import com.crm.system.mapper.param.SysParamMapper;
-import com.crm.system.mapper.rpa.ZqztRpaFormMappingMapper;
-import com.crm.system.mapper.rpa.ZqztRpaScriptDefMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -25,19 +17,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static com.crm.utils.DealMapUtil.getValueByPath;
-import static com.crm.utils.DealMapUtil.setValueByPath;
-import static com.crm.utils.EvaluateUtil.evaluateCondition;
 
 /**
  * RabbitMQ 消费者服务
@@ -47,34 +30,16 @@ import static com.crm.utils.EvaluateUtil.evaluateCondition;
 @Slf4j
 @Service
 public class RabbitMQConsumerService {
-    private static final String SCRIPT_STAGE_ROW = "ROW";
-    private static final String SCRIPT_STAGE_POST_ALL = "POST_ALL";
-
-    @Resource
-    private RabbitTemplate rabbitTemplate;
-
     private static final int MAX_RETRY_COUNT = Integer.MAX_VALUE;
 
     @Resource
-    private ZqztRpaFormMappingMapper zqztRpaFormMappingMapper;
-
-    @Resource
-    private NengKaiService nengKaiService;
-
-    @Resource
-    private SysParamMapper sysParamMapper;
+    private RabbitTemplate rabbitTemplate;
 
     @Resource
     private ZqztJtNoticeRecordMapper zqztJtNoticeRecordMapper;
 
     @Resource
-    private ZqztRpaScriptDefMapper zqztRpaScriptDefMapper;
-
-    @Resource
-    private RpaMappingScriptEngine rpaMappingScriptEngine;
-
-    @Resource
-    private RpaFormMappingCacheService rpaFormMappingCacheService;
+    private MessageStrategyFactory messageStrategyFactory;
 
     /**
      * 消费测试队列的消息（使用手动确认）
@@ -226,96 +191,18 @@ public class RabbitMQConsumerService {
     }
 
     /**
-     * 模拟处理消息的业务逻辑
+     * 处理消息 - 委托给策略工厂路由到对应策略
      *
      * @param messageBody 消息内容
-     * @throws Exception 处理异常
+     * @return 处理结果
      */
     public ZqztJtNoticeRecordDo processMessage(String messageBody) throws Exception {
         ZqztJtNoticeRecordDo recordDo = JSONUtil.toBean(messageBody, ZqztJtNoticeRecordDo.class);
         String bizCode = recordDo.getBizCode();
-        SysParamDo rpaDealUser = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "RPA_DEAL_USER").eq(SysParamDo::getCode, bizCode));
-        if(rpaDealUser !=null && rpaDealUser.getValue() != null){
-            recordDo.setDealResultCode(rpaDealUser.getValue());
-        }
-        String body = recordDo.getBody();
 
-        Boolean checkResult = this.checekData(recordDo);
-        recordDo.setDealResultCode("0");
-        // 先将JSON字符串转换为JSONObject
-        cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(body);
-        // 完全转换为Map结构，确保嵌套的JSON对象和数组也被正确转换
-        Map<String, Object> messageMap = convertJsonToMap(jsonObject);
-
-//        List<ZqztRpaFormMappingDo> zqztRpaFormMappingDos = zqztRpaFormMappingMapper.selectList(new LambdaQueryWrapper<ZqztRpaFormMappingDo>().eq(ZqztRpaFormMappingDo::getBizCode, bizCode));
-        List<ZqztRpaFormMappingDo> zqztRpaFormMappingDos = rpaFormMappingCacheService.getByBizCode(bizCode);
-        Map<String, ZqztRpaScriptDefDo> scriptDefMap = this.loadScriptDefMap(zqztRpaFormMappingDos);
-        //普通表单处理
-        List<ZqztRpaFormMappingDo> formList = zqztRpaFormMappingDos.stream()
-            .filter(item -> "0".equals(item.getIsComponent()))
-            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
-            .collect(Collectors.toList());
-
-        for (ZqztRpaFormMappingDo item : formList) {
-            //判断是否条件展示
-            if("1".equals(item.getConditionsShow())){
-                String conditionsValue = item.getConditionsValue();
-                boolean res = evaluateCondition(conditionsValue, messageMap);
-                if(res){
-                    this.applyMappingValue(messageMap, item, messageMap);
-                    this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, messageMap);
-                }
-            }else {
-                this.applyMappingValue(messageMap, item, messageMap);
-                this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, messageMap);
-            }
-        }
-
-        //处理组件表单
-        List<ZqztRpaFormMappingDo> componentList = zqztRpaFormMappingDos.stream()
-            .filter(item -> "1".equals(item.getIsComponent()))
-            .collect(Collectors.toList());
-
-        Map<String, List<ZqztRpaFormMappingDo>> ComponentMap = componentList.stream()
-            .collect(java.util.stream.Collectors.groupingBy(ZqztRpaFormMappingDo::getComponentKey));
-        for (Map.Entry<String, List<ZqztRpaFormMappingDo>> entry : ComponentMap.entrySet()) {
-            List<ZqztRpaFormMappingDo> values = entry.getValue();
-            //如果组件的集合只有一个，那么认为组件的值是固定的，直接将模版值放入到body中
-            if(values.size()==1){
-                Map<String, Object> componentMap = JSONUtil.toBean(values.get(0).getComponentTemplate(), Map.class);
-                messageMap.put(entry.getKey(), componentMap);
-            }else {
-                List<ZqztRpaFormMappingDo> sortedValues = values.stream()
-                    .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
-                    .collect(Collectors.toList());
-                String componentTemplate = sortedValues.get(0).getComponentTemplate();
-                // 将JSON字符串转换为Map
-                // 先将JSON字符串转换为JSONObject
-                cn.hutool.json.JSONObject componentObject = JSONUtil.parseObj(componentTemplate);
-                // 完全转换为Map结构，确保嵌套的JSON对象和数组也被正确转换
-                Map<String, Object> componentMap = convertJsonToMap(componentObject);
-                for (ZqztRpaFormMappingDo item : sortedValues) {
-                    if("1".equals(item.getConditionsShow())){
-                        String conditionsValue = item.getConditionsValue();
-                        boolean res = evaluateCondition(conditionsValue, messageMap);
-                        if(res){
-                            this.applyMappingValue(messageMap, item, componentMap);
-                            this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, componentMap);
-                        }
-                        continue;
-                    }
-                    this.applyMappingValue(messageMap, item, componentMap);
-                    this.executeMappingScriptIfNeeded(item, bizCode, scriptDefMap, messageMap, componentMap);
-                }
-                messageMap.put(entry.getKey(),componentMap);
-            }
-        }
-        this.executePostAllScripts(zqztRpaFormMappingDos, bizCode, scriptDefMap, messageMap);
-        recordDo.setBody(JSONUtil.toJsonStr(messageMap));
-        String response = nengKaiService.worksheetsComplete(recordDo, "RPA-YGCF");
-        recordDo.setResBody(response);
-        log.info("消息处理成功：{}", messageBody);
-        return recordDo;
+        RpaMessageProcessStrategy strategy = messageStrategyFactory.resolve(bizCode);
+        log.info("[RPA消息] bizCode={} 使用策略: {}", bizCode, strategy.getClass().getSimpleName());
+        return strategy.process(recordDo);
     }
 
     /**
@@ -335,180 +222,10 @@ public class RabbitMQConsumerService {
         return messageId;
     }
 
-    private Map<String, ZqztRpaScriptDefDo> loadScriptDefMap(List<ZqztRpaFormMappingDo> mappings) {
-        Set<String> scriptCodes = mappings.stream()
-            .filter(item -> "1".equals(item.getScriptEnabled()))
-            .map(ZqztRpaFormMappingDo::getScriptCode)
-            .filter(StringUtils::isNotBlank)
-            .collect(Collectors.toSet());
-        if (scriptCodes.isEmpty()) {
-            return new HashMap<>();
-        }
-        List<ZqztRpaScriptDefDo> defs = zqztRpaScriptDefMapper.selectList(new LambdaQueryWrapper<ZqztRpaScriptDefDo>()
-            .in(ZqztRpaScriptDefDo::getScriptCode, scriptCodes)
-            .eq(ZqztRpaScriptDefDo::getStatus, "1"));
-        return defs.stream().collect(Collectors.toMap(ZqztRpaScriptDefDo::getScriptCode, item -> item, (left, right) -> right));
-    }
-
-    private void applyMappingValue(Map<String, Object> messageMap, ZqztRpaFormMappingDo item, Map<String, Object> targetMap) {
-        if(StringUtils.isEmpty(item.getSourceKey()) && StringUtils.isNotEmpty(item.getDefaultValue())){
-            Object finalValue = convertValueType(item.getValueType(), item.getDefaultValue());
-            setValueByPath(targetMap, item.getFormKey(), finalValue);
-            log.info("RPA映射赋值 bizCode={} scope={} mappingId={} targetKey={} sourceType=default defaultValue={} finalValue={}",
-                item.getBizCode(), resolveScope(item), item.getId(), item.getFormKey(), item.getDefaultValue(), finalValue);
-            return;
-        }
-        if (StringUtils.isEmpty(item.getSourceKey())) {
-            log.info("RPA映射跳过 bizCode={} scope={} mappingId={} targetKey={} reason=sourceKey与defaultValue均为空",
-                item.getBizCode(), resolveScope(item), item.getId(), item.getFormKey());
-            return;
-        }
-        Object valueByPath = getValueByPath(messageMap, item.getSourceKey());
-        Object finalValue = convertValueType(item.getValueType(), valueByPath);
-        setValueByPath(targetMap, item.getFormKey(), finalValue);
-        log.info("RPA映射赋值 bizCode={} scope={} mappingId={} targetKey={} sourceType=sourceKey sourceKey={} sourceValue={} finalValue={}",
-            item.getBizCode(), resolveScope(item), item.getId(), item.getFormKey(), item.getSourceKey(), valueByPath, finalValue);
-    }
-
-    private Object convertValueType(String valueType, Object sourceValue) {
-        if (sourceValue == null) {
-            return null;
-        }
-        if ("Integer".equals(valueType)) {
-            if (sourceValue instanceof Number) {
-                return ((Number) sourceValue).intValue();
-            }
-            return Integer.valueOf(String.valueOf(sourceValue));
-        }
-        if ("String".equals(valueType)) {
-            return String.valueOf(sourceValue);
-        }
-        if ("BigDecimal".equals(valueType)) {
-            if (sourceValue instanceof BigDecimal) {
-                return sourceValue;
-            }
-            return new BigDecimal(String.valueOf(sourceValue));
-        }
-        return sourceValue;
-    }
-
-    private void executeMappingScriptIfNeeded(ZqztRpaFormMappingDo mapping,
-                                              String bizCode,
-                                              Map<String, ZqztRpaScriptDefDo> scriptDefMap,
-                                              Map<String, Object> messageMap,
-                                              Map<String, Object> targetMap) {
-        if (!shouldExecuteAtStage(mapping, SCRIPT_STAGE_ROW)) {
-            return;
-        }
-        if (!"1".equals(mapping.getScriptEnabled()) || StringUtils.isBlank(mapping.getScriptCode())) {
-            return;
-        }
-        ZqztRpaScriptDefDo scriptDefDo = scriptDefMap.get(mapping.getScriptCode());
-        if (scriptDefDo == null || StringUtils.isBlank(scriptDefDo.getScriptContent())) {
-            return;
-        }
-        log.info("RPA脚本开始 bizCode={} scriptStage={} scope={} mappingId={} targetKey={} scriptCode={} scriptVersion={}",
-            bizCode, resolveScriptStage(mapping), resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), scriptDefDo.getScriptVersion());
-        rpaMappingScriptEngine.execute(RpaScriptExecutionContext.builder()
-            .bizCode(bizCode)
-            .scriptCode(scriptDefDo.getScriptCode())
-            .scriptVersion(scriptDefDo.getScriptVersion())
-            .scriptContent(scriptDefDo.getScriptContent())
-            .messageMap(messageMap)
-            .targetMap(targetMap)
-            .mapping(mapping)
-            .build());
-        Object finalValue = getValueByPath(targetMap, mapping.getFormKey());
-        log.info("RPA脚本结束 bizCode={} scriptStage={} scope={} mappingId={} targetKey={} scriptCode={} finalValue={}",
-            bizCode, resolveScriptStage(mapping), resolveScope(mapping), mapping.getId(), mapping.getFormKey(), scriptDefDo.getScriptCode(), finalValue);
-    }
-
-    private void executePostAllScripts(List<ZqztRpaFormMappingDo> mappings,
-                                       String bizCode,
-                                       Map<String, ZqztRpaScriptDefDo> scriptDefMap,
-                                       Map<String, Object> messageMap) {
-        List<ZqztRpaFormMappingDo> postScripts = mappings.stream()
-            .filter(item -> shouldExecuteAtStage(item, SCRIPT_STAGE_POST_ALL))
-            .filter(item -> "1".equals(item.getScriptEnabled()))
-            .filter(item -> StringUtils.isNotBlank(item.getScriptCode()))
-            .sorted(Comparator.comparing(ZqztRpaFormMappingDo::getId, Comparator.nullsLast(Long::compareTo)))
-            .collect(Collectors.toList());
-        for (ZqztRpaFormMappingDo mapping : postScripts) {
-            ZqztRpaScriptDefDo scriptDefDo = scriptDefMap.get(mapping.getScriptCode());
-            if (scriptDefDo == null || StringUtils.isBlank(scriptDefDo.getScriptContent())) {
-                continue;
-            }
-            log.info("RPA后置脚本开始 bizCode={} scriptStage={} mappingId={} scriptCode={} scriptVersion={}",
-                bizCode, resolveScriptStage(mapping), mapping.getId(), scriptDefDo.getScriptCode(), scriptDefDo.getScriptVersion());
-            rpaMappingScriptEngine.execute(RpaScriptExecutionContext.builder()
-                .bizCode(bizCode)
-                .scriptCode(scriptDefDo.getScriptCode())
-                .scriptVersion(scriptDefDo.getScriptVersion())
-                .scriptContent(scriptDefDo.getScriptContent())
-                .messageMap(messageMap)
-                .targetMap(messageMap)
-                .mapping(mapping)
-                .build());
-            log.info("RPA后置脚本结束 bizCode={} scriptStage={} mappingId={} scriptCode={}",
-                bizCode, resolveScriptStage(mapping), mapping.getId(), scriptDefDo.getScriptCode());
-        }
-    }
-
-    private boolean shouldExecuteAtStage(ZqztRpaFormMappingDo mapping, String expectedStage) {
-        String stage = resolveScriptStage(mapping);
-        return expectedStage.equalsIgnoreCase(stage);
-    }
-
-    private String resolveScriptStage(ZqztRpaFormMappingDo mapping) {
-        return StringUtils.isBlank(mapping.getScriptStage()) ? SCRIPT_STAGE_ROW : mapping.getScriptStage();
-    }
-
-    private String resolveScope(ZqztRpaFormMappingDo item) {
-        return "1".equals(item.getIsComponent()) ? "component:" + item.getComponentKey() : "form";
-    }
-
-    private Boolean checekData(ZqztJtNoticeRecordDo recordDo){
-        //合同金额校验
-
-        //合同到期时间校验
+    /**
+     * 数据校验（保留原有逻辑）
+     */
+    private Boolean checkData(ZqztJtNoticeRecordDo recordDo) {
         return true;
-    }
-
-    /**
-     * 递归转换JSON对象为纯Map/List结构
-     *
-     * @param jsonObject 待转换的JSON对象
-     * @return 转换后的Map对象
-     */
-    private Map<String, Object> convertJsonToMap(cn.hutool.json.JSONObject jsonObject) {
-        Map<String, Object> resultMap = new java.util.LinkedHashMap<>();
-        for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            resultMap.put(key, convertJsonValue(value));
-        }
-        return resultMap;
-    }
-
-    /**
-     * 递归转换JSON值为纯Java对象
-     *
-     * @param value 待转换的值
-     * @return 转换后的Java对象
-     */
-    private Object convertJsonValue(Object value) {
-        if (value instanceof cn.hutool.json.JSONObject) {
-            return convertJsonToMap((cn.hutool.json.JSONObject) value);
-        } else if (value instanceof cn.hutool.json.JSONArray) {
-            cn.hutool.json.JSONArray jsonArray = (cn.hutool.json.JSONArray) value;
-            List<Object> resultList = new java.util.ArrayList<>();
-            for (Object item : jsonArray) {
-                resultList.add(convertJsonValue(item));
-            }
-            return resultList;
-        } else {
-            // 对于基本类型直接返回
-            return value;
-        }
     }
 }

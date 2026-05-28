@@ -4,8 +4,6 @@ import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
 
-import java.util.Map;
-
 public interface NengKaiService {
 
     /**
@@ -13,5 +11,5 @@ public interface NengKaiService {
      */
     NengKaiResponseVo nengKaiNotice(NengKaiRequestVo requestVo);
 
-    String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo,String scene);
+    String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo, String scene);
 }
