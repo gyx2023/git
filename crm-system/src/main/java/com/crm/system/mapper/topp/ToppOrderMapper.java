@@ -24,7 +24,12 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
      */
     List<ToppOrder> selectSupportOrders();
 
-    List<WorkOrderDTO> queryWorkOrder(@Param("orderType") String orderType, @Param("yyMMdd") String yyMMdd);
+    List<WorkOrderDTO> queryWorkOrder(
+        @Param("orderType") String orderType,
+        @Param("yyMMdd") String yyMMdd,
+        @Param("lastId") Long  lastId,  // 游标
+        @Param("size") Integer size
+    );
 
     Integer getToppOrderCount(@Param("orderType") String orderType,
                               @Param("endTime") String endTime);
@@ -40,5 +45,19 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
     Integer queryClosedOrderCount(
         @Param("orderType") String orderType,
         @Param("date") String date
+    );
+
+
+    List<Long> listOrderIdByCursor(
+        @Param("orderType") String orderType,
+        @Param("yyMMdd") String yyMMdd,
+        @Param("lastId") Long lastId,
+        @Param("size") int size
+    );
+
+    // ====================== 根据 ID 列表查询完整数据 ======================
+    List<WorkOrderDTO> listWorkOrderByIds(
+        @Param("orderType") String orderType,
+        @Param("idList") List<Long> idList
     );
 }
