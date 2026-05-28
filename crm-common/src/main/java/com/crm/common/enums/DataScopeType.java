@@ -44,7 +44,12 @@ public enum DataScopeType {
     /**
      * 仅本人数据权限
      */
-    SELF("5", " #{#userName} = #{#user.userId} ", " 1 = 0 ");
+    SELF("5", " #{#userName} = #{#user.userId} ", " 1 = 0 "),
+
+    /**
+     * 客户经理OA账号数据权限（用于集团客户管理）
+     */
+    CUST_MANAGER_OAUSER("6", " #{#custManagerOauser} = '#{#user.username}' ", " 1 = 0 ");
 
     private final String code;
 
