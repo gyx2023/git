@@ -15,8 +15,17 @@
     <!-- 批量查询客户属性 -->
     <select id="listCustomerPropertyBatch" resultType="java.util.Map">
         SELECT
-        b.nature_cust_id AS natureCustId,
-        IFNULL(a.major_flag, '2') AS majorFlag
+        t.nature_cust_id AS natureCustId,
+        t.major_flag AS majorFlag
+        FROM (
+        SELECT
+        b.nature_cust_id,
+        a.major_flag,
+        b.id_,
+        ROW_NUMBER() OVER (
+        PARTITION BY b.nature_cust_id
+        ORDER BY b.id_ DESC
+        ) AS rn
         FROM cust_t_roster_customer_province a
         INNER JOIN cust_t_roster_customer_nature_member_province b
         ON a.roster_customer_id = b.roster_customer_id
@@ -24,7 +33,8 @@
         <foreach collection="natureCustIdList" item="item" open="(" separator="," close=")">
             #{item}
         </foreach>
-        ORDER BY b.id_ DESC
+        ) t
+        WHERE t.rn = 1
     </select>
 
 

@@ -6,11 +6,13 @@ import java.util.Date;
 @Data
 public class WorkOrderDTO {
 
+    private Long id;
+
     /** 工单编码 */
     private String workOrderCode;
 
     /** 工单状态 2=结束 4=处理中 */
-    private Integer workOrderStatus;
+    private String workOrderStatus;
 
     /** 工单名称 */
     private String workOrderName;
@@ -46,10 +48,10 @@ public class WorkOrderDTO {
     private String customName;
 
     /** 创建时间 */
-    private Date gmtCreate;
+    private String gmtCreate;
 
     /** 完成时间 */
-    private Date backTime;
+    private String backTime;
 
     /** 区域ID */
     private String areaId;
@@ -64,7 +66,7 @@ public class WorkOrderDTO {
     private String category;
 
     /** 业务到期时间 */
-    private Date businessEndDate;
+    private String businessEndDate;
 
     /** 合同名称 */
     private String contractName;

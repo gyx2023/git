@@ -18,4 +18,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND a.province_code = 36
     </select>
 
+    <!-- 清空主库表数据 -->
+    <update id="truncateTable">
+        TRUNCATE TABLE cust_t_roster_customer_province
+    </update>
+
 </mapper>
