@@ -48,7 +48,7 @@
         kpi_business.busi_type_type_par as busiTypeTypePar,
         kpi_business.kpi_name as kpiName,
         kpi_business.kpi_desc as kpiDesc,
-        kpi_business.busi_order as busiOrder,
+        CAST(kpi_business.busi_order AS CHAR) AS busiOrder,
         kpi_business.is_display as isDisplay,
         kpi_business.busi_display_district as busiDisplayDistrict,
         kpi_business.kpi_add1_name as kpiAdd1Name,

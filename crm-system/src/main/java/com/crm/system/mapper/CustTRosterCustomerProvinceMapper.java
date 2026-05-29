@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.CustTRosterCustomerProvinceDo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -15,7 +16,6 @@ import java.util.List;
  * @date 2026-04-30
  */
 @Mapper
-@DS("slave_1")  // 指定数据源
 public interface CustTRosterCustomerProvinceMapper extends BaseMapperPlus<CustTRosterCustomerProvinceMapper, CustTRosterCustomerProvinceDo, CustTRosterCustomerProvinceDo> {
 
     /**
@@ -24,5 +24,10 @@ public interface CustTRosterCustomerProvinceMapper extends BaseMapperPlus<CustTR
      * @return 名单客户省份关系列表
      */
     List<CustTRosterCustomerProvinceDo> getCustTCustomerList();
+
+    /**
+     * 清空主库表数据
+     */
+    void truncateTable();
 
 }

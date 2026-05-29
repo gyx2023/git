@@ -64,8 +64,8 @@ public class WxStrategyServiceImpl implements WxStrategyService {
     }
 
     @Override
-    public List<WorkOrderDTO> queryWorkOrder(String orderType, String ymd) {
-        return toppOrderMapper.queryWorkOrder(orderType, ymd);
+    public List<WorkOrderDTO> queryWorkOrder(String orderType, String ymd, Long lastId, Integer size) {
+        return toppOrderMapper.queryWorkOrder(orderType, ymd, lastId, size);
     }
 
     @Override
@@ -90,5 +90,15 @@ public class WxStrategyServiceImpl implements WxStrategyService {
         return count.toString();
     }
 
+
+    @Override
+    public List<Long> listOrderIdByCursor(String orderType, String yyMMdd, Long lastId, int size) {
+        return toppOrderMapper.listOrderIdByCursor(orderType, yyMMdd, lastId, size);
+    }
+
+    @Override
+    public List<WorkOrderDTO> listWorkOrderByIds(String orderType, List<Long> idList) {
+        return toppOrderMapper.listWorkOrderByIds(orderType, idList);
+    }
 
 }

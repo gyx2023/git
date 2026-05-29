@@ -79,4 +79,11 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      * @return 商机列表
      */
     List<ToppOpportunityExcelVo> selectOpportunityExportList(@Param("areaId") Integer areaId);
+
+    /**
+     * 分页查询商机导出数据
+     */
+    List<ToppOpportunityExcelVo> selectOpportunityExportListPaged(@Param("areaId") Integer areaId,
+                                                                  @Param("offset") int offset,
+                                                                  @Param("limit") int limit);
 }
