@@ -30,7 +30,7 @@ public class repCustContractMillSumMJob extends BaseJob {
     /**
      * 下载的文件名前缀
      */
-    private static final String ftpDownloadName = "REP_CUST_CONTRACT_BILL_SUM_M_";
+    private static final String FTP_DOWNLOAD_NAME = "REP_CUST_CONTRACT_BILL_SUM_M_";
 
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
@@ -91,7 +91,7 @@ public class repCustContractMillSumMJob extends BaseJob {
         SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
         try {
             ftpUtil.login();
-            String fileNamePrefix = ftpDownloadName + yyyyMM;
+            String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
             String ftDirectory1 = ftDirectory + "/" + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
