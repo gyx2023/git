@@ -41,11 +41,6 @@ public class ContractAndOpportunityPutJob {
     //文件的本地保存测试路径
     private static final String LOCAL_SAVE_PATH = "C:/Users/12139/Desktop";
 
-    //完整的文件名+扩展名
-    static String contractIncome;//合同收入
-    static String contract;//合同
-    static String opportunity;//商机
-
     @Resource
     private ISysParamService sysParamService;
     @Resource
@@ -81,26 +76,26 @@ public class ContractAndOpportunityPutJob {
                 String areaEng = contractAndOpportunityPutConfig.getAreaEng();
                 Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-                contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";
-                contract = areaEng + "Contract" + currentDate + ".xls";
-                opportunity = areaEng + "Opportunity" + currentDate + ".xls";
+                String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
+                String contract = areaEng + "Contract" + currentDate + ".xls";//合同
+                String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
 
                 Map<File, String> fileMap = new LinkedHashMap<>();
 
                 // 创建合同收入文件
-                File incomeFile = createContractIncomeFile(areaId, areaEng, currentDate);
+                File incomeFile = createContractIncomeFile(areaId, areaEng);
                 long l2 = System.currentTimeMillis();
                 log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
                 if (incomeFile != null) { fileMap.put(incomeFile, contractIncome); }
 
                 // 创建合同统计数据文件
-                File contractFile = createContractStatisticsFile(areaId, areaEng, currentDate);
+                File contractFile = createContractStatisticsFile(areaId, areaEng);
                 long l3 = System.currentTimeMillis();
                 log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
                 if (contractFile != null) { fileMap.put(contractFile, contract); }
 
                 // 创建商机数据文件
-                File opportunityFile = createOpportunityFile(areaId, areaEng, currentDate);
+                File opportunityFile = createOpportunityFile(areaId, areaEng);
                 long l4 = System.currentTimeMillis();
                 log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
                 if (opportunityFile != null) { fileMap.put(opportunityFile, opportunity); }
@@ -138,9 +133,8 @@ public class ContractAndOpportunityPutJob {
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
-     * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private File createContractIncomeFile(Integer areaId, String areaEng, String currentDate) {
+    private File createContractIncomeFile(Integer areaId, String areaEng) {
         log.info("开始执行合同收入数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -168,6 +162,11 @@ public class ContractAndOpportunityPutJob {
 
             log.info("合同收入数据导出完成，共 {} 条", totalCount);
 
+            // 数据写入完成后，立即手动调用finish()，将内存缓冲区数据真正写入磁盘
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
+
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同收入数据导出文件创建失败");
                 return null;
@@ -184,6 +183,7 @@ public class ContractAndOpportunityPutJob {
             }
             return null;
         } finally {
+            // finally仅做兜底关闭，忽略异常，避免重复关闭导致的问题
             if (excelWriter != null) {
                 try {
                     excelWriter.finish();
@@ -199,9 +199,8 @@ public class ContractAndOpportunityPutJob {
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
-     * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private File createContractStatisticsFile(Integer areaId, String areaEng, String currentDate) {
+    private File createContractStatisticsFile(Integer areaId, String areaEng) {
         log.info("开始执行合同统计数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -254,6 +253,10 @@ public class ContractAndOpportunityPutJob {
             } while (batch != null && batch.size() == pageSize);
 
             log.info("合同统计数据导出完成，共 {} 条", totalCount);
+
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
 
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同统计数据导出文件创建失败");
@@ -371,9 +374,8 @@ public class ContractAndOpportunityPutJob {
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
-     * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private File createOpportunityFile(Integer areaId, String areaEng, String currentDate) {
+    private File createOpportunityFile(Integer areaId, String areaEng) {
         log.info("开始执行商机数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -414,6 +416,11 @@ public class ContractAndOpportunityPutJob {
             } while (batch != null && batch.size() == pageSize);
 
             log.info("商机数据导出完成，共 {} 条", totalCount);
+
+            // 数据写入完成后，立即手动调用finish()，将内存缓冲区数据真正写入磁盘
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
 
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("商机数据导出文件创建失败");
