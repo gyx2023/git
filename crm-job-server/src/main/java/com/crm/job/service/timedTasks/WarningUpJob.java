@@ -71,8 +71,8 @@ public class WarningUpJob {
 
         if (CollUtil.isNotEmpty(dwdRepGwPstMapList)) {
             // 清空本地表数据
+            log.info("开始清空dwd_rep_gw_pst_d表数据");
             dwdRepGwPstDService.truncate();
-            log.info("已清空dwd_rep_gw_pst_d表数据");
 
             // 分批插入数据，每批100条
             int count = 0;
