@@ -2,6 +2,7 @@ package com.crm.job.service.timedTasks;
 
 import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
+import com.crm.job.base.BaseJob;
 import com.crm.system.domain.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
 import com.crm.system.service.ISysParamService;
@@ -24,51 +25,20 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class repCustContractMillSumMJob {
+public class repCustContractMillSumMJob extends BaseJob {
 
     /**
      * 下载的文件名前缀
      */
     private static final String ftpDownloadName = "REP_CUST_CONTRACT_BILL_SUM_M_";
 
-    /**
-     * 下载的文件名扩展名
-     */
-    private static final String ftpDownloadEndFix = ".txt";
-
-    @Resource
-    private ISysParamService sysParamService;
-
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
 
-    static String ftpUsername;
-    static String ftpPassword;
-    static String ftpHost;
-    static String ftpPort;
-    static String ftDirectory;
-    static String localPath;
-
     @PostConstruct
     public void initStaticParam() {
-        try {
-            Map<String, String> param = sysParamService.findValueMapsByType("rep_cust_contract_mill_sum_m");
-            //用户名
-            ftpUsername = param.get("ftp_username");
-            //密码
-            ftpPassword = param.get("ftp_password");
-            //ip地址
-            ftpHost = param.get("ftp_host");
-            //端口号
-            ftpPort = param.get("ftp_port");
-            //文件存放目录
-            ftDirectory = param.get("ftp_directory");
-            //本地下载目录
-            localPath = param.get("ftp_local");
-            log.info("政企运营平台合同收入报表需求接口ftp信息初始化完成");
-        } catch (Exception e) {
-            log.error("政企运营平台合同收入报表需求接口ftp信息初始化失败", e);
-        }
+        super.initStaticParam("rep_cust_contract_mill_sum_m");
+        log.info("政企运营平台合同收入报表需求接口ftp信息初始化完成");
     }
 
     /**
@@ -122,7 +92,7 @@ public class repCustContractMillSumMJob {
         try {
             ftpUtil.login();
             String fileNamePrefix = ftpDownloadName + yyyyMM;
-            String saveFile = fileNamePrefix + ftpDownloadEndFix;
+            String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
             String ftDirectory1 = ftDirectory + "/" + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
             log.info("合同收入报表需求接口ftp开始下载文件:" + ftDirectory1 + File.separator + saveFile);

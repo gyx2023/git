@@ -3,6 +3,7 @@ package com.crm.job.service.timedTasks;
 import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.common.utils.StringUtils;
+import com.crm.job.base.BaseJob;
 import com.crm.system.domain.RepGrpCustBillSumWarning;
 import com.crm.system.service.IRepGrpCustBillSumWarningService;
 import com.crm.system.service.ISysParamService;
@@ -27,42 +28,16 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class RepGrpCustBillSumJob {
-    // 下载的文件名前缀
+public class RepGrpCustBillSumJob extends BaseJob {
     private static final String FTP_DOWNLOAD_NAME = "REP_GRP_CUST_BILL_SUM_M_";
-    // 下载的文件名扩展名
-    private static final String FTP_DOWNLOAD_END_FIX = ".txt";
 
     @Resource
     private IRepGrpCustBillSumWarningService repGrpCustBillSumWarningService;
 
-    @Resource
-    private ISysParamService sysParamService;
-
-    // FTP配置参数
-    static String ftpUsername;
-    static String ftpPassword;
-    static String ftpHost;
-    static String ftpPort;
-    static String ftDirectory;
-    static String localPath;
-
-    /**
-     * 初始化FTP配置参数
-     */
     @PostConstruct
     public void initStaticParam() {
-        Map<String, String> param = sysParamService.findValueMapsByType("tc_user_common_warning");
-        if (param != null) {
-            ftpUsername = param.get("ftp_username");
-            ftpPassword = param.get("ftp_password");
-            ftpHost = param.get("ftp_host");
-            ftpPort = param.get("ftp_port");
-            ftDirectory = param.get("ftp_directory");
-            localPath = param.get("ftp_local");
-        } else {
-            log.error("未配置集团客户账单汇总预警FTP参数");
-        }
+        super.initStaticParam("tc_user_common_warning");
+        log.info("集团客户账单汇总预警FTP参数初始化完成");
     }
 
     /**
