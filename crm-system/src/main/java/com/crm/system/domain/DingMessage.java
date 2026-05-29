@@ -23,7 +23,7 @@ public class DingMessage implements Serializable {
     /**
      * 主键ID
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Integer id;
 
     /**

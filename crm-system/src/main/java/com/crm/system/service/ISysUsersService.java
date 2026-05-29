@@ -1,6 +1,8 @@
 package com.crm.system.service;
 
 import com.crm.system.domain.SysUsers;
+import com.crm.system.domain.PersonnelInfo;
+import com.crm.system.domain.SysUsers;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -45,4 +47,24 @@ public interface ISysUsersService {
      * 校验并批量删除用户(客户的员工)信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 查询手机号对应的用户
+     */
+    List<SysUsers> findList(PersonnelInfo personnelInfo);
+
+    /**
+     * 查询OA对应的用户
+     */
+    List<SysUsers> findOaList(PersonnelInfo personnelInfo);
+
+    /**
+     * 修改/保存用户
+     */
+    void saveOrUpdate(SysUsers sysUsers);
+
+    /**
+     * 新增用户
+     */
+    void insertSysUser(SysUsers user);
 }
