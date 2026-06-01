@@ -19,5 +19,14 @@
         WHERE user_id = #{userId} AND role_id != 999
     </delete>
 
+    <!-- 根据用户ID和权限ID列表删除用户角色关联记录 -->
+    <delete id="deleteByUserIdAndRoleIds">
+        DELETE FROM zqzt_sys_user_role
+        WHERE user_id = #{userId}
+        AND role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </delete>
 
 </mapper>

@@ -25,7 +25,8 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
     @Select("SELECT u.* FROM sys_user u " +
         "LEFT JOIN (SELECT user_id, MAX(login_time) AS login_time FROM sys_login_log GROUP BY user_id) l ON u.id_ = l.user_id " +
         "WHERE u.is_valid = '1' AND NOT EXISTS (SELECT 1 FROM sys_user_not_failure n WHERE u.id_ = n.user_id) " +
-        "  AND (l.login_time <= DATE_SUB(NOW(), INTERVAL #{failureDays} DAY) OR l.login_time IS NULL) ")
+        "  AND (l.login_time <= DATE_SUB(NOW(), INTERVAL #{failureDays} DAY) OR l.login_time IS NULL) " +
+        "  AND u.create_time <= DATE_SUB(NOW(), INTERVAL #{failureDays} DAY) ")
     List<SysUsers> selectFailureList(@Param("failureDays") Integer failureDays);
 
 }
