@@ -17,10 +17,12 @@ public interface ZqztJtNoticeRecordMapper extends BaseMapperPlus<ZqztJtNoticeRec
 
     /**
      * 查询所有待重试的通知记录（deal_result_code='1'）
+     * 限制返回数量，避免全表扫描
      */
     default List<ZqztJtNoticeRecordDo> selectPendingRetryRecords() {
         return selectList(new LambdaQueryWrapper<ZqztJtNoticeRecordDo>()
-            .eq(ZqztJtNoticeRecordDo::getDealResultCode, "1"));
+            .eq(ZqztJtNoticeRecordDo::getDealResultCode, "1")
+            .last("LIMIT 500"));
     }
 
 }

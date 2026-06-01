@@ -10,6 +10,7 @@ import com.crm.system.service.rpa.strategy.RpaMessageProcessStrategy;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -21,14 +22,18 @@ import java.util.Map;
 /**
  * RPA业务重试定时任务
  * 在xxl-job调度中心配置JobHandler为：rpaBusinessRetryJobHandler
+ * 需在 application.yml 中配置 -Dspring.profiles.active=rpa 启用
  *
  * @author crm
  */
 @Slf4j
 @Component
+@Profile("rpa")
 public class RpaBusinessRetryJob {
 
-    // 永久失败状态码
+    // 状态码常量
+    private static final String STATUS_SUCCESS = "0";
+    private static final String STATUS_RETRYING = "1";
     private static final String STATUS_PERMANENT_FAILURE = "9";
 
     @Resource
@@ -99,20 +104,20 @@ public class RpaBusinessRetryJob {
                 }
 
                 // 3c. 检查重试上限
-                int currentRetryCount = record.getRetryCount() != null ? record.getRetryCount() : 0;
+                int currentRetryCount = getRetryCount(record);
                 if (currentRetryCount >= config.maxRetries) {
-                    markPermanentFailure(record);
+                    markPermanentFailure(record, currentRetryCount);
                     permanentFailureCount++;
                     continue;
                 }
 
                 // 3d. 调用策略工厂重试
                 try {
-                    processSingleRetry(record, bizCode, config);
+                    processSingleRetry(record, bizCode, now, currentRetryCount);
                     successCount++;
                 } catch (Exception e) {
-                    record.setDealResultCode("1");
                     int newRetryCount = currentRetryCount + 1;
+                    record.setDealResultCode(STATUS_RETRYING);
                     record.setRetryCount(newRetryCount);
                     record.setUpdateTime(now);
                     noticeRecordMapper.updateById(record);
@@ -156,7 +161,7 @@ public class RpaBusinessRetryJob {
     /**
      * 处理单条重试：解析 bizCode -> 查找策略 -> 执行 process
      */
-    private void processSingleRetry(ZqztJtNoticeRecordDo record, String bizCode, RetryConfig config) throws Exception {
+    private void processSingleRetry(ZqztJtNoticeRecordDo record, String bizCode, Date now, int currentRetryCount) throws Exception {
         log.info("[RPA重试] 开始重试: id={}, bizCode={}, retryCount={}", record.getId(), bizCode, record.getRetryCount());
         XxlJobHelper.log("开始重试: id={}, bizCode={}", record.getId(), bizCode);
 
@@ -168,9 +173,10 @@ public class RpaBusinessRetryJob {
 
         strategy.process(record);
 
-        // 策略执行成功：更新状态码为 '0'
-        record.setDealResultCode("0");
-        int newRetryCount = (record.getRetryCount() != null ? record.getRetryCount() : 0) + 1;
+        // 策略执行成功：更新状态码为 '0'，重置时间窗口
+        record.setUpdateTime(now);
+        record.setDealResultCode(STATUS_SUCCESS);
+        int newRetryCount = currentRetryCount + 1;
         record.setRetryCount(newRetryCount);
         noticeRecordMapper.updateById(record);
 
@@ -181,8 +187,7 @@ public class RpaBusinessRetryJob {
     /**
      * 标记为永久失败
      */
-    private void markPermanentFailure(ZqztJtNoticeRecordDo record) {
-        int currentRetryCount = record.getRetryCount() != null ? record.getRetryCount() : 0;
+    private void markPermanentFailure(ZqztJtNoticeRecordDo record, int currentRetryCount) {
         record.setDealResultCode(STATUS_PERMANENT_FAILURE);
         record.setRetryCount(currentRetryCount);
         noticeRecordMapper.updateById(record);
@@ -195,6 +200,13 @@ public class RpaBusinessRetryJob {
     private long getElapsedSeconds(Date startTime, Date endTime) {
         if (startTime == null) return Long.MAX_VALUE;
         return (endTime.getTime() - startTime.getTime()) / 1000;
+    }
+
+    /**
+     * 获取重试次数，null 时返回 0
+     */
+    private int getRetryCount(ZqztJtNoticeRecordDo record) {
+        return record.getRetryCount() != null ? record.getRetryCount() : 0;
     }
 
     /**
