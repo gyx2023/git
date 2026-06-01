@@ -16,7 +16,7 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.service.DictService;
 import com.crm.common.exception.ServiceException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.CacheUtils;
@@ -258,7 +258,7 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
             // 在非Web上下文时，直接查询数据库
             datas = null;
         }
-        
+
         if (ObjectUtil.isNull(datas)) {
             datas = SpringUtils.getAopProxy(this).selectDictDataByType(dictType);
             try {

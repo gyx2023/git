@@ -5,7 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.crm.common.core.domain.entity.SysUser;
-import com.crm.common.enums.OppoSyncConstants;
+import com.crm.common.constant.OppoSyncConstants;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
 import com.crm.system.domain.SysLog;

@@ -1,6 +1,6 @@
 package com.crm.common.enums;
 
-import com.crm.common.encrypt.encryptor.*;
+import com.crm.common.utils.encrypt.encryptor.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

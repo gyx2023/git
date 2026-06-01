@@ -5,7 +5,7 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
-import com.crm.common.core.domain.dto.OldOpportunityDTO;
+import com.crm.system.domain.dto.OldOpportunityDTO;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;

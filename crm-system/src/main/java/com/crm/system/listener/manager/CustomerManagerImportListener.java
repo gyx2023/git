@@ -3,7 +3,7 @@ package com.crm.system.listener.manager;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.crm.common.core.domain.dto.GrpGroupImportDTO;
+import com.crm.system.domain.dto.GrpGroupImportDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.system.domain.DwdRepSysPersonD;

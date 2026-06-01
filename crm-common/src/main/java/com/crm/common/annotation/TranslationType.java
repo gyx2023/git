@@ -1,9 +1,11 @@
 package com.crm.common.annotation;
 
+import com.crm.common.utils.translation.TranslationInterface;
+
 import java.lang.annotation.*;
 
 /**
- * 翻译类型注解 (标注到{@link com.crm.common.translation.TranslationInterface} 的实现类)
+ * 翻译类型注解 (标注到{@link TranslationInterface} 的实现类)
  *
  * @author Lion Li
  */

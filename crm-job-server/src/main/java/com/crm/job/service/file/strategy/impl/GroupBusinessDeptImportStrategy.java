@@ -1,7 +1,7 @@
 package com.crm.job.service.file.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.common.excel.ExcelResult;
+import com.crm.common.utils.excel.ExcelResult;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractImportStrategy;
 import com.crm.system.domain.SysOss;

@@ -3,7 +3,7 @@
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.zbzq.SalesupBakTblBidSuboppoMapper">
-    <resultMap id="resultMap" type="com.crm.common.core.domain.dto.SalesupBakTblBidSuboppoDTO">
+    <resultMap id="resultMap" type="com.crm.system.domain.dto.SalesupBakTblBidSuboppoDTO">
         <result property="projectId" column="project_id"/>
         <result property="oppoCode" column="oppo_code"/>
         <result property="infoId" column="info_id"/>

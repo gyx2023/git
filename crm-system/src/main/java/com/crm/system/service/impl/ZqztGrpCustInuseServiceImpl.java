@@ -2,18 +2,18 @@ package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.common.core.domain.R;
-import com.crm.common.core.domain.dto.*;
 import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.common.utils.Desensitization;
 import com.crm.system.domain.ZqztGrpCustInuse;
 import com.crm.system.domain.bo.ZqztGrpCustInuseBo;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dto.ZqztGrpCustAddUserListReqDTO;
+import com.crm.system.domain.dto.ZqztGrpCustInuseRespDTO;
+import com.crm.system.domain.dto.ZqztGrpCustInuseUserListRespDTO;
+import com.crm.system.domain.dto.ZqztGrpCustReqDTO;
 import com.crm.system.domain.vo.ZqztGrpCustInuseVo;
 import com.crm.system.mapper.param.SysParamMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,6 @@ import javax.annotation.Resource;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**
