@@ -5,10 +5,9 @@ import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.topp.ToppOpportunityDo;
+import com.crm.system.domain.dao.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**

@@ -1,7 +1,7 @@
 package com.crm.system.service.cust.impl;
 
-import com.crm.system.domain.CustRosterCustomerNatureMemberProvinceDo;
-import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
+import com.crm.system.domain.dao.CustRosterCustomerNatureMemberProvinceDo;
+import com.crm.system.domain.dao.CustTRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.mapper.CustTRosterCustomerNatureMemberProvinceMapper;
 import com.crm.system.mapper.zbzq.CustRosterCustomerNatureMemberProvinceMapper;
 import com.crm.system.service.cust.CustTRosterCustomerNatureMemberProvinceService;

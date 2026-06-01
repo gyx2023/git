@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.encrypt.SysFieldEncryptConfigBo;
-import com.crm.system.domain.encrypt.SysFieldEncryptConfigDo;
+import com.crm.system.domain.dao.SysFieldEncryptConfigDo;
 import com.crm.system.domain.vo.encrypt.SysFieldEncryptConfigVo;
 import com.crm.system.mapper.encrypt.SysFieldEncryptConfigMapper;
 import com.crm.system.service.encrypt.ISysFieldEncryptConfigService;
@@ -111,7 +111,7 @@ public class SysFieldEncryptConfigServiceImpl implements ISysFieldEncryptConfigS
         if (entity.getBatchSize() == null || entity.getBatchSize() <= 0) {
             entity.setBatchSize(DEFAULT_BATCH_SIZE);
         }
-        
+
         // 限制线程数范围
         if (entity.getThreadCount() == null || entity.getThreadCount() <= 0) {
             entity.setThreadCount(DEFAULT_THREAD_COUNT);
@@ -119,12 +119,12 @@ public class SysFieldEncryptConfigServiceImpl implements ISysFieldEncryptConfigS
             entity.setThreadCount(MAX_THREAD_COUNT);
             log.warn("线程数超过最大值{}，已自动调整为{}", MAX_THREAD_COUNT, MAX_THREAD_COUNT);
         }
-        
+
         // 设置默认状态为待执行
         if (StringUtils.isBlank(entity.getStatus())) {
             entity.setStatus("0");
         }
-        
+
         // 初始化计数
         if (entity.getProcessedCount() == null) {
             entity.setProcessedCount(0L);

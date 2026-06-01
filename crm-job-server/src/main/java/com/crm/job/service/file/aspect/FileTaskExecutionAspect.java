@@ -1,6 +1,6 @@
 package com.crm.job.service.file.aspect;
 
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -30,7 +30,7 @@ public class FileTaskExecutionAspect {
     /**
      * 定义切点，拦截FileAsyncTaskJob中的processTask方法
      */
-    @Pointcut("execution(boolean com.crm.job.service.file.FileAsyncTaskJob.processTask(com.crm.system.domain.file.FileAsyncTaskDo))")
+    @Pointcut("execution(boolean com.crm.job.service.file.FileAsyncTaskJob.processTask(com.crm.system.domain.dao.FileAsyncTaskDo))")
     public void taskExecutionPointcut() {
     }
 

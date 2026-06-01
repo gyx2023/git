@@ -1,6 +1,6 @@
 package com.crm.system.mapper.grp;
 
-import com.crm.system.domain.grp.GrpGroupInfoDo;
+import com.crm.system.domain.dao.GrpGroupInfoDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**

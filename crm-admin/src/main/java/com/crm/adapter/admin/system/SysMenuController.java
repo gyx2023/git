@@ -9,7 +9,7 @@ import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.entity.SysMenu;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.service.ISysMenuService;
+import com.crm.system.service.sys.ISysMenuService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

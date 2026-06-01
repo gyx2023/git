@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqGrpGroupInfoMapper">
 
-    <resultMap type="com.crm.system.domain.ZqGrpGroupInfo" id="ZqGrpGroupInfoResult">
+    <resultMap type="com.crm.system.domain.dao.ZqGrpGroupInfo" id="ZqGrpGroupInfoResult">
         <result property="grpId" column="GRP_ID"/>
         <result property="grpName" column="GRP_NAME"/>
         <result property="grpCode" column="GRP_CODE"/>
@@ -63,7 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <!-- 获取待更新数据 -->
-    <select id="getUpdQuery" resultType="com.crm.system.domain.ZqGrpGroupInfo">
+    <select id="getUpdQuery" resultType="com.crm.system.domain.dao.ZqGrpGroupInfo">
         select
             t1.grp_id,
             t2.cust_name as grp_name,

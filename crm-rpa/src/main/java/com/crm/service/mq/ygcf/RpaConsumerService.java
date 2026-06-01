@@ -3,7 +3,7 @@ package com.crm.service.mq.ygcf;
 import com.crm.common.utils.StringUtils;
 import com.crm.dto.BusinessMessageDTO;
 import com.crm.dto.BusinessResponseDTO;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

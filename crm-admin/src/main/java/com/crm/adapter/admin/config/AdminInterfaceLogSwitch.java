@@ -1,7 +1,7 @@
 package com.crm.adapter.admin.config;
 
 import com.crm.framework.kafka.InterfaceLogSwitch;
-import com.crm.system.service.ISysConfigService;
+import com.crm.system.service.sys.ISysConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;

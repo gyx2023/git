@@ -1,6 +1,6 @@
 package com.crm.system.service.topp;
 
-import com.crm.system.domain.topp.ToppOrder;
+import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.common.core.page.TableDataInfo;

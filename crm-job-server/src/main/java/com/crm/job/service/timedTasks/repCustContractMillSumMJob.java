@@ -5,7 +5,6 @@ import com.crm.common.utils.SFTPUtil;
 import com.crm.job.base.BaseJob;
 import com.crm.system.domain.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
-import com.crm.system.service.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;

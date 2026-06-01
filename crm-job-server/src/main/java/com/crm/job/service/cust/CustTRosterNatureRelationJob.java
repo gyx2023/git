@@ -1,8 +1,8 @@
 package com.crm.job.service.cust;
 
 import com.crm.common.constant.RedisKeyConstants;
-import com.crm.system.domain.CustRosterCustomerNatureMemberProvinceDo;
-import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
+import com.crm.system.domain.dao.CustRosterCustomerNatureMemberProvinceDo;
+import com.crm.system.domain.dao.CustTRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.service.cust.CustTRosterCustomerNatureMemberProvinceService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;

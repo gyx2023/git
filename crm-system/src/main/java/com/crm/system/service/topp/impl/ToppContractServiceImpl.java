@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.system.domain.bo.topp.ToppContractBo;
-import com.crm.system.domain.topp.ToppContractDo;
+import com.crm.system.domain.dao.topp.ToppContractDo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.service.topp.IToppContractService;
@@ -206,12 +206,12 @@ public class ToppContractServiceImpl implements IToppContractService {
         if (opportunityIds == null || opportunityIds.isEmpty()) {
             return Collections.emptyList();
         }
-        
+
         LambdaQueryWrapper<ToppContractDo> lqw = Wrappers.lambdaQuery();
         lqw.in(ToppContractDo::getProjectId, opportunityIds);
         lqw.eq(ToppContractDo::getIsValid, "1"); // 只查询有效的合同
         lqw.orderByDesc(ToppContractDo::getCreateTime);
-        
+
         return baseMapper.selectVoList(lqw);
     }
 }

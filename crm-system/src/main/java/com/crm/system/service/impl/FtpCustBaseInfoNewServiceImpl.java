@@ -2,24 +2,22 @@ package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.FtpCustBaseInfoNew;
-import com.crm.system.domain.SysArea;
-import com.crm.system.domain.SysUserCustNo;
-import com.crm.system.domain.oldsyssyn.OldSysOrgDo;
-import com.crm.system.domain.SysUsers;
+import com.crm.system.domain.dao.FtpCustBaseInfoNew;
+import com.crm.system.domain.dao.sys.SysArea;
+import com.crm.system.domain.dao.SysUserCustNo;
+import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
+import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.mapper.FtpCustBaseInfoNewMapper;
-import com.crm.system.mapper.SysAreaMapper;
+import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.FtpCustBaseInfoNewService;
-import com.crm.system.service.ISysCodeService;
+import com.crm.system.service.sys.ISysCodeService;
 import com.crm.system.service.ISysUserCustNoService;
-import com.crm.system.domain.vo.SysCodeVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.List;
 
 /**

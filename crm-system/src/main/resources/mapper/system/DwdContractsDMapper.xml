@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.DwdContractsDMapper">
 
-    <resultMap type="com.crm.system.domain.DwdContractsDDo" id="DwdContractsDDoResult">
+    <resultMap type="com.crm.system.domain.dao.DwdContractsDDo" id="DwdContractsDDoResult">
         <result property="customerCode" column="CUSTUMER_CODE"/>
         <result property="areaName" column="AREA_NAME"/>
         <result property="countyCode" column="COUNTY_CODE"/>

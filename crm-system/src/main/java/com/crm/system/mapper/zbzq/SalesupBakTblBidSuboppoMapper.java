@@ -4,7 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.system.domain.dto.SalesupBakTblBidSuboppoDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.zbzq.SalesupBakTblBidSuboppoVo;
-import com.crm.system.domain.zbzq.SalesupBakTblBidSuboppoDo;
+import com.crm.system.domain.dao.zbzq.SalesupBakTblBidSuboppoDo;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

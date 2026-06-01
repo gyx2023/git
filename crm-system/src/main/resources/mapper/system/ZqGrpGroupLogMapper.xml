@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqGrpGroupLogMapper">
 
-    <resultMap type="com.crm.system.domain.ZqGrpGroupLog" id="ZqGrpGroupLogResult">
+    <resultMap type="com.crm.system.domain.dao.ZqGrpGroupLog" id="ZqGrpGroupLogResult">
         <result property="grpId" column="GRP_ID"/>
         <result property="grpName" column="GRP_NAME"/>
         <result property="grpCode" column="GRP_CODE"/>
