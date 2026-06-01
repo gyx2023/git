@@ -88,6 +88,8 @@ public class repCustContractMillSumMJob extends BaseJob {
      * @param yyyyMM 账期年月
      */
     public void start(String yyyyMM) {
+        XxlJobHelper.log("开始下载账期为 {} 的合同收入报表数据", yyyyMM);
+
         SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
         try {
             ftpUtil.login();
@@ -96,6 +98,7 @@ public class repCustContractMillSumMJob extends BaseJob {
             String ftDirectory1 = ftDirectory + "/" + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
             log.info("合同收入报表需求接口ftp开始下载文件:" + ftDirectory1 + File.separator + saveFile);
+            XxlJobHelper.log("FTP目录：{}，本地文件：{}", ftDirectory1, localFile);
             ftpUtil.download(ftDirectory1, saveFile, localFile);
             log.info("合同收入报表需求接口ftp下载文件完成:" + localFile);
 
@@ -125,9 +128,11 @@ public class repCustContractMillSumMJob extends BaseJob {
                 }
                 bufferedReader.close();
                 reader.close();
+                XxlJobHelper.log("共计处理 {} 条数据", count);
             }
         } catch (Exception e) {
             log.error("合同收入报表数据导入异常", e);
+            XxlJobHelper.log("合同收入报表数据导入异常:{}", e.getMessage());
             throw new RuntimeException("合同收入报表数据导入异常", e);
         }
         log.info("政企运营平台合同收入报表接口执行完成");
