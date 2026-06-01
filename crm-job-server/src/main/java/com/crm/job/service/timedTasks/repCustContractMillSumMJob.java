@@ -92,7 +92,7 @@ public class repCustContractMillSumMJob extends BaseJob {
         SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
         try {
             ftpUtil.login();
-            String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
+            String fileNamePrefix = FTP_DOWNLOAD_NAME + "/" + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
             String ftDirectory1 = ftDirectory + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
