@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.crm.common.annotation.ExcelDictFormat;
-import com.crm.common.convert.ExcelDictConvert;
+import com.crm.common.utils.convert.ExcelDictConvert;
 import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

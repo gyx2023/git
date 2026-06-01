@@ -2,7 +2,7 @@ package com.crm.common.enums;
 
 import cn.hutool.captcha.generator.CodeGenerator;
 import cn.hutool.captcha.generator.RandomGenerator;
-import com.crm.common.captcha.UnsignedMathGenerator;
+import com.crm.common.utils.captcha.UnsignedMathGenerator;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

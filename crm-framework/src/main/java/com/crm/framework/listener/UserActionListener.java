@@ -9,7 +9,7 @@ import com.crm.common.constant.CacheConstants;
 import com.crm.common.core.domain.dto.UserOnlineDTO;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.enums.UserType;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.ServletUtils;
 import com.crm.common.utils.ip.AddressUtils;
 import com.crm.common.utils.redis.RedisUtils;

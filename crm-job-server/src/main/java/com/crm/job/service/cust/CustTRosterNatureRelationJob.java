@@ -1,6 +1,6 @@
 package com.crm.job.service.cust;
 
-import com.crm.common.enums.RedisKeyConstants;
+import com.crm.common.constant.RedisKeyConstants;
 import com.crm.system.domain.CustRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
 import com.crm.system.service.cust.CustTRosterCustomerNatureMemberProvinceService;

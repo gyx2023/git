@@ -3,7 +3,7 @@ package com.crm.framework.encrypt;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.annotation.EncryptField;
-import com.crm.common.encrypt.EncryptContext;
+import com.crm.common.utils.encrypt.EncryptContext;
 import com.crm.common.enums.AlgorithmType;
 import com.crm.common.enums.EncodeType;
 import com.crm.common.utils.StringUtils;

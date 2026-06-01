@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.enums.DateTypeEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
-import com.crm.domain.TaskParams;
+import com.crm.job.domain.TaskParams;
 import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.param.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;

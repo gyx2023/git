@@ -1,7 +1,7 @@
 package com.crm.system.service.cust.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.encrypt.DataEncryptionUtil;
+import com.crm.common.utils.encrypt.DataEncryptionUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;

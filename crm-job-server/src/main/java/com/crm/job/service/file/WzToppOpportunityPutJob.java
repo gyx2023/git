@@ -1,8 +1,8 @@
 package com.crm.job.service.file;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.crm.common.constant.RedisKeyConstants;
 import com.crm.common.core.domain.dto.OpportunityDTO;
-import com.crm.common.enums.RedisKeyConstants;
 import com.crm.job.utils.FilePath;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.service.ISysParamService;

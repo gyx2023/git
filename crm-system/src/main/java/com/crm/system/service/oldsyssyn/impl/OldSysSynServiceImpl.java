@@ -8,7 +8,7 @@ import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.exception.ServiceException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.TokenUtil;
 import com.crm.system.domain.oldsyssyn.OldSysUserDo;
 import com.crm.system.mapper.SysUserMapper;

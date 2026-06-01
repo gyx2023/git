@@ -20,7 +20,7 @@ import com.crm.common.enums.UserStatus;
 import com.crm.common.exception.user.CaptchaException;
 import com.crm.common.exception.user.CaptchaExpireException;
 import com.crm.common.exception.user.UserException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.MessageUtils;
 import com.crm.common.utils.ServletUtils;

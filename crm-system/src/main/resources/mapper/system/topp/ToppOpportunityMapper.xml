@@ -143,7 +143,7 @@
         <result property="lastVisitTime" column="last_visit_time"/>
     </resultMap>
 
-    <resultMap id="resultOpp" type="com.crm.common.core.domain.dto.SignOppoFileExportDTO">
+    <resultMap id="resultOpp" type="com.crm.system.domain.dto.SignOppoFileExportDTO">
         <result property="oppCode" column="opp_code"/>
         <result property="oppName" column="opp_name"/>
         <result property="custName" column="cust_name"/>
@@ -173,7 +173,7 @@
     </resultMap>
 
     <!-- OldOpportunityDTO的resultMap映射 -->
-    <resultMap id="OldOpportunityDTOResult" type="com.crm.common.core.domain.dto.OldOpportunityDTO">
+    <resultMap id="OldOpportunityDTOResult" type="com.crm.system.domain.dto.OldOpportunityDTO">
         <result property="oppCode" column="opp_code"/>
         <result property="oppName" column="opp_name"/>
         <result property="oppType" column="opp_type"/>

@@ -9,12 +9,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.WordTextExtractor;
-import com.crm.system.domain.SysOss;
-import com.crm.system.domain.bo.file.FileAsyncTaskBo;
 import com.crm.system.domain.bo.identify.IdentifyScoreBo;
 import com.crm.system.domain.bo.identify.IdentifyScoreCustomerBo;
 import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
@@ -32,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.*;
 

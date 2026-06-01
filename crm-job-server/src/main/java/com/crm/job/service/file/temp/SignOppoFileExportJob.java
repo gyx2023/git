@@ -1,6 +1,6 @@
 package com.crm.job.service.file.temp;
 
-import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
+import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.SysOssVo;

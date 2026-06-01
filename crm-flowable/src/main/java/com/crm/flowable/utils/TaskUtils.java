@@ -2,7 +2,7 @@ package com.crm.flowable.utils;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.flowable.common.constant.TaskConstants;
 
 import java.util.ArrayList;
