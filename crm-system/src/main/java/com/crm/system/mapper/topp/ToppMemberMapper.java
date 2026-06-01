@@ -1,7 +1,7 @@
 package com.crm.system.mapper.topp;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.topp.ToppMemberDo;
+import com.crm.system.domain.dao.topp.ToppMemberDo;
 import com.crm.system.domain.vo.topp.ToppMemberVo;
 import org.apache.ibatis.annotations.Mapper;
 

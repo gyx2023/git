@@ -1,6 +1,6 @@
 package com.crm.system.mapper.tcomm;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.tcomm.TcommTaskDo;
+import com.crm.system.domain.dao.tcomm.TcommTaskDo;
 import com.crm.system.domain.vo.tcomm.TcommTaskVo;
 import org.apache.ibatis.annotations.Mapper;
 

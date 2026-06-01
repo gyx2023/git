@@ -5,7 +5,7 @@ import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.topp.SignOppoFileExportVO;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

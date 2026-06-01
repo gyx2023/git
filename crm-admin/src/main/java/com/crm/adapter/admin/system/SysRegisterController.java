@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.model.RegisterBody;
-import com.crm.system.service.ISysConfigService;
+import com.crm.system.service.sys.ISysConfigService;
 import com.crm.system.service.SysRegisterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;

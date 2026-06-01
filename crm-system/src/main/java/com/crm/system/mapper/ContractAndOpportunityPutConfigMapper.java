@@ -1,8 +1,7 @@
 package com.crm.system.mapper;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.ContractAndOpportunityPutConfig;
+import com.crm.system.domain.dao.ContractAndOpportunityPutConfig;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

@@ -2,11 +2,11 @@
 //
 //import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 //import com.crm.system.domain.GrpCustInuseUserlist;
-//import com.crm.system.domain.ZqztGrpCustInuseUserlist;
-//import com.crm.system.domain.SysArea; // 使用sys_area表的实体类
+//import com.crm.system.domain.dao.ZqztGrpCustInuseUserlist;
+//import com.crm.system.domain.dao.sys.SysArea; // 使用sys_area表的实体类
 //import com.crm.system.mapper.GrpCustInuseUserlistMapper;
 //import com.crm.system.mapper.ZqztGrpCustInuseUserlistMapper;
-//import com.crm.system.mapper.SysAreaMapper; // 使用sys_area表的Mapper
+//import com.crm.system.mapper.sys.SysAreaMapper; // 使用sys_area表的Mapper
 //import com.xxl.job.core.context.XxlJobHelper;
 //import com.xxl.job.core.handler.annotation.XxlJob;
 //import lombok.extern.slf4j.Slf4j;

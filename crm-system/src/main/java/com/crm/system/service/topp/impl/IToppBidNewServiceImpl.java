@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppBidNewBo;
-import com.crm.system.domain.topp.ToppBidNewDo;
+import com.crm.system.domain.dao.topp.ToppBidNewDo;
 import com.crm.system.domain.vo.topp.ToppBidNewVo;
 import com.crm.system.mapper.topp.ToppBidNewMapper;
 import com.crm.system.service.topp.IToppBidNewService;

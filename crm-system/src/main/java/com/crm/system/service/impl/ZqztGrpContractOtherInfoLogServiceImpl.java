@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoLogBo;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoLogVo;
-import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
+import com.crm.system.domain.dao.ZqztGrpContractOtherInfoLog;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoLogService;
 

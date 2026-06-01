@@ -1,6 +1,6 @@
 package com.crm.system.mapper;
 
-import com.crm.system.domain.ZqztGrpCustInuseUserlist;
+import com.crm.system.domain.dao.ZqztGrpCustInuseUserlist;
 import com.crm.system.domain.vo.ZqztGrpCustInuseUserlistVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 

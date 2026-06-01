@@ -14,7 +14,7 @@ import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.system.domain.vo.ContractUserTemplateVo;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.file.IFileAsyncTaskService;
 import lombok.RequiredArgsConstructor;

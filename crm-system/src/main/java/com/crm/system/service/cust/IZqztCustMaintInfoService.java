@@ -1,7 +1,7 @@
 package com.crm.system.service.cust;
 
-import com.crm.system.domain.CustMaintInfo;
-import com.crm.system.domain.cust.ZqztCustMaintInfo;
+import com.crm.system.domain.dao.CustMaintInfo;
+import com.crm.system.domain.dao.ZqztCustMaintInfo;
 import com.crm.system.domain.vo.cust.ZqztCustMaintInfoVo;
 import com.crm.system.domain.bo.cust.ZqztCustMaintInfoBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -9,7 +9,6 @@ import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 【请填写功能名称】Service接口

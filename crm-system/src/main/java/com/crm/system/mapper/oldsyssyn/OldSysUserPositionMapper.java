@@ -1,7 +1,7 @@
 package com.crm.system.mapper.oldsyssyn;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.crm.system.domain.oldsyssyn.OldSysUserPositionDo;
+import com.crm.system.domain.dao.oldsyssyn.OldSysUserPositionDo;
 
 /**
  * 老系统用户职务关系Mapper接口

@@ -5,7 +5,7 @@ import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.system.domain.dto.OldOpportunityDTO;
 import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.topp.ToppOpportunityDo;
+import com.crm.system.domain.dao.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import org.apache.ibatis.annotations.*;

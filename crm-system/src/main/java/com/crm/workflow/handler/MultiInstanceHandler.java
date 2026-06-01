@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.toolkit.SimpleQuery;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.flowable.common.constant.ProcessConstants;
-import com.crm.system.domain.SysUserRole;
+import com.crm.system.domain.dao.sys.SysUserRole;
 import lombok.AllArgsConstructor;
 import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.UserTask;

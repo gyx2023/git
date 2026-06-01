@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.tcomm.TcommCustomerMapper">
 
-    <resultMap type="com.crm.system.domain.tcomm.TcommCustomer" id="TcommCustomerResult">
+    <resultMap type="com.crm.system.domain.dao.tcomm.TcommCustomer" id="TcommCustomerResult">
         <result property="id" column="id_"/>
         <result property="bssCustId" column="bss_cust_id"/>
         <result property="certificateAddr" column="certificate_addr"/>
