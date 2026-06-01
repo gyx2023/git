@@ -1,4 +1,4 @@
-package com.crm.workflow.domain.vo;
+package com.crm.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;

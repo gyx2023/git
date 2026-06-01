@@ -1,10 +1,10 @@
-package com.crm.workflow.service.impl;
+package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.workflow.domain.dto.SupportHoursQueryDTO;
-import com.crm.workflow.domain.vo.SupportHoursVO;
-import com.crm.workflow.service.ISupportHoursService;
+import com.crm.system.domain.dto.SupportHoursQueryDTO;
+import com.crm.system.domain.vo.SupportHoursVO;
+import com.crm.system.service.ISupportHoursService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
