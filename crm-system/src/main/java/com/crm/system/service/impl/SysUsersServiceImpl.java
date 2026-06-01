@@ -1,28 +1,25 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.crm.common.utils.StringUtils;
+import com.crm.common.core.page.TableDataInfo;
+import com.crm.common.core.domain.PageQuery;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.PersonnelInfo;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.SysUsers;
+import com.crm.system.domain.dao.PersonnelInfo;
+import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.service.ISysParamService;
 import com.crm.system.service.ISysUsersService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 /**
  * 用户(客户的员工)Service业务层处理

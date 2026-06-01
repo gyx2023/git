@@ -1,7 +1,7 @@
 package com.crm.job.service.cust;
 
-import com.crm.system.domain.cust.CustNecRelationDo;
-import com.crm.system.domain.cust.CustTNecRelationDo;
+import com.crm.system.domain.dao.CustNecRelationDo;
+import com.crm.system.domain.dao.CustTNecRelationDo;
 import com.crm.system.service.cust.CustTNecRelationService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 实体客户id与自然客户id对应关系同步定时任务

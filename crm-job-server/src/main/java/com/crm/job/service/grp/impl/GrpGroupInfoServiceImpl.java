@@ -2,7 +2,7 @@ package com.crm.job.service.grp.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.grp.GrpGroupInfoDo;
+import com.crm.system.domain.dao.GrpGroupInfoDo;
 import com.crm.system.mapper.grp.GrpGroupInfoMapper;
 import com.crm.job.service.grp.GrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;

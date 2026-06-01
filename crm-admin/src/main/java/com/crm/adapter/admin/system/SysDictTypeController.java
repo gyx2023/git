@@ -8,7 +8,7 @@ import com.crm.common.core.domain.entity.SysDictType;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.service.ISysDictTypeService;
+import com.crm.system.service.sys.ISysDictTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

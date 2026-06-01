@@ -10,7 +10,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppBidSuboppoBo;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.topp.ToppBidSuboppoDo;
+import com.crm.system.domain.dao.topp.ToppBidSuboppoDo;
 import com.crm.system.domain.vo.topp.ToppBidSuboppoVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.service.topp.IToppBidSuboppoService;

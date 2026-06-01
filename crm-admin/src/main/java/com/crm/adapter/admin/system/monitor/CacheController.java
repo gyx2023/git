@@ -9,7 +9,7 @@ import com.crm.common.utils.JsonUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.CacheUtils;
 import com.crm.common.utils.redis.RedisUtils;
-import com.crm.system.domain.SysCache;
+import com.crm.system.domain.dao.sys.SysCache;
 import lombok.RequiredArgsConstructor;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnection;

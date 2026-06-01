@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.param.SysParamMapper">
 
-    <resultMap type="com.crm.system.domain.param.SysParamDo" id="SysParamResult">
+    <resultMap type="com.crm.system.domain.dao.SysParamDo" id="SysParamResult">
         <result property="id" column="id_"/>
         <result property="code" column="code_"/>
         <result property="name" column="name_"/>

@@ -23,7 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!--查询REP_SYS_PERSON_NEW_D表中全部有效的省中心客户经理-->
-    <select id="selectProvincialManagers" resultType="com.crm.system.domain.zbzq.RepSysPersonNewDDo">
+    <select id="selectProvincialManagers" resultType="com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo">
         select a.EMP_ID as empId,
                LOWER(a.OA_USER_NAME) as oaUserName,
                a.FULL_NAME as fullName

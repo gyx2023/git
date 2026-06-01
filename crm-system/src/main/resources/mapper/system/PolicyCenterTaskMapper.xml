@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.PolicyCenterTaskMapper">
 
-    <resultMap type="com.crm.system.domain.PolicyCenterTask" id="PolicyCenterTaskResult">
+    <resultMap type="com.crm.system.domain.dao.PolicyCenterTask" id="PolicyCenterTaskResult">
         <id property="id" column="id_"/>
         <result property="createTime" column="create_time"/>
         <result property="taskCode" column="task_code"/>
@@ -54,9 +54,9 @@
     </select>
 
     <select id="selectVisitOverList" resultMap="PolicyCenterTaskResult">
-        SELECT * FROM tbl_policy_center_task 
-        WHERE manger_id = #{mangerId} 
-          AND visit_result = #{visitResult} 
+        SELECT * FROM tbl_policy_center_task
+        WHERE manger_id = #{mangerId}
+          AND visit_result = #{visitResult}
           AND status = 1
         <if test="startDate != null and startDate != ''">
             AND create_time &gt;= #{startDate}
@@ -68,9 +68,9 @@
     </select>
 
     <select id="selectWaitVisitList" resultMap="PolicyCenterTaskResult">
-        SELECT * FROM tbl_policy_center_task 
-        WHERE manger_id = #{mangerId} 
-          AND visit_result IS NULL 
+        SELECT * FROM tbl_policy_center_task
+        WHERE manger_id = #{mangerId}
+          AND visit_result IS NULL
           AND status = 1
         <if test="startDate != null and startDate != ''">
             AND create_time &gt;= #{startDate}
@@ -84,7 +84,7 @@
     <select id="selectMangerVisitNum" resultType="java.lang.Object">
         SELECT COUNT(CASE WHEN visit_result IS NULL THEN 1 END) as wait,
                COUNT(CASE WHEN visit_result IS NOT NULL AND visit_result != '3' THEN 1 END) as `over`
-        FROM tbl_policy_center_task 
+        FROM tbl_policy_center_task
         WHERE manger_id = #{mangerId} AND status = 1
     </select>
 

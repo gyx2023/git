@@ -19,7 +19,7 @@ import com.crm.framework.config.properties.MailProperties;
 import com.crm.sms.config.properties.SmsProperties;
 import com.crm.sms.core.SmsTemplate;
 import com.crm.sms.entity.SmsResult;
-import com.crm.system.service.ISysConfigService;
+import com.crm.system.service.sys.ISysConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.Expression;

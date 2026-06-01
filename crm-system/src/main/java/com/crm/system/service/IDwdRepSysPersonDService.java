@@ -1,6 +1,5 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.DwdRepSysPersonD;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;
 import com.crm.common.core.page.TableDataInfo;

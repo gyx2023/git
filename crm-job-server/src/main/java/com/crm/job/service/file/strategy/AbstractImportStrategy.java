@@ -1,6 +1,6 @@
 package com.crm.job.service.file.strategy;
 
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 import lombok.extern.slf4j.Slf4j;
 
 /**

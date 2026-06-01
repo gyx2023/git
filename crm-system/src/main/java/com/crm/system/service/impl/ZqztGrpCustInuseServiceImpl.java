@@ -8,7 +8,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.ZqztGrpCustInuse;
+import com.crm.system.domain.dao.ZqztGrpCustInuse;
 import com.crm.system.domain.bo.ZqztGrpCustInuseBo;
 import com.crm.system.domain.dto.ZqztGrpCustAddUserListReqDTO;
 import com.crm.system.domain.dto.ZqztGrpCustInuseRespDTO;
