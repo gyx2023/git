@@ -3,7 +3,7 @@ package com.crm.common.annotation;
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.crm.common.enums.SensitiveStrategy;
-import com.crm.common.jackson.SensitiveJsonSerializer;
+import com.crm.common.utils.jackson.SensitiveJsonSerializer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

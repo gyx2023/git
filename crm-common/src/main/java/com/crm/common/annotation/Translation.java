@@ -2,7 +2,7 @@ package com.crm.common.annotation;
 
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.crm.common.translation.handler.TranslationHandler;
+import com.crm.common.utils.translation.handler.TranslationHandler;
 
 import java.lang.annotation.*;
 

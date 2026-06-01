@@ -2,7 +2,7 @@ package com.crm.common.core.controller;
 
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 
 /**

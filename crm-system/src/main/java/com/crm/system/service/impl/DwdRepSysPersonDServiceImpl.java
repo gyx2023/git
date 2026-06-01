@@ -10,7 +10,7 @@ import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.DwdRepSysPersonD;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;

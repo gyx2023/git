@@ -4,7 +4,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.crm.common.enums.CustStateEnum;
+import com.crm.system.enums.CustStateEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpUtil;

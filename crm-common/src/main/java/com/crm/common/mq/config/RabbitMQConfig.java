@@ -16,6 +16,7 @@ import java.util.Map;
  */
 @Configuration
 @ConditionalOnProperty(name = "crm.mq.enabled", havingValue = "true", matchIfMissing = false)
+@Deprecated
 public class RabbitMQConfig {
 
     // ======================== 公共组件配置 ========================
