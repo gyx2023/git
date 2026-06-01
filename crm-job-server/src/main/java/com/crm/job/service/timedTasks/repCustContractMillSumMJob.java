@@ -95,7 +95,7 @@ public class repCustContractMillSumMJob extends BaseJob {
             ftpUtil.login();
             String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
-            String ftDirectory1 = ftDirectory + "/" + yyyyMM;
+            String ftDirectory1 = ftDirectory + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
             log.info("合同收入报表需求接口ftp开始下载文件:" + ftDirectory1 + File.separator + saveFile);
             XxlJobHelper.log("FTP目录：{}，本地文件：{}", ftDirectory1, localFile);
