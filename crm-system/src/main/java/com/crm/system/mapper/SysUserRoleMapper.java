@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.SysUserRole;
+import com.crm.system.domain.dao.sys.SysUserRole;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

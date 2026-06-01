@@ -1,7 +1,7 @@
 package com.crm.system.listener.client;
 
 import com.crm.common.core.domain.entity.SysDictData;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.GrpBusiDeptImportVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo;

@@ -6,7 +6,11 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.HaoKaoSignUtil;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.*;
+import com.crm.system.domain.dao.FtpCustBaseInfoNew;
+import com.crm.system.domain.dao.PolicyCenterProduct;
+import com.crm.system.domain.dao.PolicyCenterTask;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.sys.SysLog;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.sys.ISysLogService;
 import com.crm.system.service.sys.ISysParamService;
@@ -355,8 +359,8 @@ public class PolicyCenterTaskJob {
      * 将json字符串转化为PolicyCenterTask对象
      */
     private PolicyCenterTask jsonToPolicyCenterTask(PolicyCenterTask policyCenterTask,
-                                                     JSONObject gemWorkOrder,
-                                                     JSONArray products) {
+                                                    JSONObject gemWorkOrder,
+                                                    JSONArray products) {
         policyCenterTask.setTaskCode(gemWorkOrder.getString("code"));
         policyCenterTask.setSendTime(gemWorkOrder.getDate("sendTime"));
         policyCenterTask.setTaskDeadline(gemWorkOrder.getDate("deadline"));

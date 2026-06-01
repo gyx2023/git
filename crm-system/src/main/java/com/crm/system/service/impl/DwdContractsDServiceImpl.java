@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.DwdContractsDDo;
+import com.crm.system.domain.dao.DwdContractsDDo;
 import com.crm.system.domain.bo.DwdContractsDBo;
 import com.crm.system.domain.vo.ContractEformRespVo;
 import com.crm.system.domain.vo.DwdContractsDVo;

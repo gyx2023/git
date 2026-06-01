@@ -1,6 +1,6 @@
 package com.crm.system.service.sys;
 
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 
 import java.util.Map;
 

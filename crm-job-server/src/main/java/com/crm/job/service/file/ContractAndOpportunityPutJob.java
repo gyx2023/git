@@ -3,7 +3,7 @@ package com.crm.job.service.file;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.domain.ContractAndOpportunityPutConfig;
+import com.crm.system.domain.dao.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
 import com.crm.system.domain.vo.ToppContractExcelVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;

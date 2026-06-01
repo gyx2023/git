@@ -1,6 +1,6 @@
 package com.crm.system.mapper;
 
-import com.crm.system.domain.SysUsers;
+import com.crm.system.domain.dao.SysUsers;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.SysUsersVo;
 import org.apache.ibatis.annotations.Param;

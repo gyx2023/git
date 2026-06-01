@@ -3,7 +3,7 @@ package com.crm.system.service.sys;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.system.domain.SysOperLog;
+import com.crm.system.domain.dao.sys.SysOperLog;
 
 import java.util.List;
 

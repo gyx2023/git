@@ -1,9 +1,9 @@
 package com.crm.system.service.oldsyssyn.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.system.domain.SysUserRole;
-import com.crm.system.domain.oldsyssyn.OldSysUserPositionDo;
-import com.crm.system.domain.oldsyssyn.SysDataScopeMappingDo;
+import com.crm.system.domain.dao.sys.SysUserRole;
+import com.crm.system.domain.dao.oldsyssyn.OldSysUserPositionDo;
+import com.crm.system.domain.dao.oldsyssyn.SysDataScopeMappingDo;
 import com.crm.system.mapper.SysUserRoleMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysUserPositionMapper;
 import com.crm.system.mapper.oldsyssyn.SysDataScopeMappingMapper;

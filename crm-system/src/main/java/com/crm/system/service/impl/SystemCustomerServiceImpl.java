@@ -3,7 +3,7 @@ package com.crm.system.service.impl;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.SystemCustomerDo;
+import com.crm.system.domain.dao.SystemCustomerDo;
 import com.crm.system.domain.vo.SystemCustomerVo;
 import com.crm.system.mapper.SystemCustomerMapper;
 import com.crm.system.service.ISystemCustomerService;

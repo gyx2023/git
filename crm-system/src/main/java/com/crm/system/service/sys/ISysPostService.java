@@ -2,7 +2,7 @@ package com.crm.system.service.sys;
 
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.system.domain.SysPost;
+import com.crm.system.domain.dao.sys.SysPost;
 
 import java.util.List;
 

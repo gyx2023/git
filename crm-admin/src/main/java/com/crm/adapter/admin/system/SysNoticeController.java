@@ -7,7 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
-import com.crm.system.domain.SysNotice;
+import com.crm.system.domain.dao.sys.SysNotice;
 import com.crm.system.service.sys.ISysNoticeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;

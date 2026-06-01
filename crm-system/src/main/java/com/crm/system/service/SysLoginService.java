@@ -27,7 +27,7 @@ import com.crm.common.utils.ServletUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.RedisUtils;
 import com.crm.common.utils.spring.SpringUtils;
-import com.crm.system.mapper.SysUserMapper;
+import com.crm.system.mapper.sys.SysUserMapper;
 import com.crm.system.service.sys.ISysConfigService;
 import com.crm.system.service.sys.ISysDeptService;
 import lombok.RequiredArgsConstructor;

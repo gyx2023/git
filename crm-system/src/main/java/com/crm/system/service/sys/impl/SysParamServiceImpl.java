@@ -2,7 +2,7 @@ package com.crm.system.service.sys.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.constant.CacheNames;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;

@@ -3,7 +3,7 @@
 //import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 //import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 //import com.crm.system.domain.GrpContractInfo;
-//import com.crm.system.domain.ZqztGrpContractInfo;
+//import com.crm.system.domain.dao.ZqztGrpContractInfo;
 //import com.crm.system.mapper.GrpContractInfoMapper;
 //import com.crm.system.mapper.ZqztGrpContractInfoMapper;
 //import com.crm.system.service.IZqztGrpContractInfoService;

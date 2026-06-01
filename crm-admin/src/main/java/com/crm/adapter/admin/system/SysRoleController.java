@@ -11,7 +11,7 @@ import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.SysUserRole;
+import com.crm.system.domain.dao.sys.SysUserRole;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.sys.ISysRoleService;
 import com.crm.system.service.sys.ISysUserService;

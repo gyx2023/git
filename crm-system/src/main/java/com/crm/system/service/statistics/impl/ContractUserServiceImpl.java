@@ -10,7 +10,7 @@ import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.helper.LoginHelper;
-import com.crm.system.mapper.SysDeptMapper;
+import com.crm.system.mapper.sys.SysDeptMapper;
 import com.crm.system.mapper.topp.ToppBidNewScoreMapper;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.statistics.ContractUserService;

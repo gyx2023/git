@@ -3,7 +3,7 @@ package com.crm.job.service.sync;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.domain.TcIctMilestone;
+import com.crm.system.domain.dao.TcIctMilestone;
 import com.crm.system.mapper.TcIctMilestoneMapper;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.TcIctMilestoneService;

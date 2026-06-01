@@ -2,7 +2,7 @@ package com.crm.job.service.file;
 
 import com.crm.job.service.file.strategy.FileTaskStrategy;
 import com.crm.job.service.file.strategy.FileTaskStrategyFactory;
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

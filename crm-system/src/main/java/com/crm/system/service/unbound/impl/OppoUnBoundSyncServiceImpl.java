@@ -8,7 +8,7 @@ import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.constant.OppoSyncConstants;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
-import com.crm.system.domain.SysLog;
+import com.crm.system.domain.dao.sys.SysLog;
 import com.crm.system.domain.bo.SysCodeBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.bo.topp.ToppMemberBo;

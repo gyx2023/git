@@ -2,13 +2,13 @@
 //
 //import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 //import com.crm.system.domain.GrpCustInuse;
-//import com.crm.system.domain.ZqztGrpCustInuse;
-//import com.crm.system.domain.ZqGrpGroupInfo; // 使用zqzt_grp_group_info表的实体类
-//import com.crm.system.domain.SysArea; // 使用sys_area表的实体类
+//import com.crm.system.domain.dao.ZqztGrpCustInuse;
+//import com.crm.system.domain.dao.ZqGrpGroupInfo; // 使用zqzt_grp_group_info表的实体类
+//import com.crm.system.domain.dao.sys.SysArea; // 使用sys_area表的实体类
 //import com.crm.system.mapper.GrpCustInuseMapper; // 使用现有的Oracle数据源Mapper
 //import com.crm.system.mapper.ZqztGrpCustInuseMapper; // 使用现有的主数据源Mapper
 //import com.crm.system.mapper.ZqGrpGroupInfoMapper; // 使用zqzt_grp_group_info表的Mapper
-//import com.crm.system.mapper.SysAreaMapper; // 使用sys_area表的Mapper
+//import com.crm.system.mapper.sys.SysAreaMapper; // 使用sys_area表的Mapper
 //import com.xxl.job.core.context.XxlJobHelper;
 //import com.xxl.job.core.handler.annotation.XxlJob;
 //import lombok.extern.slf4j.Slf4j;

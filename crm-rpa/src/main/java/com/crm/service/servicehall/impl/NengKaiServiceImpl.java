@@ -5,8 +5,8 @@ import com.crm.dto.BusinessMessageDTO;
 import com.crm.dto.Response;
 import com.crm.service.mq.ygcf.RabbitMQProducerService;
 import com.crm.service.servicehall.NengKaiService;
-import com.crm.system.domain.Sequence;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dao.Sequence;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
 import com.crm.system.mapper.SequenceMapper;
@@ -20,7 +20,6 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;

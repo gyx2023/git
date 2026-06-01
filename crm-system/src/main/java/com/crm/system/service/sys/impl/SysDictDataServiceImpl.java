@@ -9,7 +9,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.CacheUtils;
-import com.crm.system.mapper.SysDictDataMapper;
+import com.crm.system.mapper.sys.SysDictDataMapper;
 import com.crm.system.service.sys.ISysDictDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CachePut;

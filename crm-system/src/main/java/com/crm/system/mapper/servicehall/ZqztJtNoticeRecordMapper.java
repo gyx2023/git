@@ -1,6 +1,6 @@
 package com.crm.system.mapper.servicehall;
 
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.jt.ZqztJtNoticeRecordVo;
 

@@ -11,7 +11,7 @@ import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.bo.SysCodeBo;
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCodeVo;

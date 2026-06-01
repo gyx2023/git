@@ -14,7 +14,7 @@ import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.RedisUtils;
-import com.crm.system.domain.SysUserOnline;
+import com.crm.system.domain.dao.sys.SysUserOnline;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

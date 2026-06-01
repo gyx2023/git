@@ -1,6 +1,6 @@
 package com.crm.system.service.send.impl;
 
-import com.crm.system.domain.DingMessage;
+import com.crm.system.domain.dao.DingMessage;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.service.IDingMessageService;
 import com.crm.system.service.sys.ISysParamService;
