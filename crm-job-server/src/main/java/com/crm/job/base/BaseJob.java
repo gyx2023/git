@@ -1,6 +1,6 @@
 package com.crm.job.base;
 
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
