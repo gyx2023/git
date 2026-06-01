@@ -1,23 +1,20 @@
 package com.crm.job.service.rpa;
 
-import cn.hutool.json.JSONUtil;
-import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
-import com.crm.system.service.servicehall.INengKaiCallbackService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.ZqztRpaBusinessRetryConfigDo;
-import com.crm.system.domain.ZqztRpaBusinessTaskRetryDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.mapper.ZqztRpaBusinessRetryConfigMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
-import com.crm.system.mapper.ZqztRpaBusinessTaskRetryMapper;
-import com.crm.system.service.IZqztRpaBusinessRetryService;
+import com.crm.system.service.rpa.strategy.MessageStrategyFactory;
+import com.crm.system.service.rpa.strategy.RpaMessageProcessStrategy;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,174 +28,181 @@ import java.util.Map;
 @Component
 public class RpaBusinessRetryJob {
 
-    private static final int DEFAULT_RETRY_INTERVAL_SECONDS = 300;
-    private static final int DEFAULT_MAX_RETRY_COUNT = 999;
+    // 永久失败状态码
+    private static final String STATUS_PERMANENT_FAILURE = "9";
 
     @Resource
-    private ZqztRpaBusinessTaskRetryMapper taskRetryMapper;
+    private ZqztRpaBusinessRetryConfigMapper configMapper;
 
     @Resource
     private ZqztJtNoticeRecordMapper noticeRecordMapper;
 
     @Resource
-    private IZqztRpaBusinessRetryService retryService;
-
-    @Resource
-    private RestTemplate restTemplate;
-
-    @Resource
-    private INengKaiCallbackService nengKaiCallbackService;
+    private MessageStrategyFactory messageStrategyFactory;
 
     /**
      * RPA业务重试任务
-     * 查询待重试的任务，调用admin API进行同步，根据结果更新状态
+     * 扫描 deal_result_code='1' 的记录，按 bizCode 查配置，到时间则交由策略工厂重新执行
      */
     @XxlJob("rpaBusinessRetryJobHandler")
     public void execute() {
         log.info("[RPA重试] 开始执行重试任务");
         XxlJobHelper.log("[RPA重试] 开始执行重试任务");
 
-        Date now = new Date();
-        List<ZqztRpaBusinessTaskRetryDo> pendingTasks = taskRetryMapper.selectPendingRetryTasks(now);
+        try {
+            // 1. 加载配置表的 bizCode 白名单
+            Map<String, RetryConfig> configMap = loadEnabledConfigs();
 
-        if (pendingTasks == null || pendingTasks.isEmpty()) {
-            log.info("[RPA重试] 无待处理的重试任务");
-            XxlJobHelper.log("无待处理的重试任务");
-            return;
-        }
+            if (configMap.isEmpty()) {
+                log.info("[RPA重试] 无启用中的重试配置");
+                XxlJobHelper.log("无启用中的重试配置");
+                return;
+            }
 
-        int successCount = 0;
-        int failCount = 0;
+            log.info("[RPA重试] 已加载 {} 条重试配置", configMap.size());
 
-        for (ZqztRpaBusinessTaskRetryDo task : pendingTasks) {
-            try {
-                String bizCode = task.getBizCode();
-                Integer currentRetryCount = task.getRetryCount() != null ? task.getRetryCount() : 0;
+            // 2. 查询所有待重试记录
+            List<ZqztJtNoticeRecordDo> pendingRecords = noticeRecordMapper.selectPendingRetryRecords();
 
-                // 获取重试配置
-                ZqztRpaBusinessRetryConfigDo config = retryService.getConfig(bizCode);
-                Integer maxRetries = config.getMaxRetryCount() != null ? config.getMaxRetryCount() : DEFAULT_MAX_RETRY_COUNT;
+            if (pendingRecords == null || pendingRecords.isEmpty()) {
+                log.info("[RPA重试] 无待重试记录");
+                XxlJobHelper.log("无待重试记录");
+                return;
+            }
 
-                // 检查是否超过最大重试次数
-                if (currentRetryCount >= maxRetries) {
-                    taskRetryMapper.updateTaskStatus(task.getId(), 3, currentRetryCount, "超过最大重试次数", null);
-                    failCount++;
+            log.info("[RPA重试] 共查到 {} 条待重试记录", pendingRecords.size());
+
+            Date now = new Date();
+            int processedCount = 0;
+            int successCount = 0;
+            int failedCount = 0;
+            int skippedTimeWindowCount = 0;
+            int skippedNoConfigCount = 0;
+            int permanentFailureCount = 0;
+
+            // 3. 逐条处理
+            for (ZqztJtNoticeRecordDo record : pendingRecords) {
+                String bizCode = record.getBizCode();
+
+                // 3a. 检查是否有对应配置
+                RetryConfig config = configMap.get(bizCode);
+                if (config == null) {
+                    skippedNoConfigCount++;
                     continue;
                 }
 
-                // HTTP 重试
-                Boolean syncResult = executeHttpRetry(task);
+                // 3b. 检查时间窗口：updateTime + interval <= now？
+                long elapsedSeconds = getElapsedSeconds(record.getUpdateTime(), now);
+                if (elapsedSeconds < config.intervalSeconds) {
+                    skippedTimeWindowCount++;
+                    continue;
+                }
 
-                if (Boolean.TRUE.equals(syncResult)) {
-                    // 重试成功：调用能开回调 + 标记完成
-                    notifyNengKai(task);
-                    taskRetryMapper.updateTaskStatus(task.getId(), 2, currentRetryCount + 1, null, null);
+                // 3c. 检查重试上限
+                int currentRetryCount = record.getRetryCount() != null ? record.getRetryCount() : 0;
+                if (currentRetryCount >= config.maxRetries) {
+                    markPermanentFailure(record);
+                    permanentFailureCount++;
+                    continue;
+                }
+
+                // 3d. 调用策略工厂重试
+                try {
+                    processSingleRetry(record, bizCode, config);
                     successCount++;
-                    XxlJobHelper.log("重试成功: retryId={}, bizCode={}", task.getRetryId(), bizCode);
-                } else {
-                    int nextRetryCount = currentRetryCount + 1;
-                    long interval = calculateRetryInterval(config, nextRetryCount);
-                    Date nextRetryTime = new Date(System.currentTimeMillis() + interval * 1000L);
-                    taskRetryMapper.updateTaskStatus(
-                        task.getId(), 1, nextRetryCount, "重试" + nextRetryCount + "次失败", nextRetryTime);
-                    failCount++;
+                } catch (Exception e) {
+                    record.setDealResultCode("1");
+                    int newRetryCount = currentRetryCount + 1;
+                    record.setRetryCount(newRetryCount);
+                    record.setUpdateTime(now);
+                    noticeRecordMapper.updateById(record);
+                    log.error("[RPA重试] 重试失败: id={}, bizCode={}, retryCount={}", record.getId(), bizCode, newRetryCount, e);
+                    failedCount++;
                 }
-            } catch (Exception e) {
-                log.error("[RPA重试] 重试异常: id={}, error={}", task.getId(), e.getMessage(), e);
-                int nextRetryCount = (task.getRetryCount() != null ? task.getRetryCount() : 0) + 1;
-                Date nextRetryTime = new Date(System.currentTimeMillis() + DEFAULT_RETRY_INTERVAL_SECONDS * 1000L);
-                taskRetryMapper.updateTaskStatus(task.getId(), 1, nextRetryCount, e.getMessage(), nextRetryTime);
-                failCount++;
-            }
-        }
 
-        log.info("[RPA重试] 重试任务完成: 成功{}, 失败{}", successCount, failCount);
-        XxlJobHelper.log("重试任务完成: 成功{}条, 失败{}条", successCount, failCount);
-    }
-
-    /**
-     * HTTP 重试：从任务记录中取目标地址和请求参数，执行重试
-     */
-    private Boolean executeHttpRetry(ZqztRpaBusinessTaskRetryDo task) {
-        String messageBody = task.getMessageBody();
-        if (StringUtils.isBlank(messageBody)) {
-            log.warn("[RPA重试] 消息体为空: retryId={}", task.getRetryId());
-            return false;
-        }
-
-        Map<String, Object> syncData;
-        try {
-            syncData = JSONUtil.toBean(messageBody, Map.class);
-        } catch (Exception e) {
-            log.error("[RPA重试] 解析 messageBody 失败: retryId={}, error={}", task.getRetryId(), e.getMessage());
-            throw e;
-        }
-
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(parseMediaType(task.getContentType()));
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                task.getTargetUrl(), parseHttpMethod(task.getHttpMethod()), new HttpEntity<>(syncData, headers), String.class);
-
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                cn.hutool.json.JSONObject resp = JSONUtil.parseObj(response.getBody());
-                String code = String.valueOf(resp.get("code"));
-                if ("200".equals(code) || "0".equals(code)) {
-                    log.info("[RPA重试] 调用成功: retryId={}, bizCode={}", task.getRetryId(), task.getBizCode());
-                    return true;
-                }
+                processedCount++;
             }
 
-            log.warn("[RPA重试] 调用失败: retryId={}, url={}, response={}", task.getRetryId(), task.getTargetUrl(), response.getBody());
-            return false;
+            log.info("[RPA重试] 任务完成: 处理{}条, 成功{}条, 失败{}条, 未到时间{}条, 无配置跳过{}条, 永久失败{}条",
+                processedCount, successCount, failedCount, skippedTimeWindowCount, skippedNoConfigCount, permanentFailureCount);
+            XxlJobHelper.log("任务完成: 处理%d条, 成功%d条, 失败%d条, 未到时间%d条, 无配置跳过%d条, 永久失败%d条",
+                processedCount, successCount, failedCount, skippedTimeWindowCount, skippedNoConfigCount, permanentFailureCount);
+
         } catch (Exception e) {
-            log.error("[RPA重试] admin调用异常: retryId={}, error={}", task.getRetryId(), e.getMessage(), e);
-            throw e;
+            log.error("[RPA重试] 任务执行异常", e);
+            XxlJobHelper.log("任务执行异常: %s", e.getMessage());
+            throw new RuntimeException("RPA重试任务执行失败", e);
         }
     }
 
     /**
-     * 重试成功后通知能开（通过noticeRecordId查原始消息体，调能开回调）
+     * 加载所有启用的重试配置
      */
-    private void notifyNengKai(ZqztRpaBusinessTaskRetryDo task) {
-        try {
-            Long noticeId = task.getNoticeRecordId();
-            if (noticeId == null) {
-                log.warn("[RPA重试] 未关联notice_record_id: retryId={}", task.getRetryId());
-                return;
-            }
-            ZqztJtNoticeRecordDo recordDo = noticeRecordMapper.selectById(noticeId);
-            if (recordDo == null) {
-                log.warn("[RPA重试] 未找到关联的notice_record: id={}", noticeId);
-                return;
-            }
+    private Map<String, RetryConfig> loadEnabledConfigs() {
+        List<ZqztRpaBusinessRetryConfigDo> configs = configMapper.selectList(
+            new LambdaQueryWrapper<ZqztRpaBusinessRetryConfigDo>().eq(ZqztRpaBusinessRetryConfigDo::getIsEnabled, 1));
 
-            nengKaiCallbackService.callWorksheetsComplete(recordDo, "RPA-YGCF");
-            log.info("[RPA重试] 能开回调成功: retryId={}, noticeId={}", task.getRetryId(), noticeId);
-        } catch (Exception e) {
-            log.error("[RPA重试] 能开回调失败: retryId={}, error={}", task.getRetryId(), e.getMessage(), e);
+        Map<String, RetryConfig> map = new HashMap<>();
+        for (ZqztRpaBusinessRetryConfigDo c : configs) {
+            RetryConfig cfg = new RetryConfig();
+            cfg.bizCode = c.getBizCode();
+            cfg.intervalSeconds = c.getRetryIntervalSeconds() != null ? c.getRetryIntervalSeconds() : 300;
+            cfg.maxRetries = c.getMaxRetryCount() != null ? c.getMaxRetryCount() : 999;
+            map.put(c.getBizCode(), cfg);
         }
+        return map;
     }
 
-    private HttpMethod parseHttpMethod(String method) {
-        if (method == null) return HttpMethod.POST;
-        switch (method.toUpperCase()) {
-            case "PUT":   return HttpMethod.PUT;
-            case "GET":   return HttpMethod.GET;
-            case "DELETE": return HttpMethod.DELETE;
-            default:      return HttpMethod.POST;
+    /**
+     * 处理单条重试：解析 bizCode -> 查找策略 -> 执行 process
+     */
+    private void processSingleRetry(ZqztJtNoticeRecordDo record, String bizCode, RetryConfig config) throws Exception {
+        log.info("[RPA重试] 开始重试: id={}, bizCode={}, retryCount={}", record.getId(), bizCode, record.getRetryCount());
+        XxlJobHelper.log("开始重试: id={}, bizCode={}", record.getId(), bizCode);
+
+        RpaMessageProcessStrategy strategy = messageStrategyFactory.resolve(bizCode);
+        if (strategy == null) {
+            log.warn("[RPA重试] 未找到匹配的策略: bizCode={}", bizCode);
+            throw new IllegalStateException("No strategy found for bizCode: " + bizCode);
         }
+
+        strategy.process(record);
+
+        // 策略执行成功：更新状态码为 '0'
+        record.setDealResultCode("0");
+        int newRetryCount = (record.getRetryCount() != null ? record.getRetryCount() : 0) + 1;
+        record.setRetryCount(newRetryCount);
+        noticeRecordMapper.updateById(record);
+
+        log.info("[RPA重试] 重试成功: id={}, bizCode={}, newRetryCount={}", record.getId(), bizCode, newRetryCount);
+        XxlJobHelper.log("重试成功: id={}, bizCode={}", record.getId(), bizCode);
     }
 
-    private MediaType parseMediaType(String contentType) {
-        if (contentType == null) return MediaType.APPLICATION_JSON;
-        return MediaType.parseMediaType(contentType);
+    /**
+     * 标记为永久失败
+     */
+    private void markPermanentFailure(ZqztJtNoticeRecordDo record) {
+        int currentRetryCount = record.getRetryCount() != null ? record.getRetryCount() : 0;
+        record.setDealResultCode(STATUS_PERMANENT_FAILURE);
+        record.setRetryCount(currentRetryCount);
+        noticeRecordMapper.updateById(record);
+        log.warn("[RPA重试] 超过最大重试次数，标记永久失败: id={}, bizCode={}, retryCount={}", record.getId(), record.getBizCode(), currentRetryCount);
     }
 
-    long calculateRetryInterval(ZqztRpaBusinessRetryConfigDo config, int retryCount) {
-        int baseInterval = config.getRetryIntervalSeconds() != null ? config.getRetryIntervalSeconds() : DEFAULT_RETRY_INTERVAL_SECONDS;
-        int exponent = Math.min(retryCount - 1, 6);
-        return (long) baseInterval * (1L << exponent);
+    /**
+     * 计算两个时间之间的秒数差
+     */
+    private long getElapsedSeconds(Date startTime, Date endTime) {
+        if (startTime == null) return Long.MAX_VALUE;
+        return (endTime.getTime() - startTime.getTime()) / 1000;
+    }
+
+    /**
+     * 重试配置内部类
+     */
+    private static class RetryConfig {
+        String bizCode;
+        int intervalSeconds;
+        int maxRetries;
     }
 }
