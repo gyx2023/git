@@ -1856,7 +1856,16 @@ public class Constants {
     public static final String UNBOUND_OPPORTUNITY_OFF_SWITCH = "unbound_opportunity_off_switch";
     //拜访时间到期商机关闭开关
     public static final String VISIT_TIME_OFF_SWITCH = "visit_time_off_switch";
+    //无拜访时间到期商机关闭开关
+    public static final String NOT_VISIT_TIME_OFF_SWITCH = "not_visit_time_off_switch";
 
     //经分文件订购 sftp 配置类型
     public static final String JF_COMMON_FTP = "jf_common_ftp";
+
+    //管理中台文件 sftp 配置
+    public static final String PERSONNEL_FILE_FTP_INFO = "personnel_file_ftp_info";
+
+    //短信接口配置
+    public static final String SEND_MSG_INTERFACE = "send_msg_interface";
+
 }

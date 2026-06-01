@@ -81,6 +81,179 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="payInfo" column="pay_info"/>
     </resultMap>
 
+    <!-- 合同导出 Excel VO ResultMap -->
+    <resultMap id="ToppContractExcelVoResult" type="com.crm.system.domain.vo.ToppContractExcelVo">
+        <result property="oppCode" column="opp_code"/>
+        <result property="oppName" column="opp_name"/>
+        <result property="custName" column="cust_name"/>
+        <result property="custNo" column="cust_no"/>
+        <result property="oppType" column="opp_type"/>
+        <result property="oppIncludeType" column="opp_include_type"/>
+        <result property="unicomType" column="unicom_type"/>
+        <result property="unicomType2" column="unicom_type2"/>
+        <result property="oppSource" column="opp_source"/>
+        <result property="custManagerName" column="cust_manager_name"/>
+        <result property="custManagerTel" column="cust_manager_tel"/>
+        <result property="managerArea" column="manager_area"/>
+        <result property="managerOrg" column="oname"/>
+        <result property="contractId" column="cid"/>
+        <result property="contractNo" column="contract_no"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="contractAddType" column="contract_add_type"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="totalMoney" column="total_money"/>
+        <result property="zzsSl" column="zzs_sl"/>
+        <result property="bhZzsMoney" column="bh_zzs_money"/>
+        <result property="incomeType" column="income_type"/>
+        <result property="signDate" column="sign_date"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="contractCateL1Name" column="contract_cate_l1_name"/>
+        <result property="contractCateL2Name" column="contract_cate_l2_name"/>
+        <result property="contractCateL3Name" column="contract_cate_l3_name"/>
+        <result property="wfZt" column="wf_zt"/>
+        <result property="dfName" column="df_name"/>
+        <result property="cbDepartment" column="cb_department"/>
+        <result property="lxDepartment" column="lx_department"/>
+        <result property="contState" column="cont_state"/>
+        <result property="isValid" column="is_valid"/>
+        <result property="contractCategory" column="contract_category"/>
+        <result property="htSmQdyj" column="ht_sm_qdyj"/>
+        <result property="totalRealIncome" column="total_real_income"/>
+        <result property="totalPlanIncome" column="total_plan_income"/>
+        <result property="yearRealIncome" column="year_real_income"/>
+        <result property="yearPlanIncome" column="year_plan_income"/>
+        <result property="lastYearRealIncome" column="last_year_real_income"/>
+        <result property="lastYearPlanIncome" column="last_year_plan_income"/>
+        <result property="lastMonthPlanIncome" column="last_month_plan_income"/>
+        <result property="lastMonthRealIncome" column="last_month_real_income"/>
+        <result property="currentMonthPlanIncome" column="current_month_plan_income"/>
+        <result property="serviceInMoney" column="service_in_money"/>
+        <result property="grossProfitMargin" column="gross_profit_margin"/>
+        <result property="expectIncome" column="expect_income"/>
+        <result property="createTime" column="create_time"/>
+        <result property="auditTime" column="audit_time"/>
+    </resultMap>
 
+    <!-- 查询合同收入数据列表 -->
+    <select id="getContractIncomeList" resultType="com.crm.system.domain.vo.ContractIncomeExcelVo">
+        SELECT
+            c.contract_no AS contractNo,
+            c.ict_plan_income AS ictPlanIncome,
+            c.norm_date AS normDate,
+            ROUND(c.norm_plan_income / 10000, 6) AS normPlanIncome,
+            c.plan_cycle AS planCycle,
+            ROUND(c.expect_income, 6) AS expectIncome,
+            include_type.include_type_value AS includeTypeValue
+        FROM
+            topp_contract c
+            LEFT JOIN topp_income inc ON c.id_ = inc.contract_id AND c.is_valid = '1'
+            LEFT JOIN topp_opportunity oppo ON oppo.id_ = c.project_id
+            LEFT JOIN tcomm_customer customer ON oppo.cust_id = customer.id_
+            LEFT JOIN (
+                SELECT
+                    GROUP_CONCAT(concat(name_, ':', include_type_value)) AS include_type_value,
+                    topp_contract_include_type_money.contract_id
+                FROM
+                    `topp_contract_include_type_money`
+                    INNER JOIN sys_code ON topp_contract_include_type_money.include_type = sys_code.code_
+                GROUP BY
+                    topp_contract_include_type_money.contract_id
+            ) AS include_type ON include_type.contract_id = c.id_,
+            sys_org o,
+            sys_area a1,
+            sys_area a2,
+            sys_user u1
+        WHERE
+            u1.org_id = o.id_
+            AND o.area_id = a1.id_
+            AND a1.parent_ = a2.id_
+            AND oppo.cust_manager_id = u1.id_
+            AND a1.id_ LIKE CONCAT(#{areaId}, '%')
+        GROUP BY
+            c.id_
+        ORDER BY
+            c.audit_time DESC
+    </select>
+
+    <!-- 导出合同统计数据 -->
+    <select id="exportContractList" resultMap="ToppContractExcelVoResult">
+        SELECT
+            oppo.opp_code,
+            oppo.opp_name,
+            oppo.cust_name,
+            oppo.cust_no,
+            oppo.opp_type,
+            oppo.opp_include_type,
+            oppo.unicom_type,
+            oppo.unicom_type2,
+            oppo.opp_source,
+            oppo.cust_manager_name,
+            oppo.cust_manager_tel,
+            CONCAT(a2.name_, '-', a1.name_) AS manager_area,
+            o.name_ AS oname,
+            c.id_ AS cid,
+            c.contract_no,
+            c.contract_name,
+            c.contract_add_type,
+            c.contract_type,
+            c.total_money,
+            c.zzs_sl,
+            c.bh_zzs_money,
+            c.income_type,
+            c.sign_date,
+            c.start_date,
+            c.end_date,
+            c.contract_cate_l1_name,
+            SUBSTRING_INDEX(c.contract_cate_l2_name, '-', -1) AS contract_cate_l2_name,
+            SUBSTRING_INDEX(c.contract_cate_l3_name, '-', -1) AS contract_cate_l3_name,
+            c.wf_zt,
+            c.df_name,
+            c.cb_department,
+            c.lx_department,
+            c.cont_state,
+            c.is_valid,
+            c.contract_category,
+            c.ht_sm_qdyj,
+            -- 聚合计算：收入统计
+            IFNULL(SUM(IF(INSTR(inc.pay_days, #{nowYear}) > 0, inc.real_income_month, 0)), 0) AS year_real_income,
+            IFNULL(SUM(IF(FIND_IN_SET(#{nowYear}, inc.pay_days) > 0, inc.plan_income_month, 0)), 0) AS year_plan_income,
+            IFNULL(SUM(IF(INSTR(inc.pay_days, #{lastYear}) > 0, inc.real_income_month, 0)), 0) AS last_year_real_income,
+            IFNULL(SUM(IF(INSTR(inc.pay_days, #{lastYear}) > 0, inc.plan_income_month, 0)), 0) AS last_year_plan_income,
+            IFNULL(SUM(inc.plan_income_month), 0) AS total_plan_income,
+            IFNULL(SUM(inc.real_income_month), 0) AS total_real_income,
+            IFNULL(IF(inc.pay_days = #{lastYearMonth}, inc.plan_income_month, 0), 0) AS last_month_plan_income,
+            IFNULL(IF(inc.pay_days = #{lastYearMonth}, inc.real_income_month, 0), 0) AS last_month_real_income,
+            IFNULL(IF(inc.pay_days = #{nowYearMonth}, inc.plan_income_month, 0), 0) AS current_month_plan_income,
+            c.service_in_money,
+            c.gross_profit_margin,
+            c.expect_income,
+            c.create_time,
+            c.audit_time
+        FROM
+            topp_contract c
+            -- 左关联：合同收入表
+            LEFT JOIN topp_income inc
+                ON c.id_ = inc.contract_id
+                AND c.is_valid = '1'
+            -- 左关联：商机表
+            LEFT JOIN topp_opportunity oppo
+                ON oppo.id_ = c.project_id
+            -- 左关联：客户表
+            LEFT JOIN tcomm_customer customer
+                ON oppo.cust_id = customer.id_,
+            sys_org o,
+            sys_area a1,
+            sys_area a2,
+            sys_user u1
+        WHERE
+            u1.org_id = o.id_
+            AND o.area_id = a1.id_
+            AND a1.parent_ = a2.id_
+            AND oppo.cust_manager_id = u1.id_
+            AND a1.id_ LIKE CONCAT(#{areaId}, '%')
+        GROUP BY c.id_
+        ORDER BY c.audit_time DESC
+    </select>
 
 </mapper>

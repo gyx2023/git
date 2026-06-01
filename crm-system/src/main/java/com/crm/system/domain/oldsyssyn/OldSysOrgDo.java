@@ -63,4 +63,19 @@ public class OldSysOrgDo {
 
     @TableField("is_valid")
     private Boolean isValid;
+
+    @TableField("org_id_yx")
+    private String orgIdYx;
+
+    @TableField("grid_code")
+    private String gridCode;
+
+    @TableField("org_name_yx")
+    private String orgNameYx;
+
+    @TableField("org_type")
+    private String orgType;
+
+    @TableField("syn_status")
+    private String synStatus;
 }

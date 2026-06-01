@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.CustTCustomerProvinceMapper">
+    <select id="getCustomerProperty" resultType="java.lang.String">
+        select a.major_flag
+        from cust_t_roster_customer_province a
+                 join cust_t_roster_customer_nature_member_province b
+                      on a.roster_customer_id = b.roster_customer_id
+        where b.nature_cust_id = #{natureCustId}
+        order by b.id_ desc limit 1
+    </select>
+
+    <!-- 批量查询客户属性 -->
+    <select id="listCustomerPropertyBatch" resultType="java.util.Map">
+        SELECT
+        t.nature_cust_id AS natureCustId,
+        t.major_flag AS majorFlag
+        FROM (
+        SELECT
+        b.nature_cust_id,
+        a.major_flag,
+        b.id_,
+        ROW_NUMBER() OVER (
+        PARTITION BY b.nature_cust_id
+        ORDER BY b.id_ DESC
+        ) AS rn
+        FROM cust_t_roster_customer_province a
+        INNER JOIN cust_t_roster_customer_nature_member_province b
+        ON a.roster_customer_id = b.roster_customer_id
+        WHERE b.nature_cust_id IN
+        <foreach collection="natureCustIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ) t
+        WHERE t.rn = 1
+    </select>
+
+
+</mapper>
