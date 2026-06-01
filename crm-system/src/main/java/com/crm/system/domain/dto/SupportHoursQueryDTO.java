@@ -1,4 +1,4 @@
-package com.crm.workflow.domain.dto;
+package com.crm.system.domain.dto;
 
 import lombok.Data;
 
