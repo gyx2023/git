@@ -32,7 +32,7 @@ public class repCustContractMillSumMJob extends BaseJob {
     /**
      * 下载的文件名前缀
      */
-    private static final String FTP_DOWNLOAD_NAME = "REP_CUST_CONTRACT_MILL_SUM_M_";
+    private static final String FTP_DOWNLOAD_NAME = "REP_CUST_CONTRACT_BILL_SUM_M_";
 
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
