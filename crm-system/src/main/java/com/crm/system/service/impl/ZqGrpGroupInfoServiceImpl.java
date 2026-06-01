@@ -6,31 +6,33 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.enums.GrpExpandTypeenum;
-import com.crm.common.helper.LoginHelper;
+import com.crm.system.enums.GrpExpandTypeenum;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.Desensitization;
-import com.crm.system.domain.SysArea;
-import com.crm.system.domain.SysCategory;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.sys.SysArea;
+import com.crm.system.domain.dao.sys.SysCategory;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
-import com.crm.system.mapper.SysAreaMapper;
-import com.crm.system.mapper.SysCategoryMapper;
+import com.crm.system.mapper.sys.SysAreaMapper;
+import com.crm.system.mapper.sys.SysCategoryMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
-import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.crm.system.service.*;
+import com.crm.system.service.sys.ISysDeptService;
+import com.crm.system.service.sys.ISysDictDataService;
+import com.crm.system.service.sys.ISysParamService;
+import com.crm.system.service.sys.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -124,7 +126,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
         }
         // 先查询为 ZqGrpGroupInfoVo2
-        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+        Page<ZqGrpGroupInfoVo2> resultPage = baseMapper.selectPageList(pageQuery.build(), lqw);
 
         // 根据 sys_param 表的配置决定是否脱敏
         applyDesensitizationIfNeeded(resultPage.getRecords());
@@ -202,7 +204,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             }
         }
 
-        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectVoPage(pageQuery.build(), lqw, ZqGrpGroupInfoVo2.class);
+        Page<ZqGrpGroupInfoVo2> result = baseMapper.selectPageList(pageQuery.build(), lqw);
 
         // 根据 sys_param 表的配置决定是否脱敏
         applyDesensitizationIfNeeded(result.getRecords());
@@ -630,15 +632,12 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
 
         // 添加时间范围查询条件
         // 处理创建时间范围查询
-        if (StringUtils.isNotBlank(bo.getGrpCreateTimeBegin()) && StringUtils.isNotBlank(bo.getGrpCreateTimeEnd())) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date beginDate = sdf.parse(bo.getGrpCreateTimeBegin());
-                Date endDate = sdf.parse(bo.getGrpCreateTimeEnd());
-                lqw.between(ZqGrpGroupInfo::getGrpCreateTime, beginDate, endDate);
-            } catch (Exception e) {
-                log.warn("集团创建时间参数解析失败: {}", e.getMessage());
-            }
+        if (bo.getCreateTimeStart() != null && bo.getCreateTimeEnd() != null) {
+            lqw.between(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart(), bo.getCreateTimeEnd());
+        } else if (bo.getCreateTimeStart() != null) {
+            lqw.ge(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeStart());
+        } else if (bo.getCreateTimeEnd() != null) {
+            lqw.le(ZqGrpGroupInfo::getCreateTime, bo.getCreateTimeEnd());
         }
 
         // 数据权限处理 - 根据传入的areaCode进行数据权限过滤
@@ -941,7 +940,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public List<ZqGrpGroupInfoVo2> exportPageList(ZqGrpGroupInfoBo bo, Page page, String areaCode) {
         // 构建查询条件
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildExportQueryWrapper(bo, areaCode);
-
 
 
         List<ZqGrpGroupInfoVo2> resultList;

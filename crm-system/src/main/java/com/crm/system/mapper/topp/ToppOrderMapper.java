@@ -1,8 +1,10 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.system.domain.topp.ToppOrder;
+import com.crm.common.core.domain.dto.WorkOrderDTO;
+import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -20,4 +22,22 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
      * @return 支持订单列表
      */
     List<ToppOrder> selectSupportOrders();
+
+    List<WorkOrderDTO> queryWorkOrder(@Param("orderType") String orderType, @Param("yyMMdd") String yyMMdd);
+
+    Integer getToppOrderCount(@Param("orderType") String orderType,
+                              @Param("endTime") String endTime);
+
+    Integer countByOrderTypeAndDate(
+        @Param("orderType") String orderType,
+        @Param("date") String date
+    );
+
+    /**
+     * 查询闭环工单数量
+     */
+    Integer queryClosedOrderCount(
+        @Param("orderType") String orderType,
+        @Param("date") String date
+    );
 }

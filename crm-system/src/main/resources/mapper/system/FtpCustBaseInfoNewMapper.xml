@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.FtpCustBaseInfoNewMapper">
+
+    <resultMap type="com.crm.system.domain.dao.FtpCustBaseInfoNew" id="FtpCustBaseInfoNewResult">
+        <id property="id" column="id_"/>
+        <result property="areaId" column="area_id"/>
+        <result property="areaName" column="area_name"/>
+        <result property="countyId" column="county_id"/>
+        <result property="countyName" column="county_name"/>
+        <result property="custGrpId" column="cust_grp_id"/>
+        <result property="grpCode" column="grp_code"/>
+        <result property="hqCustGrpId" column="hq_cust_grp_id"/>
+        <result property="grpName" column="grp_name"/>
+        <result property="industryType" column="industry_type"/>
+        <result property="industryTypeName" column="industry_type_name"/>
+        <result property="industrySubType" column="industry_sub_type"/>
+        <result property="industrySubTypeName" column="industry_sub_type_name"/>
+        <result property="industryDtlType" column="industry_dtl_type"/>
+        <result property="industryDtlTypeName" column="industry_dtl_type_name"/>
+        <result property="industryDetailSf" column="industry_detail_sf"/>
+        <result property="industryDetailSfName" column="industry_detail_sf_name"/>
+        <result property="grpExpandType" column="grp_expand_type"/>
+        <result property="grpExpandTypeName" column="grp_expand_type_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="longitude" column="longitude"/>
+        <result property="latitude" column="latitude"/>
+        <result property="custGrpLvl" column="cust_grp_lvl"/>
+        <result property="custGrpLvlName" column="cust_grp_lvl_name"/>
+        <result property="grpType" column="grp_type"/>
+        <result property="grpTypeName" column="grp_type_name"/>
+        <result property="contactMan" column="contact_man"/>
+        <result property="grpAddr" column="grp_addr"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="grpStatus" column="grp_status"/>
+        <result property="grpStatusName" column="grp_status_name"/>
+        <result property="grpBusiDeptType" column="grp_busi_dept_type"/>
+        <result property="grpBusiDeptTypeName" column="grp_busi_dept_type_name"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="operatorPhone" column="operator_phone"/>
+        <result property="provListType" column="prov_list_type"/>
+        <result property="provListTypeName" column="prov_list_type_name"/>
+        <result property="listId" column="list_id"/>
+        <result property="listCode" column="list_code"/>
+        <result property="listName" column="list_name"/>
+        <result property="listManagerName" column="list_manager_name"/>
+        <result property="listManagePhone" column="list_manage_phone"/>
+        <result property="listManagerId" column="list_manager_id"/>
+        <result property="servManagerId" column="serv_manager_id"/>
+        <result property="servManagerPhone" column="serv_manager_phone"/>
+        <result property="servManagerName" column="serv_manager_name"/>
+        <result property="assignTime" column="assign_time"/>
+        <result property="teamId" column="team_id"/>
+        <result property="teamName" column="team_name"/>
+        <result property="teamMonitorId" column="team_monitor_id"/>
+        <result property="teamMonitorPhone" column="team_monitor_phone"/>
+        <result property="teamMonitorName" column="team_monitor_name"/>
+        <result property="etlDataCycle" column="etl_data_cycle"/>
+        <result property="expandDept" column="expand_dept"/>
+        <result property="expandDeptName" column="expand_dept_name"/>
+        <result property="custSvcNum" column="cust_svc_num"/>
+        <result property="isImpPrt" column="is_imp_prt"/>
+        <result property="accManagerName" column="acc_manager_name"/>
+        <result property="accManagerPhone" column="acc_manager_phone"/>
+        <result property="netManagerName" column="net_manager_name"/>
+        <result property="netManagerPhone" column="net_manager_phone"/>
+        <result property="prodManagerName" column="prod_manager_name"/>
+        <result property="prodManagerPhone" column="prod_manager_phone"/>
+        <result property="certTypeName" column="cert_type_name"/>
+        <result property="certNum" column="cert_num"/>
+        <result property="taskItemId" column="task_item_id"/>
+        <result property="oppoId" column="oppo_id"/>
+        <result property="custType" column="cust_type"/>
+    </resultMap>
+
+    <select id="selectByCondition1" resultMap="FtpCustBaseInfoNewResult">
+        SELECT * FROM ftp_cust_base_info_new
+        WHERE grp_name = #{grpName} AND area_id = #{areaId}
+          AND county_id = #{countyId} AND grp_code = #{grpCode}
+    </select>
+
+    <select id="selectByCondition2" resultMap="FtpCustBaseInfoNewResult">
+        SELECT * FROM ftp_cust_base_info_new
+        WHERE grp_name = #{grpName} AND area_id = #{areaId}
+          AND county_id = #{countyId} AND cust_type = #{custType}
+        <if test="grpCode != null and grpCode != ''">
+            AND grp_code = #{grpCode}
+        </if>
+        <if test="grpDeptType != null and grpDeptType != ''">
+            AND grp_busi_dept_type = #{grpDeptType}
+        </if>
+    </select>
+</mapper>

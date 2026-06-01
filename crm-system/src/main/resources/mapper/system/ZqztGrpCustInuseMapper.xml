@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqztGrpCustInuseMapper">
-    <resultMap type="com.crm.system.domain.ZqztGrpCustInuse" id="ZqztGrpCustInuseResult">
+    <resultMap type="com.crm.system.domain.dao.ZqztGrpCustInuse" id="ZqztGrpCustInuseResult">
         <result property="inuseId" column="inuse_id"/>
         <result property="contractId" column="contract_id"/>
         <result property="contractName" column="contract_name"/>
@@ -122,7 +122,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{inuseId}
         </foreach>
     </update>
-    <select id="queryZqztGrpCustInuseList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO">
+    <select id="queryZqztGrpCustInuseList" resultType="com.crm.system.domain.dto.ZqztGrpCustInuseRespDTO">
         select
             c.inuse_id,
             a.inuse_contract_id as contract_id,
@@ -185,7 +185,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
         limit #{startIndex}, #{endIndex}
     </select>
-    <select id="queryPageUserList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
+    <select id="queryPageUserList" resultType="com.crm.system.domain.dto.ZqztGrpCustInuseUserListRespDTO">
         select
             a.inuse_id,
             a.subscrbid,
@@ -196,7 +196,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where a.is_valid = '1'
           and a.inuse_id = #{inuseId}
     </select>
-    <select id="queryPageGrpList" resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO">
+    <select id="queryPageGrpList" resultType="com.crm.system.domain.dto.ZqztGrpCustInuseRespDTO">
         select
             grp_code as grp_code_b,
             hq_grp_code as hq_grp_code_b,
@@ -221,7 +221,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select distinct subscrbid from zqzt_grp_cust_inuse_userlist where is_valid = '1'
     </select>
     <select id="queryPageAddUserList"
-            resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
+            resultType="com.crm.system.domain.dto.ZqztGrpCustInuseUserListRespDTO">
         select
             #{inuseId} as INUSE_ID, USER_ID as SUBSCRBID, SVC_NUM, PHYSICAL_CUST_NAME as CUST_NAME
         from IOB_GOV2.CUST_MAINT_INFO
@@ -235,7 +235,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
     <select id="queryPageAddUserData"
-            resultType="com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO">
+            resultType="com.crm.system.domain.dto.ZqztGrpCustInuseUserListRespDTO">
         select
             #{inuseId} as INUSE_ID, USER_ID as SUBSCRBID, SVC_NUM, PHYSICAL_CUST_NAME as CUST_NAME
         from IOB_GOV2.CUST_MAINT_INFO

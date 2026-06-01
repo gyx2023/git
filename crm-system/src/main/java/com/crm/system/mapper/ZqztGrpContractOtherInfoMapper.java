@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.crm.system.domain.ZqztGrpContractOtherInfo;
+import com.crm.system.domain.dao.ZqztGrpContractOtherInfo;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;

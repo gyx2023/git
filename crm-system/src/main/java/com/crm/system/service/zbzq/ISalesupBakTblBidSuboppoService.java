@@ -1,7 +1,7 @@
 package com.crm.system.service.zbzq;
 
 
-import com.crm.common.core.domain.dto.SalesupBakTblBidSuboppoDTO;
+import com.crm.system.domain.dto.SalesupBakTblBidSuboppoDTO;
 
 import java.util.List;
 

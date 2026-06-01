@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.PolicyCenterTaskMapper">
+
+    <resultMap type="com.crm.system.domain.dao.PolicyCenterTask" id="PolicyCenterTaskResult">
+        <id property="id" column="id_"/>
+        <result property="createTime" column="create_time"/>
+        <result property="taskCode" column="task_code"/>
+        <result property="sendTime" column="send_time"/>
+        <result property="taskDeadline" column="task_deadline"/>
+        <result property="taskRemark" column="task_remark"/>
+        <result property="mangerId" column="manger_id"/>
+        <result property="custMangerNo" column="cust_manger_no"/>
+        <result property="custMangerName" column="cust_manger_name"/>
+        <result property="custId" column="cust_id"/>
+        <result property="custName" column="cust_name"/>
+        <result property="custType" column="cust_type"/>
+        <result property="isListCust" column="is_list_cust"/>
+        <result property="custIndustry" column="cust_industry"/>
+        <result property="custIndustryName" column="cust_industry_name"/>
+        <result property="oppoNum" column="oppo_num"/>
+        <result property="developNum" column="develop_num"/>
+        <result property="incomeTarget" column="income_target"/>
+        <result property="oppoId" column="oppo_id"/>
+        <result property="visitNo" column="visit_no"/>
+        <result property="failReason" column="fail_reason"/>
+        <result property="nextVisitTime" column="next_visit_time"/>
+        <result property="visitTime" column="visit_time"/>
+        <result property="visitResult" column="visit_result"/>
+        <result property="taskCreateName" column="task_create_name"/>
+        <result property="policyCreateName" column="policy_create_name"/>
+        <result property="policyName" column="policy_name"/>
+        <result property="policyScene" column="policy_scene"/>
+        <result property="policyDescription" column="policy_description"/>
+        <result property="policyType" column="policy_type"/>
+        <result property="contactsName" column="contacts_name"/>
+        <result property="contactsRole" column="contacts_role"/>
+        <result property="contactsTel" column="contacts_tel"/>
+        <result property="visitSummary" column="visit_summary"/>
+        <result property="visitAddress" column="visit_address"/>
+        <result property="interviewContent" column="interview_content"/>
+        <result property="status" column="status"/>
+        <result property="productIds" column="product_ids"/>
+    </resultMap>
+
+    <select id="selectByTaskCode" resultMap="PolicyCenterTaskResult">
+        SELECT * FROM tbl_policy_center_task WHERE task_code = #{taskCode}
+    </select>
+
+    <select id="selectNotSyncTasks" resultMap="PolicyCenterTaskResult">
+        SELECT * FROM tbl_policy_center_task WHERE status = 0
+    </select>
+
+    <select id="selectVisitOverList" resultMap="PolicyCenterTaskResult">
+        SELECT * FROM tbl_policy_center_task
+        WHERE manger_id = #{mangerId}
+          AND visit_result = #{visitResult}
+          AND status = 1
+        <if test="startDate != null and startDate != ''">
+            AND create_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND create_time &lt;= #{endDate}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectWaitVisitList" resultMap="PolicyCenterTaskResult">
+        SELECT * FROM tbl_policy_center_task
+        WHERE manger_id = #{mangerId}
+          AND visit_result IS NULL
+          AND status = 1
+        <if test="startDate != null and startDate != ''">
+            AND create_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND create_time &lt;= #{endDate}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectMangerVisitNum" resultType="java.lang.Object">
+        SELECT COUNT(CASE WHEN visit_result IS NULL THEN 1 END) as wait,
+               COUNT(CASE WHEN visit_result IS NOT NULL AND visit_result != '3' THEN 1 END) as `over`
+        FROM tbl_policy_center_task
+        WHERE manger_id = #{mangerId} AND status = 1
+    </select>
+
+    <update id="updateVisitResultById">
+        UPDATE tbl_policy_center_task SET visit_result = '3' WHERE id_ = #{id}
+    </update>
+
+</mapper>

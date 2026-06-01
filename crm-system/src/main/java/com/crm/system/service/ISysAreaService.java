@@ -2,6 +2,7 @@ package com.crm.system.service;
 
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
+import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
 
@@ -76,4 +77,8 @@ public interface ISysAreaService {
     List<SysAreaVo> getCountiesByCityCodePrefix(String cityCodePrefix);
 
     Map<Long, String> listAll();
+
+    List<SysArea> queryLikeList(String city);
+
+    List<SysArea> findEmpAreaIdList(Integer empAreaId);
 }

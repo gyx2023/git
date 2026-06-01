@@ -1,7 +1,6 @@
 package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppBidSuboppoBo;
-import com.crm.system.domain.topp.ToppBidSuboppoDo;
+import com.crm.system.domain.dao.topp.ToppBidSuboppoDo;
 import com.crm.system.domain.vo.topp.ToppBidSuboppoVo;
 import com.crm.system.mapper.topp.ToppBidSuboppoMapper;
 import com.crm.system.service.topp.IToppBidSuboppoService;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 商机标讯信息Service业务层处理

@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqztOperRecordVo;
 import com.crm.system.domain.bo.ZqztOperRecordBo;
 import com.crm.common.core.page.TableDataInfo;

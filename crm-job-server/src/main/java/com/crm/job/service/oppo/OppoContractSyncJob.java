@@ -1,16 +1,14 @@
 package com.crm.job.service.oppo;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.crm.common.enums.OppoConversionStateEnum;
+import com.crm.system.enums.OppoConversionStateEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppContractBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.bo.zbzq.SalesupCollOppoPoolsBo;
 import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
-import com.crm.system.domain.vo.zbzq.SalesupCollOppoPoolsVo;
 import com.crm.system.domain.vo.zbzq.SalesupCollOppoSignVo;
 import com.crm.system.service.topp.IToppContractEformService;
 import com.crm.system.service.topp.IToppContractService;

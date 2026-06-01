@@ -1,6 +1,6 @@
 package com.crm.system.mapper;
 
-import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
+import com.crm.system.domain.dao.ZqztGrpContractOtherInfoLog;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoLogVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 /**

@@ -7,16 +7,16 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.SysUsers;
+import com.crm.system.domain.dao.PersonnelInfo;
+import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.ISysUsersService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.crm.system.mapper.SysUserMapper;
-import com.crm.system.service.ISysUserService;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -146,5 +146,53 @@ public class SysUsersServiceImpl implements ISysUsersService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    /**
+     * 查询手机号对应的用户
+     */
+    @Override
+    public List<SysUsers> findList(PersonnelInfo personnelInfo) {
+        if (personnelInfo == null || personnelInfo.getMobileTel() == null) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<SysUsers> wrapper = new LambdaQueryWrapper<SysUsers>()
+            .eq(SysUsers::getName, personnelInfo.getMobileTel())
+            .orderByDesc(SysUsers::getCreateTime)
+            .last("LIMIT 1");
+
+        return baseMapper.selectList(wrapper);
+    }
+
+    /**
+     * 查询OA对应的用户
+     */
+    @Override
+    public List<SysUsers> findOaList(PersonnelInfo personnelInfo) {
+        if (personnelInfo == null || personnelInfo.getUserId() == null) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<SysUsers> wrapper = new LambdaQueryWrapper<SysUsers>()
+            .eq(SysUsers::getOaAccount, personnelInfo.getUserId());
+
+        return baseMapper.selectList(wrapper);
+    }
+
+    /**
+     * 修改/保存用户
+     */
+    @Override
+    public void saveOrUpdate(SysUsers sysUsers) {
+        baseMapper.insertOrUpdate(sysUsers);
+    }
+
+    /**
+     * 新增用户
+     */
+    @Override
+    public void insertSysUser(SysUsers user) {
+        baseMapper.insert(user);
     }
 }

@@ -1,9 +1,16 @@
 package com.crm.system.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Constants;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.annotation.DataColumn;
+import com.crm.common.annotation.DataPermission;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
+import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -47,4 +54,9 @@ public interface ZqGrpGroupInfoMapper extends BaseMapperPlus<ZqGrpGroupInfoMappe
      * @return 待更新列表
      */
     List<ZqGrpGroupInfo> getUpdQuery(String createDate);
+
+    @DataPermission({
+        @DataColumn(key = "custManagerOauser", value = "CUST_MANAGER_OAUSER")
+    })
+    Page<ZqGrpGroupInfoVo2> selectPageList(@Param("page") Page<ZqGrpGroupInfo> page, @Param(Constants.WRAPPER) Wrapper<ZqGrpGroupInfo> queryWrapper);
 }

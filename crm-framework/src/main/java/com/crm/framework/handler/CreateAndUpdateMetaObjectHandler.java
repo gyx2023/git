@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.crm.common.core.domain.BaseEntity;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.exception.ServiceException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;

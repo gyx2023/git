@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.ZqztGrpContractOtherInfo;
+import com.crm.system.domain.dao.ZqztGrpContractOtherInfo;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -8,7 +8,6 @@ import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 集团合同扩展信息Service接口

@@ -4,7 +4,7 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.annotation.Sensitive;
-import com.crm.common.convert.ExcelDictConvert;
+import com.crm.common.utils.convert.ExcelDictConvert;
 import com.crm.common.enums.SensitiveStrategy;
 import lombok.Data;
 
@@ -143,11 +143,11 @@ public class ZqGrpGroupInfoVo2 {
     @ExcelDictFormat(dictType = "sys_province_newold_type")
     private String provinceNewoldType;
 
-    /**
-     * 服务经理
-     */
-    @ExcelProperty(value = "服务经理")
-    private String managerId;
+//    /**
+//     * 服务经理
+//     */
+//    @ExcelProperty(value = "服务经理")
+//    private String managerId;
 
     /**
      * 资料创建人

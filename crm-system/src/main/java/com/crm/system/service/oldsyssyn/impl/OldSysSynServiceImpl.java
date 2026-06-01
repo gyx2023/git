@@ -3,18 +3,20 @@ package com.crm.system.service.oldsyssyn.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
-import com.crm.common.constant.CacheConstants;
 import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.exception.ServiceException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.TokenUtil;
-import com.crm.common.utils.redis.RedisUtils;
-import com.crm.system.service.ISysDeptService;
-import com.crm.system.service.ISysUserService;
+import com.crm.system.domain.dao.oldsyssyn.OldSysUserDo;
+import com.crm.system.mapper.sys.SysUserMapper;
+import com.crm.system.mapper.oldsyssyn.OldSysUserMapper;
+import com.crm.system.service.sys.ISysDeptService;
+import com.crm.system.service.sys.ISysUserService;
 import com.crm.system.service.SysPermissionService;
+import com.crm.system.service.oldsyssyn.OldSysDataScopeService;
 import com.crm.system.service.oldsyssyn.OldSysPermissionService;
 import com.crm.system.service.oldsyssyn.OldSysSynService;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +46,16 @@ public class OldSysSynServiceImpl implements OldSysSynService {
     private OldSysPermissionService oldSysPermissionService;
 
     @Resource
+    private OldSysDataScopeService oldSysDataScopeService;
+
+    @Resource
     private ISysDeptService iSysDeptService;
+
+    @Resource
+    private OldSysUserMapper oldSysUserMapper;
+
+    @Resource
+    private SysUserMapper sysUserMapper;
 
 
     @Override
@@ -77,6 +88,23 @@ public class OldSysSynServiceImpl implements OldSysSynService {
 
             //5.获取用户角色，权限
             oldSysPermissionService.synMenuPermission(Long.parseLong(userId));
+
+            //6.同步用户数据权限（从老系统的sys_user_position同步到新系统的zqzt_sys_user_role）
+            oldSysDataScopeService.syncUserDataScope(Long.parseLong(userId));
+
+            //更新组织ID
+            try {
+                OldSysUserDo oldUser = oldSysUserMapper.selectById(Integer.parseInt(userId));
+                if (oldUser != null && oldUser.getOrgId() != null) {
+                    SysUser sysUser = new SysUser();
+                    sysUser.setUserId(Long.parseLong(userId));
+                    sysUser.setDeptId(Long.valueOf(oldUser.getOrgId()));
+                    sysUserMapper.updateById(sysUser);
+                    log.info("用户ID: {} 的组织ID已更新为: {}", userId, oldUser.getOrgId());
+                }
+            } catch (Exception e) {
+                log.error("更新用户组织ID失败", e);
+            }
 
             // 3. 根据用户ID查询新系统用户
             SysUser user = userService.selectUserById(Long.parseLong(userId));

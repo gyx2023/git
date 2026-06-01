@@ -1,6 +1,6 @@
 package com.crm.service.servicehall;
 
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
 

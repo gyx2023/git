@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.CustTRosterCustomerProvinceMapper">
+
+    <resultMap type="com.crm.system.domain.dao.CustTRosterCustomerProvinceDo" id="CustTRosterCustomerProvinceDoResult">
+        <result property="id" column="id_"/>
+        <result property="majorFlag" column="major_flag"/>
+        <result property="rosterCustomerId" column="roster_customer_id"/>
+    </resultMap>
+
+    <!-- 查询名单客户省份关系列表 -->
+    <select id="getCustTCustomerList" resultMap="CustTRosterCustomerProvinceDoResult">
+        SELECT a.roster_customer_id, a.major_flag
+        FROM cust_t_roster_customer_province a
+        WHERE a.state = 1
+          AND a.province_code = 36
+    </select>
+
+    <!-- 清空主库表数据 -->
+    <update id="truncateTable">
+        TRUNCATE TABLE cust_t_roster_customer_province
+    </update>
+
+</mapper>

@@ -4,24 +4,26 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.crm.common.core.domain.BaseEntity;
+import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
+import com.crm.common.enums.DataScopeType;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.SysOss;
+import com.crm.system.domain.dao.sys.SysOss;
 import com.crm.system.domain.bo.file.FileAsyncTaskBo;
-import com.crm.system.domain.file.FileAsyncTaskDo;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.file.FileAsyncTaskVo;
-import com.crm.system.mapper.SysOssMapper;
+import com.crm.system.mapper.sys.SysOssMapper;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
-import com.crm.system.service.ISysOssService;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysOssService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.file.IFileAsyncTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -334,6 +336,13 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             } else {
                 jsonObject.set("isDesensitize", "false");
             }
+
+            // 判断当前是否是客户经理数据权限
+            if (!isAdmin) {
+                String userOaCode = getCustManagerOaUser(loginUser);
+                jsonObject.set("custManagerOauser", userOaCode);
+            }
+
             // 将修改后的参数转回字符串
             String modifiedRequestParams = jsonObject.toString();
 
@@ -367,5 +376,38 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             log.error("导出任务申请异常", e);
             throw new RuntimeException("导出任务申请异常: " + e.getMessage());
         }
+    }
+
+    /**
+     * 判断当前用户是否具有客户经理数据权限，并获取用户OA账号
+     *
+     * @param loginUser 当前登录用户
+     * @return 用户OA账号，如果不具有客户经理数据权限则返回null
+     */
+    private String getCustManagerOaUser(LoginUser loginUser) {
+        // 获取用户的角色列表
+        if (loginUser.getRoles() == null || loginUser.getRoles().isEmpty()) {
+            log.debug("用户 {} 没有角色信息", loginUser.getUsername());
+            return null;
+        }
+
+        // 遍历用户的所有角色，检查是否有客户经理OA账号数据权限
+        boolean hasCustManagerOaUserPermission = false;
+        for (RoleDTO role : loginUser.getRoles()) {
+            // 使用 DataScopeType.findCode() 方法解析数据范围代码
+            DataScopeType dataScopeType = DataScopeType.findCode(role.getDataScope());
+
+            // 判断解析后的类型是否等于 DataScopeType.CUST_MANAGER_OAUSER
+            if (dataScopeType == DataScopeType.CUST_MANAGER_OAUSER) {
+                hasCustManagerOaUserPermission = true;
+                break;
+            }
+        }
+
+        // 如果具有客户经理OA账号数据权限，返回当前用户的username作为OA账号
+        if (hasCustManagerOaUserPermission && StringUtils.isNotBlank(loginUser.getUsername())) {
+            return loginUser.getUsername();
+        }
+        return null;
     }
 }

@@ -1,7 +1,7 @@
 package com.crm.system.domain.vo.topp;
 
 import com.crm.common.annotation.ExcelDictFormat;
-import com.crm.common.convert.ExcelDictConvert;
+import com.crm.common.utils.convert.ExcelDictConvert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.alibaba.excel.annotation.ExcelProperty;
