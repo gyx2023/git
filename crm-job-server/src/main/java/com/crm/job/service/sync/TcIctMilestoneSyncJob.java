@@ -112,7 +112,7 @@ public class TcIctMilestoneSyncJob {
                     while ((currentLine = bufferedReader.readLine()) != null) {
                         count++;
                         TcIctMilestone data = new TcIctMilestone();
-                        FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 3);
+                        FieldAnnotaionUtil.setFiledValFromValuesByIndex(data, currentLine.split("\\x1b", -1));
 
                         //设置预计回款时间
                         if(data.getCashLagMonths() != null && data.getCashLagMonths().intValue() != 0){
