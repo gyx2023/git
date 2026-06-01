@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.FtpBroadbandMarketCustMapper">
+
+    <resultMap type="com.crm.system.domain.FtpBroadbandMarketCust" id="FtpBroadbandMarketCustResult">
+        <result property="id" column="ID_"/>
+        <result property="statCycle" column="STAT_CYCLE"/>
+        <result property="custMarketingId" column="CUST_MARKETING_ID"/>
+        <result property="areaName" column="AREA_NAME"/>
+        <result property="countyName" column="COUNTY_NAME"/>
+        <result property="custGrpId" column="CUST_GRP_ID"/>
+        <result property="grpCode" column="GRP_CODE"/>
+        <result property="grpName" column="GRP_NAME"/>
+        <result property="servManagerId" column="SERV_MANAGER_ID"/>
+        <result property="servManagerName" column="SERV_MANAGER_NAME"/>
+        <result property="grpExpandType" column="GRP_EXPAND_TYPE"/>
+        <result property="grpBusiDeptType" column="GRP_BUSI_DEPT_TYPE"/>
+        <result property="marketingType" column="MARKETING_TYPE"/>
+        <result property="marketingName" column="MARKETING_NAME"/>
+        <result property="userScale" column="USER_SCALE"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="orderId" column="ORDER_ID"/>
+    </resultMap>
+
+</mapper>
