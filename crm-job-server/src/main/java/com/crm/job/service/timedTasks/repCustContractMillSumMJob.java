@@ -54,7 +54,7 @@ public class repCustContractMillSumMJob extends BaseJob {
             // 计算上个月的年月
             Calendar cal = Calendar.getInstance();
             cal.setTime(new Date());
-            cal.add(Calendar.MONTH, -1);
+            cal.add(Calendar.MONTH, -2);
             String year = String.valueOf(cal.get(Calendar.YEAR));
             int month = cal.get(Calendar.MONTH) + 1;
             String months;
