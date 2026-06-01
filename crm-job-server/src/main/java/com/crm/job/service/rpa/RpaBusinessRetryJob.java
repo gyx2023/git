@@ -173,9 +173,10 @@ public class RpaBusinessRetryJob {
 
         strategy.process(record);
 
-        // 策略执行成功：更新状态码为 '0'，重置时间窗口
+        // 策略执行成功：更新状态码为 '0'，清除之前失败原因
         record.setUpdateTime(now);
         record.setDealResultCode(STATUS_SUCCESS);
+        record.setFailReason(null);
         int newRetryCount = currentRetryCount + 1;
         record.setRetryCount(newRetryCount);
         noticeRecordMapper.updateById(record);
