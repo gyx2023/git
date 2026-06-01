@@ -5,14 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.service.script.RpaMappingScriptEngine;
 import com.crm.service.script.RpaScriptExecutionContext;
-import com.crm.system.domain.param.SysParamDo;
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
-import com.crm.system.domain.rpa.ZqztRpaScriptDefDo;
+import com.crm.system.domain.dao.SysParamDo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaScriptDefDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.rpa.ZqztRpaScriptDefMapper;
 import com.crm.service.servicehall.NengKaiService;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -38,19 +41,22 @@ public class RpaFormMappingEngine {
     private static final String SCRIPT_STAGE_POST_ALL = "POST_ALL";
 
     @Resource
-    protected NengKaiService nengKaiService;
+    private NengKaiService nengKaiService;
 
     @Resource
-    protected SysParamMapper sysParamMapper;
+    private SysParamMapper sysParamMapper;
 
     @Resource
-    protected ZqztRpaScriptDefMapper zqztRpaScriptDefMapper;
+    private ZqztRpaScriptDefMapper zqztRpaScriptDefMapper;
 
     @Resource
     public RpaMappingScriptEngine rpaMappingScriptEngine;
 
     @Resource
-    protected RpaFormMappingCacheService rpaFormMappingCacheService;
+    private RpaFormMappingCacheService rpaFormMappingCacheService;
+
+    @Resource
+    private ZqztJtNoticeRecordMapper zqztJtNoticeRecordMapper;
 
     // ── 便捷方法 ────────────────────────────────────────────────────────
 
@@ -189,6 +195,9 @@ public class RpaFormMappingEngine {
         // 2. 解析原始消息 & 加载表单映射
         Map<String, Object> messageMap = parseRawMessage(body);
         List<ZqztRpaFormMappingDo> allMappings = loadFormMappings(bizCode);
+        if(CollectionUtils.isEmpty(allMappings)){
+            log.info("RPA映射表查询为空，bizCode={}", bizCode);
+        }
 
         // 3. 普通表单映射 → 脚本执行 → 组件表单映射 → 脚本执行
         processAndCallback(recordDo, allMappings, messageMap);

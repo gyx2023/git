@@ -3,7 +3,6 @@ package com.crm.service.servicehall.impl;
 import cn.hutool.json.JSONUtil;
 import com.crm.dto.BusinessMessageDTO;
 import com.crm.dto.Response;
-import com.crm.service.mq.ygcf.RabbitMQProducerService;
 import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
@@ -33,12 +32,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Slf4j
 public class NengKaiServiceImpl implements NengKaiService {
-
-    @Resource
-    private ZqztJtNoticeRecordMapper zqztJtNoticeRecordMapper;
-
-    @Resource
-    private RabbitMQProducerService rabbitMQProducerService;
 
     @Resource
     private RestTemplate restTemplate;

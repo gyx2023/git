@@ -1,7 +1,7 @@
 package com.crm.service.mq.ygcf.strategy;
 
 import com.crm.service.mq.ygcf.RpaFormMappingEngine;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

@@ -1,4 +1,4 @@
-package com.crm.common.core.domain.dto;
+package com.crm.system.domain.bo.cust;
 
 import lombok.Data;
 

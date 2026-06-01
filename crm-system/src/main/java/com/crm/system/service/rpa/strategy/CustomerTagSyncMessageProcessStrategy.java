@@ -5,12 +5,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.service.mq.ygcf.RpaFormMappingEngine;
 import com.crm.service.script.RpaScriptExecutionContext;
-import com.crm.system.domain.ZqztRpaBusinessTaskRetryDo;
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
-import com.crm.system.domain.rpa.ZqztRpaScriptDefDo;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
-import com.crm.system.mapper.ZqztRpaBusinessTaskRetryMapper;
+import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaScriptDefDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -44,11 +44,9 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
     @Resource
     private RestTemplate restTemplate;
 
-    @Resource
-    private ZqztRpaBusinessTaskRetryMapper zqztRpaBusinessTaskRetryMapper;
 
     @Resource
-    private RabbitTemplate rabbitTemplate;
+    private ZqztJtNoticeRecordMapper zqztJtNoticeRecordMapper;
 
     @Value("${customer.admin.url:http://localhost:8080/system/customerTag/sync}")
     private String customerAdminUrl;
@@ -75,6 +73,10 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
         // 2. 解析原始消息 & 加载表单映射
         Map<String, Object> rawMessage = engine.parseRawMessage(body);
         List<ZqztRpaFormMappingDo> allMappings = engine.loadFormMappings(bizCode);
+        if(CollectionUtils.isEmpty(allMappings)){
+            log.info("RPA映射表查询为空,bizCode={}", bizCode);
+            throw new Exception("RPA映射表查询为空");
+        }
         Map<String, ZqztRpaScriptDefDo> scriptDefMap = engine.loadScriptDefMap(allMappings);
 
         // 3. 普通表单映射到 syncData
@@ -324,31 +326,9 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
             }
 
             log.warn("[客户标签同步] admin返回失败: bizCode={}, response={}", bizCode, response.getBody());
-            addToRetryQueue(bizCode, syncDataJson, "admin返回非成功状态", noticeRecordId);
         } catch (Exception e) {
             log.error("[客户标签同步] admin调用异常: bizCode={}, error={}", bizCode, e.getMessage(), e);
-            addToRetryQueue(bizCode, syncDataJson, e.getMessage(), noticeRecordId);
         }
         return false;
-    }
-
-    private void addToRetryQueue(String bizCode, String syncDataJson, String lastError, long noticeRecordId) {
-        ZqztRpaBusinessTaskRetryDo task = new ZqztRpaBusinessTaskRetryDo();
-        task.setRetryId(UUID.randomUUID().toString().replace("-", "").substring(0, 16));
-        task.setBizCode(bizCode);
-        task.setMessageBody(syncDataJson);
-        task.setTargetUrl(customerAdminUrl);
-        task.setHttpMethod("POST");
-        task.setContentType("application/json");
-        task.setHeaders(null);
-        task.setNoticeRecordId(noticeRecordId);
-        task.setStatus(0);
-        task.setRetryCount(0);
-        task.setLastError(lastError);
-        task.setCreateTime(new Date());
-        task.setUpdateTime(new Date());
-        task.setNextRetryTime(new Date());
-        zqztRpaBusinessTaskRetryMapper.insert(task);
-        log.info("[客户标签同步] 已加入重试队列: retryId={}, bizCode={}, noticeId={}", task.getRetryId(), bizCode, noticeRecordId);
     }
 }

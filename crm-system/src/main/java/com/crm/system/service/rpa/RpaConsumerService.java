@@ -1,5 +1,6 @@
 package com.crm.service.mq.ygcf;
 
+import cn.hutool.json.JSONUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.dto.BusinessMessageDTO;
 import com.crm.dto.BusinessResponseDTO;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.Date;
 
 @Slf4j
 @Service
@@ -30,20 +32,21 @@ public class RpaConsumerService {
 
         BusinessResponseDTO response = new BusinessResponseDTO();
 
-        try {
-            // 获取信息
-            String messageBody = businessMessage.getMessageBody();
-            log.info("接收到消息ID：{}", businessMessage.getMessageId());
-            log.info("接收到流水线编号：{}", businessMessage.getLineCode());
-            log.info("接收到业务类型：{}", businessMessage.getBizType());
-            log.info("接收到业务数据：{}", messageBody);
 
+        // 获取信息
+        String messageBody = businessMessage.getMessageBody();
+        log.info("接收到消息ID：{}", businessMessage.getMessageId());
+        log.info("接收到流水线编号：{}", businessMessage.getLineCode());
+        log.info("接收到业务类型：{}", businessMessage.getBizType());
+        log.info("接收到业务数据：{}", messageBody);
+        try {
             ZqztJtNoticeRecordDo jtNoticeRecordDo = consumerService.processMessage(messageBody);
             String failReason = consumerService.extractFailReason(jtNoticeRecordDo.getResBody());
             ZqztJtNoticeRecordDo noticeRecordDo = new ZqztJtNoticeRecordDo();
             noticeRecordDo.setId(jtNoticeRecordDo.getId());
             noticeRecordDo.setResBody(jtNoticeRecordDo.getResBody());
             noticeRecordDo.setFailReason(StringUtils.isNotEmpty(failReason) ? failReason : null);
+            noticeRecordDo.setUpdateTime(new Date());
             zqztJtNoticeRecordMapper.updateById(noticeRecordDo);
 
             log.info("更新成功");
@@ -52,6 +55,12 @@ public class RpaConsumerService {
 
         } catch (Exception e) {
             log.error("处理消息时发生错误：{}", e.getMessage(),e);
+            ZqztJtNoticeRecordDo jtNoticeRecordDo = JSONUtil.toBean(messageBody, ZqztJtNoticeRecordDo.class);
+            ZqztJtNoticeRecordDo noticeRecordDo = new ZqztJtNoticeRecordDo();
+            noticeRecordDo.setId(jtNoticeRecordDo.getId());
+            noticeRecordDo.setDealResultCode("1");
+            noticeRecordDo.setUpdateTime(new Date());
+            zqztJtNoticeRecordMapper.updateById(noticeRecordDo);
             response.setStatus("failed");
             response.setMessage(e.getMessage());
         }

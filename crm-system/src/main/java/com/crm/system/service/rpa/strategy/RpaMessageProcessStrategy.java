@@ -1,6 +1,7 @@
 package com.crm.service.mq.ygcf.strategy;
 
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 
 import java.util.Collections;
 import java.util.List;
