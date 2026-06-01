@@ -6,7 +6,7 @@ import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.file.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserExportVo;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

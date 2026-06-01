@@ -7,7 +7,7 @@ import com.crm.common.core.domain.R;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.system.domain.vo.SysCodeVo;
-import com.crm.system.service.ISysCodeService;
+import com.crm.system.service.sys.ISysCodeService;
 import com.crm.system.domain.dto.SupportHoursQueryDTO;
 import com.crm.system.domain.vo.SupportHoursVO;
 import com.crm.system.service.ISupportHoursService;

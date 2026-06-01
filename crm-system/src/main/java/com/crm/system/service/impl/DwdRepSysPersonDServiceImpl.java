@@ -21,6 +21,8 @@ import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
+import com.crm.system.service.sys.impl.SysDeptServiceImpl;
+import com.crm.system.service.sys.impl.SysUserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,9 +1,9 @@
 package com.crm.system.runner;
 
 import com.crm.common.config.CrmConfig;
-import com.crm.system.service.ISysConfigService;
-import com.crm.system.service.ISysDictTypeService;
-import com.crm.system.service.ISysOssConfigService;
+import com.crm.system.service.sys.ISysConfigService;
+import com.crm.system.service.sys.ISysDictTypeService;
+import com.crm.system.service.sys.ISysOssConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

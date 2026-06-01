@@ -6,7 +6,7 @@ import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.GrpBusiDeptImportVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateResultVo;
 import com.crm.system.domain.vo.GrpBusiDeptTemplateVo;
-import com.crm.system.service.ISysDictTypeService;
+import com.crm.system.service.sys.ISysDictTypeService;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

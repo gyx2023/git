@@ -4,7 +4,7 @@ import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.system.domain.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.*;
-import com.crm.system.service.ISysDictTypeService;
+import com.crm.system.service.sys.ISysDictTypeService;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

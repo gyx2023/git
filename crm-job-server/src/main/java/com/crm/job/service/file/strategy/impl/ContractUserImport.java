@@ -9,7 +9,7 @@ import com.crm.system.domain.vo.ContractUserTemplateResultVo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.listener.client.ContractUserImportListener;
 import com.crm.system.mapper.SysOssMapper;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

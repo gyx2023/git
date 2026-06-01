@@ -13,7 +13,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.mapper.SysDeptMapper;
 import com.crm.system.mapper.topp.ToppBidNewScoreMapper;
-import com.crm.system.service.ISysDeptService;
+import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.statistics.BiddingListService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

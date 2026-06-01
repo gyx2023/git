@@ -22,8 +22,8 @@ import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.file.FileAsyncTaskVo;
 import com.crm.system.mapper.SysOssMapper;
 import com.crm.system.mapper.file.FileAsyncTaskMapper;
-import com.crm.system.service.ISysOssService;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysOssService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.file.IFileAsyncTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
-import java.util.ArrayList;
 import javax.servlet.http.HttpServletResponse;
 
 /**

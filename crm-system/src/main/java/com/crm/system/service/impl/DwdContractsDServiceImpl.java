@@ -20,7 +20,7 @@ import com.crm.system.domain.vo.ContractEformRespVo;
 import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.mapper.DwdContractsDMapper;
 import com.crm.system.service.IDwdContractsDService;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.utils.HaoKaoSignUtil;
 import com.crm.system.utils.SSLClient;
 import lombok.RequiredArgsConstructor;

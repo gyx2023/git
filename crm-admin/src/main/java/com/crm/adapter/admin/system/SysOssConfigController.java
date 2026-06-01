@@ -13,7 +13,7 @@ import com.crm.common.core.validate.QueryGroup;
 import com.crm.common.enums.BusinessType;
 import com.crm.system.domain.bo.SysOssConfigBo;
 import com.crm.system.domain.vo.SysOssConfigVo;
-import com.crm.system.service.ISysOssConfigService;
+import com.crm.system.service.sys.ISysOssConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

@@ -7,7 +7,7 @@ import com.crm.job.utils.HttpClientUtil;
 import com.crm.common.utils.signutil.SignUtil;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.domain.vo.send.ConOpenSend;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

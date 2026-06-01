@@ -10,7 +10,7 @@ import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserImportVo;
 import com.crm.system.listener.SysUserExImportListener;
 import com.crm.system.mapper.SysOssMapper;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Component;

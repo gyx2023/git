@@ -5,7 +5,7 @@ import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.service.SensitiveService;
 import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.param.SysParamDo;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;

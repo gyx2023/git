@@ -19,6 +19,7 @@ import com.crm.system.mapper.SysLogYxMapper;
 import com.crm.system.mapper.SysUserOperateLogMapper;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.*;
+import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;

@@ -14,7 +14,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.mapper.SysDeptMapper;
 import com.crm.system.mapper.topp.ToppBidNewMapper;
-import com.crm.system.service.ISysDeptService;
+import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.statistics.StatisticsContractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

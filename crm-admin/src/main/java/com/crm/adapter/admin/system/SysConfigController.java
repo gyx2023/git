@@ -9,7 +9,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.SysConfig;
-import com.crm.system.service.ISysConfigService;
+import com.crm.system.service.sys.ISysConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

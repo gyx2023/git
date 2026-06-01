@@ -5,7 +5,7 @@ import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.TcIctMilestone;
 import com.crm.system.mapper.TcIctMilestoneMapper;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.TcIctMilestoneService;
 import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;

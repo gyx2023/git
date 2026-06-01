@@ -15,8 +15,6 @@ import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.ISysUsersService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.crm.system.mapper.SysUserMapper;
-import com.crm.system.service.ISysUserService;
 
 import java.util.Collections;
 import java.util.List;

@@ -6,7 +6,7 @@ import com.crm.common.utils.BeanCopyUtils;
 import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
 import com.crm.system.domain.identify.IdentifyScoreDo;
 import com.crm.system.domain.vo.identify.IdentifyScoreCustomerVo;
-import com.crm.system.service.ISysUserService;
+import com.crm.system.service.sys.ISysUserService;
 import com.crm.system.service.identify.IIdentifyScoreCustomerService;
 import com.crm.system.service.identify.IIdentifyScoreService;
 import com.crm.system.service.identify.impl.ScoreApiService;
