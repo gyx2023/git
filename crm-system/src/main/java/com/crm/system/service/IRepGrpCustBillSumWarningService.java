@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.RepGrpCustBillSumWarning;
+import com.crm.system.domain.dao.RepGrpCustBillSumWarning;
 
 import java.util.List;
 

@@ -3,7 +3,7 @@ package com.crm.job.service.timedTasks;
 import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.job.base.BaseJob;
-import com.crm.system.domain.RepCustContractMillSumM;
+import com.crm.system.domain.dao.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

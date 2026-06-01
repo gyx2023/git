@@ -4,7 +4,7 @@ import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.base.BaseJob;
-import com.crm.system.domain.RepGrpCustBillSumWarning;
+import com.crm.system.domain.dao.RepGrpCustBillSumWarning;
 import com.crm.system.service.IRepGrpCustBillSumWarningService;
 import com.crm.system.utils.Constants;
 import com.jcraft.jsch.SftpException;
