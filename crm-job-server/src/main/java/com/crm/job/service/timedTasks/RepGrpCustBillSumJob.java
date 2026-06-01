@@ -53,7 +53,7 @@ public class RepGrpCustBillSumJob extends BaseJob {
             String yyyyMM;
             Calendar calendar = Calendar.getInstance();
             // 获取上一个月
-            calendar.add(Calendar.MONTH, -2);
+            calendar.add(Calendar.MONTH, -1);
             yyyyMM = new SimpleDateFormat(Constants.YEAR_MONTH_PATTERN).format(calendar.getTime());
 
             // 支持通过XXL-JOB参数传入账期
