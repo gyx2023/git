@@ -3,7 +3,7 @@ package com.crm.job.service.timedTasks;
 import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.job.base.BaseJob;
-import com.crm.system.domain.RepCustContractMillSumM;
+import com.crm.system.domain.dao.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -16,7 +16,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 政企运营平台合同收入报表定时任务
@@ -29,7 +32,7 @@ public class repCustContractMillSumMJob extends BaseJob {
     /**
      * 下载的文件名前缀
      */
-    private static final String FTP_DOWNLOAD_NAME = "rep_cust_contract_mill_sum_m";
+    private static final String FTP_DOWNLOAD_NAME = "REP_CUST_CONTRACT_MILL_SUM_M_";
 
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
@@ -94,7 +97,7 @@ public class repCustContractMillSumMJob extends BaseJob {
             ftpUtil.login();
             String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
-            String ftDirectory1 = ftDirectory + "/" + yyyyMM;
+            String ftDirectory1 = ftDirectory + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
             log.info("合同收入报表需求接口ftp开始下载文件:" + ftDirectory1 + File.separator + saveFile);
             XxlJobHelper.log("FTP目录：{}，本地文件：{}", ftDirectory1, localFile);

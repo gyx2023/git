@@ -1,7 +1,7 @@
 package com.crm.system.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.crm.system.domain.DwdRepGwPstD;
+import com.crm.system.domain.dao.DwdRepGwPstD;
 
 import java.util.List;
 import java.util.Map;

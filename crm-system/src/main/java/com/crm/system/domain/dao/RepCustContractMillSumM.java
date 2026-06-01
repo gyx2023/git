@@ -1,4 +1,4 @@
-package com.crm.system.domain;
+package com.crm.system.domain.dao;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

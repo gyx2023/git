@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.RepGrpCustBillSumWarningMapper">
 
-    <resultMap type="com.crm.system.domain.RepGrpCustBillSumWarning" id="RepGrpCustBillSumWarningResult">
+    <resultMap type="com.crm.system.domain.dao.RepGrpCustBillSumWarning" id="RepGrpCustBillSumWarningResult">
         <id property="id" column="id_"/>
         <result property="custGrpId" column="CUST_GRP_ID"/>
         <result property="grpCode" column="GRP_CODE"/>

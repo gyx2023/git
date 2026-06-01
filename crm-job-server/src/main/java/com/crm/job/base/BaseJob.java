@@ -17,12 +17,12 @@ public abstract class BaseJob {
     @Resource
     protected ISysParamService sysParamService;
 
-    protected static String ftpUsername;
-    protected static String ftpPassword;
-    protected static String ftpHost;
-    protected static String ftpPort;
-    protected static String ftDirectory;
-    protected static String localPath;
+    protected  String ftpUsername;
+    protected  String ftpPassword;
+    protected  String ftpHost;
+    protected  String ftpPort;
+    protected  String ftDirectory;
+    protected  String localPath;
 
     protected void initStaticParam(String type) {
         try {

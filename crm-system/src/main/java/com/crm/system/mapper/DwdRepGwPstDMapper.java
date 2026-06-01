@@ -2,7 +2,7 @@ package com.crm.system.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.crm.system.domain.DwdRepGwPstD;
+import com.crm.system.domain.dao.DwdRepGwPstD;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

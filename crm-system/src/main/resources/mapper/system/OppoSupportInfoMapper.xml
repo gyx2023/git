@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.OppoSupportInfoMapper">
+
+    <resultMap type="com.crm.system.domain.dto.OppoSupportInfoDTO" id="OppoSupportInfoResult">
+        <result property="oppCode" column="opp_code"/>
+        <result property="oaAccount" column="oa_account"/>
+        <result property="name" column="name_"/>
+        <result property="nameCh" column="name_ch"/>
+    </resultMap>
+
+    <select id="selectOppoSupportList" resultMap="OppoSupportInfoResult">
+        select o.opp_code, su.oa_account, su.name_, su.name_ch
+        from topp_opportunity o
+        join sys_user su on su.id_ = o.designer
+        where o.create_time >= concat(year(NOW() - INTERVAL 1 DAY), '-01-01 00:00:00')
+    </select>
+
+</mapper>
