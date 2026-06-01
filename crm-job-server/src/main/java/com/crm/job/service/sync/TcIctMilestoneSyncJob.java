@@ -3,9 +3,9 @@ package com.crm.job.service.sync;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.domain.TcIctMilestone;
+import com.crm.system.domain.dao.TcIctMilestone;
 import com.crm.system.mapper.TcIctMilestoneMapper;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.TcIctMilestoneService;
 import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -112,7 +112,7 @@ public class TcIctMilestoneSyncJob {
                     while ((currentLine = bufferedReader.readLine()) != null) {
                         count++;
                         TcIctMilestone data = new TcIctMilestone();
-                        FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 3);
+                        FieldAnnotaionUtil.setFiledValFromValuesByIndex(data, currentLine.split("\\x1b", -1));
 
                         //设置预计回款时间
                         if(data.getCashLagMonths() != null && data.getCashLagMonths().intValue() != 0){

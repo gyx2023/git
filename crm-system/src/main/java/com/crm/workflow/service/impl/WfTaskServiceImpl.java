@@ -6,7 +6,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.crm.common.core.service.UserService;
 import com.crm.common.exception.ServiceException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.flowable.common.constant.ProcessConstants;
 import com.crm.flowable.common.constant.TaskConstants;

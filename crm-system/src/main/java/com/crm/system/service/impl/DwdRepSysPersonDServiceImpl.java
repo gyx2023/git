@@ -10,18 +10,21 @@ import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.DwdRepSysPersonD;
+import com.crm.system.domain.dao.DwdRepSysPersonD;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.vo.SysAreaVo;
-import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
+import com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.zbzq.RepSysPersonNewDMapper;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.crm.system.service.ISysAreaService;
+import com.crm.system.service.sys.impl.SysDeptServiceImpl;
+import com.crm.system.service.sys.impl.SysUserServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
  * @author crm
  * @date 2025-11-24
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
@@ -418,5 +422,34 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
         voPage.setRecords(voList);
 
         return TableDataInfo.build(voPage);
+    }
+
+    @Override
+    public List<Map<String, Object>> getDwdRepSysPersonListFromIob(Integer currentPage, Integer pageSize) {
+        Integer startRow = (currentPage - 1) * pageSize + 1;
+        Integer endRow = currentPage * pageSize;
+        return baseMapper.selectDwdRepSysPersonListFromIob(startRow, endRow);
+    }
+
+    @Override
+    public int getPersonCountFromIob() {
+        return baseMapper.selectPersonCountFromIob();
+    }
+
+    @Override
+    public void truncate() {
+        baseMapper.delete(null);
+        log.info("清空dwd_rep_sys_person_d表数据完成");
+    }
+
+    @Override
+    public void insertBatch(List<DwdRepSysPersonD> list) {
+        if (list != null && !list.isEmpty()) {
+            log.info("开始插入{}条dwd_rep_sys_person_d数据", list.size());
+            long startTime = System.currentTimeMillis();
+            baseMapper.insertBatch(list);
+            long endTime = System.currentTimeMillis();
+            log.info("插入{}条dwd_rep_sys_person_d数据成功,耗时:{}ms", list.size(), (endTime - startTime));
+        }
     }
 }

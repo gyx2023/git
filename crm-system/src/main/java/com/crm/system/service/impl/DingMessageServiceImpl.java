@@ -2,7 +2,7 @@ package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
-import com.crm.system.domain.DingMessage;
+import com.crm.system.domain.dao.DingMessage;
 import com.crm.system.mapper.DingMessageMapper;
 import com.crm.system.service.IDingMessageService;
 import lombok.extern.slf4j.Slf4j;

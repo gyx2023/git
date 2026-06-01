@@ -1,6 +1,6 @@
 package com.crm.common.annotation;
 
-import com.crm.common.excel.CellMergeStrategy;
+import com.crm.common.utils.excel.CellMergeStrategy;
 
 import java.lang.annotation.*;
 

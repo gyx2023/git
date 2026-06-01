@@ -2,7 +2,7 @@ package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.crm.system.domain.PersonnelInfo;
+import com.crm.system.domain.dao.PersonnelInfo;
 import com.crm.system.mapper.PersonnelInfoMapper;
 import com.crm.system.service.PersonnelInfoService;
 import lombok.extern.slf4j.Slf4j;

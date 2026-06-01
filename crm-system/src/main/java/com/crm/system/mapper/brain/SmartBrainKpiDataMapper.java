@@ -1,7 +1,7 @@
 package com.crm.system.mapper.brain;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.brain.SmartBrainKpiDataDo;
+import com.crm.system.domain.dao.SmartBrainKpiDataDo;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

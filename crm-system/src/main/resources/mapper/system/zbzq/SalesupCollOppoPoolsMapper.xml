@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.zbzq.SalesupCollOppoPoolsMapper">
 
-    <resultMap type="com.crm.system.domain.zbzq.SalesupCollOppoPoolsDo" id="SalesupCollOppoPoolsResult">
+    <resultMap type="com.crm.system.domain.dao.zbzq.SalesupCollOppoPoolsDo" id="SalesupCollOppoPoolsResult">
         <result property="id" column="id"/>
         <result property="oppoId" column="oppo_id"/>
         <result property="oppoOrderId" column="oppo_order_id"/>

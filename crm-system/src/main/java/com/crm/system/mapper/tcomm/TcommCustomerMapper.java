@@ -1,6 +1,6 @@
 package com.crm.system.mapper.tcomm;
 
-import com.crm.system.domain.tcomm.TcommCustomer;
+import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.domain.vo.tcomm.TcommCustomerVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 

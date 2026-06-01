@@ -1,6 +1,6 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.system.domain.topp.ToppBidDo;
+import com.crm.system.domain.dao.topp.ToppBidDo;
 import com.crm.system.domain.vo.topp.ToppBidVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 

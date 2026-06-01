@@ -1,7 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.ZqztGrpContractInfo;
-import com.crm.system.domain.ZqztGrpContractOtherInfo;
+import com.crm.system.domain.dao.ZqztGrpContractInfo;
 import com.crm.system.domain.vo.ZqztGrpContractInfoVo;
 import com.crm.system.domain.bo.ZqztGrpContractInfoBo;
 import com.crm.common.core.page.TableDataInfo;

@@ -4,7 +4,7 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.TcIctMilestoneMapper">
 
-    <resultMap type="com.crm.system.domain.TcIctMilestone" id="TcIctMilestoneResult">
+    <resultMap type="com.crm.system.domain.dao.TcIctMilestone" id="TcIctMilestoneResult">
         <result property="id" column="id_"/>
         <result property="comName" column="com_name"/>
         <result property="contractName" column="contract_name"/>

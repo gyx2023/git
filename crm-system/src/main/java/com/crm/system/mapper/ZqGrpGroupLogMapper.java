@@ -1,6 +1,6 @@
 package com.crm.system.mapper;
 
-import com.crm.system.domain.ZqGrpGroupLog;
+import com.crm.system.domain.dao.ZqGrpGroupLog;
 import com.crm.system.domain.vo.ZqGrpGroupLogVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 

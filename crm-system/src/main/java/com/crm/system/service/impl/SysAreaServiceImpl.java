@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
-import com.crm.system.domain.SysArea;
-import com.crm.system.mapper.SysAreaMapper;
+import com.crm.system.domain.dao.sys.SysArea;
+import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.service.ISysAreaService;
 
 import java.util.List;
@@ -26,7 +26,6 @@ import com.crm.common.constant.CacheNames;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 
-import java.util.Collections;
 import java.util.stream.Collectors;
 
 /**
