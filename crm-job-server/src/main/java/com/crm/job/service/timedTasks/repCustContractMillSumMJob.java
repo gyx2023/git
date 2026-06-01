@@ -16,7 +16,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 政企运营平台合同收入报表定时任务
@@ -29,7 +32,7 @@ public class repCustContractMillSumMJob extends BaseJob {
     /**
      * 下载的文件名前缀
      */
-    private static final String FTP_DOWNLOAD_NAME = "rep_cust_contract_mill_sum_m";
+    private static final String FTP_DOWNLOAD_NAME = "REP_CUST_CONTRACT_MILL_SUM_M_";
 
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
@@ -92,7 +95,7 @@ public class repCustContractMillSumMJob extends BaseJob {
         SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
         try {
             ftpUtil.login();
-            String fileNamePrefix = FTP_DOWNLOAD_NAME + "/" + yyyyMM;
+            String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
             String ftDirectory1 = ftDirectory + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
