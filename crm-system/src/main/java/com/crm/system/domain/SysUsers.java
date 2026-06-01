@@ -22,7 +22,7 @@ public class SysUsers extends BaseEntity {
     /**
      *
      */
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
     /**
      *

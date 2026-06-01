@@ -78,6 +78,10 @@ public class PlusDataPermissionHandler {
             currentUser = LoginHelper.getLoginUser();
             DataPermissionHelper.setVariable("user", currentUser);
         }
+        // 如果没有登录信息，则不进行数据权限控制（定时任务等场景）
+        if (ObjectUtil.isNull(currentUser)) {
+            return where;
+        }
         // 如果是超级管理员，则不过滤数据
         if (LoginHelper.isAdmin()) {
             return where;
@@ -111,6 +115,17 @@ public class PlusDataPermissionHandler {
         context.setBeanResolver(beanResolver);
         DataPermissionHelper.getContext().forEach(context::setVariable);
         Set<String> conditions = new HashSet<>();
+
+        // 先检查是否有客户经理OA账号数据权限
+        boolean hasCustManagerOaUserPermission = false;
+        for (RoleDTO role : user.getRoles()) {
+            DataScopeType type = DataScopeType.findCode(role.getDataScope());
+            if (type == DataScopeType.CUST_MANAGER_OAUSER) {
+                hasCustManagerOaUserPermission = true;
+                break;
+            }
+        }
+
         for (RoleDTO role : user.getRoles()) {
             user.setRoleId(role.getRoleId());
             // 获取角色权限泛型
@@ -118,9 +133,13 @@ public class PlusDataPermissionHandler {
             if (ObjectUtil.isNull(type)) {
                 throw new ServiceException("角色数据范围异常 => " + role.getDataScope());
             }
-            // 全部数据权限直接返回
-            if (type == DataScopeType.ALL) {
+            // 全部数据权限直接返回(但如果存在客户经理OA账号权限则不返回)
+            if (type == DataScopeType.ALL && !hasCustManagerOaUserPermission) {
                 return "";
+            }
+            // 如果是全部数据权限但存在客户经理权限,跳过该角色继续处理
+            if (type == DataScopeType.ALL && hasCustManagerOaUserPermission) {
+                continue;
             }
             boolean isSuccess = false;
             for (DataColumn dataColumn : dataColumns) {

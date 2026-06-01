@@ -143,11 +143,11 @@ public class ZqGrpGroupInfoVo2 {
     @ExcelDictFormat(dictType = "sys_province_newold_type")
     private String provinceNewoldType;
 
-    /**
-     * 服务经理
-     */
-    @ExcelProperty(value = "服务经理")
-    private String managerId;
+//    /**
+//     * 服务经理
+//     */
+//    @ExcelProperty(value = "服务经理")
+//    private String managerId;
 
     /**
      * 资料创建人

@@ -328,6 +328,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return list;
     }
 
+
     @Override
     public List<ToppOpportunityVo> queryListByOppoCodes(Set<String> oppoCodes) {
         return baseMapper.selectVoList(new LambdaQueryWrapper<ToppOpportunityDo>().in(ToppOpportunityDo::getOppCode, oppoCodes)
@@ -377,5 +378,10 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
 
         return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public List<OpportunityDTO> getToppOpportunityPut(String areaId) {
+        return baseMapper.listOpportunity(areaId);
     }
 }

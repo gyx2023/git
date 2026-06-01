@@ -42,7 +42,16 @@ public class OldSysSynServiceImpl implements OldSysSynService {
     private OldSysPermissionService oldSysPermissionService;
 
     @Resource
+    private OldSysDataScopeService oldSysDataScopeService;
+
+    @Resource
     private ISysDeptService iSysDeptService;
+
+    @Resource
+    private OldSysUserMapper oldSysUserMapper;
+
+    @Resource
+    private SysUserMapper sysUserMapper;
 
 
     @Override
@@ -75,6 +84,23 @@ public class OldSysSynServiceImpl implements OldSysSynService {
 
             //5.获取用户角色，权限
             oldSysPermissionService.synMenuPermission(Long.parseLong(userId));
+
+            //6.同步用户数据权限（从老系统的sys_user_position同步到新系统的zqzt_sys_user_role）
+            oldSysDataScopeService.syncUserDataScope(Long.parseLong(userId));
+
+            //更新组织ID
+            try {
+                OldSysUserDo oldUser = oldSysUserMapper.selectById(Integer.parseInt(userId));
+                if (oldUser != null && oldUser.getOrgId() != null) {
+                    SysUser sysUser = new SysUser();
+                    sysUser.setUserId(Long.parseLong(userId));
+                    sysUser.setDeptId(Long.valueOf(oldUser.getOrgId()));
+                    sysUserMapper.updateById(sysUser);
+                    log.info("用户ID: {} 的组织ID已更新为: {}", userId, oldUser.getOrgId());
+                }
+            } catch (Exception e) {
+                log.error("更新用户组织ID失败", e);
+            }
 
             // 3. 根据用户ID查询新系统用户
             SysUser user = userService.selectUserById(Long.parseLong(userId));
