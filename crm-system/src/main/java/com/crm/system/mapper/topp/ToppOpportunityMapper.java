@@ -1,6 +1,7 @@
 package com.crm.system.mapper.topp;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.system.domain.dto.OldOpportunityDTO;
 import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;

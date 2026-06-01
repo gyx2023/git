@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.dto.SignOppoFileExportDTO;
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.enums.ClueStateEnum;
 import com.crm.system.enums.OppoConversionStateEnum;
