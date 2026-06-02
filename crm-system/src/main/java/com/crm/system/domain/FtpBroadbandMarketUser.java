@@ -53,7 +53,7 @@ public class FtpBroadbandMarketUser {
      * 用户编号
      */
     @TableField(value = "USER_ID")
-    private Long userId;
+    private String userId;
 
     @TableField(value = "SVC_NUM")
     private String svcNum;
@@ -68,7 +68,7 @@ public class FtpBroadbandMarketUser {
      * 入网时间
      */
     @TableField(value = "OPEN_DATE")
-    private LocalDateTime openDate;
+    private String openDate;
 
     /**
      * 客户类型
@@ -80,7 +80,7 @@ public class FtpBroadbandMarketUser {
      * 订购客户ID
      */
     @TableField(value = "CUST_ID")
-    private Long custId;
+    private String custId;
 
     @TableField(value = "CUST_NAME")
     private String custName;
@@ -95,7 +95,7 @@ public class FtpBroadbandMarketUser {
      * 是否关键人
      */
     @TableField(value = "IS_GRP_KEY")
-    private Integer isGrpKey;
+    private String isGrpKey;
 
     /**
      * 集团客户编号（系统内部编号）
@@ -140,7 +140,7 @@ public class FtpBroadbandMarketUser {
      * 产品ID
      */
     @TableField(value = "PROD_ID")
-    private Integer prodId;
+    private String prodId;
 
     /**
      * 产品名称
@@ -191,31 +191,31 @@ public class FtpBroadbandMarketUser {
      * 包周期生效时间
      */
     @TableField(value = "CYCLE_START_TIME")
-    private LocalDateTime cycleStartTime;
+    private String cycleStartTime;
 
     /**
      * 包周期失效时间
      */
     @TableField(value = "CYCLE_END_TIME")
-    private LocalDateTime cycleEndTime;
+    private String cycleEndTime;
 
     /**
      * 包周期时长
      */
     @TableField(value = "CYCLE_LENGTH")
-    private Integer cycleLength;
+    private String cycleLength;
 
     /**
      * 包周期费用
      */
     @TableField(value = "CYCLE_FEE")
-    private Integer cycleFee;
+    private String cycleFee;
 
     /**
      * 营销产品ID
      */
     @TableField(value = "MKT_PRODUCT_ID_1")
-    private Integer mktProductId1;
+    private String mktProductId1;
 
     /**
      * 营销产品名称
@@ -227,7 +227,7 @@ public class FtpBroadbandMarketUser {
      * 营销产品资费ID
      */
     @TableField(value = "MKT_DISCNT_CODE_1")
-    private Integer mktDiscntCode1;
+    private String mktDiscntCode1;
 
     /**
      * 营销产品资费名称
@@ -239,13 +239,13 @@ public class FtpBroadbandMarketUser {
      * 营销产品资费费用
      */
     @TableField(value = "MKT_DISCNT_FEE_1")
-    private Integer mktDiscntFee1;
+    private String mktDiscntFee1;
 
     /**
      * 营销产品ID
      */
     @TableField(value = "MKT_PRODUCT_ID_2")
-    private Integer mktProductId2;
+    private String mktProductId2;
 
     /**
      * 营销产品名称
@@ -257,7 +257,7 @@ public class FtpBroadbandMarketUser {
      * 营销产品资费ID
      */
     @TableField(value = "MKT_DISCNT_CODE_2")
-    private Integer mktDiscntCode2;
+    private String mktDiscntCode2;
 
     /**
      * 营销产品资费名称
@@ -269,7 +269,7 @@ public class FtpBroadbandMarketUser {
      * 营销产品资费费用
      */
     @TableField(value = "MKT_DISCNT_FEE_2")
-    private Integer mktDiscntFee2;
+    private String mktDiscntFee2;
 
     /**
      * 创建时间

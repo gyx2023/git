@@ -56,4 +56,9 @@
         <result property="otherProductName" column="OTHER_PRODUCT_NAME"/>
     </resultMap>
 
+    <delete id="deleteByStatCycle" parameterType="java.lang.String">
+        DELETE FROM ftp_broadband_market_user
+        WHERE STAT_CYCLE = #{statCycle}
+    </delete>
+
 </mapper>
