@@ -30,8 +30,12 @@ import com.crm.flowable.flow.FlowableUtils;
 import com.crm.flowable.utils.ModelUtils;
 import com.crm.flowable.utils.ProcessUtils;
 import com.crm.flowable.utils.TaskUtils;
+import com.crm.system.domain.vo.topp.ToppOpportunityVo;
+import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.sys.ISysRoleService;
+import com.crm.system.service.topp.IToppOpportunityService;
+import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.domain.WfDeployForm;
 import com.crm.workflow.domain.vo.*;
 import com.crm.workflow.mapper.WfDeployFormMapper;
@@ -78,6 +82,60 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     private final ISysRoleService roleService;
     private final ISysDeptService deptService;
     private final WfDeployFormMapper deployFormMapper;
+    private final OldWorkflowQueryService oldWorkflowQueryService;
+
+    private final IToppOrderService orderService;
+    private final IToppOpportunityService opportunityService;
+    private final BusinessContextRegistry businessContextRegistry;
+
+    /**
+     * 根据流程实例ID设置工单ID和业务字段（用于新系统业务流程跳转和列表展示）
+     */
+    private void fillOrderIdByProcIns(WfTaskVo taskVo, String procInsId) {
+        try {
+            ToppOrderVo orderVo = orderService.queryByPiId(procInsId);
+            if (orderVo != null) {
+                taskVo.setOrderId(orderVo.getId());
+                taskVo.setOrderName(orderVo.getOrderName());
+                taskVo.setOrderNumber(orderVo.getOrderNumber());
+                taskVo.setCustName(orderVo.getCustName());
+                taskVo.setAccNbr(orderVo.getAccNbr());
+                // 同时查询商机信息
+                if (orderVo.getOppoId() != null) {
+                    ToppOpportunityVo oppVo = opportunityService.queryById(orderVo.getOppoId());
+                    if (oppVo != null) {
+                        taskVo.setOppoName(oppVo.getOppName());
+                        taskVo.setOppCode(oppVo.getOppCode());
+                        // 商机客户经理名称优先于工单客户名称
+                        if (com.crm.common.utils.StringUtils.isBlank(taskVo.getCustName())
+                                && com.crm.common.utils.StringUtils.isNotBlank(oppVo.getCustManagerName())) {
+                            taskVo.setCustName(oppVo.getCustManagerName());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询工单ID异常, procInsId={}", procInsId, e);
+        }
+    }
+
+    /**
+     * 从流程变量中提取合同ID（合同审核流程需要）
+     */
+    private void fillContractId(WfTaskVo taskVo, String procInsId) {
+        try {
+            Object contractId = runtimeService.getVariable(procInsId, "contractId");
+            if (contractId != null) {
+                if (contractId instanceof Number) {
+                    taskVo.setContractId(((Number) contractId).longValue());
+                } else {
+                    taskVo.setContractId(Long.valueOf(contractId.toString()));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询合同ID异常, procInsId={}", procInsId, e);
+        }
+    }
 
     /**
      * 流程定义列表
@@ -168,7 +226,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         int offset = pageQuery.getPageSize() * (pageQuery.getPageNum() - 1);
         List<HistoricProcessInstance> historicProcessInstances = historicProcessInstanceQuery
             .listPage(offset, pageQuery.getPageSize());
-        page.setTotal(historicProcessInstanceQuery.count());
+        long newTotal = historicProcessInstanceQuery.count();
         List<WfTaskVo> taskVoList = new ArrayList<>();
         for (HistoricProcessInstance hisIns : historicProcessInstances) {
             WfTaskVo taskVo = new WfTaskVo();
@@ -209,9 +267,62 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (CollUtil.isNotEmpty(taskList)) {
                 taskVo.setTaskName(taskList.stream().map(Task::getName).filter(StringUtils::isNotEmpty).collect(Collectors.joining(",")));
             }
+            taskVo.setSource("new");
+            fillOrderIdByProcIns(taskVo, hisIns.getId());
             taskVoList.add(taskVo);
         }
+
+        // 同时查询老系统我发起的流程
+        long oldTotal = 0;
+        try {
+            String currentUserId = TaskUtils.getUserId();
+            List<Map<String, Object>> oldOwnList = oldWorkflowQueryService.queryOldOwnList(currentUserId, pageQuery.getPageNum(), pageQuery.getPageSize());
+            oldTotal = oldWorkflowQueryService.queryOldOwnCount(currentUserId);
+            for (Map<String, Object> oldItem : oldOwnList) {
+                WfTaskVo flowTask = new WfTaskVo();
+                flowTask.setProcInsId(Convert.toStr(oldItem.get("proc_ins_id")));
+                flowTask.setProcDefId(Convert.toStr(oldItem.get("proc_def_id")));
+                flowTask.setCreateTime((Date) oldItem.get("create_time"));
+                flowTask.setFinishTime((Date) oldItem.get("finish_time"));
+                flowTask.setDeployId(Convert.toStr(oldItem.get("deployment_id")));
+                flowTask.setProcDefName(Convert.toStr(oldItem.get("proc_def_name")));
+                flowTask.setProcDefVersion(Convert.toInt(oldItem.get("proc_def_version"), 1));
+                flowTask.setStartUserId(Convert.toLong(oldItem.get("start_user_id")));
+                // 设置流程状态（老系统已结束或运行中）
+                flowTask.setProcessStatus(oldItem.get("finish_time") != null
+                        ? ProcessStatus.COMPLETED.getStatus() : ProcessStatus.RUNNING.getStatus());
+                // 计算耗时
+                Date startTime = (Date) oldItem.get("create_time");
+                Date endTime = (Date) oldItem.get("finish_time");
+                if (endTime != null) {
+                    flowTask.setDuration(DateUtils.getDatePoor(endTime, startTime));
+                } else {
+                    flowTask.setDuration(DateUtils.getDatePoor(DateUtils.getNowDate(), startTime));
+                }
+                flowTask.setSource("old");
+                flowTask.setProcDefKey(Convert.toStr(oldItem.get("proc_def_key")));
+                flowTask.setOrderId(Convert.toLong(oldItem.get("order_id")));
+                flowTask.setOrderName(Convert.toStr(oldItem.get("order_name")));
+                flowTask.setOrderNumber(Convert.toStr(oldItem.get("order_number")));
+                flowTask.setCustName(Convert.toStr(oldItem.get("cust_name")));
+                flowTask.setAccNbr(Convert.toStr(oldItem.get("acc_nbr")));
+                flowTask.setOppoName(Convert.toStr(oldItem.get("oppo_name")));
+                flowTask.setOppCode(Convert.toStr(oldItem.get("opp_code")));
+                taskVoList.add(flowTask);
+            }
+        } catch (Exception e) {
+            log.warn("查询老系统我发起的流程异常", e);
+        }
+
+        // 合并后的列表按创建时间倒序排序
+        taskVoList.sort((a, b) -> {
+            if (a.getCreateTime() == null) return 1;
+            if (b.getCreateTime() == null) return -1;
+            return b.getCreateTime().compareTo(a.getCreateTime());
+        });
+
         page.setRecords(taskVoList);
+        page.setTotal(newTotal + oldTotal);
         return TableDataInfo.build(page);
     }
 
@@ -250,8 +361,58 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (CollUtil.isNotEmpty(taskList)) {
                 taskVo.setTaskName(taskList.stream().map(Task::getName).filter(StringUtils::isNotEmpty).collect(Collectors.joining(",")));
             }
+            taskVo.setSource("new");
+            fillOrderIdByProcIns(taskVo, hisIns.getId());
             taskVoList.add(taskVo);
         }
+
+        // 同时查询老系统我发起的流程
+        try {
+            String currentUserId = TaskUtils.getUserId();
+            List<Map<String, Object>> oldOwnList = oldWorkflowQueryService.queryOldOwnList(currentUserId, 1, 99999);
+            for (Map<String, Object> oldItem : oldOwnList) {
+                WfTaskVo flowTask = new WfTaskVo();
+                flowTask.setProcInsId(Convert.toStr(oldItem.get("proc_ins_id")));
+                flowTask.setProcDefId(Convert.toStr(oldItem.get("proc_def_id")));
+                flowTask.setCreateTime((Date) oldItem.get("create_time"));
+                flowTask.setFinishTime((Date) oldItem.get("finish_time"));
+                flowTask.setDeployId(Convert.toStr(oldItem.get("deployment_id")));
+                flowTask.setProcDefName(Convert.toStr(oldItem.get("proc_def_name")));
+                flowTask.setProcDefVersion(Convert.toInt(oldItem.get("proc_def_version"), 1));
+                flowTask.setStartUserId(Convert.toLong(oldItem.get("start_user_id")));
+                // 设置流程状态（老系统已结束或运行中）
+                flowTask.setProcessStatus(oldItem.get("finish_time") != null
+                        ? ProcessStatus.COMPLETED.getStatus() : ProcessStatus.RUNNING.getStatus());
+                // 计算耗时
+                Date startTime = (Date) oldItem.get("create_time");
+                Date endTime = (Date) oldItem.get("finish_time");
+                if (endTime != null) {
+                    flowTask.setDuration(DateUtils.getDatePoor(endTime, startTime));
+                } else {
+                    flowTask.setDuration(DateUtils.getDatePoor(DateUtils.getNowDate(), startTime));
+                }
+                flowTask.setSource("old");
+                flowTask.setProcDefKey(Convert.toStr(oldItem.get("proc_def_key")));
+                flowTask.setOrderId(Convert.toLong(oldItem.get("order_id")));
+                flowTask.setOrderName(Convert.toStr(oldItem.get("order_name")));
+                flowTask.setOrderNumber(Convert.toStr(oldItem.get("order_number")));
+                flowTask.setCustName(Convert.toStr(oldItem.get("cust_name")));
+                flowTask.setAccNbr(Convert.toStr(oldItem.get("acc_nbr")));
+                flowTask.setOppoName(Convert.toStr(oldItem.get("oppo_name")));
+                flowTask.setOppCode(Convert.toStr(oldItem.get("opp_code")));
+                taskVoList.add(flowTask);
+            }
+        } catch (Exception e) {
+            log.warn("查询老系统我发起的流程异常", e);
+        }
+
+        // 合并后的列表按创建时间倒序排序
+        taskVoList.sort((a, b) -> {
+            if (a.getCreateTime() == null) return 1;
+            if (b.getCreateTime() == null) return -1;
+            return b.getCreateTime().compareTo(a.getCreateTime());
+        });
+
         return taskVoList;
     }
 
@@ -266,7 +427,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .orderByTaskCreateTime().desc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(taskQuery, processQuery);
-        page.setTotal(taskQuery.count());
+        long newTotal = taskQuery.count();
         int offset = pageQuery.getPageSize() * (pageQuery.getPageNum() - 1);
         List<Task> taskList = taskQuery.listPage(offset, pageQuery.getPageSize());
         List<WfTaskVo> flowList = new ArrayList<>();
@@ -276,6 +437,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setTaskId(task.getId());
             flowTask.setTaskDefKey(task.getTaskDefinitionKey());
             flowTask.setCreateTime(task.getCreateTime());
+            flowTask.setDueTime(task.getDueDate());
             flowTask.setProcDefId(task.getProcessDefinitionId());
             flowTask.setTaskName(task.getName());
             // 流程定义信息
@@ -299,9 +461,61 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             // 流程变量
             flowTask.setProcVars(task.getProcessVariables());
 
+            // 计算时限（小时）
+            if (task.getDueDate() != null && task.getCreateTime() != null) {
+                float hours = (task.getDueDate().getTime() - task.getCreateTime().getTime()) / 3600000f;
+                flowTask.setDueLimit(Math.round(hours * 10) / 10f);
+            }
+
+            flowTask.setSource("new");
+            fillOrderIdByProcIns(flowTask, task.getProcessInstanceId());
+            // 提取合同ID（合同审核流程需要）
+            fillContractId(flowTask, task.getProcessInstanceId());
             flowList.add(flowTask);
         }
+
+        // 同时查询老系统待办（同库同数据源，仅表名前缀不同）
+        long oldTotal = 0;
+        try {
+            String currentUserId = TaskUtils.getUserId();
+            List<Map<String, Object>> oldTodoList = oldWorkflowQueryService.queryOldTodoList(currentUserId);
+            oldTotal = oldWorkflowQueryService.queryOldTodoCount(currentUserId);
+            for (Map<String, Object> oldTask : oldTodoList) {
+                WfTaskVo flowTask = new WfTaskVo();
+                flowTask.setTaskId(Convert.toStr(oldTask.get("task_id")));
+                flowTask.setProcInsId(Convert.toStr(oldTask.get("proc_ins_id")));
+                flowTask.setProcDefId(Convert.toStr(oldTask.get("proc_def_id")));
+                flowTask.setTaskDefKey(Convert.toStr(oldTask.get("task_def_key")));
+                flowTask.setTaskName(Convert.toStr(oldTask.get("task_name")));
+                flowTask.setCreateTime((Date) oldTask.get("create_time"));
+                flowTask.setDeployId(Convert.toStr(oldTask.get("deployment_id")));
+                flowTask.setProcDefName(Convert.toStr(oldTask.get("proc_def_name")));
+                flowTask.setProcDefVersion(Convert.toInt(oldTask.get("proc_def_version"), 1));
+                flowTask.setSource("old");
+                flowTask.setProcDefKey(Convert.toStr(oldTask.get("proc_def_key")));
+                flowTask.setOrderId(Convert.toLong(oldTask.get("order_id")));
+                flowTask.setOrderName(Convert.toStr(oldTask.get("order_name")));
+                flowTask.setOrderNumber(Convert.toStr(oldTask.get("order_number")));
+                flowTask.setCustName(Convert.toStr(oldTask.get("cust_name")));
+                flowTask.setAccNbr(Convert.toStr(oldTask.get("acc_nbr")));
+                flowTask.setOppoName(Convert.toStr(oldTask.get("oppo_name")));
+                flowTask.setOppCode(Convert.toStr(oldTask.get("opp_code")));
+                flowTask.setDueTime((Date) oldTask.get("due_time"));
+                flowList.add(flowTask);
+            }
+        } catch (Exception e) {
+            log.warn("查询老系统待办异常", e);
+        }
+
+        // 合并后的列表按创建时间倒序排序
+        flowList.sort((a, b) -> {
+            if (a.getCreateTime() == null) return 1;
+            if (b.getCreateTime() == null) return -1;
+            return b.getCreateTime().compareTo(a.getCreateTime());
+        });
+
         page.setRecords(flowList);
+        page.setTotal(newTotal + oldTotal);
         return TableDataInfo.build(page);
     }
 
@@ -323,6 +537,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             taskVo.setTaskId(task.getId());
             taskVo.setTaskDefKey(task.getTaskDefinitionKey());
             taskVo.setCreateTime(task.getCreateTime());
+            taskVo.setDueTime(task.getDueDate());
             taskVo.setProcDefId(task.getProcessDefinitionId());
             taskVo.setTaskName(task.getName());
             // 流程定义信息
@@ -343,8 +558,59 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             taskVo.setStartUserId(userId);
             taskVo.setStartUserName(nickName);
 
+            // 流程变量
+            taskVo.setProcVars(task.getProcessVariables());
+
+            // 计算时限（小时）
+            if (task.getDueDate() != null && task.getCreateTime() != null) {
+                float hours = (task.getDueDate().getTime() - task.getCreateTime().getTime()) / 3600000f;
+                taskVo.setDueLimit(Math.round(hours * 10) / 10f);
+            }
+
+            taskVo.setSource("new");
+            fillOrderIdByProcIns(taskVo, task.getProcessInstanceId());
+            fillContractId(taskVo, task.getProcessInstanceId());
             taskVoList.add(taskVo);
         }
+
+        // 同时查询老系统待办（同库同数据源，仅表名前缀不同）
+        try {
+            String currentUserId = TaskUtils.getUserId();
+            List<Map<String, Object>> oldTodoList = oldWorkflowQueryService.queryOldTodoList(currentUserId);
+            for (Map<String, Object> oldTask : oldTodoList) {
+                WfTaskVo flowTask = new WfTaskVo();
+                flowTask.setTaskId(Convert.toStr(oldTask.get("task_id")));
+                flowTask.setProcInsId(Convert.toStr(oldTask.get("proc_ins_id")));
+                flowTask.setProcDefId(Convert.toStr(oldTask.get("proc_def_id")));
+                flowTask.setTaskDefKey(Convert.toStr(oldTask.get("task_def_key")));
+                flowTask.setTaskName(Convert.toStr(oldTask.get("task_name")));
+                flowTask.setCreateTime((Date) oldTask.get("create_time"));
+                flowTask.setDeployId(Convert.toStr(oldTask.get("deployment_id")));
+                flowTask.setProcDefName(Convert.toStr(oldTask.get("proc_def_name")));
+                flowTask.setProcDefVersion(Convert.toInt(oldTask.get("proc_def_version"), 1));
+                flowTask.setSource("old");
+                flowTask.setProcDefKey(Convert.toStr(oldTask.get("proc_def_key")));
+                flowTask.setOrderId(Convert.toLong(oldTask.get("order_id")));
+                flowTask.setOrderName(Convert.toStr(oldTask.get("order_name")));
+                flowTask.setOrderNumber(Convert.toStr(oldTask.get("order_number")));
+                flowTask.setCustName(Convert.toStr(oldTask.get("cust_name")));
+                flowTask.setAccNbr(Convert.toStr(oldTask.get("acc_nbr")));
+                flowTask.setOppoName(Convert.toStr(oldTask.get("oppo_name")));
+                flowTask.setOppCode(Convert.toStr(oldTask.get("opp_code")));
+                flowTask.setDueTime((Date) oldTask.get("due_time"));
+                taskVoList.add(flowTask);
+            }
+        } catch (Exception e) {
+            log.warn("查询老系统待办异常", e);
+        }
+
+        // 合并后的列表按创建时间倒序排序
+        taskVoList.sort((a, b) -> {
+            if (a.getCreateTime() == null) return 1;
+            if (b.getCreateTime() == null) return -1;
+            return b.getCreateTime().compareTo(a.getCreateTime());
+        });
+
         return taskVoList;
     }
 
@@ -486,13 +752,57 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             // 流程变量
             flowTask.setProcVars(histTask.getProcessVariables());
 
+            flowTask.setSource("new");
+            fillOrderIdByProcIns(flowTask, histTask.getProcessInstanceId());
             hisTaskList.add(flowTask);
         }
-        page.setTotal(taskInstanceQuery.count());
+        long newTotal = taskInstanceQuery.count();
+
+        // 同时查询老系统已办
+        long oldTotal = 0;
+        try {
+            String currentUserId = TaskUtils.getUserId();
+            List<Map<String, Object>> oldFinishedList = oldWorkflowQueryService.queryOldFinishedList(currentUserId, 1, 99999);
+            oldTotal = oldWorkflowQueryService.queryOldFinishedCount(currentUserId);
+            for (Map<String, Object> oldTask : oldFinishedList) {
+                WfTaskVo flowTask = new WfTaskVo();
+                flowTask.setTaskId(Convert.toStr(oldTask.get("task_id")));
+                flowTask.setProcInsId(Convert.toStr(oldTask.get("proc_ins_id")));
+                flowTask.setProcDefId(Convert.toStr(oldTask.get("proc_def_id")));
+                flowTask.setTaskDefKey(Convert.toStr(oldTask.get("task_def_key")));
+                flowTask.setTaskName(Convert.toStr(oldTask.get("task_name")));
+                flowTask.setCreateTime((Date) oldTask.get("create_time"));
+                flowTask.setFinishTime((Date) oldTask.get("finish_time"));
+                flowTask.setDeployId(Convert.toStr(oldTask.get("deployment_id")));
+                flowTask.setProcDefName(Convert.toStr(oldTask.get("proc_def_name")));
+                flowTask.setProcDefVersion(Convert.toInt(oldTask.get("proc_def_version"), 1));
+                flowTask.setSource("old");
+                flowTask.setProcDefKey(Convert.toStr(oldTask.get("proc_def_key")));
+                flowTask.setOrderId(Convert.toLong(oldTask.get("order_id")));
+                flowTask.setOrderName(Convert.toStr(oldTask.get("order_name")));
+                flowTask.setOrderNumber(Convert.toStr(oldTask.get("order_number")));
+                flowTask.setCustName(Convert.toStr(oldTask.get("cust_name")));
+                flowTask.setAccNbr(Convert.toStr(oldTask.get("acc_nbr")));
+                flowTask.setOppoName(Convert.toStr(oldTask.get("oppo_name")));
+                flowTask.setOppCode(Convert.toStr(oldTask.get("opp_code")));
+                flowTask.setDueTime((Date) oldTask.get("due_time"));
+                hisTaskList.add(flowTask);
+            }
+        } catch (Exception e) {
+            log.warn("查询老系统已办异常", e);
+        }
+
+        // 合并后的列表按完成时间倒序排序
+        hisTaskList.sort((a, b) -> {
+            Date timeA = a.getFinishTime() != null ? a.getFinishTime() : a.getCreateTime();
+            Date timeB = b.getFinishTime() != null ? b.getFinishTime() : b.getCreateTime();
+            if (timeA == null) return 1;
+            if (timeB == null) return -1;
+            return timeB.compareTo(timeA);
+        });
+
+        page.setTotal(newTotal + oldTotal);
         page.setRecords(hisTaskList);
-//        Map<String, Object> result = new HashMap<>();
-//        result.put("result",page);
-//        result.put("finished",true);
         return TableDataInfo.build(page);
     }
 
@@ -542,8 +852,52 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             // 流程变量
             flowTask.setProcVars(histTask.getProcessVariables());
 
+            flowTask.setSource("new");
+            fillOrderIdByProcIns(flowTask, histTask.getProcessInstanceId());
             hisTaskList.add(flowTask);
         }
+
+        // 同时查询老系统已办
+        try {
+            String currentUserId = TaskUtils.getUserId();
+            List<Map<String, Object>> oldFinishedList = oldWorkflowQueryService.queryOldFinishedList(currentUserId, 1, 99999);
+            for (Map<String, Object> oldTask : oldFinishedList) {
+                WfTaskVo flowTask = new WfTaskVo();
+                flowTask.setTaskId(Convert.toStr(oldTask.get("task_id")));
+                flowTask.setProcInsId(Convert.toStr(oldTask.get("proc_ins_id")));
+                flowTask.setProcDefId(Convert.toStr(oldTask.get("proc_def_id")));
+                flowTask.setTaskDefKey(Convert.toStr(oldTask.get("task_def_key")));
+                flowTask.setTaskName(Convert.toStr(oldTask.get("task_name")));
+                flowTask.setCreateTime((Date) oldTask.get("create_time"));
+                flowTask.setFinishTime((Date) oldTask.get("finish_time"));
+                flowTask.setDeployId(Convert.toStr(oldTask.get("deployment_id")));
+                flowTask.setProcDefName(Convert.toStr(oldTask.get("proc_def_name")));
+                flowTask.setProcDefVersion(Convert.toInt(oldTask.get("proc_def_version"), 1));
+                flowTask.setSource("old");
+                flowTask.setProcDefKey(Convert.toStr(oldTask.get("proc_def_key")));
+                flowTask.setOrderId(Convert.toLong(oldTask.get("order_id")));
+                flowTask.setOrderName(Convert.toStr(oldTask.get("order_name")));
+                flowTask.setOrderNumber(Convert.toStr(oldTask.get("order_number")));
+                flowTask.setCustName(Convert.toStr(oldTask.get("cust_name")));
+                flowTask.setAccNbr(Convert.toStr(oldTask.get("acc_nbr")));
+                flowTask.setOppoName(Convert.toStr(oldTask.get("oppo_name")));
+                flowTask.setOppCode(Convert.toStr(oldTask.get("opp_code")));
+                flowTask.setDueTime((Date) oldTask.get("due_time"));
+                hisTaskList.add(flowTask);
+            }
+        } catch (Exception e) {
+            log.warn("查询老系统已办异常", e);
+        }
+
+        // 合并后的列表按完成时间倒序排序
+        hisTaskList.sort((a, b) -> {
+            Date timeA = a.getFinishTime() != null ? a.getFinishTime() : a.getCreateTime();
+            Date timeB = b.getFinishTime() != null ? b.getFinishTime() : b.getCreateTime();
+            if (timeA == null) return 1;
+            if (timeB == null) return -1;
+            return timeB.compareTo(timeA);
+        });
+
         return hisTaskList;
     }
 
@@ -648,7 +1002,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     public String queryBpmnXmlById(String processDefId) {
         InputStream inputStream = repositoryService.getProcessModel(processDefId);
         try {
-            return IoUtil.readUtf8(inputStream);
+            String xml = IoUtil.readUtf8(inputStream);
+            return ModelUtils.ensureBpmnHasDiagram(xml);
         } catch (IORuntimeException exception) {
             throw new RuntimeException("加载xml文件异常");
         }
@@ -663,6 +1018,12 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      */
     @Override
     public WfDetailVo queryProcessDetail(String procInsId, String taskId) {
+        // 检测是否为老系统流程（老系统流程实例ID在ACT_HI_PROCINST表中）
+        boolean isOldProcess = oldWorkflowQueryService.isOldProcess(procInsId);
+        if (isOldProcess) {
+            return queryOldProcessDetail(procInsId, taskId);
+        }
+
         WfDetailVo detailVo = new WfDetailVo();
         // 获取流程实例
         HistoricProcessInstance historicProcIns = historyService.createHistoricProcessInstanceQuery()
@@ -684,12 +1045,153 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         // 获取Bpmn模型信息
         InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
         String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));
+        bpmnXmlStr = ModelUtils.ensureBpmnHasDiagram(bpmnXmlStr);
         BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXmlStr);
         detailVo.setBpmnXml(bpmnXmlStr);
         detailVo.setHistoryProcNodeList(historyProcNodeList(historicProcIns));
         detailVo.setProcessFormList(processFormList(bpmnModel, historicProcIns));
         detailVo.setFlowViewer(getFlowViewer(bpmnModel, procInsId));
+        // 添加业务上下文（订单详情、商机详情等）
+        enrichBusinessContext(detailVo, historicProcIns.getProcessDefinitionId(), "new", procInsId);
         return detailVo;
+    }
+
+    /**
+     * 查询老系统流程详情（直连ACT_HI_PROCINST等表）
+     */
+    private WfDetailVo queryOldProcessDetail(String procInsId, String taskId) {
+        WfDetailVo detailVo = new WfDetailVo();
+
+        // 1. 查询流程实例信息
+        Map<String, Object> procInst = oldWorkflowQueryService.queryOldProcessDetail(procInsId);
+        if (procInst == null || procInst.isEmpty()) {
+            throw new com.crm.common.exception.ServiceException("流程实例不存在");
+        }
+
+        // 2. 获取BPMN XML并从旧系统中生成流程图
+        String bpmnXmlStr = oldWorkflowQueryService.getOldBpmnXml(procInsId);
+        if (bpmnXmlStr != null) {
+            bpmnXmlStr = ModelUtils.ensureBpmnHasDiagram(bpmnXmlStr);
+            detailVo.setBpmnXml(bpmnXmlStr);
+        }
+
+        // 3. 构建历史处理节点列表
+        List<Map<String, Object>> oldActInsts = oldWorkflowQueryService.queryOldHistoricActivityInsts(procInsId);
+        List<Map<String, Object>> oldComments = oldWorkflowQueryService.queryOldComments(procInsId);
+
+        // 将老系统审批意见按taskId分组，转换为WfCommentVo对象
+        Map<String, List<WfCommentVo>> commentMap = new HashMap<>();
+        if (oldComments != null) {
+            for (Map<String, Object> oldCmt : oldComments) {
+                String cmtTaskId = Convert.toStr(oldCmt.get("taskId"));
+                if (StringUtils.isBlank(cmtTaskId)) {
+                    continue;
+                }
+                WfCommentVo comment = new WfCommentVo();
+                comment.setType(Convert.toStr(oldCmt.get("type")));
+                comment.setMessage(Convert.toStr(oldCmt.get("message")));
+                comment.setFullMessage(Convert.toStr(oldCmt.get("message")));
+                comment.setTime((Date) oldCmt.get("time"));
+                commentMap.computeIfAbsent(cmtTaskId, k -> new ArrayList<>()).add(comment);
+            }
+        }
+
+        List<WfProcNodeVo> nodeList = new ArrayList<>();
+        if (oldActInsts != null) {
+            for (Map<String, Object> act : oldActInsts) {
+                WfProcNodeVo node = new WfProcNodeVo();
+                node.setActivityId(Convert.toStr(act.get("activityId")));
+                node.setActivityName(Convert.toStr(act.get("activityName")));
+                node.setActivityType(Convert.toStr(act.get("activityType")));
+                node.setCreateTime((Date) act.get("startTime"));
+                node.setEndTime((Date) act.get("endTime"));
+                String assignee = Convert.toStr(act.get("assignee"));
+                if (StringUtils.isNotBlank(assignee)) {
+                    node.setAssigneeName(getUserNameById(assignee));
+                }
+                // 设置时长
+                Long duration = Convert.toLong(act.get("duration"));
+                if (duration != null && duration > 0) {
+                    node.setDuration(DateUtil.formatBetween(duration, BetweenFormatter.Level.SECOND));
+                }
+                // 匹配审批意见
+                String actTaskId = Convert.toStr(act.get("taskId"));
+                if (StringUtils.isNotBlank(actTaskId) && commentMap.containsKey(actTaskId)) {
+                    node.setCommentList(commentMap.get(actTaskId));
+                }
+                nodeList.add(node);
+            }
+        }
+
+        // 4. 构建流程查看器数据（已完成的节点和未完成的节点）
+        if (oldActInsts != null && bpmnXmlStr != null) {
+            Set<String> finishedTaskSet = new HashSet<>();
+            Set<String> finishedSequenceFlowSet = new HashSet<>();
+            Set<String> unfinishedTaskSet = new HashSet<>();
+            for (Map<String, Object> act : oldActInsts) {
+                String activityType = Convert.toStr(act.get("activityType"));
+                String activityId = Convert.toStr(act.get("activityId"));
+                Date endTime = (Date) act.get("endTime");
+                if (endTime != null) {
+                    if ("sequenceFlow".equals(activityType)) {
+                        finishedSequenceFlowSet.add(activityId);
+                    } else {
+                        finishedTaskSet.add(activityId);
+                    }
+                } else {
+                    unfinishedTaskSet.add(activityId);
+                }
+            }
+            detailVo.setFlowViewer(new com.crm.workflow.domain.vo.WfViewerVo(
+                    finishedTaskSet, finishedSequenceFlowSet, unfinishedTaskSet, new HashSet<>()));
+        }
+
+        detailVo.setHistoryProcNodeList(nodeList);
+        // 添加老系统业务上下文
+        String oldProcDefKey = oldWorkflowQueryService.queryOldProcDefKey(procInsId);
+        enrichBusinessContext(detailVo, oldProcDefKey, "old", procInsId);
+        return detailVo;
+    }
+
+    /**
+     * 注入业务上下文（订单详情、商机详情等）到流程详情VO
+     *
+     * @param detailVo          流程详情VO
+     * @param processDefQueryKey 流程定义标识（新系统为 processDefinitionId，老系统为 procDefKey）
+     * @param source             数据来源（new/old）
+     * @param procInsId          流程实例ID
+     */
+    private void enrichBusinessContext(WfDetailVo detailVo, String processDefQueryKey, String source, String procInsId) {
+        if (processDefQueryKey == null) {
+            return;
+        }
+        // 新系统的 processDefinitionId 格式为 key:version:deploymentId，需提取 key
+        String procDefKey;
+        if ("new".equals(source)) {
+            procDefKey = processDefQueryKey.contains(":")
+                    ? processDefQueryKey.substring(0, processDefQueryKey.indexOf(":"))
+                    : processDefQueryKey;
+        } else {
+            procDefKey = processDefQueryKey;
+        }
+        WfBusinessContext context = businessContextRegistry.getContext(procDefKey, source, procInsId);
+        if (context != null) {
+            context.setSource(source);
+            detailVo.setBusinessContext(context);
+        }
+    }
+
+    /**
+     * 根据用户ID（字符串，可能包含逗号）获取用户名
+     */
+    private String getUserNameById(String userIdStr) {
+        try {
+            String cleanId = userIdStr.replace(",", "");
+            Long userId = Long.parseLong(cleanId);
+            return userService.selectNickNameById(userId);
+        } catch (Exception e) {
+            return userIdStr;
+        }
     }
 
     /**
@@ -974,13 +1476,29 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 if (StringUtils.isNotBlank(stringBuilder)) {
                     elementVo.setCandidate(stringBuilder.substring(0, stringBuilder.length() - 1));
                 }
-                // 获取意见评论内容
+                // 获取意见评论内容（过滤掉引擎自动产生的系统事件，仅保留有审批文字的）
                 if (CollUtil.isNotEmpty(commentList)) {
-                    List<Comment> comments = new ArrayList<>();
+                    List<WfCommentVo> comments = new ArrayList<>();
                     for (Comment comment : commentList) {
-
-                        if (comment.getTaskId().equals(activityInstance.getTaskId())) {
-                            comments.add(comment);
+                        if (comment.getTaskId().equals(activityInstance.getTaskId())
+                                && StringUtils.isNotBlank(comment.getFullMessage())) {
+                            WfCommentVo vo = new WfCommentVo();
+                            // 新系统: TYPE_ = "1"/"2"/...; 老系统: TYPE_ = "comment", ACTION_ = "1"/"2"/...
+                            String cmtType = comment.getType();
+                            if (StringUtils.isNotBlank(cmtType) && cmtType.matches("[1-7]")) {
+                                // 已是最新 FlowComment 类型，直接使用
+                            } else if (comment instanceof org.flowable.engine.task.Event) {
+                                // 兼容老系统: Event 的 ACTION_ 存储了类型
+                                cmtType = ((org.flowable.engine.task.Event) comment).getAction();
+                            } else {
+                                // 兜底: 3-参数 addComment(如商机关闭) 存储 TYPE_="comment"，有审批文字说明是用户提交的，默认 NORMAL
+                                cmtType = "1";
+                            }
+                            vo.setType(cmtType);
+                            vo.setMessage(comment.getFullMessage());
+                            vo.setFullMessage(comment.getFullMessage());
+                            vo.setTime(comment.getTime());
+                            comments.add(vo);
                         }
                     }
                     elementVo.setCommentList(comments);

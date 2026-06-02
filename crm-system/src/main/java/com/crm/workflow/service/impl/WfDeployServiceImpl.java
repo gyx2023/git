@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.flowable.core.domain.ProcessQuery;
+import com.crm.flowable.utils.ModelUtils;
 import com.crm.flowable.utils.ProcessUtils;
 import com.crm.workflow.domain.WfDeployForm;
 import com.crm.workflow.domain.vo.WfDeployVo;
@@ -129,7 +130,8 @@ public class WfDeployServiceImpl implements IWfDeployService {
     public String queryBpmnXmlById(String definitionId) {
         InputStream inputStream = repositoryService.getProcessModel(definitionId);
         try {
-            return IoUtil.readUtf8(inputStream);
+            String xml = IoUtil.readUtf8(inputStream);
+            return ModelUtils.ensureBpmnHasDiagram(xml);
         } catch (IORuntimeException exception) {
             throw new RuntimeException("加载xml文件异常");
         }

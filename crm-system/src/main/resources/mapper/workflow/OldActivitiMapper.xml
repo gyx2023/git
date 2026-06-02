@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.workflow.mapper.OldActivitiMapper">
+
+    <!-- 老系统待办任务查询结果映射 -->
+    <resultMap id="OldTodoResult" type="java.util.Map">
+        <result property="taskId" column="task_id"/>
+        <result property="procInsId" column="proc_ins_id"/>
+        <result property="procDefId" column="proc_def_id"/>
+        <result property="taskDefKey" column="task_def_key"/>
+        <result property="taskName" column="task_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="dueTime" column="due_time"/>
+        <result property="finishTime" column="finish_time"/>
+        <result property="assignee" column="assignee_"/>
+        <result property="procDefName" column="proc_def_name"/>
+        <result property="procDefKey" column="proc_def_key"/>
+        <result property="procDefVersion" column="proc_def_version"/>
+        <result property="deploymentId" column="deployment_id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="orderName" column="order_name"/>
+        <result property="orderNumber" column="order_number"/>
+        <result property="accNbr" column="acc_nbr"/>
+        <result property="custName" column="cust_name"/>
+        <result property="oppoName" column="oppo_name"/>
+        <result property="oppCode" column="opp_code"/>
+        <result property="startUserId" column="start_user_id"/>
+        <result property="source" column="source"/>
+    </resultMap>
+
+    <!-- 查询老系统待办列表 -->
+    <select id="selectOldTodoList" resultMap="OldTodoResult">
+        SELECT
+            task.ID_ AS task_id,
+            task.PROC_INST_ID_ AS proc_ins_id,
+            task.PROC_DEF_ID_ AS proc_def_id,
+            task.TASK_DEF_KEY_ AS task_def_key,
+            task.NAME_ AS task_name,
+            task.CREATE_TIME_ AS create_time,
+            task.DUE_DATE_ AS due_time,
+            task.ASSIGNEE_ AS assignee_,
+            def.NAME_ AS proc_def_name,
+            def.KEY_ AS proc_def_key,
+            def.VERSION_ AS proc_def_version,
+            def.DEPLOYMENT_ID_ AS deployment_id,
+            ord.id_ AS order_id,
+            ord.order_name AS order_name,
+            ord.order_number AS order_number,
+            ord.cust_name AS cust_name,
+            ord.acc_nbr AS acc_nbr,
+            opp.opp_name AS oppo_name,
+            opp.opp_code AS opp_code,
+            '' AS start_user_id,
+            'old' AS source
+        FROM ACT_RU_TASK task
+        JOIN ACT_RE_PROCDEF def ON task.PROC_DEF_ID_ = def.ID_
+        LEFT JOIN topp_order ord ON task.PROC_INST_ID_ = ord.pi_id
+        LEFT JOIN topp_opportunity opp ON ord.oppo_id = opp.id_
+        WHERE task.ASSIGNEE_ IS NOT NULL
+          AND (task.ASSIGNEE_ LIKE CONCAT('%,', #{userId}, ',%')
+            OR task.ASSIGNEE_ = #{userId}
+            OR task.ASSIGNEE_ LIKE CONCAT(#{userId}, ',%')
+            OR task.ASSIGNEE_ LIKE CONCAT('%,', #{userId}))
+        ORDER BY task.CREATE_TIME_ DESC
+    </select>
+
+    <!-- 查询老系统待办数量 -->
+    <select id="selectOldTodoCount" resultType="long">
+        SELECT COUNT(*)
+        FROM ACT_RU_TASK task
+        WHERE task.ASSIGNEE_ IS NOT NULL
+          AND (task.ASSIGNEE_ LIKE CONCAT('%,', #{userId}, ',%')
+            OR task.ASSIGNEE_ = #{userId}
+            OR task.ASSIGNEE_ LIKE CONCAT(#{userId}, ',%')
+            OR task.ASSIGNEE_ LIKE CONCAT('%,', #{userId}))
+    </select>
+
+    <!-- 查询老系统已办列表 -->
+    <select id="selectOldFinishedList" resultMap="OldTodoResult">
+        SELECT
+            hist.ID_ AS task_id,
+            hist.PROC_INST_ID_ AS proc_ins_id,
+            hist.PROC_DEF_ID_ AS proc_def_id,
+            hist.TASK_DEF_KEY_ AS task_def_key,
+            hist.NAME_ AS task_name,
+            hist.START_TIME_ AS create_time,
+            hist.END_TIME_ AS finish_time,
+            hist.DUE_DATE_ AS due_time,
+            hist.ASSIGNEE_ AS assignee_,
+            def.NAME_ AS proc_def_name,
+            def.KEY_ AS proc_def_key,
+            def.VERSION_ AS proc_def_version,
+            def.DEPLOYMENT_ID_ AS deployment_id,
+            ord.id_ AS order_id,
+            ord.order_name AS order_name,
+            ord.order_number AS order_number,
+            ord.cust_name AS cust_name,
+            ord.acc_nbr AS acc_nbr,
+            opp.opp_name AS oppo_name,
+            opp.opp_code AS opp_code,
+            hist.START_TIME_ AS start_user_id,
+            'old' AS source
+        FROM ACT_HI_TASKINST hist
+        JOIN ACT_RE_PROCDEF def ON hist.PROC_DEF_ID_ = def.ID_
+        LEFT JOIN topp_order ord ON hist.PROC_INST_ID_ = ord.pi_id
+        LEFT JOIN topp_opportunity opp ON ord.oppo_id = opp.id_
+        WHERE hist.END_TIME_ IS NOT NULL
+          AND hist.ASSIGNEE_ IS NOT NULL
+          AND (hist.ASSIGNEE_ LIKE CONCAT('%,', #{userId}, ',%')
+            OR hist.ASSIGNEE_ = #{userId}
+            OR hist.ASSIGNEE_ LIKE CONCAT(#{userId}, ',%')
+            OR hist.ASSIGNEE_ LIKE CONCAT('%,', #{userId}))
+        ORDER BY hist.END_TIME_ DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询老系统已办数量 -->
+    <select id="selectOldFinishedCount" resultType="long">
+        SELECT COUNT(*)
+        FROM ACT_HI_TASKINST hist
+        WHERE hist.END_TIME_ IS NOT NULL
+          AND hist.ASSIGNEE_ IS NOT NULL
+          AND (hist.ASSIGNEE_ LIKE CONCAT('%,', #{userId}, ',%')
+            OR hist.ASSIGNEE_ = #{userId}
+            OR hist.ASSIGNEE_ LIKE CONCAT(#{userId}, ',%')
+            OR hist.ASSIGNEE_ LIKE CONCAT('%,', #{userId}))
+    </select>
+
+    <!-- 查询老系统我发起的列表 -->
+    <select id="selectOldOwnList" resultMap="OldTodoResult">
+        SELECT
+            hp.PROC_INST_ID_ AS proc_ins_id,
+            hp.PROC_DEF_ID_ AS proc_def_id,
+            hp.START_TIME_ AS create_time,
+            hp.END_TIME_ AS finish_time,
+            hp.START_USER_ID_ AS start_user_id,
+            def.NAME_ AS proc_def_name,
+            def.KEY_ AS proc_def_key,
+            def.VERSION_ AS proc_def_version,
+            def.DEPLOYMENT_ID_ AS deployment_id,
+            ord.id_ AS order_id,
+            ord.order_name AS order_name,
+            ord.order_number AS order_number,
+            ord.cust_name AS cust_name,
+            ord.acc_nbr AS acc_nbr,
+            opp.opp_name AS oppo_name,
+            opp.opp_code AS opp_code,
+            'old' AS source
+        FROM ACT_HI_PROCINST hp
+        JOIN ACT_RE_PROCDEF def ON hp.PROC_DEF_ID_ = def.ID_
+        LEFT JOIN topp_order ord ON hp.PROC_INST_ID_ = ord.pi_id
+        LEFT JOIN topp_opportunity opp ON ord.oppo_id = opp.id_
+        WHERE hp.START_USER_ID_ = #{userId}
+        ORDER BY hp.START_TIME_ DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询老系统我发起的数量 -->
+    <select id="selectOldOwnCount" resultType="long">
+        SELECT COUNT(*)
+        FROM ACT_HI_PROCINST
+        WHERE START_USER_ID_ = #{userId}
+    </select>
+
+    <!-- 查询老系统流程实例 -->
+    <select id="selectOldProcInst" resultType="java.util.Map">
+        SELECT
+            hp.PROC_INST_ID_ AS procInsId,
+            hp.PROC_DEF_ID_ AS procDefId,
+            hp.BUSINESS_KEY_ AS businessKey,
+            hp.START_TIME_ AS startTime,
+            hp.END_TIME_ AS endTime,
+            hp.DURATION_ AS duration,
+            hp.START_USER_ID_ AS startUserId,
+            hp.DELETE_REASON_ AS deleteReason,
+            def.NAME_ AS procDefName,
+            def.KEY_ AS procDefKey,
+            def.VERSION_ AS procDefVersion,
+            def.DEPLOYMENT_ID_ AS deploymentId
+        FROM ACT_HI_PROCINST hp
+        JOIN ACT_RE_PROCDEF def ON hp.PROC_DEF_ID_ = def.ID_
+        WHERE hp.PROC_INST_ID_ = #{procInsId}
+    </select>
+
+    <!-- 查询老系统历史活动节点 -->
+    <select id="selectOldHistoricActivityInsts" resultType="java.util.Map">
+        SELECT
+            ID_ AS id,
+            ACTIVITY_ID_ AS activityId,
+            ACTIVITY_NAME_ AS activityName,
+            ACTIVITY_TYPE_ AS activityType,
+            TASK_ID_ AS taskId,
+            ASSIGNEE_ AS assignee,
+            START_TIME_ AS startTime,
+            END_TIME_ AS endTime,
+            DURATION_ AS duration,
+            PROC_INST_ID_ AS procInsId
+        FROM ACT_HI_ACTINST
+        WHERE PROC_INST_ID_ = #{procInsId}
+        ORDER BY START_TIME_ ASC
+    </select>
+
+    <!-- 查询老系统历史任务实例 -->
+    <select id="selectOldHistoricTaskInsts" resultType="java.util.Map">
+        SELECT
+            ID_ AS id,
+            TASK_DEF_KEY_ AS taskDefKey,
+            NAME_ AS name,
+            ASSIGNEE_ AS assignee,
+            START_TIME_ AS startTime,
+            END_TIME_ AS endTime,
+            DURATION_ AS duration,
+            PROC_INST_ID_ AS procInsId
+        FROM ACT_HI_TASKINST
+        WHERE PROC_INST_ID_ = #{procInsId}
+        ORDER BY START_TIME_ ASC
+    </select>
+
+    <!-- 查询老系统流程变量 -->
+    <select id="selectOldProcVariables" resultType="java.util.Map">
+        SELECT
+            ID_ AS id,
+            PROC_INST_ID_ AS procInsId,
+            TASK_ID_ AS taskId,
+            NAME_ AS name,
+            VAR_TYPE_ AS varType,
+            TEXT_ AS textValue,
+            DOUBLE_ AS doubleValue,
+            LONG_ AS longValue
+        FROM ACT_HI_VARINST
+        WHERE PROC_INST_ID_ = #{procInsId}
+        ORDER BY NAME_ ASC
+    </select>
+
+</mapper>

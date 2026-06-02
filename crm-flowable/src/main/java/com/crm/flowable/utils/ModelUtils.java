@@ -2,17 +2,35 @@ package com.crm.flowable.utils;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
 import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.*;
 import org.flowable.common.engine.impl.util.io.StringStreamSource;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
  * @author KonBAI
  * @createTime 2022/3/26 19:04
  */
+@Slf4j
 public class ModelUtils {
 
     private static final BpmnXMLConverter bpmnXMLConverter = new BpmnXMLConverter();
@@ -49,6 +67,437 @@ public class ModelUtils {
     @Deprecated
     public static byte[] getBpmnXml(BpmnModel bpmnModel) {
         return bpmnXMLConverter.convertToXML(bpmnModel);
+    }
+
+    // BPMN 标准命名空间
+    private static final String NS_BPMNDI = "http://www.omg.org/spec/BPMN/20100524/DI";
+    private static final String NS_DC = "http://www.omg.org/spec/DD/20100524/DC";
+    private static final String NS_DI = "http://www.omg.org/spec/DD/20100524/DI";
+    private static final String NS_BPMN = "http://www.omg.org/spec/BPMN/20100524/MODEL";
+
+    /**
+     * 确保BPMN XML包含BPMNDiagram信息
+     * 如果XML缺少BPMNDiagram，自动生成简单的流程图布局信息并注入到XML中。
+     * 使用DOM操作方式，保证不丢失原始XML中的任何数据。
+     *
+     * @param xml 原始BPMN XML字符串
+     * @return 包含BPMNDiagram的XML字符串
+     */
+    public static String ensureBpmnHasDiagram(String xml) {
+        if (StrUtil.isBlank(xml)) {
+            return xml;
+        }
+        // 快速检查是否已有BPMNDiagram
+        if (xml.contains("bpmndi:BPMNDiagram") || xml.contains("BPMNDiagram")) {
+            return xml;
+        }
+
+        try {
+            // 1. 解析XML DOM
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(new InputSource(new StringReader(xml)));
+
+            // 再次检查DOM中是否有BPMNDiagram
+            NodeList existingDiagrams = document.getElementsByTagNameNS(NS_BPMNDI, "BPMNDiagram");
+            if (existingDiagrams != null && existingDiagrams.getLength() > 0) {
+                return xml;
+            }
+
+            Element definitions = document.getDocumentElement();
+            if (definitions == null) {
+                return xml;
+            }
+
+            // 2. 收集所有bpmn:process及其子元素（flow nodes和sequence flows）
+            NodeList processList = definitions.getElementsByTagNameNS(NS_BPMN, "process");
+            if (processList == null || processList.getLength() == 0) {
+                // 尝试无命名空间查找
+                processList = definitions.getElementsByTagName("process");
+                if (processList == null || processList.getLength() == 0) {
+                    return xml;
+                }
+            }
+
+            for (int pi = 0; pi < processList.getLength(); pi++) {
+                Element processEl = (Element) processList.item(pi);
+                String processId = processEl.getAttribute("id");
+                if (StrUtil.isBlank(processId)) {
+                    continue;
+                }
+
+                // 收集流程节点（所有非sequenceFlow的元素）
+                List<FlowNodeInfo> flowNodes = new ArrayList<>();
+                // 收集连线
+                List<SequenceFlowInfo> sequenceFlows = new ArrayList<>();
+
+                NodeList childNodes = processEl.getChildNodes();
+                for (int ci = 0; ci < childNodes.getLength(); ci++) {
+                    Node child = childNodes.item(ci);
+                    if (child.getNodeType() != Node.ELEMENT_NODE) {
+                        continue;
+                    }
+                    String nodeName = child.getLocalName();
+                    if (nodeName == null) {
+                        nodeName = child.getNodeName();
+                        // 去除命名空间前缀
+                        int colonIdx = nodeName.indexOf(':');
+                        if (colonIdx >= 0) {
+                            nodeName = nodeName.substring(colonIdx + 1);
+                        }
+                    }
+                    String elementId = ((Element) child).getAttribute("id");
+                    if (StrUtil.isBlank(elementId)) {
+                        continue;
+                    }
+
+                    if ("sequenceFlow".equals(nodeName)) {
+                        String sourceRef = ((Element) child).getAttribute("sourceRef");
+                        String targetRef = ((Element) child).getAttribute("targetRef");
+                        sequenceFlows.add(new SequenceFlowInfo(elementId, sourceRef, targetRef));
+                    } else {
+                        flowNodes.add(new FlowNodeInfo(elementId, nodeName));
+                    }
+                }
+
+                if (flowNodes.isEmpty()) {
+                    continue;
+                }
+
+                // 3. 使用简单布局算法为节点分配位置
+                Map<String, double[]> positions = simpleLayout(flowNodes, sequenceFlows);
+
+                // 4. 创建BPMNDiagram元素
+                Element bpmnDiagram = document.createElementNS(NS_BPMNDI, "bpmndi:BPMNDiagram");
+                bpmnDiagram.setAttribute("id", "BPMNDiagram_" + processId);
+
+                Element bpmnPlane = document.createElementNS(NS_BPMNDI, "bpmndi:BPMNPlane");
+                bpmnPlane.setAttribute("bpmnElement", processId);
+                bpmnPlane.setAttribute("id", "BPMNPlane_" + processId);
+
+                // 为每个流程节点创建BPMNShape
+                for (FlowNodeInfo node : flowNodes) {
+                    double[] pos = positions.get(node.id);
+                    if (pos == null) continue;
+
+                    Element shape = document.createElementNS(NS_BPMNDI, "bpmndi:BPMNShape");
+                    shape.setAttribute("bpmnElement", node.id);
+                    shape.setAttribute("id", "BPMNShape_" + node.id);
+
+                    Element bounds = document.createElementNS(NS_DC, "dc:Bounds");
+                    bounds.setAttribute("x", String.valueOf((int) pos[0]));
+                    bounds.setAttribute("y", String.valueOf((int) pos[1]));
+                    bounds.setAttribute("width", String.valueOf((int) pos[2]));
+                    bounds.setAttribute("height", String.valueOf((int) pos[3]));
+                    shape.appendChild(bounds);
+
+                    bpmnPlane.appendChild(shape);
+                }
+
+                // 为每条sequence flow创建BPMNEdge
+                for (SequenceFlowInfo sf : sequenceFlows) {
+                    double[] sourcePos = positions.get(sf.sourceRef);
+                    double[] targetPos = positions.get(sf.targetRef);
+                    if (sourcePos == null || targetPos == null) continue;
+
+                    // 计算源节点出口点（底部中心）和目标节点入口点（顶部中心）
+                    double srcX = sourcePos[0] + sourcePos[2] / 2;
+                    double srcY = sourcePos[1] + sourcePos[3];
+                    double tgtX = targetPos[0] + targetPos[2] / 2;
+                    double tgtY = targetPos[1];
+
+                    // 如果目标在上方，使用侧面连接
+                    if (tgtY < srcY) {
+                        srcY = sourcePos[1] + sourcePos[3] / 2;
+                        tgtY = targetPos[1] + targetPos[3] / 2;
+                        srcX = sourcePos[0] + sourcePos[2];
+                        tgtX = targetPos[0];
+                    }
+
+                    Element edge = document.createElementNS(NS_BPMNDI, "bpmndi:BPMNEdge");
+                    edge.setAttribute("bpmnElement", sf.id);
+                    edge.setAttribute("id", "BPMNEdge_" + sf.id);
+
+                    // 起点
+                    Element wp1 = document.createElementNS(NS_DC, "dc:Point");
+                    wp1.setAttribute("x", String.valueOf((int) srcX));
+                    wp1.setAttribute("y", String.valueOf((int) srcY));
+                    edge.appendChild(wp1);
+
+                    // 终点
+                    Element wp2 = document.createElementNS(NS_DC, "dc:Point");
+                    wp2.setAttribute("x", String.valueOf((int) tgtX));
+                    wp2.setAttribute("y", String.valueOf((int) tgtY));
+                    edge.appendChild(wp2);
+
+                    bpmnPlane.appendChild(edge);
+                }
+
+                bpmnDiagram.appendChild(bpmnPlane);
+                definitions.appendChild(bpmnDiagram);
+            }
+
+            // 5. 序列化回XML字符串
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+
+            StringWriter writer = new StringWriter();
+            transformer.transform(new DOMSource(document), new StreamResult(writer));
+            String result = writer.toString();
+
+            // 确保XML声明头部使用UTF-8
+            if (result.startsWith("<?xml")) {
+                int encodingIdx = result.indexOf("encoding=");
+                if (encodingIdx > 0) {
+                    int quoteStart = result.indexOf('"', encodingIdx);
+                    int quoteEnd = result.indexOf('"', quoteStart + 1);
+                    if (quoteStart > 0 && quoteEnd > 0) {
+                        String encoding = result.substring(quoteStart + 1, quoteEnd);
+                        if (!"UTF-8".equalsIgnoreCase(encoding)) {
+                            result = result.substring(0, quoteStart + 1) + "UTF-8" + result.substring(quoteEnd);
+                        }
+                    }
+                }
+            }
+
+            log.info("已为BPMN流程 [{}] 自动生成BPMNDiagram布局", processIdFromXml(xml));
+            return result;
+
+        } catch (Exception e) {
+            log.warn("自动生成BPMN Diagram失败，返回原始XML", e);
+            return xml;
+        }
+    }
+
+    /**
+     * 简单布局算法：BFS层次布局
+     * 从开始节点出发，按照连线关系分层，每层垂直排列，层内水平分布
+     */
+    private static Map<String, double[]> simpleLayout(List<FlowNodeInfo> nodes, List<SequenceFlowInfo> flows) {
+        Map<String, double[]> positions = new LinkedHashMap<>();
+
+        if (nodes.isEmpty()) {
+            return positions;
+        }
+
+        // 确定节点尺寸
+        Map<String, double[]> sizes = new HashMap<>();
+        for (FlowNodeInfo node : nodes) {
+            sizes.put(node.id, getNodeSize(node.type));
+        }
+
+        // 构建邻接表
+        Map<String, List<String>> outEdges = new HashMap<>();
+        Map<String, List<String>> inEdges = new HashMap<>();
+        for (FlowNodeInfo node : nodes) {
+            outEdges.putIfAbsent(node.id, new ArrayList<>());
+            inEdges.putIfAbsent(node.id, new ArrayList<>());
+        }
+        for (SequenceFlowInfo sf : flows) {
+            outEdges.computeIfAbsent(sf.sourceRef, k -> new ArrayList<>()).add(sf.targetRef);
+            inEdges.computeIfAbsent(sf.targetRef, k -> new ArrayList<>()).add(sf.sourceRef);
+        }
+
+        // 找开始节点（没有入边的节点，或类型为startEvent的节点）
+        String startNodeId = null;
+        for (FlowNodeInfo node : nodes) {
+            if ("startEvent".equals(node.type)) {
+                startNodeId = node.id;
+                break;
+            }
+        }
+        if (startNodeId == null) {
+            // 没有开始事件，找第一个没有入边的节点
+            for (FlowNodeInfo node : nodes) {
+                if (inEdges.getOrDefault(node.id, Collections.emptyList()).isEmpty()) {
+                    startNodeId = node.id;
+                    break;
+                }
+            }
+        }
+        if (startNodeId == null) {
+            startNodeId = nodes.get(0).id;
+        }
+
+        // BFS分层
+        Map<String, Integer> levels = new HashMap<>();
+        Queue<String> queue = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
+
+        queue.add(startNodeId);
+        visited.add(startNodeId);
+        levels.put(startNodeId, 0);
+
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            int currentLevel = levels.get(current);
+
+            for (String next : outEdges.getOrDefault(current, Collections.emptyList())) {
+                if (!visited.contains(next)) {
+                    visited.add(next);
+                    levels.put(next, currentLevel + 1);
+                    queue.add(next);
+                }
+            }
+            // 也处理入边，避免节点被遗漏（如指向开始节点的反向边）
+            for (String prev : inEdges.getOrDefault(current, Collections.emptyList())) {
+                if (!visited.contains(prev)) {
+                    visited.add(prev);
+                    levels.put(prev, currentLevel - 1);
+                    queue.add(prev);
+                }
+            }
+        }
+
+        // 未连接的节点分配默认层级
+        int maxLevel = levels.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        for (FlowNodeInfo node : nodes) {
+            if (!levels.containsKey(node.id)) {
+                maxLevel++;
+                levels.put(node.id, maxLevel);
+            }
+        }
+
+        // 按层级分组
+        Map<Integer, List<String>> levelGroups = new TreeMap<>();
+        for (Map.Entry<String, Integer> entry : levels.entrySet()) {
+            levelGroups.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
+        }
+
+        // 计算最宽层级
+        int minLevel = levelGroups.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
+        int maxLvl = levelGroups.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+
+        // 布局参数
+        final int START_X = 100;
+        final int START_Y = 60;
+        final int V_GAP = 120;  // 垂直间距
+        final int H_GAP = 80;   // 水平间距
+
+        // 计算每个层级的总宽度，确定X起始偏移（居中）
+        Map<Integer, Double> levelWidths = new HashMap<>();
+        for (Map.Entry<Integer, List<String>> entry : levelGroups.entrySet()) {
+            double totalWidth = 0;
+            for (String nodeId : entry.getValue()) {
+                double[] size = sizes.getOrDefault(nodeId, new double[]{100, 80});
+                totalWidth += size[0];
+            }
+            totalWidth += (entry.getValue().size() - 1) * H_GAP;
+            levelWidths.put(entry.getKey(), totalWidth);
+        }
+
+        double maxWidth = levelWidths.values().stream().mapToDouble(Double::doubleValue).max().orElse(500);
+
+        // 分配位置
+        for (Map.Entry<Integer, List<String>> entry : levelGroups.entrySet()) {
+            int level = entry.getKey();
+            List<String> nodeIds = entry.getValue();
+
+            double y = START_Y + (level - minLevel) * V_GAP;
+            double totalWidth = levelWidths.get(level);
+            double x = START_X + (maxWidth - totalWidth) / 2;
+
+            for (String nodeId : nodeIds) {
+                double[] size = sizes.getOrDefault(nodeId, new double[]{100, 80});
+                positions.put(nodeId, new double[]{x, y, size[0], size[1]});
+                x += size[0] + H_GAP;
+            }
+        }
+
+        return positions;
+    }
+
+    /**
+     * 根据节点类型获取默认尺寸 [width, height]
+     */
+    private static double[] getNodeSize(String type) {
+        if (type == null) {
+            return new double[]{100, 80};
+        }
+        switch (type) {
+            case "startEvent":
+            case "endEvent":
+            case "intermediateCatchEvent":
+            case "intermediateThrowEvent":
+                return new double[]{36, 36};
+            case "exclusiveGateway":
+            case "parallelGateway":
+            case "inclusiveGateway":
+            case "complexGateway":
+            case "eventBasedGateway":
+                return new double[]{50, 50};
+            case "userTask":
+            case "serviceTask":
+            case "scriptTask":
+            case "businessRuleTask":
+            case "manualTask":
+            case "receiveTask":
+            case "sendTask":
+                return new double[]{100, 80};
+            case "callActivity":
+                return new double[]{100, 80};
+            case "subProcess":
+            case "transaction":
+                return new double[]{200, 150};
+            default:
+                return new double[]{100, 80};
+        }
+    }
+
+    /**
+     * 内部类：流程节点信息
+     */
+    private static class FlowNodeInfo {
+        final String id;
+        final String type;
+
+        FlowNodeInfo(String id, String type) {
+            this.id = id;
+            this.type = type;
+        }
+    }
+
+    /**
+     * 内部类：连线信息
+     */
+    private static class SequenceFlowInfo {
+        final String id;
+        final String sourceRef;
+        final String targetRef;
+
+        SequenceFlowInfo(String id, String sourceRef, String targetRef) {
+            this.id = id;
+            this.sourceRef = sourceRef;
+            this.targetRef = targetRef;
+        }
+    }
+
+    /**
+     * 从XML中提取processId（用于日志）
+     */
+    private static String processIdFromXml(String xml) {
+        try {
+            int idx = xml.indexOf("processId=\"");
+            if (idx < 0) {
+                idx = xml.indexOf("id=\"");
+                if (idx >= 0) {
+                    int start = idx + 4;
+                    int end = xml.indexOf('"', start);
+                    if (end > 0 && end - start < 100) {
+                        return xml.substring(start, end);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "unknown";
     }
 
     /**
