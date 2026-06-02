@@ -3,7 +3,7 @@ package com.crm.job.service.file;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.FtpBroadbandMarketResult;
 import com.crm.system.mapper.FtpBroadbandMarketResultMapper;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
