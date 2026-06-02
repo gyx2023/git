@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -114,7 +115,11 @@ public class repCustContractMillSumMJob extends BaseJob {
                 while ((currentLine = bufferedReader.readLine()) != null) {
                     count++;
                     RepCustContractMillSumM data = new RepCustContractMillSumM();
-                    FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 3);
+                    String[] values = currentLine.split("\\x1b", -1);
+                    if (count <= 1) {
+                        log.info("第{}行数据: values长度={}, values={}", count, values.length, Arrays.toString(values));
+                    }
+                    FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, values, 3);
                     data.setCreateDate(new Date());
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMM");
                     Date paymentDays = simpleDateFormat.parse(yyyyMM);
