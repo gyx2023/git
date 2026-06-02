@@ -1,4 +1,4 @@
-package com.crm.service.script;
+package com.crm.system.service.rpa.script;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;

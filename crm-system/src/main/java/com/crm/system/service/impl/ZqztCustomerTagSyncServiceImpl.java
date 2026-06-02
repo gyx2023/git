@@ -4,14 +4,16 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.DwdRepSysPersonD;
-import com.crm.system.domain.ZqGrpGroupInfo;
+
+import com.crm.system.domain.bo.cust.CustomerTagSyncDTO;
+import com.crm.system.domain.dao.DwdRepSysPersonD;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.mapper.DwdRepSysPersonDMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.service.IZqGrpGroupLogService;
 import com.crm.system.service.IZqztCustomerTagSyncService;
-import com.crm.system.service.ISysDictDataService;
+import com.crm.system.service.sys.ISysDictDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +50,7 @@ public class ZqztCustomerTagSyncServiceImpl implements IZqztCustomerTagSyncServi
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Boolean syncCustomerTags(com.crm.common.core.domain.dto.CustomerTagSyncDTO request) {
+    public Boolean syncCustomerTags(CustomerTagSyncDTO request) {
         String hqGrpCode = StringUtils.trimToNull(request.getHqGrpCode());
         if (StringUtils.isBlank(hqGrpCode)) {
             log.warn("[客户标签同步] 总部集团编码为空，跳过");

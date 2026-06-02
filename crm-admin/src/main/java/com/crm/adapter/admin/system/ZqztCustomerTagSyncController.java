@@ -1,7 +1,7 @@
-package com.crm.web.controller.system;
+package com.crm.adapter.admin.system;
 
 import com.crm.common.core.domain.R;
-import com.crm.common.core.domain.dto.CustomerTagSyncDTO;
+import com.crm.system.domain.bo.cust.CustomerTagSyncDTO;
 import com.crm.system.service.IZqztCustomerTagSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

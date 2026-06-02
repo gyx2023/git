@@ -1,22 +1,22 @@
-package com.crm.service.servicehall.impl;
+package com.crm.system.service.rpa.servicehall.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.crm.dto.BusinessMessageDTO;
-import com.crm.dto.Response;
-import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dto.rpa.BusinessMessageDTO;
+import com.crm.system.domain.dto.rpa.Response;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;
 import com.crm.system.domain.vo.servicehall.NengKaiResponseVo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.mapper.param.SysParamMapper;
-import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.system.service.jt.IZqztJtNoticeRecordService;
+import com.crm.system.service.rpa.servicehall.NengKaiService;
 import com.crm.system.service.servicehall.INengKaiCallbackService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -26,7 +26,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -45,16 +46,7 @@ public class NengKaiServiceImpl implements NengKaiService {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${ability.app_id}")
-    private String APP_ID;
-
-    @Value("${ability.app_secret}")
-    private String APP_SECRET;
-
-    @Value("${ability.url.worksheetsComplete}")
-    private String worksheetsCompleteURL;
-
-    @Value("${ability.url.unmannedFactory}")
+    @Value("${ability.url.unmannedFactory:}")
     private String UnmannedFactoryURL;
 
     @Resource

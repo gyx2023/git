@@ -1,5 +1,6 @@
-package com.crm.service.mq.ygcf.strategy;
+package com.crm.system.service.rpa.strategy;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;

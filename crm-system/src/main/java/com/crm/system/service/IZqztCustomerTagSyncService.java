@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.common.core.domain.dto.CustomerTagSyncDTO;
+import com.crm.system.domain.bo.cust.CustomerTagSyncDTO;
 
 /**
  * RPA客户标签同步Service接口

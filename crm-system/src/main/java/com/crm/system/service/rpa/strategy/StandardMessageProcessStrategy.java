@@ -1,8 +1,10 @@
-package com.crm.service.mq.ygcf.strategy;
+package com.crm.system.service.rpa.strategy;
 
-import com.crm.service.mq.ygcf.RpaFormMappingEngine;
+
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.service.rpa.RpaFormMappingEngine;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

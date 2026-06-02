@@ -7,3 +7,7 @@ INSERT INTO `zqzt_sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict
 INSERT INTO `zqzt_sys_dict_type` (`dict_name`, `dict_type`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES ( '集团客户类别', 'sys_cust_type', '0', 'admin', '2025-11-25 10:34:11', 'admin', '2025-11-25 10:34:11', '集团客户状态');
 INSERT INTO `zqzt_sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES ( 0, 'ws7fevfrqjs', '500', 'rpa_cust_type', NULL, 'default', 'N', '0', 'admin', '2026-05-28 09:59:39', 'admin', '2026-05-28 09:59:39', '中小企业客户');
 INSERT INTO `zqzt_sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES ( 1, 'zfvjvrswm53', '400', 'rpa_cust_type', NULL, 'default', 'N', '0', 'admin', '2026-05-28 10:00:04', 'admin', '2026-05-28 10:00:04', '大客户');
+
+
+ALTER TABLE `zqzt_jt_notice_record` MODIFY COLUMN `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间' AFTER `create_time`;
+ALTER TABLE zqqt_jt_notice_record ADD COLUMN retry_count INT DEFAULT 0 COMMENT '重试次数' AFTER res_body;

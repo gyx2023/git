@@ -1,4 +1,4 @@
-package com.crm.service.mq.ygcf;
+package com.crm.system.service.rpa;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.constant.CacheNames;

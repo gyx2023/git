@@ -1,4 +1,4 @@
-package com.crm.service.script;
+package com.crm.system.service.rpa.script;
 
 import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import lombok.Builder;

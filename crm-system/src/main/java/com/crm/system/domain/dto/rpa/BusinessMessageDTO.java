@@ -1,4 +1,4 @@
-package com.crm.system.domain.dao.rpa;
+package com.crm.system.domain.dto.rpa;
 
 import lombok.Data;
 

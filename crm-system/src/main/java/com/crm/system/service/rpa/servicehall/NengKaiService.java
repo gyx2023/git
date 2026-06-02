@@ -1,4 +1,4 @@
-package com.crm.service.servicehall;
+package com.crm.system.service.rpa.servicehall;
 
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.servicehall.NengKaiRequestVo;

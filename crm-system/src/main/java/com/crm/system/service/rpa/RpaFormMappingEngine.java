@@ -1,21 +1,21 @@
-package com.crm.service.mq.ygcf;
+package com.crm.system.service.rpa;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.service.script.RpaMappingScriptEngine;
-import com.crm.service.script.RpaScriptExecutionContext;
 import com.crm.system.domain.dao.SysParamDo;
-import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import com.crm.system.domain.dao.rpa.ZqztRpaScriptDefDo;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.rpa.ZqztRpaScriptDefMapper;
-import com.crm.service.servicehall.NengKaiService;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
+import com.crm.system.service.rpa.script.RpaMappingScriptEngine;
+import com.crm.system.service.rpa.script.RpaScriptExecutionContext;
+import com.crm.system.service.rpa.servicehall.NengKaiService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -23,9 +23,9 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.crm.utils.DealMapUtil.getValueByPath;
-import static com.crm.utils.DealMapUtil.setValueByPath;
-import static com.crm.utils.EvaluateUtil.evaluateCondition;
+import static com.crm.system.utils.DealMapUtil.getValueByPath;
+import static com.crm.system.utils.DealMapUtil.setValueByPath;
+import static com.crm.system.utils.EvaluateUtil.evaluateCondition;
 
 /**
  * 表单映射与脚本执行的公共引擎。

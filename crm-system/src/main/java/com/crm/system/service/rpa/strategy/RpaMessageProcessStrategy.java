@@ -1,4 +1,4 @@
-package com.crm.service.mq.ygcf.strategy;
+package com.crm.system.service.rpa.strategy;
 
 
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;

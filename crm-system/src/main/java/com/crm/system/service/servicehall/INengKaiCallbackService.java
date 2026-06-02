@@ -1,6 +1,7 @@
 package com.crm.system.service.servicehall;
 
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 
 /**
  * 能开回调核心服务（System层）

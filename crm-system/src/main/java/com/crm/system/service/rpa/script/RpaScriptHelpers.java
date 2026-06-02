@@ -1,4 +1,6 @@
-package com.crm.service.script;
+package com.crm.system.service.rpa.script;
+
+import com.crm.system.utils.DealMapUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,11 +13,11 @@ import java.util.Map;
 public class RpaScriptHelpers {
 
     public Object getValueByPath(Map<String, Object> source, String path) {
-        return com.crm.utils.DealMapUtil.getValueByPath(source, path);
+        return DealMapUtil.getValueByPath(source, path);
     }
 
     public void setValueByPath(Map<String, Object> source, String path, Object value) {
-        com.crm.utils.DealMapUtil.setValueByPath(source, path, value);
+        DealMapUtil.setValueByPath(source, path, value);
     }
 
     public Integer toInteger(Object value) {

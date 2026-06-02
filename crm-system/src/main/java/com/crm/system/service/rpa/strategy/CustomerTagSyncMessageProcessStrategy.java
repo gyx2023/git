@@ -1,18 +1,17 @@
-package com.crm.service.mq.ygcf.strategy;
+package com.crm.system.service.rpa.strategy;
 
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.service.mq.ygcf.RpaFormMappingEngine;
-import com.crm.service.script.RpaScriptExecutionContext;
 import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import com.crm.system.domain.dao.rpa.ZqztRpaScriptDefDo;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
+import com.crm.system.service.rpa.RpaFormMappingEngine;
+import com.crm.system.service.rpa.script.RpaScriptExecutionContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -22,9 +21,9 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.crm.utils.DealMapUtil.getValueByPath;
-import static com.crm.utils.DealMapUtil.setValueByPath;
-import static com.crm.utils.EvaluateUtil.evaluateCondition;
+import static com.crm.system.utils.DealMapUtil.getValueByPath;
+import static com.crm.system.utils.DealMapUtil.setValueByPath;
+import static com.crm.system.utils.EvaluateUtil.evaluateCondition;
 
 /**
  * 客户标签同步消息处理策略（bizCode = ZH01qu）

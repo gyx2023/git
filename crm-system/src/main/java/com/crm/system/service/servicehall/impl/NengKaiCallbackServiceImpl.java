@@ -3,16 +3,18 @@ package com.crm.system.service.servicehall.impl;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.crm.system.domain.Sequence;
+import com.crm.system.domain.dao.Sequence;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.service.servicehall.INengKaiCallbackService;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.utils.HaoKaoSignUtil;
 import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -35,13 +37,13 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
     @Resource
     private RedissonClient redissonClient;
 
-    @Value("${ability.app_id}")
+    @Value("${ability.app_id:}")
     private String APP_ID;
 
-    @Value("${ability.app_secret}")
+    @Value("${ability.app_secret:}")
     private String APP_SECRET;
 
-    @Value("${ability.url.worksheetsComplete}")
+    @Value("${ability.url.worksheetsComplete:}")
     private String worksheetsCompleteURL;
 
     @Override

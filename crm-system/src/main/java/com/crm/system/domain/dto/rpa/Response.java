@@ -1,4 +1,4 @@
-package com.crm.dto;
+package com.crm.system.domain.dto.rpa;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

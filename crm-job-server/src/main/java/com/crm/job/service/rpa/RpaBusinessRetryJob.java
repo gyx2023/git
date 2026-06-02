@@ -28,7 +28,6 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@Profile("rpa")
 public class RpaBusinessRetryJob {
 
     // 状态码常量

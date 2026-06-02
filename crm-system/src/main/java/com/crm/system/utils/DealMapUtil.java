@@ -1,4 +1,4 @@
-package com.crm.utils;
+package com.crm.system.utils;
 
 import java.util.Map;
 

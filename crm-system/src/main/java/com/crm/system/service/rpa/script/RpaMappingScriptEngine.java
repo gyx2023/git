@@ -1,4 +1,4 @@
-package com.crm.service.script;
+package com.crm.system.service.rpa.script;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyClassLoader;
