@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.FtpBroadbandMarketResultMapper">
+
+    <resultMap type="com.crm.system.domain.FtpBroadbandMarketResult" id="FtpBroadbandMarketResultResult">
+        <result property="statCycle" column="STAT_CYCLE"/>
+        <result property="marketingType" column="MARKETING_TYPE"/>
+        <result property="marketingName" column="MARKETING_NAME"/>
+        <result property="userMarketingId" column="USER_MARKETING_ID"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="svcNum" column="SVC_NUM"/>
+        <result property="isSucc" column="IS_SUCC"/>
+        <result property="createDate" column="CREATE_DATE"/>
+        <result property="startDate" column="START_DATE"/>
+        <result property="endDate" column="END_DATE"/>
+        <result property="orderProductCode" column="ORDER_PRODUCT_CODE"/>
+        <result property="orderProductName" column="ORDER_PRODUCT_NAME"/>
+        <result property="orderDiscntCode" column="ORDER_DISCNT_CODE"/>
+        <result property="orderDiscntName" column="ORDER_DISCNT_NAME"/>
+        <result property="newSpeed" column="NEW_SPEED"/>
+    </resultMap>
+
+    <!--根据账期删除数据-->
+    <delete id="deleteByStatCycle">
+        DELETE FROM ftp_broadband_market_result
+        WHERE STAT_CYCLE = #{statCycle}
+    </delete>
+
+</mapper>
