@@ -1,14 +1,13 @@
 package com.crm.system.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.crm.system.domain.CustTRosterCustomerProvinceDo;
+import com.crm.system.domain.dao.CustTRosterCustomerProvinceDo;
 import com.crm.system.mapper.CustTRosterCustomerProvinceMapper;
 import com.crm.system.service.ICustTRosterCustomerProvinceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 
 @Service

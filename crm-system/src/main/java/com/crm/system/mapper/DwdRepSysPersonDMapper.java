@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.crm.system.domain.DwdRepSysPersonD;
+import com.crm.system.domain.dao.DwdRepSysPersonD;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;

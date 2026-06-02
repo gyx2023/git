@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.crm.system.domain.PolicyCenterTask;
+import com.crm.system.domain.dao.PolicyCenterTask;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -26,7 +26,7 @@ public interface PolicyCenterTaskMapper extends BaseMapper<PolicyCenterTask> {
     /**
      * 根据客户经理ID查询已拜访任务列表
      */
-    List<PolicyCenterTask> selectVisitOverList(@Param("mangerId") Integer mangerId, 
+    List<PolicyCenterTask> selectVisitOverList(@Param("mangerId") Integer mangerId,
                                                 @Param("visitResult") String visitResult,
                                                 @Param("startDate") String startDate,
                                                 @Param("endDate") String endDate);

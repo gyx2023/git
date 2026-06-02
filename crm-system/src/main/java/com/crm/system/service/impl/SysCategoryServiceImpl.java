@@ -1,7 +1,6 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.constant.CacheNames;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
@@ -15,8 +14,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.SysCategoryBo;
 import com.crm.system.domain.vo.SysCategoryVo;
-import com.crm.system.domain.SysCategory;
-import com.crm.system.mapper.SysCategoryMapper;
+import com.crm.system.domain.dao.sys.SysCategory;
+import com.crm.system.mapper.sys.SysCategoryMapper;
 import com.crm.system.service.ISysCategoryService;
 
 import java.util.List;

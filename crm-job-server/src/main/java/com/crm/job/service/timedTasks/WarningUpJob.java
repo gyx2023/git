@@ -2,8 +2,8 @@ package com.crm.job.service.timedTasks;
 
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
-import com.crm.system.domain.DwdRepGwPstD;
-import com.crm.system.domain.DwdRepSysPersonD;
+import com.crm.system.domain.dao.DwdRepGwPstD;
+import com.crm.system.domain.dao.DwdRepSysPersonD;
 import com.crm.system.service.DwdRepGwPstDService;
 import com.crm.system.service.IDwdRepSysPersonDService;
 import com.xxl.job.core.context.XxlJobHelper;

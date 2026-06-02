@@ -2,9 +2,9 @@ package com.crm.system.mapper.zbzq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.crm.common.core.domain.dto.GrpGroupImportDTO;
+import com.crm.system.domain.dto.GrpGroupImportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.zbzq.RepSysPersonNewDDo;
+import com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

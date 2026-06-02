@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.RepCustContractMillSumM;
+import com.crm.system.domain.dao.RepCustContractMillSumM;
 
 import java.util.List;
 

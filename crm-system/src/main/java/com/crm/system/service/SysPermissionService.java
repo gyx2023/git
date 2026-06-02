@@ -1,14 +1,12 @@
 package com.crm.system.service;
 
-import com.crm.common.core.domain.entity.SysRole;
 import com.crm.common.core.domain.entity.SysUser;
+import com.crm.system.service.sys.ISysMenuService;
+import com.crm.system.service.sys.ISysRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**

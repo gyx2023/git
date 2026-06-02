@@ -1,7 +1,7 @@
 package com.crm.system.mapper.encrypt;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.encrypt.SysFieldEncryptConfigDo;
+import com.crm.system.domain.dao.SysFieldEncryptConfigDo;
 import com.crm.system.domain.vo.encrypt.SysFieldEncryptConfigVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.MapKey;

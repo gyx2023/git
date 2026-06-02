@@ -4,7 +4,7 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.CustMaintInfoMapper">
 
-    <resultMap type="com.crm.system.domain.CustMaintInfo" id="CustMaintInfoResult">
+    <resultMap type="com.crm.system.domain.dao.CustMaintInfo" id="CustMaintInfoResult">
         <!-- 核心主键字段 -->
         <result property="userId" column="USER_ID"/>
         <!-- 基础信息字段 -->
@@ -94,7 +94,7 @@
     </resultMap>
 
     <!-- 第一页查询 -->
-    <select id="selectFirstPage" resultType="com.crm.system.domain.CustMaintInfo">
+    <select id="selectFirstPage" resultType="com.crm.system.domain.dao.CustMaintInfo">
         SELECT * FROM CUST_MAINT_INFO
         WHERE STATUS = '1'
         <if test="params != null and params != ''">
@@ -105,7 +105,7 @@
     </select>
 
     <!-- 后续页查询 - 游标方式 -->
-    <select id="selectNextPage" resultType="com.crm.system.domain.CustMaintInfo">
+    <select id="selectNextPage" resultType="com.crm.system.domain.dao.CustMaintInfo">
         SELECT * FROM CUST_MAINT_INFO
         WHERE STATUS = '1'
         AND (

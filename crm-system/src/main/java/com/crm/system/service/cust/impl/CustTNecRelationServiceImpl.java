@@ -1,8 +1,7 @@
 package com.crm.system.service.cust.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.system.domain.cust.CustNecRelationDo;
-import com.crm.system.domain.cust.CustTNecRelationDo;
+import com.crm.system.domain.dao.CustNecRelationDo;
+import com.crm.system.domain.dao.CustTNecRelationDo;
 import com.crm.system.mapper.cust.CustNecRelationMapper;
 import com.crm.system.mapper.cust.CustTNecRelationMapper;
 import com.crm.system.service.cust.CustTNecRelationService;

@@ -1,6 +1,6 @@
 package com.crm.system.mapper.param;
 
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

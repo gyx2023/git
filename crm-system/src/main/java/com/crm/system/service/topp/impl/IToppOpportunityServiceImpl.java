@@ -6,16 +6,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.domain.dto.OpportunityDTO;
-import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.enums.ClueStateEnum;
-import com.crm.common.enums.OppoConversionStateEnum;
-import com.crm.common.enums.OppoStateEnum;
+import com.crm.system.enums.ClueStateEnum;
+import com.crm.system.enums.OppoConversionStateEnum;
+import com.crm.system.enums.OppoStateEnum;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.topp.ToppOpportunityDo;
+import com.crm.system.domain.dao.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;
@@ -25,11 +25,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**

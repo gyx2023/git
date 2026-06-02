@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.crm.system.domain.PolicyCenterProduct;
+import com.crm.system.domain.dao.PolicyCenterProduct;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

@@ -1,6 +1,6 @@
 package com.crm.system.mapper.identify;
 
-import com.crm.system.domain.identify.IdentifyScoreDo;
+import com.crm.system.domain.dao.IdentifyScoreDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.identify.IdentifyScoreVo;
 

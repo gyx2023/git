@@ -2,7 +2,7 @@ package com.crm.system.mapper.cust;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.cust.CustNecRelationDo;
+import com.crm.system.domain.dao.CustNecRelationDo;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;

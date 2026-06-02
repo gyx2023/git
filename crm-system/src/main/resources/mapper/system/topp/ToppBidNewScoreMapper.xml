@@ -4,7 +4,7 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.topp.ToppBidNewScoreMapper">
 
-    <resultMap type="com.crm.common.core.domain.dto.BiddingListRespDTO" id="resultMap">
+    <resultMap type="com.crm.system.domain.dto.BiddingListRespDTO" id="resultMap">
         <result property="projectName" column="project_name"/>
         <result property="buyUserName" column="buy_user_name"/>
         <result property="buyBudgetMoney" column="buy_budget_money"/>
@@ -34,7 +34,7 @@
     </resultMap>
 
 
-    <resultMap type="com.crm.common.core.domain.dto.ContractUserRespDTO" id="resultContractMap">
+    <resultMap type="com.crm.system.domain.dto.ContractUserRespDTO" id="resultContractMap">
         <result property="projectName" column="project_name"/>
         <result property="buyUserName" column="buy_user_name"/>
         <result property="signTime" column="sign_time"/>

@@ -3,9 +3,8 @@ package com.crm.job.service.timedTasks;
 import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.job.base.BaseJob;
-import com.crm.system.domain.RepCustContractMillSumM;
+import com.crm.system.domain.dao.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
-import com.crm.system.service.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 政企运营平台合同收入报表定时任务
@@ -88,14 +90,17 @@ public class repCustContractMillSumMJob extends BaseJob {
      * @param yyyyMM 账期年月
      */
     public void start(String yyyyMM) {
+        XxlJobHelper.log("开始下载账期为 {} 的合同收入报表数据", yyyyMM);
+
         SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
         try {
             ftpUtil.login();
             String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
-            String ftDirectory1 = ftDirectory + "/" + yyyyMM;
+            String ftDirectory1 = ftDirectory + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
             log.info("合同收入报表需求接口ftp开始下载文件:" + ftDirectory1 + File.separator + saveFile);
+            XxlJobHelper.log("FTP目录：{}，本地文件：{}", ftDirectory1, localFile);
             ftpUtil.download(ftDirectory1, saveFile, localFile);
             log.info("合同收入报表需求接口ftp下载文件完成:" + localFile);
 
@@ -125,9 +130,11 @@ public class repCustContractMillSumMJob extends BaseJob {
                 }
                 bufferedReader.close();
                 reader.close();
+                XxlJobHelper.log("共计处理 {} 条数据", count);
             }
         } catch (Exception e) {
             log.error("合同收入报表数据导入异常", e);
+            XxlJobHelper.log("合同收入报表数据导入异常:{}", e.getMessage());
             throw new RuntimeException("合同收入报表数据导入异常", e);
         }
         log.info("政企运营平台合同收入报表接口执行完成");

@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqztOperRecordMapper">
 
-    <resultMap type="com.crm.system.domain.ZqztOperRecord" id="ZqztOperRecordResult">
+    <resultMap type="com.crm.system.domain.dao.ZqztOperRecord" id="ZqztOperRecordResult">
         <result property="id" column="id"/>
         <result property="moduleCode" column="module_code"/>
         <result property="operCode" column="oper_code"/>

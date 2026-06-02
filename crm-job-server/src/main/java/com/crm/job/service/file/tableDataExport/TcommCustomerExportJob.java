@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.crm.common.utils.ExportToolsUtils;
-import com.crm.system.domain.tcomm.TcommCustomer;
+import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.service.tcomm.ITcommCustomerService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

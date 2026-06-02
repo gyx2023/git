@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.CustTRosterCustomerProvinceDo;
+import com.crm.system.domain.dao.CustTRosterCustomerProvinceDo;
 
 import java.util.List;
 

@@ -1,9 +1,7 @@
 package com.crm.system.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.crm.system.domain.CustMaintInfo;
+import com.crm.system.domain.dao.CustMaintInfo;
 
-import java.util.Map;
 import java.util.List;
 import java.util.function.Consumer;
 

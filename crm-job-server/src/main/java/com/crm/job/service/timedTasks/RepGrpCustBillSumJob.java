@@ -4,9 +4,8 @@ import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.base.BaseJob;
-import com.crm.system.domain.RepGrpCustBillSumWarning;
+import com.crm.system.domain.dao.RepGrpCustBillSumWarning;
 import com.crm.system.service.IRepGrpCustBillSumWarningService;
-import com.crm.system.service.ISysParamService;
 import com.crm.system.utils.Constants;
 import com.jcraft.jsch.SftpException;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -96,11 +95,7 @@ public class RepGrpCustBillSumJob extends BaseJob {
             return;
         }
 
-        // 获取ftp配置
-        Map<String, String> param = sysParamService.findValueMapsByType("tc_user_common_warning");
-        //文件存放目录
-        String ftpDirectory = param.get("ftp_directory");
-        ftpDirectory += yyyyMM;
+        String ftpDirectory = ftDirectory + yyyyMM;
         String saveFile = FTP_DOWNLOAD_NAME + yyyyMM + FTP_DOWNLOAD_END_FIX;
         String localFile = localPath + File.separator + saveFile;
         log.info("ftDirectory----" + ftpDirectory + ",localFile----" + localFile + ",saveFile----" + saveFile);

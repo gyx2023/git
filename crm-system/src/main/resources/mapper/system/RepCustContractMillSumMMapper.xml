@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.RepCustContractMillSumMMapper">
 
-    <resultMap type="com.crm.system.domain.RepCustContractMillSumM" id="RepCustContractMillSumMResult">
+    <resultMap type="com.crm.system.domain.dao.RepCustContractMillSumM" id="RepCustContractMillSumMResult">
         <result property="id" column="id_"/>
         <result property="contractId" column="contract_id"/>
         <result property="contractErp" column="contract_erp"/>

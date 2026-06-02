@@ -1,7 +1,7 @@
 package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.crm.system.domain.DwdRepGwPstD;
+import com.crm.system.domain.dao.DwdRepGwPstD;
 import com.crm.system.mapper.DwdRepGwPstDMapper;
 import com.crm.system.service.DwdRepGwPstDService;
 import lombok.extern.slf4j.Slf4j;

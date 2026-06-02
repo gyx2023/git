@@ -1,6 +1,6 @@
 package com.crm.job.base;
 
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,12 +17,12 @@ public abstract class BaseJob {
     @Resource
     protected ISysParamService sysParamService;
 
-    protected static String ftpUsername;
-    protected static String ftpPassword;
-    protected static String ftpHost;
-    protected static String ftpPort;
-    protected static String ftDirectory;
-    protected static String localPath;
+    protected  String ftpUsername;
+    protected  String ftpPassword;
+    protected  String ftpHost;
+    protected  String ftpPort;
+    protected  String ftDirectory;
+    protected  String localPath;
 
     protected void initStaticParam(String type) {
         try {
