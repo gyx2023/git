@@ -101,7 +101,7 @@ public class FtpBroadbandMarketCust {
      * 营销用户数
      */
     @TableField(value = "USER_SCALE")
-    private Long userScale;
+    private String userScale;
 
     /**
      * 创建时间

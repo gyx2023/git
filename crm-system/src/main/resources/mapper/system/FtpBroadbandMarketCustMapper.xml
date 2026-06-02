@@ -24,4 +24,10 @@
         <result property="orderId" column="ORDER_ID"/>
     </resultMap>
 
+    <!-- 新增：根据统计周期删除数据 -->
+    <delete id="deleteByStatCycle" parameterType="java.lang.String">
+        DELETE FROM ftp_broadband_market_cust
+        WHERE STAT_CYCLE = #{statCycle}
+    </delete>
+
 </mapper>
