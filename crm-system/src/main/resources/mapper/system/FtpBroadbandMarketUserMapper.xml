@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.FtpBroadbandMarketUserMapper">
+
+    <resultMap type="com.crm.system.domain.FtpBroadbandMarketUser" id="FtpBroadbandMarketUserResult">
+        <result property="id" column="ID_"/>
+        <result property="statCycle" column="STAT_CYCLE"/>
+        <result property="marketingType" column="MARKETING_TYPE"/>
+        <result property="marketingName" column="MARKETING_NAME"/>
+        <result property="userMarketingId" column="USER_MARKETING_ID"/>
+        <result property="areaName" column="AREA_NAME"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="svcNum" column="SVC_NUM"/>
+        <result property="countyName" column="COUNTY_NAME"/>
+        <result property="openDate" column="OPEN_DATE"/>
+        <result property="custKind" column="CUST_KIND"/>
+        <result property="custId" column="CUST_ID"/>
+        <result property="custName" column="CUST_NAME"/>
+        <result property="certType" column="CERT_TYPE"/>
+        <result property="isGrpKey" column="IS_GRP_KEY"/>
+        <result property="custGrpId" column="CUST_GRP_ID"/>
+        <result property="grpCode" column="GRP_CODE"/>
+        <result property="grpName" column="GRP_NAME"/>
+        <result property="servManagerId" column="SERV_MANAGER_ID"/>
+        <result property="servManagerName" column="SERV_MANAGER_NAME"/>
+        <result property="grpExpandType" column="GRP_EXPAND_TYPE"/>
+        <result property="grpBusiDeptType" column="GRP_BUSI_DEPT_TYPE"/>
+        <result property="prodId" column="PROD_ID"/>
+        <result property="prodName" column="PROD_NAME"/>
+        <result property="userStatus" column="USER_STATUS"/>
+        <result property="hqSvcType" column="HQ_SVC_TYPE"/>
+        <result property="custCountyName" column="CUST_COUNTY_NAME"/>
+        <result property="developerId" column="DEVELOPER_ID"/>
+        <result property="developerName" column="DEVELOPER_NAME"/>
+        <result property="speed" column="SPEED"/>
+        <result property="userAddr" column="USER_ADDR"/>
+        <result property="cycleStartTime" column="CYCLE_START_TIME"/>
+        <result property="cycleEndTime" column="CYCLE_END_TIME"/>
+        <result property="cycleLength" column="CYCLE_LENGTH"/>
+        <result property="cycleFee" column="CYCLE_FEE"/>
+        <result property="mktProductId1" column="MKT_PRODUCT_ID_1"/>
+        <result property="mktProductName1" column="MKT_PRODUCT_NAME_1"/>
+        <result property="mktDiscntCode1" column="MKT_DISCNT_CODE_1"/>
+        <result property="mktDiscntName1" column="MKT_DISCNT_NAME_1"/>
+        <result property="mktDiscntFee1" column="MKT_DISCNT_FEE_1"/>
+        <result property="mktProductId2" column="MKT_PRODUCT_ID_2"/>
+        <result property="mktProductName2" column="MKT_PRODUCT_NAME_2"/>
+        <result property="mktDiscntCode2" column="MKT_DISCNT_CODE_2"/>
+        <result property="mktDiscntName2" column="MKT_DISCNT_NAME_2"/>
+        <result property="mktDiscntFee2" column="MKT_DISCNT_FEE_2"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="mktResult" column="MKT_RESULT"/>
+        <result property="orderProduct" column="ORDER_PRODUCT"/>
+        <result property="otherProductName" column="OTHER_PRODUCT_NAME"/>
+    </resultMap>
+
+</mapper>

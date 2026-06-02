@@ -23,12 +23,6 @@ public class RepCustContractMillSumM implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 主键ID
-     */
-    @TableId(value = "id_", type = IdType.AUTO)
-    private Integer id;
-
-    /**
      * 合同号
      */
     @TableField("contract_id")
@@ -63,6 +57,12 @@ public class RepCustContractMillSumM implements Serializable {
      */
     @TableField("total_owe_fee")
     private BigDecimal totalOweFee;
+
+    /**
+     * 主键ID
+     */
+    @TableId(value = "id_", type = IdType.AUTO)
+    private Integer id;
 
     /**
      * 创建时间
