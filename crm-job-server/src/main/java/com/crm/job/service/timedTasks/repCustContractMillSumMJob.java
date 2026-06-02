@@ -116,9 +116,6 @@ public class repCustContractMillSumMJob extends BaseJob {
                     count++;
                     RepCustContractMillSumM data = new RepCustContractMillSumM();
                     String[] values = currentLine.split("\\x1b", -1);
-                    if (count <= 1) {
-                        log.info("第{}行数据: values长度={}, values={}", count, values.length, Arrays.toString(values));
-                    }
                     FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, values, 3);
                     data.setCreateDate(new Date());
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMM");
