@@ -91,7 +91,8 @@ public class FieldAnnotaionUtil {
                 field.setDouble(obj, Double.parseDouble(val));
             } else if (t == float.class) {
                 field.setFloat(obj, Float.parseFloat(val));
-            } else {//其他对象类型要再次追加 把val转换为 相应对象
+            } else {
+                //其他对象类型要再次追加 把val转换为 相应对象
                 field.set(obj, val);
             }
 
@@ -141,18 +142,27 @@ public class FieldAnnotaionUtil {
      * @return 是否成功
      */
     public static boolean setFiledValFromValuesByOrder(Object obj, String[] values, Integer extraColumn) {
-        if (null == obj) return false;
-        if (null == values || values.length < 1) return false;
-        if (extraColumn == null) extraColumn = 0;
+        if (null == obj) {
+            return false;
+        }
+
+        if (null == values || values.length < 1) {
+            return false;
+        }
 
         boolean flag = true;
         Class<?> clazz = obj.getClass();
         Field[] fields = classFieldsMap.get(clazz);
+
         if (fields == null) {
+            //获取所有字段
             fields = clazz.getDeclaredFields();
             classFieldsMap.put(clazz, fields);
         }
-        if (fields.length < 1) return false;
+
+        if (fields.length < 1){
+            return false;
+        }
 
         // 验证字段数与values个数是否匹配(考虑跳过的字段)
         if (fields.length != values.length + extraColumn) {
