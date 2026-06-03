@@ -7,6 +7,7 @@ import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import com.crm.system.mapper.rpa.ZqztRpaFormMappingMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.ehcache.impl.internal.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -119,13 +120,14 @@ public class RpaFormMappingCacheService {
                     .eq(ZqztRpaFormMappingDo::getBizCode, bizCode)
             );
 
-            // 4. 缓存空列表也存（避免重复查空）
-            CacheUtils.put(
-                CacheNames.ZQZT_RPA_FORM_MAPPING,
-                bizCode,
-                list.isEmpty() ? Collections.emptyList() : new ArrayList<>(list) // 防御性拷贝
-            );
-
+            // 4. 存入缓存
+            if(CollectionUtils.isNotEmpty(list)){
+                CacheUtils.put(
+                    CacheNames.ZQZT_RPA_FORM_MAPPING,
+                    bizCode,
+                    new ArrayList<>(list) // 防御性拷贝
+                );
+            }
             // 5. 返回不可变列表
             return Collections.unmodifiableList(list);
         } catch (Exception e) {

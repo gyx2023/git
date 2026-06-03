@@ -1,5 +1,6 @@
 package com.crm.adapter.admin.system;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.core.domain.R;
 import com.crm.system.domain.bo.cust.CustomerTagSyncDTO;
 import com.crm.system.service.IZqztCustomerTagSyncService;
@@ -25,9 +26,10 @@ public class ZqztCustomerTagSyncController {
      * RPA调用：同步集团客户标签信息
      */
     @PostMapping("/sync")
+    @SaIgnore
     public R<String> sync(@RequestBody CustomerTagSyncDTO request) {
-        log.info("[客户标签同步] 接收RPA同步请求: hqGrpCode={}, bizCode={}",
-            request.getHqGrpCode(), request.getBizCode());
+        log.info("[客户标签同步] 接收RPA同步请求: hqGrpCode={}",
+            request.getHqGrpCode());
 
         try {
             Boolean result = customerTagSyncService.syncCustomerTags(request);

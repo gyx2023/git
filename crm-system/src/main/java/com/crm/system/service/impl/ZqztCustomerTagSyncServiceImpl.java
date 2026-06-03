@@ -68,8 +68,12 @@ public class ZqztCustomerTagSyncServiceImpl implements IZqztCustomerTagSyncServi
 
         // 2. 行业分类: 通过dict_label查dict_value
         String industryMappingLabel = StringUtils.trimToNull(request.getIndustryClassification());
-        String industryMappingValue = resolveDictLabelToValue(industryMappingLabel,"");
-
+        String industryMappingValue = null;
+        if(StringUtils.isNotEmpty(industryMappingLabel)){
+            String[] parts = industryMappingLabel.split("/");
+            String lastPart = parts[parts.length - 1];
+            industryMappingValue = resolveDictLabelToValue(lastPart,"rpa_busi_dept_type");
+        }
         // 3. 直拓类型
         String expandTypeLabel = StringUtils.trimToNull(request.getDirectExpansionType());
         String expandTypeValue = resolveDictLabelToValue(expandTypeLabel,"rpa_expand_type");

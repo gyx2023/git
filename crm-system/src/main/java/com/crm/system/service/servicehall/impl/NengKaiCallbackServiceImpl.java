@@ -1,8 +1,6 @@
 package com.crm.system.service.servicehall.impl;
 
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.SequenceMapper;
@@ -13,8 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -99,24 +95,38 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             return responseBody;
         } catch (Exception e) {
             log.error("能开回调失败: noticeRecordId={}, scene={}", recordDo != null ? recordDo.getId() : null, scene, e);
-            return responseBody;
+            throw new RuntimeException("能开回调失败");
         }
     }
 
     private String getCode(String seqName) {
         String lockKey = "sequence_lock:" + seqName;
-        long expireTime = 60;
+        long expireTime = 60; // 锁过期时间60秒
 
         RLock lock = redissonClient.getLock(lockKey);
         try {
+            // 获取分布式锁，设置锁超时时间为60秒
             boolean acquired = lock.tryLock(expireTime, expireTime, TimeUnit.SECONDS);
+
             if (acquired) {
-                try {
-                    return doGenerateSequence(seqName);
-                } finally {
-                    if (lock.isHeldByCurrentThread()) {
-                        lock.unlock();
-                    }
+                // 获取当前日期
+                String currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+                // 查询sequence表中当天的记录
+                // 这里需要根据实际的sequence表结构和mapper进行查询
+                // 模拟逻辑：查询数据库中指定序列名和日期的记录
+                Integer currentVal = getCurrentValueFromDB(seqName, currentDate);
+
+                if (currentVal != null) {
+                    // 如果当天已有记录，返回current_val+1，并更新current_val
+                    int nextVal = currentVal + 1;
+                    // 更新数据库中的current_val
+                    updateCurrentValueInDB(seqName, currentDate, nextVal);
+                    return String.format("%09d", currentVal);
+                } else {
+                    // 如果当天没有记录，说明这个序列当天第一次使用，将search_date更新为当天，current_val更新为1
+                    updateSequenceForNewDay(seqName, currentDate, 1);
+                    return String.format("%09d", 1);
                 }
             } else {
                 throw new RuntimeException("获取序列号锁失败");
@@ -124,46 +134,51 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("获取序列号过程中线程被中断", e);
-        }
-    }
-
-    private String doGenerateSequence(String seqName) {
-        String currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-        LambdaQueryWrapper<Sequence> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Sequence::getSeqName, seqName)
-                    .eq(Sequence::getSearchDate, currentDate);
-
-        Sequence sequence = sequenceMapper.selectOne(queryWrapper);
-        int currentValue;
-        if (sequence != null) {
-            currentValue = sequence.getCurrentVal().intValue();
-        } else {
-            currentValue = 0;
-        }
-
-        int nextVal = currentValue + 1;
-        LambdaUpdateWrapper<Sequence> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(Sequence::getSeqName, seqName)
-                     .eq(Sequence::getSearchDate, currentDate)
-                     .set(Sequence::getCurrentVal, nextVal);
-        sequenceMapper.update(null, updateWrapper);
-
-        if (currentValue == 0) {
-            updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.eq(Sequence::getSeqName, seqName)
-                         .eq(Sequence::getSearchDate, currentDate)
-                         .set(Sequence::getCurrentVal, nextVal);
-            int affected = sequenceMapper.update(null, updateWrapper);
-            if (affected == 0) {
-                Sequence newSeq = new Sequence();
-                newSeq.setSeqName(seqName);
-                newSeq.setSearchDate(currentDate);
-                newSeq.setCurrentVal(nextVal);
-                sequenceMapper.insert(newSeq);
+        } finally {
+            // 释放分布式锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
         }
-
-        return String.format("%09d", currentValue);
     }
+
+    // 从数据库获取当前值
+    private Integer getCurrentValueFromDB(String seqName, String searchDate) {
+        // 使用LambdaQueryWrapper进行精确查询
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Sequence> lambdaQueryWrapper =
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Sequence::getSeqName, seqName)
+            .eq(Sequence::getSearchDate, searchDate);
+
+        Sequence sequence = sequenceMapper.selectOne(lambdaQueryWrapper);
+
+        return sequence != null ? sequence.getCurrentVal().intValue() : null;
+    }
+
+    // 更新数据库中的当前值
+    private void updateCurrentValueInDB(String seqName, String searchDate, int newValue) {
+        // 使用LambdaUpdateWrapper更新sequence表中的current_val字段
+        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Sequence> lambdaUpdateWrapper =
+            new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Sequence::getSeqName, seqName)
+            .eq(Sequence::getSearchDate, searchDate)
+            .set(Sequence::getCurrentVal, Long.valueOf(newValue));
+
+        sequenceMapper.update(null, lambdaUpdateWrapper);
+    }
+
+    // 更新序列记录，将日期更新为当天，current_val更新为1
+    private void updateSequenceForNewDay(String seqName, String searchDate, int initValue) {
+        // 使用LambdaUpdateWrapper更新sequence表中的search_date和current_val字段
+        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Sequence> lambdaUpdateWrapper =
+            new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Sequence::getSeqName, seqName)
+            .set(Sequence::getSearchDate, searchDate)
+            .set(Sequence::getCurrentVal, Long.valueOf(initValue));
+
+        sequenceMapper.update(null, lambdaUpdateWrapper);
+    }
+
+
+
 }

@@ -38,14 +38,4 @@ public class CustomerTagSyncDTO implements Serializable {
      * 发展人OA号
      */
     private String developerOa;
-
-    /**
-     * 集团客户编码（即zqzt_grp_group_info的hqGrpCode）
-     */
-    private String groupCustomerCode;
-
-    /**
-     * 业务类型编码(由RPA端传入)
-     */
-    private String bizCode;
 }

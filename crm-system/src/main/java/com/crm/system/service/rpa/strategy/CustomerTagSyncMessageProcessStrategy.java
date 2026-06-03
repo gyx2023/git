@@ -101,7 +101,8 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
             engine.callNengKaiCallback(recordDo, rawMessage);
             log.info("[{}] 消息处理成功: {}", bizCode, noticeRecordId);
         } else {
-            log.info("[{}] admin同步暂存失败队列，等待重试: {}", bizCode, noticeRecordId);
+            log.info("[{}] 同步政企运营平台失败，等待重试: {}", bizCode, noticeRecordId);
+            throw new RuntimeException("同步政企运营平台失败，等待重试");
         }
 
         return recordDo;
@@ -311,10 +312,13 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(syncData, headers);
-
+            log.info("[客户标签同步] 请求URL: {}", customerAdminUrl);
+            log.info("[客户标签同步] 请求Headers: {}", headers);
+            log.info("[客户标签同步] 请求Body: {}", JSONUtil.toJsonStr(syncData));
             ResponseEntity<String> response = restTemplate.exchange(
                 customerAdminUrl, HttpMethod.POST, httpEntity, String.class);
-
+            log.info("[客户标签同步] 响应状态码: {}", response.getStatusCode());
+            log.info("[客户标签同步] 响应Body: {}", response.getBody());
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 cn.hutool.json.JSONObject resp = JSONUtil.parseObj(response.getBody());
                 String code = String.valueOf(resp.get("code"));
