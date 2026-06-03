@@ -11,11 +11,17 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.sys.SysCode;
 import com.crm.system.domain.dao.sys.SysLog;
+import com.crm.system.domain.dao.sys.SysUserOld;
+import com.crm.system.domain.dao.topp.ToppGeneralRequirements;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.topp.ToppOrderSyncGroup;
 import com.crm.system.mapper.SequenceMapper;
+import com.crm.system.mapper.flowable.FlowableHiProcinstMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
+import com.crm.system.mapper.sys.SysUserOldMapper;
+import com.crm.system.mapper.topp.ToppGeneralRequirementsMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
+import com.crm.system.mapper.topp.ToppOrderVariablesMapper;
 import com.crm.system.service.sys.ISysLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.topp.IToppOrderSyncGroupService;
@@ -30,7 +36,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -91,7 +96,16 @@ public class OrderSyncGroupJob {
     private SequenceMapper sequenceMapper;
 
     @Resource
-    private JdbcTemplate jdbcTemplate;
+    private ToppOrderVariablesMapper toppOrderVariablesMapper;
+
+    @Resource
+    private ToppGeneralRequirementsMapper toppGeneralRequirementsMapper;
+
+    @Resource
+    private SysUserOldMapper sysUserOldMapper;
+
+    @Resource
+    private FlowableHiProcinstMapper flowableHiProcinstMapper;
 
     @Resource
     private SysCodeMapper sysCodeMapper;
@@ -235,7 +249,7 @@ public class OrderSyncGroupJob {
         // 流程ID
         body.put("bizCode", order.getPiId());
         // 流程名称（与老项目行为一致：老项目使用orderTypeName，@Transient，该上下文下为null）
-        body.put("bizName", "");
+        body.put("bizName", null);
         // 流程状态 1-草稿 2-已启用 3-已停用 默认启用
         body.put("bizStatus", "2");
         // 归属业务类型编码
@@ -258,13 +272,10 @@ public class OrderSyncGroupJob {
             return new String[]{"", ""};
         }
         try {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT name_ch, oa_account FROM sys_user WHERE id_ = ?", creatorId);
-            if (CollUtil.isNotEmpty(rows)) {
-                Map<String, Object> row = rows.get(0);
-                String nameCh = String.valueOf(row.getOrDefault("name_ch", ""));
-                String oaAccount = String.valueOf(row.getOrDefault("oa_account", ""));
-                return new String[]{nameCh, oaAccount};
+            SysUserOld user = sysUserOldMapper.selectOne(new LambdaQueryWrapper<SysUserOld>()
+                .eq(SysUserOld::getId, creatorId));
+            if (user != null) {
+                return new String[]{String.valueOf(user.getNameCh()), String.valueOf(user.getOaAccount())};
             }
         } catch (Exception e) {
             log.warn("【订单同步集团任务】查询sys_user失败，creatorId: {}, 异常: {}", creatorId, e.getMessage());
@@ -278,15 +289,8 @@ public class OrderSyncGroupJob {
      * 查不到时异常会传播至上层 catch 块处理
      */
     private String getProcessEndTime(String procInstId) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-            "SELECT end_time_ FROM flo_hi_procinst WHERE proc_inst_id_ = ? AND end_time_ IS NOT NULL ORDER BY end_time_ DESC LIMIT 1",
-            procInstId);
-        Object endTime = rows.get(0).get("end_time_");
-        if (endTime instanceof Date) {
-            return DateUtil.format((Date) endTime, "yyyyMMddHHmmss");
-        }
-        LocalDateTime ldt = new java.sql.Timestamp(((Date) endTime).getTime()).toLocalDateTime();
-        return ldt.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        Date endTime = flowableHiProcinstMapper.selectEndTimeByProcInstId(procInstId);
+        return DateUtil.format(endTime, "yyyyMMddHHmmss");
     }
 
     /**
@@ -301,7 +305,6 @@ public class OrderSyncGroupJob {
         try {
             switch (orderType) {
                 case "crv": {
-                    // 资源核查：取支撑系统订单号
                     String ywxtddh = getOrderVariable(orderId, "crv_initiate-ywxtddh");
                     if (StringUtils.isNotEmpty(ywxtddh)) {
                         body.put("relOrderId", ywxtddh.replaceAll("\\|", ","));
@@ -309,7 +312,6 @@ public class OrderSyncGroupJob {
                     break;
                 }
                 case "mainCircuit": {
-                    // 电路开通：取受理系统单号
                     String slxtdh = getOrderVariable(orderId, "mainCircuit_kthm-slxtdh");
                     if (StringUtils.isNotEmpty(slxtdh)) {
                         body.put("relOrderId", slxtdh.replaceAll("\\|", ","));
@@ -317,20 +319,17 @@ public class OrderSyncGroupJob {
                     break;
                 }
                 case "businessAcceptance": {
-                    // 业务受理：按优先级依次取 B-BSS系统单号 > BSS系统单号 > cBSS系统单号
-                    String bbssxtdh = getOrderVariable(orderId, "ba_accept-bbssxtdh");
-                    if (StringUtils.isNotEmpty(bbssxtdh)) {
-                        body.put("relOrderId", bbssxtdh.replaceAll("\\|", ","));
-                    } else {
-                        String ywslxtdh = getOrderVariable(orderId, "ba_accept-ywslxtdh");
-                        if (StringUtils.isNotEmpty(ywslxtdh)) {
-                            body.put("relOrderId", ywslxtdh.replaceAll("\\|", ","));
-                        } else {
-                            String cbssxtdh = getOrderVariable(orderId, "ba_accept-cbssxtdh");
-                            if (StringUtils.isNotEmpty(cbssxtdh)) {
-                                body.put("relOrderId", cbssxtdh.replaceAll("\\|", ","));
-                            }
-                        }
+                    // 与老项目一致：先一次性查询全部变量，再从 Map 中按优先级取值
+                    Map<String, String> vars = getOrderVariablesMap(orderId);
+                    String relOrderId = vars.get("ba_accept-bbssxtdh");
+                    if (StringUtils.isEmpty(relOrderId)) {
+                        relOrderId = vars.get("ba_accept-ywslxtdh");
+                    }
+                    if (StringUtils.isEmpty(relOrderId)) {
+                        relOrderId = vars.get("ba_accept-cbssxtdh");
+                    }
+                    if (StringUtils.isNotEmpty(relOrderId)) {
+                        body.put("relOrderId", relOrderId.replaceAll("\\|", ","));
                     }
                     break;
                 }
@@ -344,25 +343,47 @@ public class OrderSyncGroupJob {
     }
 
     /**
-     * 从 TOPP_ORDER_VARIABLES 表中查询流程变量值（与老项目查询逻辑一致）
-     * 老项目 SQL: SELECT T.TEXT_ FROM TOPP_ORDER_VARIABLES T
-     *            WHERE T.ORDER_ID=? AND T.NAME_=? ORDER BY create_time DESC LIMIT 0,1
+     * 查询订单全部变量并处理类型
+     */
+    private Map<String, String> getOrderVariablesMap(Long orderId) {
+        Map<String, String> result = new HashMap<>();
+        List<Map<String, Object>> rows = toppOrderVariablesMapper.selectAllVarsByOrderId(orderId);
+        for (Map<String, Object> row : rows) {
+            String name = (String) row.get("name_");
+            String type = (String) row.get("type");
+            Object val;
+            if ("long".equals(type)) {
+                val = row.get("long_");
+            } else if ("double".equals(type)) {
+                val = row.get("double_");
+            } else {
+                val = row.get("text_");
+            }
+            result.put(name, val != null ? String.valueOf(val) : null);
+        }
+        return result;
+    }
+
+    /**
+     * 从 TOPP_ORDER_VARIABLES 表中查询流程变量值（与老项目类型处理逻辑一致）
+     * 老项目逻辑：按 type_ 字段判断取 text_ / lon_ / doub_
      */
     private String getOrderVariable(Long orderId, String variableName) {
-        try {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT text_ FROM topp_order_variables WHERE order_id = ? AND name_ = ?"
-                + " ORDER BY create_time DESC LIMIT 1",
-                orderId, variableName);
-            if (CollUtil.isNotEmpty(rows)) {
-                Object val = rows.get(0).get("text_");
-                return val != null ? String.valueOf(val) : null;
-            }
-        } catch (Exception e) {
-            log.debug("【订单同步集团任务】查询topp_order_variables失败，orderId: {}, name: {}, 异常: {}",
-                orderId, variableName, e.getMessage());
+        Map<String, Object> row = toppOrderVariablesMapper.selectVarByOrderIdAndName(orderId, variableName);
+        if (row == null) {
+            return null;
         }
-        return null;
+        String type = (String) row.get("type");
+        if ("long".equals(type)) {
+            Object val = row.get("long_");
+            return val != null ? String.valueOf(val) : null;
+        } else if ("double".equals(type)) {
+            Object val = row.get("double_");
+            return val != null ? String.valueOf(val) : null;
+        } else {
+            Object val = row.get("text_");
+            return val != null ? String.valueOf(val) : null;
+        }
     }
 
     /**
@@ -470,9 +491,9 @@ public class OrderSyncGroupJob {
      *   2. config.getJSONObject("type").getJSONObject(operationType).getString("type")
      */
     private String getGeneralOrderBizType(Long orderId) {
-        String operationType = jdbcTemplate.queryForList(
-            "SELECT operation_type FROM topp_general_requirements WHERE order_id = ?", orderId)
-            .get(0).get("operation_type").toString();
+        String operationType = toppGeneralRequirementsMapper.selectOne(
+            new LambdaQueryWrapper<ToppGeneralRequirements>()
+                .eq(ToppGeneralRequirements::getOrderId, orderId)).getOperationType();
         return needSendOrderTypeMap.get("general_order_support")
             .getJSONObject("type")
             .getJSONObject(operationType)

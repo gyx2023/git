@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppOrderVariablesMapper">
+
+    <!-- 根据订单ID和变量名查询最新的变量值（含类型处理） -->
+    <select id="selectVarByOrderIdAndName" resultType="java.util.HashMap">
+        SELECT type_ AS type, text_, long_, double_
+        FROM topp_order_variables
+        WHERE order_id = #{orderId}
+          AND name_ = #{name}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据订单ID查询所有变量（含类型处理） -->
+    <select id="selectAllVarsByOrderId" resultType="java.util.HashMap">
+        SELECT name_, type_ AS type, text_, long_, double_
+        FROM topp_order_variables
+        WHERE order_id = #{orderId}
+    </select>
+
+</mapper>
