@@ -1,4 +1,4 @@
-package com.crm.job.service.timedTasks.services;
+package com.crm.system.service;
 
 import com.crm.system.domain.dao.PendingGroupTodo;
 

@@ -22,6 +22,7 @@ public class SysParamServiceImpl implements ISysParamService {
     private SysParamMapper sysParamMapper;
 
     @Override
+    @Cacheable(cacheNames = CacheNames.SYS_PARAM_CACHE, key = "'type:' + #type")
     public Map<String, String> findValueMapsByType(String type) {
         List<SysParamDo> list = sysParamMapper.selectList(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, type));
         if (list == null || list.isEmpty()) {

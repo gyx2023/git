@@ -1,6 +1,6 @@
 package com.crm.job.service.timedTasks;
 
-import com.crm.job.service.timedTasks.services.IPendingSyncTodoService;
+import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.service.IPendingService;
@@ -10,7 +10,6 @@ import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,28 +31,31 @@ public class PendingJob {
     @Resource
     private IPendingSyncTodoService pendingSyncTodoService;
 
-    private static String addUrl;
-    private static String updateUrl;
-    private static String appId;
-    private static String token;
+    private String addUrl;
+    private String updateUrl;
+    private String appId;
+    private String token;
 
-    @PostConstruct
-    public void initStaticParam() {
+    /**
+     * 从Redis缓存加载待办推送配置参数（sys_param表），避免每次改数据库配置需要重启
+     */
+    private void loadPendingConfig() {
         try {
             Map<String, String> param = sysParamService.findValueMapsByType("pending_job_prod");
             addUrl = param.get("addUrl");
             updateUrl = param.get("updateUrl");
             appId = param.get("appId");
             token = param.get("token");
-            log.info("待办同步参数初始化完成");
         } catch (Exception e) {
-            log.error("待办同步参数初始化失败", e);
+            log.error("待办同步参数加载失败", e);
         }
     }
 
     @XxlJob(value = "pendingJob")
     public void start() {
         long startTime = System.currentTimeMillis();
+        // 从Redis缓存加载配置参数（sys_param表），避免每次改数据库配置需要重启
+        loadPendingConfig();
         XxlJobHelper.log("开始执行待办同步Job");
         log.info("开始执行待办同步Job");
 

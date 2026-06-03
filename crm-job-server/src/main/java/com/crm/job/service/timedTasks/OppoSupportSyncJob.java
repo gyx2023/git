@@ -10,7 +10,6 @@ import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -31,18 +30,14 @@ public class OppoSupportSyncJob extends BaseJob {
     @Resource
     private IOppoSupportInfoService oppoSupportInfoService;
 
-    @PostConstruct
-    public void initStaticParam() {
-        super.initStaticParam("opp_support_info_file");
-        log.info("商机支撑信息同步FTP参数初始化完成");
-    }
-
     /**
      * 每日凌晨6:00执行 - 商机支撑信息同步给外围系统
      */
     @XxlJob(value = "oppoSupportInfoSyncJob")
     public void doSync() {
         long startTime = System.currentTimeMillis();
+        // 从Redis缓存加载FTP配置参数（sys_param表），避免每次改数据库配置需要重启
+        super.initStaticParam("opp_support_info_file");
         XxlJobHelper.log("开始执行商机支撑信息同步给外围系统Job");
         log.info("开始执行商机支撑信息同步给外围系统Job");
 
