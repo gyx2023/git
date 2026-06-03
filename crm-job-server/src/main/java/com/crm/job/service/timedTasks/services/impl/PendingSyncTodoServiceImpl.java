@@ -2,9 +2,9 @@ package com.crm.job.service.timedTasks.services.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
-import com.crm.common.utils.StringUtils;
 import com.crm.job.service.timedTasks.services.IPendingSyncTodoService;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.domain.dao.SysUsers;
@@ -13,10 +13,8 @@ import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysParamService;
-import cn.hutool.http.HttpUtil;
 import com.crm.system.utils.SSLClient;
 import lombok.extern.slf4j.Slf4j;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -56,11 +54,16 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     private PendingGroupTodo todoTask;
     private ToppOrder order;
-    private List<HistoricTaskInstance> hisList; //任务列表
-    private HistoricTaskInstance currentTask; //当前任务
-    private int currentTaskInHisListIndex; //当前任务在hisList索引位置
-    private HistoricTaskInstance firstTask; //第一个任务
-    private HistoricTaskInstance lastTask; //最后一个任务
+    //任务列表
+    private List<HistoricTaskInstance> hisList;
+    //当前任务
+    private HistoricTaskInstance currentTask;
+    //当前任务在hisList索引位置
+    private int currentTaskInHisListIndex;
+    //第一个任务
+    private HistoricTaskInstance firstTask;
+    //最后一个任务
+    private HistoricTaskInstance lastTask;
 
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";

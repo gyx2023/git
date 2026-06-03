@@ -22,14 +22,4 @@ public interface PendingMapper extends BaseMapper<Pending> {
      * 批量更新失败次数（对应旧框架 HQL: update Pending set sendStatus = '2', failTimes = 3 where id in (:ids)）
      */
     int updateFailTimes(Map<String, Object> params);
-
-    /**
-     * 历史数据迁移：备份成功的待办
-     */
-    void execPendingInsertBackup();
-
-    /**
-     * 历史数据迁移：删除已备份的待办
-     */
-    void execPendingDeleteBackup();
 }

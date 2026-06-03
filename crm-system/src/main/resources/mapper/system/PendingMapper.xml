@@ -35,7 +35,7 @@
         ORDER BY id_
     </select>
 
-    <!-- 批量更新失败次数（对应旧框架 HQL: update Pending set sendStatus = '2', failTimes = 3 where id in (:ids)） -->
+    <!-- 批量更新失败次数 -->
     <update id="updateFailTimes" parameterType="java.util.Map">
         UPDATE pending SET send_status = '2', fail_times = 3
         WHERE id_ IN
@@ -43,36 +43,4 @@
             #{id}
         </foreach>
     </update>
-
-    <!-- 历史数据迁移：备份成功的待办数据 -->
-    <insert id="execPendingInsertBackup">
-        INSERT INTO his_zj_sj.pending
-        SELECT * FROM pending
-        WHERE pending_code IN (
-            SELECT t1.pending_code FROM (
-                SELECT p.pending_code FROM pending p
-                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'a'
-            ) t1
-            JOIN (
-                SELECT p.pending_code FROM pending p
-                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'u'
-            ) t2 ON t1.pending_code = t2.pending_code
-        )
-    </insert>
-
-    <!-- 历史数据迁移：删除已备份的待办数据 -->
-    <delete id="execPendingDeleteBackup">
-        DELETE FROM pending
-        WHERE pending_code IN (
-            SELECT t1.pending_code FROM (
-                SELECT p.pending_code FROM pending p
-                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'a'
-            ) t1
-            JOIN (
-                SELECT p.pending_code FROM pending p
-                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'u'
-            ) t2 ON t1.pending_code = t2.pending_code
-        )
-    </delete>
-
 </mapper>

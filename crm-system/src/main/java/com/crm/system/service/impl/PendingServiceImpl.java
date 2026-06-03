@@ -354,17 +354,4 @@ public class PendingServiceImpl implements IPendingService {
     public void updateGroupTodoTask(PendingGroupTodo pendingTodo) {
         pendingGroupTodoMapper.updateById(pendingTodo);
     }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void movePending() {
-        try {
-            pendingMapper.execPendingInsertBackup();
-            pendingMapper.execPendingDeleteBackup();
-            log.info("待办历史数据迁移完成");
-        } catch (Exception e) {
-            log.error("待办历史数据迁移失败", e);
-            throw new RuntimeException("待办历史数据迁移失败", e);
-        }
-    }
 }

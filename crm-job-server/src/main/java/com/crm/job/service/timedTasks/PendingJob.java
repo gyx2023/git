@@ -107,27 +107,4 @@ public class PendingJob {
             XxlJobHelper.log("待办同步Job执行异常:{}", e.getMessage());
         }
     }
-
-    /**
-     * 待办历史数据迁移Job
-     */
-    @XxlJob(value = "moveHistoryPendingJob")
-    public void moveHistory() {
-        long startTime = System.currentTimeMillis();
-        XxlJobHelper.log("开始执行待办历史数据迁移Job");
-        log.info("开始执行待办历史数据迁移Job");
-
-        try {
-            pendingService.movePending();
-
-            long endTime = System.currentTimeMillis();
-            long costTime = endTime - startTime;
-            log.info("待办历史数据迁移Job执行完成,耗时:{}ms", costTime);
-            XxlJobHelper.log("待办历史数据迁移Job执行完成,耗时:{}ms", costTime);
-
-        } catch (Exception e) {
-            log.error("待办历史数据迁移Job执行异常", e);
-            XxlJobHelper.log("待办历史数据迁移Job执行异常:{}", e.getMessage());
-        }
-    }
 }

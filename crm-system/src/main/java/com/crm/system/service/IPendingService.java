@@ -49,9 +49,4 @@ public interface IPendingService {
      * 更新集团待办同步状态
      */
     void updateGroupTodoTask(PendingGroupTodo pendingTodo);
-
-    /**
-     * 备份已成功的待办数据并删除
-     */
-    void movePending();
 }
