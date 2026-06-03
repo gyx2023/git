@@ -1,6 +1,6 @@
 package com.crm.system.service.impl;
 
-import com.crm.system.domain.RepCustContractMillSumM;
+import com.crm.system.domain.dao.RepCustContractMillSumM;
 import com.crm.system.mapper.RepCustContractMillSumMMapper;
 import com.crm.system.service.IRepCustContractMillSumMService;
 import lombok.extern.slf4j.Slf4j;

@@ -3,7 +3,7 @@ package com.crm.job.service.timedTasks;
 import com.crm.common.utils.FieldAnnotaionUtil;
 import com.crm.common.utils.SFTPUtil;
 import com.crm.job.base.BaseJob;
-import com.crm.system.domain.RepCustContractMillSumM;
+import com.crm.system.domain.dao.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -16,7 +16,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 政企运营平台合同收入报表定时任务
@@ -29,7 +33,7 @@ public class repCustContractMillSumMJob extends BaseJob {
     /**
      * 下载的文件名前缀
      */
-    private static final String FTP_DOWNLOAD_NAME = "rep_cust_contract_mill_sum_m";
+    private static final String FTP_DOWNLOAD_NAME = "REP_CUST_CONTRACT_BILL_SUM_M_";
 
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
@@ -111,7 +115,11 @@ public class repCustContractMillSumMJob extends BaseJob {
                 while ((currentLine = bufferedReader.readLine()) != null) {
                     count++;
                     RepCustContractMillSumM data = new RepCustContractMillSumM();
-                    FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 3);
+                    String[] values = currentLine.split("\\x1b", -1);
+                    if (count <= 1) {
+                        log.info("第{}行数据: values长度={}, values={}", count, values.length, Arrays.toString(values));
+                    }
+                    FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, values, 3);
                     data.setCreateDate(new Date());
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMM");
                     Date paymentDays = simpleDateFormat.parse(yyyyMM);

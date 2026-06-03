@@ -1,6 +1,6 @@
 package com.crm.system.service.impl;
 
-import com.crm.system.domain.RepGrpCustBillSumWarning;
+import com.crm.system.domain.dao.RepGrpCustBillSumWarning;
 import com.crm.system.mapper.RepGrpCustBillSumWarningMapper;
 import com.crm.system.service.IRepGrpCustBillSumWarningService;
 import lombok.extern.slf4j.Slf4j;

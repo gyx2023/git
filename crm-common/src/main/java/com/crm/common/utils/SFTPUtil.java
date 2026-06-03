@@ -144,4 +144,43 @@ public class SFTPUtil {
         }
         return sftp.get(downloadFile);
     }
+
+    /**
+     * 将输入流的数据上传到sftp作为文件。文件完整路径=basePath+directory
+     * @param basePath  服务器的基础路径
+     * @param directory  上传到该目录
+     * @param sftpFileName  sftp端文件名
+     * @param input   输入流
+     */
+    public void upload(String basePath, String directory, String sftpFileName, InputStream input) throws SftpException {
+        if (basePath != null && !"".equals(basePath)) {
+            sftp.cd(basePath);
+        }
+        if (directory != null && !"".equals(directory)) {
+            try {
+                sftp.cd(directory);
+            } catch (SftpException e) {
+                // 目录不存在，创建目录
+                String[] dirs = directory.split("/");
+                String tempPath = basePath;
+                if (tempPath == null || "".equals(tempPath)) {
+                    tempPath = "/";
+                }
+                for (String dir : dirs) {
+                    if (dir != null && !"".equals(dir)) {
+                        try {
+                            sftp.cd(tempPath);
+                            sftp.mkdir(dir);
+                            sftp.cd(dir);
+                            tempPath = tempPath + "/" + dir;
+                        } catch (SftpException e1) {
+                            sftp.cd(dir);
+                            tempPath = tempPath + "/" + dir;
+                        }
+                    }
+                }
+            }
+        }
+        sftp.put(input, sftpFileName);
+    }
 }

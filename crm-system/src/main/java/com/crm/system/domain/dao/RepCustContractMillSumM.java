@@ -1,4 +1,4 @@
-package com.crm.system.domain;
+package com.crm.system.domain.dao;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -19,14 +19,6 @@ import java.util.Date;
 @Data
 @TableName("rep_cust_contract_bill_sum_m")
 public class RepCustContractMillSumM implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * 主键ID
-     */
-    @TableId(value = "id_", type = IdType.AUTO)
-    private Integer id;
 
     /**
      * 合同号
@@ -63,6 +55,12 @@ public class RepCustContractMillSumM implements Serializable {
      */
     @TableField("total_owe_fee")
     private BigDecimal totalOweFee;
+
+    /**
+     * 主键ID
+     */
+    @TableId(value = "id_", type = IdType.AUTO)
+    private Integer id;
 
     /**
      * 创建时间
