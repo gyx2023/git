@@ -239,4 +239,37 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         }
         return oss;
     }
+
+    @Override
+    public SysOssVo uploadFileByPath(File file, String path) {
+        String originalfileName = file.getName();
+        String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
+        OssClient storage = OssFactory.instance();
+        UploadResult uploadResult;
+
+        try {
+            byte[] bytes = IoUtil.readBytes(new FileInputStream(file));
+            String contentType = FileUtils.getMimeType(file.getName());
+
+            // 核心：自定义路径 + 文件名
+            String fileName = path + "/" + originalfileName;
+
+            uploadResult = storage.upload(bytes, fileName, contentType);
+        } catch (IOException e) {
+            throw new ServiceException("文件上传失败：" + e.getMessage());
+        }
+
+        // 保存记录
+        SysOss oss = new SysOss();
+        oss.setUrl(uploadResult.getUrl());
+        oss.setFileSuffix(suffix);
+        oss.setFileName(uploadResult.getFilename());
+        oss.setOriginalName(originalfileName);
+        oss.setService(storage.getConfigKey());
+        baseMapper.insert(oss);
+
+        SysOssVo sysOssVo = new SysOssVo();
+        BeanCopyUtils.copy(oss, sysOssVo);
+        return this.matchingUrl(sysOssVo);
+    }
 }

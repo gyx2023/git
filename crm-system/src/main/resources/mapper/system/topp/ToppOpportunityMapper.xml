@@ -682,5 +682,41 @@
             oppo.create_time DESC
     </select>
 
-
+    <select id="selectReportData" resultType="com.crm.system.domain.vo.topp.OpportunityReportVO">
+        SELECT
+        CASE
+        WHEN b.parent_ IS NULL
+        OR b.parent_ = '100000'
+        OR b.parent_ = '330000'
+        THEN b.name_ ELSE c.name_
+        END AS city,             <!-- 地市 -->
+        a.opp_code AS oppCode,   <!-- 商机编号 -->
+        a.opp_name AS oppName,   <!-- 商机名称 -->
+        d.name_ AS customerIndustry, <!-- 客户行业 -->
+        e.name_ AS oppType,     <!-- 商机类型 -->
+        a.expect_contract_money AS oppMoney, <!-- 商机金额万 -->
+        f.cnt AS cnt,
+        g.id_ AS id,
+        ifnull(h.total, 0) AS total
+        FROM topp_opportunity a
+        LEFT JOIN sys_area b ON b.id_ = a.opp_area_id
+        LEFT JOIN sys_area c ON b.parent_ = c.id_
+        LEFT JOIN sys_code d ON a.unicom_type = d.code_ AND d.type_ = 'unicom_type_new'
+        LEFT JOIN sys_code e ON a.opp_type = e.code_ AND e.type_ = 'opp_type'
+        LEFT JOIN (
+        SELECT oppo_id, count(1) AS cnt
+        FROM topp_order
+        WHERE order_type = 'applay_support'
+        GROUP BY oppo_id
+        ) f ON a.id_ = f.oppo_id
+        LEFT JOIN topp_bid g ON a.bid_id = g.id_
+        LEFT JOIN (
+        SELECT project_id, sum(total_money) AS total
+        FROM topp_contract aa
+        WHERE aa.audit_status = '2' AND aa.is_valid = '1'
+        GROUP BY project_id
+        ) h ON h.project_id = a.id_
+        WHERE a.opp_data_reform = '千项万亿工程'
+        AND a.audit_status != 'opp_stop'
+    </select>
 </mapper>
