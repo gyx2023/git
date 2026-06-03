@@ -1,6 +1,6 @@
 package com.crm.job.service.file.strategy;
 
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 
 /**
  * 文件任务处理策略接口

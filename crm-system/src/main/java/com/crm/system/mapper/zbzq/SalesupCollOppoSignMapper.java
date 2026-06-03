@@ -1,7 +1,7 @@
 package com.crm.system.mapper.zbzq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.crm.system.domain.zbzq.SalesupCollOppoSignDo;
+import com.crm.system.domain.dao.zbzq.SalesupCollOppoSignDo;
 import com.crm.system.domain.vo.zbzq.SalesupCollOppoSignVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;

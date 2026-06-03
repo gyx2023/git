@@ -8,7 +8,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.domain.TaskParams;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import lombok.extern.slf4j.Slf4j;

@@ -11,7 +11,7 @@
 //import org.springframework.stereotype.Service;
 //import com.crm.system.domain.bo.ZqztGrpCustInuseUserlistBo;
 //import com.crm.system.domain.vo.ZqztGrpCustInuseUserlistVo;
-//import com.crm.system.domain.ZqztGrpCustInuseUserlist;
+//import com.crm.system.domain.dao.ZqztGrpCustInuseUserlist;
 //import com.crm.system.mapper.ZqztGrpCustInuseUserlistMapper;
 //import com.crm.system.service.IZqztGrpCustInuseUserlistService;
 //

@@ -2,7 +2,7 @@ package com.crm.system.service;
 
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.system.domain.SysArea;
+import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
 

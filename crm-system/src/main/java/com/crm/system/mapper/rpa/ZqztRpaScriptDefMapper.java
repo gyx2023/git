@@ -1,7 +1,7 @@
 package com.crm.system.mapper.rpa;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.rpa.ZqztRpaScriptDefDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaScriptDefDo;
 
 /**
  * rpa行级脚本定义Mapper接口

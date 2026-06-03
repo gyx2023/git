@@ -1,7 +1,7 @@
 package com.crm.system.mapper.zbzq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.crm.system.domain.zbzq.SalesupCollOppoPoolsDo;
+import com.crm.system.domain.dao.zbzq.SalesupCollOppoPoolsDo;
 import com.crm.system.domain.vo.zbzq.SalesupCollOppoPoolsVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 

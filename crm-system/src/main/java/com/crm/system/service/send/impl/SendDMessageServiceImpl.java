@@ -1,9 +1,9 @@
 package com.crm.system.service.send.impl;
 
-import com.crm.system.domain.DingMessage;
+import com.crm.system.domain.dao.DingMessage;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.service.IDingMessageService;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.ISysUsersService;
 import com.crm.system.service.send.ISendDMessageService;
 import lombok.extern.slf4j.Slf4j;

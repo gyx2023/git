@@ -4,11 +4,10 @@ import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.core.domain.entity.SysUser;
-import com.crm.system.service.ISysOperLogService;
-import com.crm.system.service.impl.SysParamServiceImpl;
+import com.crm.system.service.sys.ISysOperLogService;
+import com.crm.system.service.sys.impl.SysParamServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;

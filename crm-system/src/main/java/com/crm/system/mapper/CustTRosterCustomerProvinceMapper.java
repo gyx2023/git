@@ -1,10 +1,8 @@
 package com.crm.system.mapper;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.CustTRosterCustomerProvinceDo;
+import com.crm.system.domain.dao.CustTRosterCustomerProvinceDo;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 

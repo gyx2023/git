@@ -3,7 +3,7 @@ package com.crm.system.service.topp;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.topp.ToppBidSuboppoBo;
-import com.crm.system.domain.topp.ToppBidSuboppoDo;
+import com.crm.system.domain.dao.topp.ToppBidSuboppoDo;
 import com.crm.system.domain.vo.topp.ToppBidSuboppoVo;
 
 import java.util.Collection;

@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.RepCustContractMillSumMMapper">
 
-    <resultMap type="com.crm.system.domain.RepCustContractMillSumM" id="RepCustContractMillSumMResult">
+    <resultMap type="com.crm.system.domain.dao.RepCustContractMillSumM" id="RepCustContractMillSumMResult">
         <result property="id" column="id_"/>
         <result property="contractId" column="contract_id"/>
         <result property="contractErp" column="contract_erp"/>
@@ -19,26 +19,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 批量插入 -->
     <insert id="insertBatch">
         INSERT INTO rep_cust_contract_bill_sum_m (
-            contract_id,
-            contract_erp,
-            zd_bill_fee,
-            final_bill_fee,
-            total_bill_fee,
-            total_owe_fee,
-            create_date,
-            payment_days
+            contract_id,contract_erp,zd_bill_fee,final_bill_fee,
+            total_bill_fee,total_owe_fee,create_date,payment_days
         )
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
-                #{item.contractId},
-                #{item.contractErp},
-                #{item.zdBillFee},
-                #{item.finalBillFee},
-                #{item.totalBillFee},
-                #{item.totalOweFee},
-                #{item.createDate},
-                #{item.paymentDays}
+                #{item.contractId},#{item.contractErp},#{item.zdBillFee},#{item.finalBillFee},
+                #{item.totalBillFee},#{item.totalOweFee},#{item.createDate},#{item.paymentDays}
             )
         </foreach>
     </insert>

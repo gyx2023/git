@@ -3,7 +3,7 @@ package com.crm.job.service.file.tableDataExport;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
-import com.crm.system.domain.topp.ToppContractDo;
+import com.crm.system.domain.dao.topp.ToppContractDo;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

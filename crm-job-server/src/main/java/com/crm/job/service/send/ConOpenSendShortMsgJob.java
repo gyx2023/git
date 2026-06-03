@@ -1,6 +1,6 @@
 package com.crm.job.service.send;
 
-import com.crm.system.domain.DingMessage;
+import com.crm.system.domain.dao.DingMessage;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.service.IDingMessageService;

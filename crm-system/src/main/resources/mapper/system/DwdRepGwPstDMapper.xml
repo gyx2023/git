@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.DwdRepGwPstDMapper">
 
-    <resultMap type="com.crm.system.domain.DwdRepGwPstD" id="DwdRepGwPstDResult">
+    <resultMap type="com.crm.system.domain.dao.DwdRepGwPstD" id="DwdRepGwPstDResult">
         <result property="id" column="id_"/>
         <result property="empId" column="EMP_ID"/>
         <result property="hrCode" column="HR_CODE"/>

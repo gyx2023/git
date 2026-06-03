@@ -15,7 +15,7 @@ import com.crm.system.enums.OppoStateEnum;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
-import com.crm.system.domain.topp.ToppOpportunityDo;
+import com.crm.system.domain.dao.topp.ToppOpportunityDo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;

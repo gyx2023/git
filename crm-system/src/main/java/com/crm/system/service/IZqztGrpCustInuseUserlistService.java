@@ -1,6 +1,6 @@
 //package com.crm.system.service;
 //
-//import com.crm.system.domain.ZqztGrpCustInuseUserlist;
+//import com.crm.system.domain.dao.ZqztGrpCustInuseUserlist;
 //import com.crm.system.domain.vo.ZqztGrpCustInuseUserlistVo;
 //import com.crm.system.domain.bo.ZqztGrpCustInuseUserlistBo;
 //import com.crm.common.core.page.TableDataInfo;

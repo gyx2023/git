@@ -10,12 +10,12 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.ZqztOperRecordBo;
 import com.crm.system.domain.vo.ZqztOperRecordVo;
-import com.crm.system.domain.ZqztOperRecord;
+import com.crm.system.domain.dao.ZqztOperRecord;
 import com.crm.system.mapper.ZqztOperRecordMapper;
 import com.crm.system.service.IZqztOperRecordService;
 
