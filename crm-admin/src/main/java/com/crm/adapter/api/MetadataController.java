@@ -1,9 +1,7 @@
 package com.crm.adapter.api;
 
-import com.crm.askdata.entity.MetaDimension;
 import com.crm.askdata.entity.MetaMetric;
 import com.crm.askdata.service.CacheService;
-import com.crm.askdata.service.DimensionService;
 import com.crm.askdata.service.MetricService;
 import com.crm.common.annotation.Log;
 import com.crm.common.core.controller.BaseController;
@@ -19,8 +17,7 @@ import java.util.List;
 /**
  * 语义层元数据管理 API
  * <p>
- * 提供指标 / 维度的 CRUD 管理接口，供管理后台使用
- * 对应设计文档 BE-04 语义层元数据管理
+ * 提供指标的 CRUD 管理接口，供管理后台使用
  *
  * @author crm
  */
@@ -32,7 +29,6 @@ import java.util.List;
 public class MetadataController extends BaseController {
 
     private final MetricService metricService;
-    private final DimensionService dimensionService;
     private final CacheService cacheService;
 
     // ======================== 指标管理 ========================
@@ -42,12 +38,14 @@ public class MetadataController extends BaseController {
      *
      * @param keyword 关键词 (可选)
      * @param status  状态 (可选，1-启用 0-禁用)
+     * @param category 业务分类 (可选)
      */
     @GetMapping("/metrics")
     public R<List<MetaMetric>> listMetrics(
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "status", required = false) Integer status) {
-        List<MetaMetric> list = metricService.queryMetrics(keyword, status);
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "category", required = false) String category) {
+        List<MetaMetric> list = metricService.queryMetrics(keyword, status, category);
         return R.ok(list);
     }
 
@@ -124,80 +122,6 @@ public class MetadataController extends BaseController {
                                           @RequestParam("value") String value) {
         boolean valid = metricService.validateMetricValue(metricCode, value);
         return R.ok(valid);
-    }
-
-    // ======================== 维度管理 ========================
-
-    /**
-     * 查询维度列表
-     *
-     * @param keyword 关键词 (可选)
-     * @param status  状态 (可选)
-     */
-    @GetMapping("/dimensions")
-    public R<List<MetaDimension>> listDimensions(
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "status", required = false) Integer status) {
-        List<MetaDimension> list = dimensionService.queryDimensions(keyword, status);
-        return R.ok(list);
-    }
-
-    /**
-     * 获取所有启用维度
-     */
-    @GetMapping("/dimensions/all")
-    public R<List<MetaDimension>> listAllDimensions() {
-        return R.ok(dimensionService.getAllAvailableDimensions());
-    }
-
-    /**
-     * 根据维度代码获取维度详情
-     *
-     * @param dimCode 维度代码
-     */
-    @GetMapping("/dimensions/{dimCode}")
-    public R<MetaDimension> getDimension(@PathVariable String dimCode) {
-        return R.ok(dimensionService.getDimensionDefinition(dimCode));
-    }
-
-    /**
-     * 新增或更新维度
-     */
-    @Log(title = "语义层维度管理", businessType = BusinessType.INSERT)
-    @PostMapping("/dimensions")
-    public R<MetaDimension> saveDimension(@RequestBody MetaDimension dimension) {
-        String operator = getUsername();
-        MetaDimension saved = dimensionService.saveDimension(dimension, operator);
-        return R.ok(saved);
-    }
-
-    /**
-     * 更新维度
-     *
-     * @param dimCode   维度代码
-     * @param dimension 维度信息
-     */
-    @Log(title = "语义层维度管理", businessType = BusinessType.UPDATE)
-    @PutMapping("/dimensions/{dimCode}")
-    public R<MetaDimension> updateDimension(@PathVariable String dimCode,
-                                            @RequestBody MetaDimension dimension) {
-        dimension.setDimCode(dimCode);
-        String operator = getUsername();
-        MetaDimension saved = dimensionService.saveDimension(dimension, operator);
-        return R.ok(saved);
-    }
-
-    /**
-     * 删除维度 (逻辑删除)
-     *
-     * @param dimCode 维度代码
-     */
-    @Log(title = "语义层维度管理", businessType = BusinessType.DELETE)
-    @DeleteMapping("/dimensions/{dimCode}")
-    public R<Void> deleteDimension(@PathVariable String dimCode) {
-        String operator = getUsername();
-        dimensionService.deleteDimension(dimCode, operator);
-        return R.ok();
     }
 
     // ======================== 缓存管理 ========================

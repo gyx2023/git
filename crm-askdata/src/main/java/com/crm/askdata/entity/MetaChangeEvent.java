@@ -38,7 +38,7 @@ public class MetaChangeEvent {
     private String eventType;
 
     /**
-     * 实体类型：METRIC/DIMENSION
+     * 实体类型：METRIC
      */
     @TableField("entity_type")
     private String entityType;

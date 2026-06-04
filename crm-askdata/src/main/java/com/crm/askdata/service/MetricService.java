@@ -44,7 +44,7 @@ public class MetricService {
      * @param metricCode 指标代码
      * @return 指标
      */
-    @Cacheable(value = "semantic:metric", key = "#metricCode", unless = "#result == null")
+//    @Cacheable(value = "semantic:metric", key = "#metricCode", unless = "#result == null")
     public MetaMetric getMetricDefinition(String metricCode) {
         MetaMetric metric = metricMapper.findByMetricCodeAndStatus(metricCode, 1);
         if (metric == null) {
@@ -55,12 +55,26 @@ public class MetricService {
     }
 
     /**
+     * 根据指标代码或名称查询（支持中文名匹配）
+     * <p>
+     * 用于 HiAgent 返回中文指标名时的兜底匹配，同时查找 metric_code 和 metric_name。
+     * 若指标未配置 source_table 则不适用（说明该指标仅用于语义描述，不可执行查询）。
+     *
+     * @param codeOrName 指标代码或中文名称
+     * @return 指标，不存在返回 null
+     */
+//    @Cacheable(value = "semantic:metric:name", key = "#codeOrName", unless = "#result == null")
+    public MetaMetric findByCodeOrName(String codeOrName) {
+        return metricMapper.findByMetricCodeOrName(codeOrName, 1);
+    }
+
+    /**
      * 批量检查指标是否全部存在
      *
      * @param metricCodes 指标代码列表
      * @return 是否全部存在
      */
-    @Cacheable(value = "semantic:metrics", key = "#metricCodes.hashCode()", unless = "#result == false")
+//    @Cacheable(value = "semantic:metrics", key = "#metricCodes.hashCode()", unless = "#result == false")
     public boolean hasMetrics(List<String> metricCodes) {
         if (metricCodes == null || metricCodes.isEmpty()) {
             return false;
@@ -82,7 +96,7 @@ public class MetricService {
      * @return 保存后的指标
      */
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(value = {"semantic:metric", "semantic:metrics"}, key = "#metric.metricCode", allEntries = false)
+//    @CacheEvict(value = {"semantic:metric", "semantic:metrics"}, key = "#metric.metricCode", allEntries = false)
     public MetaMetric saveMetric(MetaMetric metric, String operator) {
         // 1. 校验枚举值 (防止 AI 幻觉)
         if (metric.getAllowedValuesJson() != null) {
@@ -140,7 +154,7 @@ public class MetricService {
      * @param operator   操作人
      */
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(value = {"semantic:metric", "semantic:metrics"}, key = "#metricCode", allEntries = false)
+//    @CacheEvict(value = {"semantic:metric", "semantic:metrics"}, key = "#metricCode", allEntries = false)
     public void deleteMetric(String metricCode, String operator) {
         MetaMetric metric = metricMapper.findByMetricCodeAndStatus(metricCode, 1);
         if (metric == null) {
@@ -185,7 +199,7 @@ public class MetricService {
      *
      * @return 指标列表
      */
-    @Cacheable(value = "semantic:metrics:all", key = "'all'")
+//    @Cacheable(value = "semantic:metrics:all", key = "'all'")
     public List<MetaMetric> getAllAvailableMetrics() {
         return metricMapper.findAllByStatus(1);
     }
@@ -193,14 +207,18 @@ public class MetricService {
     /**
      * 分页查询指标
      *
-     * @param keyword 关键词 (可空)
-     * @param status  状态 (可空)
+     * @param keyword  关键词 (可空)
+     * @param status   状态 (可空)
+     * @param category 业务分类 (可空)
      * @return 指标列表
      */
-    public List<MetaMetric> queryMetrics(String keyword, Integer status) {
+    public List<MetaMetric> queryMetrics(String keyword, Integer status, String category) {
         LambdaQueryWrapper<MetaMetric> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {
             wrapper.eq(MetaMetric::getStatus, status);
+        }
+        if (category != null && !category.trim().isEmpty()) {
+            wrapper.eq(MetaMetric::getCategory, category);
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
             wrapper.and(w -> w.like(MetaMetric::getMetricCode, keyword)

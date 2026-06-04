@@ -136,4 +136,15 @@ public class SseMessage {
             .suggestions(suggestions)
             .build();
     }
+
+    /**
+     * 心跳事件：用于防止前端 SSE 连接因超时无消息而断开
+     * 前端收到此事件时仅重置心跳计时器，不渲染任何 UI
+     */
+    public static SseMessage keepalive(String traceId) {
+        return SseMessage.builder()
+            .traceId(traceId)
+            .type("keepalive")
+            .build();
+    }
 }

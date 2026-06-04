@@ -50,6 +50,11 @@ public class MetaMetric extends BaseEntity {
     private String expression;
 
     /**
+     * 业务分类：sales/contract/customer/finance 等
+     */
+    private String category;
+
+    /**
      * 数据类型：money/percent/count/ratio/date
      */
     @TableField("data_type")
@@ -65,6 +70,25 @@ public class MetaMetric extends BaseEntity {
      * 单位
      */
     private String unit;
+
+    /**
+     * 数据来源表名
+     */
+    @TableField("source_table")
+    private String sourceTable;
+
+    /**
+     * 数据源名称（对应 spring.datasource.dynamic.datasource 中的配置 key）
+     */
+    @TableField("source_datasource")
+    private String sourceDatasource;
+
+    /**
+     * 实体字段→物理字段映射（JSON 格式）
+     * 如 {"time":"order_month", "region":"region_code"}
+     */
+    @TableField("condition_mapping")
+    private String conditionMapping;
 
     /**
      * 枚举值列表 (JSON 格式，防止 AI 幻觉)

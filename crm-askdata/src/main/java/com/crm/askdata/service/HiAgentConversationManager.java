@@ -82,6 +82,19 @@ public class HiAgentConversationManager {
     }
 
     /**
+     * 强制续期会话：删除旧会话缓存，下次请求自动创建新会话
+     * <p>
+     * 在检测到用户切换话题时调用，避免旧对话历史干扰新话题
+     *
+     * @param userId  业务用户 ID
+     * @param agentId Agent 业务标识
+     */
+    public void renewConversation(String userId, String agentId) {
+        removeConversationId(userId, agentId);
+        log.info("userId={} agentId={} conversation renewed (cache cleared)", userId, agentId);
+    }
+
+    /**
      * 清除指定用户所有 Agent 的会话缓存
      *
      * @param userId 业务用户 ID

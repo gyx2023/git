@@ -16,9 +16,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.crm.askdata.entity.ToolParam;
+import com.crm.askdata.executor.SemanticQueryExecutor;
+import com.crm.askdata.executor.TextToSqlExecutor;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import org.slf4j.MDC;
 
 /**
@@ -48,6 +52,9 @@ public class RouterService {
     private final RouterProperties properties;
     private final SemanticLayerService semanticLayerService;
     private final UserPermissionService permissionService;
+    private final ToolConfigService configService;
+    private final SemanticQueryExecutor semanticQueryExecutor;
+    private final TextToSqlExecutor textToSqlExecutor;
     private final ConversationContextManager contextManager;
     private final AuditLogger auditLogger;
     private final StateValidator stateValidator;
@@ -68,6 +75,13 @@ public class RouterService {
                               String userId, SseEmitter emitter) {
         // 捕获当前线程的 MDC 上下文，用于异步线程恢复
         Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+
+        // 启动心跳线程，每 15 秒发送一次 keepalive 事件（需在 submit 之前定义，确保 lambda 可引用）
+        ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "sse-heartbeat-" + traceId);
+            t.setDaemon(true);
+            return t;
+        });
 
         Future<?> future = sseExecutor.submit(() -> {
             // 恢复 MDC 上下文
@@ -92,14 +106,24 @@ public class RouterService {
                 clearSessionLock(sessionId, traceId);
                 handleStreamError(e, traceId, messageId, emitter, startTime);
             } finally {
+                heartbeatScheduler.shutdown();
                 if (mdcContext != null && !mdcContext.isEmpty()) {
                     MDC.clear();
                 }
             }
         });
 
+        heartbeatScheduler.scheduleAtFixedRate(() -> {
+            try {
+                sendSseEventSafe(emitter, SseMessage.keepalive(traceId));
+            } catch (Exception ignored) {
+                heartbeatScheduler.shutdown();
+            }
+        }, 15, 15, TimeUnit.SECONDS);
+
         // 注册取消回调：SSE 连接关闭时中断后台任务线程
         emitter.onTimeout(() -> {
+            heartbeatScheduler.shutdown();
             log.warn("sse emitter timeout, cancelling background task");
             if (!future.isDone()) {
                 future.cancel(true);
@@ -107,12 +131,14 @@ public class RouterService {
             emitter.complete();
         });
         emitter.onError(e -> {
+            heartbeatScheduler.shutdown();
             log.error("sse emitter error, cancelling background task", e);
             if (!future.isDone()) {
                 future.cancel(true);
             }
         });
         emitter.onCompletion(() -> {
+            heartbeatScheduler.shutdown();
             if (!future.isDone()) {
                 future.cancel(true);
             }
@@ -470,14 +496,13 @@ public class RouterService {
      */
     private void validateParametersBeforeExecute(IntentResult intent, String traceId) {
         if (intent == null || !"data_query".equals(intent.getIntent())) {
-            return;  // 非数据查询，无需校验
+            return;
         }
 
         if (intent.getToolName() == null || intent.getToolName().isEmpty()) {
-            return;  // 没有工具名，由后续逻辑处理
+            return;
         }
 
-        // 检查必填参数（根据实际业务调整）
         Map<String, Object> entities = intent.getEntities();
         if (entities == null || entities.isEmpty()) {
             log.warn("data_query with toolName={} but entities is empty, possible hallucination",
@@ -485,21 +510,31 @@ public class RouterService {
             throw new IllegalArgumentException("缺少必填参数，请补充更多信息");
         }
 
-        // 可以根据具体工具定义必填参数
-        // 例如：get_sales_report 需要 time 和 region
-//        List<String> missingParams = new ArrayList<>();
-//        if (!entities.containsKey("time") && !entities.containsKey("startTime")) {
-//            missingParams.add("时间");
-//        }
-//        if (!entities.containsKey("region") && !entities.containsKey("department")) {
-//            missingParams.add("地区/部门");
-//        }
-//
-//        if (!missingParams.isEmpty()) {
-//            log.warn("data_query with toolName={} missing required params: {}, entities={}",
-//                intent.getToolName(), missingParams, entities);
-//            throw new IllegalArgumentException("缺少必填参数：" + String.join("、", missingParams));
-//        }
+        // 从数据库工具参数定义中动态校验必填参数
+        try {
+            ToolConfigWithParams fullConfig = configService.getToolConfigWithParams(intent.getToolName());
+            List<ToolParam> params = fullConfig.getParams();
+            if (params == null || params.isEmpty()) {
+                return;
+            }
+
+            List<String> missingRequired = params.stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsRequired()))
+                .filter(p -> !entities.containsKey(p.getParamName())
+                    && !entities.containsKey(p.getTargetParamName()))
+                .map(p -> p.getParamDisplayName() != null ? p.getParamDisplayName() : p.getParamName())
+                .collect(java.util.stream.Collectors.toList());
+
+            if (!missingRequired.isEmpty()) {
+                log.warn("traceId={} toolName={} missing required params: {}",
+                    traceId, intent.getToolName(), missingRequired);
+                throw new IllegalArgumentException("缺少必填参数：" + String.join("、", missingRequired));
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("traceId={} parameter validation failed: {}", traceId, e.getMessage());
+        }
 
         log.debug("parameters validation passed: toolName={}, entities={}",
             intent.getToolName(), entities);
@@ -581,7 +616,7 @@ public class RouterService {
         }
 
         // 发送结束消息
-        List<String> suggestions = Arrays.asList("查看趋势", "对比上月", "导出数据");
+        List<String> suggestions = generateSuggestions(result);
         sendSseEvent(emitter, SseMessage.end(traceId, messageId, null,
             result.getStrategy(), System.currentTimeMillis() - startTime, suggestions));
     }
@@ -591,7 +626,11 @@ public class RouterService {
      */
     private void handleStreamError(Exception e, String traceId, String messageId,
                                    SseEmitter emitter, long startTime) {
-        sendSseEventSafe(emitter, SseMessage.error(traceId, messageId, "系统繁忙，请稍后重试"));
+        String errorMsg = e != null ? e.getMessage() : null;
+        if (errorMsg == null || errorMsg.isEmpty()) {
+            errorMsg = "系统繁忙，请稍后重试";
+        }
+        sendSseEventSafe(emitter, SseMessage.error(traceId, messageId, errorMsg));
         sendSseEventSafe(emitter, SseMessage.end(traceId, messageId, null, "FALLBACK_GLOBAL",
             System.currentTimeMillis() - startTime, null));
         emitter.completeWithError(e);
@@ -770,13 +809,53 @@ public class RouterService {
             case TOOL_CALL:
                 return toolCallExecutor;
             case SEMANTIC_QUERY:
+                return semanticQueryExecutor;
             case TEXT_TO_SQL:
-                // 桩实现：BE-05/06 实现后替换为对应执行器
-                log.info("Strategy {} not yet implemented, using fallback executor", strategy);
+                if (Boolean.TRUE.equals(properties.getSecurity().getEnableSqlSandbox())) {
+                    return textToSqlExecutor;
+                }
                 return fallbackQueryExecutor;
             default:
                 return fallbackQueryExecutor;
         }
+    }
+
+    /**
+     * 根据查询结果动态生成推荐问题
+     */
+    private List<String> generateSuggestions(QueryResult result) {
+        if (result != null && result.getData() != null && !result.getData().isEmpty()) {
+            Object dataObj = result.getData().get("data");
+            if (dataObj instanceof List && !((List<?>) dataObj).isEmpty()) {
+                Object firstRow = ((List<?>) dataObj).get(0);
+                if (firstRow instanceof Map) {
+                    Map<String, Object> row = (Map<String, Object>) firstRow;
+                    List<String> s = new ArrayList<>();
+                    if (row.containsKey("time") || row.containsKey("date")
+                        || row.containsKey("month") || row.containsKey("year")) {
+                        s.add("查看趋势");
+                        s.add("对比上月");
+                    }
+                    if (row.containsKey("region") || row.containsKey("area")
+                        || row.containsKey("city") || row.containsKey("dept")) {
+                        s.add("按地区排名");
+                    }
+                    if (s.isEmpty()) {
+                        s.add("查看更多详情");
+                    }
+                    s.add("导出数据");
+                    return s;
+                }
+            }
+        }
+        return generateDefaultSuggestions();
+    }
+
+    /**
+     * 根据查询场景生成默认推荐问题
+     */
+    private List<String> generateDefaultSuggestions() {
+        return Arrays.asList("查看趋势", "对比上月", "导出数据");
     }
 
     /**
@@ -874,26 +953,29 @@ public class RouterService {
      * @return true 表示检测到意图切换
      */
     private boolean detectIntentSwitch(ConversationSession session, IntentResult intent, String query) {
-        if (session == null || session.getStatus() != ConversationSession.ConversationStatus.CLARIFYING) {
+        if (session == null) {
             return false;
         }
 
         String lockedToolName = session.getLockedToolName();
         String newToolName = intent.getToolName();
 
-        // 条件1：toolName 发生变化（从 A 工具切换到 B 工具）
-        if (lockedToolName != null && newToolName != null && !lockedToolName.equals(newToolName)) {
-            log.info("toolName changed from '{}' to '{}', possible topic switch",
-                lockedToolName, newToolName);
-            return true;
+        if (session.getStatus() == ConversationSession.ConversationStatus.CLARIFYING) {
+            // 原有逻辑：CLARIFYING 状态下 toolName 变化
+            if (lockedToolName != null && newToolName != null && !lockedToolName.equals(newToolName)) {
+                log.info("toolName changed from '{}' to '{}' during CLARIFYING, topic switch detected",
+                    lockedToolName, newToolName);
+                return true;
+            }
+            return false;
         }
 
-        // 条件2：从有 toolName 变为无 toolName，且用户输入看起来像新问题
-        // （例如：澄清期间用户突然问"今天天气怎么样"）
-        if (lockedToolName != null && (newToolName == null || newToolName.isEmpty())) {
-            // 可以通过简单启发式判断：用户输入不包含原话题关键词
-            // 这里暂时保守处理，不触发重置，依赖 Agent 自主管理
-            log.debug("toolName disappeared during clarification, but not forcing reset");
+        // 新增：INITIAL 阶段检测话题切换
+        // 场景：上一轮 lockedToolName 与本轮 toolName 完全不同
+        if (lockedToolName != null && newToolName != null && !lockedToolName.equals(newToolName)) {
+            log.info("toolName changed from '{}' to '{}' on new turn, topic switch detected",
+                lockedToolName, newToolName);
+            return true;
         }
 
         return false;
@@ -912,6 +994,11 @@ public class RouterService {
         old.setLockedToolName(null);
         old.touch();
         contextManager.saveSession(old);
+
+        // 清除 HiAgent 旧会话缓存，下次请求自动创建新会话
+        conversationManager.renewConversation(userId, intentAgentId);
+
+        log.info("session reset for new topic: sessionId={}, userId={}", old.getSessionId(), userId);
         return old;
     }
 

@@ -52,4 +52,18 @@ public interface MetaMetricMapper extends BaseMapperPlus<MetaMetricMapper, MetaM
                 .eq(MetaMetric::getStatus, status)
                 .orderByAsc(MetaMetric::getMetricCode));
     }
+
+    /**
+     * 根据指标代码或名称查询（支持中文名匹配）
+     *
+     * @param codeOrName 指标代码或中文名称
+     * @param status     状态
+     * @return 指标
+     */
+    default MetaMetric findByMetricCodeOrName(String codeOrName, Integer status) {
+        return selectOne(new LambdaQueryWrapper<MetaMetric>()
+                .eq(MetaMetric::getStatus, status)
+                .and(w -> w.eq(MetaMetric::getMetricCode, codeOrName)
+                           .or().eq(MetaMetric::getMetricName, codeOrName)));
+    }
 }

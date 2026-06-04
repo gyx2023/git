@@ -14,7 +14,6 @@ import java.util.Map;
  * 语义层服务
  * <p>
  * 封装元数据查询能力，为路由决策引擎提供语义层打通
- * BE-04 实现：接入真实 MetricService / DimensionService
  *
  * @author crm
  */
@@ -24,7 +23,6 @@ import java.util.Map;
 public class SemanticLayerService {
 
     private final MetricService metricService;
-    private final DimensionService dimensionService;
 
     /**
      * 检查实体中是否包含语义层指标

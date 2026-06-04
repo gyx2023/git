@@ -87,6 +87,11 @@ public class IntentParser {
         } catch (Exception e) {
             log.warn("traceId={} failed to parse answer as IntentResult, answer={}, error={}",
                 traceId, truncate(answer, 200), e.getMessage());
+            // 非空 answer 解析失败是 HiAgent 返回异常（如截断 JSON），
+            // 直接抛出异常让上层走错误处理链路，前端展示"智能体异常"
+            if (answer != null && !answer.trim().isEmpty()) {
+                throw new RuntimeException("智能体响应异常，请稍后重试", e);
+            }
             return buildFallback("answer 解析失败：" + e.getMessage());
         }
     }

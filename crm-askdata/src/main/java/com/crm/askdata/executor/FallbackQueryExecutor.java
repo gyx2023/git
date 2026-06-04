@@ -10,12 +10,7 @@ import org.springframework.stereotype.Component;
  * 知识库降级执行器
  * <p>
  * 当其他策略不可用或执行失败时，返回友好的降级提示。
- * 作为兜底策略，保证系统始终能返回结果。
- * <p>
- * 注：原知识库检索功能已移除，因 HiAgent v1.6.0 没有独立的知识库检索接口。
- * BE-05/06/07 实现后需替换为真实执行器。
- *
- * @author crm
+ * 文案根据意图类型和上下文动态生成，提供有引导性的提示。
  */
 @Slf4j
 @Component
@@ -26,8 +21,22 @@ public class FallbackQueryExecutor implements QueryExecutor {
         log.info("traceId={} executing fallback query", traceId);
 
         String intent = intentResult != null ? intentResult.getIntent() : "unknown";
-        String content = String.format(
-            "您的问题已收到，但目前暂时无法处理意图「%s」的类型。请尝试更详细地描述您的问题。", intent);
+        String toolName = intentResult != null ? intentResult.getToolName() : null;
+
+        String content;
+        if ("data_query".equals(intent) && toolName != null) {
+            content = String.format(
+                "暂不支持「%s」相关指标的查询，请尝试其他表达方式，例如：\n" +
+                "• 查询销售额\n• 查看合同到期情况\n• 客户分布统计", toolName);
+        } else if ("data_query".equals(intent)) {
+            content = "未找到匹配的数据查询工具，请尝试更具体地描述您想查什么，例如：\n" +
+                      "• 本月销售额\n• 华北区合同数量\n• 客户行业分布";
+        } else if ("knowledge".equals(intent)) {
+            content = "暂不支持此类知识问答，请尝试查询具体业务数据。";
+        } else {
+            content = "抱歉，未能理解您的问题。请重新描述，例如：\n" +
+                      "• 上个月销售额是多少\n• 华北地区合同数量";
+        }
 
         return QueryResult.success(RoutingStrategy.FALLBACK_KB.name(), content);
     }
