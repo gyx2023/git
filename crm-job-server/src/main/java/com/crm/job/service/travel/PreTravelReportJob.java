@@ -31,7 +31,7 @@ public class PreTravelReportJob {
         XxlJobHelper.log("开始执行行前报告生成触发任务");
 
         try {
-            String param = "20260603";//XxlJobHelper.getJobParam();
+            String param = XxlJobHelper.getJobParam();
             String startTime;
             String endTime;
 
