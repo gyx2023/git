@@ -20,8 +20,6 @@ import java.util.Date;
 @TableName("rep_cust_contract_bill_sum_m")
 public class RepCustContractMillSumM implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     /**
      * 合同号
      */
