@@ -1,4 +1,4 @@
-package com.crm.web.api;
+package com.crm.adapter.api;
 
 import com.crm.askdata.client.HiAgentClient;
 import com.crm.askdata.model.*;

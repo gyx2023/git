@@ -1,4 +1,4 @@
-package com.crm.web.api;
+package com.crm.adapter.api;
 
 import com.crm.askdata.entity.MetaDimension;
 import com.crm.askdata.entity.MetaMetric;
