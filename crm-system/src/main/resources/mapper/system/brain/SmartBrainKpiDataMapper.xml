@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.brain.SmartBrainKpiDataMapper">
+
+    <!-- 删除指标数据 -->
+    <delete id="deleteKpiData">
+        delete from smart_brain_kpi_data
+        where
+        <choose>
+            <when test='cycleType == "D"'>data_cycle_d = #{cycleDate}</when>
+            <when test='cycleType == "M"'>month_id = substring(#{cycleDate},1,6)</when>
+            <when test='cycleType == "Y"'>year = substring(#{cycleDate},1,4)</when>
+            <otherwise>1=2</otherwise>
+        </choose>
+        and data_requency = #{cycleType}
+    </delete>
+
+    <!-- 查询指标数据列表 -->
+    <select id="getKpiDataList" resultType="java.util.Map">
+        select
+            DATE_FORMAT(etl_time,'%y%m%d%h%i%s') as etlTime,
+            data_cycle_d as dataCycleD,
+            month_id as monthId,
+            year as year,
+            case when data_level ='0' then '999'
+            when kpidata.area_code ='330000' and data_level ='1' then '000'
+            else sa.remark_
+        end as areaCode,
+        case when county_code is null then null
+             when data_level ='2' and sa2.parent_ ='330000' then CONCAT('S',sa2.remark_)
+             else sa2.bss_code
+        end as countyCode,
+        zone_code as zoneCode,
+        data_level as dataLevel,
+        data_requency as dataRequency,
+        kpidata.kpi_id as kpiId,
+        kpi_value as kpiValue,
+        month_val as monthVal,
+        month_ratio as monthRatio,
+        year_val as yearVal,
+        year_ratio as yearRatio,
+        kpi_val_add1 as kpiValAdd1,
+        kpi_val_add2 as kpiValAdd2,
+        'G' as taskSource,
+        kpi_business.kpi_type as kpiType,
+        kpi_business.busi_type_level as busiTypeLevel,
+        kpi_business.busi_type_type_par as busiTypeTypePar,
+        kpi_business.kpi_name as kpiName,
+        kpi_business.kpi_desc as kpiDesc,
+        CAST(kpi_business.busi_order AS CHAR) AS busiOrder,
+        kpi_business.is_display as isDisplay,
+        kpi_business.busi_display_district as busiDisplayDistrict,
+        kpi_business.kpi_add1_name as kpiAdd1Name,
+        kpi_business.kpi_add2_name as kpiAdd2Name
+        from smart_brain_kpi_data kpidata
+        left join sys_area sa on kpidata.area_code = sa.id_
+        left join sys_area sa2 on kpidata.county_code = sa2.id_
+        left join smart_brain_kpi_business_type kpi_business on kpidata.kpi_id = kpi_business.kpi_id
+        where data_cycle_d = #{cycleDate}
+    </select>
+
+    <!-- 省级工单总量 -->
+    <insert id="buildProvinceKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        '330000' as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '0' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM ${todaySql}, ${compare1Sql}
+        <if test='cycleType != "Y"'>,${compare2Sql}</if>
+    </insert>
+
+    <!-- 市级工单总量 -->
+    <insert id="buildCityKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        area.area_id as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '1' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (SELECT DISTINCT id_ as area_id FROM sys_area where parent_='330000' or id_='330000') area
+        LEFT JOIN ${todaySql} ON LEFT(area.area_id,4) = today.area_id
+        LEFT JOIN ${compare1Sql} ON LEFT(area.area_id,4) = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON LEFT(area.area_id,4) = compare2.area_id
+        </if>
+    </insert>
+
+    <!-- 县级工单总量 -->
+    <insert id="buildCountyKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        area.area_id as area_code,
+        area.county_id as county_code,
+        NULL as zone_code,
+        '2' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (
+        -- 全量区县，不遗漏任何一个
+        SELECT DISTINCT id_ as county_id,id_ as area_id FROM sys_area WHERE parent_ ='330000'
+        union
+        SELECT DISTINCT id_ as county_id, parent_ as area_id FROM sys_area
+        where parent_ BETWEEN '330100' and '331100' and bss_code !=''
+        ) area
+        -- 左连接，无工单自动为0
+        LEFT JOIN ${todaySql} ON area.county_id = today.area_id
+        LEFT JOIN ${compare1Sql} ON area.county_id = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON area.county_id = compare2.area_id
+        </if>
+    </insert>
+
+    <!-- 省级闭环率 -->
+    <insert id="buildProvinceClosedLoopKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        '330000' as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '0' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        CASE WHEN all_today.today_count=0 THEN 0
+        ELSE ROUND(today.today_count*100.0/all_today.today_count,2)+0
+        END as kpi_val_add1,
+        null as kpi_val_add2
+        FROM ${allTodaySql}, ${todaySql}, ${compare1Sql}
+        <if test='cycleType != "Y"'>,${compare2Sql}</if>
+    </insert>
+
+    <!-- 市级闭环率 -->
+    <insert id="buildCityClosedLoopKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        area.area_id as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '1' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        CASE WHEN all_today.today_count=0 THEN 0
+        ELSE ROUND(today.today_count*100.0/all_today.today_count,2)+0
+        END as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (SELECT DISTINCT id_ as area_id FROM sys_area where parent_='330000' or id_='330000') area
+        LEFT JOIN ${allTodaySql} ON LEFT(area.area_id,4) = all_today.area_id
+        LEFT JOIN ${todaySql} ON LEFT(area.area_id,4) = today.area_id
+        LEFT JOIN ${compare1Sql} ON LEFT(area.area_id,4) = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON LEFT(area.area_id,4) = compare2.area_id
+        </if>
+    </insert>
+
+    <!-- 县级闭环率 -->
+    <insert id="buildCountyClosedLoopKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        area.area_id as area_code,
+        area.county_id as county_code,
+        NULL as zone_code,
+        '2' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        CASE WHEN all_today.today_count=0 THEN 0
+        ELSE ROUND(today.today_count*100.0/all_today.today_count,2)+0
+        END as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (
+        SELECT DISTINCT id_ as county_id,id_ as area_id FROM sys_area WHERE parent_ ='330000'
+        union
+        SELECT DISTINCT id_ as county_id, parent_ as area_id FROM sys_area where parent_ BETWEEN '330100' and '331100' and bss_code !=''
+        ) area
+        LEFT JOIN ${allTodaySql} ON area.county_id = all_today.area_id
+        LEFT JOIN ${todaySql} ON area.county_id = today.area_id
+        LEFT JOIN ${compare1Sql} ON area.county_id = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON area.county_id = compare2.area_id
+        </if>
+    </insert>
+
+    <!-- 省级平均办理时长 -->
+    <insert id="buildProvinceAvgDealTimeKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        '330000' as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '0' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM ${todaySql}, ${compare1Sql}
+        <if test='cycleType != "Y"'>,${compare2Sql}</if>
+    </insert>
+
+    <!-- 市级平均办理时长 -->
+    <insert id="buildCityAvgDealTimeKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        replace(#{cycleDate},'-','') as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        area.area_id as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '1' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (SELECT DISTINCT id_ as area_id FROM sys_area where parent_='330000' or id_='330000') area
+        LEFT JOIN ${todaySql} ON LEFT(area.area_id,4) = today.area_id
+        LEFT JOIN ${compare1Sql} ON LEFT(area.area_id,4) = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON LEFT(area.area_id,4) = compare2.area_id
+        </if>
+    </insert>
+
+    <!-- 县级平均办理时长 -->
+    <insert id="buildCountyAvgDealTimeKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        replace(#{cycleDate},'-','') as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        area.area_id as area_code,
+        area.county_id as county_code,
+        NULL as zone_code,
+        '2' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (
+        SELECT DISTINCT id_ as county_id,id_ as area_id FROM sys_area WHERE parent_ ='330000'
+        union
+        SELECT DISTINCT id_ as county_id, parent_ as area_id FROM sys_area where parent_ BETWEEN '330100' and '331100' and bss_code !=''
+        ) area
+        LEFT JOIN ${todaySql} ON area.county_id = today.area_id
+        LEFT JOIN ${compare1Sql} ON area.county_id = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON area.county_id = compare2.area_id
+        </if>
+    </insert>
+
+    <!-- 省级日活用户 -->
+    <insert id="buildProvinceDailyActiveUsersKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        '330000' as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '0' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        CASE WHEN today.today_count=0 OR today.today_count IS NULL THEN 0
+        ELSE ROUND(today.today_count*100.0/sys_user.all_counts,1)
+        END as kpi_val_add1,
+        null as kpi_val_add2
+        FROM ${todaySql}, ${compare1Sql}
+        <if test='cycleType != "Y"'>,${compare2Sql}</if>
+        ,(select count(1) as all_counts from sys_user) sys_user
+    </insert>
+
+    <!-- 市级日活用户 -->
+    <insert id="buildCityDailyActiveUsersKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        COALESCE(CONCAT(areas.area_id,'00'),'未知') as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '1' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        CASE WHEN today.today_count=0 OR today.today_count IS NULL THEN 0
+        ELSE ROUND(today.today_count*100.0/sys_user.all_counts,1)
+        END as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (SELECT DISTINCT LEFT(id_,4) as area_id FROM sys_area WHERE parent_='330000' or id_='330000') areas
+        LEFT JOIN ${todaySql} ON areas.area_id = today.area_id
+        LEFT JOIN ${compare1Sql} ON areas.area_id = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON areas.area_id = compare2.area_id
+        </if>
+        LEFT JOIN (select count(1) as all_counts from sys_user) sys_user on 1=1
+    </insert>
+
+    <!-- 县级日活用户 -->
+    <insert id="buildCountyDailyActiveUsersKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        COALESCE(areas.area_id,'未知') as area_code,
+        areas.county_id as county_code,
+        NULL as zone_code,
+        '2' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        CASE WHEN today.today_count=0 OR today.today_count IS NULL THEN 0
+        ELSE ROUND(today.today_count*100.0/sys_user.all_users,1)
+        END as kpi_val_add1,
+        null as kpi_val_add2
+        FROM (
+        SELECT DISTINCT id_ as county_id,id_ as area_id FROM sys_area WHERE parent_ ='330000'
+        union
+        SELECT DISTINCT id_ as county_id, parent_ as area_id FROM sys_area where parent_ BETWEEN '330100' and '331100' and bss_code !=''
+        ) areas
+        LEFT JOIN ${todaySql} ON areas.county_id = today.area_id
+        LEFT JOIN ${compare1Sql} ON areas.county_id = compare1.area_id
+        <if test='cycleType != "Y"'>
+            LEFT JOIN ${compare2Sql} ON areas.county_id = compare2.area_id
+        </if>
+        LEFT JOIN (select count(1) as all_users from sys_user) sys_user on 1=1
+    </insert>
+
+    <!-- 省级操作日志数 -->
+    <insert id="buildProvinceLogCountKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+        etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+        data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+        year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+        CURDATE() as etl_time,
+        #{cycleDate} as data_cycle_d,
+        substring(#{cycleDate},1,6) as month_id,
+        substring(#{cycleDate},1,4) as year,
+        '330000' as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '0' as data_level,
+        #{cycleType} as data_requency,
+        #{kpiId} as kpi_id,
+        COALESCE(today.today_count,0) as kpi_value,
+        COALESCE((today.today_count - compare1.today_count),0) as month_val,
+        CASE WHEN COALESCE(compare1.today_count,0)=0 THEN 0
+        ELSE ROUND(COALESCE((today.today_count - compare1.today_count),0)*100.0/compare1.today_count,2)+0
+        END as month_ratio,
+        <if test='cycleType != "Y"'>
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE CAST(today.today_count - compare2.today_count AS SIGNED)
+            END as year_val,
+            CASE WHEN compare2.today_count IS NULL OR compare2.today_count=0 THEN NULL
+            ELSE ROUND((today.today_count - compare2.today_count)*100.0/compare2.today_count,2)+0
+            END as year_ratio,
+        </if>
+        <if test='cycleType == "Y"'>
+            null as year_val,
+            null as year_ratio,
+        </if>
+        null as kpi_val_add1,
+        null as kpi_val_add2
+        FROM ${todaySql}, ${compare1Sql}
+        <if test='cycleType != "Y"'>,${compare2Sql}</if>
+    </insert>
+
+    <!-- 省级耗时接口数（>3s）-->
+    <insert id="buildProvinceLongCountKpiInsertSql">
+        INSERT INTO smart_brain_kpi_data (
+            etl_time,data_cycle_d,month_id,year,area_code,county_code,zone_code,
+            data_level,data_requency,kpi_id,kpi_value,month_val,month_ratio,
+            year_val,year_ratio,kpi_val_add1,kpi_val_add2
+        )
+        SELECT
+            CURDATE() as etl_time,
+            #{cycleDate} as data_cycle_d,
+            substring(#{cycleDate},1,6) as month_id,
+            substring(#{cycleDate},1,4) as year,
+        '330000' as area_code,
+        NULL as county_code,
+        NULL as zone_code,
+        '0' as data_level,
+            #{cycleType} as data_requency,
+            #{kpiId} as kpi_id,
+            null as kpi_value,
+            null as month_val,
+            null as month_ratio,
+            null as year_val,
+            null as year_ratio,
+            null as kpi_val_add1,
+            null as kpi_val_add2
+        FROM ${todaySql}
+    </insert>
+
+</mapper>

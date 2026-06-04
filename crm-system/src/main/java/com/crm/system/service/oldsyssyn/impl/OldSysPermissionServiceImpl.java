@@ -54,9 +54,9 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
         log.info("开始同步用户菜单权限");
         log.info("用户ID: {}", userId);
         OldSysUserDo oldSysUserDO = oldSysUserMapper.selectVoById(userId);
-        String roleList = oldSysUserDO.getRoleList();
 
         // 处理roleList：去除前后逗号并转换为List
+        String roleList = oldSysUserDO.getRoleList();
         List<String> roleIdList = parseRoleListToList(roleList);
         log.info("解析后的角色ID列表: {}", roleIdList);
         //删除用户角色绑定关系
@@ -83,7 +83,7 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
             List<String> oldMenuIds = parseRoleListToList(functionList);
             List<SysMenuMappingDo> sysMenuMappingDos = sysMenuMappingMapper.selectList(new LambdaQueryWrapper<SysMenuMappingDo>().in(SysMenuMappingDo::getOldMenuId, oldMenuIds));
             //不为空说明存在菜单权限，则同步角色数据
-            if(!sysMenuMappingDos.isEmpty()){
+            if (!sysMenuMappingDos.isEmpty()) {
                 //同步角色菜单绑定关系
                 List<SysRoleMenu> sysRoleMenus = sysMenuMappingDos.stream().map(sysMenuMappingDo -> {
                     SysRoleMenu sysRoleMenu = new SysRoleMenu();
@@ -129,8 +129,8 @@ public class OldSysPermissionServiceImpl implements OldSysPermissionService {
 
         // 分割并去除空白，过滤空值
         return Arrays.stream(trimmedRoleList.split(","))
-                .map(String::trim)
-                .filter(roleId -> !roleId.isEmpty())
-                .collect(Collectors.toList());
+            .map(String::trim)
+            .filter(roleId -> !roleId.isEmpty())
+            .collect(Collectors.toList());
     }
 }

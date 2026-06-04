@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.common.core.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.ClueStateEnum;
@@ -331,6 +332,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return list;
     }
 
+
     @Override
     public List<ToppOpportunityVo> queryListByOppoCodes(Set<String> oppoCodes) {
         return baseMapper.selectVoList(new LambdaQueryWrapper<ToppOpportunityDo>().in(ToppOpportunityDo::getOppCode, oppoCodes)
@@ -359,5 +361,31 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         lqw.eq(ToppOpportunityDo::getIsValid, 1);
 
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 查询创建时间超过3个月+7天的商机，并且无拜访时间
+     * @param bfStartTime
+     * @param bfEndTime
+     * @return
+     */
+    @Override
+    public List<ToppOpportunityVo> queryOpportunityByCreateTime(String bfStartTime, String bfEndTime) {
+
+        LambdaQueryWrapper<ToppOpportunityDo> lqw = new LambdaQueryWrapper<>();
+        // 查询createTime小于3个月+7天前的时间，并且无拜访时间，即最后拜访时间超过3个月+7天的商机
+
+        lqw.ge(ToppOpportunityDo::getCreateTime, bfStartTime);
+        lqw.le(ToppOpportunityDo::getCreateTime, bfEndTime);
+        lqw.isNull(ToppOpportunityDo::getLastVisitTime);
+        lqw.ne(ToppOpportunityDo::getOppPhase, Constants.OPP_PHASE_NEW_CREATE);
+        lqw.eq(ToppOpportunityDo::getIsValid, 1);
+
+        return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public List<OpportunityDTO> getToppOpportunityPut(String areaId) {
+        return baseMapper.listOpportunity(areaId);
     }
 }

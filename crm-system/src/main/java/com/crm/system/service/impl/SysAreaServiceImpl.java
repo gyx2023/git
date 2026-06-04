@@ -95,12 +95,12 @@ public class SysAreaServiceImpl implements ISysAreaService {
 
     private LambdaQueryWrapper<SysArea> buildQueryWrapper(SysAreaBo bo) {
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
-        
+
         // 添加null检查保护
         if (bo == null) {
             return lqw;
         }
-        
+
         Map<String, Object> params = bo.getParams();
         lqw.eq(StringUtils.isNotBlank(bo.getName()), SysArea::getName, bo.getName());
         lqw.eq(StringUtils.isNotBlank(bo.getType()), SysArea::getType, bo.getType());
@@ -252,5 +252,22 @@ public class SysAreaServiceImpl implements ISysAreaService {
         return baseMapper.selectList()
             .stream()
             .collect(Collectors.toMap(SysArea::getId, SysArea::getName));
+    }
+
+    @Override
+    public List<SysArea> queryLikeList(String city) {
+        LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        lqw.likeRight(SysArea::getId, "33")
+            .like(SysArea::getName, city);
+
+        return baseMapper.selectList(lqw);
+    }
+
+    @Override
+    public List<SysArea> findEmpAreaIdList(Integer empAreaId) {
+        LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysArea::getEmpAreaId, empAreaId);
+
+        return baseMapper.selectList(lqw);
     }
 }

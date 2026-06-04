@@ -141,6 +141,18 @@ public class OppoUnboundSyncJob {
                 }
             }
 
+            // 查询创建时间超过3个月+7天无拜访的商机
+            Map<String, String> notVisitTimeSwitchMap = sysParamService.findValueMapsByType(Constants.NOT_VISIT_TIME_OFF_SWITCH);
+            if (SwitchStatus.ON.getValue().equals(notVisitTimeSwitchMap.get(Constants.NOT_VISIT_TIME_OFF_SWITCH))) {
+                List<ToppOpportunityVo> longUnvisitedOppos = getDataOnNotVisitTimeWithoutFilter(bfStartTime, bfEndTime);
+                log.info("查询到创建时间超过3个月+7天无拜访的商机数量：{}", longUnvisitedOppos != null ? longUnvisitedOppos.size() : 0);
+                // 添加超过3个月+7天未拜访的商机
+                if (longUnvisitedOppos != null && !longUnvisitedOppos.isEmpty()) {
+                    longUnvisitedOppos.forEach(oppo -> oppo.setFinalEndOppTypeMemo("超过三个月未拜访未转化商机，系统自动关闭！"));
+                    resultOppoList.addAll(longUnvisitedOppos);
+                }
+            }
+
             if (resultOppoList.isEmpty()) {
                 log.info("没有需要更新状态的商机");
                 return;
@@ -207,6 +219,12 @@ public class OppoUnboundSyncJob {
         log.info("查询商机超过3个月+7天未拜访时间范围：{} 到 {}", bfStartTime, bfEndTime);
         // 返回原始数据，不进行过滤
         return toppOpportunityService.queryOpportunityByLastVisitTime(bfStartTime, bfEndTime);
+    }
+
+    private List<ToppOpportunityVo> getDataOnNotVisitTimeWithoutFilter(String bfStartTime, String bfEndTime) {
+        log.info("查询商机创建时间超过3个月+7天无拜访时间范围：{} 到 {}", bfStartTime, bfEndTime);
+        // 返回原始数据，不进行过滤
+        return toppOpportunityService.queryOpportunityByCreateTime(bfStartTime, bfEndTime);
     }
 
     /**
