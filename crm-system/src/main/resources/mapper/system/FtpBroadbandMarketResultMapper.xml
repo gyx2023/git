@@ -4,7 +4,7 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.FtpBroadbandMarketResultMapper">
 
-    <resultMap type="com.crm.system.domain.FtpBroadbandMarketResult" id="FtpBroadbandMarketResultResult">
+    <resultMap type="com.crm.system.domain.dao.FtpBroadbandMarketResult" id="FtpBroadbandMarketResultResult">
         <result property="statCycle" column="STAT_CYCLE"/>
         <result property="marketingType" column="MARKETING_TYPE"/>
         <result property="marketingName" column="MARKETING_NAME"/>

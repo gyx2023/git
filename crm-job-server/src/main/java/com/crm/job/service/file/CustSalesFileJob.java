@@ -1,27 +1,38 @@
 package com.crm.job.service.file;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.domain.FtpBroadbandMarketCust;
-import com.crm.system.domain.FtpBroadbandMarketResult;
-import com.crm.system.domain.FtpBroadbandMarketUser;
+import com.crm.system.domain.dao.FtpBroadbandMarketCust;
+import com.crm.system.domain.dao.FtpBroadbandMarketResult;
+import com.crm.system.domain.dao.FtpBroadbandMarketUser;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.FtpBroadbandMarketCustMapper;
 import com.crm.system.mapper.FtpBroadbandMarketResultMapper;
 import com.crm.system.mapper.FtpBroadbandMarketUserMapper;
+import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
+import com.crm.system.mapper.sys.SysDeptMapper;
+import com.crm.system.mapper.topp.ToppOrderMapper;
+import com.crm.common.core.domain.entity.SysDept;
 import com.crm.system.service.sys.ISysParamService;
+import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.flowable.engine.RepositoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.TaskService;
+import org.flowable.engine.repository.ProcessDefinition;
+import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -34,6 +45,8 @@ public class CustSalesFileJob {
     private static String USER_FILE_FULL_PATCH;
     // 结果文件
     private static final String RESULT_FILE_NAME = "TC_USER_BROADBAND_MARKETING_RESULT_M_";
+    /** 流程定义Key */
+    private static final String PROCESS_KEY = "custSales";
 
     @Autowired
     private ISysParamService sysParamService;
@@ -45,6 +58,20 @@ public class CustSalesFileJob {
     private FtpBroadbandMarketResultMapper ftpBroadbandMarketResultMapper;
     @Autowired
     private SysCodeMapper sysCodeMapper;
+    @Autowired
+    private SysUsersMapper sysUsersMapper;
+    @Autowired
+    private SysDeptMapper sysDeptMapper;
+    @Autowired
+    private ToppOrderMapper toppOrderMapper;
+
+    @Autowired
+    private RepositoryService repositoryService;
+    @Autowired
+    private RuntimeService runtimeService;
+    @Autowired
+    private TaskService taskService;
+
 
     @XxlJob(value="custSalesFileJob")
     public void custSalesFileJob() {
@@ -75,6 +102,7 @@ public class CustSalesFileJob {
             sysCodeMapper.insertCustSaleProduct();
 
             //启动任务
+            startTasks(yyyyMM);
         }
     }
 
@@ -392,6 +420,91 @@ public class CustSalesFileJob {
             log.error("用户文件编码异常，仅支持UTF-8编码", e);
         } catch (IOException e) {
             log.error("用户文件读取失败", e);
+        }
+    }
+
+    /**
+     * 启动任务
+     * 查询该账期未对应工单的客户数据，为每条数据创建订单并启动流程
+     */
+    private void startTasks(String yyyyMM){
+        // 1. 查询该账期数据未对应工单的数据
+        LambdaQueryWrapper<FtpBroadbandMarketCust> qw = new LambdaQueryWrapper<>();
+        qw.eq(FtpBroadbandMarketCust::getStatCycle, yyyyMM)
+            .isNull(FtpBroadbandMarketCust::getOrderId);
+        List<FtpBroadbandMarketCust> custList = ftpBroadbandMarketCustMapper.selectList(qw);
+
+        // 2. 循环处理每一条客户数据
+        for (FtpBroadbandMarketCust cust : custList){
+            // 根据发展人编码查询客户经理
+            SysUsers user = sysUsersMapper.selectUserByChannelHqCode(cust.getServManagerId());
+            if(user == null){
+                log.info("根据发展人编码{}查询客户经理为空", cust.getServManagerId());
+                ftpBroadbandMarketCustMapper.updateCustOrderId(0, Long.valueOf(cust.getId()));
+                // 跳过当前客户，处理下一条
+                continue;
+            }
+
+            log.info("开始处理客户表ID为{}，账期：{}，发展人编码：{}，客户ID：{}，营销类型：{}",
+                cust.getId(), cust.getStatCycle(), cust.getServManagerId(),
+                cust.getCustGrpId(), cust.getMarketingName());
+            long startTime = System.currentTimeMillis();
+
+            // 新建订单
+            ToppOrder order = new ToppOrder();
+            order.setOrderType(PROCESS_KEY);
+            order.setCreateTime(new Date());
+            order.setStatus(Constants.ORDER_STATUS_RUNNING);
+            order.setOrderName(cust.getGrpName() + "宽带专项营销");
+            order.setCustManagerId(user.getId());
+            order.setCustName(cust.getGrpName());
+            order.setCreator(user.getId());
+            if (user.getOrgId() != null) {
+                order.setOrgId(user.getOrgId());
+                SysDept dept = sysDeptMapper.selectById(user.getOrgId());
+                if (dept != null && dept.getAreaCode() != null) {
+                    order.setAreaId(Long.parseLong(dept.getAreaCode()));
+                }
+            }
+
+            // 构建流程启动变量，设置节点接收人
+            Map<String, Object> startVariables = new HashMap<>();
+            startVariables.put("custManager", "," + user.getId() + ",");
+
+            // 查询最新的流程定义并启动流程实例
+            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(PROCESS_KEY)
+                .latestVersion()
+                .singleResult();
+            ProcessInstance processInstance = runtimeService.startProcessInstanceById(
+                processDefinition.getId(), startVariables);
+            String piId = processInstance.getId();
+
+            // 获取第一个任务节点
+            Task task = taskService.createTaskQuery()
+                .processInstanceId(piId)
+                .singleResult();
+
+            // 回写流程信息到订单
+            order.setPiId(piId);
+            order.setPhase(task.getTaskDefinitionKey());
+            order.setPhaseName(task.getName());
+            toppOrderMapper.insert(order);
+
+            // 设置任务本地变量（对应原Activiti的setVariablesLocal）
+            Map<String, Object> taskVariables = new HashMap<>();
+            taskVariables.put(task.getTaskDefinitionKey() + "_dealUrl",
+                "/custSales/toCustManagerDeal?orderId=" + order.getId() + "&taskId=" + task.getId());
+            taskVariables.put(task.getTaskDefinitionKey() + "_infoId", order.getId());
+            taskVariables.put(task.getTaskDefinitionKey() + "_infoType", "order");
+            taskVariables.put(task.getTaskDefinitionKey() + "_custName", order.getCustName());
+            taskService.setVariablesLocal(task.getId(), taskVariables);
+
+            // 将订单ID回写至业务表
+            ftpBroadbandMarketCustMapper.updateCustOrderId(order.getId().intValue(), Long.valueOf(cust.getId()));
+
+            long endTime = System.currentTimeMillis();
+            log.info("发起宽带专项营销流程耗时：{}ms", endTime - startTime);
         }
     }
 }
