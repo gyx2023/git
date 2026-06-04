@@ -82,7 +82,7 @@ public class ZqztCustomerTagSyncServiceImpl implements IZqztCustomerTagSyncServi
         String developerOa = StringUtils.trimToNull(request.getDeveloperOa());
         String custManagerEmpid = null;
         String custManagerName = null;
-        if (StringUtils.isNotBlank(developerOa)) {
+        if (StringUtils.isNotEmpty(developerOa)) {
             DwdRepSysPersonD person = dwdRepSysPersonDMapper.selectOne(
                 new LambdaQueryWrapper<DwdRepSysPersonD>()
                     .eq(DwdRepSysPersonD::getOaUserName, developerOa)
@@ -106,27 +106,27 @@ public class ZqztCustomerTagSyncServiceImpl implements IZqztCustomerTagSyncServi
             boolean hasUpdate = false;
 
             // 只有当解析成功时才更新对应字段
-            if (StringUtils.isNotBlank(industryMappingValue)) {
-                update.setIndustryDetailKind(industryMappingValue);
+            if (StringUtils.isNotEmpty(industryMappingValue)) {
+                update.setGrpBusiDeptType(industryMappingValue);
                 hasUpdate = true;
             }
-            if (StringUtils.isNotBlank(expandTypeValue)) {
+            if (StringUtils.isNotEmpty(expandTypeValue)) {
                 update.setGrpExpandType(expandTypeValue);
                 hasUpdate = true;
             }
-            if (StringUtils.isNotBlank(custManagerEmpid)) {
+            if (StringUtils.isNotEmpty(custManagerEmpid)) {
                 update.setCustManagerEmpId(custManagerEmpid);
                 hasUpdate = true;
             }
-            if (StringUtils.isNotBlank(custManagerOauser(developerOa))) {
-                update.setCustManagerOauser(custManagerOauser(developerOa));
+            if (StringUtils.isNotEmpty(developerOa)) {
+                update.setCustManagerOauser(developerOa);
                 hasUpdate = true;
             }
-            if (StringUtils.isNotBlank(custManagerName)) {
+            if (StringUtils.isNotEmpty(custManagerName)) {
                 update.setCustManagerName(custManagerName);
                 hasUpdate = true;
             }
-            if(StringUtils.isNotBlank(customerTypeValue)){
+            if(StringUtils.isNotEmpty(customerTypeValue)){
                 update.setGrpCustType(customerTypeValue);
                 hasUpdate = true;
             }
@@ -174,9 +174,5 @@ public class ZqztCustomerTagSyncServiceImpl implements IZqztCustomerTagSyncServi
         }
         log.warn("[客户标签同步] 字典表中未找到匹配的行业分类标签: {}", label);
         return null;
-    }
-
-    private String custManagerOauser(String oa) {
-        return StrUtil.isBlank(oa) ? null : oa.toLowerCase();
     }
 }
