@@ -11,6 +11,7 @@ import com.crm.system.service.rpa.script.RpaScriptExecutionContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,7 @@ import static com.crm.system.utils.EvaluateUtil.evaluateCondition;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "rpa.form-mapping.cache.enabled", havingValue = "true", matchIfMissing = false)
 public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessStrategy {
 
     @Resource

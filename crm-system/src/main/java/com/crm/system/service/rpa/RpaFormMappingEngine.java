@@ -15,6 +15,7 @@ import com.crm.system.service.rpa.script.RpaScriptExecutionContext;
 import com.crm.system.service.rpa.servicehall.NengKaiService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,7 @@ import static com.crm.system.utils.EvaluateUtil.evaluateCondition;
  */
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "rpa.form-mapping.cache.enabled", havingValue = "true", matchIfMissing = false)
 public class RpaFormMappingEngine {
 
     private static final String SCRIPT_STAGE_ROW = "ROW";

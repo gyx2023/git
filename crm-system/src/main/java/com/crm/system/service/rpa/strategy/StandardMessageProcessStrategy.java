@@ -4,6 +4,7 @@ package com.crm.system.service.rpa.strategy;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.service.rpa.RpaFormMappingEngine;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import javax.annotation.Resource;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "rpa.form-mapping.cache.enabled", havingValue = "true", matchIfMissing = false)
 public class StandardMessageProcessStrategy implements RpaMessageProcessStrategy {
 
     @Resource

@@ -10,7 +10,7 @@ import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.system.service.rpa.strategy.MessageStrategyFactory;
 import com.crm.system.service.rpa.strategy.RpaMessageProcessStrategy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -21,10 +21,14 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "rpa.form-mapping.cache.enabled", havingValue = "true", matchIfMissing = false)
 public class RpaConsumerService {
 
     @Resource
     private ZqztJtNoticeRecordMapper zqztJtNoticeRecordMapper;
+
+    @Resource
+    private MessageStrategyFactory messageStrategyFactory;
 
     /**
      * 消费RPA业务消息
@@ -69,9 +73,6 @@ public class RpaConsumerService {
         }
         return response;
     }
-
-    @Resource
-    private MessageStrategyFactory messageStrategyFactory;
 
 
     public String extractFailReason(String responseBody) {

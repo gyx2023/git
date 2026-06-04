@@ -1,5 +1,6 @@
 package com.crm.system.service.rpa.strategy;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ import java.util.*;
  * @author crm
  */
 @Component
+@ConditionalOnProperty(name = "rpa.form-mapping.cache.enabled", havingValue = "true", matchIfMissing = false)
 public class MessageStrategyFactory {
 
     private final List<RpaMessageProcessStrategy> strategies;
