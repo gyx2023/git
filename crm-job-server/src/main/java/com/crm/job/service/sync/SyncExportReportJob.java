@@ -1,12 +1,10 @@
 package com.crm.job.service.sync;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.job.utils.FilePath;
 import com.crm.system.domain.vo.topp.OpportunityReportVO;
-import com.crm.system.service.sys.ISysOssService;
 import com.crm.system.service.ReportService;
+import com.crm.system.service.sys.ISysOssService;
 import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -26,6 +24,7 @@ import java.util.List;
 /**
  * 千项万亿报表导出csv文件
  * 每周六9点05分
+ *
  * @author pengjun
  */
 @Component
@@ -33,8 +32,6 @@ import java.util.List;
 public class SyncExportReportJob {
 
     public static final String ATTACH_FILE_PATH = "zj_yypt/";
-
-    private static final int PAGE_SIZE = 1000;
 
     @Resource
     private ISysOssService ossService;
@@ -64,44 +61,16 @@ public class SyncExportReportJob {
 
         try (BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(Files.newOutputStream(csvFile.toPath()), StandardCharsets.UTF_8))) {
-
             writer.write(arrayToCsvLine(title));
             writer.newLine();
-
-            int currentPage = 1;
-            long total = 0;
-
-            while (true) {
-                Page<OpportunityReportVO> page = new Page<>(currentPage, PAGE_SIZE);
-                IPage<OpportunityReportVO> resultPage = reportService.getReportData(page);
-
-                // ==============================================
-                // 🔥 修复死循环：页数超过总页数就退出
-                // ==============================================
-                if (currentPage > resultPage.getPages()) {
-                    break;
-                }
-
-                List<OpportunityReportVO> records = resultPage.getRecords();
-                if (records == null || records.isEmpty()) {
-                    break;
-                }
-
-                for (OpportunityReportVO vo : records) {
-                    Object[] row = buildRow(vo);
-                    writer.write(arrayToCsvLine(row));
-                    writer.newLine();
-                }
-
-                total += records.size();
-                currentPage++;
-                log.info("已写入：{} 条", total);
-                writer.flush();
+            List<OpportunityReportVO> records = reportService.getReportData();
+            for (OpportunityReportVO vo : records) {
+                Object[] row = buildRow(vo);
+                writer.write(arrayToCsvLine(row));
+                writer.newLine();
             }
-
-            log.info("报表生成完成，总条数：{}", total);
-            XxlJobHelper.log("报表生成完成，总条数：{}", total);
-
+            writer.flush();
+            XxlJobHelper.log("报表生成完成，总条数：{}", records.size());
             // 上传COS
             uploadToCos(csvFile);
 

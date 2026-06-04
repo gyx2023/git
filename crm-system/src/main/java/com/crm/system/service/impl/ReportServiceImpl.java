@@ -19,7 +19,7 @@ public class ReportServiceImpl implements ReportService {
     private ToppOpportunityMapper reportMapper;
 
     @Override
-    public IPage<OpportunityReportVO> getReportData(Page<OpportunityReportVO> page) {
-        return reportMapper.selectReportData(page);
+    public List<OpportunityReportVO> getReportData() {
+        return reportMapper.selectReportData();
     }
 }

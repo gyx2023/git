@@ -88,6 +88,6 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
                                                                   @Param("offset") int offset,
                                                                   @Param("limit") int limit);
 
-    IPage<OpportunityReportVO> selectReportData(Page<OpportunityReportVO> page);
+    List<OpportunityReportVO> selectReportData();
 
 }

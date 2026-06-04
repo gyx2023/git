@@ -13,5 +13,5 @@ public interface ReportService {
     /**
      * 分页查询数据
      */
-    IPage<OpportunityReportVO> getReportData(Page<OpportunityReportVO> page);
+    List<OpportunityReportVO> getReportData();
 }
