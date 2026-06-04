@@ -1,11 +1,11 @@
 package com.crm.system.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO;
-import com.crm.common.core.domain.dto.ZqztGrpCustReqDTO;
-import com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO;
+import com.crm.system.domain.dto.ZqztGrpCustInuseUserListRespDTO;
+import com.crm.system.domain.dto.ZqztGrpCustReqDTO;
+import com.crm.system.domain.dto.ZqztGrpCustInuseRespDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.ZqztGrpCustInuse;
+import com.crm.system.domain.dao.ZqztGrpCustInuse;
 import com.crm.system.domain.vo.ZqztGrpCustInuseVo;
 import org.apache.ibatis.annotations.Param;
 

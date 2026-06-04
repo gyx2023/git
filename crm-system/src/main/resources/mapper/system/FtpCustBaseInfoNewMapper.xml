@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.FtpCustBaseInfoNewMapper">
 
-    <resultMap type="com.crm.system.domain.FtpCustBaseInfoNew" id="FtpCustBaseInfoNewResult">
+    <resultMap type="com.crm.system.domain.dao.FtpCustBaseInfoNew" id="FtpCustBaseInfoNewResult">
         <id property="id" column="id_"/>
         <result property="areaId" column="area_id"/>
         <result property="areaName" column="area_name"/>

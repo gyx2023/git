@@ -1,6 +1,6 @@
 package com.crm.system.mapper.topp;
 
-import com.crm.system.domain.topp.ToppContractDo;
+import com.crm.system.domain.dao.topp.ToppContractDo;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
 import com.crm.system.domain.vo.ToppContractExcelVo;
 import com.crm.system.domain.vo.topp.ToppContractVo;

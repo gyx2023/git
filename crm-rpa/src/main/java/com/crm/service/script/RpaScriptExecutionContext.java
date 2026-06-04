@@ -1,6 +1,6 @@
 package com.crm.service.script;
 
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import lombok.Builder;
 import lombok.Data;
 

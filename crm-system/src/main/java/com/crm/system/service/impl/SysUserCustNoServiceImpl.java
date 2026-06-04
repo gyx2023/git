@@ -1,7 +1,7 @@
 package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.system.domain.SysUserCustNo;
+import com.crm.system.domain.dao.SysUserCustNo;
 import com.crm.system.mapper.SysUserCustNoMapper;
 import com.crm.system.service.ISysUserCustNoService;
 import lombok.extern.slf4j.Slf4j;

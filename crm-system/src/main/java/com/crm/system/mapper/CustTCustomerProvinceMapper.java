@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.CustTCustomerProvinceDo;
+import com.crm.system.domain.dao.CustTCustomerProvinceDo;
 import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Param;
 

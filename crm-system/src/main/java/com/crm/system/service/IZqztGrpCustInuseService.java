@@ -1,9 +1,9 @@
 package com.crm.system.service;
 
-import com.crm.common.core.domain.dto.ZqztGrpCustAddUserListReqDTO;
-import com.crm.common.core.domain.dto.ZqztGrpCustInuseRespDTO;
-import com.crm.common.core.domain.dto.ZqztGrpCustInuseUserListRespDTO;
-import com.crm.common.core.domain.dto.ZqztGrpCustReqDTO;
+import com.crm.system.domain.dto.ZqztGrpCustAddUserListReqDTO;
+import com.crm.system.domain.dto.ZqztGrpCustInuseRespDTO;
+import com.crm.system.domain.dto.ZqztGrpCustInuseUserListRespDTO;
+import com.crm.system.domain.dto.ZqztGrpCustReqDTO;
 import com.crm.system.domain.vo.ZqztGrpCustInuseVo;
 import com.crm.system.domain.bo.ZqztGrpCustInuseBo;
 import com.crm.common.core.page.TableDataInfo;

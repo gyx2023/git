@@ -1,13 +1,12 @@
 package com.crm.system.mapper.topp;
 
 import com.crm.common.core.domain.dto.WorkOrderDTO;
-import com.crm.system.domain.topp.ToppOrder;
+import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 【请填写功能名称】Mapper接口

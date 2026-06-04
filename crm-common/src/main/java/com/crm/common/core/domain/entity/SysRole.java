@@ -5,7 +5,7 @@ import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import com.crm.common.annotation.ExcelDictFormat;
 import com.crm.common.constant.UserConstants;
-import com.crm.common.convert.ExcelDictConvert;
+import com.crm.common.utils.convert.ExcelDictConvert;
 import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

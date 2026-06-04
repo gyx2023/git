@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.tcomm.TcommCustomerBo;
 import com.crm.system.domain.vo.tcomm.TcommCustomerVo;
-import com.crm.system.domain.tcomm.TcommCustomer;
+import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.mapper.tcomm.TcommCustomerMapper;
 import com.crm.system.service.tcomm.ITcommCustomerService;
 

@@ -1,7 +1,6 @@
 package com.crm.job.service.sync;
 
-import com.crm.system.domain.CustTRosterCustomerProvinceDo;
-import com.crm.system.mapper.CustTRosterCustomerProvinceMapper;
+import com.crm.system.domain.dao.CustTRosterCustomerProvinceDo;
 import com.crm.system.service.ICustTRosterCustomerProvinceService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;

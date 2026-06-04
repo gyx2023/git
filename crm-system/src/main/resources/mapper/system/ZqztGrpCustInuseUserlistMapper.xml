@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqztGrpCustInuseUserlistMapper">
 
-    <resultMap type="com.crm.system.domain.ZqztGrpCustInuseUserlist" id="ZqztGrpCustInuseUserlistResult">
+    <resultMap type="com.crm.system.domain.dao.ZqztGrpCustInuseUserlist" id="ZqztGrpCustInuseUserlistResult">
         <result property="inuseId" column="INUSE_ID"/>
         <result property="SUBSCRBID" column="SUBSCRBID"/>
         <result property="svcNum" column="SVC_NUM"/>

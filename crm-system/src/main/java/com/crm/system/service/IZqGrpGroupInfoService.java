@@ -1,7 +1,7 @@
 package com.crm.system.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.bo.ZqGrpGroupInfoBo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;

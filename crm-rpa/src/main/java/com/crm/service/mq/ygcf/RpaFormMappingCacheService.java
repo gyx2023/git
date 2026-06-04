@@ -3,7 +3,7 @@ package com.crm.service.mq.ygcf;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.constant.CacheNames;
 import com.crm.common.utils.redis.CacheUtils;
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import com.crm.system.mapper.rpa.ZqztRpaFormMappingMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

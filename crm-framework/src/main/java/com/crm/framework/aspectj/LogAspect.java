@@ -7,7 +7,7 @@ import com.crm.common.annotation.Log;
 import com.crm.common.core.domain.event.OperLogEvent;
 import com.crm.common.enums.BusinessStatus;
 import com.crm.common.enums.HttpMethod;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.JsonUtils;
 import com.crm.common.utils.ServletUtils;
 import com.crm.common.utils.StringUtils;

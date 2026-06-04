@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.grp.TfFCustGroupMDo;
+import com.crm.system.domain.dao.TfFCustGroupMDo;
 
 import java.util.List;
 

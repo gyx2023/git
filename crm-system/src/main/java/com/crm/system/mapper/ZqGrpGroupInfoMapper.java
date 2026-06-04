@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.annotation.DataColumn;
 import com.crm.common.annotation.DataPermission;
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo;
 import com.crm.system.domain.vo.ZqGrpGroupInfoVo2;
 import org.apache.ibatis.annotations.Param;
