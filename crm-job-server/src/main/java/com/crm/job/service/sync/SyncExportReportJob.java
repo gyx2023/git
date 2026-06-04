@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.job.utils.FilePath;
 import com.crm.system.domain.vo.topp.OpportunityReportVO;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import com.crm.system.service.ReportService;
 import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -54,6 +54,11 @@ public class SyncExportReportJob {
     private void startDeal(String jobParam) {
         String fileName = jobParam + getYearMonthDay() + ".csv";
         String filePath = FilePath.rootPath;
+        File dir = new File(filePath);
+        if (!dir.exists()) {
+            boolean mkdirSuccess = dir.mkdirs();
+            log.info("创建目录结果：{}，路径：{}", mkdirSuccess, filePath);
+        }
         File csvFile = new File(filePath, fileName);
         String[] title = {"地市", "商机编号", "商机名称", "客户行业", "商机类型", "商机金额万", "cnt", "id_", "total"};
 
