@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.job.utils.FilePath;
 import com.crm.system.domain.vo.topp.OpportunityReportVO;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import com.crm.system.service.ReportService;
 import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
