@@ -158,4 +158,4 @@ ability:
     unmannedFactory: http:///192.168.124.91:16313/kafkaMessageRecord/insert
 customer:
   admin:
-    url: http://localhost:8080/system/customerTag/sync
+    url: http://localhost:8088/system/customerTag/sync

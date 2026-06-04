@@ -90,12 +90,12 @@ public class NotificationsController {
         return rpaConsumerService.receiveRpaMessage(message);
     }
 
-    @GetMapping(value = "consume1")
+    @GetMapping(value = "consume1/{id}")
     @ResponseBody
     @SaIgnore
-    public void consumeMessage1() throws IOException {
+    public void consumeMessage1(@PathVariable("id") Long id) throws IOException {
 
-        ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = zqztJtNoticeRecordMapper.selectById(2910);
+        ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = zqztJtNoticeRecordMapper.selectById(id);
         BusinessMessageDTO businessMessageDTO = new BusinessMessageDTO();
         //获取唯一标识
         businessMessageDTO.setMessageId("202604231127BIZRPA002LINERPA0011014");
@@ -105,22 +105,18 @@ public class NotificationsController {
         rpaConsumerService.receiveRpaMessage(businessMessageDTO);
     }
 
-    @GetMapping(value = "notice1")
-    @ResponseBody
-    @SaIgnore
-    public void notice1() {
-//        ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = zqztJtNoticeRecordMapper.selectById(258);
-//        System.out.println(zqztJtNoticeRecordDo.getOrderStatus());
-//        zqztJtNoticeRecordDo.setId(null);
-//        iZqztJtNoticeRecordService.saveNoticeRecord(zqztJtNoticeRecordDo);
-        String UnmannedFactoryURL = "http://10.129.99.194:12001/prod-api/asiainfo_micro/unmannedfactory/kafkaMessageRecord/insert";
-        ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = zqztJtNoticeRecordMapper.selectById(923);
-        BusinessMessageDTO businessMessageDTO = new BusinessMessageDTO();
-        //获取唯一标识
-        businessMessageDTO.setMessageId("202604281830BIZRPA002LINERPA0010027");
-        businessMessageDTO.setBizType("BIZRPA001");
-        businessMessageDTO.setLineCode("LINERPA001");
-        businessMessageDTO.setMessageBody(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
-        Response response = restTemplate.postForObject(UnmannedFactoryURL, businessMessageDTO, Response.class);
-    }
+//    @GetMapping(value = "notice1")
+//    @ResponseBody
+//    @SaIgnore
+//    public void notice1() {
+//        String UnmannedFactoryURL = "http://10.129.99.194:12001/prod-api/asiainfo_micro/unmannedfactory/kafkaMessageRecord/insert";
+//        ZqztJtNoticeRecordDo zqztJtNoticeRecordDo = zqztJtNoticeRecordMapper.selectById(923);
+//        BusinessMessageDTO businessMessageDTO = new BusinessMessageDTO();
+//        //获取唯一标识
+//        businessMessageDTO.setMessageId("202604281830BIZRPA002LINERPA0010027");
+//        businessMessageDTO.setBizType("BIZRPA001");
+//        businessMessageDTO.setLineCode("LINERPA001");
+//        businessMessageDTO.setMessageBody(JSONUtil.toJsonStr(zqztJtNoticeRecordDo));
+//        Response response = restTemplate.postForObject(UnmannedFactoryURL, businessMessageDTO, Response.class);
+//    }
 }

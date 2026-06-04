@@ -197,3 +197,19 @@ sms:
 --- # flowable
 flowable:
   database-schema: zj_sj_test
+# 文件上传临时根目录
+attach:
+  root: /tmp/wz
+path:
+  temp: /tmp/wz
+ability:
+  app_id: bR4nqpsTto
+  #app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
+  app_secret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
+  url:
+    #worksheetsComplete: http://10.244.18.146:8000/api/chinaUnicom/govEnterprise/orderCenter/ordersget/v1
+    worksheetsComplete: http://10.124.164.110:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1
+    unmannedFactory: http:///192.168.124.91:16313/kafkaMessageRecord/insert
+customer:
+  admin:
+    url: http://localhost:8088/system/customerTag/sync

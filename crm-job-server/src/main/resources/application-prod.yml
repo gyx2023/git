@@ -199,3 +199,6 @@ ability:
   url:
     worksheetsComplete: http://10.164.255.25:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1
     unmannedFactory: http://10.129.99.194:12001/prod-api/asiainfo_micro/unmannedfactory/kafkaMessageRecord/insert
+customer:
+  admin:
+    url: http://10.129.99.175:9002/zqzt-backend/system/customerTag/sync
