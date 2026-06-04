@@ -4,6 +4,7 @@ import com.crm.common.core.domain.dto.WorkOrderDTO;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
  * @author crm
  * @date 2025-12-18
  */
+@Mapper
 public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrder, ToppOrderVo> {
 
     /**

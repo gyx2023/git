@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.flowable.FlowableHiProcinstMapper">
+
+    <select id="selectEndTimeByProcInstId" resultType="java.util.Date">
+        SELECT end_time_
+        FROM flo_hi_procinst
+        WHERE proc_inst_id_ = #{procInstId}
+          AND end_time_ IS NOT NULL
+        ORDER BY end_time_ DESC
+        LIMIT 1
+    </select>
+
+</mapper>

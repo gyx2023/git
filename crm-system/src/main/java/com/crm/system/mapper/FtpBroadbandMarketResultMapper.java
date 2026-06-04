@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.FtpBroadbandMarketResult;
+import com.crm.system.domain.dao.FtpBroadbandMarketResult;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
