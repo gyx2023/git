@@ -3,7 +3,7 @@ package com.crm.job.service.file;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
-import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
@@ -70,6 +70,21 @@ public class ContractAndOpportunityPutJob {
             }
 
             List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
+
+            // 一次性加载所有字典，避免每个地市重复加载
+            Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
+            Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
+            Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
+            Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
+            Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
+            Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
+            Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
+            Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
+            Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
+            Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
+            Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
+            Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
+
             for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
                 long l1 = System.currentTimeMillis();
                 ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
@@ -89,13 +104,16 @@ public class ContractAndOpportunityPutJob {
                 if (incomeFile != null) { fileMap.put(incomeFile, contractIncome); }
 
                 // 创建合同统计数据文件
-                File contractFile = createContractStatisticsFile(areaId, areaEng);
+                File contractFile = createContractStatisticsFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
+                        unicomType2Map, clueSourceMap, contractAddTypeMap, contractTypeMap, incomeTypeMap);
                 long l3 = System.currentTimeMillis();
                 log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
                 if (contractFile != null) { fileMap.put(contractFile, contract); }
 
                 // 创建商机数据文件
-                File opportunityFile = createOpportunityFile(areaId, areaEng);
+                File opportunityFile = createOpportunityFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
+                        unicomType2Map, unicomType2Settingstr1Map, clueSourceMap, selectType1Map,
+                        oppoStateMap, bidResultMap, bgTypeResultMap);
                 long l4 = System.currentTimeMillis();
                 log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
                 if (opportunityFile != null) { fileMap.put(opportunityFile, opportunity); }
@@ -143,7 +161,7 @@ public class ContractAndOpportunityPutJob {
             tempFile = File.createTempFile("contract_income_", ".xls");
 
             excelWriter = EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
-                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                     .build();
             WriteSheet writeSheet = EasyExcel.writerSheet("合同收入数据统计").build();
 
@@ -200,7 +218,11 @@ public class ContractAndOpportunityPutJob {
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
      */
-    private File createContractStatisticsFile(Integer areaId, String areaEng) {
+    private File createContractStatisticsFile(Integer areaId, String areaEng,
+            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+            Map<String, String> unicomType2Map, Map<String, String> clueSourceMap,
+            Map<String, String> contractAddTypeMap, Map<String, String> contractTypeMap,
+            Map<String, String> incomeTypeMap) {
         log.info("开始执行合同统计数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -222,17 +244,8 @@ public class ContractAndOpportunityPutJob {
 
             tempFile = File.createTempFile("contract_statistics_", ".xls");
 
-            // 一次性加载所有字典
-            Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
-            Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
-            Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
-            Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
-            Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
-            Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
-            Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
-
             excelWriter = EasyExcel.write(tempFile, ToppContractExcelVo.class)
-                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                     .build();
             WriteSheet writeSheet = EasyExcel.writerSheet("合同查询统计").build();
 
@@ -375,7 +388,12 @@ public class ContractAndOpportunityPutJob {
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
      */
-    private File createOpportunityFile(Integer areaId, String areaEng) {
+    private File createOpportunityFile(Integer areaId, String areaEng,
+            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+            Map<String, String> unicomType2Map, Map<String, String> unicomType2Settingstr1Map,
+            Map<String, String> clueSourceMap, Map<String, String> selectType1Map,
+            Map<String, String> oppoStateMap, Map<String, String> bidResultMap,
+            Map<String, String> bgTypeResultMap) {
         log.info("开始执行商机数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
@@ -383,19 +401,8 @@ public class ContractAndOpportunityPutJob {
         try {
             tempFile = File.createTempFile("opportunity_", ".xls");
 
-            // 一次性加载所有字典
-            Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
-            Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
-            Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
-            Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
-            Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
-            Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
-            Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
-            Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
-            Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
-
             excelWriter = EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
-                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                     .build();
             WriteSheet writeSheet = EasyExcel.writerSheet("商机查询统计").build();
 
