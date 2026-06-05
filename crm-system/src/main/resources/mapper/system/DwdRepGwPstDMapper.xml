@@ -15,6 +15,11 @@
         <result property="etlTime" column="ETL_TIME"/>
     </resultMap>
 
+    <!-- 清空表数据 -->
+    <update id="truncate">
+        TRUNCATE TABLE dwd_rep_gw_pst_d
+    </update>
+
     <!-- 从IOB数据库查询人员职位列表 -->
     <select id="selectDwdRepGwPstListFromIob" resultType="java.util.Map">
         SELECT * FROM IOB_DATA.DWD_REP_GW_PST_D

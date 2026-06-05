@@ -25,6 +25,11 @@ public interface DwdRepSysPersonDMapper extends BaseMapperPlus<DwdRepSysPersonDM
     List<DwdRepSysPersonDVo> selectAreaAndCounty(@Param("personInfos") List<Map<String, String>> personInfos);
 
     /**
+     * 清空表数据
+     */
+    void truncate();
+
+    /**
      * 从IOB数据库分页查询人员信息列表(在职标志为0)
      */
     @DS("slave_2")

@@ -13,7 +13,6 @@ import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,18 +32,14 @@ public class RepGrpCustBillSumJob extends BaseJob {
     @Resource
     private IRepGrpCustBillSumWarningService repGrpCustBillSumWarningService;
 
-    @PostConstruct
-    public void initStaticParam() {
-        super.initStaticParam("tc_user_common_warning");
-        log.info("集团客户账单汇总预警FTP参数初始化完成");
-    }
-
     /**
      * 集团客户账单汇总预警数据下载定时任务
      */
     @XxlJob(value = "repGrpCustBillSumJob")
     public void download() {
         long startTime = System.currentTimeMillis();
+        // 从Redis缓存加载FTP配置参数（sys_param表），避免每次改数据库配置需要重启
+        super.initStaticParam("tc_user_common_warning");
         XxlJobHelper.log("开始执行集团客户账单汇总预警数据下载Job");
         log.info("开始执行集团客户账单汇总预警数据下载Job");
 

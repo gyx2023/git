@@ -16,14 +16,6 @@ import java.util.Date;
 @Data
 @TableName("rep_grp_cust_bill_sum_m")
 public class RepGrpCustBillSumWarning implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * 主键ID
-     */
-    @TableId(value = "id_")
-    private Integer id;
-
     /**
      * 集团客户编号（系统内部编号）
      */
@@ -287,6 +279,13 @@ public class RepGrpCustBillSumWarning implements Serializable {
      */
     @TableField("accounting_period")
     private String accountingPeriod;
+
+    /**
+     * 主键ID
+     */
+    @TableId(value = "id_")
+    private Integer id;
+
 
     /**
      * 创建日期

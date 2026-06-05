@@ -10,7 +10,6 @@ import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,18 +37,14 @@ public class repCustContractMillSumMJob extends BaseJob {
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
 
-    @PostConstruct
-    public void initStaticParam() {
-        super.initStaticParam("rep_cust_contract_mill_sum_m");
-        log.info("政企运营平台合同收入报表需求接口ftp信息初始化完成");
-    }
-
     /**
      * 定时任务入口
      */
     @XxlJob(value = "repCustContractMillSumMJob")
     public void download() {
         long startTime = System.currentTimeMillis();
+        // 从Redis缓存加载FTP配置参数（sys_param表），避免每次改数据库配置需要重启
+        super.initStaticParam("rep_cust_contract_mill_sum_m");
         XxlJobHelper.log("开始执行合同收入报表定时任务");
         log.info("开始执行合同收入报表定时任务");
 
@@ -116,9 +111,6 @@ public class repCustContractMillSumMJob extends BaseJob {
                     count++;
                     RepCustContractMillSumM data = new RepCustContractMillSumM();
                     String[] values = currentLine.split("\\x1b", -1);
-                    if (count <= 1) {
-                        log.info("第{}行数据: values长度={}, values={}", count, values.length, Arrays.toString(values));
-                    }
                     FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, values, 3);
                     data.setCreateDate(new Date());
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMM");

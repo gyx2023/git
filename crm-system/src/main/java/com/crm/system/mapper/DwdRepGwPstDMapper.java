@@ -22,6 +22,11 @@ public interface DwdRepGwPstDMapper extends BaseMapper<DwdRepGwPstD> {
     List<Map<String, Object>> selectDwdRepGwPstListFromIob();
 
     /**
+     * 清空表数据
+     */
+    void truncate();
+
+    /**
      * 批量插入人员职位数据
      */
     int insertBatch(@Param("list") List<DwdRepGwPstD> list);
