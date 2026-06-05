@@ -32,7 +32,8 @@
                OR (operator_type = 'u' AND pending_status = '1'))
           AND send_status IN ('0','2')
           AND fail_times &lt; 3
-        ORDER BY id_
+        ORDER BY pending_date ASC
+        LIMIT 30
     </select>
 
     <!-- 批量更新失败次数 -->

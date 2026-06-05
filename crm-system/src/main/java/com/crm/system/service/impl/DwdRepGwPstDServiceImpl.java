@@ -28,9 +28,8 @@ public class DwdRepGwPstDServiceImpl extends ServiceImpl<DwdRepGwPstDMapper, Dwd
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void truncate() {
-        dwdRepGwPstDMapper.delete(null);
+        dwdRepGwPstDMapper.truncate();
         log.info("清空dwd_rep_gw_pst_d表数据完成");
     }
 

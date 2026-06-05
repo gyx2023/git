@@ -43,6 +43,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="etlTime" column="ETL_TIME"/>
     </resultMap>
 
+    <!-- 清空表数据 -->
+    <update id="truncate">
+        TRUNCATE TABLE dwd_rep_sys_person_d
+    </update>
+
     <resultMap type="com.crm.system.domain.vo.DwdRepSysPersonDVo" id="DwdRepSysPersonDResult2">
         <result property="fullName" column="full_name"/>
         <result property="mobile" column="mobile"/>

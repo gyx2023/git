@@ -438,7 +438,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
 
     @Override
     public void truncate() {
-        baseMapper.delete(null);
+        baseMapper.truncate();
         log.info("清空dwd_rep_sys_person_d表数据完成");
     }
 
