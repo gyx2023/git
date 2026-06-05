@@ -51,6 +51,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="wideResult" column="wide_result"/>
         <result property="orderCategory" column="order_category"/>
         <result property="thirdCheckResult" column="third_check_result"/>
+        <result property="processEngine" column="process_engine"/>
     </resultMap>
 
     <select id="selectSupportOrders" resultMap="ToppOrderResult">

@@ -281,5 +281,11 @@ public class ToppOrderVo {
     @ExcelProperty(value = "三方稽核原因")
     private String thirdCheckResult;
 
+    /**
+     * 流程引擎来源：ACTIVITI/FLOWABLE
+     */
+    @ExcelProperty(value = "流程引擎来源")
+    private String processEngine;
+
 
 }
