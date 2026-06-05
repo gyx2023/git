@@ -28,7 +28,12 @@ public interface OssConstant {
     /**
      * 云服务商
      */
-    String[] CLOUD_SERVICE = new String[] {"aliyun", "qcloud", "qiniu", "obs"};
+    String[] CLOUD_SERVICE = new String[] {"aliyun", "qcloud", "qiniu", "obs", "cucloud"};
+
+    /**
+     * 联通云服务商
+     */
+    String[] CUCLOUD_SERVICE = new String[] {"cucloud"};
 
     /**
      * https 状态
