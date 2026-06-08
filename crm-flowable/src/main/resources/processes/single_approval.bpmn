@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/process">
+    <process id="single_approval" name="预警处理流程" isExecutable="true">
+        <documentation>通用预警处理流程，通过 BUSINESS_KEY_ 区分预警类型</documentation>
+        <!-- 开始事件 -->
+        <startEvent id="startevent" name="开始"></startEvent>
+        <!-- 客户经理处理任务 -->
+        <userTask id="manager_handle" name="客户经理处理" flowable:assignee="${manager}">
+            <documentation>预警处理</documentation>
+        </userTask>
+        <!-- 排他网关 -->
+        <exclusiveGateway id="approvalGateway" name="审批网关"></exclusiveGateway>
+        <!-- 结束事件 -->
+        <endEvent id="endevent" name="结束"></endEvent>
+        <!-- 流程连接线 -->
+        <sequenceFlow id="flow1" sourceRef="startevent" targetRef="manager_handle"></sequenceFlow>
+        <sequenceFlow id="flow2" sourceRef="manager_handle" targetRef="approvalGateway"></sequenceFlow>
+        <sequenceFlow id="flowApproved" sourceRef="approvalGateway" targetRef="endevent">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'agree'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowTransfer" sourceRef="approvalGateway" targetRef="manager_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'transfer'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowRejected" sourceRef="approvalGateway" targetRef="endevent"></sequenceFlow>
+    </process>
+    <!-- 流程图可视化定义 -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_single_approval">
+        <bpmndi:BPMNPlane bpmnElement="single_approval" id="BPMNPlane_single_approval">
+            <bpmndi:BPMNShape bpmnElement="startevent" id="BPMNShape_startevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="60.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="manager_handle" id="BPMNShape_manager_handle">
+                <omgdc:Bounds height="55.0" width="105.0" x="150.0" y="210.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="approvalGateway" id="BPMNShape_approvalGateway">
+                <omgdc:Bounds height="40.0" width="40.0" x="310.0" y="217.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="endevent" id="BPMNShape_endevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="410.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+                <omgdi:waypoint x="95.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="150.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+                <omgdi:waypoint x="255.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="310.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowApproved" id="BPMNEdge_flowApproved">
+                <omgdi:waypoint x="350.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="410.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowTransfer" id="BPMNEdge_flowTransfer">
+                <omgdi:waypoint x="330.0" y="257.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="310.0"></omgdi:waypoint>
+                <omgdi:waypoint x="202.0" y="310.0"></omgdi:waypoint>
+                <omgdi:waypoint x="202.0" y="265.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowRejected" id="BPMNEdge_flowRejected">
+                <omgdi:waypoint x="330.0" y="257.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="300.0"></omgdi:waypoint>
+                <omgdi:waypoint x="427.0" y="300.0"></omgdi:waypoint>
+                <omgdi:waypoint x="427.0" y="255.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>
