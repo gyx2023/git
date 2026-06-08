@@ -183,4 +183,16 @@ public class SFTPUtil {
         }
         sftp.put(input, sftpFileName);
     }
+
+    /**
+     * 修改文件名
+     * @param directory 要修改文件所在目录
+     * @param oldPath 旧名
+     * @param oldPath 新名
+     */
+    public void rename(String directory, String oldPath,String newPath) throws SftpException{
+        sftp.cd(directory);
+        sftp.rename(oldPath,newPath);
+    }
 }
+
