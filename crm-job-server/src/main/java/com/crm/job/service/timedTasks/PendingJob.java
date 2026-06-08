@@ -1,9 +1,9 @@
 package com.crm.job.service.timedTasks;
 
-import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.service.IPendingService;
+import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -54,31 +54,36 @@ public class PendingJob {
     @XxlJob(value = "pendingJob")
     public void start() {
         long startTime = System.currentTimeMillis();
-        // 从Redis缓存加载配置参数（sys_param表），避免每次改数据库配置需要重启
+        //加载配置
         loadPendingConfig();
-        XxlJobHelper.log("开始执行待办同步Job");
-        log.info("开始执行待办同步Job");
+        XxlJobHelper.log("====== 待办统一调度开始执行（按ID逐条执行）======");
+        log.info("====== 待办统一调度开始执行（按ID逐条执行）======");
 
-        try {
-            List<Pending> addList = new ArrayList<>();
-            List<Pending> updateList = new ArrayList<>();
-            List<Pending> pending = pendingService.getPendingList();
+        // 1. 获取按 ID 排序好的 a + u 列表
+        List<Pending> pendingList = pendingService.getPendingList();
 
-            for (Pending p : pending) {
-                if ("a".equals(p.getOperatorType())) {
-                    addList.add(p);
-                } else if ("u".equals(p.getOperatorType())) {
-                    updateList.add(p);
+        // 2. 逐条处理：a 新增，u 更新（核心修复版）
+        if (pendingList != null && !pendingList.isEmpty()) {
+            List<Pending> list = new ArrayList<>();
+            for (Pending pending : pendingList) {
+                list = new ArrayList<>();
+                list.add(pending);
+                try {
+                    if ("a".equals(pending.getOperatorType())) {
+                        // 正确：单条传入新增
+                        pendingService.pushAddPending(list, addUrl, appId, token);
+                    } else if ("u".equals(pending.getOperatorType())) {
+                        // 正确：单条传入更新
+                        pendingService.pushUpdatePendingStatus(list, updateUrl, appId, token);
+                    }
+                } catch (Exception e) {
+                    log.error("单条待办处理失败，id=" + pending.getId(), e);
                 }
             }
+        }
 
-            log.info("待推送新增待办{}条, 待更新待办{}条", addList.size(), updateList.size());
-            XxlJobHelper.log("待推送新增待办{}条, 待更新待办{}条", addList.size(), updateList.size());
-
-            // 推送新增待办
-            pendingService.pushAddPending(addList, addUrl, appId, token);
-            // 推送待办状态更新
-            pendingService.pushUpdatePendingStatus(updateList, updateUrl, appId, token);
+        log.info("====== 主待办处理完成，开始同步集团运营平台 ======");
+        XxlJobHelper.log("====== 主待办处理完成，开始同步集团运营平台 ======");
 
             // 同步给集团运营平台待办
             List<PendingGroupTodo> list = pendingService.getGroupTodoList();
@@ -103,10 +108,5 @@ public class PendingJob {
             long costTime = endTime - startTime;
             log.info("待办同步Job执行完成,耗时:{}ms", costTime);
             XxlJobHelper.log("待办同步Job执行完成,耗时:{}ms", costTime);
-
-        } catch (Exception e) {
-            log.error("待办同步Job执行异常", e);
-            XxlJobHelper.log("待办同步Job执行异常:{}", e.getMessage());
-        }
     }
 }
