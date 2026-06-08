@@ -40,7 +40,7 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
         "INNER JOIN sys_developer_income_day b ON a.oa_account = b.user_name " +
         "WHERE a.is_valid = '1' " +
         "AND b.user_name != '' " +
-        "AND b.up_channel_hqCode = #{channelHqCode} " +
+        "AND b.up_channel_hq_code = #{channelHqCode} " +
         "LIMIT 1")  // 只查1条数据
     SysUsers selectUserByChannelHqCode(@Param("channelHqCode") String channelHqCode);
 
