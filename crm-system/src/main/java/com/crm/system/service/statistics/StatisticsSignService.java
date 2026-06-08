@@ -1,9 +1,9 @@
 package com.crm.system.service.statistics;
 
 import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.domain.dto.SignStatisticsReqDTO;
-import com.crm.common.core.domain.dto.SignStatisticsRespDTO;
-import com.crm.common.core.domain.dto.SignStatisticsUserRespDTO;
+import com.crm.system.domain.dto.SignStatisticsReqDTO;
+import com.crm.system.domain.dto.SignStatisticsRespDTO;
+import com.crm.system.domain.dto.SignStatisticsUserRespDTO;
 import com.crm.common.core.page.TableDataInfo;
 
 import java.util.List;

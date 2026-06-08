@@ -1,7 +1,7 @@
 package com.crm.job.utils;
 
 import cn.hutool.extra.ssh.Sftp;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.Getter;

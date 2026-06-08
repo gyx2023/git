@@ -4,7 +4,7 @@ package com.crm.system.service.jt;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.jt.ZqztJtNoticeRecordBo;
-import com.crm.system.domain.servicehall.ZqztJtNoticeRecordDo;
+import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.jt.ZqztJtNoticeRecordVo;
 
 import java.util.Collection;

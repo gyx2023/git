@@ -3,10 +3,10 @@ package com.crm.job.service.file.strategy.impl;
 import cn.hutool.json.JSONUtil;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.SysUserExportVo;
-import com.crm.system.service.ISysOssService;
+import com.crm.system.service.sys.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

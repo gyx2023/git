@@ -6,16 +6,18 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.HaoKaoSignUtil;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.*;
+import com.crm.system.domain.dao.FtpCustBaseInfoNew;
+import com.crm.system.domain.dao.PolicyCenterProduct;
+import com.crm.system.domain.dao.PolicyCenterTask;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.sys.SysLog;
 import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.service.ISysLogService;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysLogService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.PolicyCenterProductService;
 import com.crm.system.service.PolicyCenterTaskService;
 import com.crm.system.service.FtpCustBaseInfoNewService;
 import com.crm.system.service.send.ISendDMessageService;
-import com.xxl.job.core.context.XxlJobHelper;
-import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -276,7 +278,7 @@ public class PolicyCenterTaskJob {
     /**
      * 设置头部节点
      */
-    private Map<String, Object> setHead() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnsupportedEncodingException {
+    private Map<String, Object> setHead() throws NoSuchAlgorithmException, UnsupportedEncodingException {
         Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
         Map<String, Object> headMap = new HashMap<>();
         UNI_BSS_HEAD.put("APP_ID", POLICY_CENTER_GET_TASK_APPID);
@@ -357,8 +359,8 @@ public class PolicyCenterTaskJob {
      * 将json字符串转化为PolicyCenterTask对象
      */
     private PolicyCenterTask jsonToPolicyCenterTask(PolicyCenterTask policyCenterTask,
-                                                     JSONObject gemWorkOrder,
-                                                     JSONArray products) {
+                                                    JSONObject gemWorkOrder,
+                                                    JSONArray products) {
         policyCenterTask.setTaskCode(gemWorkOrder.getString("code"));
         policyCenterTask.setSendTime(gemWorkOrder.getDate("sendTime"));
         policyCenterTask.setTaskDeadline(gemWorkOrder.getDate("deadline"));

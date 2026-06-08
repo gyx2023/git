@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.SysUserPost;
+import com.crm.system.domain.dao.sys.SysUserPost;
 
 /**
  * 用户与岗位关联表 数据层

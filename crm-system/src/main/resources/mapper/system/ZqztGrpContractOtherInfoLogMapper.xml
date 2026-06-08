@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper">
 
-    <resultMap type="com.crm.system.domain.ZqztGrpContractOtherInfoLog" id="ZqztGrpContractOtherInfoLogResult">
+    <resultMap type="com.crm.system.domain.dao.ZqztGrpContractOtherInfoLog" id="ZqztGrpContractOtherInfoLogResult">
         <result property="id" column="id"/>
         <result property="contractId" column="contract_id"/>
         <result property="infoTag" column="info_tag"/>

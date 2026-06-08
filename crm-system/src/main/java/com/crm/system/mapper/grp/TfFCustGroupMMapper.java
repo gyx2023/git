@@ -1,5 +1,5 @@
 package com.crm.system.mapper.grp;
-import com.crm.system.domain.grp.TfFCustGroupMDo;
+import com.crm.system.domain.dao.TfFCustGroupMDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**

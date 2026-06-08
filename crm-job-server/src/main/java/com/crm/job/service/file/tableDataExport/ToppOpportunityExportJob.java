@@ -2,7 +2,7 @@ package com.crm.job.service.file.tableDataExport;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.ExportToolsUtils;
-import com.crm.system.domain.topp.ToppOpportunityDo;
+import com.crm.system.domain.dao.topp.ToppOpportunityDo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

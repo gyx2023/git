@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.cust.TfFCustGroupDMapper">
 
-    <select id="getTfFCustGroupDList" resultType="com.crm.system.domain.cust.TfFCustGroupDDo">
+    <select id="getTfFCustGroupDList" resultType="com.crm.system.domain.dao.TfFCustGroupDDo">
         select
             cust_name,
             group_id,

@@ -2,7 +2,7 @@ package com.crm.service.script;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

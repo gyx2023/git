@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppOrderSyncGroupMapper">
+
+    <!-- 查询待发送的同步数据列表（最近一天内创建的） -->
+    <select id="selectPendingList" resultType="com.crm.system.domain.topp.ToppOrderSyncGroup">
+        SELECT id_ AS id, procInstId, sendType
+        FROM topp_order_sync_group
+        WHERE create_time &gt;= DATE_SUB(NOW(), INTERVAL 1 DAY)
+        ORDER BY id_
+    </select>
+
+</mapper>

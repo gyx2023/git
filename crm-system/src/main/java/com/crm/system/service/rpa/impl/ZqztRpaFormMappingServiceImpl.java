@@ -1,7 +1,7 @@
 package com.crm.system.service.rpa.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import com.crm.system.mapper.rpa.ZqztRpaFormMappingMapper;
 import com.crm.system.service.rpa.IZqztRpaFormMappingService;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +10,8 @@ import org.springframework.stereotype.Service;
 
 
 import javax.annotation.Resource;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * rpa单映射Service业务层处理

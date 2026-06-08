@@ -1,6 +1,6 @@
 package com.crm.system.mapper;
 
-import com.crm.system.domain.ZqztOperRecord;
+import com.crm.system.domain.dao.ZqztOperRecord;
 import com.crm.system.domain.vo.ZqztOperRecordVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
