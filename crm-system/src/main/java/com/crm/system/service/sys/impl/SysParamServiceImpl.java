@@ -22,6 +22,7 @@ public class SysParamServiceImpl implements ISysParamService {
     private SysParamMapper sysParamMapper;
 
     @Override
+    @Cacheable(cacheNames = CacheNames.SYS_PARAM_CACHE, key = "'type:' + #type")
     public Map<String, String> findValueMapsByType(String type) {
         List<SysParamDo> list = sysParamMapper.selectList(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, type));
         if (list == null || list.isEmpty()) {
@@ -38,5 +39,11 @@ public class SysParamServiceImpl implements ISysParamService {
     @Cacheable(cacheNames = CacheNames.SYS_PARAM_CACHE, key = "'code:' + #code")
     public SysParamDo findByCode(String code) {
         return sysParamMapper.selectVoOne(new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getCode, code));
+    }
+
+    @Override
+    public String findValueByCode(String code) {
+        SysParamDo param = findByCode(code);
+        return param != null ? param.getValue() : null;
     }
 }

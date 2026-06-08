@@ -1,11 +1,14 @@
 package com.crm.system.mapper.topp;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.system.domain.dto.OldOpportunityDTO;
 import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.dao.topp.ToppOpportunityDo;
+import com.crm.system.domain.vo.topp.OpportunityReportVO;
 import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import org.apache.ibatis.annotations.*;
@@ -77,4 +80,14 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
      * @return 商机列表
      */
     List<ToppOpportunityExcelVo> selectOpportunityExportList(@Param("areaId") Integer areaId);
+
+    /**
+     * 分页查询商机导出数据
+     */
+    List<ToppOpportunityExcelVo> selectOpportunityExportListPaged(@Param("areaId") Integer areaId,
+                                                                  @Param("offset") int offset,
+                                                                  @Param("limit") int limit);
+
+    List<OpportunityReportVO> selectReportData();
+
 }
