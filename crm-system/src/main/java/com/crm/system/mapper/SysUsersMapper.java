@@ -3,6 +3,7 @@ package com.crm.system.mapper;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.SysUsersVo;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -14,6 +15,7 @@ import java.util.List;
  * @author crm
  * @date 2025-12-23
  */
+@Mapper
 public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers, SysUsersVo> {
 
     /**
@@ -28,5 +30,18 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
         "  AND (l.login_time <= DATE_SUB(NOW(), INTERVAL #{failureDays} DAY) OR l.login_time IS NULL) " +
         "  AND u.create_time <= DATE_SUB(NOW(), INTERVAL #{failureDays} DAY) ")
     List<SysUsers> selectFailureList(@Param("failureDays") Integer failureDays);
+
+    /**
+     * 根据渠道总部编码查询单个用户
+     * @param channelHqCode 渠道总部编码
+     * @return 单个用户对象，未查询到则返回 null
+     */
+    @Select("SELECT a.* FROM sys_user a " +
+        "INNER JOIN sys_developer_income_day b ON a.oa_account = b.user_name " +
+        "WHERE a.is_valid = '1' " +
+        "AND b.user_name != '' " +
+        "AND b.up_channel_hqCode = #{channelHqCode} " +
+        "LIMIT 1")  // 只查1条数据
+    SysUsers selectUserByChannelHqCode(@Param("channelHqCode") String channelHqCode);
 
 }

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.PendingMapper">
+
+    <resultMap type="com.crm.system.domain.dao.Pending" id="PendingResult">
+        <id property="id" column="id_"/>
+        <result property="pendingCode" column="pending_code"/>
+        <result property="operatorType" column="operator_type"/>
+        <result property="pendingTitle" column="pending_title"/>
+        <result property="pendingDate" column="pending_date"/>
+        <result property="pendingUserID" column="pending_user_id"/>
+        <result property="pendingURL" column="pending_URL"/>
+        <result property="pendingStatus" column="pending_status"/>
+        <result property="pendingLevel" column="pending_level"/>
+        <result property="pendingCityCode" column="pending_city_code"/>
+        <result property="pendingSourceUserID" column="pending_source_user_id"/>
+        <result property="pendingSource" column="pending_source"/>
+        <result property="pendingNote" column="pending_note"/>
+        <result property="lastUpdateDate" column="last_update_date"/>
+        <result property="sendStatus" column="send_status"/>
+        <result property="sendTime" column="send_time"/>
+        <result property="responseMsg" column="response_msg"/>
+        <result property="failTimes" column="fail_times"/>
+    </resultMap>
+
+    <!-- 查询待推送的待办数据 -->
+    <select id="selectPendingList" resultMap="PendingResult">
+        SELECT * FROM pending
+        WHERE ((operator_type = 'a' AND pending_status = '0')
+               OR (operator_type = 'u' AND pending_status = '1'))
+          AND send_status IN ('0','2')
+          AND fail_times &lt; 3
+        ORDER BY pending_date ASC
+        LIMIT 30
+    </select>
+
+    <!-- 批量更新失败次数 -->
+    <update id="updateFailTimes" parameterType="java.util.Map">
+        UPDATE pending SET send_status = '2', fail_times = 3
+        WHERE id_ IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

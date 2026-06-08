@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.mapper.BaseMapperPlus;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysDeptMapper extends BaseMapperPlus<SysDeptMapper, SysDept, SysDept> {
 
     /**

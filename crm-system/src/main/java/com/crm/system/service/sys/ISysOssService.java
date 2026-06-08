@@ -44,4 +44,5 @@ public interface ISysOssService {
 
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
+    SysOssVo uploadFileByPath(File file, String path);
 }

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.RepGrpCustBillSumWarningMapper">
+
+    <resultMap type="com.crm.system.domain.dao.RepGrpCustBillSumWarning" id="RepGrpCustBillSumWarningResult">
+        <id property="id" column="id_"/>
+        <result property="custGrpId" column="CUST_GRP_ID"/>
+        <result property="grpCode" column="GRP_CODE"/>
+        <result property="grpName" column="GRP_NAME"/>
+        <result property="areaCode" column="AREA_CODE"/>
+        <result property="countyId" column="COUNTY_ID"/>
+        <result property="servManagerId" column="SERV_MANAGER_ID"/>
+        <result property="servManagerName" column="SERV_MANAGER_NAME"/>
+        <result property="totalInnetUsers" column="TOTAL_INNET_USERS"/>
+        <result property="totalBillUsers" column="TOTAL_BILL_USERS"/>
+        <result property="totalBillFee" column="TOTAL_BILL_FEE"/>
+        <result property="ywinnetusers" column="YW_INNET_USERS"/>
+        <result property="ywBillUsers" column="YW_BILL_USERS"/>
+        <result property="ywBillFee" column="YW_BILL_FEE"/>
+        <result property="mobileInnetUsers" column="MOBILE_INNET_USERS"/>
+        <result property="mobileBillUsers" column="MOBILE_BILL_USERS"/>
+        <result property="mobileBillFee" column="MOBILE_BILL_FEE"/>
+        <result property="industryInnetUsers" column="INDUSTRY_INNET_USERS"/>
+        <result property="industryBillUsers" column="INDUSTRY_BILL_USERS"/>
+        <result property="industryFillFee" column="INDUSTRY_BILL_FEE"/>
+        <result property="gwInnetUsers" column="GW_INNET_USERS"/>
+        <result property="gwBillUsers" column="GW_BILL_USERS"/>
+        <result property="gwBillFee" column="GW_BILL_FEE"/>
+        <result property="broadInnetUsers" column="BROAD_INNET_USERS"/>
+        <result property="broadBillUsers" column="BROAD_BILL_USERS"/>
+        <result property="broadBillFee" column="BROAD_BILL_FEE"/>
+        <result property="specialBroadInnetUsers" column="SPECIAL_BROAD_INNET_USERS"/>
+        <result property="specialBroadBillUsers" column="SPECIAL_BROAD_BILL_USERS"/>
+        <result property="specialBroadBillFee" column="SPECIAL_BROAD_BILL_FEE"/>
+        <result property="circuitInnetUsers" column="CIRCUIT_INNET_USERS"/>
+        <result property="circuitBillUsers" column="CIRCUIT_BILL_USERS"/>
+        <result property="circuitIllFee" column="CIRCUIT_ILL_FEE"/>
+        <result property="cioudCalculateInnetUsers" column="CIOUD_CALCULATE_INNET_USERS"/>
+        <result property="cioudCalculateBillUsers" column="CIOUD_CALCULATE_BILL_USERS"/>
+        <result property="cioudCalculateBillFee" column="CIOUD_CALCULATE_BILL_FEE"/>
+        <result property="bigDataInnetUsers" column="BIG_DATA_INNET_USERS"/>
+        <result property="bigDataBillUsers" column="BIG_DATA_BILL_USERS"/>
+        <result property="bigDataBillFee" column="BIG_DATA_BILL_FEE"/>
+        <result property="iotInnetUsers" column="IOT_INNET_USERS"/>
+        <result property="iotBillUsers" column="IOT_BILL_USERS"/>
+        <result property="iotBillFee" column="IOT_BILL_FEE"/>
+        <result property="idcInnetUsers" column="IDC_INNET_USERS"/>
+        <result property="idcBillUsers" column="IDC_BILL_USERS"/>
+        <result property="idcBillFee" column="IDC_BILL_FEE"/>
+        <result property="accountingPeriod" column="ACCOUNTING_PERIOD"/>
+        <result property="createDate" column="create_date"/>
+    </resultMap>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO REP_GRP_CUST_BILL_SUM_M (
+            CUST_GRP_ID, GRP_CODE, GRP_NAME, AREA_CODE, COUNTY_ID, SERV_MANAGER_ID, SERV_MANAGER_NAME,
+            TOTAL_INNET_USERS, TOTAL_BILL_USERS, TOTAL_BILL_FEE,
+            YW_INNET_USERS, YW_BILL_USERS, YW_BILL_FEE,
+            MOBILE_INNET_USERS, MOBILE_BILL_USERS, MOBILE_BILL_FEE,
+            INDUSTRY_INNET_USERS, INDUSTRY_BILL_USERS, INDUSTRY_BILL_FEE,
+            GW_INNET_USERS, GW_BILL_USERS, GW_BILL_FEE,
+            BROAD_INNET_USERS, BROAD_BILL_USERS, BROAD_BILL_FEE,
+            SPECIAL_BROAD_INNET_USERS, SPECIAL_BROAD_BILL_USERS, SPECIAL_BROAD_BILL_FEE,
+            CIRCUIT_INNET_USERS, CIRCUIT_BILL_USERS, CIRCUIT_ILL_FEE,
+            CIOUD_CALCULATE_INNET_USERS, CIOUD_CALCULATE_BILL_USERS, CIOUD_CALCULATE_BILL_FEE,
+            BIG_DATA_INNET_USERS, BIG_DATA_BILL_USERS, BIG_DATA_BILL_FEE,
+            IOT_INNET_USERS, IOT_BILL_USERS, IOT_BILL_FEE,
+            IDC_INNET_USERS, IDC_BILL_USERS, IDC_BILL_FEE,
+            ACCOUNTING_PERIOD, create_date
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.custGrpId}, #{item.grpCode}, #{item.grpName}, #{item.areaCode}, #{item.countyId},
+                #{item.servManagerId}, #{item.servManagerName},
+                #{item.totalInnetUsers}, #{item.totalBillUsers}, #{item.totalBillFee},
+                #{item.ywinnetusers}, #{item.ywBillUsers}, #{item.ywBillFee},
+                #{item.mobileInnetUsers}, #{item.mobileBillUsers}, #{item.mobileBillFee},
+                #{item.industryInnetUsers}, #{item.industryBillUsers}, #{item.industryFillFee},
+                #{item.gwInnetUsers}, #{item.gwBillUsers}, #{item.gwBillFee},
+                #{item.broadInnetUsers}, #{item.broadBillUsers}, #{item.broadBillFee},
+                #{item.specialBroadInnetUsers}, #{item.specialBroadBillUsers}, #{item.specialBroadBillFee},
+                #{item.circuitInnetUsers}, #{item.circuitBillUsers}, #{item.circuitIllFee},
+                #{item.cioudCalculateInnetUsers}, #{item.cioudCalculateBillUsers}, #{item.cioudCalculateBillFee},
+                #{item.bigDataInnetUsers}, #{item.bigDataBillUsers}, #{item.bigDataBillFee},
+                #{item.iotInnetUsers}, #{item.iotBillUsers}, #{item.iotBillFee},
+                #{item.idcInnetUsers}, #{item.idcBillUsers}, #{item.idcBillFee},
+                #{item.accountingPeriod}, #{item.createDate}
+            )
+        </foreach>
+    </insert>
+
+</mapper>
