@@ -13,6 +13,7 @@ import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.domain.dao.TfFCustGroupDDo;
 import com.crm.system.domain.dao.SysParamDo;
+import com.crm.system.domain.dao.ZqGrpGroupLog;
 import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.mapper.ZqGrpGroupInfoMapper;
 import com.crm.system.mapper.ZqGrpGroupLogMapper;
