@@ -847,6 +847,10 @@ public class Constants {
     public static final String ACT_AUDIT_STATUS_END = "3";
     public static final String ACT_AUDIT_SAVE = "4";
     public static final String ACT_AUDIT_UPGRADE = "5";
+    // 通用预警处理流程
+    public static final String SINGLE_APPROVAL_PROCESS_KEY = "single_approval";
+    public static final String SINGLE_APPROVAL_PROCESS_NAME = "预警处理流程";
+
     // order_status
     public static final String ORDER_STATUS_DRAFT = "draft";// 待提交
     public static final String ORDER_STATUS_RUNNING = "running";
