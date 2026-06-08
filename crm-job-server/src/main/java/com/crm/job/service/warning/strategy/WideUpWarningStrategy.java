@@ -1,8 +1,8 @@
 package com.crm.job.service.warning.strategy;
 
+import com.crm.job.mapper.warning.WideUpWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -19,16 +19,6 @@ import java.util.Map;
  * 预警类型标识：new_wide_up
  * <p>
  * 每个区域+每个领导生成一条 WarningRecord，由 Service 为每一条启动流程。
- * <p>
- * ===== 完整链路 =====
- * WideUpWarningJob → WarningStartService.startCommonProcess("new_wide_up")
- *   → WideUpWarningStrategy.query(yyyyMM)
- *     → 查询 sys_area 有 bss_code 的区域
- *     → 每区域的每个领导 → 一条 WarningRecord
- *   → 逐条 startCommonProcess(record)
- *     → Flowable 启动 common_warning_process 流程
- *     → 创建 topp_order 工单
- *     → 设置区域相关流程变量
  *
  * @author crm
  */
@@ -36,7 +26,7 @@ import java.util.Map;
 public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
-    private JdbcTemplate jdbcTemplate;
+    private WideUpWarningMapper mapper;
 
     @Override
     public String getOrderType() {
@@ -51,19 +41,10 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
     @Override
     protected List<WarningRecord> doQuery(String yyyyMM) {
         // 第一步：查询有 bss_code 的区域
-        String areaSql = "SELECT DISTINCT a.id_, a.name_, a.bss_code "
-                + "FROM sys_area a "
-                + "WHERE a.bss_code IS NOT NULL "
-                + "ORDER BY a.id_";
-        List<Map<String, Object>> areas = jdbcTemplate.queryForList(areaSql);
+        List<Map<String, Object>> areas = mapper.selectAllAreas();
 
         // 第二步：查找各区域的领导（总经理/副总经理），同时获取用户详细信息
-        String leaderSql = "SELECT DISTINCT u.user_id, u.dept_id, u.nick_name, u.phonenumber FROM sys_user u "
-                + "JOIN sys_user_role ur ON u.user_id = ur.user_id "
-                + "JOIN sys_role r ON ur.role_id = r.role_id "
-                + "WHERE r.role_key IN ('boss', 'vice_boss') AND u.del_flag = '0'";
-
-        List<Map<String, Object>> leaderRows = jdbcTemplate.queryForList(leaderSql);
+        List<Map<String, Object>> leaderRows = mapper.selectLeaders();
         List<LeaderInfo> leaders = new ArrayList<>();
         for (Map<String, Object> row : leaderRows) {
             Long userId = toLong(row.get("user_id"));
@@ -77,7 +58,6 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
             }
         }
 
-        // 每个区域+每个领导=一条记录
         List<WarningRecord> records = new ArrayList<>();
         for (Map<String, Object> area : areas) {
             Long areaId = toLong(area.get("id_"));
@@ -96,7 +76,6 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
                 record.setCustName(areaName);
                 record.setCustManagerId(leader.userId);
 
-                // 传递工单所需的附加信息
                 Map<String, Object> extra = new HashMap<>();
                 extra.put("wide_second_new_orderFlag", "1");
                 extra.put("wide_second_new_codeInfo", bssCode);

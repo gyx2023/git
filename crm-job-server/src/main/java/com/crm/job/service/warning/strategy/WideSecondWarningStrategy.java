@@ -1,13 +1,12 @@
 package com.crm.job.service.warning.strategy;
 
+import com.crm.job.mapper.warning.WideSecondWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,12 +18,12 @@ import java.util.Map;
  * 预警类型标识：wide_second
  * <p>
  * ===== 完整链路 =====
- * WideSecondWarningJob → WarningStartService.startCommonProcess("wide_second")
+ * WideSecondWarningJob → WarningStartService.startByType("wide_second")
  *   → WideSecondWarningStrategy.query(targetDate)
- *     → SQL 查 ftp_tc_user_cust_warning + 按 oaId_dev 查 sys_user
+ *     → Mapper SQL 查 ftp_tc_user_cust_warning + 按 oaId_dev 查 sys_user
  *     → 转 List<WarningRecord>（已解析为真实 userId）
- *   → 逐条 startCommonProcess(record)
- *     → Flowable 启动 common_warning_process 流程
+ *   → 逐条 createAndStartOrder(record)
+ *     → Flowable 启动 single_approval 流程
  *     → 创建 topp_order 工单
  *
  * @author crm
@@ -33,7 +32,7 @@ import java.util.Map;
 public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
-    private JdbcTemplate jdbcTemplate;
+    private WideSecondWarningMapper mapper;
 
     @Override
     public String getOrderType() {
@@ -47,14 +46,7 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     protected List<WarningRecord> doQuery(String targetDate) {
-        String sql = "SELECT w.id, w.grp_name, w.grp_code, w.oa_id_dev, w.serv_manager_id, w.warning_type "
-                + "FROM ftp_tc_user_cust_warning w "
-                + "WHERE w.warning_type = 'C00002' "
-                + "AND w.is_valid = '1' "
-                + "AND DATE_FORMAT(w.exp_time, '%Y-%m-%d') >= ? "
-                + "ORDER BY w.id";
-
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, targetDate);
+        List<Map<String, Object>> rows = mapper.selectSecondWarnList(targetDate);
         List<WarningRecord> records = new ArrayList<>();
 
         for (Map<String, Object> row : rows) {
@@ -74,14 +66,12 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
         }
 
         // 按 oaId 查 sys_user 表，获取真实 userId 及相关信息
-        String userSql = "SELECT user_id, dept_id, nick_name, phonenumber FROM sys_user "
-                + "WHERE user_name = ? AND del_flag = '0' LIMIT 1";
-        List<Map<String, Object>> userRows = jdbcTemplate.queryForList(userSql, oaIdDev);
-        if (userRows.isEmpty()) {
+        Map<String, Object> userRow = mapper.selectUserByOaId(oaIdDev);
+        if (userRow == null || userRow.isEmpty()) {
             log.warn("【{}】未找到对应客户经理, oaId: {}", getOrderTypeName(), oaIdDev);
             return null;
         }
-        Map<String, Object> userRow = userRows.get(0);
+
         Long userId = toLong(userRow.get("user_id"));
         if (userId == null) {
             log.warn("【{}】客户经理ID为空, oaId: {}", getOrderTypeName(), oaIdDev);
@@ -94,7 +84,6 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
         record.setCustName(getString(row.get("grp_name")));
         record.setCustManagerId(userId);
 
-        // 传递工单所需的附加信息
         record.setExtraVariable("infoId", toLong(row.get("id")));
         record.setExtraVariable("orgId", toLong(userRow.get("dept_id")));
         record.setExtraVariable("nickName", getString(userRow.get("nick_name")));
