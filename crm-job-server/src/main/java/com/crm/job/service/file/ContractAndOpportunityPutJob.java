@@ -161,34 +161,31 @@ public class ContractAndOpportunityPutJob {
         log.info("开始执行合同收入数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
-        ExcelWriter excelWriter = null;
         try {
             tempFile = File.createTempFile("contract_income_", ".xls");
 
-            excelWriter = EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
-                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
-                    .build();
-            WriteSheet writeSheet = EasyExcel.writerSheet("合同收入数据统计").build();
+            // ✅ try-with-resources 自动关闭 ExcelWriter，无需手动 finish
+            try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .build()) {
+                WriteSheet writeSheet = EasyExcel.writerSheet("合同收入数据统计").build();
 
-            int offset = 0;
-            int pageSize = 1000;
-            int totalCount = 0;
-            List<ContractIncomeExcelVo> batch;
-            do {
-                batch = toppContractMapper.getContractIncomeListPaged(areaId, offset, pageSize);
-                if (batch != null && !batch.isEmpty()) {
-                    excelWriter.write(batch, writeSheet);
-                    totalCount += batch.size();
-                    offset += pageSize;
-                }
-            } while (batch != null && batch.size() == pageSize);
+                int offset = 0;
+                int pageSize = 1000;
+                int totalCount = 0;
+                List<ContractIncomeExcelVo> batch;
+                do {
+                    batch = toppContractMapper.getContractIncomeListPaged(areaId, offset, pageSize);
+                    if (batch != null && !batch.isEmpty()) {
+                        excelWriter.write(batch, writeSheet);
+                        totalCount += batch.size();
+                        offset += pageSize;
+                    }
+                } while (batch != null && batch.size() == pageSize);
 
-            log.info("合同收入数据导出完成，共 {} 条", totalCount);
-
-            // 数据写入完成后，立即手动调用finish()，将内存缓冲区数据真正写入磁盘
-            if (excelWriter != null) {
-                excelWriter.finish();
+                log.info("合同收入数据导出完成，共 {} 条", totalCount);
             }
+            // 离开try-with-resources代码块后，自动执行finish/close
 
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同收入数据导出文件创建失败");
@@ -196,7 +193,7 @@ public class ContractAndOpportunityPutJob {
             }
 
             log.info("合同收入数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
-                    tempFile.getAbsolutePath(), tempFile.length());
+                tempFile.getAbsolutePath(), tempFile.length());
 
             return tempFile;
         } catch (Exception e) {
@@ -205,15 +202,6 @@ public class ContractAndOpportunityPutJob {
                 tempFile.delete();
             }
             return null;
-        } finally {
-            // finally仅做兜底关闭，忽略异常，避免重复关闭导致的问题
-            if (excelWriter != null) {
-                try {
-                    excelWriter.finish();
-                } catch (Exception e) {
-                    log.warn("关闭ExcelWriter失败", e);
-                }
-            }
         }
     }
 
@@ -224,14 +212,13 @@ public class ContractAndOpportunityPutJob {
      * @param areaEng 区域英文标识
      */
     private File createContractStatisticsFile(Integer areaId, String areaEng,
-            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
-            Map<String, String> unicomType2Map, Map<String, String> clueSourceMap,
-            Map<String, String> contractAddTypeMap, Map<String, String> contractTypeMap,
-            Map<String, String> incomeTypeMap) {
+                                              Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+                                              Map<String, String> unicomType2Map, Map<String, String> clueSourceMap,
+                                              Map<String, String> contractAddTypeMap, Map<String, String> contractTypeMap,
+                                              Map<String, String> incomeTypeMap) {
         log.info("开始执行合同统计数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
-        ExcelWriter excelWriter = null;
         try {
             Calendar cal = Calendar.getInstance();
             int nowYear = cal.get(Calendar.YEAR);
@@ -245,35 +232,33 @@ public class ContractAndOpportunityPutJob {
             String lastYearMonth = String.valueOf(nowYear) + (lastMonth < 10 ? "0" + lastMonth : lastMonth);
 
             log.info("时间参数 - nowYear: {}, lastYear: {}, nowYearMonth: {}, lastYearMonth: {}",
-                    nowYear, lastYear, nowYearMonth, lastYearMonth);
+                nowYear, lastYear, nowYearMonth, lastYearMonth);
 
             tempFile = File.createTempFile("contract_statistics_", ".xls");
 
-            excelWriter = EasyExcel.write(tempFile, ToppContractExcelVo.class)
-                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
-                    .build();
-            WriteSheet writeSheet = EasyExcel.writerSheet("合同查询统计").build();
+            // ✅ try-with-resources 自动关闭
+            try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ToppContractExcelVo.class)
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .build()) {
+                WriteSheet writeSheet = EasyExcel.writerSheet("合同查询统计").build();
 
-            int offset = 0;
-            int pageSize = 1000;
-            int totalCount = 0;
-            List<ToppContractExcelVo> batch;
-            do {
-                batch = toppContractMapper.exportContractListPaged(
+                int offset = 0;
+                int pageSize = 1000;
+                int totalCount = 0;
+                List<ToppContractExcelVo> batch;
+                do {
+                    batch = toppContractMapper.exportContractListPaged(
                         areaId, nowYear, lastYear, nowYearMonth, lastYearMonth, offset, pageSize);
-                if (batch != null && !batch.isEmpty()) {
-                    translateAndFormatContractStatisticsData(batch, oppTypeMap, unicomTypeMap,
+                    if (batch != null && !batch.isEmpty()) {
+                        translateAndFormatContractStatisticsData(batch, oppTypeMap, unicomTypeMap,
                             unicomType2Map, clueSourceMap, contractAddTypeMap, contractTypeMap, incomeTypeMap);
-                    excelWriter.write(batch, writeSheet);
-                    totalCount += batch.size();
-                    offset += pageSize;
-                }
-            } while (batch != null && batch.size() == pageSize);
+                        excelWriter.write(batch, writeSheet);
+                        totalCount += batch.size();
+                        offset += pageSize;
+                    }
+                } while (batch != null && batch.size() == pageSize);
 
-            log.info("合同统计数据导出完成，共 {} 条", totalCount);
-
-            if (excelWriter != null) {
-                excelWriter.finish();
+                log.info("合同统计数据导出完成，共 {} 条", totalCount);
             }
 
             if (!tempFile.exists() || tempFile.length() == 0) {
@@ -282,7 +267,7 @@ public class ContractAndOpportunityPutJob {
             }
 
             log.info("合同统计数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
-                    tempFile.getAbsolutePath(), tempFile.length());
+                tempFile.getAbsolutePath(), tempFile.length());
 
             return tempFile;
         } catch (Exception e) {
@@ -291,14 +276,6 @@ public class ContractAndOpportunityPutJob {
                 tempFile.delete();
             }
             return null;
-        } finally {
-            if (excelWriter != null) {
-                try {
-                    excelWriter.finish();
-                } catch (Exception e) {
-                    log.warn("关闭ExcelWriter失败", e);
-                }
-            }
         }
     }
 
@@ -394,44 +371,40 @@ public class ContractAndOpportunityPutJob {
      * @param areaEng 区域英文标识
      */
     private File createOpportunityFile(Integer areaId, String areaEng,
-            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
-            Map<String, String> unicomType2Map, Map<String, String> unicomType2Settingstr1Map,
-            Map<String, String> clueSourceMap, Map<String, String> selectType1Map,
-            Map<String, String> oppoStateMap, Map<String, String> bidResultMap,
-            Map<String, String> bgTypeResultMap) {
+                                       Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+                                       Map<String, String> unicomType2Map, Map<String, String> unicomType2Settingstr1Map,
+                                       Map<String, String> clueSourceMap, Map<String, String> selectType1Map,
+                                       Map<String, String> oppoStateMap, Map<String, String> bidResultMap,
+                                       Map<String, String> bgTypeResultMap) {
         log.info("开始执行商机数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
-        ExcelWriter excelWriter = null;
         try {
             tempFile = File.createTempFile("opportunity_", ".xls");
 
-            excelWriter = EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
-                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
-                    .build();
-            WriteSheet writeSheet = EasyExcel.writerSheet("商机查询统计").build();
+            // ✅ try-with-resources 自动关闭
+            try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .build()) {
+                WriteSheet writeSheet = EasyExcel.writerSheet("商机查询统计").build();
 
-            int offset = 0;
-            int pageSize = 1000;
-            int totalCount = 0;
-            List<ToppOpportunityExcelVo> batch;
-            do {
-                batch = toppOpportunityMapper.selectOpportunityExportListPaged(areaId, offset, pageSize);
-                if (batch != null && !batch.isEmpty()) {
-                    processingOpportunityData(batch, oppTypeMap, unicomTypeMap, unicomType2Map,
+                int offset = 0;
+                int pageSize = 1000;
+                int totalCount = 0;
+                List<ToppOpportunityExcelVo> batch;
+                do {
+                    batch = toppOpportunityMapper.selectOpportunityExportListPaged(areaId, offset, pageSize);
+                    if (batch != null && !batch.isEmpty()) {
+                        processingOpportunityData(batch, oppTypeMap, unicomTypeMap, unicomType2Map,
                             unicomType2Settingstr1Map, clueSourceMap, selectType1Map,
                             oppoStateMap, bidResultMap, bgTypeResultMap);
-                    excelWriter.write(batch, writeSheet);
-                    totalCount += batch.size();
-                    offset += pageSize;
-                }
-            } while (batch != null && batch.size() == pageSize);
+                        excelWriter.write(batch, writeSheet);
+                        totalCount += batch.size();
+                        offset += pageSize;
+                    }
+                } while (batch != null && batch.size() == pageSize);
 
-            log.info("商机数据导出完成，共 {} 条", totalCount);
-
-            // 数据写入完成后，立即手动调用finish()，将内存缓冲区数据真正写入磁盘
-            if (excelWriter != null) {
-                excelWriter.finish();
+                log.info("商机数据导出完成，共 {} 条", totalCount);
             }
 
             if (!tempFile.exists() || tempFile.length() == 0) {
@@ -440,7 +413,7 @@ public class ContractAndOpportunityPutJob {
             }
 
             log.info("商机数据导出成功,临时文件路径: {}, 文件大小: {} bytes",
-                    tempFile.getAbsolutePath(), tempFile.length());
+                tempFile.getAbsolutePath(), tempFile.length());
 
             return tempFile;
         } catch (Exception e) {
@@ -449,14 +422,6 @@ public class ContractAndOpportunityPutJob {
                 tempFile.delete();
             }
             return null;
-        } finally {
-            if (excelWriter != null) {
-                try {
-                    excelWriter.finish();
-                } catch (Exception e) {
-                    log.warn("关闭ExcelWriter失败", e);
-                }
-            }
         }
     }
 
