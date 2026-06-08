@@ -167,6 +167,7 @@ public class ContractAndOpportunityPutJob {
             // ✅ try-with-resources 自动关闭 ExcelWriter，无需手动 finish
             try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
                 .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .inMemory(false)  // 不使用内存缓存，直接写磁盘
                 .build()) {
                 WriteSheet writeSheet = EasyExcel.writerSheet("合同收入数据统计").build();
 
@@ -239,6 +240,7 @@ public class ContractAndOpportunityPutJob {
             // ✅ try-with-resources 自动关闭
             try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ToppContractExcelVo.class)
                 .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .inMemory(false)  // 不使用内存缓存，直接写磁盘
                 .build()) {
                 WriteSheet writeSheet = EasyExcel.writerSheet("合同查询统计").build();
 
@@ -291,6 +293,7 @@ public class ContractAndOpportunityPutJob {
             return;
         }
 
+        StringBuilder sb = new StringBuilder(128); // 方法开始时创建一次
         for (ToppContractExcelVo contract : contractList){
             // 1.业务类型（主）
             String oppType = contract.getOppType();
@@ -304,12 +307,12 @@ public class ContractAndOpportunityPutJob {
                 if(cleanedType.contains(",")){
                     // 多个业务类型：分割后翻译
                     String[] oppIncludeTypeArr = cleanedType.split(",");
-                    StringBuilder sb = new StringBuilder();
+                    sb.setLength(0); // 复用，清空内容
                     for (String type : oppIncludeTypeArr) {
                         String trimType = type.trim();
                         String name = oppTypeMap.get(trimType);
                         if (name != null) {
-                            sb.append(name).append(" ");
+                            sb.append(name).append(' ');  // char比String轻量
                         }
                     }
                     contract.setOppIncludeType(sb.toString().trim());
@@ -385,6 +388,7 @@ public class ContractAndOpportunityPutJob {
             // ✅ try-with-resources 自动关闭
             try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
                 .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .inMemory(false)  // 不使用内存缓存，直接写磁盘
                 .build()) {
                 WriteSheet writeSheet = EasyExcel.writerSheet("商机查询统计").build();
 
@@ -438,6 +442,7 @@ public class ContractAndOpportunityPutJob {
             return;
         }
 
+        StringBuilder sb = new StringBuilder(128);
         for(ToppOpportunityExcelVo opportunity : List){
             //业务类型（主）
             String oppType = opportunity.getOppType();
@@ -452,13 +457,13 @@ public class ContractAndOpportunityPutJob {
                 if (cleanedType.contains(",")) {
                     // 多个业务类型，用逗号分隔
                     String[] typeArray = cleanedType.split(",");
-                    StringBuilder sb = new StringBuilder();
+                    sb.setLength(0); // 复用，清空内容
                     for (String type : typeArray) {
                         String trimmedType = type.trim();
                         if (!trimmedType.isEmpty()) {
                             String typeName = oppTypeMap.get(trimmedType);
                             if (typeName != null) {
-                                sb.append(typeName).append(" ");
+                                sb.append(typeName).append(' ');
                             }
                         }
                     }
