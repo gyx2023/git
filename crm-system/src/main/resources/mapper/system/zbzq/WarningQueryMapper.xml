@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.zbzq.WarningQueryMapper">
+
+    <!-- B. 割接预警 -->
+    <select id="selectCutOverWarnings" resultType="java.util.Map">
+        select d.name_                                                           as type,
+               case when c.warning_level = 1 then '高'
+                    when c.warning_level = 2 then '中'
+                    when c.warning_level = 3 then '低'
+                    else '低' end                                               as warning_level,
+               c.order_number                                                    as order_id,
+               '电路业务割接预警，提示哪些电路会受影响'                                  as scenario_explanation,
+               CONCAT(a.BEGIN_TIME, '-', a.END_TIME)                             as cutover_time,
+               round(a.IMPACT_DURATION / 60, 0)                                  as impact_hours,
+               e.CIRCUIT_NAME                                                    as circuit_id,
+               a.USER_SCALE                                                      as affected_users,
+               CONCAT(LEFT(a.LINKMAN, 1), '*', RIGHT(a.LINKMAN, 1))             as contact,
+               CONCAT(LEFT(a.LINKMAN_PHONE, 3), '****', RIGHT(a.LINKMAN_PHONE, 4)) as phone,
+               a.TITLE                                                           as notification
+        from ftp_tc_cust_cut_over_warning a
+        inner join topp_order c on a.id_ = c.info_id and c.order_type = 'cut_over_warn' and c.status_ &lt;&gt; 'end'
+        left join sys_code d on c.order_type = d.code_ and d.type_ = 'process_key'
+        left join (select MAIN_ORDER_FLOW_NO, max(CIRCUIT_NAME) as CIRCUIT_NAME
+                   from ftp_tc_user_cut_over_warning group by MAIN_ORDER_FLOW_NO) e
+            on e.MAIN_ORDER_FLOW_NO = a.MAIN_ORDER_FLOW_NO
+        where a.CUST_GRP_ID in
+        <foreach collection="provinceCustIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          and a.oa_id_dev = #{oaId}
+        order by a.create_date desc
+    </select>
+
+    <!-- C. 合同到期预警 -->
+    <select id="selectContractDueWarnings" resultType="java.util.Map">
+        select d.name_                                                           as type,
+               case when c.warning_level = 1 then '高'
+                    when c.warning_level = 2 then '中'
+                    when c.warning_level = 3 then '低'
+                    else '低' end                                               as warning_level,
+               c.order_number                                                    as order_id,
+               '与客户签订的合同到期前90天推送预警'                                    as scenario_explanation,
+               a.CONTRACT_NAME                                                   as contract_name,
+               a.contract_id                                                     as contract_id,
+               a.CONTRACT_MONEY2                                                 as contract_amount,
+               DATE_FORMAT(a.CONTRACT_EFFDATE, '%Y-%m-%d')                       as contract_start,
+               DATE_FORMAT(a.CONTRACT_EXPDATE, '%Y-%m-%d')                       as contract_end
+        from ftp_tc_grp_contract_due_warning a
+        inner join topp_order c on a.id_ = c.info_id and c.order_type = 'htdq_warn' and c.status_ &lt;&gt; 'end'
+            and c.actors_ like CONCAT('%', #{userDbId}, '%')
+        left join sys_code d on c.order_type = d.code_ and d.type_ = 'process_key'
+        where a.CUST_GRP_ID in
+        <foreach collection="provinceCustIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by a.CREATE_date desc
+    </select>
+
+    <!-- D. 红名单到期预警 -->
+    <select id="selectRedListWarnings" resultType="java.util.Map">
+        select d.name_                                                           as type,
+               case when c.warning_level = 1 then '高'
+                    when c.warning_level = 2 then '中'
+                    when c.warning_level = 3 then '低'
+                    else '低' end                                               as warning_level,
+               c.order_number                                                    as order_id,
+               '客户关键人员加入红名单后不停机，在到期前15天推送预警'                      as scenario_explanation,
+               a.USER_SCALE                                                      as expired_user_count,
+               SUBSTRING_INDEX(a.WARNING_INFO, '||', 1)                         as overdue_amount,
+               SUBSTRING_INDEX(a.WARNING_INFO, '||', -1)                        as earliest_overdue_period,
+               '请关注并做好提前维系'                                               as note
+        from ftp_tc_user_cust_warning a
+        inner join topp_order c on a.id_ = c.info_id and c.order_type = 'hmd_warn' and c.status_ &lt;&gt; 'end'
+            and c.actors_ like CONCAT('%', #{userDbId}, '%')
+        left join sys_code d on c.order_type = d.code_ and d.type_ = 'process_key'
+        where a.CUST_GRP_ID in
+        <foreach collection="provinceCustIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by a.create_date desc
+    </select>
+
+    <!-- E. 预打发票预警 -->
+    <select id="selectReceiptWarnings" resultType="java.util.Map">
+        select d.name_                                                           as type,
+               case when c.warning_level = 1 then '高'
+                    when c.warning_level = 2 then '中'
+                    when c.warning_level = 3 then '低'
+                    else '低' end                                               as warning_level,
+               c.order_number                                                    as order_id,
+               '预警类型包含账单预打发票 和 营业预打发票（一次性费用）'                   as scenario_explanation,
+               null                                                              as invoice_count,
+               a.INVOICE_FEE                                                     as invoice_amount
+        from dwd_cust_receipt_warning a
+        inner join topp_order c on a.id_ = c.info_id and c.order_type = 'cust_receipt_warn' and c.status_ &lt;&gt; 'end'
+            and c.actors_ like CONCAT('%', #{userDbId}, '%')
+        left join sys_code d on c.order_type = d.code_ and d.type_ = 'process_key'
+        where a.CUST_GRP_ID in
+        <foreach collection="provinceCustIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by a.create_date desc
+    </select>
+
+    <!-- F. 团购折扣到期预警 -->
+    <select id="selectGroupBuyWarnings" resultType="java.util.Map">
+        select d.name_                                                           as type,
+               case when c.warning_level = 1 then '高'
+                    when c.warning_level = 2 then '中'
+                    when c.warning_level = 3 then '低'
+                    else '低' end                                               as warning_level,
+               c.order_number                                                    as order_id,
+               '主要针对客户的公司内的员工，个人受理的手机套餐等活动到期前1个月预警'         as scenario_explanation,
+               SUBSTRING_INDEX(e.WARNING_INFO, '||', 2)                         as activity_name,
+               a.USER_SCALE                                                      as phone_count,
+               DATE_FORMAT(SUBSTRING_INDEX(e.WARNING_INFO, '||', -1), '%Y-%m-%d') as expire_time
+        from ftp_tc_user_cust_warning a
+        inner join topp_order c on a.id_ = c.info_id and c.order_type = 'group_buy_warn' and c.status_ &lt;&gt; 'end'
+            and c.actors_ like CONCAT('%', #{userDbId}, '%')
+        left join sys_code d on c.order_type = d.code_ and d.type_ = 'process_key'
+        left join (select MAIN_ORDER_FLOW_NO, WARNING_TYPE, max(WARNING_INFO) as WARNING_INFO
+                   from ftp_tc_user_common_warning
+                   where CYCLE_FLAG = 0 or CYCLE_FLAG is null
+                   group by MAIN_ORDER_FLOW_NO, WARNING_TYPE) e
+            on a.MAIN_ORDER_FLOW_NO = e.MAIN_ORDER_FLOW_NO and a.WARNING_TYPE = e.WARNING_TYPE
+        where a.CUST_GRP_ID in
+        <foreach collection="provinceCustIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by a.create_date desc
+    </select>
+
+    <!-- G. 通服欠费预警 -->
+    <select id="selectOweWarnings" resultType="java.util.Map">
+        select d.name_                                                           as type,
+               case when c.warning_level = 1 then '高'
+                    when c.warning_level = 2 then '中'
+                    when c.warning_level = 3 then '低'
+                    else '低' end                                               as warning_level,
+               c.order_number                                                    as order_id,
+               '客户下用户的逾期欠费（含销户用户欠费）'                                  as scenario_explanation,
+               DATE_FORMAT(a.create_date, '%Y-%m-%d')                            as create_time,
+               null                                                              as days_pending
+        from ftp_tc_user_cust_warning a
+        inner join topp_order c on a.id_ = c.info_id and c.order_type = 'user_cust_owe_warn' and c.status_ &lt;&gt; 'end'
+            and c.actors_ like CONCAT('%', #{userDbId}, '%')
+        left join sys_code d on c.order_type = d.code_ and d.type_ = 'process_key'
+        where a.CUST_GRP_ID in
+        <foreach collection="provinceCustIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by a.create_date desc
+    </select>
+
+    <!-- 商机信息 -->
+    <select id="selectOpportunities" resultType="java.util.Map">
+        select op.opp_code                                                            as code,
+               op.opp_name                                                            as name,
+               co.name_                                                               as type_primary,
+               (select GROUP_CONCAT(d.name_ ORDER BY FIND_IN_SET(d.code_, op.opp_include_type) SEPARATOR ',')
+                from sys_code d
+                where d.type_ = 'opp_type'
+                  and FIND_IN_SET(d.code_, op.opp_include_type))                      as type_secondary,
+               op.cust_need                                                           as requirement,
+               round(op.expect_contract_money, 4)                                     as amount,
+               round(op.month_income_contribution, 4)                                 as monthly_contribution,
+               op.opp_win_prob                                                        as sign_probability,
+               DATE_FORMAT(op.sign_time, '%Y-%m-%d')                                  as sign_date,
+               co2.name_                                                              as status,
+               op.opp_data_reform                                                     as department,
+               op.is_valid                                                            as is_valid,
+               co3.name_                                                              as product_solution
+        from topp_opportunity op
+        left join sys_code co on op.opp_type = co.code_ and co.type_ = 'opp_type'
+        left join sys_code co2 on op.oppo_state = co2.code_ and co2.type_ = 'oppo_state'
+        left join sys_code co3 on op.product_code = co3.code_ and co3.type_ = 'main_product'
+        where op.is_Valid = 1
+          and op.cust_no = #{custNo}
+          and (op.cust_manager_id = #{userDbId}
+               or op.designer = #{userDbId}
+               or op.creator = #{userDbId}
+               or op.white_list like CONCAT('%,', #{userDbId}, ',%')
+               or exists (select 1 from topp_member m where m.project_id = op.id_ and m.member_id = #{userDbId}))
+        order by op.id_ desc
+    </select>
+
+</mapper>

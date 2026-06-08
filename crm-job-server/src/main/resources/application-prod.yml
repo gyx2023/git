@@ -193,3 +193,9 @@ attach:
   root: /tmp
 path:
   temp: /tmp
+--- # 行前报告Hiagent接口配置
+pre-travel-report:
+  api-url: http://132.151.58.42:32300/api/proxy/api/v1/sync_run_app_workflow
+  api-key: d8b9jlenlnbcfr9revsg
+  app-key: d8b9jj6nlnbcfr9revqg
+  user-id: "321"
