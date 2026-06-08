@@ -2,6 +2,7 @@ package com.crm.job.service.warning;
 
 import lombok.Data;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -38,4 +39,12 @@ public class WarningRecord {
 
     /** 扩展字段（如需传递额外的业务数据给流程变量或消息通知） */
     private Map<String, Object> extraVariables;
+
+    /** 便捷设置单个扩展字段 */
+    public void setExtraVariable(String key, Object value) {
+        if (extraVariables == null) {
+            extraVariables = new HashMap<>();
+        }
+        extraVariables.put(key, value);
+    }
 }

@@ -36,7 +36,7 @@ public class DefaultToppBusinessContextProvider implements BusinessContextProvid
 
     @Override
     public boolean supports(String procDefKey, String source) {
-        return procDefKey != null && (procDefKey.startsWith("topp_") || "common_warning_process".equals(procDefKey));
+        return procDefKey != null && procDefKey.startsWith("topp_");
     }
 
     @Override
@@ -68,14 +68,6 @@ public class DefaultToppBusinessContextProvider implements BusinessContextProvid
             actions.add(new WfBusinessAction("close_oppo", "关闭商机", "primary", "el-icon-circle-check"));
             actions.add(new WfBusinessAction("modify_sign_time", "修改签约时间", "warning", "el-icon-edit"));
             actions.add(new WfBusinessAction("conversion", "转化", "success", "el-icon-refresh"));
-            ctx.setActions(actions);
-        }
-
-        // common_warning_process 流程添加完成/转派操作按钮
-        if ("new".equals(source) && "common_warning_process".equals(procDefKey)) {
-            List<WfBusinessAction> actions = new ArrayList<>();
-            actions.add(new WfBusinessAction("warning_complete", "完成", "primary", "el-icon-circle-check"));
-            actions.add(new WfBusinessAction("warning_transfer", "转派", "warning", "el-icon-refresh"));
             ctx.setActions(actions);
         }
 
