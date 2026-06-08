@@ -63,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="queryWorkOrder" resultType="com.crm.common.core.domain.dto.WorkOrderDTO">
         SELECT
+        to2.id_ as id,
         <choose>
             <when test="orderType == 'double_wide' or orderType == 'Wide'">
                 concat(1,to2.id_,b.warnUserId) work_order_code,
@@ -92,7 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.ZB_BUILD_ID as buildId,
                 b.BUILDING_NAME as buildName,
                 'GWJC' as category,
-                 CAST(CONCAT(IFNULL(DATE_FORMAT(b.exp_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as business_end_date
+                CAST(CONCAT(IFNULL(DATE_FORMAT(b.exp_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as business_end_date
 
             </when>
             <otherwise>
@@ -154,6 +155,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         to2.order_type = #{orderType}
         AND to2.create_time >= '2024-01-01 00:00:00'
         AND to2.create_time &lt;= CONCAT(#{yyMMdd}, ' 23:59:59')
+        <if test="lastId != null and lastId > 0">
+            AND to2.id_ > #{lastId}
+        </if>
+        ORDER BY to2.id_ ASC
+        LIMIT #{size}
     </select>
 
     <select id="getToppOrderCount" resultType="java.lang.Integer">
@@ -183,4 +189,117 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND create_time &lt;= #{date}
           AND status_ = 'end'
     </select>
+
+
+
+    <!-- ====================== 1. 游标分页查询 唯一 ID（无重复，精准分页） ====================== -->
+    <select id="listOrderIdByCursor" resultType="java.lang.Long">
+        SELECT to2.id_
+        FROM topp_order to2
+        WHERE
+        to2.order_type = #{orderType}
+        AND to2.create_time >= '2024-01-01 00:00:00'
+        AND to2.create_time &lt;= CONCAT(#{yyMMdd}, ' 23:59:59')
+        <if test="lastId != null and lastId > 0">
+            AND to2.id_ > #{lastId}
+        </if>
+        ORDER BY to2.id_ ASC
+        LIMIT #{size}
+    </select>
+
+    <!-- ====================== 2. 根据 ID 列表查询完整数据（原始业务逻辑） ====================== -->
+    <select id="listWorkOrderByIds" resultType="com.crm.common.core.domain.dto.WorkOrderDTO">
+        SELECT
+        <choose>
+            <when test="orderType == 'double_wide' or orderType == 'Wide'">
+                concat(1,to2.id_,b.warnUserId) work_order_code,
+            </when>
+            <otherwise>
+                concat(1,to2.id_,IFNULL(md.id_, '0000036')) work_order_code,
+            </otherwise>
+        </choose>
+        case to2.status_ when 'end' then 2 else 4 end work_order_status,
+        concat(to2.cust_name, sc.remark_) work_order_name,
+        DATE_FORMAT(to2.create_time ,'%Y-%m-%d %H:%i:%s') work_order_time,
+        (select COUNTY_ID from dwd_rep_sys_person_d where oa_user_name=UPPER(su.oa_account) limit 1) org_name,
+        su.oa_account manager_no,
+        su.name_ch manager_name,
+        su.name_ manager_mobile,
+        su.oa_account actual_manager_no,
+        su.name_ch actual_manager_name,
+        su.name_ actual_manager_mobile,
+        ctnr.nature_cust_id custom_id,
+        to2.cust_name custom_name,
+        CAST(CONCAT(IFNULL(DATE_FORMAT(to2.create_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as gmt_create,
+        case to2.status_ when 'running' then NULL else  CAST(CONCAT(IFNULL(DATE_FORMAT(to2.update_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) end back_time,
+        LEFT(to2.area_id , 4) as areaId,
+
+        <choose>
+            <when test="orderType == 'double_wide' or orderType == 'Wide'">
+                b.ZB_BUILD_ID as buildId,
+                b.BUILDING_NAME as buildName,
+                'GWJC' as category,
+                CAST(CONCAT(IFNULL(DATE_FORMAT(b.exp_time, '%Y-%m-%d %H:%i:%s'), ''), '.0') AS CHAR) as business_end_date
+            </when>
+            <otherwise>
+                '' as buildId,
+                '' as buildName,
+                '' as category,
+                '' as business_end_date
+            </otherwise>
+        </choose>
+
+        <if test="orderType == 'htdq_warn'">
+            ,ftcdw.CONTRACT_NAME AS contract_name,
+            ftcdw.CONTRACT_ID AS contract_code,
+            tc.cust_no,
+            tc.cust_name
+        </if>
+
+        <if test="orderType == 'terminal_contract_warn'">
+            ,w.svc_num
+        </if>
+
+        FROM topp_order to2
+        LEFT JOIN maintenance_detail md ON to2.id_ = md.order_id
+
+        <if test="orderType == 'double_wide' or orderType == 'Wide'">
+            JOIN ftp_tc_user_cust_warning c ON to2.info_id = c.id_
+            JOIN (
+            SELECT
+            u.exp_time,
+            w.BUILDING_NAME,
+            w.ZB_BUILD_ID,
+            w.MAIN_ORDER_FLOW_NO,
+            w.id_ as warnUserId
+            FROM wide_sys_auto_warning u
+            JOIN ftp_tc_user_common_warning w ON w.id_=u.u_id
+            WHERE IFNULL(u.IS_NINEDISCOUNT,0)=0
+            ) b ON b.MAIN_ORDER_FLOW_NO=c.MAIN_ORDER_FLOW_NO
+        </if>
+
+        <if test="orderType == 'htdq_warn'">
+            LEFT JOIN ftp_tc_grp_contract_due_warning ftcdw ON to2.info_id = ftcdw.id_
+            LEFT JOIN tcomm_customer tc ON to2.cust_id = tc.id_
+        </if>
+
+        <if test="orderType == 'terminal_contract_warn'">
+            JOIN ftp_tc_user_cust_warning c ON to2.info_id = c.id_
+            JOIN ftp_tc_user_common_warning w ON w.MAIN_ORDER_FLOW_NO = c.MAIN_ORDER_FLOW_NO
+        </if>
+
+        JOIN sys_user su ON to2.creator_ = su.id_
+        JOIN sys_code sc
+        ON to2.order_type = sc.code_
+        AND sc.type_='process_key'
+        AND sc.setting_str3='maintenance_order'
+
+        LEFT JOIN cust_t_nec_relation ctnr ON md.cust_grp_id = ctnr.PROVINCE_CUST_ID
+
+        WHERE to2.id_ IN
+        <foreach collection="idList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
 </mapper>

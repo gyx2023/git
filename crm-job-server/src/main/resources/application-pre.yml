@@ -182,9 +182,15 @@ flowable:
   database-schema: zj_sj
 # 文件上传临时根目录
 attach:
-  root: /tmp/wz
+  root: /tmp
 path:
-  temp: /tmp/wz
+  temp: /tmp
+--- # 行前报告Hiagent接口配置
+pre-travel-report:
+  api-url: http://132.151.58.42:32300/api/proxy/api/v1/sync_run_app_workflow
+  api-key: d8b9jlenlnbcfr9revsg
+  app-key: d8b9jj6nlnbcfr9revqg
+  user-id: "321"
 ability:
   app_id: bR4nqpsTto
   app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V

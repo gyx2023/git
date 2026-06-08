@@ -1,7 +1,9 @@
 package com.crm.job.service.file;
 
 import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
@@ -39,11 +41,6 @@ public class ContractAndOpportunityPutJob {
     //文件的本地保存测试路径
     private static final String LOCAL_SAVE_PATH = "C:/Users/12139/Desktop";
 
-    //完整的文件名+扩展名
-    static String contractIncome;//合同收入
-    static String contract;//合同
-    static String opportunity;//商机
-
     @Resource
     private ISysParamService sysParamService;
     @Resource
@@ -73,32 +70,50 @@ public class ContractAndOpportunityPutJob {
             }
 
             List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
+
+            // 一次性加载所有字典，避免每个地市重复加载
+            Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
+            Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
+            Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
+            Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
+            Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
+            Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
+            Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
+            Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
+            Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
+            Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
+            Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
+            Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
+
             for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
                 long l1 = System.currentTimeMillis();
                 ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
                 String areaEng = contractAndOpportunityPutConfig.getAreaEng();
                 Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-                contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";
-                contract = areaEng + "Contract" + currentDate + ".xls";
-                opportunity = areaEng + "Opportunity" + currentDate + ".xls";
+                String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
+                String contract = areaEng + "Contract" + currentDate + ".xls";//合同
+                String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
 
                 Map<File, String> fileMap = new LinkedHashMap<>();
 
                 // 创建合同收入文件
-                File incomeFile = createContractIncomeFile(areaId, areaEng, currentDate);
+                File incomeFile = createContractIncomeFile(areaId, areaEng);
                 long l2 = System.currentTimeMillis();
                 log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
                 if (incomeFile != null) { fileMap.put(incomeFile, contractIncome); }
 
                 // 创建合同统计数据文件
-                File contractFile = createContractStatisticsFile(areaId, areaEng, currentDate);
+                File contractFile = createContractStatisticsFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
+                        unicomType2Map, clueSourceMap, contractAddTypeMap, contractTypeMap, incomeTypeMap);
                 long l3 = System.currentTimeMillis();
                 log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
                 if (contractFile != null) { fileMap.put(contractFile, contract); }
 
                 // 创建商机数据文件
-                File opportunityFile = createOpportunityFile(areaId, areaEng, currentDate);
+                File opportunityFile = createOpportunityFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
+                        unicomType2Map, unicomType2Settingstr1Map, clueSourceMap, selectType1Map,
+                        oppoStateMap, bidResultMap, bgTypeResultMap);
                 long l4 = System.currentTimeMillis();
                 log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
                 if (opportunityFile != null) { fileMap.put(opportunityFile, opportunity); }
@@ -136,28 +151,40 @@ public class ContractAndOpportunityPutJob {
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
-     * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private File createContractIncomeFile(Integer areaId, String areaEng, String currentDate) {
+    private File createContractIncomeFile(Integer areaId, String areaEng) {
         log.info("开始执行合同收入数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
+        ExcelWriter excelWriter = null;
         try {
-            // 1. 查询数据
-            List<ContractIncomeExcelVo> contractIncomeList = toppContractMapper.getContractIncomeList(areaId);
-
-            log.info("查询到合同收入数据 {} 条", contractIncomeList != null ? contractIncomeList.size() : 0);
-
-            // 3. 创建临时文件
             tempFile = File.createTempFile("contract_income_", ".xls");
 
-            // 4. 使用EasyExcel写入数据
-            EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
-                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("合同收入数据统计")
-                    .doWrite(contractIncomeList);
+            excelWriter = EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                    .build();
+            WriteSheet writeSheet = EasyExcel.writerSheet("合同收入数据统计").build();
 
-            // 5. 验证文件是否创建成功
+            int offset = 0;
+            int pageSize = 1000;
+            int totalCount = 0;
+            List<ContractIncomeExcelVo> batch;
+            do {
+                batch = toppContractMapper.getContractIncomeListPaged(areaId, offset, pageSize);
+                if (batch != null && !batch.isEmpty()) {
+                    excelWriter.write(batch, writeSheet);
+                    totalCount += batch.size();
+                    offset += pageSize;
+                }
+            } while (batch != null && batch.size() == pageSize);
+
+            log.info("合同收入数据导出完成，共 {} 条", totalCount);
+
+            // 数据写入完成后，立即手动调用finish()，将内存缓冲区数据真正写入磁盘
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
+
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同收入数据导出文件创建失败");
                 return null;
@@ -173,6 +200,15 @@ public class ContractAndOpportunityPutJob {
                 tempFile.delete();
             }
             return null;
+        } finally {
+            // finally仅做兜底关闭，忽略异常，避免重复关闭导致的问题
+            if (excelWriter != null) {
+                try {
+                    excelWriter.finish();
+                } catch (Exception e) {
+                    log.warn("关闭ExcelWriter失败", e);
+                }
+            }
         }
     }
 
@@ -181,14 +217,17 @@ public class ContractAndOpportunityPutJob {
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
-     * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private File createContractStatisticsFile(Integer areaId, String areaEng, String currentDate) {
+    private File createContractStatisticsFile(Integer areaId, String areaEng,
+            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+            Map<String, String> unicomType2Map, Map<String, String> clueSourceMap,
+            Map<String, String> contractAddTypeMap, Map<String, String> contractTypeMap,
+            Map<String, String> incomeTypeMap) {
         log.info("开始执行合同统计数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
+        ExcelWriter excelWriter = null;
         try {
-            // 1. 计算时间参数
             Calendar cal = Calendar.getInstance();
             int nowYear = cal.get(Calendar.YEAR);
             cal.add(Calendar.YEAR, -1);
@@ -203,25 +242,35 @@ public class ContractAndOpportunityPutJob {
             log.info("时间参数 - nowYear: {}, lastYear: {}, nowYearMonth: {}, lastYearMonth: {}",
                     nowYear, lastYear, nowYearMonth, lastYearMonth);
 
-            // 2. 查询数据
-            List<ToppContractExcelVo> contractList = toppContractMapper.exportContractList(
-                    areaId, nowYear, lastYear, nowYearMonth, lastYearMonth);
-
-            log.info("查询到合同统计数据 {} 条", contractList != null ? contractList.size() : 0);
-
-            //进行数据格式转换
-            translateAndFormatContractStatisticsData(contractList);
-
-            // 4. 创建临时文件
             tempFile = File.createTempFile("contract_statistics_", ".xls");
 
-            // 5. 使用EasyExcel写入数据
-            EasyExcel.write(tempFile, ToppContractExcelVo.class)
-                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("合同查询统计")
-                    .doWrite(contractList);
+            excelWriter = EasyExcel.write(tempFile, ToppContractExcelVo.class)
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                    .build();
+            WriteSheet writeSheet = EasyExcel.writerSheet("合同查询统计").build();
 
-            // 6. 验证文件是否创建成功
+            int offset = 0;
+            int pageSize = 1000;
+            int totalCount = 0;
+            List<ToppContractExcelVo> batch;
+            do {
+                batch = toppContractMapper.exportContractListPaged(
+                        areaId, nowYear, lastYear, nowYearMonth, lastYearMonth, offset, pageSize);
+                if (batch != null && !batch.isEmpty()) {
+                    translateAndFormatContractStatisticsData(batch, oppTypeMap, unicomTypeMap,
+                            unicomType2Map, clueSourceMap, contractAddTypeMap, contractTypeMap, incomeTypeMap);
+                    excelWriter.write(batch, writeSheet);
+                    totalCount += batch.size();
+                    offset += pageSize;
+                }
+            } while (batch != null && batch.size() == pageSize);
+
+            log.info("合同统计数据导出完成，共 {} 条", totalCount);
+
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
+
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("合同统计数据导出文件创建失败");
                 return null;
@@ -237,34 +286,29 @@ public class ContractAndOpportunityPutJob {
                 tempFile.delete();
             }
             return null;
+        } finally {
+            if (excelWriter != null) {
+                try {
+                    excelWriter.finish();
+                } catch (Exception e) {
+                    log.warn("关闭ExcelWriter失败", e);
+                }
+            }
         }
     }
 
     /**
      * 将合同统计数据进行转换和格式化
      */
-    private void translateAndFormatContractStatisticsData(List<ToppContractExcelVo> contractList) {
+    private void translateAndFormatContractStatisticsData(List<ToppContractExcelVo> contractList,
+            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+            Map<String, String> unicomType2Map, Map<String, String> clueSourceMap,
+            Map<String, String> contractAddTypeMap, Map<String, String> contractTypeMap,
+            Map<String, String> incomeTypeMap) {
         if (contractList == null || contractList.isEmpty()) {
             return;
         }
 
-        // 一次性批量查询所有字典，存入Map缓存
-        // 业务类型 opp_type
-        Map<String,String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
-        // 一级行业 unicom_type
-        Map<String,String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
-        // 二级行业 unicom_type_2
-        Map<String,String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
-        // 商机来源 clue_source
-        Map<String,String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
-        // 合同种类 contractAdd_type
-        Map<String,String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
-        // 合同类型 contract_type
-        Map<String,String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
-        // 计收类型 income_type
-        Map<String,String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
-
-        // 循环中直接从Map取值，0次数据库查询
         for (ToppContractExcelVo contract : contractList){
             // 1.业务类型（主）
             String oppType = contract.getOppType();
@@ -343,31 +387,48 @@ public class ContractAndOpportunityPutJob {
      *
      * @param areaId 区域ID
      * @param areaEng 区域英文标识
-     * @param currentDate 当前日期（yyyyMMdd格式）
      */
-    private File createOpportunityFile(Integer areaId, String areaEng, String currentDate) {
+    private File createOpportunityFile(Integer areaId, String areaEng,
+            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+            Map<String, String> unicomType2Map, Map<String, String> unicomType2Settingstr1Map,
+            Map<String, String> clueSourceMap, Map<String, String> selectType1Map,
+            Map<String, String> oppoStateMap, Map<String, String> bidResultMap,
+            Map<String, String> bgTypeResultMap) {
         log.info("开始执行商机数据导出任务，areaId: {}, areaEng: {}", areaId, areaEng);
 
         File tempFile = null;
+        ExcelWriter excelWriter = null;
         try {
-            // 1. 查询数据
-            List<ToppOpportunityExcelVo> opportunityList = toppOpportunityMapper.selectOpportunityExportList(areaId);
-
-            log.info("查询到商机数据 {} 条", opportunityList != null ? opportunityList.size() : 0);
-
-            // 2. 进行数据格式转换
-            processingOpportunityData(opportunityList);
-
-            // 4. 创建临时文件
             tempFile = File.createTempFile("opportunity_", ".xls");
 
-            // 5. 使用EasyExcel写入数据
-            EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
-                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                    .sheet("商机查询统计")
-                    .doWrite(opportunityList);
+            excelWriter = EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                    .build();
+            WriteSheet writeSheet = EasyExcel.writerSheet("商机查询统计").build();
 
-            // 6. 验证文件是否创建成功
+            int offset = 0;
+            int pageSize = 1000;
+            int totalCount = 0;
+            List<ToppOpportunityExcelVo> batch;
+            do {
+                batch = toppOpportunityMapper.selectOpportunityExportListPaged(areaId, offset, pageSize);
+                if (batch != null && !batch.isEmpty()) {
+                    processingOpportunityData(batch, oppTypeMap, unicomTypeMap, unicomType2Map,
+                            unicomType2Settingstr1Map, clueSourceMap, selectType1Map,
+                            oppoStateMap, bidResultMap, bgTypeResultMap);
+                    excelWriter.write(batch, writeSheet);
+                    totalCount += batch.size();
+                    offset += pageSize;
+                }
+            } while (batch != null && batch.size() == pageSize);
+
+            log.info("商机数据导出完成，共 {} 条", totalCount);
+
+            // 数据写入完成后，立即手动调用finish()，将内存缓冲区数据真正写入磁盘
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
+
             if (!tempFile.exists() || tempFile.length() == 0) {
                 log.error("商机数据导出文件创建失败");
                 return null;
@@ -383,34 +444,29 @@ public class ContractAndOpportunityPutJob {
                 tempFile.delete();
             }
             return null;
+        } finally {
+            if (excelWriter != null) {
+                try {
+                    excelWriter.finish();
+                } catch (Exception e) {
+                    log.warn("关闭ExcelWriter失败", e);
+                }
+            }
         }
     }
 
     /**
      * 对查询到的商机数据进行处理
      */
-    private void processingOpportunityData(List<ToppOpportunityExcelVo> List){
+    private void processingOpportunityData(List<ToppOpportunityExcelVo> List,
+            Map<String, String> oppTypeMap, Map<String, String> unicomTypeMap,
+            Map<String, String> unicomType2Map, Map<String, String> unicomType2Settingstr1Map,
+            Map<String, String> clueSourceMap, Map<String, String> selectType1Map,
+            Map<String, String> oppoStateMap, Map<String, String> bidResultMap,
+            Map<String, String> bgTypeResultMap) {
         if (List == null || List.isEmpty()) {
             return;
         }
-        //业务类型（主）map
-        Map<String,String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
-        //所属一级行业map
-        Map<String,String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
-        //所属二级行业map
-        Map<String,String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
-        //将二级行业编码映射到一级行业编码的map
-        Map<String,String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
-        //商机来源map
-        Map<String,String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
-        //是否招投标map
-        Map<String,String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
-        //商机状态map
-        Map<String,String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
-        //投标结果map
-        Map<String,String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
-        //商机行业 BU打标map
-        Map<String,String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
 
         for(ToppOpportunityExcelVo opportunity : List){
             //业务类型（主）
