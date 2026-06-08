@@ -229,18 +229,22 @@ public class PendingServiceImpl implements IPendingService {
             return;
         }
 
-        //去掉无效数据
-        checkUpdateData(updateList);
+        try {
+            //去掉无效数据
+            checkUpdateData(updateList);
 
-        int sendNums = updateList.size() / 15 + 1;
-        for (int i = 0; i < sendNums; i++) {
-            List<Pending> newList;
-            if ((i + 1) == sendNums) {
-                newList = new ArrayList<>(updateList.subList(i * 15, updateList.size()));
-            } else {
-                newList = new ArrayList<>(updateList.subList(i * 15, (i + 1) * 15));
+            int sendNums = updateList.size() / 15 + 1;
+            for (int i = 0; i < sendNums; i++) {
+                List<Pending> newList;
+                if ((i + 1) == sendNums) {
+                    newList = new ArrayList<>(updateList.subList(i * 15, updateList.size()));
+                } else {
+                    newList = new ArrayList<>(updateList.subList(i * 15, (i + 1) * 15));
+                }
+                updatePendingStatus(newList, updateUrl, appId, token);
             }
-            updatePendingStatus(newList, updateUrl, appId, token);
+        } catch (Exception e) {
+            log.error("推送待办状态更新异常", e);
         }
     }
 
