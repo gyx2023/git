@@ -25,12 +25,17 @@ public class OweWarningJob {
 
     @XxlJob("oweWarningJob")
     public void start() {
+        log.info("【欠费预警Job】开始执行");
         String jobParam = XxlJobHelper.getJobParam();
         String targetDate = StringUtils.isNotBlank(jobParam) ? jobParam
                 : DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, new java.util.Date());
-        log.info("【欠费预警Job】开始执行, targetDate={}", targetDate);
-        warningStartService.startByType("qf_warn", targetDate);
-        log.info("【欠费预警Job】执行完成");
-        XxlJobHelper.handleSuccess("执行完成");
+        try {
+            warningStartService.startByType("qf_warn", targetDate);
+            log.info("【欠费预警Job】执行完成");
+            XxlJobHelper.handleSuccess("执行完成");
+        } catch (Exception e) {
+            log.error("【欠费预警Job】执行异常", e);
+            XxlJobHelper.handleFail("执行异常：" + e.getMessage());
+        }
     }
 }
