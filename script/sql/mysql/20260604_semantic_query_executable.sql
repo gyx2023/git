@@ -8,7 +8,7 @@
 ALTER TABLE `meta_metric`
   ADD COLUMN `source_table`      VARCHAR(200) DEFAULT NULL COMMENT '数据来源表名',
   ADD COLUMN `source_datasource` VARCHAR(50)  DEFAULT 'master' COMMENT '数据源名称（对应 spring.datasource.dynamic.datasource key）',
-  ADD COLUMN `condition_mapping` JSON         DEFAULT NULL COMMENT '实体字段→物理字段映射，如 {"time":"order_month","region":"region_code"}',
+  ADD COLUMN `condition_mapping` JSON         DEFAULT NULL COMMENT '实体字段→物理字段映射，如 {"time_range":"order_month","region":"region_code"}',
   ADD COLUMN `category`          VARCHAR(50)  DEFAULT NULL COMMENT '业务分类：sales/contract/customer/finance';
 
 -- ============================================================
@@ -19,20 +19,18 @@ ALTER TABLE `meta_metric`
 INSERT IGNORE INTO `meta_metric` (`metric_code`, `metric_name`, `expression`, `data_type`, `unit`, `category`, `source_table`, `source_datasource`, `condition_mapping`, `version`, `status`)
 VALUES
 ('gmv',             '成交总额', 'SUM(order_amount)',           'money',   '元', 'sales',    'dws_sales_daily',   'master',
- '{"time":"order_month","region":"region_code","dept":"dept_id"}', 1, 1),
+ '{"time_range":"order_month","region":"region_code","dept":"dept_id"}', 1, 1),
 ('order_count',     '订单数量', 'COUNT(order_id)',             'count',   '笔', 'sales',    'dws_sales_daily',   'master',
- '{"time":"order_month","region":"region_code","dept":"dept_id"}', 1, 1),
+ '{"time_range":"order_month","region":"region_code","dept":"dept_id"}', 1, 1),
 ('avg_order_amt',   '客单价',   'SUM(order_amount)/COUNT(DISTINCT order_id)', 'money', '元', 'sales', 'dws_sales_daily', 'master',
- '{"time":"order_month","region":"region_code","dept":"dept_id"}', 1, 1),
+ '{"time_range":"order_month","region":"region_code","dept":"dept_id"}', 1, 1),
 ('contract_count',  '合同数',   'COUNT(contract_id)',          'count',   '个', 'contract', 'dws_contract_daily', 'master',
- '{"time":"sign_month","region":"region_code","dept":"dept_id"}', 1, 1),
+ '{"time_range":"sign_month","region":"region_code","dept":"dept_id"}', 1, 1),
 ('contract_amount', '合同额',   'SUM(contract_amount)',         'money',   '元', 'contract', 'dws_contract_daily', 'master',
- '{"time":"sign_month","region":"region_code","dept":"dept_id"}', 1, 1),
+ '{"time_range":"sign_month","region":"region_code","dept":"dept_id"}', 1, 1),
 ('new_customer',    '新增客户', 'COUNT(DISTINCT customer_id)',  'count',   '个', 'customer', 'dws_customer_daily', 'master',
- '{"time":"create_month","region":"region_code","dept":"dept_id"}', 1, 1)
+ '{"time_range":"create_month","region":"region_code","dept":"dept_id"}', 1, 1)
 ON DUPLICATE KEY UPDATE
-    category = VALUES(category),
-    source_table = VALUES(source_table),
     source_datasource = VALUES(source_datasource),
     condition_mapping = VALUES(condition_mapping);
 

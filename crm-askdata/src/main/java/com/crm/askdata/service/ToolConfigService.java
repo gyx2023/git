@@ -1,6 +1,7 @@
 package com.crm.askdata.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.crm.askdata.entity.AuthConfig;
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
 import com.crm.askdata.mapper.ToolConfigMapper;
@@ -29,6 +30,7 @@ public class ToolConfigService {
 
     private final ToolConfigMapper configMapper;
     private final ToolParamMapper paramMapper;
+    private final AuthConfigService authConfigService;
 
     private static final String CACHE_KEY_PREFIX = "askdata:tool:config:";
     private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(5);
@@ -43,11 +45,11 @@ public class ToolConfigService {
         String cacheKey = CACHE_KEY_PREFIX + "full:" + toolName;
 
         // 1. 尝试从缓存获取
-        ToolConfigWithParams cached = RedisUtils.getCacheObject(cacheKey);
-        if (cached != null) {
-            log.debug("traceId={} cache hit for tool: {}", getTraceId(), toolName);
-            return cached;
-        }
+//        ToolConfigWithParams cached = RedisUtils.getCacheObject(cacheKey);
+//        if (cached != null) {
+//            log.debug("traceId={} cache hit for tool: {}", getTraceId(), toolName);
+//            return cached;
+//        }
 
         // 2. 从数据库查询
         ToolConfig config = configMapper.selectByToolName(toolName);
@@ -63,6 +65,13 @@ public class ToolConfigService {
         ToolConfigWithParams fullConfig = new ToolConfigWithParams();
         fullConfig.setConfig(config);
         fullConfig.setParams(params);
+
+        // 4b. 加载关联的认证配置
+        if (config.getAuthConfigId() != null) {
+            AuthConfig authConfig = authConfigService.getById(config.getAuthConfigId());
+            fullConfig.setAuthConfig(authConfig);
+            config.setAuthConfig(authConfig);  // 也回写到 config 对象
+        }
 
         // 5. 写入缓存（使用配置的 TTL，如果为 0 则使用默认值）
         Duration ttl = config.getCacheTtlSeconds() != null && config.getCacheTtlSeconds() > 0
@@ -146,8 +155,9 @@ public class ToolConfigService {
         String cacheKey = CACHE_KEY_PREFIX + toolName;
         RedisUtils.deleteObject(cacheKey);
 
-        // 同时清除全量缓存
+        // 同时清除全量缓存和完整对象缓存
         RedisUtils.deleteObject(CACHE_KEY_PREFIX + "all:enabled");
+        RedisUtils.deleteObject(CACHE_KEY_PREFIX + "full:" + toolName);
 
         log.info("traceId={} cache cleared for tool: {}", getTraceId(), toolName);
     }
@@ -163,6 +173,20 @@ public class ToolConfigService {
             clearCache(config.getToolName());
         }
         log.info("traceId={} all tool config cache cleared", getTraceId());
+    }
+
+    /**
+     * 统计引用指定认证配置的工具数量
+     *
+     * @param authConfigId 认证配置ID
+     * @return 引用的工具数量
+     */
+    public int countByAuthConfigId(Long authConfigId) {
+        if (authConfigId == null) return 0;
+        return configMapper.selectCount(
+            Wrappers.<ToolConfig>lambdaQuery()
+                .eq(ToolConfig::getAuthConfigId, authConfigId)
+        ).intValue();
     }
 
     /**

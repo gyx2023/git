@@ -1,11 +1,13 @@
 package com.crm.askdata.executor;
 
+import com.crm.askdata.entity.AuthConfig;
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
 import com.crm.askdata.model.ToolConfigWithParams;
 import com.crm.askdata.router.RoutingStrategy;
+import com.crm.askdata.security.AuthHeaderInjector;
 import com.crm.askdata.service.ToolConfigService;
 import com.crm.askdata.transformer.UniversalParameterMapper;
 import com.crm.askdata.validator.UniversalParameterValidator;
@@ -59,8 +61,8 @@ public class DatabaseDrivenApiTool {
         // 2. 参数转换
         Map<String, Object> apiParams = mapper.convert(toolName, intent.getEntities(), paramDefs);
 
-        // 3. 调用原接口
-        ResponseEntity<JsonNode> response = callApi(config, apiParams);
+        // 3. 调用原接口（携带认证 Header）
+        ResponseEntity<JsonNode> response = callApi(config, fullConfig.getAuthConfig(), apiParams);
 
         // 4. 结果格式化
         QueryResult result = formatResponse(response.getBody(), config);
@@ -77,10 +79,20 @@ public class DatabaseDrivenApiTool {
 
     /**
      * 调用原业务接口
+     * <p>
+     * 根据工具配置的 auth_config 注入认证 Header 后再发起调用。
+     * 仅当 authConfig != null 时注入，否则不携带凭证。
+     * 支持 NONE/SA_TOKEN/API_KEY/BASIC/OAUTH2_CLIENT 多种认证方式。
      */
-    private ResponseEntity<JsonNode> callApi(ToolConfig config, Map<String, Object> params) {
+    private ResponseEntity<JsonNode> callApi(ToolConfig config, AuthConfig authConfig, Map<String, Object> params) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(config.getContentType()));
+
+        if (authConfig != null) {
+            // 按 auth_type 注入认证 Header
+            String currentToken = extractCurrentToken();
+            AuthHeaderInjector.inject(headers, authConfig, currentToken);
+        }
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(params, headers);
 
@@ -92,6 +104,60 @@ public class DatabaseDrivenApiTool {
             entity,
             JsonNode.class
         );
+    }
+
+    /**
+     * 从当前请求上下文获取 Sa-Token（原始值，不含 Bearer 前缀）
+     * <p>
+     * 优先级：
+     * 1. TokenContextHolder（RouterService 在异步前捕获并写入）
+     * 2. RequestContextHolder（同步线程有效）
+     * 3. StpUtil（异步线程中 Sa-Token 上下文已绑定时有效）
+     */
+    private String extractCurrentToken() {
+        // 方案A: 从 TokenContextHolder 获取（RouterService 在异步前捕获）
+        String holderToken = com.crm.askdata.security.TokenContextHolder.get();
+        if (holderToken != null && !holderToken.isEmpty()) {
+            return holderToken;
+        }
+
+        try {
+            // 方案B: 从当前请求的 Header 中获取（同步线程有效）
+            javax.servlet.http.HttpServletRequest request =
+                ((org.springframework.web.context.request.ServletRequestAttributes)
+                    org.springframework.web.context.request.RequestContextHolder.getRequestAttributes())
+                    .getRequest();
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && !authHeader.isEmpty()) {
+                // 去除 "Bearer " 前缀，只返回 Token 原始值
+                return stripBearerPrefix(authHeader);
+            }
+        } catch (Exception ignored) {
+            // RequestContextHolder 可能为空（异步线程）
+        }
+
+        try {
+            // 方案C: 从 Sa-Token 上下文获取（异步线程中已绑定）
+            String rawToken = cn.dev33.satoken.stp.StpUtil.getTokenValue();
+            if (rawToken != null && !rawToken.isEmpty()) {
+                return rawToken;
+            }
+        } catch (Exception ignored) {
+            // Sa-Token 上下文可能未绑定
+        }
+
+        return null;
+    }
+
+    /**
+     * 去除 Authorization Header 中的 "Bearer " 前缀
+     */
+    private String stripBearerPrefix(String authHeader) {
+        if (authHeader == null) return null;
+        if (authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return authHeader.substring(7).trim();
+        }
+        return authHeader.trim();
     }
 
     /**

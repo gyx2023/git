@@ -76,6 +76,9 @@ public class RouterService {
         // 捕获当前线程的 MDC 上下文，用于异步线程恢复
         Map<String, String> mdcContext = MDC.getCopyOfContextMap();
 
+        // 捕获当前请求的 Sa-Token，用于异步线程中工具调用的认证传播
+        String currentToken = getCurrentTokenSafely();
+
         // 启动心跳线程，每 15 秒发送一次 keepalive 事件（需在 submit 之前定义，确保 lambda 可引用）
         ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "sse-heartbeat-" + traceId);
@@ -88,6 +91,8 @@ public class RouterService {
             if (mdcContext != null && !mdcContext.isEmpty()) {
                 MDC.setContextMap(mdcContext);
             }
+            // 设置 Token 上下文（用于异步线程中工具调用的认证传播）
+            com.crm.askdata.security.TokenContextHolder.set(currentToken);
             long startTime = System.currentTimeMillis();
             String messageId = traceId + "_" + System.currentTimeMillis();
             try {
@@ -107,6 +112,7 @@ public class RouterService {
                 handleStreamError(e, traceId, messageId, emitter, startTime);
             } finally {
                 heartbeatScheduler.shutdown();
+                com.crm.askdata.security.TokenContextHolder.clear();
                 if (mdcContext != null && !mdcContext.isEmpty()) {
                     MDC.clear();
                 }
@@ -472,6 +478,7 @@ public class RouterService {
 
             return result;
         } catch (Exception e) {
+            log.error("execution failed", e);
             if (decision.canRetry()) {
                 log.warn("excution failed, retrying... count={}",
                     decision.getRetryCount());
@@ -1042,6 +1049,17 @@ public class RouterService {
             }
         } catch (Exception ex) {
             log.warn("failed to clear session lock: {}", ex.getMessage());
+        }
+    }
+
+    /**
+     * 安全获取当前线程的 Sa-Token 值（不抛异常）
+     */
+    private static String getCurrentTokenSafely() {
+        try {
+            return cn.dev33.satoken.stp.StpUtil.getTokenValue();
+        } catch (Exception ignored) {
+            return null;
         }
     }
 }

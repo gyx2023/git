@@ -1,6 +1,7 @@
 package com.crm.askdata.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.crm.askdata.entity.AuthConfig;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -79,6 +80,18 @@ public class ToolConfig {
      */
     @TableField("is_enabled")
     private Boolean isEnabled;
+
+    /**
+     * 关联认证配置ID
+     */
+    @TableField("auth_config_id")
+    private Long authConfigId;
+
+    /**
+     * 关联的认证配置（非持久化，联表查询填充）
+     */
+    @TableField(exist = false)
+    private AuthConfig authConfig;
 
     /**
      * 数据提取路径(JSONPath)

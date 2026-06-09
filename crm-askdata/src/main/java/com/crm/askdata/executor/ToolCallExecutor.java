@@ -70,6 +70,7 @@ public class ToolCallExecutor implements QueryExecutor {
             try {
                 fullConfig = configService.getToolConfigWithParams(toolName);
             } catch (IllegalArgumentException e) {
+                log.error("", e);
                 // 工具配置不存在
                 log.warn("traceId={} tool config not found: {}", traceId, toolName);
                 auditLog.setStatus("REJECT");

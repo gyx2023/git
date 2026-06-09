@@ -56,14 +56,7 @@ public class MetricSqlExecutor {
         // 2. 解析 condition_mapping
         Map<String, String> fieldMap = parseConditionMapping(metric.getConditionMapping());
 
-        // 3. 组装 SQL（参数化）
-        String sql = buildSql(metric, entities, fieldMap);
-        List<Object> params = buildParams(metric, entities, fieldMap);
-
-        log.info("traceId={} executing metric query: sql={}, params={}, ds={}",
-            traceId, sql, params, metric.getSourceDatasource());
-
-        // 4. 切换数据源
+        // 3. 切换数据源
         String dsName = metric.getSourceDatasource() != null ? metric.getSourceDatasource() : "master";
         try {
             DynamicRoutingDataSource ds = com.crm.common.utils.spring.SpringUtils
@@ -75,15 +68,25 @@ public class MetricSqlExecutor {
                     "指标「" + metricName + "」配置的数据源不存在，请联系管理员");
             }
 
-            // 5. 执行查询
             JdbcTemplate jdbc = new JdbcTemplate(targetDs);
-            BigDecimal value = jdbc.queryForObject(sql, params.toArray(), BigDecimal.class);
 
-            // 6. 格式化返回
+            // 4. 判断是否为趋势查询（时间范围 + 有图表类型）
+            if (isTrendQuery(entities)) {
+                return executeTrend(metric, entities, fieldMap, jdbc, traceId);
+            }
+
+            // 5. 单值查询
+            String sql = buildSql(metric, entities, fieldMap);
+            List<Object> params = buildParams(metric, entities, fieldMap);
+
+            log.info("traceId={} executing metric query: sql={}, params={}, ds={}",
+                traceId, sql, params, dsName);
+
+            BigDecimal value = jdbc.queryForObject(sql, params.toArray(), BigDecimal.class);
             String formatted = formatValue(value, metric.getDataType(), metric.getUnit());
             String content = metricName + "：" + formatted;
-            log.info("traceId={} metric={} result={}", traceId, metricCode, content);
 
+            log.info("traceId={} metric={} result={}", traceId, metricCode, content);
             return QueryResult.success(RoutingStrategy.SEMANTIC_QUERY.name(), content);
 
         } catch (Exception e) {
@@ -91,6 +94,165 @@ public class MetricSqlExecutor {
             return QueryResult.fail(RoutingStrategy.SEMANTIC_QUERY.name(),
                 "指标「" + metricName + "」查询失败，请稍后重试");
         }
+    }
+
+    /**
+     * 趋势查询：时间范围自动 GROUP BY + 返回结构化数据供前端渲染图表
+     */
+    private QueryResult executeTrend(MetaMetric metric, Map<String, Object> entities,
+                                     Map<String, String> fieldMap, JdbcTemplate jdbc, String traceId) {
+        String timeField = fieldMap != null ? fieldMap.get("time_range") : null;
+        if (timeField == null) {
+            log.warn("traceId={} trend query requires time field in condition_mapping", traceId);
+            return QueryResult.fail(RoutingStrategy.SEMANTIC_QUERY.name(), "指标未配置时间维度，无法展示趋势");
+        }
+
+        String sql = buildTrendSql(metric, entities, fieldMap, timeField);
+        List<Object> params = buildTrendParams(entities, fieldMap);
+
+        log.info("traceId={} executing trend query: sql={}, params={}", traceId, sql, params);
+
+        List<Map<String, Object>> rows = jdbc.queryForList(sql, params.toArray());
+
+        String summary = buildTrendSummary(metric.getMetricName(), entities, rows);
+        QueryResult result = QueryResult.success(RoutingStrategy.SEMANTIC_QUERY.name(), summary);
+        result.setTotal(rows.size());
+        result.setChartType("line");
+
+        // 结构化为 SSE chart 事件需要的格式
+        java.util.Map<String, Object> dataMap = new java.util.LinkedHashMap<>();
+        dataMap.put("data", rows);
+        dataMap.put("chartType", "line");
+        result.setData(dataMap);
+
+        log.info("traceId={} trend query done: metric={}, rows={}", traceId, metric.getMetricCode(), rows.size());
+        return result;
+    }
+
+    /**
+     * 判断是否为趋势查询
+     * <p>
+     * 纯启发式规则：time 为年/季度范围关键字 → 多数据点 → 走趋势图
+     * time 为单月关键字或无 time → 单值 → 走数字
+     * 和 chart_type 无关，纯由时间范围性质决定。
+     */
+    private boolean isTrendQuery(Map<String, Object> entities) {
+        if (entities != null && entities.containsKey("time_range") && entities.get("time_range") != null) {
+            String timeVal = entities.get("time_range").toString();
+            return "last_year".equals(timeVal) || "this_year".equals(timeVal)
+                || "last_quarter".equals(timeVal) || "this_quarter".equals(timeVal);
+        }
+        return false;
+    }
+
+    /**
+     * 趋势查询 SQL：time_field + expression + GROUP BY time_field
+     */
+    private String buildTrendSql(MetaMetric metric, Map<String, Object> entities,
+                                 Map<String, String> fieldMap, String timeField) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT ").append(timeField).append(", ").append(metric.getExpression());
+        sql.append(" FROM ").append(metric.getSourceTable());
+        sql.append(" WHERE 1=1");
+
+        // 时间范围条件
+        if (entities != null && entities.containsKey("time_range") && entities.get("time_range") != null) {
+            String timeVal = entities.get("time_range").toString();
+            if (isRelativeTimeKeyword(timeVal)) {
+                sql.append(" AND ").append(timeField).append(" >= ?");
+                sql.append(" AND ").append(timeField).append(" <= ?");
+            }
+        }
+
+        // 其他维度条件
+        if (fieldMap != null && entities != null && !entities.isEmpty()) {
+            for (String entityKey : fieldMap.keySet()) {
+                if ("time_range".equals(entityKey)) continue;
+                if (entities.containsKey(entityKey) && entities.get(entityKey) != null) {
+                    sql.append(" AND ").append(fieldMap.get(entityKey)).append(" = ?");
+                }
+            }
+        }
+
+        // 默认最近一个月
+        if (timeField != null) {
+            boolean hasTime = entities != null && entities.containsKey("time_range") && entities.get("time_range") != null;
+            if (!hasTime) {
+                sql.append(" AND ").append(timeField).append(" >= ?");
+            }
+        }
+
+        sql.append(" GROUP BY ").append(timeField);
+        sql.append(" ORDER BY ").append(timeField);
+        return sql.toString();
+    }
+
+    /**
+     * 趋势查询参数
+     */
+    private List<Object> buildTrendParams(Map<String, Object> entities, Map<String, String> fieldMap) {
+        List<Object> params = new ArrayList<>();
+
+        // 时间范围
+        if (entities != null && entities.containsKey("time_range") && entities.get("time_range") != null) {
+            String timeVal = entities.get("time_range").toString();
+            if (isRelativeTimeKeyword(timeVal)) {
+                String[] range = resolveTimeRange(timeVal);
+                if (range != null && range.length == 2) {
+                    params.add(range[0]);
+                    params.add(range[1]);
+                }
+            }
+        }
+
+        // 其他维度
+        if (fieldMap != null && entities != null && !entities.isEmpty()) {
+            for (String entityKey : fieldMap.keySet()) {
+                if ("time_range".equals(entityKey)) continue;
+                if (entities.containsKey(entityKey) && entities.get(entityKey) != null) {
+                    params.add(entities.get(entityKey));
+                }
+            }
+        }
+
+        // 默认时间
+        String timeField = fieldMap != null ? fieldMap.get("time_range") : null;
+        if (timeField != null) {
+            boolean hasTime = entities != null && entities.containsKey("time_range") && entities.get("time_range") != null;
+            if (!hasTime) {
+                params.add(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM")));
+            }
+        }
+
+        return params;
+    }
+
+    /**
+     * 趋势查询结果摘要
+     */
+    private String buildTrendSummary(String metricName, Map<String, Object> entities,
+                                     List<Map<String, Object>> rows) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(metricName).append("趋势");
+        if (entities != null && entities.containsKey("time_range")) {
+            sb.append("（").append(entities.get("time_range")).append("）");
+        }
+        if (rows != null && rows.size() >= 2) {
+            String[] keys = rows.get(0).keySet().toArray(new String[0]);
+            String valField = keys.length > 1 ? keys[1] : keys[0];
+            Number firstVal = (Number) rows.get(0).get(valField);
+            Number lastVal = (Number) rows.get(rows.size() - 1).get(valField);
+            if (firstVal != null && lastVal != null) {
+                BigDecimal f = new BigDecimal(firstVal.toString());
+                BigDecimal l = new BigDecimal(lastVal.toString());
+                if (f.compareTo(BigDecimal.ZERO) != 0) {
+                    BigDecimal pct = l.subtract(f).multiply(BigDecimal.valueOf(100))
+                        .divide(f, 1, RoundingMode.HALF_UP);
+                    sb.append("，环比变化：").append(pct).append("%");
+                }
+            }
+        }
+        return sb.toString();
     }
 
     /**
@@ -133,10 +295,10 @@ public class MetricSqlExecutor {
         }
 
         // 无时间条件 → 默认取最近一个月
-        String timeField = fieldMap != null ? fieldMap.get("time") : null;
+        String timeField = fieldMap != null ? fieldMap.get("time_range") : null;
         if (timeField != null) {
-            boolean hasTimeInEntities = entities != null && entities.containsKey("time")
-                && entities.get("time") != null;
+            boolean hasTimeInEntities = entities != null && entities.containsKey("time_range")
+                && entities.get("time_range") != null;
             if (!hasTimeInEntities) {
                 sql.append(" AND ").append(timeField).append(" >= ?");
             }
@@ -179,10 +341,10 @@ public class MetricSqlExecutor {
         }
 
         // 默认时间范围
-        String timeField = fieldMap != null ? fieldMap.get("time") : null;
+        String timeField = fieldMap != null ? fieldMap.get("time_range") : null;
         if (timeField != null) {
-            boolean hasTimeInEntities = entities != null && entities.containsKey("time")
-                && entities.get("time") != null;
+            boolean hasTimeInEntities = entities != null && entities.containsKey("time_range")
+                && entities.get("time_range") != null;
             if (!hasTimeInEntities) {
                 String defaultMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
                 params.add(defaultMonth);

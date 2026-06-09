@@ -1,5 +1,6 @@
 package com.crm.askdata.model;
 
+import com.crm.askdata.entity.AuthConfig;
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
 import lombok.Data;
@@ -7,7 +8,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 工具配置完整对象（包含参数列表）
+ * 工具配置完整对象（包含参数列表和认证配置）
  *
  * @author crm
  */
@@ -23,4 +24,9 @@ public class ToolConfigWithParams {
      * 参数列表
      */
     private List<ToolParam> params;
+
+    /**
+     * 关联的认证配置
+     */
+    private AuthConfig authConfig;
 }
