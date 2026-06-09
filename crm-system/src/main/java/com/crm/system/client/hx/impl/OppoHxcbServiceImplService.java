@@ -1,4 +1,4 @@
-package com.hollycrm.ws.hx.client.impl;
+package com.crm.system.client.hx.impl;
 
 import java.net.URL;
 

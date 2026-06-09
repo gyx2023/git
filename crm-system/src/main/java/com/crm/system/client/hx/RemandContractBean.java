@@ -1,4 +1,4 @@
-package com.hollycrm.ws.hx.client;
+package com.crm.system.client.hx;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.hollycrm.ws.hx.client;
+package com.crm.system.client.hx;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -6,18 +6,18 @@ import javax.xml.bind.annotation.XmlType;
 
 /**
  * <p>
- * pushInfoToOppoSys complex type�� Java �ࡣ
+ * remandContractSave complex type�� Java �ࡣ
  *
  * <p>
  * ����ģʽƬ��ָ�������ڴ����е�Ԥ�����ݡ�
  *
  * <pre>
- * &lt;complexType name="pushInfoToOppoSys">
+ * &lt;complexType name="remandContractSave">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="msgHeader" type="{http://service.oppo.sdunicomsi.com/}msgHeader" minOccurs="0"/>
- *         &lt;element name="remandId" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
+ *         &lt;element name="remandContractBean" type="{http://service.oppo.sdunicomsi.com/}remandContractBean" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -27,11 +27,11 @@ import javax.xml.bind.annotation.XmlType;
  *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "pushInfoToOppoSys", propOrder = { "msgHeader", "remandId" })
-public class PushInfoToOppoSys {
+@XmlType(name = "remandContractSave", propOrder = { "msgHeader", "remandContractBean" })
+public class RemandContractSave {
 
 	protected MsgHeader msgHeader;
-	protected String remandId;
+	protected RemandContractBean remandContractBean;
 
 	/**
 	 * ��ȡmsgHeader���Ե�ֵ��
@@ -55,24 +55,24 @@ public class PushInfoToOppoSys {
 	}
 
 	/**
-	 * ��ȡremandId���Ե�ֵ��
+	 * ��ȡremandContractBean���Ե�ֵ��
 	 *
-	 * @return possible object is {@link String }
+	 * @return possible object is {@link RemandContractBean }
 	 *
 	 */
-	public String getRemandId() {
-		return remandId;
+	public RemandContractBean getRemandContractBean() {
+		return remandContractBean;
 	}
 
 	/**
-	 * ����remandId���Ե�ֵ��
+	 * ����remandContractBean���Ե�ֵ��
 	 *
 	 * @param value
-	 *          allowed object is {@link String }
+	 *          allowed object is {@link RemandContractBean }
 	 *
 	 */
-	public void setRemandId(String value) {
-		this.remandId = value;
+	public void setRemandContractBean(RemandContractBean value) {
+		this.remandContractBean = value;
 	}
 
 }

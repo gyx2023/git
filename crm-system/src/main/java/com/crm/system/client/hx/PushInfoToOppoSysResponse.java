@@ -1,4 +1,4 @@
-package com.hollycrm.ws.hx.client;
+package com.crm.system.client.hx;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -7,13 +7,13 @@ import javax.xml.bind.annotation.XmlType;
 
 /**
  * <p>
- * remandContractSaveResponse complex type�� Java �ࡣ
+ * pushInfoToOppoSysResponse complex type�� Java �ࡣ
  *
  * <p>
  * ����ģʽƬ��ָ�������ڴ����е�Ԥ�����ݡ�
  *
  * <pre>
- * &lt;complexType name="remandContractSaveResponse">
+ * &lt;complexType name="pushInfoToOppoSysResponse">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
@@ -27,8 +27,8 @@ import javax.xml.bind.annotation.XmlType;
  *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "remandContractSaveResponse", propOrder = { "_return" })
-public class RemandContractSaveResponse {
+@XmlType(name = "pushInfoToOppoSysResponse", propOrder = { "_return" })
+public class PushInfoToOppoSysResponse {
 
 	@XmlElement(name = "return")
 	protected OutParam _return;

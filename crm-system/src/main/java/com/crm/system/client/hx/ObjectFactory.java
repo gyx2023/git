@@ -1,4 +1,4 @@
-package com.hollycrm.ws.hx.client;
+package com.crm.system.client.hx;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElementDecl;
