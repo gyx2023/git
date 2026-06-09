@@ -1,4 +1,4 @@
-package com.crm.job.service.sync;
+package com.crm.job.service.nlpt;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
@@ -17,6 +17,7 @@ import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.topp.ToppOrderSyncGroup;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.mapper.flowable.FlowableHiProcinstMapper;
+import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
 import com.crm.system.mapper.sys.SysUserOldMapper;
 import com.crm.system.mapper.topp.ToppGeneralRequirementsMapper;
@@ -61,24 +62,9 @@ public class OrderSyncGroupJob {
     private static final String SEQ_NAME = "SYNC_GROOUP";
 
     /**
-     * 省份地市和集团地市区域编码映射关系
+     * 省份地市和集团地市区域编码映射关系（从sys_area表加载）
      */
-    private static final Map<String, String> AREA_MAP = new HashMap<>();
-
-    static {
-        AREA_MAP.put("3301", "360"); // 杭州
-        AREA_MAP.put("3302", "370"); // 宁波
-        AREA_MAP.put("3303", "470"); // 温州
-        AREA_MAP.put("3304", "363"); // 嘉兴
-        AREA_MAP.put("3305", "362"); // 湖州
-        AREA_MAP.put("3306", "365"); // 绍兴
-        AREA_MAP.put("3307", "367"); // 金华
-        AREA_MAP.put("3308", "468"); // 衢州
-        AREA_MAP.put("3309", "364"); // 舟山
-        AREA_MAP.put("3310", "476"); // 台州
-        AREA_MAP.put("3311", "469"); // 丽水
-        AREA_MAP.put("3300", "360"); // 省本级对应到杭州
-    }
+    private final Map<String, String> areaMap = new HashMap<>();
 
     @Resource
     private IToppOrderSyncGroupService orderSyncGroupService;
@@ -110,6 +96,9 @@ public class OrderSyncGroupJob {
     @Resource
     private SysCodeMapper sysCodeMapper;
 
+    @Resource
+    private SysAreaMapper sysAreaMapper;
+
     /**
      * 需要发送集团服务大厅的订单类型配置缓存
      * 与 OrderSyncGroupEventListener.needSendOrderTypeMap 加载逻辑一致
@@ -130,6 +119,13 @@ public class OrderSyncGroupJob {
             }
         }
         log.info("【订单同步集团任务】订单同步配置加载完成，共{}个订单类型", needSendOrderTypeMap.size());
+
+        // 从sys_area表加载浙江省区域编码与集团地市编码的映射关系
+        List<Map<String, Object>> areaJtCodeList = sysAreaMapper.selectAreaJtCodeList();
+        for (Map<String, Object> row : areaJtCodeList) {
+            areaMap.put((String) row.get("area_code"), (String) row.get("jt_code"));
+        }
+        log.info("【订单同步集团任务】区域编码映射加载完成，共{}个区域", areaMap.size());
     }
 
     /**
@@ -222,7 +218,7 @@ public class OrderSyncGroupJob {
         // 归属省分编码，浙江固定36
         body.put("provinceCode", "36");
         // 地市编码，根据配置做转化
-        body.put("cityCode", AREA_MAP.get(String.valueOf(order.getAreaId()).substring(0, 4)));
+        body.put("cityCode", areaMap.get(String.valueOf(order.getAreaId()).substring(0, 4)));
         // 创建人信息（从sys_user表查询）
         String[] creatorInfo = getCreatorInfo(order.getCreator());
         body.put("operatorName", creatorInfo[0]);
