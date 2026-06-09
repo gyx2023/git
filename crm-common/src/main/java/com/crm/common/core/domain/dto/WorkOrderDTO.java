@@ -6,6 +6,8 @@ import java.util.Date;
 @Data
 public class WorkOrderDTO {
 
+    private Long id;
+
     /** 工单编码 */
     private String workOrderCode;
 

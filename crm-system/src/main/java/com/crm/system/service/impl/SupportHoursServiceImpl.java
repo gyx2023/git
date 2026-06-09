@@ -166,7 +166,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                                     }
 
                                     // 按周聚合
-                                    String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
+                                    String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)), weekCycles);
                                     if (cycle != null && weeklyHourMap.containsKey(cycle)) {
                                         weeklyHourMap.put(cycle, weeklyHourMap.get(cycle) + hours);
                                     }
@@ -198,7 +198,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                                     }
 
                                     // 按周聚合
-                                    String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
+                                    String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)), weekCycles);
                                     if (cycle != null && weeklyHourMap.containsKey(cycle)) {
                                         weeklyHourMap.put(cycle, weeklyHourMap.get(cycle) + hours);
                                     }
@@ -314,7 +314,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                             }
 
                             // 按周聚合
-                            String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
+                            String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)), weekCycles);
                             if (cycle != null && weeklyHourMap.containsKey(cycle)) {
                                 weeklyHourMap.put(cycle, weeklyHourMap.get(cycle) + hours);
                             }
@@ -338,7 +338,7 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
                             }
 
                             // 按周聚合
-                            String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)));
+                            String cycle = findWeeklyCycle(leftDate, rightDate, sdf.parse(createTime.substring(0, 10)), weekCycles);
                             if (cycle != null && weeklyHourMap.containsKey(cycle)) {
                                 weeklyHourMap.put(cycle, weeklyHourMap.get(cycle) + hours);
                             }
@@ -701,23 +701,28 @@ public class SupportHoursServiceImpl implements ISupportHoursService {
     /**
      * 查找日期所属的周周期
      */
-    private String findWeeklyCycle(Date leftDate, Date rightDate, Date targetDate) {
+    private String findWeeklyCycle(Date leftDate, Date rightDate, Date targetDate, List<String> weekCycles) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar startCal = Calendar.getInstance();
-        startCal.setTime(leftDate);
-        startCal.setFirstDayOfWeek(Calendar.SUNDAY);
 
-        Calendar targetCal = Calendar.getInstance();
-        targetCal.setTime(targetDate);
+        // 直接使用getWeeklyCycles生成的周期列表来匹配
+        for (String cycle : weekCycles) {
+            try {
+                String[] dates = cycle.split("/");
+                if (dates.length == 2) {
+                    Date cycleStart = sdf.parse(dates[0]);
+                    Date cycleEnd = sdf.parse(dates[1]);
 
-        // 找到该周的周日和周六
-        Calendar cycleStart = (Calendar) targetCal.clone();
-        cycleStart.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+                    // 判断目标日期是否在当前周期内
+                    if (!targetDate.before(cycleStart) && !targetDate.after(cycleEnd)) {
+                        return cycle;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析周周期失败: {}", cycle, e);
+            }
+        }
 
-        Calendar cycleEnd = (Calendar) targetCal.clone();
-        cycleEnd.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
-
-        return sdf.format(cycleStart.getTime()) + "/" + sdf.format(cycleEnd.getTime());
+        return null;
     }
 
     /**

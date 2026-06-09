@@ -3,6 +3,7 @@ package com.crm.common.utils;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -109,4 +110,31 @@ public class JsonUtils {
         }
     }
 
+    /***
+     * 获取指定路径的值,默认分割符为.
+     */
+    public static String getNodeValueByPath(JSONObject data, String paths) {
+        return  getNodeValueByPath(data,paths,"\\.");
+    }
+
+    /***
+     * 获取指定路径的值
+     */
+    public static String getNodeValueByPath(JSONObject data,String paths,String separator) {
+        String[] nodes=paths.split(separator);
+        JSONObject currentJson=data;
+        for(int i=0;i<nodes.length;i++){
+            String node=nodes[i];
+            if(!currentJson.containsKey(node)){
+                return null;
+            }
+            Object obj=currentJson.get(node);
+            if(obj instanceof JSONObject){
+                currentJson=(JSONObject)obj;
+                continue;
+            }
+            return String.valueOf(obj);
+        }
+        return currentJson.toString();
+    }
 }
