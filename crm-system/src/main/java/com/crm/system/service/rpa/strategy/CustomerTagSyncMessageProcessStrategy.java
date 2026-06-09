@@ -52,6 +52,9 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
     @Value("${customer.admin.url:http://localhost:8080/system/customerTag/sync}")
     private String customerAdminUrl;
 
+    @Value("${customer.admin.api-key:}")
+    private String secretKey;
+
     @Override
     public String getBizCode() {
         return null; // 由 getBizCodes() 表达多 bizCode
@@ -313,6 +316,7 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Api-Key", secretKey);
             HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(syncData, headers);
             log.info("[客户标签同步] 请求URL: {}", customerAdminUrl);
             log.info("[客户标签同步] 请求Headers: {}", headers);

@@ -206,3 +206,4 @@ ability:
 customer:
   admin:
     url: http://10.130.22.18:31068/system/customerTag/sync
+    api-key: aF3kL9pQ2wR8sX4mV7nC
