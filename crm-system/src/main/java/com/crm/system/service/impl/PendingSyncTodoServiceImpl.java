@@ -100,6 +100,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 currentTask = historyService.createHistoricTaskInstanceQuery()
                         .taskId(pendingTodo.getTaskId())
                         .singleResult();
+                log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.getId() : "null");
                 this.refreshData(currentTask.getProcessInstanceId());
             }
             // 获取当前任务在任务列表中的索引位置
