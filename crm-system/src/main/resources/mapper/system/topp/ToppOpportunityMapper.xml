@@ -567,6 +567,95 @@
         ORDER BY op.id_ DESC
     </select>
 
+    <!-- 分页查询商机导出数据 -->
+    <select id="selectOpportunityExportListPaged" resultMap="OpportunityExcelVoResult">
+        SELECT
+            op.opp_code,
+            op.opp_name,
+            op.opp_type,
+            op.opp_include_type,
+            op.unicom_type,
+            op.unicom_type2,
+            op.opp_source,
+            op.expect_contract_money,
+            op.month_income_contribution,
+            op.contract_month,
+            CAST(op.is_bidding AS CHAR) as is_bidding,
+            CAST(op.is_need_external_resources AS CHAR) as is_need_external_resources,
+            CAST(op.is_have_innovate AS CHAR) as is_have_innovate,
+            op.cust_no,
+            op.cust_name,
+            DATE_FORMAT(op.create_time, '%Y/%m/%d') as create_time,
+            op.oppo_state,
+            CAST(op.is_valid AS CHAR) as is_valid,
+            op.cust_need,
+            DATE_FORMAT(op.sign_time, '%Y/%m/%d') as sign_time,
+            op.bg_type,
+            op.clue_id,
+            cust.develop_flag,
+            cust.department_code,
+            unicom_type_setting.setting_str1 as customer_unicom_type,
+            creator.name_ch as creator_name_ch,
+            creator.relation_tel as creator_phone,
+            creator_area_parent.name_ as creator_city,
+            creator_area.name_ as creator_district,
+            creator_org.name_ as creator_dept,
+            manager.name_ch as cust_manager_name_ch,
+            manager.relation_tel as cust_manager_phone,
+            manager_area_parent.name_ as cust_manager_city,
+            manager_area.name_ as cust_manager_district,
+            manager_org.name_ as cust_manager_dept,
+            designer.name_ch as designer_name_ch,
+            designer.relation_tel as designer_phone,
+            designer_area_parent.name_ as designer_city,
+            designer_area.name_ as designer_district,
+            designer_org.name_ as designer_dept,
+            bid.bid_body,
+            bid.result as bid_result,
+            DATE_FORMAT(bid.result_time, '%Y/%m/%d') as bid_result_time,
+            bid.bid_money,
+            bid.match_bid_money,
+            DATE_FORMAT(bid.create_time, '%Y/%m/%d') as bid_create_time,
+            IFNULL(contract_agg.contract_count, 0) as contract_count,
+            contract_agg.contract_total_money,
+            DATE_FORMAT(contract_agg.min_sign_date, '%Y/%m/%d') as contract_sign_date,
+            DATE_FORMAT(contract_agg.min_start_date, '%Y/%m/%d') as contract_start_date,
+            DATE_FORMAT(contract_agg.min_start_date, '%Y/%m/%d') as contract_period_start,
+            DATE_FORMAT(contract_agg.max_end_date, '%Y/%m/%d') as contract_end_date
+        FROM topp_opportunity op
+            LEFT JOIN tcomm_customer cust ON op.cust_id = cust.id_
+            LEFT JOIN sys_code unicom_type_setting
+                ON cust.department_code = unicom_type_setting.code_
+                AND unicom_type_setting.type_ = 'unicom_type_2'
+            LEFT JOIN sys_user creator ON op.creator = creator.id_
+            LEFT JOIN sys_org creator_org ON creator.org_id = creator_org.id_
+            LEFT JOIN sys_area creator_area ON creator_org.area_id = creator_area.id_
+            LEFT JOIN sys_area creator_area_parent ON creator_area.parent_ = creator_area_parent.id_
+            LEFT JOIN sys_user manager ON op.cust_manager_id = manager.id_
+            LEFT JOIN sys_org manager_org ON manager.org_id = manager_org.id_
+            LEFT JOIN sys_area manager_area ON manager_org.area_id = manager_area.id_
+            LEFT JOIN sys_area manager_area_parent ON manager_area.parent_ = manager_area_parent.id_
+            LEFT JOIN sys_user designer ON op.designer = designer.id_
+            LEFT JOIN sys_org designer_org ON designer.org_id = designer_org.id_
+            LEFT JOIN sys_area designer_area ON designer_org.area_id = designer_area.id_
+            LEFT JOIN sys_area designer_area_parent ON designer_area.parent_ = designer_area_parent.id_
+            LEFT JOIN topp_bid bid ON op.bid_id = bid.id_
+            LEFT JOIN (
+                SELECT
+                    project_id,
+                    COUNT(*) as contract_count,
+                    SUM(total_money) as contract_total_money,
+                    MIN(sign_date) as min_sign_date,
+                    MIN(start_date) as min_start_date,
+                    MAX(end_date) as max_end_date
+                FROM topp_contract
+                GROUP BY project_id
+            ) contract_agg ON op.id_ = contract_agg.project_id
+        WHERE op.opp_area_id LIKE CONCAT(#{areaId}, '%')
+        ORDER BY op.id_ DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
     <select id="listOpportunity" resultType="com.crm.common.core.domain.dto.OpportunityDTO">
         SELECT
             oppo.opp_code,
@@ -593,5 +682,41 @@
             oppo.create_time DESC
     </select>
 
-
+    <select id="selectReportData" resultType="com.crm.system.domain.vo.topp.OpportunityReportVO">
+        SELECT
+        CASE
+        WHEN b.parent_ IS NULL
+        OR b.parent_ = '100000'
+        OR b.parent_ = '330000'
+        THEN b.name_ ELSE c.name_
+        END AS city,             <!-- 地市 -->
+        a.opp_code AS oppCode,   <!-- 商机编号 -->
+        a.opp_name AS oppName,   <!-- 商机名称 -->
+        d.name_ AS customerIndustry, <!-- 客户行业 -->
+        e.name_ AS oppType,     <!-- 商机类型 -->
+        a.expect_contract_money AS oppMoney, <!-- 商机金额万 -->
+        f.cnt AS cnt,
+        g.id_ AS id,
+        ifnull(h.total, 0) AS total
+        FROM topp_opportunity a
+        LEFT JOIN sys_area b ON b.id_ = a.opp_area_id
+        LEFT JOIN sys_area c ON b.parent_ = c.id_
+        LEFT JOIN sys_code d ON a.unicom_type = d.code_ AND d.type_ = 'unicom_type_new'
+        LEFT JOIN sys_code e ON a.opp_type = e.code_ AND e.type_ = 'opp_type'
+        LEFT JOIN (
+        SELECT oppo_id, count(1) AS cnt
+        FROM topp_order
+        WHERE order_type = 'applay_support'
+        GROUP BY oppo_id
+        ) f ON a.id_ = f.oppo_id
+        LEFT JOIN topp_bid g ON a.bid_id = g.id_
+        LEFT JOIN (
+        SELECT project_id, sum(total_money) AS total
+        FROM topp_contract aa
+        WHERE aa.audit_status = '2' AND aa.is_valid = '1'
+        GROUP BY project_id
+        ) h ON h.project_id = a.id_
+        WHERE a.opp_data_reform = '千项万亿工程'
+        AND a.audit_status != 'opp_stop'
+    </select>
 </mapper>

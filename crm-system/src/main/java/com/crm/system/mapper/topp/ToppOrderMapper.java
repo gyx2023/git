@@ -4,6 +4,7 @@ import com.crm.common.core.domain.dto.WorkOrderDTO;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
  * @author crm
  * @date 2025-12-18
  */
+@Mapper
 public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrder, ToppOrderVo> {
 
     /**
@@ -23,7 +25,12 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
      */
     List<ToppOrder> selectSupportOrders();
 
-    List<WorkOrderDTO> queryWorkOrder(@Param("orderType") String orderType, @Param("yyMMdd") String yyMMdd);
+    List<WorkOrderDTO> queryWorkOrder(
+        @Param("orderType") String orderType,
+        @Param("yyMMdd") String yyMMdd,
+        @Param("lastId") Long  lastId,  // 游标
+        @Param("size") Integer size
+    );
 
     Integer getToppOrderCount(@Param("orderType") String orderType,
                               @Param("endTime") String endTime);
@@ -39,5 +46,19 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
     Integer queryClosedOrderCount(
         @Param("orderType") String orderType,
         @Param("date") String date
+    );
+
+
+    List<Long> listOrderIdByCursor(
+        @Param("orderType") String orderType,
+        @Param("yyMMdd") String yyMMdd,
+        @Param("lastId") Long lastId,
+        @Param("size") int size
+    );
+
+    // ====================== 根据 ID 列表查询完整数据 ======================
+    List<WorkOrderDTO> listWorkOrderByIds(
+        @Param("orderType") String orderType,
+        @Param("idList") List<Long> idList
     );
 }
