@@ -189,10 +189,10 @@ public class ToppCloseStartJob extends FlowServiceFactory {
         identityService.setAuthenticatedUserId(systemUser.getUserId().toString());
         // 设置流程变量
         Map<String, Object> startVariables = new HashMap<>();
-//        startVariables.put("manager", String.valueOf(custManagerId));
+        startVariables.put("manager", String.valueOf(custManagerId));
         // TODO: 测试硬编码，后续需替换为实际值。老系统使用 "," + nextUser.getId() + "," 格式，
         // 但Flowable的taskCandidateOrAssigned查询不支持该格式，待找替代方案
-        startVariables.put("manager", "99999");
+//        startVariables.put("manager", "99999");
 
         // 启动流程实例
         ProcessInstance processInstance = runtimeService.startProcessInstanceById(
@@ -240,6 +240,7 @@ public class ToppCloseStartJob extends FlowServiceFactory {
         orderBo.setActorsInfo(nextUser.getNickName() + ":" + nextUser.getPhonenumber());
         orderBo.setCustName(opportunity.getCustName());
         orderBo.setWarningLevel(warningLevel);
+        orderBo.setProcessEngine("FLOWABLE");
         orderBo.setCreateTime(new Date());
         orderBo.setUpdateTime(new Date());
 

@@ -90,7 +90,13 @@ public class OppoCloseController {
 
         // 取流程实例ID：优先工单关联的piId，兜底用请求参数
         String pi = order != null ? order.getPiId() : procInsId;
-        boolean isOld = StringUtils.isNotBlank(pi) && oldWorkflowQueryService.isOldProcess(pi);
+        // 引擎来源判断：优先查 topp_order.process_engine 落表字段，兜底查 ACT_HI_PROCINST
+        boolean isOld;
+        if (order != null && StringUtils.isNotBlank(order.getProcessEngine())) {
+            isOld = "ACTIVITI".equals(order.getProcessEngine());
+        } else {
+            isOld = StringUtils.isNotBlank(pi) && oldWorkflowQueryService.isOldProcess(pi);
+        }
 
         if (StringUtils.isNotBlank(pi)) {
             if (isOld) {
@@ -472,6 +478,7 @@ public class OppoCloseController {
         auditOrderBo.setContractId(contractId);
         auditOrderBo.setPiId(pi.getId());
         auditOrderBo.setStatus(Constants.ORDER_STATUS_RUNNING);
+        auditOrderBo.setProcessEngine("FLOWABLE");
         orderService.insertByBo(auditOrderBo);
 
         // 5. 完成第一个任务（contract_add），自动路由到 xmgly_audit

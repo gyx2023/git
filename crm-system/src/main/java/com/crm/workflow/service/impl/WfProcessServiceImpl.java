@@ -1018,8 +1018,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      */
     @Override
     public WfDetailVo queryProcessDetail(String procInsId, String taskId) {
-        // 检测是否为老系统流程（老系统流程实例ID在ACT_HI_PROCINST表中）
-        boolean isOldProcess = oldWorkflowQueryService.isOldProcess(procInsId);
+        // 检测是否为老系统流程：优先查 topp_order.process_engine 落表字段，兜底查 ACT_HI_PROCINST
+        boolean isOldProcess = isOldProcessByProcInsId(procInsId);
         if (isOldProcess) {
             return queryOldProcessDetail(procInsId, taskId);
         }
@@ -1054,6 +1054,21 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         // 添加业务上下文（订单详情、商机详情等）
         enrichBusinessContext(detailVo, historicProcIns.getProcessDefinitionId(), "new", procInsId);
         return detailVo;
+    }
+
+    /**
+     * 判断流程是否来自旧系统 Activiti
+     * 优先查 topp_order.process_engine 落表字段，兜底查 ACT_HI_PROCINST
+     */
+    private boolean isOldProcessByProcInsId(String procInsId) {
+        if (procInsId == null) {
+            return false;
+        }
+        ToppOrderVo order = orderService.queryByPiId(procInsId);
+        if (order != null && StringUtils.isNotBlank(order.getProcessEngine())) {
+            return "ACTIVITI".equals(order.getProcessEngine());
+        }
+        return oldWorkflowQueryService.isOldProcess(procInsId);
     }
 
     /**

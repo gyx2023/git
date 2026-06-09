@@ -62,7 +62,7 @@ public class DefaultToppBusinessContextProvider implements BusinessContextProvid
 
         ctx.setSections(sections);
 
-        // 仅 topp_close_process 流程添加商机关闭操作按钮
+        // topp_close_process 流程添加商机关闭操作按钮
         if ("new".equals(source) && "topp_close_process".equals(procDefKey)) {
             List<WfBusinessAction> actions = new ArrayList<>();
             actions.add(new WfBusinessAction("close_oppo", "关闭商机", "primary", "el-icon-circle-check"));
