@@ -363,7 +363,7 @@ public class WxStrategyJob {
                                 .append("htdq_warn".equals(key) ? ifNull(workOrder.getContractCode()) : "");
 
                             bw.write(sb.toString());
-                            bw.newLine();
+                            bw.write("\r\n");
                         }
 
                         bw.flush();

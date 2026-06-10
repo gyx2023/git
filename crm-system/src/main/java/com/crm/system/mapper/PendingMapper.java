@@ -19,7 +19,7 @@ public interface PendingMapper extends BaseMapper<Pending> {
     List<Pending> selectPendingList();
 
     /**
-     * 批量更新失败次数（对应旧框架 HQL: update Pending set sendStatus = '2', failTimes = 3 where id in (:ids)）
+     * 批量更新失败次数
      */
     int updateFailTimes(Map<String, Object> params);
 
