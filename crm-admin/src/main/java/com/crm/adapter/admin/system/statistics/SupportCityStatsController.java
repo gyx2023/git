@@ -40,7 +40,6 @@ public class SupportCityStatsController extends BaseController {
     /**
      * 查询支撑情况地市统计列表
      */
-    @SaCheckPermission("statistics:supportCity:list")
     @GetMapping("/list")
     public TableDataInfo<SupportCityStatsVO> list(SupportCityStatsDTO dto) {
         List<SupportCityStatsVO> list = supportCityStatsService.selectSupportCityStatsList(dto);
@@ -50,7 +49,6 @@ public class SupportCityStatsController extends BaseController {
     /**
      * 查询支撑工单明细
      */
-    @SaCheckPermission("statistics:supportCity:list")
     @GetMapping("/detail")
     public TableDataInfo<SupportCityDetailVO> detail(@RequestParam("areaId") String areaId,
                                                       @RequestParam(value = "startDate", required = false) String startDate,
@@ -63,7 +61,7 @@ public class SupportCityStatsController extends BaseController {
      * 导出支撑情况地市统计
      */
     @Log(title = "支撑情况地市统计", businessType = BusinessType.EXPORT)
-    @SaCheckPermission("statistics:supportCity:list")
+    @SaCheckPermission("statistics:supportCity:export")
     @PostMapping("/export")
     public void export(HttpServletResponse response, SupportCityStatsDTO dto) throws IOException {
         List<SupportCityStatsVO> list = supportCityStatsService.exportSupportCityStatsList(dto);
