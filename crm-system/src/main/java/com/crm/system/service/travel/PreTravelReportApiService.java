@@ -136,8 +136,7 @@ public class PreTravelReportApiService {
                 return null;
             }
             JSONObject output2Json = JSON.parseObject(output2);
-
-            return output2Json.getString("report_content");
+            return output2Json.get("report_content") == null ? output2Json.getString("markdown_report") : output2Json.getString("report_content");
         } catch (Exception e) {
             log.error("解析Hiagent返回内容异常", e);
             return null;

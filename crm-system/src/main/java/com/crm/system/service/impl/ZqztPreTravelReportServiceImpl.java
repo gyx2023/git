@@ -3,6 +3,7 @@ package com.crm.system.service.impl;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.servicehall.ZqztPreTravelReport;
 import com.crm.system.domain.dao.CustNecRelationDo;
@@ -160,10 +161,14 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
                 String apiResponse = apiService.callHiagentApi(reportMeta, customer, visitTarget, lastVisit, warnings, opportunities);
                 report.setApiResponse(apiResponse);
                 String mdContent = apiService.extractReportContent(apiResponse);
-                report.setMdContent(mdContent);
-                report.setTaskStatus(TASK_STATUS_SUCCESS);
-                report.setTaskStatusDesc("生成成功");
-
+                if(StringUtils.isEmpty(mdContent)){
+                    report.setTaskStatus(TASK_STATUS_FAILED);
+                    report.setTaskStatusDesc("生成失败:mdContent为空 ");
+                }else{
+                    report.setMdContent(mdContent);
+                    report.setTaskStatus(TASK_STATUS_SUCCESS);
+                    report.setTaskStatusDesc("生成成功");
+                }
             } catch (Exception e) {
                 log.error("处理行前报告异常, reportId={}, customerId={}", reportId, customerId, e);
                 report.setTaskStatus(TASK_STATUS_FAILED);
