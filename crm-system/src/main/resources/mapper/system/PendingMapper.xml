@@ -25,16 +25,7 @@
         <result property="failTimes" column="fail_times"/>
     </resultMap>
 
-    <!-- 查询待推送的待办数据-->
-    <select id="selectPendingList" resultMap="PendingResult">
-        SELECT * FROM pending
-        WHERE ((operator_type = 'a' AND pending_status = '0')
-               OR (operator_type = 'u' AND pending_status = '1'))
-          AND send_status IN ('0','2')
-          AND fail_times &lt; 3
-        ORDER BY id_
-        LIMIT 30
-    </select>
+
 
     <!-- 批量更新失败次数 -->
     <update id="updateFailTimes" parameterType="java.util.Map">

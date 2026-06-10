@@ -215,7 +215,7 @@
             PROC_INST_ID_ AS procInsId
         FROM ACT_HI_TASKINST
         WHERE PROC_INST_ID_ = #{procInsId}
-        ORDER BY START_TIME_ ASC
+        ORDER BY ID_ DESC
     </select>
 
     <!-- 查询老系统流程变量 -->
@@ -232,6 +232,38 @@
         FROM ACT_HI_VARINST
         WHERE PROC_INST_ID_ = #{procInsId}
         ORDER BY NAME_ ASC
+    </select>
+
+    <!-- 按 taskId 查询老系统单个历史任务 -->
+    <select id="selectOldHistoricTaskByTaskId" resultType="java.util.Map">
+        SELECT
+            ID_              AS id,
+            PROC_DEF_ID_     AS procDefId,
+            PROC_INST_ID_    AS procInsId,
+            TASK_DEF_KEY_    AS taskDefKey,
+            NAME_            AS name,
+            ASSIGNEE_        AS assignee,
+            START_TIME_      AS startTime,
+            END_TIME_        AS endTime,
+            DURATION_        AS duration
+        FROM ACT_HI_TASKINST
+        WHERE ID_ = #{taskId}
+    </select>
+
+    <!-- 按 taskId + 变量名查询老系统单个流程变量 -->
+    <select id="selectOldHistoricVariable" resultType="java.util.Map">
+        SELECT
+            ID_          AS id,
+            PROC_INST_ID_ AS procInsId,
+            TASK_ID_     AS taskId,
+            NAME_        AS name,
+            VAR_TYPE_    AS varType,
+            TEXT_        AS textValue,
+            DOUBLE_      AS doubleValue,
+            LONG_        AS longValue
+        FROM ACT_HI_VARINST
+        WHERE TASK_ID_ = #{taskId}
+          AND NAME_ = #{variableName}
     </select>
 
 </mapper>

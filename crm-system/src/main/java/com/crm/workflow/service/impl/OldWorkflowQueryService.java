@@ -171,4 +171,18 @@ public class OldWorkflowQueryService {
     public String queryOldProcDefKey(String procInsId) {
         return oldActivitiMapper.selectOldProcDefKey(procInsId);
     }
+
+    /**
+     * 按 taskId 查询老系统单个历史任务
+     */
+    public Map<String, Object> queryOldHistoricTaskByTaskId(String taskId) {
+        return oldActivitiMapper.selectOldHistoricTaskByTaskId(taskId);
+    }
+
+    /**
+     * 按 taskId + 变量名查询老系统单个流程变量
+     */
+    public Map<String, Object> queryOldHistoricVariable(String taskId, String variableName) {
+        return oldActivitiMapper.selectOldHistoricVariable(taskId, variableName);
+    }
 }

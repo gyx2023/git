@@ -22,8 +22,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
-import org.flowable.engine.HistoryService;
-import org.flowable.task.api.history.HistoricTaskInstance;
+import com.crm.workflow.service.impl.OldWorkflowQueryService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -47,7 +46,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     private SysUsersMapper sysUsersMapper;
 
     @Resource
-    private HistoryService historyService;
+    private OldWorkflowQueryService oldWorkflowQueryService;
 
     @Resource
     private ISysParamService sysParamService;
@@ -55,15 +54,15 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     private PendingGroupTodo todoTask;
     private ToppOrder order;
     //任务列表
-    private List<HistoricTaskInstance> hisList;
+    private List<Map<String, Object>> hisList;
     //当前任务
-    private HistoricTaskInstance currentTask;
+    private Map<String, Object> currentTask;
     //当前任务在hisList索引位置
     private int currentTaskInHisListIndex;
     //第一个任务
-    private HistoricTaskInstance firstTask;
+    private Map<String, Object> firstTask;
     //最后一个任务
-    private HistoricTaskInstance lastTask;
+    private Map<String, Object> lastTask;
 
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
@@ -97,11 +96,10 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 this.refreshData(pendingTodo.getProcInstId());
                 this.currentTask = this.lastTask;
             } else {
-                currentTask = historyService.createHistoricTaskInstanceQuery()
-                        .taskId(pendingTodo.getTaskId())
-                        .singleResult();
-                log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.getId() : "null");
-                this.refreshData(currentTask.getProcessInstanceId());
+                currentTask = oldWorkflowQueryService
+                        .queryOldHistoricTaskByTaskId(pendingTodo.getTaskId());
+                log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.get("id") : "null");
+                this.refreshData((String) currentTask.get("procInsId"));
             }
             // 获取当前任务在任务列表中的索引位置
             this.setCurrentTaskInListIndex();
@@ -230,10 +228,10 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      */
     private List<JSONObject> getProcessInfo() {
         List<JSONObject> processList = new ArrayList<>();
-        if (this.currentTask.getId().equals(this.firstTask.getId())) {
+        if (this.currentTask.get("id").equals(this.firstTask.get("id"))) {
             JSONObject taskJson = new JSONObject();
             taskJson.put("OPERATION_STATE", "0");
-            taskJson.put("CURRENT_LINK", this.firstTask.getName());
+            taskJson.put("CURRENT_LINK", this.firstTask.get("name"));
             String url = getUrl(ORDER_INFO_URL + this.order.getId());
             taskJson.put("URL", url);
             taskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(this.firstTask));
@@ -248,7 +246,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     private List<JSONObject> getWaitSolveInfo() {
         List<JSONObject> waitSolveInfoList = new ArrayList<>();
         JSONObject waitTaskJson = new JSONObject();
-        waitTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.currentTask.getCreateTime()));
+        waitTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.currentTask.get("startTime")));
         waitTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(this.currentTask));
         waitTaskJson.put("WAIT_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
         waitTaskJson.put("WAIT_SOLVE_LEVEL", "0");
@@ -256,23 +254,23 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         waitTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36");
         waitTaskJson.put("PENDING_LEVEL", "0");
         waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", new Date()));
-        if (this.currentTask.getCreateTime() != null) {
-            waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.currentTask.getCreateTime()));
+        if (this.currentTask.get("startTime") != null) {
+            waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.currentTask.get("startTime")));
         }
-        waitTaskJson.put("WORKSHEET_ID", this.currentTask.getId());
-        waitTaskJson.put("FLOW_CODE", this.currentTask.getTaskDefinitionKey());
-        waitTaskJson.put("FLOW_NAME", this.currentTask.getName());
+        waitTaskJson.put("WORKSHEET_ID", this.currentTask.get("id"));
+        waitTaskJson.put("FLOW_CODE", this.currentTask.get("taskDefKey"));
+        waitTaskJson.put("FLOW_NAME", this.currentTask.get("name"));
 
         if ("u".equals(this.todoTask.getOperatorType())) {
             waitTaskJson.put("OPERATION_STATE", "1");
-            if (this.lastTask.getEndTime() != null) {
-                waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.lastTask.getEndTime()));
+            if (this.lastTask.get("endTime") != null) {
+                waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.lastTask.get("endTime")));
             }
             waitSolveInfoList.add(waitTaskJson);
             return waitSolveInfoList;
         }
         // 第一个环节
-        if (this.currentTask.getId().equals(this.firstTask.getId())) {
+        if (this.currentTask.get("id").equals(this.firstTask.get("id"))) {
             waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(this.currentTask));
             waitSolveInfoList.add(waitTaskJson);
             return waitSolveInfoList;
@@ -281,20 +279,20 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         waitSolveInfoList.add(waitTaskJson);
         if (this.hisList.size() > 1) {
             JSONObject preTaskJson = new JSONObject();
-            HistoricTaskInstance preTask = this.hisList.get(this.currentTaskInHisListIndex + 1);
-            preTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", preTask.getCreateTime()));
+            Map<String, Object> preTask = this.hisList.get(this.currentTaskInHisListIndex + 1);
+            preTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) preTask.get("startTime")));
             preTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(preTask));
             preTaskJson.put("WAIT_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
             preTaskJson.put("WAIT_SOLVE_LEVEL", "0");
             preTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36");
             preTaskJson.put("PENDING_LEVEL", "0");
-            preTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", preTask.getCreateTime()));
-            preTaskJson.put("WORKSHEET_ID", preTask.getId());
-            preTaskJson.put("FLOW_CODE", preTask.getTaskDefinitionKey());
-            preTaskJson.put("FLOW_NAME", preTask.getName());
+            preTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) preTask.get("startTime")));
+            preTaskJson.put("WORKSHEET_ID", preTask.get("id"));
+            preTaskJson.put("FLOW_CODE", preTask.get("taskDefKey"));
+            preTaskJson.put("FLOW_NAME", preTask.get("name"));
             preTaskJson.put("OPERATION_STATE", "1");
-            if (preTask.getEndTime() != null) {
-                preTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", preTask.getEndTime()));
+            if (preTask.get("endTime") != null) {
+                preTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) preTask.get("endTime")));
             }
             waitSolveInfoList.add(preTaskJson);
         }
@@ -310,34 +308,34 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         List<JSONObject> alreadySolveInfoList = new ArrayList<>();
         if ("u".equals(this.todoTask.getOperatorType())) {
             JSONObject lastTaskJson = new JSONObject();
-            lastTaskJson.put("WORKSHEET_ID", this.lastTask.getId());
-            lastTaskJson.put("FLOW_CODE", this.lastTask.getTaskDefinitionKey());
-            lastTaskJson.put("FLOW_NAME", this.lastTask.getName());
+            lastTaskJson.put("WORKSHEET_ID", this.lastTask.get("id"));
+            lastTaskJson.put("FLOW_CODE", this.lastTask.get("taskDefKey"));
+            lastTaskJson.put("FLOW_NAME", this.lastTask.get("name"));
             lastTaskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(this.lastTask));
-            lastTaskJson.put("CURRENT_LINK", this.lastTask.getTaskDefinitionKey());
+            lastTaskJson.put("CURRENT_LINK", this.lastTask.get("taskDefKey"));
             lastTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(this.lastTask));
-            if (this.lastTask.getEndTime() == null) {
+            if (this.lastTask.get("endTime") == null) {
                 lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.order.getUpdateTime()));
             } else {
-                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.lastTask.getEndTime()));
+                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.lastTask.get("endTime")));
             }
             lastTaskJson.put("ALREADY_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
             lastTaskJson.put("OPERATION_STATE", "0");
             alreadySolveInfoList.add(lastTaskJson);
         } else {
-            if (this.hisList.size() > 1 && !this.currentTask.getId().equals(this.firstTask.getId())) {
+            if (this.hisList.size() > 1 && !this.currentTask.get("id").equals(this.firstTask.get("id"))) {
                 JSONObject preTaskJson = new JSONObject();
-                HistoricTaskInstance preTask = this.hisList.get(1);
-                preTaskJson.put("WORKSHEET_ID", preTask.getId());
-                preTaskJson.put("FLOW_CODE", preTask.getTaskDefinitionKey());
-                preTaskJson.put("FLOW_NAME", preTask.getName());
+                Map<String, Object> preTask = this.hisList.get(1);
+                preTaskJson.put("WORKSHEET_ID", preTask.get("id"));
+                preTaskJson.put("FLOW_CODE", preTask.get("taskDefKey"));
+                preTaskJson.put("FLOW_NAME", preTask.get("name"));
                 preTaskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(preTask));
-                preTaskJson.put("CURRENT_LINK", preTask.getTaskDefinitionKey());
+                preTaskJson.put("CURRENT_LINK", preTask.get("taskDefKey"));
                 preTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(preTask));
-                if (preTask.getEndTime() == null) {
+                if (preTask.get("endTime") == null) {
                     preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.order.getUpdateTime()));
                 } else {
-                    preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", preTask.getEndTime()));
+                    preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) preTask.get("endTime")));
                 }
                 preTaskJson.put("ALREADY_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
                 preTaskJson.put("OPERATION_STATE", "0");
@@ -395,11 +393,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 刷新任务列表数据
      */
     private void refreshData(String procInstId) {
-        this.hisList = historyService.createHistoricTaskInstanceQuery()
-                .processInstanceId(procInstId)
-                .orderByTaskCreateTime()
-                .desc()
-                .list();
+        this.hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts(procInstId);
+        this.hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
+                .compareTo((java.util.Date) a.get("startTime")));
         this.firstTask = hisList.get(hisList.size() - 1);
         this.lastTask = hisList.get(0);
     }
@@ -409,7 +405,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      */
     private void setCurrentTaskInListIndex() {
         for (int i = 0; i < this.hisList.size(); i++) {
-            if (this.hisList.get(i).getId().equals(this.currentTask.getId())) {
+            if (((String) this.hisList.get(i).get("id")).equals((String) this.currentTask.get("id"))) {
                 this.currentTaskInHisListIndex = i;
                 break;
             }
@@ -419,11 +415,12 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 根据任务处理人获取OA账号
      */
-    private String getOaByTaskAssignee(HistoricTaskInstance task) {
-        if (task.getAssignee() == null) {
+    private String getOaByTaskAssignee(Map<String, Object> task) {
+        String assignee = (String) task.get("assignee");
+        if (assignee == null) {
             return "";
         }
-        int userId = Integer.parseInt(task.getAssignee().replaceAll(",", ""));
+        int userId = Integer.parseInt(assignee.replaceAll(",", ""));
         SysUsers user = sysUsersMapper.selectById(userId);
         return user != null && user.getOaAccount() != null ? user.getOaAccount() : "";
     }

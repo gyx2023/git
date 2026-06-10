@@ -124,4 +124,15 @@ public interface OldActivitiMapper {
     @Select("SELECT ID_, TYPE_, USER_ID_, GROUP_ID_, TASK_ID_, PROC_INST_ID_ " +
             "FROM ACT_HI_IDENTITYLINK WHERE PROC_INST_ID_ = #{procInsId}")
     List<Map<String, Object>> selectOldIdentityLinks(@Param("procInsId") String procInsId);
+
+    /**
+     * 按 taskId 查询老系统单个历史任务
+     */
+    Map<String, Object> selectOldHistoricTaskByTaskId(@Param("taskId") String taskId);
+
+    /**
+     * 按 taskId + 变量名查询老系统单个流程变量
+     */
+    Map<String, Object> selectOldHistoricVariable(@Param("taskId") String taskId,
+                                                   @Param("variableName") String variableName);
 }
