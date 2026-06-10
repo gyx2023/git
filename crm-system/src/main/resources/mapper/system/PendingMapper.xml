@@ -44,4 +44,32 @@
             #{id}
         </foreach>
     </update>
+
+    <!-- 备份已经成功的数据到历史表 -->
+    <insert id="movePendingInsert">
+        INSERT INTO his_zj_sj.pending SELECT * FROM pending WHERE pending_code IN (
+            SELECT t1.pending_code FROM (
+                SELECT p.pending_code FROM pending p
+                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'a'
+            ) t1
+            JOIN (
+                SELECT p.pending_code FROM pending p
+                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'u'
+            ) t2 ON t1.pending_code = t2.pending_code
+        )
+    </insert>
+
+    <!-- 删除已经成功的数据 -->
+    <delete id="movePendingDelete">
+        DELETE FROM pending WHERE pending_code IN (
+            SELECT t1.pending_code FROM (
+                SELECT p.pending_code FROM pending p
+                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'a'
+            ) t1
+            JOIN (
+                SELECT p.pending_code FROM pending p
+                WHERE p.response_msg = '100-操作成功' AND p.operator_type = 'u'
+            ) t2 ON t1.pending_code = t2.pending_code
+        )
+    </delete>
 </mapper>
