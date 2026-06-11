@@ -1,7 +1,7 @@
 package com.crm.system.mapper.oldsyssyn;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.oldsyssyn.OldSysUserDo;
+import com.crm.system.domain.dao.oldsyssyn.OldSysUserDo;
 
 /**
  * 参数配置 数据层

@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.crm.system.domain.SysUserCustNo;
+import com.crm.system.domain.dao.SysUserCustNo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

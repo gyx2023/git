@@ -1,6 +1,6 @@
 package com.crm.system.service.impl;
 
-import com.crm.system.domain.cust.TfFCustGroupDDo;
+import com.crm.system.domain.dao.TfFCustGroupDDo;
 import com.crm.system.mapper.cust.TfFCustGroupDMapper;
 import com.crm.system.service.TfFCustGroupDService;
 import lombok.extern.slf4j.Slf4j;

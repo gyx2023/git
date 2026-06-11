@@ -3,9 +3,9 @@ package com.crm.job.service.sync;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.domain.TcIctMilestone;
+import com.crm.system.domain.dao.TcIctMilestone;
 import com.crm.system.mapper.TcIctMilestoneMapper;
-import com.crm.system.service.ISysParamService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.TcIctMilestoneService;
 import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -102,44 +102,46 @@ public class TcIctMilestoneSyncJob {
                     log.info("清空合同里程碑表数据");
                     tcIctMilestoneMapper.clearMilestoneTable();
 
-                    FileReader reader = new FileReader(file);
-                    BufferedReader bufferedReader = new BufferedReader(reader);
-                    int count = 0;
-                    String currentLine;
-                    List<TcIctMilestone> dataList = new ArrayList<>();
-                    Calendar calendar = Calendar.getInstance();
+                    // 自动关闭流
+                    try (FileReader reader = new FileReader(file);
+                         BufferedReader bufferedReader = new BufferedReader(reader)) {
 
-                    while ((currentLine = bufferedReader.readLine()) != null) {
-                        count++;
-                        TcIctMilestone data = new TcIctMilestone();
-                        FieldAnnotaionUtil.setFiledValFromValuesByOrder(data, currentLine.split("\\x1b", -1), 3);
+                        int count = 0;
+                        String currentLine;
+                        List<TcIctMilestone> dataList = new ArrayList<>();
+                        Calendar calendar = Calendar.getInstance();
 
-                        //设置预计回款时间
-                        if(data.getCashLagMonths() != null && data.getCashLagMonths().intValue() != 0){
-                            calendar.setTime(data.getMilestoneDate());
-                            calendar.add(Calendar.MONTH, data.getCashLagMonths().intValue());
-                            data.setPredictCashDate(calendar.getTime());
-                        }else{
-                            data.setPredictCashDate(data.getMilestoneDate());
+                        while ((currentLine = bufferedReader.readLine()) != null) {
+                            count++;
+                            TcIctMilestone data = new TcIctMilestone();
+                            FieldAnnotaionUtil.setFiledValFromValuesByIndex(data, currentLine.split("\\x1b", -1));
+
+                            //设置预计回款时间
+                            if(data.getCashLagMonths() != null && data.getCashLagMonths().intValue() != 0){
+                                calendar.setTime(data.getMilestoneDate());
+                                calendar.add(Calendar.MONTH, data.getCashLagMonths().intValue());
+                                data.setPredictCashDate(calendar.getTime());
+                            }else{
+                                data.setPredictCashDate(data.getMilestoneDate());
+                            }
+                            data.setCreateDate(date);
+                            dataList.add(data);
+
+                            if (count % 1000 == 0) {
+                                tcIctMilestoneService.saveBatch(dataList);
+                                log.info("已处理 {} 条数据，批量插入完成", count);
+                                dataList = new ArrayList<>();
+                            }
                         }
-                        data.setCreateDate(date);
-                        dataList.add(data);
 
-                        if (count % 1000 == 0) {
+                        //处理剩余数据
+                        if (!dataList.isEmpty()) {
                             tcIctMilestoneService.saveBatch(dataList);
-                            log.info("已处理 {} 条数据，批量插入完成", count);
-                            dataList = new ArrayList<>();
+                            log.info("处理剩余 {} 条数据，批量插入完成", dataList.size());
                         }
-                    }
 
-                    //处理剩余数据
-                    if (dataList.size() != 0) {
-                        tcIctMilestoneService.saveBatch(dataList);
-                        log.info("处理剩余 {} 条数据，批量插入完成", dataList.size());
+                        log.info("========== 合同里程碑信息同步完成，共同步 {} 条数据 ==========", count);
                     }
-
-                    bufferedReader.close();
-                    log.info("========== 合同里程碑信息同步完成，共同步 {} 条数据 ==========", count);
                 }catch (Exception e){
                     log.error("处理文件数据失败", e);
                     throw e;

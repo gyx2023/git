@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.zbzq.SalesupCollOppoSignMapper">
 
-    <resultMap type="com.crm.system.domain.zbzq.SalesupCollOppoSignDo" id="SalesupCollOppoSignResult">
+    <resultMap type="com.crm.system.domain.dao.zbzq.SalesupCollOppoSignDo" id="SalesupCollOppoSignResult">
         <result property="id" column="id"/>
         <result property="ifSign" column="if_sign"/>
         <result property="signType" column="sign_type"/>

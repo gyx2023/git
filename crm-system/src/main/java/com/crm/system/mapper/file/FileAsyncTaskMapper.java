@@ -1,6 +1,6 @@
 package com.crm.system.mapper.file;
 
-import com.crm.system.domain.file.FileAsyncTaskDo;
+import com.crm.system.domain.dao.FileAsyncTaskDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.vo.file.FileAsyncTaskVo;
 import org.apache.ibatis.annotations.Param;

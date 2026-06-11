@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.SysUserCustNo;
+import com.crm.system.domain.dao.SysUserCustNo;
 
 import java.util.List;
 

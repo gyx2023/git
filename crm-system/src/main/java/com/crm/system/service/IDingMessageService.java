@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.DingMessage;
+import com.crm.system.domain.dao.DingMessage;
 
 import java.util.List;
 

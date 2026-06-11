@@ -1,6 +1,6 @@
 package com.crm.system.mapper.rpa;
 
-import com.crm.system.domain.rpa.ZqztRpaFormMappingDo;
+import com.crm.system.domain.dao.rpa.ZqztRpaFormMappingDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**

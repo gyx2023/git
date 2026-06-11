@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
-import com.crm.system.domain.topp.ToppContractEformDo;
+import com.crm.system.domain.dao.topp.ToppContractEformDo;
 import com.crm.system.domain.vo.topp.ToppContractEformVo;
 import com.crm.system.mapper.topp.ToppContractEformMapper;
 import com.crm.system.service.topp.IToppContractEformService;
@@ -141,12 +141,12 @@ public class ToppContractEformServiceImpl implements IToppContractEformService {
         if (opportunityIds == null || opportunityIds.isEmpty()) {
             return Collections.emptyList();
         }
-        
+
         LambdaQueryWrapper<ToppContractEformDo> lqw = Wrappers.lambdaQuery();
         lqw.in(ToppContractEformDo::getProjectId, opportunityIds);
         lqw.eq(ToppContractEformDo::getIsValid, 1); // 只查询有效的电子表单
         lqw.orderByDesc(ToppContractEformDo::getCreateTime);
-        
+
         return baseMapper.selectVoList(lqw);
     }
 }

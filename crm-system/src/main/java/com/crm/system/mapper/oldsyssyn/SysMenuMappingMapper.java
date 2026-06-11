@@ -1,6 +1,6 @@
 package com.crm.system.mapper.oldsyssyn;
 
-import com.crm.system.domain.oldsyssyn.SysMenuMappingDo;
+import com.crm.system.domain.dao.oldsyssyn.SysMenuMappingDo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 
 /**

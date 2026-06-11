@@ -1,6 +1,6 @@
 package com.crm.job.service.grp;
 
-import com.crm.system.domain.grp.GrpGroupInfoDo;
+import com.crm.system.domain.dao.GrpGroupInfoDo;
 import java.util.List;
 
 /**

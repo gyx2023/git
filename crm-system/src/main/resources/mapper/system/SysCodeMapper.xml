@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.crm.system.mapper.SysCodeMapper">
+<mapper namespace="com.crm.system.mapper.sys.SysCodeMapper">
 
-    <resultMap type="com.crm.system.domain.SysCode" id="SysCodeResult">
+    <resultMap type="com.crm.system.domain.dao.sys.SysCode" id="SysCodeResult">
         <result property="id" column="id_"/>
         <result property="name" column="name_"/>
         <result property="type" column="type_"/>
@@ -19,6 +19,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="settingStr3" column="setting_str3"/>
     </resultMap>
 
+    <!--根据类型删除sys_code表的数据-->
+    <delete id="deleteByType">
+        DELETE FROM sys_code WHERE type_ = #{type}
+    </delete>
 
+    <insert id="insertCustSaleProduct">
+        INSERT INTO `sys_code` (`code_`,`name_`, `type_`, `remark_`, `is_system`)
+        SELECT DISTINCT(MKT_PRODUCT_ID_1), MKT_PRODUCT_NAME_1, 'cust_sale_product', '宽带专项营销产品列表', 1
+        FROM ftp_broadband_market_user
+        WHERE MKT_PRODUCT_NAME_1 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT(MKT_PRODUCT_ID_2), MKT_PRODUCT_NAME_2, 'cust_sale_product', '宽带专项营销产品列表', 1
+        FROM ftp_broadband_market_user
+        WHERE MKT_PRODUCT_NAME_2 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT(MKT_DISCNT_CODE_1), MKT_DISCNT_NAME_1, 'cust_sale_product', '宽带专项营销产品列表', 1
+        FROM ftp_broadband_market_user
+        WHERE MKT_DISCNT_CODE_1 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT(MKT_DISCNT_CODE_2), MKT_DISCNT_NAME_2, 'cust_sale_product', '宽带专项营销产品列表', 1
+        FROM ftp_broadband_market_user
+        WHERE MKT_DISCNT_CODE_2 IS NOT NULL
+        UNION ALL
+        SELECT 1, '其它', 'cust_sale_product', '宽带专项营销产品列表', 1
+    </insert>
 
 </mapper>

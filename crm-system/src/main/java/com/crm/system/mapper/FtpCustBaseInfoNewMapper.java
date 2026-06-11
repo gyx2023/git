@@ -1,7 +1,7 @@
 package com.crm.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.crm.system.domain.FtpCustBaseInfoNew;
+import com.crm.system.domain.dao.FtpCustBaseInfoNew;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

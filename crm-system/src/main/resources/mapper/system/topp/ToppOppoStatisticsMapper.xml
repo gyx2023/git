@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.topp.ToppOppoStatisticsMapper">
+
+    <!-- 查询今日是否已统计 -->
+    <select id="selectTodayStats" resultType="com.crm.system.domain.topp.ToppOppoStatistics">
+        SELECT id_ AS id, type, data, time_limite AS timeLimite, statistics_date AS statisticsDate, area_type AS areaType
+        FROM topp_oppotunity_statistics
+        --         FROM topp_oppotunity_statistics
+        WHERE type = #{type}
+        AND statistics_date = #{date}
+        AND area_type = #{areaType}
+        <if test="timeLimite != null and timeLimite != ''">
+            AND time_limite = #{timeLimite}
+        </if>
+        LIMIT 1
+    </select>
+
+    <!-- ============ 储备商机统计 ============ -->
+
+    <!-- 储备商机统计 - 按区域分组（省本/市本/县分模式） -->
+    <select id="selectReserveByIndividualArea" resultType="java.util.Map">
+        SELECT
+            count(0) AS cnt,
+            sum(expect_contract_money) AS money,
+            area.id_ AS areaId,
+            area.name_ AS areaName
+        FROM topp_opportunity_base_view oppo
+                 LEFT JOIN sys_area area ON area.id_ = oppo.opp_area_id
+        WHERE oppo.oppo_state != 'oppo_status_end'
+          AND oppo.opp_phase != 'oppo_end'
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_source != 'kssj'
+          AND oppo.audit_time &gt;= #{beginDate}
+          AND oppo.audit_time &lt;= #{endDate}
+          AND (SELECT count(0) FROM topp_contract_base_view c WHERE oppo.id_ = c.id_) = 0
+          AND oppo.opp_area_id IS NOT NULL
+        GROUP BY oppo.opp_area_id
+    </select>
+
+    <!-- 储备商机统计 - 指定区域汇总（全省/全市模式） -->
+    <select id="selectReserveForArea" resultType="java.util.Map">
+        SELECT count(0) AS cnt, sum(expect_contract_money) AS money,
+        #{areaId} AS areaId, #{areaName} AS areaName
+        FROM topp_opportunity_base_view oppo
+        LEFT JOIN sys_area area ON area.id_ = oppo.opp_area_id
+        WHERE oppo.oppo_state != 'oppo_status_end'
+        AND oppo.opp_phase != 'oppo_end'
+        AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+        AND oppo.opp_source != 'kssj'
+        AND oppo.audit_time &gt;= #{beginDate}
+        AND oppo.audit_time &lt;= #{endDate}
+        AND (SELECT count(0) FROM topp_contract_base_view c WHERE oppo.id_ = c.id_) = 0
+        <if test="areaPrefix != null">
+            AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        </if>
+    </select>
+
+    <!-- ============ 本月新增统计 ============ -->
+
+    <!-- 本月新增统计 - 按区域分组 -->
+    <select id="selectMonthCountByIndividualArea" resultType="java.util.Map">
+        SELECT
+            count(0) AS cnt,
+            sum(expect_contract_money) AS money,
+            area.id_ AS areaId,
+            area.name_ AS areaName
+        FROM topp_opportunity_base_view oppo
+                 LEFT JOIN sys_area area ON area.id_ = oppo.opp_area_id
+        WHERE oppo.oppo_state != 'oppo_status_end'
+          AND oppo.opp_phase != 'oppo_end'
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_source != 'kssj'
+          AND oppo.audit_time &gt;= #{startDate}
+          AND oppo.opp_area_id IS NOT NULL
+        GROUP BY oppo.opp_area_id
+    </select>
+
+    <!-- 本月新增统计 - 指定区域汇总 -->
+    <select id="selectMonthCountForArea" resultType="java.util.Map">
+        SELECT
+        count(0) AS cnt,
+        sum(expect_contract_money) AS money,
+        #{areaId} AS areaId,
+        #{areaName} AS areaName
+        FROM topp_opportunity_base_view oppo
+        LEFT JOIN sys_area area ON area.id_ = oppo.opp_area_id
+        WHERE oppo.oppo_state != 'oppo_status_end'
+        AND oppo.opp_phase != 'oppo_end'
+        AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+        AND oppo.opp_source != 'kssj'
+        AND oppo.audit_time &gt;= #{startDate}
+        <if test="areaPrefix != null">
+            AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        </if>
+    </select>
+
+    <!-- ============ 签约商机统计 ============ -->
+
+    <!-- 签约商机统计 - 按区域分组 -->
+    <select id="selectSignCountByIndividualArea" resultType="java.util.Map">
+        SELECT count(con.id_) AS cnt, sum(con.total_money) AS money,
+               area.id_ AS areaId, area.name_ AS areaName
+        FROM topp_opportunity_base_view oppo,
+             topp_contract_base_view con,
+             sys_area area
+        WHERE oppo.id_ = con.project_id
+          AND area.id_ = oppo.opp_area_id
+          AND con.audit_status = 2
+          AND oppo.oppo_state != 'oppo_status_end'
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_phase != 'oppo_end'
+          AND oppo.opp_source != 'kssj'
+          AND con.audit_time &gt;= #{startDate}
+          AND (con.is_valid IS NULL OR con.is_valid = '1')
+          AND oppo.opp_area_id IS NOT NULL
+        GROUP BY oppo.opp_area_id
+    </select>
+
+    <!-- 签约商机统计 - 指定区域汇总 -->
+    <select id="selectSignCountForArea" resultType="java.util.Map">
+        SELECT
+        count(con.id_) AS cnt,
+        sum(con.total_money) AS money,
+        #{areaId} AS areaId,
+        #{areaName} AS areaName
+        FROM topp_opportunity_base_view oppo,
+        topp_contract_base_view con,
+        sys_area area
+        WHERE oppo.id_ = con.project_id
+        AND area.id_ = oppo.opp_area_id
+        AND con.audit_status = 2
+        AND oppo.oppo_state != 'oppo_status_end'
+        AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+        AND oppo.opp_phase != 'oppo_end'
+        AND oppo.opp_source != 'kssj'
+        AND con.audit_time &gt;= #{startDate}
+        AND (con.is_valid IS NULL OR con.is_valid = '1')
+        <if test="areaPrefix != null">
+            AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        </if>
+    </select>
+
+    <!-- ============ 商机分类统计（图表） ============ -->
+
+    <!-- 商机分类统计 - 按区域分组（支持市本/全省两种模式） -->
+    <select id="selectIncludeTypeByIndividualArea" resultType="java.util.Map">
+        SELECT count(c.value) AS cnt, c.value AS typeCode, sc.name_ AS typeName,
+        <choose>
+            <when test="areaId != null">
+                #{areaId} AS areaId
+            </when>
+            <otherwise>
+                c.areaId AS areaId
+            </otherwise>
+        </choose>
+        FROM (
+        SELECT a.id_, area.id_ AS areaId,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(a.opp_include_type, ',', b.help_topic_id + 1), ',', -1) AS value
+        FROM topp_opportunity_base_view a
+        LEFT JOIN help_topic b ON b.help_topic_id &lt; (LENGTH(a.opp_include_type) - LENGTH(REPLACE(a.opp_include_type, ',', '')) + 1)
+        LEFT JOIN sys_area area ON area.id_ = a.opp_area_id
+        WHERE a.audit_time &gt;= #{startDate}
+        AND a.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+        AND a.opp_source != 'kssj'
+        AND a.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        ) c
+        LEFT JOIN sys_code sc ON c.value = sc.code_ AND sc.type_ = 'opp_type'
+        WHERE c.value != ''
+        <choose>
+            <when test="areaId != null">
+                <!-- 全省/全市模式：只按 value 分组 -->
+                GROUP BY c.value
+            </when>
+            <otherwise>
+                <!-- 市本模式：按 value, areaId 分组 -->
+                GROUP BY c.value, c.areaId
+                ORDER BY c.areaId ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 商机分类统计 - 指定区域汇总 -->
+    <select id="selectIncludeTypeForArea" resultType="java.util.Map">
+        SELECT count(c.value) AS cnt, c.value AS typeCode, sc.name_ AS typeName, #{areaId} AS areaId
+        FROM (
+                 SELECT a.id_,
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(a.opp_include_type, ',', b.help_topic_id + 1), ',', -1) AS value
+                 FROM topp_opportunity_base_view a
+                     LEFT JOIN help_topic b ON b.help_topic_id &lt; (LENGTH(a.opp_include_type) - LENGTH(REPLACE(a.opp_include_type, ',', '')) + 1)
+                 WHERE a.audit_time &gt;= #{startDate}
+                   AND a.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+                   AND a.opp_source != 'kssj'
+                   AND a.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+             ) c
+                 LEFT JOIN sys_code sc ON c.value = sc.code_ AND sc.type_ = 'opp_type'
+        WHERE c.value != ''
+        GROUP BY c.value
+    </select>
+
+    <!-- ============ 签约按月统计（图表） ============ -->
+
+    <!-- 签约按月统计 - 按区域分组 -->
+    <select id="selectMonthSignByIndividualArea" resultType="java.util.Map">
+        SELECT month(con.audit_time) AS monthVal, sum(con.total_money) AS money,
+            count(con.id_) AS total, oppo.opp_area_id AS areaId
+        FROM topp_opportunity_base_view oppo,
+            topp_contract_base_view con
+        WHERE oppo.id_ = con.project_id
+          AND con.audit_status = 2
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_source != 'kssj'
+          AND con.audit_time &gt;= #{startDate}
+          AND con.audit_time &lt;= #{lastDate}
+          AND (con.is_valid IS NULL OR con.is_valid = '1')
+          AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        GROUP BY monthVal, oppo.opp_area_id
+        ORDER BY oppo.opp_area_id, monthVal ASC
+    </select>
+
+    <!-- 签约按月统计 - 指定区域汇总 -->
+    <select id="selectMonthSignForArea" resultType="java.util.Map">
+        SELECT month(con.audit_time) AS monthVal, sum(con.total_money) AS money,
+            count(con.id_) AS total, #{areaId} AS areaId
+        FROM topp_opportunity_base_view oppo,
+            topp_contract_base_view con
+        WHERE oppo.id_ = con.project_id
+          AND con.audit_status = 2
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_source != 'kssj'
+          AND con.audit_time &gt;= #{startDate}
+          AND con.audit_time &lt;= #{lastDate}
+          AND (con.is_valid IS NULL OR con.is_valid = '1')
+          AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        GROUP BY monthVal
+        ORDER BY monthVal ASC
+    </select>
+
+    <!-- ============ 商机按月统计 ============ -->
+
+    <!-- 商机按月统计 - 按区域分组 -->
+    <select id="selectMonthOppoByIndividualArea" resultType="java.util.Map">
+        SELECT month(oppo.audit_time) AS monthVal, count(oppo.id_) AS total, oppo.opp_area_id AS areaId
+        FROM topp_opportunity_base_view oppo
+        WHERE oppo.oppo_state != 'oppo_status_end'
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_phase != 'oppo_end'
+          AND oppo.opp_source != 'kssj'
+          AND oppo.audit_time &gt;= #{startDate}
+          AND oppo.audit_time &lt;= #{lastDate}
+          AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+          AND oppo.opp_area_id IS NOT NULL
+        GROUP BY monthVal, oppo.opp_area_id
+        ORDER BY oppo.opp_area_id, monthVal ASC
+    </select>
+
+    <!-- 商机按月统计 - 指定区域汇总 -->
+    <select id="selectMonthOppoForArea" resultType="java.util.Map">
+        SELECT month(oppo.audit_time) AS monthVal, count(oppo.id_) AS total, #{areaId} AS areaId
+        FROM topp_opportunity_base_view oppo
+        WHERE oppo.oppo_state != 'oppo_status_end'
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_phase != 'oppo_end'
+          AND oppo.opp_source != 'kssj'
+          AND oppo.audit_time &gt;= #{startDate}
+          AND oppo.audit_time &lt;= #{lastDate}
+          AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+          AND oppo.opp_area_id IS NOT NULL
+        GROUP BY monthVal
+        ORDER BY monthVal ASC
+    </select>
+
+    <!-- ============ 辅助查询 ============ -->
+
+    <!-- 获取有数据的区域ID列表 -->
+    <select id="selectHaveDataAreaIds" resultType="java.lang.Long">
+        SELECT DISTINCT opp_area_id
+        FROM topp_opportunity_base_view
+        WHERE audit_time &gt;= CONCAT(#{startDate}, ' 00:00:00')
+          AND opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        ORDER BY opp_area_id ASC
+    </select>
+
+    <!-- 获取有商机数据的区域ID列表 -->
+    <select id="selectHaveOppoDataAreaIds" resultType="java.lang.Long">
+        SELECT DISTINCT opp_area_id
+        FROM topp_opportunity_base_view oppo
+        WHERE oppo.oppo_state != 'oppo_status_end'
+          AND oppo.audit_status NOT IN ('opp_stop', 'opp_new', 'opp_notpass')
+          AND oppo.opp_phase != 'oppo_end'
+          AND oppo.opp_source != 'kssj'
+          AND oppo.audit_time &gt;= #{startDate}
+          AND oppo.audit_time &lt;= #{lastDate}
+          AND oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+        ORDER BY opp_area_id ASC
+    </select>
+
+    <!-- 获取省级城市区域ID列表 -->
+    <select id="selectCityAreaIds" resultType="java.lang.Long">
+        SELECT id_ FROM sys_area WHERE parent_ = #{parentId} ORDER BY id_ ASC
+    </select>
+
+</mapper>

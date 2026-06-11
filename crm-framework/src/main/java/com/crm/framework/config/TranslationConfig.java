@@ -2,9 +2,9 @@ package com.crm.framework.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.crm.common.annotation.TranslationType;
-import com.crm.common.translation.TranslationInterface;
-import com.crm.common.translation.handler.TranslationBeanSerializerModifier;
-import com.crm.common.translation.handler.TranslationHandler;
+import com.crm.common.utils.translation.TranslationInterface;
+import com.crm.common.utils.translation.handler.TranslationBeanSerializerModifier;
+import com.crm.common.utils.translation.handler.TranslationHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
