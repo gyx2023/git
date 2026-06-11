@@ -218,3 +218,4 @@ ability:
 customer:
   admin:
     url: http://localhost:8088/system/customerTag/sync
+    api-key: aF3kL9pQ2wR8sX4mV7nC

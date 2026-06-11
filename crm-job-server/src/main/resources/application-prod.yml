@@ -208,3 +208,4 @@ ability:
 customer:
   admin:
     url: http://10.129.99.175:9002/zqzt-backend/system/customerTag/sync
+    api-key: aF3kL9pQ2wR8sX4mV7nC
