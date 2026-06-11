@@ -145,6 +145,7 @@ security:
     - /actuator/**
     # SSO自动登录接口
     - /sso/autoLogin
+    - /api/askdata/tools/schemas
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -427,4 +428,3 @@ askdata:
       log-response-data: false
       # 审计日志保留天数
       retention-days: 180
-  

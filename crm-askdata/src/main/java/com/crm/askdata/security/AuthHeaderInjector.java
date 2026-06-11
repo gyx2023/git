@@ -2,12 +2,16 @@ package com.crm.askdata.security;
 
 import com.crm.askdata.entity.AuthConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -75,10 +79,18 @@ public final class AuthHeaderInjector {
     }
 
     /**
-     * SA_TOKEN 模式：携带当前请求的 Token
+     * SA_TOKEN 模式：携带当前请求的 Token 并转发额外 Header
      * <p>
      * auth_config_json 格式:
-     * {"headerName": "Authorization", "headerPrefix": "Bearer "}
+     * {
+     *   "headerName": "Authorization",
+     *   "headerPrefix": "Bearer ",
+     *   "forwardHeaders": ["loginoa", "loginname"]
+     * }
+     * <p>
+     * forwardHeaders 指定需要从当前请求上下文转发到目标 API 的 Header 名称列表。
+     * 这些 Header 的值来自 HeaderContextHolder（由 RouterService 在异步前捕获）。
+     * 常用于透传用户身份信息（OA、姓名等）到下游服务。
      */
     private static void injectSaToken(HttpHeaders headers, AuthConfig authConfig, String currentToken) {
         if (currentToken == null || currentToken.isEmpty()) {
@@ -92,6 +104,19 @@ public final class AuthHeaderInjector {
         String headerPrefix = cfg != null ? cfg.getOrDefault("headerPrefix", "Bearer ") : "Bearer ";
 
         headers.set(headerName, headerPrefix + currentToken);
+
+        // 转发额外 Header（如 loginoa、loginname 等用户身份信息）
+        List<String> forwardHeaders = parseForwardHeaders(authConfig.getAuthConfigJson());
+        if (!forwardHeaders.isEmpty()) {
+            Map<String, String> ctxHeaders = HeaderContextHolder.getAll();
+            for (String fh : forwardHeaders) {
+                String value = ctxHeaders.get(fh);
+                if (value != null && !value.isEmpty()) {
+                    headers.set(fh, value);
+                    log.debug("Forwarded header: {}={}", fh, value);
+                }
+            }
+        }
     }
 
     /**
@@ -151,6 +176,35 @@ public final class AuthHeaderInjector {
         }
 
         headers.set("Authorization", "Bearer " + cfg.get("accessToken"));
+    }
+
+    /**
+     * 解析 auth_config_json 中的 forwardHeaders 数组
+     * <p>
+     * 从 SA_TOKEN 的 auth_config_json 中提取 forwardHeaders 配置，
+     * 指定需要从当前请求转发到目标 API 的 Header 名称列表。
+     *
+     * @param json auth_config_json 字符串
+     * @return forwardHeaders 列表，无配置时返回空列表
+     */
+    private static List<String> parseForwardHeaders(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(json);
+            JsonNode fh = root.get("forwardHeaders");
+            if (fh != null && fh.isArray()) {
+                List<String> result = new ArrayList<>();
+                for (JsonNode n : fh) {
+                    result.add(n.asText());
+                }
+                return result;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse forwardHeaders from auth_config_json: {}", e.getMessage());
+        }
+        return Collections.emptyList();
     }
 
     /**

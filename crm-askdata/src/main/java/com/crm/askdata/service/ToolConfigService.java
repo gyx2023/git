@@ -132,10 +132,10 @@ public class ToolConfigService {
 
         // 尝试从缓存获取
         @SuppressWarnings("unchecked")
-        List<ToolConfig> cached = RedisUtils.getCacheObject(cacheKey);
-        if (cached != null) {
-            return cached;
-        }
+//        List<ToolConfig> cached = RedisUtils.getCacheObject(cacheKey);
+//        if (cached != null) {
+//            return cached;
+//        }
 
         // 从数据库查询
         List<ToolConfig> configs = configMapper.selectEnabledTools();

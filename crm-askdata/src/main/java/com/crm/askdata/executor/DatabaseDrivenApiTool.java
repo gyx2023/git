@@ -132,8 +132,8 @@ public class DatabaseDrivenApiTool {
                 // 去除 "Bearer " 前缀，只返回 Token 原始值
                 return stripBearerPrefix(authHeader);
             }
-        } catch (Exception ignored) {
-            // RequestContextHolder 可能为空（异步线程）
+        } catch (Exception e) {
+            log.debug("Failed to get token from RequestContextHolder (expected in async threads): {}", e.getMessage());
         }
 
         try {
@@ -142,8 +142,8 @@ public class DatabaseDrivenApiTool {
             if (rawToken != null && !rawToken.isEmpty()) {
                 return rawToken;
             }
-        } catch (Exception ignored) {
-            // Sa-Token 上下文可能未绑定
+        } catch (Exception e) {
+            log.debug("Failed to get token from StpUtil (expected if sa-token not bound): {}", e.getMessage());
         }
 
         return null;

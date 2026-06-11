@@ -3,6 +3,7 @@ package com.crm.askdata.validator;
 import com.crm.askdata.config.MetadataProperties;
 import com.crm.askdata.exception.MetadataException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.regex.Pattern;
  *
  * @author crm
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MetadataValidator {
@@ -104,7 +106,7 @@ public class MetadataValidator {
                 return Pattern.compile(configPattern);
             }
         } catch (Exception e) {
-            // 配置模式异常时回退到默认
+            log.debug("Invalid code pattern config, falling back to default: {}", e.getMessage());
         }
         return DEFAULT_CODE_PATTERN;
     }
