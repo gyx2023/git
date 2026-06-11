@@ -6,6 +6,7 @@ import com.crm.askdata.service.HiAgentConversationManager;
 import com.crm.askdata.service.RouterService;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.utils.TraceIdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 智能问数 API
@@ -53,6 +57,18 @@ public class AskDataController extends BaseController {
         log.info("askdata stream request: queryLength={}, sessionId={}",
             query.length(), resolvedSessionId);
 
+        // 从当前登录用户获取需透传给下游的身份信息
+        Map<String, String> requestHeaders = new HashMap<>();
+        LoginUser loginUser = getLoginUser();
+        if (loginUser != null) {
+            if (loginUser.getUsername() != null && !loginUser.getUsername().isEmpty()) {
+                requestHeaders.put("loginoa", loginUser.getUsername().toUpperCase());
+            }
+            if (loginUser.getNickName() != null && !loginUser.getNickName().isEmpty()) {
+                requestHeaders.put("loginname", loginUser.getNickName());
+            }
+        }
+
         // 超时设置 5 分钟（SSE 长连接）
         SseEmitter emitter = new SseEmitter(5 * 60 * 1000L);
 
@@ -63,7 +79,7 @@ public class AskDataController extends BaseController {
         emitter.onError(e -> log.error("sse emitter error", e));
 
         routerService.processStream(query, resolvedTraceId, resolvedSessionId,
-            userId, emitter);
+            userId, requestHeaders, emitter);
 
         return emitter;
     }

@@ -70,15 +70,17 @@ public class RouterService {
 
     /**
      * SSE 流式接口（异步）
+     *
+     * @param requestHeaders 需透传给下游工具的 Header 键值对（由 Controller 从 HttpServletRequest 提取传入）
      */
     public void processStream(String query, String traceId, String sessionId,
-                              String userId, SseEmitter emitter) {
+                              String userId, Map<String, String> requestHeaders,
+                              SseEmitter emitter) {
         // 捕获当前线程的 MDC 上下文，用于异步线程恢复
         Map<String, String> mdcContext = MDC.getCopyOfContextMap();
 
-        // 捕获当前请求的认证上下文（Token + 额外 Header），用于异步线程中工具调用的身份透传
+        // 捕获当前请求的 Token，用于异步线程中工具调用的身份透传
         String currentToken = com.crm.askdata.security.RequestContextHelper.captureToken();
-        Map<String, String> requestHeaders = com.crm.askdata.security.RequestContextHelper.captureHeaders();
 
         // 启动心跳线程，每 15 秒发送一次 keepalive 事件（需在 submit 之前定义，确保 lambda 可引用）
         ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -615,7 +617,7 @@ public class RouterService {
 
         // 发送图表数据
         if (result.getData() != null && !result.getData().isEmpty()) {
-            String chartType = (String) result.getData().getOrDefault("chartType", "table");
+            String chartType = result.getChartType() != null ? result.getChartType() : "table";
             Object rawData = result.getData().get("data");
             List<Map<String, Object>> chartData = rawData instanceof List
                 ? (List<Map<String, Object>>) rawData

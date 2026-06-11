@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,7 +124,10 @@ public final class AuthHeaderInjector {
      * API_KEY 模式：使用静态 API Key
      * <p>
      * auth_config_json 格式:
-     * {"headerName": "X-API-Key", "apiKey": "sk-xxxx"}
+     * {"headerName": "Authorization", "headerPrefix": "Bearer ", "apiKey": "eyJhbGci...", "forwardHeaders": ["loginoa", "loginname"]}
+     * <p>
+     * 除注入 API Key 外，也支持 forwardHeaders 透传用户身份信息，
+     * 与 SA_TOKEN 模式的 forwardHeaders 行为一致。
      */
     private static void injectApiKey(HttpHeaders headers, AuthConfig authConfig) {
         Map<String, String> cfg = parseConfig(authConfig.getAuthConfigJson());
@@ -133,9 +137,23 @@ public final class AuthHeaderInjector {
         }
 
         String headerName = cfg.getOrDefault("headerName", "X-API-Key");
+        String headerPrefix = cfg.getOrDefault("headerPrefix", "");
         String apiKey = cfg.get("apiKey");
 
-        headers.set(headerName, apiKey);
+        headers.set(headerName, headerPrefix + apiKey);
+
+        // 转发额外 Header（如 loginoa、loginname 等用户身份信息）
+        List<String> forwardHeaders = parseForwardHeaders(authConfig.getAuthConfigJson());
+        if (!forwardHeaders.isEmpty()) {
+            Map<String, String> ctxHeaders = HeaderContextHolder.getAll();
+            for (String fh : forwardHeaders) {
+                String value = ctxHeaders.get(fh);
+                if (value != null && !value.isEmpty()) {
+                    headers.set(fh, value);
+                    log.debug("Forwarded header: {}={}", fh, value);
+                }
+            }
+        }
     }
 
     /**
@@ -208,14 +226,25 @@ public final class AuthHeaderInjector {
     }
 
     /**
-     * 解析 auth_config_json
+     * 解析 auth_config_json（仅提取字符串值，跳过数组/对象等非标量类型）
+     * <p>
+     * 使用 readTree 遍历 JSON 节点，只提取 Textual/Number/Boolean 类型的值。
+     * 避免 {@code forwardHeaders: ["loginoa"]} 等数组字段导致解析失败。
      */
     private static Map<String, String> parseConfig(String json) {
         if (json == null || json.trim().isEmpty()) {
             return null;
         }
         try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
+            JsonNode root = OBJECT_MAPPER.readTree(json);
+            Map<String, String> result = new HashMap<>();
+            root.fieldNames().forEachRemaining(field -> {
+                JsonNode value = root.get(field);
+                if (value != null && (value.isTextual() || value.isNumber() || value.isBoolean())) {
+                    result.put(field, value.asText());
+                }
+            });
+            return result;
         } catch (Exception e) {
             log.warn("Failed to parse auth_config_json: {}", e.getMessage());
             return null;

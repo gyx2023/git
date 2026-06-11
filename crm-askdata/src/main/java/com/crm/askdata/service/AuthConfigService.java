@@ -47,17 +47,17 @@ public class AuthConfigService {
             return null;
         }
 
-        String cacheKey = CACHE_KEY_PREFIX + id;
-
-        AuthConfig cached = RedisUtils.getCacheObject(cacheKey);
-        if (cached != null) {
-            return cached;
-        }
+//        String cacheKey = CACHE_KEY_PREFIX + id;
+//
+//        AuthConfig cached = RedisUtils.getCacheObject(cacheKey);
+//        if (cached != null) {
+//            return cached;
+//        }
 
         AuthConfig config = authConfigMapper.selectById(id);
-        if (config != null) {
-            RedisUtils.setCacheObject(cacheKey, config, DEFAULT_CACHE_TTL);
-        }
+//        if (config != null) {
+//            RedisUtils.setCacheObject(cacheKey, config, DEFAULT_CACHE_TTL);
+//        }
 
         return config;
     }

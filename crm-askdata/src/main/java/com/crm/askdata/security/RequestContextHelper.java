@@ -2,20 +2,18 @@ package com.crm.askdata.security;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * 请求上下文辅助工具
  * <p>
- * 统一管理 Token 和 Header 的捕获、设置、清理。
- * 将鉴权上下文逻辑从 RouterService 中解耦出来，
- * RouterService 只需在合适的时机调用 captureContext / setContext / clearContext。
+ * 统一管理 Token 的捕获、设置、清理。
+ * 额外 Header 由 Controller 从 HttpServletRequest 提取后直接传入，
+ * 不经过 RequestContextHelper，减少对 RequestContextHolder 的间接依赖。
  * <p>
  * 职责：
  * - captureToken(): 从当前请求或 Sa-Token 上下文捕获 Token
- * - captureHeaders(): 从当前请求捕获需转发的 Header
- * - setContext(): 将捕获的值写入异步线程的 ThreadLocal
+ * - setContext(): 将 Token 和 Header 写入异步线程的 ThreadLocal
  * - clearContext(): 清理 ThreadLocal，防止内存泄漏
  *
  * @author crm
@@ -69,39 +67,6 @@ public final class RequestContextHelper {
         }
 
         return null;
-    }
-
-    /**
-     * 获取当前请求的额外 Header（如 loginoa、loginname）
-     * <p>
-     * 这些 Header 会在异步线程中通过 HeaderContextHolder 传递，
-     * 最终由 AuthHeaderInjector 根据 auth_config 的 forwardHeaders 配置
-     * 转发到目标 API。
-     *
-     * @return Header 键值对，可能为空 Map
-     */
-    public static Map<String, String> captureHeaders() {
-        Map<String, String> headers = new HashMap<>();
-        try {
-            javax.servlet.http.HttpServletRequest request =
-                ((org.springframework.web.context.request.ServletRequestAttributes)
-                    org.springframework.web.context.request.RequestContextHolder.getRequestAttributes())
-                    .getRequest();
-
-            // loginoa: 用户OA工号（smart-ai-micro 网关要求）
-            String loginoa = request.getHeader("loginoa");
-            if (loginoa != null && !loginoa.isEmpty()) {
-                headers.put("loginoa", loginoa);
-            }
-            // loginname: 用户姓名
-            String loginname = request.getHeader("loginname");
-            if (loginname != null && !loginname.isEmpty()) {
-                headers.put("loginname", loginname);
-            }
-        } catch (Exception e) {
-            log.debug("Failed to capture request headers (expected in async threads): {}", e.getMessage());
-        }
-        return headers;
     }
 
     /**

@@ -3,6 +3,7 @@ package com.crm.askdata.executor;
 import com.crm.askdata.entity.AuthConfig;
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
+import com.crm.askdata.entity.ToolResponseField;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
 import com.crm.askdata.model.ToolConfigWithParams;
@@ -20,6 +21,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -63,6 +65,7 @@ public class DatabaseDrivenApiTool {
 
         // 3. 调用原接口（携带认证 Header）
         ResponseEntity<JsonNode> response = callApi(config, fullConfig.getAuthConfig(), apiParams);
+        log.info("traceId={} raw response: {}", traceId, response.getBody());
 
         // 4. 结果格式化
         QueryResult result = formatResponse(response.getBody(), config);
@@ -97,6 +100,13 @@ public class DatabaseDrivenApiTool {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(params, headers);
 
         HttpMethod httpMethod = HttpMethod.valueOf(config.getHttpMethod().toUpperCase());
+
+        // 打印请求信息方便调试
+        log.info("toolCall request: {} {} headers=[Authorization: {}|loginoa: {}|loginname: {}] params={}",
+            httpMethod, config.getApiUrl(),
+            headers.getFirst("Authorization"),
+            headers.getFirst("loginoa"), headers.getFirst("loginname"),
+            params);
 
         return restTemplate.exchange(
             config.getApiUrl(),
@@ -179,6 +189,9 @@ public class DatabaseDrivenApiTool {
                 result.setData(convertToMap(response));
             }
 
+            // 应用响应字段中文映射（替换英文字段名为中文显示名）
+            applyFieldMapping(result.getData(), config.getId());
+
             // 提取总数
             if (config.getResponseTotalPath() != null && !config.getResponseTotalPath().trim().isEmpty()) {
                 try {
@@ -198,12 +211,110 @@ public class DatabaseDrivenApiTool {
             result.setContent("查询成功");
 
         } catch (Exception e) {
-            log.error("Failed to format response", e);
+            log.error("Failed to format response for tool={}, path={}, responseBody={}",
+                config.getToolName(), config.getResponseDataPath(), response, e);
             result.setSuccess(false);
             result.setContent("响应格式化失败：" + e.getMessage());
         }
 
         return result;
+    }
+
+    /**
+     * 应用响应字段中文映射
+     * <p>
+     * 将 API 返回数据中的原始英文字段名替换为中文显示名，
+     * 并按配置的格式规则格式化数值。
+     * 数据格式：{"data": [{"AREA_NAME":"杭州", "TOTAL_COUNT":165}, ...]}
+     */
+    private void applyFieldMapping(Map<String, Object> data, Long toolId) {
+        if (data == null || data.isEmpty()) return;
+
+        // 获取该工具配置的响应字段映射
+        List<ToolResponseField> fields = configService.getResponseFields(toolId);
+        if (fields == null || fields.isEmpty()) return;
+
+        // 构建映射表：原始字段名 → 中文显示名 + 格式化规则
+        Map<String, ToolResponseField> fieldMap = new LinkedHashMap<>();
+        for (ToolResponseField f : fields) {
+            if (f.getDisplayName() != null && !f.getDisplayName().isEmpty()) {
+                fieldMap.put(f.getFieldName(), f);
+            }
+        }
+        if (fieldMap.isEmpty()) return;
+
+        // 只处理内层的数据（data key 指向的 List/Map），不处理包装层
+        // 避免误删 "data" 等包装 key
+        Object innerData = data.get("data");
+        applyMappingToValue(innerData, fieldMap);
+        log.info("applied response field mapping for toolId={}, fields={}", toolId, fieldMap.keySet());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyMappingToValue(Object value, Map<String, ToolResponseField> fieldMap) {
+        if (value instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) value;
+            // 先递归处理子项（如 Map 的值可能是嵌套的 List）
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                applyMappingToValue(entry.getValue(), fieldMap);
+            }
+            // 替换当前层的字段名
+            replaceFieldNames(map, fieldMap);
+        } else if (value instanceof List) {
+            List<Object> list = (List<Object>) value;
+            for (Object item : list) {
+                applyMappingToValue(item, fieldMap);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void replaceFieldNames(Map<String, Object> map, Map<String, ToolResponseField> fieldMap) {
+        // 收集需要替换和删除的键（避免 ConcurrentModificationException）
+        List<Map.Entry<String, Object>> toReplace = new ArrayList<>();
+        List<String> toRemove = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            ToolResponseField field = fieldMap.get(entry.getKey());
+            if (field != null && field.getDisplayName() != null && !field.getDisplayName().isEmpty()) {
+                if (!field.getDisplayName().equals(entry.getKey())) {
+                    toReplace.add(entry);
+                }
+                // 有映射且显示名相同则保留，无需操作
+            } else {
+                // 不在映射表中的字段 → 移除（只展示表里配置的字段）
+                toRemove.add(entry.getKey());
+            }
+        }
+        // 执行替换
+        for (Map.Entry<String, Object> entry : toReplace) {
+            Object formattedValue = formatValue(entry.getValue(), fieldMap.get(entry.getKey()));
+            map.put(fieldMap.get(entry.getKey()).getDisplayName(), formattedValue);
+            map.remove(entry.getKey());
+        }
+        // 移除未配置的字段
+        for (String key : toRemove) {
+            map.remove(key);
+        }
+    }
+
+    /**
+     * 按配置的格式规则格式化数值
+     */
+    private Object formatValue(Object value, ToolResponseField field) {
+        if (value == null || field == null || field.getFormatRule() == null || field.getFormatRule().isEmpty()) {
+            return value;
+        }
+        if (!(value instanceof Number)) {
+            return value;
+        }
+        try {
+            DecimalFormat df = new DecimalFormat(field.getFormatRule());
+            return df.format(((Number) value).doubleValue());
+        } catch (Exception e) {
+            log.warn("Failed to format value: field={}, value={}, rule={}",
+                field.getFieldName(), value, field.getFormatRule());
+            return value;
+        }
     }
 
     /**

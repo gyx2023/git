@@ -78,3 +78,25 @@ CREATE TABLE IF NOT EXISTS askdata_tool_param (
     UNIQUE KEY uk_tool_param (tool_id, param_name),
     INDEX idx_tool_id (tool_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具参数定义表';
+
+-- 3. 工具响应字段映射表
+CREATE TABLE IF NOT EXISTS askdata_tool_response_field (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    tool_id BIGINT NOT NULL COMMENT '关联工具ID',
+
+    -- 字段映射信息
+    field_name VARCHAR(100) NOT NULL COMMENT 'API返回的原始字段名（如 AREA_NAME）',
+    display_name VARCHAR(200) COMMENT '前端显示的中文名（如"地市名称"）',
+    data_type VARCHAR(20) DEFAULT 'string' COMMENT '数据类型: string/number/currency/percentage/date',
+    format_rule VARCHAR(100) COMMENT '格式化规则（如 #,##0.00）',
+
+    -- 显示控制
+    sort_order INT DEFAULT 0 COMMENT '排序号（决定列顺序）',
+    is_visible BOOLEAN DEFAULT TRUE COMMENT '是否默认显示',
+    group_name VARCHAR(100) COMMENT '分组名',
+    description TEXT COMMENT '字段描述',
+
+    FOREIGN KEY (tool_id) REFERENCES askdata_tool_config(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_tool_resp_field (tool_id, field_name),
+    INDEX idx_resp_tool_id (tool_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具响应字段映射表';

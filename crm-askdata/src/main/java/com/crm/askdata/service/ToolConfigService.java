@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.askdata.entity.AuthConfig;
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
+import com.crm.askdata.entity.ToolResponseField;
 import com.crm.askdata.mapper.ToolConfigMapper;
 import com.crm.askdata.mapper.ToolParamMapper;
+import com.crm.askdata.mapper.ToolResponseFieldMapper;
 import com.crm.askdata.model.ToolConfigWithParams;
 import com.crm.common.utils.redis.RedisUtils;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class ToolConfigService {
 
     private final ToolConfigMapper configMapper;
     private final ToolParamMapper paramMapper;
+    private final ToolResponseFieldMapper responseFieldMapper;
     private final AuthConfigService authConfigService;
 
     private static final String CACHE_KEY_PREFIX = "askdata:tool:config:";
@@ -78,8 +81,8 @@ public class ToolConfigService {
             ? Duration.ofSeconds(config.getCacheTtlSeconds())
             : DEFAULT_CACHE_TTL;
 
-        RedisUtils.setCacheObject(cacheKey, fullConfig, ttl);
-        log.debug("traceId={} cache set for tool: {}, ttl={}s", getTraceId(), toolName, ttl.getSeconds());
+//        RedisUtils.setCacheObject(cacheKey, fullConfig, ttl);
+//        log.debug("traceId={} cache set for tool: {}, ttl={}s", getTraceId(), toolName, ttl.getSeconds());
 
         return fullConfig;
     }
@@ -187,6 +190,20 @@ public class ToolConfigService {
             Wrappers.<ToolConfig>lambdaQuery()
                 .eq(ToolConfig::getAuthConfigId, authConfigId)
         ).intValue();
+    }
+
+    /**
+     * 获取工具响应字段映射列表
+     * <p>
+     * 用于将 API 返回的原始英文字段名替换为中文显示名，
+     * 并应用格式化规则。
+     *
+     * @param toolId 工具ID
+     * @return 响应字段映射列表（按 sort_order 排序）
+     */
+    public List<ToolResponseField> getResponseFields(Long toolId) {
+        if (toolId == null) return java.util.Collections.emptyList();
+        return responseFieldMapper.selectByToolId(toolId);
     }
 
     /**

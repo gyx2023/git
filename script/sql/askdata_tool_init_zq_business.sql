@@ -11,16 +11,19 @@
 -- =============================================
 -- 1. 认证配置: smart-ai-micro 网关
 -- =============================================
--- SA_TOKEN 模式: 转发当前用户Token + 用户身份信息
+-- API_KEY 模式: 使用固定 JWT（跨系统调用，不转发当前 Token）
 -- 说明:
---   - Authorization: Bearer <token> 由系统从当前请求上下文自动获取并注入
+--   - Authorization: Bearer <JWT> 由 auth_config_json 中的 apiKey 注入
 --   - forwardHeaders: 指定需要从当前请求转发到目标 API 的 Header 名称列表
 --     loginoa=用户OA工号, loginname=用户姓名 (smart-ai-micro 网关要求)
---   这些 Header 由 RouterService 在请求开始时捕获，存储在 HeaderContextHolder 中，
+--   这些 Header 由 RouterService 在异步前捕获，存储在 HeaderContextHolder 中，
 --   最终由 AuthHeaderInjector 根据此配置自动注入。
+--
+--   ⚠️ 生产环境需将 <FIXED_JWT> 替换为实际可用的 smart-ai-micro JWT。
+--     可通过 smart-ai-micro 的 /auth/interiorServiceToken 或 /auth/login 接口获取。
 INSERT INTO askdata_auth_config (system_name, system_desc, caller_id, auth_type, auth_config_json, status, create_by) VALUES
-('smart_ai_micro', 'AI微服务平台-政企商机看板', 'crm-askdata', 'SA_TOKEN',
- '{"headerName": "Authorization", "headerPrefix": "Bearer ", "forwardHeaders": ["loginoa", "loginname"]}',
+('smart_ai_micro', 'AI微服务平台-政企商机看板', 'crm-askdata', 'API_KEY',
+ '{"headerName": "Authorization", "headerPrefix": "Bearer ", "apiKey": "<FIXED_JWT>", "forwardHeaders": ["loginoa", "loginname"]}',
  '0', 'system');
 
 -- =============================================
@@ -580,3 +583,20 @@ INSERT INTO askdata_tool_param (
 -- JOIN askdata_tool_config tc ON tp.tool_id = tc.id
 -- WHERE tc.tool_name = 'query_kpi_cards'
 -- ORDER BY tp.sort_order;
+
+-- =============================================
+-- 4. 响应字段映射
+-- =============================================
+
+-- -------- 4.1 query_sign_summary 签约概览 ----------
+INSERT INTO askdata_tool_response_field (tool_id, field_name, display_name, data_type, format_rule, sort_order, is_visible) VALUES
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'AREA_NAME',         '地市名称',      'string',   NULL,          1, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'TOTAL_COUNT',       '签约数量',      'number',   '#,##0',       2, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'ARRAIR_AMOUNT',     '签约金额(万元)', 'currency', '#,##0.00',    3, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'TB_ARRAIR_AMOUNT',  '签约金额同比',   'percentage',NULL,         4, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'WCL_ARRAIR_AMOUNT', '完成率',        'percentage',NULL,         5, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'YJ_ARRAIR_AMOUNT',  '亿级合同数量',   'number',    '#,##0',       6, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'QW_ARRAIR_AMOUNT',  '千万级合同数量',  'number',   '#,##0',       7, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'BW_ARRAIR_AMOUNT',  '百万级合同数量',  'number',   '#,##0',       8, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'PRE_OPPO',          '签约前置商机比例','percentage',NULL,       9, TRUE),
+((SELECT id FROM askdata_tool_config WHERE tool_name = 'query_sign_summary'), 'YEAR_AMOUNT',       '年化签约金额(万元)','currency','#,##0.00',10, TRUE);
