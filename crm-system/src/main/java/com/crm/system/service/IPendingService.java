@@ -13,7 +13,7 @@ public interface IPendingService {
     /**
      * 获取待处理的待办数据
      */
-    List<Pending> getPendingList();
+    List<Pending> getPendingList(String limit);
 
     /**
      * 推送新增待办至OA系统

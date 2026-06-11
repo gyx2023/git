@@ -56,8 +56,8 @@ public class PendingServiceImpl implements IPendingService {
             "pendingSourceUserID", "pendingSource", "pendingLevel", "pendingNote");
 
     @Override
-    public List<Pending> getPendingList() {
-        return pendingMapper.selectPendingList();
+    public List<Pending> getPendingList(String limit) {
+        return pendingMapper.selectPendingList(limit);
     }
 
     @Override

@@ -17,7 +17,7 @@ public interface PendingMapper extends BaseMapper<Pending> {
     /**
      * 查询待推送的待办数据
      */
-    default List<Pending> selectPendingList() {
+    default List<Pending> selectPendingList(String limit) {
         LambdaQueryWrapper<Pending> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w ->
             w.and(a -> a.eq(Pending::getOperatorType, "a")
@@ -27,7 +27,7 @@ public interface PendingMapper extends BaseMapper<Pending> {
             .in(Pending::getSendStatus, "0", "2")
             .lt(Pending::getFailTimes, 3)
             .orderByAsc(Pending::getId)
-            .last("LIMIT 30");
+            .last("LIMIT " + limit);
         return this.selectList(wrapper);
     }
 
