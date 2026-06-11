@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysAreaTreeVo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.service.ISysAreaService;
@@ -268,5 +269,34 @@ public class SysAreaServiceImpl implements ISysAreaService {
         lqw.eq(SysArea::getEmpAreaId, empAreaId);
 
         return baseMapper.selectList(lqw);
+    }
+
+    /**
+     * 查询区域树（递归包含所有子节点）
+     */
+    @Override
+    public List<SysAreaTreeVo> queryAreaTree(Long areaId) {
+        SysAreaVo root = queryById(areaId);
+        if (root == null) {
+            return new ArrayList<>();
+        }
+        SysAreaTreeVo rootNode = buildTreeNode(root);
+        List<SysAreaTreeVo> result = new ArrayList<>();
+        result.add(rootNode);
+        return result;
+    }
+
+    private SysAreaTreeVo buildTreeNode(SysAreaVo area) {
+        SysAreaTreeVo node = new SysAreaTreeVo();
+        node.setId(String.valueOf(area.getId()));
+        node.setLabel(area.getName());
+        List<SysAreaVo> children = baseMapper.selectVoList(new LambdaQueryWrapper<SysArea>()
+            .eq(SysArea::getParent, area.getId()));
+        if (children != null && !children.isEmpty()) {
+            node.setChildren(children.stream()
+                .map(this::buildTreeNode)
+                .collect(Collectors.toList()));
+        }
+        return node;
     }
 }

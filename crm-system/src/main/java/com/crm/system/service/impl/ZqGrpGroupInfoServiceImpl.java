@@ -70,7 +70,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private ISysDeptService sysDeptService;
 
 
-
     /**
      * 查询政企集团客户信息
      */
@@ -913,6 +912,15 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             stt= GrpExpandTypeenum.PROVINCE_ZT.getCode();
         }
         return stt;
+    }
+
+    @Override
+    public String getGrpNameById(Long grpId) {
+        ZqGrpGroupInfo info = baseMapper.selectById(grpId);
+        if (info == null) {
+            throw new RuntimeException("集团信息不存在");
+        }
+        return info.getGrpName();
     }
 
     /**

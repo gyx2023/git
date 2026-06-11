@@ -103,4 +103,9 @@ public interface IZqGrpGroupInfoService {
     Map<String, List<SysDictData>> getDictData();
 
     String getUserByStt();
+
+    /**
+     * 根据集团ID查询未脱敏的集团名称
+     */
+    String getGrpNameById(Long grpId);
 }

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.statistics.SupportCityStatsMapper">
+
+    <!-- 支撑工单通用过滤条件 -->
+    <sql id="taskConditions">
+        AND task.result_code = '0'
+        AND task.task_code IN ('support_pro_maintain', 'order_explanation_material',
+                               'order_site_explanation', 'order_bszz',
+                               'order_center', 'order_xcjb')
+        <if test="startDate != null and startDate != ''">
+            AND task.end_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND task.end_time &lt;= #{endDate}
+        </if>
+    </sql>
+
+    <!-- 区域条件：精确匹配或LIKE前缀匹配 -->
+    <sql id="areaCondition">
+        <choose>
+            <when test="exactMatch">
+                oppo.opp_area_id = #{areaPrefix}
+            </when>
+            <otherwise>
+                oppo.opp_area_id LIKE CONCAT(#{areaPrefix}, '%')
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 查询指定区域的支撑工单数和支撑商机数 -->
+    <select id="selectStatsByAreaPrefix" resultType="java.util.HashMap">
+        SELECT
+            a.taskCount AS taskCount,
+            IFNULL(b.oppoCount, 0) AS oppoCount
+        FROM (
+            SELECT COUNT(task.id_) AS taskCount
+            FROM tcomm_task task
+            LEFT JOIN topp_opportunity oppo ON task.info_id = oppo.id_
+            WHERE <include refid="areaCondition"/>
+            <include refid="taskConditions"/>
+        ) a,
+        (
+            SELECT COUNT(c.infoId) AS oppoCount
+            FROM (
+                SELECT task.info_id AS infoId
+                FROM tcomm_task task
+                LEFT JOIN topp_opportunity oppo ON task.info_id = oppo.id_
+                WHERE <include refid="areaCondition"/>
+                <include refid="taskConditions"/>
+                GROUP BY task.info_id
+            ) c
+        ) b
+    </select>
+
+    <!-- 查询指定区域下满足条件的task ID列表（用于明细） -->
+    <select id="selectTaskIdsByAreaPrefix" resultType="java.lang.Integer">
+        SELECT task.id_
+        FROM tcomm_task task
+        LEFT JOIN topp_opportunity oppo ON task.info_id = oppo.id_
+        WHERE <include refid="areaCondition"/>
+        <include refid="taskConditions"/>
+    </select>
+
+    <!-- 查询支撑工单明细（关联商机和支撑经理信息） -->
+    <select id="selectDetailByAreaPrefix" resultType="com.crm.system.domain.vo.SupportCityDetailVO">
+        SELECT
+            oppo.opp_code        AS oppCode,
+            oppo.opp_name        AS oppName,
+            IFNULL(area.name_, '') AS areaName,
+            IFNULL(oppo.cust_manager_name, '') AS custManageName,
+            IFNULL(oppo.cust_manager_tel, '')  AS custManageTel,
+            IFNULL(designer.name_ch, '')       AS designerName,
+            IFNULL(designer.name_, '')          AS designerTel,
+            IFNULL(designerArea.name_, '')      AS designerArea,
+            IFNULL(sc.name_, task.task_code) AS taskCode,
+            DATE_FORMAT(task.create_time, '%Y-%m-%d') AS createTime,
+            DATE_FORMAT(task.end_time, '%Y-%m-%d')    AS auditTime,
+            task.score_            AS score
+        FROM tcomm_task task
+        LEFT JOIN topp_opportunity oppo ON task.info_id = oppo.id_
+        LEFT JOIN sys_area area ON oppo.opp_area_id = area.id_
+        LEFT JOIN sys_user designer ON oppo.designer = designer.id_
+        LEFT JOIN sys_org org ON designer.org_id = org.id_
+        LEFT JOIN sys_area designerArea ON org.area_id = designerArea.id_
+        LEFT JOIN sys_code sc ON sc.code_ = task.task_code AND sc.type_ = 'cust_manager_order'
+        WHERE <include refid="areaCondition"/>
+        <include refid="taskConditions"/>
+        ORDER BY oppo.opp_code, task.create_time DESC
+    </select>
+
+</mapper>
