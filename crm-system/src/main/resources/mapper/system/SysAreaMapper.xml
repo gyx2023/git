@@ -20,5 +20,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="jtCode" column="jt_code"/>
     </resultMap>
 
+    <!-- 根据BSS父级编码查询地市列表 -->
+    <select id="selectByBssCodeParent" resultMap="SysAreaResult">
+        SELECT * FROM sys_area WHERE bss_code_parent = #{bssCodeParent}
+    </select>
 
 </mapper>
