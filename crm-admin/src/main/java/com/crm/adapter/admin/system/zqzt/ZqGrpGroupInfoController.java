@@ -153,6 +153,19 @@ public class ZqGrpGroupInfoController extends BaseController {
         }
     }
 
+    /**
+     * 获取未脱敏的集团名称
+     *
+     * @param grpId 集团ID
+     */
+    @GetMapping("/grpName/{grpId}")
+    @SaCheckPermission("system:manager:decrypt")
+    public R<String> getGrpName(@NotNull(message = "主键不能为空")
+                                 @PathVariable Long grpId) {
+        String grpName = iZqGrpGroupInfoService.getGrpNameById(grpId);
+        return R.ok("操作成功", grpName);
+    }
+
 
     /**
      * 新增政企集团客户信息
