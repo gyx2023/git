@@ -165,7 +165,9 @@ public class SFTPUtil {
             try {
                 sftp.cd(directory);
             } catch (SftpException e) {
-                mkdirs(directory);
+                // directory是相对路径时，拼上basePath构建完整路径
+                String fullPath = directory.startsWith("/") ? directory : basePath + "/" + directory;
+                mkdirs(fullPath);
             }
         }
         sftp.put(input, sftpFileName);
