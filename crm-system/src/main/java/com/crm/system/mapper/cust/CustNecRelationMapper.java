@@ -3,6 +3,7 @@ package com.crm.system.mapper.cust;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import com.crm.system.domain.dao.CustNecRelationDo;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -15,5 +16,8 @@ public interface CustNecRelationMapper extends BaseMapperPlus<CustNecRelationMap
      */
     @Select("select ctnr.nature_cust_id, ctnr.PROVINCE_CUST_ID from cust_t_nec_relation ctnr where ctnr.state_code = 0 and ctnr.province_code=36")
     List<CustNecRelationDo> getCustTNecRelationList();
+
+    @Select("select ctnr.nature_cust_id as natureCustId, ctnr.PROVINCE_CUST_ID as provinceCustId from cust_t_nec_relation ctnr where ctnr.NATURE_CUST_ID = #{natureCustId}")
+    List<CustNecRelationDo> selectByNatureCustId(@Param("natureCustId") String natureCustId);
 
 }
