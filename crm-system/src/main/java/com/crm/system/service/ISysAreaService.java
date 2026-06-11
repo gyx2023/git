@@ -5,6 +5,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysAreaTreeVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -81,4 +82,9 @@ public interface ISysAreaService {
     List<SysArea> queryLikeList(String city);
 
     List<SysArea> findEmpAreaIdList(Integer empAreaId);
+
+    /**
+     * 查询区域树（递归包含所有子节点）
+     */
+    List<SysAreaTreeVo> queryAreaTree(Long areaId);
 }
