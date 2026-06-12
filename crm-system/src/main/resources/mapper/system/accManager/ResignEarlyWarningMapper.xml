@@ -7,7 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- ==================== DM/达梦查询 (slave_2) ==================== -->
 
     <!-- 查询已离职人员 -->
-    <select id="selectResignedPersons" resultType="java.util.Map">
+    <select id="selectResignedPersons" resultType="com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo">
         SELECT * FROM IOB_DATA.REP_SYS_PERSON_NEW_D
         WHERE ONJOB_FLAG = '1'
           AND OA_USER_NAME IS NOT NULL

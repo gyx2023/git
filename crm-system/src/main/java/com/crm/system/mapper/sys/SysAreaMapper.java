@@ -15,12 +15,4 @@ import java.util.List;
  */
 public interface SysAreaMapper extends BaseMapperPlus<SysAreaMapper, SysArea, SysAreaVo> {
 
-    /**
-     * 根据BSS父级编码查询地市列表
-     *
-     * @param bssCodeParent BSS父级编码 (如 "Z00" 表示浙江省)
-     * @return 地市列表
-     */
-    List<SysArea> selectByBssCodeParent(@Param("bssCodeParent") String bssCodeParent);
-
 }

@@ -3,12 +3,13 @@ package com.crm.job.service.accManager;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.accManager.WaringListTable;
-import com.crm.system.domain.dao.sys.SysArea;
-import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.mapper.accManager.ResignEarlyWarningMapper;
-import com.crm.system.mapper.accManager.WaringListTableMapper;
-import com.crm.system.mapper.sys.SysAreaMapper;
-import com.crm.system.mapper.sys.SysDeptMapper;
+import com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo;
+import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.service.IResignEarlyWarningService;
+import com.crm.system.service.IWaringListTableService;
+import com.crm.system.service.ISysAreaService;
+import com.crm.system.service.ISysUsersService;
+import com.crm.system.service.sys.ISysDeptService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -56,19 +57,19 @@ public class AccountManagerResignEarlyWarningJob {
     private static final int LONG_TIME_NO_LOGIN_DAYS = 20;
 
     @Resource
-    private ResignEarlyWarningMapper resignEarlyWarningMapper;
+    private IResignEarlyWarningService resignEarlyWarningService;
 
     @Resource
-    private WaringListTableMapper waringListTableMapper;
+    private IWaringListTableService waringListTableService;
 
     @Resource
-    private SysUsersMapper sysUsersMapper;
+    private ISysUsersService sysUsersService;
 
     @Resource
-    private SysAreaMapper sysAreaMapper;
+    private ISysAreaService sysAreaService;
 
     @Resource
-    private SysDeptMapper sysDeptMapper;
+    private ISysDeptService sysDeptService;
 
     /**
      * 客户经理离职预警同步任务
@@ -105,7 +106,7 @@ public class AccountManagerResignEarlyWarningJob {
      * 查询离职人员信息，逐人检测各业务系统角色挂靠情况，生成预警记录
      */
     private void queryTheInformationOfTheDepartingEmployee(String cycleId) {
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectResignedPersons();
+        List<RepSysPersonNewDDo> list = resignEarlyWarningService.selectResignedPersons();
 
         if (list.isEmpty()) {
             log.info(">>>>>>>>无离职人员");
@@ -117,40 +118,45 @@ public class AccountManagerResignEarlyWarningJob {
 
         // 清空类型为离职人员的旧预警数据
         log.info(">>>>>>>>清空表数据");
-        waringListTableMapper.deleteByWaringType(WARNING_TYPE_1);
+        waringListTableService.deleteByWaringType(WARNING_TYPE_1);
 
         WaringListTable waringListTable;
-        for (Map<String, Object> user : list) {
+        for (RepSysPersonNewDDo person : list) {
             waringListTable = new WaringListTable();
             waringListTable.setCycleId(cycleId);
-            waringListTable.setOaUserName(getMapString(user, "OA_USER_NAME").toLowerCase());
-            waringListTable.setFullName(getMapString(user, "FULL_NAME"));
+            waringListTable.setOaUserName(person.getOaUserName() != null ? person.getOaUserName().toLowerCase() : "");
+            waringListTable.setFullName(person.getFullName() != null ? person.getFullName() : "");
             waringListTable.setWaringType(WARNING_TYPE_1);
             waringListTable.setState(STATE_ONJOB);
 
             // 处理地区信息
-            String areaName = getMapString(user, "AREA_NAME");
+            String areaName = person.getAreaName() != null ? person.getAreaName() : "";
             if (!areaName.isEmpty()) {
-                SysArea sysArea = escapeAreaName(areaName);
+                SysAreaVo sysArea = escapeAreaName(areaName);
                 if (sysArea == null) {
-                    waringListTable.setAreaId(getMapString(user, "AREA_ID"));
+                    waringListTable.setAreaId(person.getAreaId() != null ? person.getAreaId() : "");
                     waringListTable.setAreaName(areaName);
                 } else {
                     waringListTable.setAreaId(String.valueOf(sysArea.getId()));
                     waringListTable.setAreaName(sysArea.getName());
                 }
             }
-            waringListTable.setCountyId(getMapString(user, "COUNTY_ID"));
-            waringListTable.setCountyName(getMapString(user, "COUNTY_NAME"));
+            waringListTable.setCountyId(person.getCountyId() != null ? person.getCountyId() : "");
+            waringListTable.setCountyName(person.getCountyName() != null ? person.getCountyName() : "");
+
+            // 构建用于角色检测的Map
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("OA_USER_NAME", person.getOaUserName());
+            userMap.put("FULL_NAME", person.getFullName());
 
             // 检测各业务系统角色挂靠
-            whetherCustLevel4Manager(user, waringListTable);
-            whetherNaturalCustManager(user, waringListTable);
+            whetherCustLevel4Manager(userMap, waringListTable);
+            whetherNaturalCustManager(userMap, waringListTable);
             // 实体客户客户经理 暂时没有OA账号先不跑
-            // whetherEntityCustManager(user, waringListTable);
-            whetherOpportunityManager(user, waringListTable);
-            whetherContractManager(user, waringListTable);
-            whetherContactPerson(user, waringListTable);
+            // whetherEntityCustManager(userMap, waringListTable);
+            whetherOpportunityManager(userMap, waringListTable);
+            whetherContractManager(userMap, waringListTable);
+            whetherContactPerson(userMap, waringListTable);
 
             // 有预警信息则插入表中
             if (waringListTable.getCustLevel4ManagerCount() != null && waringListTable.getCustLevel4ManagerCount() != 0
@@ -159,7 +165,7 @@ public class AccountManagerResignEarlyWarningJob {
                     || waringListTable.getOpportunityManagerCount() != null && waringListTable.getOpportunityManagerCount() != 0
                     || waringListTable.getContractManagerCount() != null && waringListTable.getContractManagerCount() != 0) {
                 waringListTable.setCreateTime(new Date());
-                waringListTableMapper.insert(waringListTable);
+                waringListTableService.insert(waringListTable);
             }
         }
         log.info(">>>>>>>>客户经理离职预警执行完成");
@@ -170,7 +176,7 @@ public class AccountManagerResignEarlyWarningJob {
      * 查询长期未登录工号，逐人检测各业务系统角色挂靠情况，生成预警记录
      */
     private void queryLongTimeNoLoginOaUser(String cycleId) {
-        List<SysUsers> sysUserList = sysUsersMapper.selectFailureList(LONG_TIME_NO_LOGIN_DAYS);
+        List<SysUsers> sysUserList = sysUsersService.selectFailureList(LONG_TIME_NO_LOGIN_DAYS);
 
         if (sysUserList.isEmpty()) {
             log.info(">>>>>>>>长期未登录工号:无");
@@ -179,7 +185,7 @@ public class AccountManagerResignEarlyWarningJob {
         }
 
         // 清空类型为长期未登录的旧预警数据
-        waringListTableMapper.deleteByWaringType(WARNING_TYPE_2);
+        waringListTableService.deleteByWaringType(WARNING_TYPE_2);
 
         log.info(">>>>>>>>长期未登录工号:{}条", sysUserList.size());
         XxlJobHelper.log("长期未登录工号:" + sysUserList.size() + "条");
@@ -220,7 +226,7 @@ public class AccountManagerResignEarlyWarningJob {
                     || waringListTable.getOpportunityManagerCount() != null && waringListTable.getOpportunityManagerCount() != 0
                     || waringListTable.getContractManagerCount() != null && waringListTable.getContractManagerCount() != 0) {
                 waringListTable.setCreateTime(new Date());
-                waringListTableMapper.insert(waringListTable);
+                waringListTableService.insert(waringListTable);
             }
         }
         log.info(">>>>>>>>长期未登录工号预警执行完成");
@@ -235,11 +241,11 @@ public class AccountManagerResignEarlyWarningJob {
             return;
         }
         try {
-            SysDept dept = sysDeptMapper.selectById(sysUser.getOrgId());
+            SysDept dept = sysDeptService.selectDeptById(sysUser.getOrgId());
             if (dept == null || dept.getAreaCode() == null) {
                 return;
             }
-            SysArea area = sysAreaMapper.selectById(Long.parseLong(dept.getAreaCode()));
+            SysAreaVo area = sysAreaService.queryById(Long.parseLong(dept.getAreaCode()));
             if (area == null) {
                 return;
             }
@@ -253,7 +259,7 @@ public class AccountManagerResignEarlyWarningJob {
                 waringListTable.setCountyName(area.getName());
 
                 if (area.getParent() != null) {
-                    SysArea parent = sysAreaMapper.selectById(area.getParent());
+                    SysAreaVo parent = sysAreaService.queryById(area.getParent());
                     if (parent != null) {
                         waringListTable.setAreaId(String.valueOf(parent.getId()));
                         waringListTable.setAreaName(parent.getName());
@@ -272,7 +278,7 @@ public class AccountManagerResignEarlyWarningJob {
      */
     private void whetherCustLevel4Manager(Map<String, Object> user, WaringListTable waringListTable) {
         String oaUserName = user.get("OA_USER_NAME").toString();
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectCustLevel4ManagerByOaUser(oaUserName);
+        List<Map<String, Object>> list = resignEarlyWarningService.selectCustLevel4ManagerByOaUser(oaUserName);
 
         if (list.isEmpty()) {
             log.debug(">>>>>>>>该用户不属于四级名单客户客户经理 A/B角:({})", oaUserName);
@@ -287,7 +293,7 @@ public class AccountManagerResignEarlyWarningJob {
      */
     private void whetherNaturalCustManager(Map<String, Object> user, WaringListTable waringListTable) {
         String oaUserName = user.get("OA_USER_NAME").toString();
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectNaturalCustManagerByOaUser(oaUserName);
+        List<Map<String, Object>> list = resignEarlyWarningService.selectNaturalCustManagerByOaUser(oaUserName);
 
         if (list.isEmpty()) {
             log.debug(">>>>>>>>该用户不属于自然客户客户经理:({})", oaUserName);
@@ -306,7 +312,7 @@ public class AccountManagerResignEarlyWarningJob {
         if (fullName.isEmpty()) {
             return;
         }
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectEntityCustManagerByFullName(fullName);
+        List<Map<String, Object>> list = resignEarlyWarningService.selectEntityCustManagerByFullName(fullName);
 
         if (list.isEmpty()) {
             log.debug(">>>>>>>>该用户不属于实体客户客户经理:({})", user.get("OA_USER_NAME"));
@@ -321,7 +327,7 @@ public class AccountManagerResignEarlyWarningJob {
      */
     private void whetherOpportunityManager(Map<String, Object> user, WaringListTable waringListTable) {
         String oaUserName = user.get("OA_USER_NAME").toString();
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectOpportunityManagerByOaUser(oaUserName);
+        List<Map<String, Object>> list = resignEarlyWarningService.selectOpportunityManagerByOaUser(oaUserName);
 
         if (list.isEmpty()) {
             log.debug(">>>>>>>>该用户不属于商机的客户经理:({})", oaUserName);
@@ -336,7 +342,7 @@ public class AccountManagerResignEarlyWarningJob {
      */
     private void whetherContractManager(Map<String, Object> user, WaringListTable waringListTable) {
         String oaUserName = user.get("OA_USER_NAME").toString();
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectContractManagerByOaUser(oaUserName);
+        List<Map<String, Object>> list = resignEarlyWarningService.selectContractManagerByOaUser(oaUserName);
 
         if (list.isEmpty()) {
             log.debug(">>>>>>>>该用户不属于合同的承办人/履行人:({})", oaUserName);
@@ -351,7 +357,7 @@ public class AccountManagerResignEarlyWarningJob {
      */
     private void whetherContactPerson(Map<String, Object> user, WaringListTable waringListTable) {
         String oaUserName = user.get("OA_USER_NAME").toString();
-        List<Map<String, Object>> list = resignEarlyWarningMapper.selectContactPersonByOaUser(oaUserName);
+        List<Map<String, Object>> list = resignEarlyWarningService.selectContactPersonByOaUser(oaUserName);
 
         if (list.isEmpty()) {
             log.debug(">>>>>>>>该用户不属于基层维系人:({})", oaUserName);
@@ -366,7 +372,7 @@ public class AccountManagerResignEarlyWarningJob {
     /**
      * 解析地区名称，将浙江省本级映射为省本级，其他按地市名匹配
      */
-    private SysArea escapeAreaName(String areaName) {
+    private SysAreaVo escapeAreaName(String areaName) {
         if (areaName == null || areaName.length() < 3) {
             return null;
         }
@@ -374,15 +380,15 @@ public class AccountManagerResignEarlyWarningJob {
 
         // 浙江省特殊处理
         if ("浙江省".equals(str)) {
-            SysArea area = new SysArea();
+            SysAreaVo area = new SysAreaVo();
             area.setName("省本级");
             area.setId(330000L);
             return area;
         }
 
         // 与浙江地市列表匹配
-        List<SysArea> cityAreas = sysAreaMapper.selectByBssCodeParent("Z00");
-        for (SysArea cityArea : cityAreas) {
+        List<SysAreaVo> cityAreas = sysAreaService.queryZhejiangCities();
+        for (SysAreaVo cityArea : cityAreas) {
             if (cityArea.getName() != null && cityArea.getName().equals(str)) {
                 return cityArea;
             }
@@ -398,7 +404,7 @@ public class AccountManagerResignEarlyWarningJob {
         if (oaId == null || oaId.isEmpty()) {
             return null;
         }
-        Map<String, Object> result = resignEarlyWarningMapper.selectUserStateByOaId(oaId.toLowerCase());
+        Map<String, Object> result = resignEarlyWarningService.selectUserStateByOaId(oaId.toLowerCase());
         if (result == null || result.isEmpty()) {
             return null;
         }

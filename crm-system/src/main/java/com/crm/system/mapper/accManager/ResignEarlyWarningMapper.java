@@ -1,6 +1,7 @@
 package com.crm.system.mapper.accManager;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -27,7 +28,7 @@ public interface ResignEarlyWarningMapper {
      * 从DM查询已离职人员 (ONJOB_FLAG='1' 表示离职)
      */
     @DS("slave_2")
-    List<Map<String, Object>> selectResignedPersons();
+    List<RepSysPersonNewDDo> selectResignedPersons();
 
     /**
      * 从DM查询合同的承办人/履行人

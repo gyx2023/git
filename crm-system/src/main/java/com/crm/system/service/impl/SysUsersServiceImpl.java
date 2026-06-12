@@ -195,4 +195,15 @@ public class SysUsersServiceImpl implements ISysUsersService {
     public void insertSysUser(SysUsers user) {
         baseMapper.insert(user);
     }
+
+    /**
+     * 查询长期未登录用户
+     *
+     * @param failureDays 超时时长
+     * @return 长期未登录用户列表
+     */
+    @Override
+    public List<SysUsers> selectFailureList(Integer failureDays) {
+        return baseMapper.selectFailureList(failureDays);
+    }
 }

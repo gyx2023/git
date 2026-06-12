@@ -55,6 +55,7 @@ public class ZqGrpGroupInfoController extends BaseController {
      * 查询政企集团客户信息列表（根据sys_param表里的配置决定省市县经理信息是否脱敏）
      */
     @GetMapping("/lists")
+    @Log(title = "集团客户管理查询")
     public TableDataInfo<ZqGrpGroupInfoVo2> list(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
                                                 @RequestParam(value = "grpCreateTimeBegin", required = false) String grpCreateTimeBegin,
                                                 @RequestParam(value = "grpCreateTimeEnd", required = false) String grpCreateTimeEnd) {
@@ -66,6 +67,7 @@ public class ZqGrpGroupInfoController extends BaseController {
      * 查询政企集团客户信息列表 - 处理前端传来的分配时间和创建时间参数
      */
     @GetMapping("/list")
+    @Log(title = "客户经理分配查询")
     public TableDataInfo<ZqGrpGroupInfoVo> listWithTimes(ZqGrpGroupInfoBo bo, PageQuery pageQuery,
                                                          @RequestParam(value = "assignBeginTime", required = false) String assignBeginTime,
                                                          @RequestParam(value = "assignEndTime", required = false) String assignEndTime,

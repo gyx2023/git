@@ -40,6 +40,7 @@ public class StatisticsContractController {
      */
     @InterfaceMonitor
     @GetMapping("/list")
+    @Log(title = "签约统计")
     public TableDataInfo<ContractStatisticsRespDTO> list(ContractStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsContractService.selectPageList(reqDTO, pageQuery);
     }
