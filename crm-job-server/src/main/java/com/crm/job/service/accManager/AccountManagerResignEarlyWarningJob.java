@@ -404,12 +404,11 @@ public class AccountManagerResignEarlyWarningJob {
         if (oaId == null || oaId.isEmpty()) {
             return null;
         }
-        Map<String, Object> result = resignEarlyWarningService.selectUserStateByOaId(oaId.toLowerCase());
-        if (result == null || result.isEmpty()) {
+        RepSysPersonNewDDo result = resignEarlyWarningService.selectUserStateByOaId(oaId.toLowerCase());
+        if (result == null) {
             return null;
         }
-        Object onjobFlag = result.get("ONJOB_FLAG");
-        return onjobFlag != null ? onjobFlag.toString() : null;
+        return result.getOnjobFlag();
     }
 
     /**

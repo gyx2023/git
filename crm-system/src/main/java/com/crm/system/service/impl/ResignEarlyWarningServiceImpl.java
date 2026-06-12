@@ -51,7 +51,7 @@ public class ResignEarlyWarningServiceImpl implements IResignEarlyWarningService
      * 从DM查询人员的在职状态
      */
     @Override
-    public Map<String, Object> selectUserStateByOaId(String oaId) {
+    public RepSysPersonNewDDo selectUserStateByOaId(String oaId) {
         return resignEarlyWarningMapper.selectUserStateByOaId(oaId);
     }
 

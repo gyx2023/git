@@ -46,7 +46,7 @@ public interface ResignEarlyWarningMapper {
      * 从DM查询人员的在职状态
      */
     @DS("slave_2")
-    Map<String, Object> selectUserStateByOaId(@Param("oaId") String oaId);
+    RepSysPersonNewDDo selectUserStateByOaId(@Param("oaId") String oaId);
 
     // ==================== OB/MySQL查询 (slave_1) ====================
 

@@ -33,7 +33,7 @@ public interface IResignEarlyWarningService {
     /**
      * 从DM查询人员的在职状态
      */
-    Map<String, Object> selectUserStateByOaId(String oaId);
+    RepSysPersonNewDDo selectUserStateByOaId(String oaId);
 
     // ==================== OB/MySQL查询 (slave_1) ====================
 
