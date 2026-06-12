@@ -914,15 +914,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
         return stt;
     }
 
-    @Override
-    public String getGrpNameById(Long grpId) {
-        ZqGrpGroupInfo info = baseMapper.selectById(grpId);
-        if (info == null) {
-            throw new RuntimeException("集团信息不存在");
-        }
-        return info.getGrpName();
-    }
-
     /**
      * 添加去重值到Map中
      */

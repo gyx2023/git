@@ -132,7 +132,7 @@ public class ZqGrpGroupInfoController extends BaseController {
      * @param grpId 主键
      */
     @GetMapping("/detail/{grpId}")
-    @SaCheckPermission(value={"system:client:viewDetail"})
+    @SaCheckPermission(value={"system:client:viewDetail","system:manager:decrypt"},mode= SaMode.OR)
     public R<ZqGrpGroupInfo> getInfoWithoutSensitive(@NotNull(message = "主键不能为空")
                                                        @PathVariable Long grpId) {
         try {
@@ -153,19 +153,6 @@ public class ZqGrpGroupInfoController extends BaseController {
             }
             return R.fail(e.getMessage());
         }
-    }
-
-    /**
-     * 获取未脱敏的集团名称
-     *
-     * @param grpId 集团ID
-     */
-    @GetMapping("/grpName/{grpId}")
-    @SaCheckPermission("system:manager:decrypt")
-    public R<String> getGrpName(@NotNull(message = "主键不能为空")
-                                 @PathVariable Long grpId) {
-        String grpName = iZqGrpGroupInfoService.getGrpNameById(grpId);
-        return R.ok("操作成功", grpName);
     }
 
 
