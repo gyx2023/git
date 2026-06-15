@@ -141,6 +141,7 @@ public class ZqztGrpCustInuseController extends BaseController {
      * 查询合同和关联客户ID列表
      */
     @GetMapping("/listAll")
+    @Log(title = "集团用户关联客户管理")
     public TableDataInfo<ZqztGrpCustInuseRespDTO> listAll(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(reqDTO, pageQuery);
     }

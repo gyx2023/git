@@ -66,4 +66,12 @@ public interface ISysUsersService {
      * 新增用户
      */
     void insertSysUser(SysUsers user);
+
+    /**
+     * 查询长期未登录用户
+     *
+     * @param failureDays 超时时长
+     * @return 长期未登录用户列表
+     */
+    List<SysUsers> selectFailureList(Integer failureDays);
 }
