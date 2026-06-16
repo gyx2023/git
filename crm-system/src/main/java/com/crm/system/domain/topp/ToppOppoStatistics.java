@@ -15,7 +15,7 @@ import java.util.Date;
  * @author crm
  */
 @Data
-@TableName("topp_oppotunity_statistics_test")
+@TableName("topp_oppotunity_statistics")
 //@TableName("topp_oppotunity_statistics")
 public class ToppOppoStatistics implements Serializable {
 
