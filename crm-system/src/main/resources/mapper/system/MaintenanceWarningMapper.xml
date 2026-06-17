@@ -1,0 +1,1028 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.MaintenanceWarningMapper">
+
+    <!-- ==================== 字典查询（简单SQL，无动态条件） ==================== -->
+
+    <select id="selectOrderTypeList" resultType="java.util.Map">
+        SELECT code_ AS code, name_ AS codeName FROM sys_code WHERE setting_str3 = 'maintenance_order'
+    </select>
+
+    <select id="selectDeptList" resultType="java.util.Map">
+        SELECT code_ AS code, name_ AS name FROM sys_code WHERE type_ = 'expandDep' ORDER BY order_
+    </select>
+
+    <select id="selectIsImpPrtList" resultType="java.util.Map">
+        SELECT code_ AS code, name_ AS name FROM sys_code WHERE type_ = 'is_imp_prt' ORDER BY order_
+    </select>
+
+    <select id="selectGrpTypeList" resultType="java.util.Map">
+        SELECT code_ AS code, name_ AS name FROM sys_code WHERE type_ = 'grp_type' ORDER BY order_
+    </select>
+
+    <!-- ==================== Tab 1: 维系预警已发工单整体情况 (对应 getMaintenanceNewStatSql) ==================== -->
+
+    <select id="selectDispatchedByCity" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.ypfl, tmp.yjsl,
+            CONCAT(CAST(IF(ROUND(tmp.yjsl / tmp.ypfl * 100, 2) IS NULL, 0, ROUND(tmp.yjsl / tmp.ypfl * 100, 2)) AS CHAR),'%') AS yjszb,
+            tmp.sdcl, tmp.plcl, tmp.zczngd, (tmp.sdcl + tmp.plcl + tmp.zczngd) AS zcgdhj,
+            CONCAT(CAST(IF(ROUND((tmp.sdcl + tmp.plcl + tmp.zczngd) / tmp.ypfl * 100, 2) IS NULL, 0, ROUND((tmp.sdcl + tmp.plcl + tmp.zczngd) / tmp.ypfl * 100, 2)) AS CHAR),'%') AS zcgdzb,
+            tmp.yhlw, tmp.gdcs, (tmp.yhlw + tmp.gdcs) AS ycgdhj,
+            CONCAT(CAST(IF(ROUND((tmp.yhlw + tmp.gdcs) / tmp.ypfl * 100, 2) IS NULL, 0, ROUND((tmp.yhlw + tmp.gdcs) / tmp.ypfl * 100, 2)) AS CHAR),'%') AS ycgdzb,
+            tmp.wjsl, tmp.gzl,
+            CONCAT(CAST(IF(ROUND(tmp.wjsl / tmp.ypfl * 100, 2) IS NULL, 0, ROUND(tmp.wjsl / tmp.ypfl * 100, 2)) AS CHAR),'%') AS wjszb
+        FROM (
+            SELECT
+                <choose>
+                    <when test="areaId == null or areaId == ''">
+                        COALESCE(CASE WHEN area.type_ = '一级' THEN '省本级' ELSE area.name_ END, '未知') AS areaName,
+                    </when>
+                    <otherwise>
+                        COALESCE(CASE WHEN county.type_ = '二级' THEN CONCAT(county.name_,'市本级') ELSE county.name_ END, '未知') AS areaName,
+                    </otherwise>
+                </choose>
+                COUNT(IF(a.status=1, TRUE, NULL)) AS ypfl,
+                COUNT(IF(o.status_ = 'end', TRUE, NULL)) AS yjsl,
+                COUNT(IF(o.status_ = 'end' AND o.end_reason = '0' AND (o.batch_flag = 0 OR o.batch_flag IS NULL), TRUE, NULL)) AS sdcl,
+                COUNT(IF(o.status_ = 'end' AND o.end_reason = '0' AND o.batch_flag = 1, TRUE, NULL)) AS plcl,
+                COUNT(IF(o.end_reason = '1', TRUE, NULL)) AS zczngd,
+                COUNT(IF(o.end_reason = '2', TRUE, NULL)) AS yhlw,
+                COUNT(IF(o.end_reason = '3', TRUE, NULL)) AS gdcs,
+                COUNT(IF(o.status_ NOT IN ('end','tracking') OR o.status_ IS NULL, TRUE, NULL)) AS wjsl,
+                COUNT(IF(o.status_ = 'tracking', TRUE, NULL)) AS gzl
+            FROM maintenance_detail_new a
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            WHERE a.status = 1
+            <if test="orderType != null and orderType != ''">
+                AND a.order_type = #{orderType}
+            </if>
+            <if test="leftTime != null and leftTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+            </if>
+            <if test="rightTime != null and rightTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+            </if>
+            <if test="businessDep != null and businessDep != ''">
+                AND o.business_dep = #{businessDep}
+            </if>
+            <choose>
+                <when test="areaId == null or areaId == ''">
+                    AND a.area_id IS NOT NULL GROUP BY a.area_id ORDER BY area.order_ ASC
+                </when>
+                <when test="countryId == null or countryId == ''">
+                    AND a.area_id IN
+                    <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                    GROUP BY a.county_id ORDER BY a.county_id ASC, area.order_ ASC
+                </when>
+                <otherwise>
+                    AND a.area_id IN
+                    <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                    AND a.county_id IN
+                    <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                    GROUP BY a.county_id ORDER BY county.order_ ASC
+                </otherwise>
+            </choose>
+        ) tmp
+    </select>
+
+    <!-- Tab1 合计 (对应老项目 getMaintenanceTotalNewSql) -->
+    <select id="selectDispatchedTotal" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.ypfl, tmp.yjsl,
+            CONCAT(CAST(IF(ROUND(tmp.yjsl / tmp.ypfl * 100, 2) IS NULL, 0, ROUND(tmp.yjsl / tmp.ypfl * 100, 2)) AS CHAR),'%') AS yjszb,
+            tmp.sdcl, tmp.plcl, tmp.zczngd, (tmp.sdcl + tmp.plcl + tmp.zczngd) AS zcgdhj,
+            CONCAT(CAST(IF(ROUND((tmp.sdcl + tmp.plcl + tmp.zczngd) / tmp.ypfl * 100, 2) IS NULL, 0, ROUND((tmp.sdcl + tmp.plcl + tmp.zczngd) / tmp.ypfl * 100, 2)) AS CHAR),'%') AS zcgdzb,
+            tmp.yhlw, tmp.gdcs, (tmp.yhlw + tmp.gdcs) AS ycgdhj,
+            CONCAT(CAST(IF(ROUND((tmp.yhlw + tmp.gdcs) / tmp.ypfl * 100, 2) IS NULL, 0, ROUND((tmp.yhlw + tmp.gdcs) / tmp.ypfl * 100, 2)) AS CHAR),'%') AS ycgdzb,
+            tmp.wjsl, tmp.gzl,
+            CONCAT(CAST(IF(ROUND(tmp.wjsl / tmp.ypfl * 100, 2) IS NULL, 0, ROUND(tmp.wjsl / tmp.ypfl * 100, 2)) AS CHAR),'%') AS wjszb
+        FROM (
+            SELECT
+                <if test="areaId == null or areaId == ''">'全省'</if>
+                <if test="areaId != null and areaId != ''">'合计'</if> AS areaName,
+                COUNT(IF(a.status=1, TRUE, NULL)) AS ypfl,
+                COUNT(IF(o.status_ = 'end', TRUE, NULL)) AS yjsl,
+                COUNT(IF(o.status_ = 'end' AND o.end_reason = '0' AND (o.batch_flag = 0 OR o.batch_flag IS NULL), TRUE, NULL)) AS sdcl,
+                COUNT(IF(o.status_ = 'end' AND o.end_reason = '0' AND o.batch_flag = 1, TRUE, NULL)) AS plcl,
+                COUNT(IF(o.end_reason = '1', TRUE, NULL)) AS zczngd,
+                COUNT(IF(o.end_reason = '2', TRUE, NULL)) AS yhlw,
+                COUNT(IF(o.end_reason = '3', TRUE, NULL)) AS gdcs,
+                COUNT(IF(o.status_ NOT IN ('end','tracking') OR o.status_ IS NULL, TRUE, NULL)) AS wjsl,
+                COUNT(IF(o.status_ = 'tracking', TRUE, NULL)) AS gzl
+            FROM maintenance_detail_new a
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            WHERE a.status = 1
+            <if test="orderType != null and orderType != ''">
+                AND a.order_type = #{orderType}
+            </if>
+            <if test="leftTime != null and leftTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+            </if>
+            <if test="rightTime != null and rightTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+            </if>
+            <if test="businessDep != null and businessDep != ''">
+                AND o.business_dep = #{businessDep}
+            </if>
+            <if test="areaId == null or areaId == ''">
+                AND a.area_id IS NOT NULL
+            </if>
+            <if test="areaId != null and areaId != '' and (countryId == null or countryId == '')">
+                AND a.area_id IN
+                <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                AND a.county_id IS NOT NULL
+            </if>
+            <if test="areaId != null and areaId != '' and countryId != null and countryId != ''">
+                AND a.area_id IN
+                <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                AND a.county_id IN
+                <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+        ) tmp
+    </select>
+
+    <!-- ==================== Tab 2: 客户经理预警工单处理情况 (对应 getMaintenanceManagerNewStatSql) ==================== -->
+
+    <select id="selectManagerStats" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.countyName, tmp.managerName, tmp.gdl AS ypfl, tmp.yjsl,
+            CONCAT(CAST(IF(ROUND(tmp.yjsl / tmp.gdl * 100, 2) IS NULL, 0, ROUND(tmp.yjsl / tmp.gdl * 100, 2)) AS CHAR),'%') AS yjszb,
+            tmp.sdcl, tmp.plcl, tmp.zczngd, (tmp.sdcl + tmp.plcl + tmp.zczngd) AS zcgdhj,
+            CONCAT(CAST(IF(ROUND((tmp.sdcl + tmp.plcl + tmp.zczngd) / tmp.gdl * 100, 2) IS NULL, 0, ROUND((tmp.sdcl + tmp.plcl + tmp.zczngd) / tmp.gdl * 100, 2)) AS CHAR),'%') AS zcgdzb,
+            tmp.yhlw, tmp.gdcs, (tmp.yhlw + tmp.gdcs) AS ycgdhj,
+            CONCAT(CAST(IF(ROUND((tmp.yhlw + tmp.gdcs) / tmp.gdl * 100, 2) IS NULL, 0, ROUND((tmp.yhlw + tmp.gdcs) / tmp.gdl * 100, 2)) AS CHAR),'%') AS ycgdzb,
+            tmp.wjsl, tmp.gzl,
+            CONCAT(CAST(IF(ROUND(tmp.wjsl / tmp.gdl * 100, 2) IS NULL, 0, ROUND(tmp.wjsl / tmp.gdl * 100, 2)) AS CHAR),'%') AS wjszb
+        FROM (
+            SELECT
+                COALESCE(CASE WHEN area.type_ = '一级' THEN '省本级' ELSE area.name_ END, '未知') AS areaName,
+                CASE WHEN county.type_ = '二级' THEN '市本级' ELSE county.name_ END AS countyName,
+                u.name_ch AS managerName,
+                COUNT(1) AS gdl,
+                COUNT(IF(o.status_ = 'end', TRUE, NULL)) AS yjsl,
+                COUNT(IF(o.status_ = 'end' AND o.end_reason = '0' AND (o.batch_flag = 0 OR o.batch_flag IS NULL), TRUE, NULL)) AS sdcl,
+                COUNT(IF(o.status_ = 'end' AND o.end_reason = '0' AND o.batch_flag = 1, TRUE, NULL)) AS plcl,
+                COUNT(IF(o.end_reason = '1', TRUE, NULL)) AS zczngd,
+                COUNT(IF(o.end_reason = '2', TRUE, NULL)) AS yhlw,
+                COUNT(IF(o.end_reason = '3', TRUE, NULL)) AS gdcs,
+                COUNT(IF(o.status_ NOT IN ('end','tracking') OR o.status_ IS NULL, TRUE, NULL)) AS wjsl,
+                COUNT(IF(o.status_ = 'tracking', TRUE, NULL)) AS gzl
+            FROM maintenance_detail_new a
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            LEFT JOIN sys_user u ON u.id_ = a.user_id
+            WHERE a.status = 1 AND a.user_id IS NOT NULL
+            <if test="orderType != null and orderType != ''">
+                AND a.order_type = #{orderType}
+            </if>
+            <if test="leftTime != null and leftTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+            </if>
+            <if test="rightTime != null and rightTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+            </if>
+            <if test="areaId != null and areaId != ''">
+                AND a.area_id IN
+                <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="countryId != null and countryId != ''">
+                AND a.county_id IN
+                <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="managerId != null and managerId != ''">
+                AND a.manager_id = #{managerId}
+            </if>
+            <if test="managerName != null and managerName != ''">
+                AND u.name_ch LIKE CONCAT('%', #{managerName}, '%')
+            </if>
+            <if test="isImpPrt != null and isImpPrt != ''">
+                AND a.is_imp_prt = #{isImpPrt}
+            </if>
+            <if test="grpType != null and grpType != ''">
+                AND a.grp_type = #{grpType}
+            </if>
+            GROUP BY u.id_, a.area_id, a.county_id
+            ORDER BY area.order_ ASC, county.order_ ASC, u.id_ ASC
+            <if test="startRow != null and pageSize != null and pageSize > 0">
+                LIMIT #{startRow}, #{pageSize}
+            </if>
+        ) tmp
+    </select>
+
+    <!-- Tab2 总数 -->
+    <select id="selectManagerStatsCount" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.lang.Long">
+        SELECT COUNT(1) FROM (
+            SELECT u.id_
+            FROM maintenance_detail_new a
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN sys_user u ON u.id_ = a.user_id
+            WHERE a.status = 1 AND a.user_id IS NOT NULL
+            <if test="orderType != null and orderType != ''">
+                AND a.order_type = #{orderType}
+            </if>
+            <if test="leftTime != null and leftTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+            </if>
+            <if test="rightTime != null and rightTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+            </if>
+            <if test="areaId != null and areaId != ''">
+                AND a.area_id IN
+                <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="countryId != null and countryId != ''">
+                AND a.county_id IN
+                <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="managerId != null and managerId != ''">
+                AND a.manager_id = #{managerId}
+            </if>
+            <if test="managerName != null and managerName != ''">
+                AND u.name_ch LIKE CONCAT('%', #{managerName}, '%')
+            </if>
+            <if test="isImpPrt != null and isImpPrt != ''">
+                AND a.is_imp_prt = #{isImpPrt}
+            </if>
+            <if test="grpType != null and grpType != ''">
+                AND a.grp_type = #{grpType}
+            </if>
+            GROUP BY u.id_, a.area_id, a.county_id
+        ) t
+    </select>
+
+    <!-- ==================== Tab 5: 维系预警未派发工单情况 (对应 getMaintenanceStatSql + getMaintenanceTotalSql) ==================== -->
+    <!-- 注意: 查的是 maintenance_detail 表(不是maintenance_detail_new!) -->
+    <!--       status=1=已派发, status=0=未派发 -->
+
+    <select id="selectUnallocatedByCity" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.gdl, tmp.khjll, tmp.ypfl,
+            CONCAT(CAST(IF(ROUND(tmp.ypfl / tmp.gdl * 100, 2) IS NULL, 0, ROUND(tmp.ypfl / tmp.gdl * 100, 2)) AS CHAR),'%') AS ypfzb,
+            tmp.wpfl,
+            CONCAT(CAST(IF(ROUND(tmp.wpfl / tmp.gdl * 100, 2) IS NULL, 0, ROUND(tmp.wpfl / tmp.gdl * 100, 2)) AS CHAR),'%') AS wpfzb,
+            tmp.wpfkhjll, tmp.areaId
+        FROM (
+            SELECT
+                <choose>
+                    <when test="areaId == null or areaId == ''">
+                        area.name_ AS areaName, a.area_id AS areaId,
+                    </when>
+                    <otherwise>
+                        county.name_ AS areaName, county.id_ AS areaId,
+                    </otherwise>
+                </choose>
+                COUNT(1) AS gdl,
+                COUNT(DISTINCT(a.manager_id), IF(a.manager_id != '' AND a.manager_id IS NOT NULL, TRUE, NULL)) AS khjll,
+                COUNT(IF(a.status=1, TRUE, NULL)) AS ypfl,
+                COUNT(IF(a.status=0, TRUE, NULL)) AS wpfl,
+                COUNT(DISTINCT(a.manager_id), IF(a.status=0, TRUE, NULL)) AS wpfkhjll
+            FROM maintenance_detail a
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            WHERE 1=1
+            <if test="orderType != null and orderType != ''">
+                AND a.order_type = #{orderType}
+            </if>
+            <if test="leftTime != null and leftTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+            </if>
+            <if test="rightTime != null and rightTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+            </if>
+            <if test="businessDep != null and businessDep != ''">
+                AND a.business_dep = #{businessDep}
+            </if>
+            <if test="isImpPrt != null and isImpPrt != ''">
+                AND a.is_imp_prt = #{isImpPrt}
+            </if>
+            <if test="grpType != null and grpType != ''">
+                AND a.grp_type = #{grpType}
+            </if>
+            <choose>
+                <when test="areaId == null or areaId == ''">
+                    GROUP BY a.area_id ORDER BY area.order_ IS NULL, area.order_ ASC
+                </when>
+                <when test="countryId == null or countryId == ''">
+                    AND a.area_id IN
+                    <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                    AND a.county_id IS NOT NULL GROUP BY a.county_id ORDER BY a.county_id ASC, area.order_ ASC
+                </when>
+                <otherwise>
+                    AND a.area_id IN
+                    <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                    AND a.county_id IN
+                    <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                    GROUP BY a.county_id ORDER BY county.order_ ASC
+                </otherwise>
+            </choose>
+        ) tmp
+    </select>
+
+    <!-- ==================== 未派发工单清单 (对应老项目 getMaintenanceUnallocatedSql) ==================== -->
+
+    <select id="selectUnallocatedList" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT sc.name_ AS orderTypeName, area.name_ AS areaName, county.name_ AS countyName,
+            a.cust_grp_id AS custGrpId, a.grp_code AS grpCode, a.grp_name AS grpName,
+            sc1.name_ AS businessDepName, a.manager_id AS managerId, a.manager_name AS managerName,
+            a.svc_num AS svcNum, a.id_ AS id
+        FROM maintenance_detail a
+        LEFT JOIN sys_code sc ON a.order_type = sc.code_ AND sc.setting_str3 = 'maintenance_order'
+        LEFT JOIN sys_code sc1 ON a.business_dep = sc1.code_ AND sc1.type_ = 'expandDep'
+        LEFT JOIN sys_area area ON a.area_id = area.id_
+        LEFT JOIN sys_area county ON a.county_id = county.id_
+        WHERE a.status = 0
+        <if test="orderType != null and orderType != ''">
+            AND a.order_type = #{orderType}
+        </if>
+        <if test="leftTime != null and leftTime != ''">
+            AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+        </if>
+        <if test="rightTime != null and rightTime != ''">
+            AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+        </if>
+        <if test="areaId != null and areaId != ''">
+            AND a.area_id IN
+            <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <if test="countryId != null and countryId != ''">
+            AND a.county_id IN
+            <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <if test="businessDep != null and businessDep != ''">
+            AND a.business_dep = #{businessDep}
+        </if>
+        <if test="isImpPrt != null and isImpPrt != ''">
+            AND a.is_imp_prt = #{isImpPrt}
+        </if>
+        <if test="grpType != null and grpType != ''">
+            AND a.grp_type = #{grpType}
+        </if>
+        <if test="managerId != null and managerId != ''">
+            AND a.manager_id LIKE CONCAT('%', #{managerId}, '%')
+        </if>
+        <if test="managerName != null and managerName != ''">
+            AND a.manager_name LIKE CONCAT('%', #{managerName}, '%')
+        </if>
+        <if test="grpName != null and grpName != ''">
+            AND a.grp_name LIKE CONCAT('%', #{grpName}, '%')
+        </if>
+        <if test="grpCode != null and grpCode != ''">
+            AND a.grp_code LIKE CONCAT('%', #{grpCode}, '%')
+        </if>
+        <if test="custGrpId != null and custGrpId != ''">
+            AND a.cust_grp_id LIKE CONCAT('%', #{custGrpId}, '%')
+        </if>
+        <if test="svcNum != null and svcNum != ''">
+            AND a.svc_num LIKE CONCAT('%', #{svcNum}, '%')
+        </if>
+        ORDER BY a.create_time DESC
+        <if test="startRow != null and pageSize != null and pageSize > 0">
+            LIMIT #{startRow}, #{pageSize}
+        </if>
+    </select>
+
+    <select id="selectUnallocatedListCount" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.lang.Long">
+        SELECT COUNT(1) FROM maintenance_detail a
+        WHERE a.status = 0
+        <if test="orderType != null and orderType != ''">AND a.order_type = #{orderType}</if>
+        <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+        <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+        <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+        <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+        <if test="businessDep != null and businessDep != ''">AND a.business_dep = #{businessDep}</if>
+        <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+        <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+        <if test="managerId != null and managerId != ''">AND a.manager_id LIKE CONCAT('%', #{managerId}, '%')</if>
+        <if test="managerName != null and managerName != ''">AND a.manager_name LIKE CONCAT('%', #{managerName}, '%')</if>
+        <if test="grpName != null and grpName != ''">AND a.grp_name LIKE CONCAT('%', #{grpName}, '%')</if>
+        <if test="grpCode != null and grpCode != ''">AND a.grp_code LIKE CONCAT('%', #{grpCode}, '%')</if>
+        <if test="custGrpId != null and custGrpId != ''">AND a.cust_grp_id LIKE CONCAT('%', #{custGrpId}, '%')</if>
+        <if test="svcNum != null and svcNum != ''">AND a.svc_num LIKE CONCAT('%', #{svcNum}, '%')</if>
+    </select>
+
+    <!-- Tab5 合计 (对应老项目 getMaintenanceTotalSql) -->
+    <select id="selectUnallocatedTotal" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.gdl, tmp.khjll, tmp.ypfl,
+            CONCAT(CAST(IF(ROUND(tmp.ypfl / tmp.gdl * 100, 2) IS NULL, 0, ROUND(tmp.ypfl / tmp.gdl * 100, 2)) AS CHAR),'%') AS ypfzb,
+            tmp.wpfl,
+            CONCAT(CAST(IF(ROUND(tmp.wpfl / tmp.gdl * 100, 2) IS NULL, 0, ROUND(tmp.wpfl / tmp.gdl * 100, 2)) AS CHAR),'%') AS wpfzb,
+            tmp.wpfkhjll, tmp.areaId
+        FROM (
+            SELECT
+                <if test="areaId == null or areaId == ''">'全省'</if>
+                <if test="areaId != null and areaId != ''">'合计'</if> AS areaName,
+                'all' AS areaId,
+                COUNT(1) AS gdl,
+                COUNT(DISTINCT(a.manager_id), IF(a.manager_id != '' AND a.manager_id IS NOT NULL, TRUE, NULL)) AS khjll,
+                COUNT(IF(a.status=1, TRUE, NULL)) AS ypfl,
+                COUNT(IF(a.status=0, TRUE, NULL)) AS wpfl,
+                COUNT(DISTINCT(a.manager_id), IF(a.status=0, TRUE, NULL)) AS wpfkhjll
+            FROM maintenance_detail a
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            WHERE 1=1
+            <if test="orderType != null and orderType != ''">
+                AND a.order_type = #{orderType}
+            </if>
+            <if test="leftTime != null and leftTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}
+            </if>
+            <if test="rightTime != null and rightTime != ''">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}
+            </if>
+            <if test="businessDep != null and businessDep != ''">
+                AND a.business_dep = #{businessDep}
+            </if>
+            <if test="isImpPrt != null and isImpPrt != ''">
+                AND a.is_imp_prt = #{isImpPrt}
+            </if>
+            <if test="grpType != null and grpType != ''">
+                AND a.grp_type = #{grpType}
+            </if>
+            <if test="areaId != null and areaId != '' and (countryId == null or countryId == '')">
+                AND a.area_id IN
+                <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                AND a.county_id IS NOT NULL
+            </if>
+            <if test="areaId != null and areaId != '' and countryId != null and countryId != ''">
+                AND a.area_id IN
+                <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                AND a.county_id IN
+                <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+        ) tmp
+    </select>
+
+    <!-- ==================== Tab3: 维系效果报表(预警维度) ==================== -->
+
+    <select id="selectTab3Mnp" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number,
+            CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb
+        FROM (
+            SELECT COALESCE(CASE WHEN area.type_ = '一级' THEN '省本级' ELSE area.name_ END, '未知') AS areaName,
+                COUNT(1) AS yjl,
+                COUNT(IF(o.cur_innet_flag = '1', TRUE, NULL)) AS number
+            FROM maintenance_detail a
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            WHERE a.status = 1 AND a.order_type = 'mnp'
+            <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+            <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="businessDep != null and businessDep != ''">AND o.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+            GROUP BY a.area_id ORDER BY area.order_ ASC
+        ) tmp
+    </select>
+
+    <select id="selectTab3MnpTotal" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number,
+            CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb
+        FROM (
+            SELECT '全省合计' AS areaName,
+                COUNT(1) AS yjl,
+                COUNT(IF(o.cur_innet_flag = '1', TRUE, NULL)) AS number
+            FROM maintenance_detail a
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            WHERE a.status = 1 AND a.order_type = 'mnp'
+            <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+            <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="businessDep != null and businessDep != ''">AND o.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+        ) tmp
+    </select>
+
+    <!-- ==================== Tab3: 维系效果报表(预警维度) 动态 SQL ==================== -->
+
+    <sql id="tab3NumberColumn">
+        <choose>
+            <when test="orderType == 'mnp'">COUNT(IF(o.cur_innet_flag = '1', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'hmd_warn'">COUNT(IF(w.NEW_RED_CREATE_DATE != '', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">COUNT(IF(w.exte_flag = 1, TRUE, NULL)) AS number, SUM(w.NEW_SCHEME_FEE) AS xynf</when>
+            <when test="orderType == 'third_check_warn'">COUNT(IF(w.cycle_flag = 1, TRUE, NULL)) AS number</when>
+            <when test="orderType == 'cloud_expire_alarm'">COUNT(IF(w.NEW_CONSUME_TIME IS NOT NULL, TRUE, NULL)) AS number, SUM(w.NEW_AMOUNT_PER_YEAR) AS yjnsr</when>
+            <when test="orderType == 'special_activity_warn'">COUNT(IF(w.EP_SPECIAL_SCHEME_NAME != '', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'group_buy_warn'">COUNT(IF(u.EP_PURCHASE_SCHEME_NAME != '', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'terminal_contract_warn'">COUNT(IF(u.NEW_SCHEME_NAME != '', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'qf_warn'">IF(ROUND(SUM(w.TOT_OWE_FEE) / 10000, 2) IS NULL, 0, ROUND(SUM(w.TOT_OWE_FEE) / 10000, 2)) AS number, IF(ROUND(SUM(w.WRITEOFF_FEE) / 10000, 2) IS NULL, 0, ROUND(SUM(w.WRITEOFF_FEE) / 10000, 2)) AS qfhs</when>
+            <when test="orderType == 'user_cust_owe_warn'">IF(ROUND(SUM(SUBSTRING_INDEX(SUBSTRING_INDEX(u.WARNING_INFO,'||',5),'||',-1)) / 10000, 2) IS NULL, 0, ROUND(SUM(SUBSTRING_INDEX(SUBSTRING_INDEX(u.WARNING_INFO,'||',5),'||',-1)) / 10000, 2)) AS number, IF(ROUND(SUM(u.WRITEOFF_FEE) / 10000, 2) IS NULL, 0, ROUND(SUM(u.WRITEOFF_FEE) / 10000, 2)) AS qfhs</when>
+            <when test="orderType == 'cust_receipt_warn'">IF(ROUND((SUM(w.RECEIPT_ONE_FEE)+SUM(w.INVOICE_FEE)) / 10000, 2) IS NULL, 0, ROUND((SUM(w.RECEIPT_ONE_FEE)+SUM(w.INVOICE_FEE)) / 10000, 2)) AS number, COUNT(IF(w.WRITEOFF_FLAG = '1', TRUE, NULL)) AS zzl, IF(ROUND(SUM(w.WRITEOFF_FEE) / 10000, 2) IS NULL, 0, ROUND(SUM(w.WRITEOFF_FEE) / 10000, 2)) AS zzje</when>
+            <when test="orderType == 'htdq_warn'">COUNT(IF(w.XQ_CREATE_TIME IS NOT NULL, TRUE, NULL)) AS number, IF(ROUND(SUM(w.XQ_CONTRACT_MONEY2) / 10000, 2) IS NULL, 0, ROUND(SUM(w.XQ_CONTRACT_MONEY2) / 10000, 2)) AS htje</when>
+            <otherwise>0 AS number</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="tab3WarnJoin">
+        <choose>
+            <when test="orderType == 'mnp'"></when>
+            <when test="orderType == 'hmd_warn' or orderType == 'special_activity_warn'">LEFT JOIN ftp_tc_user_common_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">LEFT JOIN wide_sys_auto_warning w ON a.detail_id = w.id</when>
+            <when test="orderType == 'third_check_warn'">LEFT JOIN dedicated_crcuit_check_warning w ON a.detail_id = w.id</when>
+            <when test="orderType == 'cloud_expire_alarm'">LEFT JOIN ftp_tc_grp_cloud_expire_alarm w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'group_buy_warn' or orderType == 'terminal_contract_warn' or orderType == 'user_cust_owe_warn'">LEFT JOIN ftp_tc_user_cust_warning w ON a.detail_id = w.id_ LEFT JOIN ftp_tc_user_common_warning u ON w.MAIN_ORDER_FLOW_NO = u.MAIN_ORDER_FLOW_NO</when>
+            <when test="orderType == 'qf_warn'">LEFT JOIN ftp_tc_grp_owe_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'cust_receipt_warn'">LEFT JOIN dwd_cust_receipt_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'htdq_warn'">LEFT JOIN ftp_tc_grp_contract_due_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'cut_over_warn'">LEFT JOIN ftp_tc_cust_cut_over_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'leaseline_relet'">LEFT JOIN ftp_tc_leaseline_relet_cust_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'ictArrearsWarn'">LEFT JOIN ftp_tc_user_cust_ict_warning w ON a.detail_id = w.id_</when>
+        </choose>
+    </sql>
+
+    <sql id="tab3OuterColumns">
+        <choose>
+            <when test="orderType == 'mnp' or orderType == 'hmd_warn' or orderType == 'special_activity_warn' or orderType == 'group_buy_warn' or orderType == 'terminal_contract_warn' or orderType == 'third_check_warn'">
+                CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb
+            </when>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb,
+                IF(ROUND(tmp.xynf / 10000, 2) IS NULL, 0, ROUND(tmp.xynf / 10000, 2)) AS xynf
+            </when>
+            <when test="orderType == 'cloud_expire_alarm'">
+                CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb,
+                IF(ROUND(tmp.yjnsr / 10000, 2) IS NULL, 0, ROUND(tmp.yjnsr / 10000, 2)) AS yjnsr
+            </when>
+            <when test="orderType == 'qf_warn' or orderType == 'user_cust_owe_warn'">
+                tmp.qfhs,
+                CONCAT(CAST(IF(ROUND(tmp.qfhs / tmp.number * 100, 2) IS NULL, 0, ROUND(tmp.qfhs / tmp.number * 100, 2)) AS CHAR),'%') AS hkl
+            </when>
+            <when test="orderType == 'cust_receipt_warn'">
+                tmp.zzl, tmp.zzje,
+                CONCAT(CAST(IF(ROUND(tmp.zzl / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.zzl / tmp.yjl * 100, 2)) AS CHAR),'%') AS zzlv,
+                CONCAT(CAST(IF(ROUND(tmp.zzje / tmp.number * 100, 2) IS NULL, 0, ROUND(tmp.zzje / tmp.number * 100, 2)) AS CHAR),'%') AS zzjezb
+            </when>
+            <when test="orderType == 'htdq_warn'">
+                CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS xyl,
+                tmp.htje
+            </when>
+            <otherwise>CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb</otherwise>
+        </choose>
+    </sql>
+
+    <select id="selectTab3Effect" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number, <include refid="tab3OuterColumns"/>
+        FROM (
+            SELECT
+                <choose>
+                    <when test="areaId == null or areaId == ''">COALESCE(CASE WHEN area.type_ = '一级' THEN '省本级' ELSE area.name_ END, '未知') AS areaName</when>
+                    <when test="countryId != null and countryId != ''">CASE WHEN us.name_ch IS NULL THEN '其他' ELSE us.name_ch END AS areaName</when>
+                    <otherwise>COALESCE(CASE WHEN county.type_ = '二级' THEN CONCAT(county.name_,'市本级') ELSE county.name_ END, '未知') AS areaName</otherwise>
+                </choose>
+                , COUNT(1) AS yjl,
+                <include refid="tab3NumberColumn"/>
+            FROM maintenance_detail a
+            LEFT JOIN sys_user us ON a.user_id = us.id_
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            <include refid="tab3WarnJoin"/>
+            WHERE a.order_type = #{orderType}
+            <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+            <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="businessDep != null and businessDep != ''">AND o.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+            <if test="isDistribute != null and isDistribute != ''">AND a.status = #{isDistribute}</if>
+            <choose>
+                <when test="areaId == null or areaId == ''">GROUP BY a.area_id ORDER BY area.order_ IS NULL, area.order_ ASC</when>
+                <when test="countryId == null or countryId == ''">GROUP BY a.county_id ORDER BY a.county_id ASC, area.order_ ASC</when>
+                <otherwise>GROUP BY a.user_id ORDER BY a.user_id DESC</otherwise>
+            </choose>
+        ) tmp
+    </select>
+
+    <select id="selectTab3EffectTotal" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number, <include refid="tab3OuterColumns"/>
+        FROM (
+            SELECT
+                <choose>
+                    <when test="areaId == null or areaId == ''">'全省'</when>
+                    <otherwise>'合计'</otherwise>
+                </choose> AS areaName,
+                COUNT(1) AS yjl,
+                <include refid="tab3NumberColumn"/>
+            FROM maintenance_detail a
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            <include refid="tab3WarnJoin"/>
+            WHERE a.order_type = #{orderType}
+            <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+            <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="businessDep != null and businessDep != ''">AND o.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+            <if test="isDistribute != null and isDistribute != ''">AND a.status = #{isDistribute}</if>
+        ) tmp
+    </select>
+
+    <!-- ==================== Tab3 特殊预警类型 (hmd_warn/Wide/double_wide/cloud_expire_alarm) 需要 UNION ALL 处理 C/U 两类订单 ==================== -->
+
+    <select id="selectTab3EffectSpecial" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number,
+            CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb
+            <if test="orderType == 'Wide' or orderType == 'double_wide'">
+                , IF(ROUND(tmp.xynf / 10000, 2) IS NULL, 0, ROUND(tmp.xynf / 10000, 2)) AS xynf
+            </if>
+            <if test="orderType == 'cloud_expire_alarm'">
+                , IF(ROUND(tmp.yjnsr / 10000, 2) IS NULL, 0, ROUND(tmp.yjnsr / 10000, 2)) AS yjnsr
+            </if>
+            <if test="orderType == 'Wide' or orderType == 'double_wide' or orderType == 'hmd_warn' or orderType == 'cloud_expire_alarm'">
+                , tmp.areaId
+            </if>
+        FROM (
+            SELECT
+                <choose>
+                    <when test="areaId == null or areaId == ''">CASE WHEN area.type_ = '一级' THEN '省本级' ELSE area.name_ END AS areaName</when>
+                    <when test="countryId != null and countryId != ''">CASE WHEN us.name_ch IS NULL THEN '其他' ELSE us.name_ch END AS areaName</when>
+                    <otherwise>CASE WHEN county.type_ = '二级' THEN CONCAT(county.name_,'市本级') ELSE county.name_ END AS areaName</otherwise>
+                </choose>
+                , COUNT(1) AS yjl
+                <choose>
+                    <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                        , COUNT(IF(a.exte_flag = 1, TRUE, NULL)) AS number, SUM(a.NEW_SCHEME_FEE) AS xynf
+                    </when>
+                    <when test="orderType == 'hmd_warn'">
+                        , COUNT(IF(a.NEW_RED_CREATE_DATE != '', TRUE, NULL)) AS number
+                    </when>
+                    <when test="orderType == 'cloud_expire_alarm'">
+                        , COUNT(IF(a.NEW_CONSUME_TIME IS NOT NULL, TRUE, NULL)) AS number, SUM(a.NEW_AMOUNT_PER_YEAR) AS yjnsr
+                    </when>
+                </choose>
+                <if test="orderType == 'Wide' or orderType == 'double_wide' or orderType == 'hmd_warn' or orderType == 'cloud_expire_alarm'">
+                    <choose>
+                        <when test="areaId == null or areaId == ''">, a.area_id AS areaId</when>
+                        <otherwise>, a.county_id AS areaId</otherwise>
+                    </choose>
+                </if>
+            FROM (
+                <include refid="tab3SpecialUnion"/>
+            ) a
+            LEFT JOIN sys_user us ON a.user_id = us.id_
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            WHERE 1 = 1
+            <if test="isDistribute != null and isDistribute != ''">AND a.status = #{isDistribute}</if>
+            <if test="leftTime != null and leftTime != ''">AND a.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+            <if test="rightTime != null and rightTime != ''">AND a.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+            <if test="businessDep != null and businessDep != ''">AND a.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+            <choose>
+                <when test="areaId == null or areaId == ''">GROUP BY a.area_id ORDER BY area.order_ IS NULL, area.order_ ASC</when>
+                <when test="countryId == null or countryId == ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> GROUP BY a.county_id ORDER BY a.county_id ASC, area.order_ ASC</when>
+                <otherwise>AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> GROUP BY a.user_id ORDER BY a.user_id DESC</otherwise>
+            </choose>
+            <if test="startRow != null and pageSize != null and pageSize > 0">
+                LIMIT #{startRow}, #{pageSize}
+            </if>
+        ) tmp
+    </select>
+
+    <select id="selectTab3EffectSpecialTotal" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number,
+            CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb
+            <if test="orderType == 'Wide' or orderType == 'double_wide'">
+                , IF(ROUND(tmp.xynf / 10000, 2) IS NULL, 0, ROUND(tmp.xynf / 10000, 2)) AS xynf
+            </if>
+            <if test="orderType == 'cloud_expire_alarm'">
+                , IF(ROUND(tmp.yjnsr / 10000, 2) IS NULL, 0, ROUND(tmp.yjnsr / 10000, 2)) AS yjnsr
+            </if>
+        FROM (
+            SELECT
+                <choose><when test="areaId == null or areaId == ''">'全省'</when><otherwise>'合计'</otherwise></choose> AS areaName
+                , COUNT(1) AS yjl
+                <choose>
+                    <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                        , COUNT(IF(a.exte_flag = 1, TRUE, NULL)) AS number, SUM(a.NEW_SCHEME_FEE) AS xynf
+                    </when>
+                    <when test="orderType == 'hmd_warn'">
+                        , COUNT(IF(a.NEW_RED_CREATE_DATE != '', TRUE, NULL)) AS number
+                    </when>
+                    <when test="orderType == 'cloud_expire_alarm'">
+                        , COUNT(IF(a.NEW_CONSUME_TIME IS NOT NULL, TRUE, NULL)) AS number, SUM(a.NEW_AMOUNT_PER_YEAR) AS yjnsr
+                    </when>
+                </choose>
+            FROM (
+                <include refid="tab3SpecialUnion"/>
+            ) a
+            WHERE 1 = 1
+            <if test="isDistribute != null and isDistribute != ''">AND a.status = #{isDistribute}</if>
+            <if test="leftTime != null and leftTime != ''">AND a.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+            <if test="rightTime != null and rightTime != ''">AND a.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+            <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="businessDep != null and businessDep != ''">AND a.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+        ) tmp
+    </select>
+
+    <sql id="tab3SpecialUnion">
+        <choose>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                SELECT d.grp_type, d.STATUS, d.order_type, d.create_time, d.is_imp_prt, d.area_id, d.county_id, d.user_id, d.business_dep,
+                    u.id AS uid_, u.exte_flag, u.NEW_SCHEME_FEE
+                FROM maintenance_detail d INNER JOIN wide_sys_auto_warning u ON d.detail_id = u.id
+                WHERE d.order_type = #{orderType} AND d.order_category != 'C'
+                <if test="leftTime != null and leftTime != ''">AND d.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+                <if test="rightTime != null and rightTime != ''">AND d.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+                UNION ALL
+                SELECT d.grp_type, d.STATUS, d.order_type, d.create_time, d.is_imp_prt, d.area_id, d.county_id, d.user_id, d.business_dep,
+                    u.id AS uid_, u.exte_flag, u.NEW_SCHEME_FEE
+                FROM maintenance_detail d
+                INNER JOIN ftp_tc_user_cust_warning c ON d.detail_id = c.id_
+                INNER JOIN wide_sys_auto_warning u ON c.MAIN_ORDER_FLOW_NO = u.main_order_flow_no
+                WHERE d.order_type = #{orderType} AND d.order_category = 'C'
+                <if test="leftTime != null and leftTime != ''">AND d.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+                <if test="rightTime != null and rightTime != ''">AND d.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+            </when>
+            <when test="orderType == 'hmd_warn'">
+                SELECT d.grp_type, d.STATUS, d.order_type, d.create_time, d.is_imp_prt, d.area_id, d.county_id, d.user_id, d.business_dep,
+                    u.id_ AS uid_, u.NEW_RED_CREATE_DATE
+                FROM maintenance_detail d INNER JOIN ftp_tc_user_common_warning u ON d.detail_id = u.id_
+                WHERE d.order_type = #{orderType} AND d.order_category != 'C'
+                <if test="leftTime != null and leftTime != ''">AND d.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+                <if test="rightTime != null and rightTime != ''">AND d.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+                UNION ALL
+                SELECT d.grp_type, d.STATUS, d.order_type, d.create_time, d.is_imp_prt, d.area_id, d.county_id, d.user_id, d.business_dep,
+                    u.id_ AS uid_, u.NEW_RED_CREATE_DATE
+                FROM maintenance_detail d
+                INNER JOIN ftp_tc_user_cust_warning c ON d.detail_id = c.id_
+                INNER JOIN ftp_tc_user_common_warning u ON c.MAIN_ORDER_FLOW_NO = u.MAIN_ORDER_FLOW_NO
+                WHERE d.order_type = #{orderType} AND d.order_category = 'C'
+                <if test="leftTime != null and leftTime != ''">AND d.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+                <if test="rightTime != null and rightTime != ''">AND d.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+            </when>
+            <when test="orderType == 'cloud_expire_alarm'">
+                SELECT d.grp_type, d.STATUS, d.order_type, d.create_time, d.is_imp_prt, d.area_id, d.county_id, d.user_id, d.business_dep,
+                    u.id_ AS uid_, u.NEW_CONSUME_TIME, u.NEW_AMOUNT_PER_YEAR
+                FROM maintenance_detail d INNER JOIN ftp_tc_grp_cloud_expire_alarm u ON d.detail_id = u.id_
+                WHERE d.order_type = #{orderType} AND d.order_category != 'C'
+                <if test="leftTime != null and leftTime != ''">AND d.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+                <if test="rightTime != null and rightTime != ''">AND d.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+                UNION ALL
+                SELECT d.grp_type, d.STATUS, d.order_type, d.create_time, d.is_imp_prt, d.area_id, d.county_id, d.user_id, d.business_dep,
+                    u.id_ AS uid_, u.NEW_CONSUME_TIME, u.NEW_AMOUNT_PER_YEAR
+                FROM maintenance_detail d
+                INNER JOIN ftp_tc_user_cust_warning c ON d.detail_id = c.id_
+                INNER JOIN ftp_tc_grp_cloud_expire_alarm u ON c.MAIN_ORDER_FLOW_NO = u.MAIN_ORDER_FLOW_NO
+                WHERE d.order_type = #{orderType} AND d.order_category = 'C'
+                <if test="leftTime != null and leftTime != ''">AND d.create_time &gt;= STR_TO_DATE(#{leftTime},'%Y-%m-%d')</if>
+                <if test="rightTime != null and rightTime != ''">AND d.create_time &lt; DATE_ADD(STR_TO_DATE(#{rightTime},'%Y-%m-%d'),INTERVAL 1 DAY)</if>
+            </when>
+        </choose>
+    </sql>
+
+    <!-- ==================== Tab4: 维系效果报表(业务维度) — 独立 SQL 片段，不完全复用 Tab3 ==================== -->
+
+    <sql id="tab4TimeFilter">
+        <choose>
+            <when test="orderType == 'mnp' or orderType == 'qf_warn' or orderType == 'cut_over_warn' or orderType == 'user_cust_owe_warn' or orderType == 'third_check_warn' or orderType == 'double_zero_warn' or orderType == 'pcdn_warn' or orderType == 'leaseline_relet'">
+                <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+                <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(a.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            </when>
+            <when test="orderType == 'htdq_warn'">
+                <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(w.CONTRACT_EXPDATE, '%Y-%m-%d') &gt;= #{leftTime}</if>
+                <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(w.CONTRACT_EXPDATE, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            </when>
+            <when test="orderType == 'hmd_warn'">
+                <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(SUBSTRING_INDEX(SUBSTRING_INDEX(w.WARNING_INFO,'||',3),'||',-1), '%Y-%m-%d') &gt;= #{leftTime}</if>
+                <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(SUBSTRING_INDEX(SUBSTRING_INDEX(w.WARNING_INFO,'||',3),'||',-1), '%Y-%m-%d') &lt;= #{rightTime}</if>
+            </when>
+            <when test="orderType == 'group_buy_warn'">
+                <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info,'||',4),'||',-1), '%Y-%m-%d') &gt;= #{leftTime}</if>
+                <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info,'||',4),'||',-1), '%Y-%m-%d') &lt;= #{rightTime}</if>
+            </when>
+            <otherwise>
+                <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(w.expire_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+                <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(w.expire_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="tab4WarnJoin">
+        <choose>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                INNER JOIN (SELECT b.id,b.exte_flag,b.NEW_SCHEME_FEE,b.exp_time AS expire_time FROM (SELECT x.* FROM wide_sys_auto_warning x ORDER BY x.create_date DESC) b GROUP BY b.user_id,b.scheme_id,b.eff_time,b.exp_time) w ON a.detail_id = w.id
+            </when>
+            <when test="orderType == 'third_check_warn'">LEFT JOIN dedicated_crcuit_check_warning w ON a.detail_id = w.id</when>
+            <when test="orderType == 'cust_receipt_warn'">
+                INNER JOIN (SELECT b.id_,b.WRITEOFF_FLAG,b.WRITEOFF_FEE,b.RECEIPT_ONE_FEE,b.INVOICE_FEE,b.OPERATE_TIME AS expire_time FROM (SELECT x.* FROM dwd_cust_receipt_warning x ORDER BY x.create_date DESC) b GROUP BY b.CUST_GRP_ID,b.OPERATE_TIME,b.RECEIPT_TYPE,b.RECEIPT_NO,b.RECEIPT_BATCH_ID,b.RECEIPT_ONE_FEE,b.INVOICE_FEE) w ON a.detail_id = w.id_
+            </when>
+            <when test="orderType == 'cloud_expire_alarm'">
+                INNER JOIN (SELECT b.id_,b.NEW_CONSUME_TIME,b.NEW_AMOUNT_PER_YEAR,b.END_TIME AS expire_time FROM (SELECT x.* FROM ftp_tc_grp_cloud_expire_alarm x ORDER BY x.create_date DESC) b GROUP BY b.SERIAL_NUMBER,b.CONSUME_TYPE,b.CONSUME_TIME,b.END_TIME) w ON a.detail_id = w.id_
+            </when>
+            <when test="orderType == 'group_buy_warn'">LEFT JOIN ftp_tc_user_cust_warning u ON a.detail_id = u.id_ LEFT JOIN ftp_tc_user_common_warning w ON u.MAIN_ORDER_FLOW_NO = w.MAIN_ORDER_FLOW_NO</when>
+            <when test="orderType == 'special_activity_warn'">LEFT JOIN (SELECT x.id_,x.EP_SPECIAL_SCHEME_NAME,SUBSTRING_INDEX(SUBSTRING_INDEX(x.warning_info,'||',4),'||',-1) AS expire_time FROM ftp_tc_user_common_warning x) w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'terminal_contract_warn'">LEFT JOIN ftp_tc_user_cust_warning u ON a.detail_id = u.id_ INNER JOIN (SELECT b.MAIN_ORDER_FLOW_NO,b.NEW_SCHEME_NAME,SUBSTRING_INDEX(SUBSTRING_INDEX(b.warning_info,'||',4),'||',-1) AS expire_time FROM ftp_tc_user_common_warning b WHERE b.WARNING_TYPE='000033') w ON u.MAIN_ORDER_FLOW_NO = w.MAIN_ORDER_FLOW_NO</when>
+            <when test="orderType == 'qf_warn'">LEFT JOIN ftp_tc_grp_owe_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'htdq_warn'">LEFT JOIN ftp_tc_grp_contract_due_warning w ON a.detail_id = w.id_</when>
+            <when test="orderType == 'hmd_warn'">LEFT JOIN (SELECT uu.*,cc.id_ cid FROM ftp_tc_user_common_warning uu LEFT JOIN ftp_tc_user_cust_warning cc ON uu.MAIN_ORDER_FLOW_NO = cc.MAIN_ORDER_FLOW_NO) w ON ((a.detail_id=w.id_ AND a.order_category!='C') OR (a.detail_id=w.cid AND a.order_category='C'))</when>
+            <when test="orderType == 'user_cust_owe_warn' or orderType == 'double_zero_warn' or orderType == 'pcdn_warn'">LEFT JOIN ftp_tc_user_cust_warning w ON a.detail_id = w.id_ LEFT JOIN ftp_tc_user_common_warning u ON w.MAIN_ORDER_FLOW_NO = u.MAIN_ORDER_FLOW_NO</when>
+            <when test="orderType == 'leaseline_relet'">LEFT JOIN ftp_tc_leaseline_relet_cust_warning u ON a.detail_id = u.id_ INNER JOIN ftp_tc_leaseline_relet_warning w ON u.MAIN_ORDER_FLOW_NO = w.MAIN_ORDER_FLOW_NO</when>
+        </choose>
+    </sql>
+
+    <sql id="tab4NumberColumn">
+        <choose>
+            <when test="orderType == 'double_zero_warn' or orderType == 'pcdn_warn'">COUNT(IF(u.FEEDBACK_FLAG = '1', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'cut_over_warn'">COUNT(IF(w.handle_flag = 1, TRUE, NULL)) AS number</when>
+            <when test="orderType == 'leaseline_relet'">COUNT(IF(w.IS_RENT = '1', TRUE, NULL)) AS number</when>
+            <when test="orderType == 'cust_receipt_warn'">
+                IF(ROUND((SUM(w.RECEIPT_ONE_FEE)+SUM(w.INVOICE_FEE)) / 10000, 2) IS NULL, 0, ROUND((SUM(w.RECEIPT_ONE_FEE)+SUM(w.INVOICE_FEE)) / 10000, 2)) AS number,
+                COUNT(IF(w.WRITEOFF_FLAG = '1', TRUE, NULL)) AS zzl,
+                IF(ROUND(SUM(w.WRITEOFF_FEE) / 10000, 2) IS NULL, 0, ROUND(SUM(w.WRITEOFF_FEE) / 10000, 2)) AS zzje
+            </when>
+            <otherwise><include refid="tab3NumberColumn"/></otherwise>
+        </choose>
+    </sql>
+
+    <sql id="tab4OuterColumns">
+        <choose>
+            <when test="orderType == 'double_zero_warn' or orderType == 'pcdn_warn'">CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb</when>
+            <when test="orderType == 'cut_over_warn' or orderType == 'leaseline_relet'">CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS zb</when>
+            <when test="orderType == 'cust_receipt_warn'">
+                tmp.zzl, tmp.zzje,
+                CONCAT(CAST(IF(ROUND(tmp.zzl / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.zzl / tmp.yjl * 100, 2)) AS CHAR),'%') AS zzlv,
+                CONCAT(CAST(IF(ROUND(tmp.zzje / tmp.number * 100, 2) IS NULL, 0, ROUND(tmp.zzje / tmp.number * 100, 2)) AS CHAR),'%') AS zzjezb
+            </when>
+            <when test="orderType == 'qf_warn' or orderType == 'user_cust_owe_warn'">
+                tmp.qfhs,
+                CONCAT(CAST(IF(ROUND(tmp.qfhs / tmp.number * 100, 2) IS NULL, 0, ROUND(tmp.qfhs / tmp.number * 100, 2)) AS CHAR),'%') AS hklv
+            </when>
+            <when test="orderType == 'htdq_warn'">
+                CONCAT(CAST(IF(ROUND(tmp.number / tmp.yjl * 100, 2) IS NULL, 0, ROUND(tmp.number / tmp.yjl * 100, 2)) AS CHAR),'%') AS xylv,
+                tmp.htje
+            </when>
+            <otherwise><include refid="tab3OuterColumns"/></otherwise>
+        </choose>
+    </sql>
+
+    <select id="selectTab4Effect" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number, <include refid="tab4OuterColumns"/>
+        FROM (
+            SELECT
+                <choose>
+                    <when test="areaId == null or areaId == ''">COALESCE(CASE WHEN area.type_ = '一级' THEN '省本级' ELSE area.name_ END, '未知') AS areaName</when>
+                    <when test="countryId != null and countryId != ''">CASE WHEN us.name_ch IS NULL THEN '其他' ELSE us.name_ch END AS areaName</when>
+                    <otherwise>COALESCE(CASE WHEN county.type_ = '二级' THEN CONCAT(county.name_,'市本级') ELSE county.name_ END, '未知') AS areaName</otherwise>
+                </choose>
+                , COUNT(1) AS yjl,
+                <include refid="tab4NumberColumn"/>
+            FROM maintenance_detail a
+            LEFT JOIN sys_user us ON a.user_id = us.id_
+            LEFT JOIN sys_area area ON a.area_id = area.id_
+            LEFT JOIN sys_area county ON a.county_id = county.id_
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            <include refid="tab4WarnJoin"/>
+            WHERE 1=1 AND a.order_type = #{orderType}
+            <include refid="tab4TimeFilter"/>
+            <if test="businessDep != null and businessDep != ''">AND o.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+            <if test="isDistribute != null and isDistribute != ''">AND a.status = #{isDistribute}</if>
+            <choose>
+                <when test="areaId == null or areaId == ''">GROUP BY a.area_id ORDER BY area.order_ IS NULL, area.order_ ASC</when>
+                <when test="countryId == null or countryId == ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> GROUP BY a.county_id ORDER BY a.county_id ASC, area.order_ ASC</when>
+                <otherwise>AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> GROUP BY a.user_id ORDER BY a.user_id DESC</otherwise>
+            </choose>
+        ) tmp
+    </select>
+
+    <select id="selectTab4EffectTotal" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        SELECT tmp.areaName, tmp.yjl, tmp.number, <include refid="tab4OuterColumns"/>
+        FROM (
+            SELECT
+                <choose><when test="areaId == null or areaId == ''">'全省'</when><otherwise>'合计'</otherwise></choose> AS areaName,
+                COUNT(1) AS yjl,
+                <include refid="tab4NumberColumn"/>
+            FROM maintenance_detail a
+            LEFT JOIN topp_order o ON a.order_id = o.id_
+            <include refid="tab4WarnJoin"/>
+            WHERE 1=1 AND a.order_type = #{orderType}
+            <include refid="tab4TimeFilter"/>
+            <if test="areaId != null and areaId != ''">AND a.area_id IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="countryId != null and countryId != ''">AND a.county_id IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+            <if test="businessDep != null and businessDep != ''">AND o.business_dep = #{businessDep}</if>
+            <if test="isImpPrt != null and isImpPrt != ''">AND a.is_imp_prt = #{isImpPrt}</if>
+            <if test="grpType != null and grpType != ''">AND a.grp_type = #{grpType}</if>
+            <if test="isDistribute != null and isDistribute != ''">AND a.status = #{isDistribute}</if>
+        ) tmp
+    </select>
+
+
+    <!-- ==================== Tab6: 客户经理维系效果报表 ==================== -->
+
+    <select id="selectTab6Effect" parameterType="com.crm.system.domain.dto.MaintenanceWarningReqDTO" resultType="java.util.Map">
+        <choose>
+            <when test="orderType == 'Wide'">
+                SELECT ttt.areaName, ttt.countryName, ttt.managerName, ttt.relationTel, ttt.warnCount,
+                    ttt.normalClose, ttt.abnormalClose, ttt.tracking, ttt.untreated,
+                    ttt.xyCount, ttt.xyRate, ttt.xyFee, ttt.rank, ttt.user_id
+                FROM (
+                    SELECT 0 AS rank,
+                        CONCAT(CAST(IF(ROUND(tt.xyCount * 1.0 / tt.warnCount * 100, 2) IS NULL, 0, ROUND(tt.xyCount * 1.0 / tt.warnCount * 100, 2)) AS CHAR),'%') AS xyRate, tt.*
+                    FROM (SELECT
+                        CASE WHEN a.type_ = '一级' THEN '省本级' WHEN a.type_ = '二级' THEN a.name_ WHEN a.type_ = '三级' THEN p.name_ ELSE '' END AS areaName,
+                        CASE WHEN a.type_ = '一级' THEN '' WHEN a.type_ = '二级' THEN '市本级' WHEN a.type_ = '三级' THEN a.name_ ELSE '' END AS countryName,
+                        u.name_ch AS managerName, u.name_ AS relationTel, COUNT(1) AS warnCount,
+                        COUNT(IF(mm.status_ = 'end' AND mm.end_reason IN ('0','1'), TRUE, NULL)) AS normalClose,
+                        COUNT(IF(mm.status_ = 'end' AND mm.end_reason IN ('2','3'), TRUE, NULL)) AS abnormalClose,
+                        COUNT(IF(mm.status_ = 'tracking', TRUE, NULL)) AS tracking,
+                        COUNT(IF(mm.status_ NOT IN ('end','tracking') OR mm.status_ IS NULL, TRUE, NULL)) AS untreated,
+                        COUNT(IF(mm.exte_flag = 1, TRUE, NULL)) AS xyCount, ROUND(SUM(mm.NEW_SCHEME_FEE) / 10000, 2) AS xyFee, mm.user_id
+                    FROM (
+                        SELECT m.id_, m.user_id, t.status_, t.end_reason, w.exte_flag, w.NEW_SCHEME_FEE, w.id
+                        FROM maintenance_detail m LEFT JOIN topp_order t ON m.order_id = t.id_ LEFT JOIN wide_sys_auto_warning w ON m.detail_id = w.id
+                        WHERE m.STATUS = 1 AND m.order_type = 'Wide' AND m.order_category = 'U'
+                        <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(w.exp_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+                        <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(w.exp_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+                        UNION
+                        SELECT m.id_, m.user_id, t.status_, t.end_reason, w.exte_flag, w.NEW_SCHEME_FEE, w.id
+                        FROM maintenance_detail m LEFT JOIN topp_order t ON m.order_id = t.id_
+                        LEFT JOIN ftp_tc_user_cust_warning c ON m.detail_id = c.id_
+                        LEFT JOIN wide_sys_auto_warning w ON c.MAIN_ORDER_FLOW_NO = w.main_order_flow_no
+                        WHERE m.STATUS = 1 AND m.order_type = 'Wide' AND m.order_category = 'C'
+                        <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(w.exp_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+                        <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(w.exp_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+                    ) mm
+                    LEFT JOIN sys_user u ON mm.user_id = u.id_ LEFT JOIN sys_org o ON u.org_id = o.id_
+                    LEFT JOIN sys_area a ON a.id_ = o.area_id LEFT JOIN sys_area p ON a.parent_ = p.id_
+                    WHERE 1=1
+                    <choose>
+                        <when test="areaId != null and areaId != '' and (countryId == null or countryId == '')">
+                            AND (a.id_ IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> OR p.id_ IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>)
+                        </when>
+                        <when test="areaId != null and areaId != '' and countryId != null and countryId != ''">
+                            AND p.id_ IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                            AND a.id_ IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                        </when>
+                    </choose>
+                    <if test="managerName != null and managerName != ''">AND u.name_ch LIKE CONCAT('%', #{managerName}, '%')</if>
+                    <if test="phoneId != null and phoneId != ''">AND u.name_ LIKE CONCAT('%', #{phoneId}, '%')</if>
+                    <if test="isImpPrt != null and isImpPrt != ''">AND m.is_imp_prt = #{isImpPrt}</if>
+                    <if test="grpType != null and grpType != ''">AND m.grp_type = #{grpType}</if>
+                    GROUP BY mm.user_id
+                    ) tt
+                ) ttt ORDER BY ttt.xyRate DESC
+            </when>
+            <when test="orderType == 'mnp'">
+                SELECT ttt.areaName, ttt.countryName, ttt.managerName, ttt.relationTel, ttt.warnCount,
+                    ttt.normalClose, ttt.abnormalClose, ttt.tracking, ttt.untreated,
+                    ttt.onlineCount, ttt.onlineRate, ttt.rank, ttt.user_id
+                FROM (
+                    SELECT 0 AS rank,
+                        CONCAT(CAST(IF(ROUND(tt.onlineCount * 1.0 / tt.warnCount * 100, 2) IS NULL, 0, ROUND(tt.onlineCount * 1.0 / tt.warnCount * 100, 2)) AS CHAR),'%') AS onlineRate, tt.*
+                    FROM (SELECT
+                        CASE WHEN a.type_ = '一级' THEN '省本级' WHEN a.type_ = '二级' THEN a.name_ WHEN a.type_ = '三级' THEN p.name_ ELSE '' END AS areaName,
+                        CASE WHEN a.type_ = '一级' THEN '' WHEN a.type_ = '二级' THEN '市本级' WHEN a.type_ = '三级' THEN a.name_ ELSE '' END AS countryName,
+                        u.name_ch AS managerName, u.name_ AS relationTel, COUNT(1) AS warnCount,
+                        COUNT(IF(t.status_ = 'end' AND t.end_reason IN ('0','1'), TRUE, NULL)) AS normalClose,
+                        COUNT(IF(t.status_ = 'end' AND t.end_reason IN ('2','3'), TRUE, NULL)) AS abnormalClose,
+                        COUNT(IF(t.status_ = 'tracking', TRUE, NULL)) AS tracking,
+                        COUNT(IF(t.status_ NOT IN ('end','tracking') OR t.status_ IS NULL, TRUE, NULL)) AS untreated,
+                        COUNT(IF(t.cur_innet_flag = '1', TRUE, NULL)) AS onlineCount, u.id_ AS user_id
+                    FROM maintenance_detail m
+                    LEFT JOIN topp_order t ON m.order_id = t.id_
+                    LEFT JOIN sys_user u ON m.user_id = u.id_
+                    LEFT JOIN sys_org o ON u.org_id = o.id_
+                    LEFT JOIN sys_area a ON a.id_ = o.area_id
+                    LEFT JOIN sys_area p ON a.parent_ = p.id_
+                    WHERE m.STATUS = 1 AND m.order_type = 'mnp' AND m.user_id IS NOT NULL
+                    <if test="leftTime != null and leftTime != ''">AND DATE_FORMAT(m.create_time, '%Y-%m-%d') &gt;= #{leftTime}</if>
+                    <if test="rightTime != null and rightTime != ''">AND DATE_FORMAT(m.create_time, '%Y-%m-%d') &lt;= #{rightTime}</if>
+                    <choose>
+                        <when test="areaId != null and areaId != '' and (countryId == null or countryId == '')">
+                            AND (a.id_ IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach> OR p.id_ IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>)
+                        </when>
+                        <when test="areaId != null and areaId != '' and countryId != null and countryId != ''">
+                            AND p.id_ IN <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                            AND a.id_ IN <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                        </when>
+                    </choose>
+                    <if test="managerName != null and managerName != ''">AND u.name_ch LIKE CONCAT('%', #{managerName}, '%')</if>
+                    <if test="phoneId != null and phoneId != ''">AND u.name_ LIKE CONCAT('%', #{phoneId}, '%')</if>
+                    <if test="isImpPrt != null and isImpPrt != ''">AND m.is_imp_prt = #{isImpPrt}</if>
+                    <if test="grpType != null and grpType != ''">AND m.grp_type = #{grpType}</if>
+                    GROUP BY u.id_
+                    ) tt
+                ) ttt ORDER BY ttt.onlineRate DESC
+            </when>
+            <otherwise>
+                SELECT 1 AS empty_result FROM DUAL WHERE 1=0
+            </otherwise>
+        </choose>
+    </select>
+
+</mapper>
