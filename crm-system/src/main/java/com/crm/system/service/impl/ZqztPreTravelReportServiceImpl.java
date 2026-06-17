@@ -87,15 +87,15 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
         int seq = getNextSeqForToday();
         int processed = 0;
 
-        List<String> areaCodes = sysParamMapper.selectVoList(
+        List<String> areaValues = sysParamMapper.selectVoList(
                 new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "jt_code")
             ).stream()
-            .map(SysParamDo::getCode)
+            .map(SysParamDo::getValue)
             .collect(Collectors.toList());
 
 
         for (VisitAppointmentDo appt : appointments) {
-            if(!areaCodes.contains(appt.getEparchyCode())){
+            if(!areaValues.contains(appt.getEparchyCode())){
                 log.info("该预约记录不在jt_code中, 不生成行前报告, eparchyCode={}", appt.getEparchyCode());
                 continue;
             }
