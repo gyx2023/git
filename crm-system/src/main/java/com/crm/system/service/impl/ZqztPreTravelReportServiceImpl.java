@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.servicehall.ZqztPreTravelReport;
 import com.crm.system.domain.dao.CustNecRelationDo;
@@ -12,9 +13,11 @@ import com.crm.system.domain.dao.zbzq.VisitRecordDo;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.ZqztPreTravelReportMapper;
 import com.crm.system.mapper.cust.CustNecRelationMapper;
+import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.zbzq.VisitAppointmentQueryMapper;
 import com.crm.system.mapper.zbzq.WarningQueryMapper;
 import com.crm.system.service.IZqztPreTravelReportService;
+import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.travel.PreTravelReportApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +37,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
     private final WarningQueryMapper warningQueryMapper;
     private final SysUsersMapper sysUsersMapper;
     private final PreTravelReportApiService apiService;
+    private final SysParamMapper sysParamMapper;
 
     private static final String REPORT_ID_PREFIX = "BR-";
     private static final String TASK_STATUS_PENDING = "0";
@@ -83,11 +87,24 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
         int seq = getNextSeqForToday();
         int processed = 0;
 
+        List<String> areaCodes = sysParamMapper.selectVoList(
+                new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, "jt_code")
+            ).stream()
+            .map(SysParamDo::getCode)
+            .collect(Collectors.toList());
+
+
         for (VisitAppointmentDo appt : appointments) {
+            if(!areaCodes.contains(appt.getEparchyCode())){
+                log.info("该预约记录不在jt_code中, 不生成行前报告, eparchyCode={}", appt.getEparchyCode());
+                continue;
+            }
             String reportId = generateReportId(seq++);
             String customerId = appt.getCustomerId();
             String userId = appt.getUserId();
             String oaAccount = appt.getCreateUser();
+            // 1. 获取用户DB ID (master, 用oaAccount查)
+            String userDbId = getSysUserDbId(oaAccount);
 
             log.info("开始处理行前报告, reportId={}, customerId={}, userId={}, oaAccount={}",
                     reportId, customerId, userId, oaAccount);
@@ -96,18 +113,19 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             report.setReportId(reportId);
             report.setCustomerId(customerId);
             report.setCustomerName(appt.getCustomName());
-            report.setCreator(userId);
+            //这里存本系统userId
+            report.setCreator(userDbId);
             report.setOaAccount(oaAccount);
             report.setRetryCount(0);
             report.setCreateTime(new Date());
             report.setUpdateTime(new Date());
 
             try {
-                // 1. 查拜访信息 (slave_2)
+                // 2. 查拜访信息 (slave_2)
                 VisitRecordDo visitRecord = visitAppointmentQueryMapper
                         .selectLastVisitRecord(customerId, userId);
 
-                // 2. 查自然→实体客户映射 (slave_1)
+                // 3. 查自然→实体客户映射 (slave_1)
                 List<CustNecRelationDo> necRelations = custNecRelationMapper
                         .selectByNatureCustId(customerId);
                 List<String> provinceCustIds = necRelations.stream()
@@ -115,8 +133,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
 
-                // 3. 获取用户DB ID (master, 用oaAccount查)
-                String userDbId = getSysUserDbId(oaAccount);
+
 
                 // 4. 查预警信息 (master)
                 List<Map<String, Object>> warnings = new ArrayList<>();
