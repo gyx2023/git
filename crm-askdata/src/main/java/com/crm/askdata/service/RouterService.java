@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.crm.askdata.entity.ToolParam;
-import com.crm.askdata.executor.SemanticQueryExecutor;
+import com.crm.askdata.executor.SemanticSqlExecutor;
 import com.crm.askdata.executor.TextToSqlExecutor;
 import java.io.IOException;
 import java.util.*;
@@ -53,7 +53,7 @@ public class RouterService {
     private final SemanticLayerService semanticLayerService;
     private final UserPermissionService permissionService;
     private final ToolConfigService configService;
-    private final SemanticQueryExecutor semanticQueryExecutor;
+    private final SemanticSqlExecutor semanticSqlExecutor;
     private final TextToSqlExecutor textToSqlExecutor;
     private final ConversationContextManager contextManager;
     private final AuditLogger auditLogger;
@@ -180,6 +180,9 @@ public class RouterService {
                                         String userId, long startTime) {
         // 阶段1：意图识别
         IntentRecognitionResult intentRecog = recognizeIntent(query, sessionId, userId, traceId);
+
+        // 透传原始查询到 IntentResult，供结果处理和展示阶段使用
+        intentRecog.intentResult.setOriginalQuery(query);
 
         // 阶段2：澄清处理（如果需要）
         ClarificationOutcome clarification = handleClarificationIfNeeded(
@@ -622,7 +625,19 @@ public class RouterService {
             List<Map<String, Object>> chartData = rawData instanceof List
                 ? (List<Map<String, Object>>) rawData
                 : Collections.emptyList();
-            sendSseEvent(emitter, SseMessage.chart(traceId, messageId, chartType, chartData, null));
+
+            // 构建图表选项（包含展示标题和图表配置）
+            Map<String, Object> chartOptions = new HashMap<>();
+            if (result.getDisplayTitle() != null) {
+                chartOptions.put("title", result.getDisplayTitle());
+            }
+            Object chartConfig = result.getData().get("chartConfig");
+            if (chartConfig != null) {
+                chartOptions.put("chartConfig", chartConfig);
+            }
+
+            sendSseEvent(emitter, SseMessage.chart(traceId, messageId, chartType, chartData,
+                chartOptions.isEmpty() ? null : chartOptions));
         }
 
         // 发送结束消息
@@ -819,7 +834,7 @@ public class RouterService {
             case TOOL_CALL:
                 return toolCallExecutor;
             case SEMANTIC_QUERY:
-                return semanticQueryExecutor;
+                return semanticSqlExecutor;
             case TEXT_TO_SQL:
                 if (Boolean.TRUE.equals(properties.getSecurity().getEnableSqlSandbox())) {
                     return textToSqlExecutor;

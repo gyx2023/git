@@ -84,11 +84,14 @@ public class MetaMetric extends BaseEntity {
     private String sourceDatasource;
 
     /**
-     * 实体字段→物理字段映射（JSON 格式）
-     * 如 {"time":"order_month", "region":"region_code"}
+     * 目标表字段定义（JSON 格式）
+     * <p>
+     * 描述 target_table 中与此指标相关的字段名、类型和业务含义，
+     * 供 semantic_sql_agent 生成 SQL 时参考。
+     * 格式：[{"name":"sign_month","type":"string","description":"签约月份，格式yyyy-MM"}, ...]
      */
-    @TableField("condition_mapping")
-    private String conditionMapping;
+    @TableField("column_definitions")
+    private String columnDefinitions;
 
     /**
      * 枚举值列表 (JSON 格式，防止 AI 幻觉)

@@ -62,6 +62,9 @@ public class IntentResult {
     /** 会话版本 (用于状态同步校验) */
     private Long sessionVersion;
 
+    /** 当前轮用户原始输入（透传给结果处理阶段，用于智能过滤和展示优化） */
+    private String originalQuery;
+
     /**
      * 验证结果有效性
      *

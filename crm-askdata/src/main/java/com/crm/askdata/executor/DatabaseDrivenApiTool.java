@@ -3,9 +3,10 @@ package com.crm.askdata.executor;
 import com.crm.askdata.entity.AuthConfig;
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
-import com.crm.askdata.entity.ToolResponseField;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
+import com.crm.askdata.model.ResponseSchema;
+import com.crm.askdata.model.ResponseSchema.FieldMapping;
 import com.crm.askdata.model.ToolConfigWithParams;
 import com.crm.askdata.router.RoutingStrategy;
 import com.crm.askdata.security.AuthHeaderInjector;
@@ -172,27 +173,43 @@ public class DatabaseDrivenApiTool {
 
     /**
      * 格式化响应结果
+     * <p>
+     * 优先从 config.responseSchema JSON 中读取 dataPath、字段映射和图表类型，
+     * 兼容旧的 responseDataPath / responseChartPath / response_field 表配置。
      */
     private QueryResult formatResponse(JsonNode response, ToolConfig config) {
         QueryResult result = new QueryResult();
         result.setSuccess(true);
 
         try {
-            // 使用 JSONPath 提取数据
             String jsonResponse = response.toString();
 
-            // 提取数据
-            if (config.getResponseDataPath() != null && !config.getResponseDataPath().trim().isEmpty()) {
-                Object data = JsonPath.read(jsonResponse, config.getResponseDataPath());
+            // 优先解析 response_schema，获取 dataPath 和字段映射
+            ResponseSchema schema = parseResponseSchema(config.getResponseSchema());
+
+            // 提取数据：优先用 schema.dataPath，其次用旧的 responseDataPath
+            String dataPath = null;
+            if (schema != null && schema.getDataPath() != null && !schema.getDataPath().trim().isEmpty()) {
+                dataPath = schema.getDataPath();
+            } else if (config.getResponseDataPath() != null && !config.getResponseDataPath().trim().isEmpty()) {
+                dataPath = config.getResponseDataPath();
+            }
+
+            if (dataPath != null) {
+                Object data = JsonPath.read(jsonResponse, dataPath);
                 result.setData(convertToMap(data));
             } else {
                 result.setData(convertToMap(response));
             }
 
-            // 应用响应字段中文映射（替换英文字段名为中文显示名）
-            applyFieldMapping(result.getData(), config.getId());
+            // 应用响应字段中文映射（优先用 response_schema.fields，其次用旧的 response_field 表）
+            if (schema != null && schema.isValid()) {
+                applyFieldMappingFromSchema(result.getData(), schema);
+            } else if (config.getId() != null) {
+                applyFieldMappingFromLegacyTable(result.getData(), config.getId());
+            }
 
-            // 提取总数
+            // 提取总数（兼容旧字段）
             if (config.getResponseTotalPath() != null && !config.getResponseTotalPath().trim().isEmpty()) {
                 try {
                     Object total = JsonPath.read(jsonResponse, config.getResponseTotalPath());
@@ -200,19 +217,25 @@ public class DatabaseDrivenApiTool {
                         result.setTotal(((Number) total).intValue());
                     }
                 } catch (Exception e) {
-                    log.warn("Failed to extract total from response", e);
+                    log.warn("traceId={} failed to extract total from response", config.getToolName(), e);
                 }
             }
 
-            // 设置图表类型
-            result.setChartType(config.getResponseChartType() != null
-                ? config.getResponseChartType() : "table");
+            // 设置图表类型：schema.displayHints → 旧 responseChartType → 默认 table
+            String chartType = "table";
+            if (schema != null && schema.getDisplayHints() != null
+                    && schema.getDisplayHints().getDefaultChartType() != null) {
+                chartType = schema.getDisplayHints().getDefaultChartType();
+            } else if (config.getResponseChartType() != null) {
+                chartType = config.getResponseChartType();
+            }
+            result.setChartType(chartType);
 
             result.setContent("查询成功");
 
         } catch (Exception e) {
-            log.error("Failed to format response for tool={}, path={}, responseBody={}",
-                config.getToolName(), config.getResponseDataPath(), response, e);
+            log.error("traceId={} failed to format response for tool={}, responseBody={}",
+                config.getToolName(), config.getToolName(), response, e);
             result.setSuccess(false);
             result.setContent("响应格式化失败：" + e.getMessage());
         }
@@ -221,77 +244,81 @@ public class DatabaseDrivenApiTool {
     }
 
     /**
-     * 应用响应字段中文映射
-     * <p>
-     * 将 API 返回数据中的原始英文字段名替换为中文显示名，
-     * 并按配置的格式规则格式化数值。
-     * 数据格式：{"data": [{"AREA_NAME":"杭州", "TOTAL_COUNT":165}, ...]}
+     * 解析 response_schema JSON 字符串
      */
-    private void applyFieldMapping(Map<String, Object> data, Long toolId) {
-        if (data == null || data.isEmpty()) return;
-
-        // 获取该工具配置的响应字段映射
-        List<ToolResponseField> fields = configService.getResponseFields(toolId);
-        if (fields == null || fields.isEmpty()) return;
-
-        // 构建映射表：原始字段名 → 中文显示名 + 格式化规则
-        Map<String, ToolResponseField> fieldMap = new LinkedHashMap<>();
-        for (ToolResponseField f : fields) {
-            if (f.getDisplayName() != null && !f.getDisplayName().isEmpty()) {
-                fieldMap.put(f.getFieldName(), f);
-            }
+    private ResponseSchema parseResponseSchema(String schemaJson) {
+        if (schemaJson == null || schemaJson.trim().isEmpty()) {
+            return null;
         }
-        if (fieldMap.isEmpty()) return;
+        try {
+            return objectMapper.readValue(schemaJson, ResponseSchema.class);
+        } catch (Exception e) {
+            log.warn("failed to parse response_schema JSON, will use legacy field mapping", e);
+            return null;
+        }
+    }
+
+    /**
+     * 从 response_schema.fields 应用字段中文映射
+     * <p>
+     * 将 API 返回数据中的原始英文字段名替换为中文 label，
+     * 并按配置的 format 规则格式化数值。
+     */
+    private void applyFieldMappingFromSchema(Map<String, Object> data, ResponseSchema schema) {
+        if (data == null || data.isEmpty() || schema == null || !schema.isValid()) return;
+
+        // 构建映射表：原始字段名 → FieldMapping
+        Map<String, FieldMapping> fieldMap = new LinkedHashMap<>();
+        for (FieldMapping f : schema.getFields()) {
+            fieldMap.put(f.getField(), f);
+        }
 
         // 只处理内层的数据（data key 指向的 List/Map），不处理包装层
-        // 避免误删 "data" 等包装 key
         Object innerData = data.get("data");
-        applyMappingToValue(innerData, fieldMap);
-        log.info("applied response field mapping for toolId={}, fields={}", toolId, fieldMap.keySet());
+        applyMappingToValueFromSchema(innerData, fieldMap);
+        log.info("applied field mapping from response_schema, fields={}", fieldMap.keySet());
     }
 
     @SuppressWarnings("unchecked")
-    private void applyMappingToValue(Object value, Map<String, ToolResponseField> fieldMap) {
+    private void applyMappingToValueFromSchema(Object value, Map<String, FieldMapping> fieldMap) {
         if (value instanceof Map) {
             Map<String, Object> map = (Map<String, Object>) value;
-            // 先递归处理子项（如 Map 的值可能是嵌套的 List）
             for (Map.Entry<String, Object> entry : map.entrySet()) {
-                applyMappingToValue(entry.getValue(), fieldMap);
+                applyMappingToValueFromSchema(entry.getValue(), fieldMap);
             }
-            // 替换当前层的字段名
-            replaceFieldNames(map, fieldMap);
+            replaceFieldNamesFromSchema(map, fieldMap);
         } else if (value instanceof List) {
             List<Object> list = (List<Object>) value;
             for (Object item : list) {
-                applyMappingToValue(item, fieldMap);
+                applyMappingToValueFromSchema(item, fieldMap);
             }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void replaceFieldNames(Map<String, Object> map, Map<String, ToolResponseField> fieldMap) {
-        // 收集需要替换和删除的键（避免 ConcurrentModificationException）
+    private void replaceFieldNamesFromSchema(Map<String, Object> map, Map<String, FieldMapping> fieldMap) {
         List<Map.Entry<String, Object>> toReplace = new ArrayList<>();
         List<String> toRemove = new ArrayList<>();
+
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            ToolResponseField field = fieldMap.get(entry.getKey());
-            if (field != null && field.getDisplayName() != null && !field.getDisplayName().isEmpty()) {
-                if (!field.getDisplayName().equals(entry.getKey())) {
+            FieldMapping mapping = fieldMap.get(entry.getKey());
+            if (mapping != null && mapping.getLabel() != null && !mapping.getLabel().isEmpty()) {
+                if (!mapping.getLabel().equals(entry.getKey())) {
                     toReplace.add(entry);
                 }
-                // 有映射且显示名相同则保留，无需操作
             } else {
-                // 不在映射表中的字段 → 移除（只展示表里配置的字段）
+                // 不在映射表中的字段 → 移除（只展示 schema 里配置的字段）
                 toRemove.add(entry.getKey());
             }
         }
-        // 执行替换
+
         for (Map.Entry<String, Object> entry : toReplace) {
-            Object formattedValue = formatValue(entry.getValue(), fieldMap.get(entry.getKey()));
-            map.put(fieldMap.get(entry.getKey()).getDisplayName(), formattedValue);
+            FieldMapping mapping = fieldMap.get(entry.getKey());
+            Object formattedValue = formatValueFromSchema(entry.getValue(), mapping);
+            map.put(mapping.getLabel(), formattedValue);
             map.remove(entry.getKey());
         }
-        // 移除未配置的字段
+
         for (String key : toRemove) {
             map.remove(key);
         }
@@ -300,21 +327,104 @@ public class DatabaseDrivenApiTool {
     /**
      * 按配置的格式规则格式化数值
      */
-    private Object formatValue(Object value, ToolResponseField field) {
-        if (value == null || field == null || field.getFormatRule() == null || field.getFormatRule().isEmpty()) {
+    private Object formatValueFromSchema(Object value, FieldMapping mapping) {
+        if (value == null || mapping == null || mapping.getFormat() == null || mapping.getFormat().isEmpty()) {
             return value;
         }
         if (!(value instanceof Number)) {
             return value;
         }
         try {
-            DecimalFormat df = new DecimalFormat(field.getFormatRule());
+            DecimalFormat df = new DecimalFormat(mapping.getFormat());
             return df.format(((Number) value).doubleValue());
         } catch (Exception e) {
-            log.warn("Failed to format value: field={}, value={}, rule={}",
-                field.getFieldName(), value, field.getFormatRule());
+            log.warn("failed to format value: field={}, value={}, rule={}",
+                mapping.getField(), value, mapping.getFormat());
             return value;
         }
+    }
+
+    /**
+     * 兼容旧方案：从 askdata_tool_response_field 表应用字段映射
+     * <p>
+     * 仅当 response_schema 不存在时使用，后续逐步废弃。
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFieldMappingFromLegacyTable(Map<String, Object> data, Long toolId) {
+        if (data == null || data.isEmpty()) return;
+
+        List<com.crm.askdata.entity.ToolResponseField> fields =
+            configService.getResponseFields(toolId);
+        if (fields == null || fields.isEmpty()) return;
+
+        Map<String, com.crm.askdata.entity.ToolResponseField> fieldMap = new LinkedHashMap<>();
+        for (com.crm.askdata.entity.ToolResponseField f : fields) {
+            if (f.getDisplayName() != null && !f.getDisplayName().isEmpty()) {
+                fieldMap.put(f.getFieldName(), f);
+            }
+        }
+        if (fieldMap.isEmpty()) return;
+
+        Object innerData = data.get("data");
+        applyMappingToValueFromLegacy(innerData, fieldMap);
+        log.info("applied legacy response field mapping for toolId={}, fields={}", toolId, fieldMap.keySet());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyMappingToValueFromLegacy(Object value,
+                                                Map<String, com.crm.askdata.entity.ToolResponseField> fieldMap) {
+        if (value instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) value;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                applyMappingToValueFromLegacy(entry.getValue(), fieldMap);
+            }
+            replaceFieldNamesFromLegacy(map, fieldMap);
+        } else if (value instanceof List) {
+            List<Object> list = (List<Object>) value;
+            for (Object item : list) {
+                applyMappingToValueFromLegacy(item, fieldMap);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void replaceFieldNamesFromLegacy(Map<String, Object> map,
+                                              Map<String, com.crm.askdata.entity.ToolResponseField> fieldMap) {
+        List<Map.Entry<String, Object>> toReplace = new ArrayList<>();
+        List<String> toRemove = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            com.crm.askdata.entity.ToolResponseField field = fieldMap.get(entry.getKey());
+            if (field != null && field.getDisplayName() != null && !field.getDisplayName().isEmpty()) {
+                if (!field.getDisplayName().equals(entry.getKey())) {
+                    toReplace.add(entry);
+                }
+            } else {
+                toRemove.add(entry.getKey());
+            }
+        }
+        for (Map.Entry<String, Object> entry : toReplace) {
+            Object formattedValue = formatValueFromSchema(entry.getValue(),
+                toFieldMapping(fieldMap.get(entry.getKey())));
+            map.put(fieldMap.get(entry.getKey()).getDisplayName(), formattedValue);
+            map.remove(entry.getKey());
+        }
+        for (String key : toRemove) {
+            map.remove(key);
+        }
+    }
+
+    /**
+     * 将 ToolResponseField 转换为 FieldMapping（兼容旧表过渡用）
+     */
+    private FieldMapping toFieldMapping(com.crm.askdata.entity.ToolResponseField legacy) {
+        if (legacy == null) return null;
+        FieldMapping mapping = new FieldMapping();
+        mapping.setField(legacy.getFieldName());
+        mapping.setLabel(legacy.getDisplayName());
+        mapping.setFormat(legacy.getFormatRule());
+        mapping.setType(legacy.getDataType());
+        mapping.setVisible(legacy.getIsVisible());
+        return mapping;
     }
 
     /**

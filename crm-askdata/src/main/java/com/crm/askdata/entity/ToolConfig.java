@@ -112,6 +112,29 @@ public class ToolConfig {
     private String responseTotalPath;
 
     /**
+     * 响应 Schema 定义（JSON）
+     * <p>
+     * 替代 response_data_path / response_chart_type / response_total_path / response_field 表。
+     * 定义了字段映射、展示提示等完整响应结构描述。
+     * 格式：
+     * {
+     *   "version": "1.0",
+     *   "dataPath": "$.data",
+     *   "fields": [
+     *     {"field": "AREA_NAME", "label": "地市名称", "type": "dimension"},
+     *     {"field": "TOTAL_COUNT", "label": "签约数量", "type": "metric", "format": "#,##0"}
+     *   ],
+     *   "displayHints": {
+     *     "defaultChartType": "bar",
+     *     "dimensionField": "AREA_NAME",
+     *     "metricField": "TOTAL_COUNT"
+     *   }
+     * }
+     */
+    @TableField("response_schema")
+    private String responseSchema;
+
+    /**
      * 超时时间(秒)
      */
     @TableField("timeout_seconds")

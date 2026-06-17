@@ -9,6 +9,7 @@ import com.crm.askdata.model.ToolConfigWithParams;
 import com.crm.askdata.router.RoutingStrategy;
 import com.crm.askdata.security.ToolCallLimiter;
 import com.crm.askdata.service.AuditLogger;
+import com.crm.askdata.service.ResultPostProcessorService;
 import com.crm.askdata.service.ToolConfigService;
 import com.crm.askdata.service.UserPermissionService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -41,6 +42,7 @@ public class ToolCallExecutor implements QueryExecutor {
 
     private final ToolConfigService configService;
     private final DatabaseDrivenApiTool databaseDrivenApiTool;
+    private final ResultPostProcessorService resultPostProcessor;
     private final ToolCallProperties properties;
     private final UserPermissionService permissionService;
     private final ToolCallLimiter callLimiter;
@@ -108,7 +110,12 @@ public class ToolCallExecutor implements QueryExecutor {
             // ========== 第六步：执行数据库驱动的工具（参数校验、API调用、结果格式化）==========
             QueryResult result = databaseDrivenApiTool.execute(intent, fullConfig, traceId);
 
-            // ========== 第七步：记录成功审计日志 ==========
+            // ========== 第七步：智能结果后处理（智能过滤、展示优化、摘要生成）==========
+            if (result.isSuccess() && intent.getOriginalQuery() != null) {
+                result = resultPostProcessor.postProcess(intent, result, traceId);
+            }
+
+            // ========== 第八步：记录成功审计日志 ==========
             auditLog.setStatus("SUCCESS");
             auditLog.setExecutionLatencyMs(System.currentTimeMillis() - startTime);
             auditLog.setReturnedRows(extractRowCount(result));

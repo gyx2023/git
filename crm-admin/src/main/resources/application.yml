@@ -314,6 +314,10 @@ hiagent:
   retry-interval-ms: 1000
   # 意图识别 Agent ID（对应 agents 配置中的 key）
   intent-agent-id: intent_agent
+  # 结果处理 Agent ID（对应 agents 配置中的 key）
+  result-agent-id: result_agent
+  # 语义查询 SQL Agent ID（对应 agents 配置中的 key）
+  semantic-sql-agent-id: semantic_sql_agent
   # 多 Agent 工作流配置，key 为 agentId，apiKey 从 HiAgent 智能体预览页获取
   agents:
     intent_agent:
@@ -325,6 +329,19 @@ hiagent:
       # API Key 从 HiAgent 平台新建智能体页获取
       api-key: ${HIAGENT_TOOL_AGENT_KEY:}
       description: 工具参数提取 Agent（识别具体报表工具名 + 提取调用参数）
+    result_agent:
+      # 结果处理 Agent：对工具调用返回的原始数据进行智能过滤和展示优化
+      # 输入：用户原始查询 + IntentAgent 解析结果 + API 原始响应数据
+      # 输出：过滤后数据 + 展示格式建议 + 摘要文本
+      # API Key 从 HiAgent 平台新建智能体页获取
+      api-key: d8lrbpu7tiq2rrjpaoqg
+      description: 结果处理 Agent（后处理阶段：智能过滤、展示优化、摘要生成）
+    semantic_sql_agent:
+      # 语义查询 SQL Agent：根据用户问题 + metric 定义生成安全 SQL
+      # 输入：用户原始查询 + entities + metricDefinitions
+      # 输出：SQL + queryType + 展示信息
+      api-key: ${HIAGENT_SEMANTIC_SQL_AGENT_KEY:d8ofv6mnlnbcfra80ts0}
+      description: 语义查询 SQL Agent（生成安全 SQL，由后端沙箱执行）
   # 置信度校准配置
   calibration:
     enabled: false
@@ -350,7 +367,7 @@ askdata:
       low: 0.40
     # 安全配置
     security:
-      enable-sql-sandbox: true
+      enable-sql-sandbox: false
       default-fallback: FALLBACK_KB
     # 延迟预算配置 (毫秒)
     budget:

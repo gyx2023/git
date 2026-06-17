@@ -40,6 +40,9 @@ public class QueryResult {
     /** 图表类型 */
     private String chartType;
 
+    /** 展示标题（由结果处理 Agent 生成，如"杭州市签约数量"） */
+    private String displayTitle;
+
     // ==================== 澄清相关字段（同步接口返回澄清卡片）====================
 
     /**
