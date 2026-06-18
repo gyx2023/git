@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("meta_metric")
+@TableName("askdata_meta_metric")
 public class MetaMetric extends BaseEntity {
 
     private static final long serialVersionUID = 1L;

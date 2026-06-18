@@ -22,7 +22,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("meta_change_event")
+@TableName("askdata_meta_change_event")
 public class MetaChangeEvent {
 
     /**
