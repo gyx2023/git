@@ -193,3 +193,19 @@ attach:
   root: /tmp
 path:
   temp: /tmp
+--- # 行前报告Hiagent接口配置
+pre-travel-report:
+  api-url: http://132.151.58.42:32300/api/proxy/api/v1/sync_run_app_workflow
+  api-key: d8b9jlenlnbcfr9revsg
+  app-key: d8b9jj6nlnbcfr9revqg
+  user-id: "321"
+ability:
+  app_id: bR4nqpsTto
+  app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
+  url:
+    worksheetsComplete: http://10.164.255.25:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1
+    unmannedFactory: http://10.129.99.194:12001/prod-api/asiainfo_micro/unmannedfactory/kafkaMessageRecord/insert
+customer:
+  admin:
+    url: http://10.129.99.175:9002/zqzt-backend/system/customerTag/sync
+    api-key: aF3kL9pQ2wR8sX4mV7nC

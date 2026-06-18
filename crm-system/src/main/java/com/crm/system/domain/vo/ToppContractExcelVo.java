@@ -1,6 +1,7 @@
 package com.crm.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -147,18 +148,21 @@ public class ToppContractExcelVo {
      * 合同签订日期
      */
     @ExcelProperty(value = "合同签订日期", index = 22)
+    @DateTimeFormat("yyyy/M/d")
     private Date signDate;
 
     /**
      * 合同开始履行日期
      */
     @ExcelProperty(value = "合同开始履行日期", index = 23)
+    @DateTimeFormat("yyyy/M/d")
     private Date startDate;
 
     /**
      * 合同履行结束日期
      */
     @ExcelProperty(value = "合同履行结束日期", index = 24)
+    @DateTimeFormat("yyyy/M/d")
     private Date endDate;
 
     /**

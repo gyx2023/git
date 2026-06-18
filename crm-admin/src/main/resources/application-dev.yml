@@ -186,3 +186,7 @@ kafka:
       mechanism: SCRAM-SHA-256
       # JAAS 配置，包含用户名和密码
       jaas-config: org.apache.kafka.common.security.scram.ScramLoginModule required username="test-interface-log-user" password="test##ZJlt1116";
+--- #外部调用政企接口apiKey
+crm:
+  api:
+    secret-key: aF3kL9pQ2wR8sX4mV7nC
