@@ -27,7 +27,7 @@ public class ToolCallLimiter {
     private final ConcurrentHashMap<String, AtomicInteger> sessionCallCounts = new ConcurrentHashMap<>();
 
     /** 每会话每工具最大调用次数 */
-    private static final int MAX_CALLS_PER_SESSION_TOOL = 3;
+    private static final int MAX_CALLS_PER_SESSION_TOOL = 30;
 
     /** 每会话最大总调用次数（防止滥用） */
     private static final int MAX_CALLS_PER_SESSION_TOTAL = 10;
