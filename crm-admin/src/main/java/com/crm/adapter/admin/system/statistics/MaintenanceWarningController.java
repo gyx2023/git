@@ -8,8 +8,6 @@ import com.crm.system.domain.dto.MaintenanceWarningReqDTO;
 import com.crm.system.service.statistics.MaintenanceWarningService;
 import com.crm.system.service.statistics.impl.MaintenanceWarningExportService;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.validation.annotation.Validated;
@@ -106,22 +104,7 @@ public class MaintenanceWarningController {
         response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
 
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("未派发工单清单");
-            // 表头
-            String[] headers = {"预警类型", "地市", "县分", "客户编码", "客户15位编码", "客户名称", "归属行业", "客户经理编码", "客户经理名称", "用户号码"};
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
-            String[] keys = {"orderTypeName","areaName","countyName","custGrpId","grpCode","grpName","businessDepName","managerId","managerName","svcNum"};
-            for (int i = 0; i < list.size(); i++) {
-                Row row = sheet.createRow(i + 1);
-                Map<String, Object> data = list.get(i);
-                for (int j = 0; j < keys.length; j++) {
-                    Object val = data.get(keys[j]);
-                    row.createCell(j).setCellValue(val != null ? val.toString() : "");
-                }
-            }
+            exportService.exportUnallocatedList(workbook, list);
             try (OutputStream os = response.getOutputStream()) {
                 workbook.write(os);
             }

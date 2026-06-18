@@ -476,6 +476,44 @@ public class MaintenanceWarningExportService {
         setColWidths(sheet, allKeys.size(), 4000);
     }
 
+    // ==================== 未派发工单清单导出 (单层表头，美化) ====================
+
+    public void exportUnallocatedList(Workbook wb, List<Map<String, Object>> list) {
+        Sheet sheet = wb.createSheet("未派发工单清单");
+        CellStyle deep = deepStyle(wb);
+        CellStyle dStyle = dataStyle(wb);
+
+        String[] titles = {"预警类型", "地市", "县分", "客户编码", "客户15位编码", "客户名称", "归属行业", "客户经理编码", "客户经理名称", "用户号码"};
+        String[] keys = {"orderTypeName", "areaName", "countyName", "custGrpId", "grpCode", "grpName", "businessDepName", "managerId", "managerName", "svcNum"};
+
+        Row hr = sheet.createRow(0);
+        for (int i = 0; i < titles.length; i++) {
+            Cell c = hr.createCell(i);
+            c.setCellValue(titles[i]);
+            c.setCellStyle(deep);
+        }
+        for (int r = 0; r < list.size(); r++) {
+            Row dr = sheet.createRow(r + 1);
+            for (int c = 0; c < keys.length; c++) {
+                Object val = list.get(r).get(keys[c]);
+                Cell cell = dr.createCell(c);
+                cell.setCellValue(val != null ? val.toString() : "");
+                cell.setCellStyle(dStyle);
+            }
+        }
+        // 列宽：长文本列宽一些
+        sheet.setColumnWidth(0, 5000);   // 预警类型
+        sheet.setColumnWidth(1, 4000);   // 地市
+        sheet.setColumnWidth(2, 4000);   // 县分
+        sheet.setColumnWidth(3, 4800);   // 客户编码
+        sheet.setColumnWidth(4, 5200);   // 客户15位编码
+        sheet.setColumnWidth(5, 7000);   // 客户名称
+        sheet.setColumnWidth(6, 4200);   // 归属行业
+        sheet.setColumnWidth(7, 5200);   // 客户经理编码
+        sheet.setColumnWidth(8, 5000);   // 客户经理名称
+        sheet.setColumnWidth(9, 4800);   // 用户号码
+    }
+
     // ==================== Tab3/4 简单表头导出 helper ====================
     private void writeSimpleExport(Sheet sheet, CellStyle headerStyle, CellStyle dataStyle,
                                     String[] titles, String[] keys, List<Map<String, Object>> list) {
