@@ -93,6 +93,14 @@ public class SysAreaServiceImpl implements ISysAreaService {
         return baseMapper.selectVoList(lqw);
     }
 
+    @Override
+    public List<SysAreaVo> queryCountyListByBssCode(String bssCode) {
+        LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysArea::getBssCodeParent, bssCode);
+        lqw.eq(SysArea::getType, "三级");
+        return baseMapper.selectVoList(lqw);
+    }
+
     private LambdaQueryWrapper<SysArea> buildQueryWrapper(SysAreaBo bo) {
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
 

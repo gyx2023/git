@@ -45,6 +45,11 @@ public interface ISysAreaService {
     List<SysAreaVo> queryCountyListByCityId(String areaId);
 
     /**
+     * 根据地级市BSS编码查询其下辖的区县列表（维系预警Tab3/4/5 客户维度用）
+     */
+    List<SysAreaVo> queryCountyListByBssCode(String bssCode);
+
+    /**
      * 新增【请填写功能名称】
      */
     Boolean insertByBo(SysAreaBo bo);

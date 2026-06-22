@@ -57,6 +57,15 @@ public class SysAreaController extends BaseController {
     }
 
     /**
+     * 根据地级市BSS编码查询其下辖的区县列表（维系预警Tab3/4/5 客户维度用）
+     */
+    @GetMapping("/county/listByBssCode")
+    public R<List<SysAreaVo>> countyListByBssCode(@RequestParam String bssCode) {
+        List<SysAreaVo> counties = iSysAreaService.queryCountyListByBssCode(bssCode);
+        return R.ok(counties);
+    }
+
+    /**
      * 查询区域树（递归包含所有子节点）
      */
     @GetMapping("/tree")

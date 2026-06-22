@@ -2,7 +2,7 @@ package com.crm.adapter.admin.servicehall;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.core.domain.R;
-import com.crm.service.mq.ygcf.RpaFormMappingCacheService;
+import com.crm.system.service.rpa.RpaFormMappingCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
