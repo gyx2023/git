@@ -1,7 +1,7 @@
 --- # HiAgent 智能问数配置
 hiagent:
   # HiAgent 平台基础 URL（所有 Agent 共用同一平台）
-  base-url: http://192.168.124.160:32300/api/proxy/api/v1
+  base-url: http://132.151.58.42:32300/api/proxy/api/v1
   # 创建会话 API 路径
   create-conversation-api: /create_conversation
   # 阻塞/流式聊天 API 路径
