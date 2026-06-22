@@ -3,7 +3,7 @@ package com.crm.system.service.impl;
 
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
-import com.crm.system.domain.CustMaintInfo;
+import com.crm.system.domain.dao.CustMaintInfo;
 import com.crm.system.mapper.CustMaintInfoMapper;
 import com.crm.system.service.ICustMaintInfoService;
 import lombok.extern.slf4j.Slf4j;

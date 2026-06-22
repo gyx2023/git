@@ -1,7 +1,7 @@
 package com.crm.system.mapper.cust;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.cust.TfFCustGroupDDo;
+import com.crm.system.domain.dao.TfFCustGroupDDo;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

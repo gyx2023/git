@@ -283,3 +283,8 @@ flowable:
   check-process-definitions: false
   # 关闭历史任务定时任务job
   async-history-executor-activate: false
+--- # RPA 缓存加载配置
+rpa:
+  form-mapping:
+    cache:
+      enabled: true

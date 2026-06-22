@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.encrypt.SensitiveFieldEncryptUtil;
-import com.crm.system.domain.encrypt.SysFieldEncryptConfigDo;
+import com.crm.system.domain.dao.SysFieldEncryptConfigDo;
 import com.crm.system.domain.vo.encrypt.SysFieldEncryptConfigVo;
 import com.crm.system.mapper.encrypt.SysFieldEncryptConfigMapper;
 import com.crm.system.service.encrypt.IDataEncryptionService;

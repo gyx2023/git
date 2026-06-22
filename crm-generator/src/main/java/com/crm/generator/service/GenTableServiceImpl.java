@@ -15,7 +15,7 @@ import com.crm.common.constant.GenConstants;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.exception.ServiceException;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.JsonUtils;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;

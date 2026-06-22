@@ -3,7 +3,7 @@ package com.crm.framework.satoken.service;
 import cn.dev33.satoken.stp.StpInterface;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.enums.UserType;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 
 import java.util.ArrayList;
 import java.util.List;

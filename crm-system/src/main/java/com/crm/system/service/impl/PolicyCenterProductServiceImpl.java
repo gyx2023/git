@@ -1,7 +1,7 @@
 package com.crm.system.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.crm.system.domain.PolicyCenterProduct;
+import com.crm.system.domain.dao.PolicyCenterProduct;
 import com.crm.system.mapper.PolicyCenterProductMapper;
 import com.crm.system.service.PolicyCenterProductService;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +12,6 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-public class PolicyCenterProductServiceImpl extends ServiceImpl<PolicyCenterProductMapper, PolicyCenterProduct> 
+public class PolicyCenterProductServiceImpl extends ServiceImpl<PolicyCenterProductMapper, PolicyCenterProduct>
         implements PolicyCenterProductService {
 }

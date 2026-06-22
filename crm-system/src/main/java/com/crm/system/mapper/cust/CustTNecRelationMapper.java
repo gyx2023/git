@@ -1,7 +1,7 @@
 package com.crm.system.mapper.cust;
 
 import com.crm.common.core.mapper.BaseMapperPlus;
-import com.crm.system.domain.cust.CustTNecRelationDo;
+import com.crm.system.domain.dao.CustTNecRelationDo;
 import org.apache.ibatis.annotations.Delete;
 
 /**

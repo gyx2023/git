@@ -1,8 +1,8 @@
 package com.crm.system.service.cust;
 
 
-import com.crm.system.domain.CustRosterCustomerNatureMemberProvinceDo;
-import com.crm.system.domain.CustTRosterCustomerNatureMemberProvinceDo;
+import com.crm.system.domain.dao.CustRosterCustomerNatureMemberProvinceDo;
+import com.crm.system.domain.dao.CustTRosterCustomerNatureMemberProvinceDo;
 
 import java.util.List;
 

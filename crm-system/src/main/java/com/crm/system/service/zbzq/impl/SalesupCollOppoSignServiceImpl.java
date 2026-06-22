@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.zbzq.SalesupCollOppoSignBo;
 import com.crm.system.domain.vo.zbzq.SalesupCollOppoSignVo;
-import com.crm.system.domain.zbzq.SalesupCollOppoSignDo;
+import com.crm.system.domain.dao.zbzq.SalesupCollOppoSignDo;
 import com.crm.system.mapper.zbzq.SalesupCollOppoSignMapper;
 import com.crm.system.service.zbzq.ISalesupCollOppoSignService;
 

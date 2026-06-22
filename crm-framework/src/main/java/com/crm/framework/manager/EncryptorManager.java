@@ -2,8 +2,8 @@ package com.crm.framework.manager;
 
 import cn.hutool.core.util.ReflectUtil;
 import com.crm.common.annotation.EncryptField;
-import com.crm.common.encrypt.EncryptContext;
-import com.crm.common.encrypt.IEncryptor;
+import com.crm.common.utils.encrypt.EncryptContext;
+import com.crm.common.utils.encrypt.IEncryptor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;

@@ -1,9 +1,9 @@
 package com.crm.system.service.statistics;
 
 import com.crm.common.core.domain.PageQuery;
-import com.crm.common.core.domain.dto.ContractStatisticsReqDTO;
-import com.crm.common.core.domain.dto.ContractStatisticsRespDTO;
-import com.crm.common.core.domain.dto.ContractStatisticsUserRespDTO;
+import com.crm.system.domain.dto.ContractStatisticsReqDTO;
+import com.crm.system.domain.dto.ContractStatisticsRespDTO;
+import com.crm.system.domain.dto.ContractStatisticsUserRespDTO;
 import com.crm.common.core.page.TableDataInfo;
 
 import java.util.List;

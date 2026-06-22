@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.ZqGrpGroupLogBo;
 import com.crm.system.domain.vo.ZqGrpGroupLogVo;
-import com.crm.system.domain.ZqGrpGroupLog;
-import com.crm.system.domain.ZqGrpGroupInfo;
+import com.crm.system.domain.dao.ZqGrpGroupLog;
+import com.crm.system.domain.dao.ZqGrpGroupInfo;
 import com.crm.system.mapper.ZqGrpGroupLogMapper;
 import com.crm.system.service.IZqGrpGroupLogService;
 

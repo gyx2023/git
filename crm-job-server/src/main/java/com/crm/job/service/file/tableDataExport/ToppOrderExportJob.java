@@ -1,7 +1,7 @@
 package com.crm.job.service.file.tableDataExport;
 
 import com.crm.common.utils.ExportToolsUtils;
-import com.crm.system.domain.topp.ToppOrder;
+import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.service.topp.IToppOrderService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;

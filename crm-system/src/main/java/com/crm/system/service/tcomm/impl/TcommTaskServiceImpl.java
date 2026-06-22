@@ -8,7 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.tcomm.TcommTaskBo;
-import com.crm.system.domain.tcomm.TcommTaskDo;
+import com.crm.system.domain.dao.tcomm.TcommTaskDo;
 import com.crm.system.domain.vo.tcomm.TcommTaskVo;
 import com.crm.system.mapper.tcomm.TcommTaskMapper;
 import com.crm.system.service.tcomm.TcommTaskService;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 

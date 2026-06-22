@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.DwdRepSysPersonD;
+import com.crm.system.domain.dao.DwdRepSysPersonD;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.system.domain.bo.DwdRepSysPersonDBo;
 import com.crm.common.core.page.TableDataInfo;
@@ -68,4 +68,24 @@ public interface IDwdRepSysPersonDService {
      * 分页查询客户经理列表
      */
     TableDataInfo<DwdRepSysPersonDVo> getManagerPageListByLoginUser(PageQuery pageQuery, String keyword);
+
+    /**
+     * 从IOB数据库分页查询人员信息列表(在职标志为0)
+     */
+    List<Map<String, Object>> getDwdRepSysPersonListFromIob(Integer currentPage, Integer pageSize);
+
+    /**
+     * 从IOB数据库查询人员总数(在职标志为0)
+     */
+    int getPersonCountFromIob();
+
+    /**
+     * 清空表数据
+     */
+    void truncate();
+
+    /**
+     * 批量插入人员信息数据
+     */
+    void insertBatch(List<DwdRepSysPersonD> list);
 }

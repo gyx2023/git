@@ -1,7 +1,7 @@
 package com.crm.job.utils;
 
 import cn.hutool.extra.ssh.Sftp;
-import com.crm.system.domain.param.SysParamDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.mapper.param.SysParamMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.Getter;
@@ -10,14 +10,11 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -783,6 +780,68 @@ public class SftpUtil implements InitializingBean {
         } finally {
             close(sftp);
         }
+    }
+
+    /**
+     * 从SFTP服务器下载文件到本地
+     *
+     * @param configType 配置类型
+     * @param remoteFilePath 远程文件路径
+     * @param localFilePath 本地文件路径
+     */
+    public void downloadFile(String configType, String remoteFilePath, String localFilePath) {
+        Sftp sftp = null;
+        String msg = "";
+        try {
+            sftp = getSftp(configType);
+            // 使用ls方法检查文件是否存在
+            List<String> files = sftp.ls(remoteFilePath);
+            if(files == null || files.isEmpty()) {
+                msg = "远程文件不存在: " + remoteFilePath;
+                throw new RuntimeException("远程文件不存在: " + remoteFilePath);
+            }
+
+            sftp = getSftp(configType);
+            log.info("开始从SFTP下载文件，配置类型: {}, 远程文件: {}, 本地文件: {}",
+                    configType, remoteFilePath, localFilePath);
+
+            // 确保本地文件的父目录存在
+            File localFile = new File(localFilePath);
+            File parentDir = localFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+                log.info("创建本地目录: {}", parentDir.getAbsolutePath());
+            }
+
+            // 下载文件
+            sftp.getClient().get(remoteFilePath, localFilePath);
+
+            // 验证文件是否下载成功
+            if (!localFile.exists()) {
+                msg = "文件下载失败，本地文件不存在: " + localFilePath;
+                throw new RuntimeException("文件下载失败，本地文件不存在: " + localFilePath);
+            }
+
+            long fileSize = localFile.length();
+            log.info("文件下载成功，配置类型: {}, 远程文件: {}, 本地文件: {}, 文件大小: {} bytes",
+                    configType, remoteFilePath, localFilePath, fileSize);
+        } catch (Exception e) {
+            log.error("使用配置类型 '{}' 下载文件失败，远程文件: {}, 错误: {}",
+                    configType, remoteFilePath, e.getMessage(), e);
+            throw new RuntimeException(msg);
+        } finally {
+            close(sftp);
+        }
+    }
+
+    /**
+     * 从SFTP服务器下载文件到本地（使用当前活跃配置类型）
+     *
+     * @param remoteFilePath 远程文件路径
+     * @param localFilePath 本地文件路径
+     */
+    public void downloadFile(String remoteFilePath, String localFilePath) {
+        downloadFile(activeConfigType, remoteFilePath, localFilePath);
     }
 
 

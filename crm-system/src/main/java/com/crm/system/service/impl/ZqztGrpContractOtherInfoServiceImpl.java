@@ -1,14 +1,14 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.crm.common.encrypt.DataEncryptionUtil;
+import com.crm.common.utils.encrypt.DataEncryptionUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.domain.cust.ZqztCustMaintInfo;
+import com.crm.system.domain.dao.ZqztCustMaintInfo;
 import com.crm.system.service.cust.IZqztCustMaintInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.crm.system.domain.bo.ZqztGrpContractOtherInfoBo;
 import com.crm.system.domain.vo.ZqztGrpContractOtherInfoVo;
-import com.crm.system.domain.ZqztGrpContractOtherInfo;
-import com.crm.system.domain.ZqztGrpContractOtherInfoLog;
+import com.crm.system.domain.dao.ZqztGrpContractOtherInfo;
+import com.crm.system.domain.dao.ZqztGrpContractOtherInfoLog;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoMapper;
 import com.crm.system.mapper.ZqztGrpContractOtherInfoLogMapper;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import com.crm.system.service.ITfFCustGroupMService;
-import com.crm.common.enums.InfoTagEnum;
+import com.crm.system.enums.InfoTagEnum;
 
 import javax.annotation.Resource;
 import java.util.*;

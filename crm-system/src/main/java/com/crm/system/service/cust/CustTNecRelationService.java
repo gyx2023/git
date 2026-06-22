@@ -1,7 +1,7 @@
 package com.crm.system.service.cust;
 
-import com.crm.system.domain.cust.CustNecRelationDo;
-import com.crm.system.domain.cust.CustTNecRelationDo;
+import com.crm.system.domain.dao.CustNecRelationDo;
+import com.crm.system.domain.dao.CustTNecRelationDo;
 
 import java.util.List;
 

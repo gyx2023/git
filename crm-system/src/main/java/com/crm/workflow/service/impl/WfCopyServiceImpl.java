@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
-import com.crm.common.helper.LoginHelper;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StringUtils;
 import com.crm.workflow.domain.WfCopy;
 import com.crm.workflow.domain.bo.WfCopyBo;

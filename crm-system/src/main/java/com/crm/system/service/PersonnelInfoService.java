@@ -1,6 +1,6 @@
 package com.crm.system.service;
 
-import com.crm.system.domain.PersonnelInfo;
+import com.crm.system.domain.dao.PersonnelInfo;
 
 import java.util.List;
 

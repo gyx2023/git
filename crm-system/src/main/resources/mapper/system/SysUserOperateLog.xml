@@ -4,7 +4,7 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.SysUserOperateLogMapper">
 
-    <resultMap id="SysUserOperateLogResult" type="com.crm.system.domain.SysUserOperateLog">
+    <resultMap id="SysUserOperateLogResult" type="com.crm.system.domain.dao.SysUserOperateLog">
         <result column="log_id" property="logId"/>
         <result column="name_" property="name"/>
         <result column="name_ch" property="nameCh"/>

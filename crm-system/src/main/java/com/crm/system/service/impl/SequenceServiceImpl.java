@@ -2,7 +2,7 @@ package com.crm.system.service.impl;
 
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.crm.system.domain.Sequence;
+import com.crm.system.domain.dao.Sequence;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.service.ISequenceService;
 import lombok.extern.slf4j.Slf4j;

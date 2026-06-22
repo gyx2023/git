@@ -1,7 +1,6 @@
 package com.crm.job.service.sync;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.crm.system.domain.CustMaintInfo;
+import com.crm.system.domain.dao.CustMaintInfo;
 import com.crm.system.service.ICustMaintInfoService;
 import com.crm.system.service.cust.IZqztCustMaintInfoService;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**

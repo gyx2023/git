@@ -1,7 +1,7 @@
 package com.crm.system.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.crm.system.domain.PolicyCenterTask;
+import com.crm.system.domain.dao.PolicyCenterTask;
 
 import java.util.List;
 

@@ -3,9 +3,8 @@ package com.crm.system.service.identify;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
-import com.crm.system.domain.SysOss;
 import com.crm.system.domain.bo.identify.IdentifyScoreCustomerBo;
-import com.crm.system.domain.identify.IdentifyScoreCustomerDo;
+import com.crm.system.domain.dao.IdentifyScoreCustomerDo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.domain.vo.identify.IdentifyScoreCustomerVo;
 
