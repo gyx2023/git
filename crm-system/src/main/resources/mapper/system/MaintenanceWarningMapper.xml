@@ -578,6 +578,12 @@
                 </choose>
                 , COUNT(1) AS yjl,
                 <include refid="tab3NumberColumn"/>
+                <if test="orderType == 'group_buy_warn' or orderType == 'terminal_contract_warn' or orderType == 'user_cust_owe_warn'">
+                    <choose>
+                        <when test="areaId == null or areaId == ''">, a.area_id AS areaId</when>
+                        <otherwise>, a.county_id AS areaId</otherwise>
+                    </choose>
+                </if>
             FROM maintenance_detail a
             LEFT JOIN sys_user us ON a.user_id = us.id_
             LEFT JOIN sys_area area ON a.area_id = area.id_
