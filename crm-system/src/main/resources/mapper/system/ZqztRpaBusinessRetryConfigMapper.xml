@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.ZqztRpaBusinessRetryConfigMapper">
+
+    <select id="selectByBizCode" resultType="com.crm.system.domain.ZqztRpaBusinessRetryConfigDo">
+        SELECT * FROM zqzt_rpa_business_retry_config
+        WHERE biz_code = #{bizCode}
+          AND is_enabled = 1
+        ORDER BY update_time DESC
+        LIMIT 1
+    </select>
+
+</mapper>

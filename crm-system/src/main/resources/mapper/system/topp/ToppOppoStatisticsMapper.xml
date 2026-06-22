@@ -7,7 +7,7 @@
     <!-- 查询今日是否已统计 -->
     <select id="selectTodayStats" resultType="com.crm.system.domain.topp.ToppOppoStatistics">
         SELECT id_ AS id, type, data, time_limite AS timeLimite, statistics_date AS statisticsDate, area_type AS areaType
-        FROM topp_oppotunity_statistics_test
+        FROM topp_oppotunity_statistics
         --         FROM topp_oppotunity_statistics
         WHERE type = #{type}
         AND statistics_date = #{date}
