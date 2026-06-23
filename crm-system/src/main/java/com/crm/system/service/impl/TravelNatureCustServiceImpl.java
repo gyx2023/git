@@ -1,6 +1,9 @@
 package com.crm.system.service.impl;
 
+import com.crm.common.core.domain.entity.SysUser;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.dao.travel.ZqztTravelNatureCust;
 import com.crm.system.domain.vo.NatureCustVo;
 import com.crm.system.mapper.travel.ZqztTravelNatureCustMapper;
@@ -28,10 +31,11 @@ public class TravelNatureCustServiceImpl implements ITravelNatureCustService {
 
     @Override
     public List<NatureCustVo> searchNatureCust(String keyword) {
+        String oaAccount = LoginHelper.getLoginUser().getUsername();
         if (StringUtils.isEmpty(keyword)) {
             return Collections.emptyList();
         }
-        List<ZqztTravelNatureCust> list = zqztTravelNatureCustMapper.searchByKeyword(keyword.trim());
+        List<ZqztTravelNatureCust> list = zqztTravelNatureCustMapper.searchByKeyword(keyword.trim(),oaAccount);
         return list.stream().map(item -> {
             NatureCustVo vo = new NatureCustVo();
             vo.setNatureCustId(item.getNatureCustId());
