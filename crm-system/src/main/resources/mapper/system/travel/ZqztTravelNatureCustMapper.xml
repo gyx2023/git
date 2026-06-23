@@ -12,9 +12,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT a.nature_cust_id, b.nature_cust_name
         FROM cust_t_nature_customer_developer a
         INNER JOIN zqzt_travel_nature_cust b ON a.nature_cust_id = b.nature_cust_id
-        WHERE (b.nature_cust_name LIKE CONCAT('%', #{keyword}, '%')
+        WHERE a.oa_code = #{oaAccount}
+          AND (b.nature_cust_name LIKE CONCAT('%', #{keyword}, '%')
            OR a.nature_cust_id LIKE CONCAT('%', #{keyword}, '%'))
-          AND a.oa_code = #{oaAccount}
         LIMIT 50
     </select>
 
