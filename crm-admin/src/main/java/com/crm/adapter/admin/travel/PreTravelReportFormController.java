@@ -1,6 +1,5 @@
 package com.crm.adapter.admin.travel;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
 import com.crm.system.domain.bo.PreTravelReportFormBo;
@@ -35,7 +34,6 @@ public class PreTravelReportFormController extends BaseController {
     /**
      * 自然客户模糊查询
      */
-    @SaCheckPermission("travel:preTravelReport:list")
     @GetMapping("/natureCust/search")
     public R<List<NatureCustVo>> searchNatureCust(@RequestParam("keyword") @NotBlank(message = "搜索关键字不能为空") String keyword) {
         List<NatureCustVo> list = travelNatureCustService.searchNatureCust(keyword);
@@ -45,7 +43,6 @@ public class PreTravelReportFormController extends BaseController {
     /**
      * 提交行前报告生成
      */
-    @SaCheckPermission("travel:preTravelReport:add")
     @PostMapping("/submit")
     public R<Map<String, Object>> submit(@Validated @RequestBody PreTravelReportFormBo bo) {
         Map<String, Object> result = preTravelReportFormService.submitPreTravelReport(bo);
