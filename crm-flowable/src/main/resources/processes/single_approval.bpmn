@@ -5,7 +5,7 @@
         <!-- 开始事件 -->
         <startEvent id="startevent" name="开始"></startEvent>
         <!-- 客户经理处理任务 -->
-        <userTask id="manager_handle" name="客户经理处理" flowable:assignee="${manager}">
+        <userTask id="manager_handle" name="${manager_handle_name}" flowable:assignee="${manager}">
             <documentation>预警处理</documentation>
         </userTask>
         <!-- 排他网关 -->

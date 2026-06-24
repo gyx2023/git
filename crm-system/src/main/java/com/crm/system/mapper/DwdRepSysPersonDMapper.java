@@ -5,6 +5,7 @@ import com.crm.system.domain.dao.DwdRepSysPersonD;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
@@ -45,4 +46,13 @@ public interface DwdRepSysPersonDMapper extends BaseMapperPlus<DwdRepSysPersonDM
      * 批量插入人员信息数据
      */
     int insertBatch(@Param("list") List<DwdRepSysPersonD> list);
+
+    /**
+     * 根据MDM组织编码查询组织名称
+     *
+     * @param mdmOrgCode MDM组织编码
+     * @return 组织名称
+     */
+    @Select("SELECT COUNTY_NAME FROM dwd_rep_sys_person_d WHERE COUNTY_ID = #{mdmOrgCode} LIMIT 1")
+    String selectMdmCodeName(@Param("mdmOrgCode") String mdmOrgCode);
 }

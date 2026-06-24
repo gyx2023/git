@@ -27,8 +27,15 @@ public class WideUpWarningJob {
     public void start() {
         log.info("【宽带升级预警Job】开始执行");
         String jobParam = XxlJobHelper.getJobParam();
-        String yyyyMM = StringUtils.isNotBlank(jobParam) ? jobParam
-                : DateUtils.parseDateToStr(DateUtils.YYYY_MM, new java.util.Date());
+        // 默认查询上个月数据，对应旧系统 calendar.add(Calendar.MONTH, -1)
+        String yyyyMM;
+        if (StringUtils.isNotBlank(jobParam)) {
+            yyyyMM = jobParam;
+        } else {
+            java.util.Calendar calendar = java.util.Calendar.getInstance();
+            calendar.add(java.util.Calendar.MONTH, -1);
+            yyyyMM = new java.text.SimpleDateFormat("yyyy-MM").format(calendar.getTime());
+        }
         try {
             warningStartService.startByType("new_wide_up", yyyyMM);
             log.info("【宽带升级预警Job】执行完成");

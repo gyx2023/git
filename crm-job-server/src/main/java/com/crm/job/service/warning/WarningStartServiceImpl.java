@@ -1,25 +1,29 @@
 package com.crm.job.service.warning;
 
 import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.topp.ToppOrderUp;
+import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.ISequenceService;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.topp.IToppOrderService;
+import com.crm.system.service.topp.IToppOrderUpService;
 import com.crm.system.utils.OppClueCodeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -57,6 +61,15 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
     @Autowired(required = false)
     private ISysDeptService deptService;
+
+    @Autowired(required = false)
+    private IToppOrderUpService toppOrderUpService;
+
+    @Autowired(required = false)
+    private SysUsersMapper sysUsersMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Override
     public void startByType(String orderType, String targetDate) {
@@ -149,6 +162,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             ToppOrderBo orderBo = buildOrderBo(record, task, extra);
             orderService.insertByBo(orderBo);
 
+            // 4.5 保存升级预警关联表（仅针对升级预警类型）
+            saveToppOrderUpIfNeeded(orderBo, extra);
+
             // 5. 设置任务本地变量
             setTaskLocalVariables(task, orderBo, record, extra);
 
@@ -194,7 +210,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("manager", String.valueOf(record.getCustManagerId()));
-        variables.put("action", "agree");
+        //节点名称可自定义
+        variables.put("manager_handle_name", record.getExtraVariables().get("manager_handle_name")!= null ? record.getExtraVariables().get("manager_handle_name") :"客户经理处理");
 
         ProcessInstance processInstance = runtimeService.startProcessInstanceById(
                 processDefinition.getId(), record.getOrderType(), variables);
@@ -232,7 +249,11 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         orderBo.setInfoId(extra != null ? (Long) extra.get("infoId") : null);
         orderBo.setCreateTime(new Date());
         orderBo.setUpdateTime(new Date());
-
+        if(record.getSysUser()!= null){
+            orderBo.setCreator(record.getSysUser().getId());
+            orderBo.setOrgId(record.getSysUser().getOrgId());
+        }
+        orderBo.setAreaId(record.getAreaId());
         if (extra == null) return orderBo;
 
         // 可选：orderNumber
@@ -271,10 +292,33 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             }
         }
 
+        // 优先从 extra 中获取 nickName 和 phone，如果没有则从 sys_user 表查询
         String nickName = (String) extra.get("nickName");
         String phone = (String) extra.get("phone");
-        if (nickName != null) {
-            orderBo.setActorsInfo(nickName + ":" + (phone != null ? phone : ""));
+
+        // 如果 extra 中没有，尝试从 sys_user 表查询
+        if (StringUtils.isBlank(nickName) || StringUtils.isBlank(phone)) {
+            Long custManagerId = orderBo.getCustManagerId();
+            if (custManagerId != null && sysUsersMapper != null) {
+                try {
+                    SysUsers user = sysUsersMapper.selectById(custManagerId);
+                    if (user != null) {
+                        if (StringUtils.isBlank(nickName)) {
+                            nickName = user.getNameCh();
+                        }
+                        if (StringUtils.isBlank(phone)) {
+                            phone = user.getRelationTel();
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("【预警启动】查询用户信息失败, userId={}", custManagerId);
+                }
+            }
+        }
+
+        // 设置 actorsInfo
+        if (StringUtils.isNotBlank(nickName)) {
+            orderBo.setActorsInfo(nickName + ":" + (StringUtils.isNotBlank(phone) ? phone : ""));
         }
     }
 
@@ -327,6 +371,105 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             if (fk.equals(key)) return true;
         }
         return false;
+    }
+
+    /**
+     * 保存升级预警订单关联表（仅针对升级预警类型）
+     * 对应旧系统 WarningUpJob.startProcessWarnUp() 中的 orderUpService.saveOrUpdate()
+     */
+    private void saveToppOrderUpIfNeeded(ToppOrderBo orderBo, Map<String, Object> extra) {
+        if (toppOrderUpService == null) {
+            log.debug("【升级预警关联表】IToppOrderUpService 未注入，跳过保存");
+            return;
+        }
+
+        // 仅处理升级预警类型
+        String orderType = orderBo.getOrderType();
+        if (!"new_wide_up".equals(orderType) && !"new_hmd_up".equals(orderType)) {
+            return;
+        }
+
+        String bssCode = extra != null ? (String) extra.get("bssCode") : null;
+        String mdmOrgCode = extra != null ? (String) extra.get("mdmOrgCode") : null;
+        String period = extra != null ? (String) extra.get("wide_second_new_period") : null;
+
+        // 如果 period 为空，尝试从 _targetDate 获取
+        if (StringUtils.isBlank(period)) {
+            period = extra != null ? (String) extra.get("_targetDate") : null;
+        }
+
+        ToppOrderUp orderUp = new ToppOrderUp();
+        orderUp.setOrderId(orderBo.getId() != null ? orderBo.getId().intValue() : null);
+        orderUp.setBssCode(bssCode);
+        orderUp.setMdmOrgCode(mdmOrgCode);
+        orderUp.setPeriod(period);
+
+        toppOrderUpService.insertToppOrderUp(orderUp);
+    }
+
+    // ==================== sys_flow_user 默认处理人查询 ====================
+
+    @Override
+    public List<SysUser> findDefaultHandlerByProcessAndArea(String processKey, String taskDefKey, Long areaId) {
+        // 构建基础SQL（使用占位符防止SQL注入）
+        StringBuilder sql = new StringBuilder(
+                "SELECT DISTINCT u.user_id, u.dept_id, u.user_name, u.nick_name, u.phonenumber " +
+                "FROM sys_flow_user fu " +
+                "INNER JOIN sys_user u ON fu.user_id = u.user_id AND u.del_flag = '0' ");
+
+        List<Object> params = new ArrayList<>();
+        params.add(processKey);
+        params.add(taskDefKey);
+
+        // 如果指定了区域ID，添加部门关联和区域过滤条件
+        if (areaId != null) {
+            sql.append("INNER JOIN sys_dept d ON u.dept_id = d.dept_id AND d.area_code = ? ");
+            params.add(String.valueOf(areaId));
+            sql.append("WHERE fu.is_valid = 1 AND fu.process_key = ? AND fu.task_def_key = ? ");
+            sql.append("AND (fu.area_id IS NULL OR fu.area_id = ?) ");
+            params.add(processKey);
+            params.add(taskDefKey);
+            params.add(areaId);
+        } else {
+            sql.append("WHERE fu.is_valid = 1 AND fu.process_key = ? AND fu.task_def_key = ? ");
+        }
+
+        sql.append("ORDER BY u.user_id ASC LIMIT 10");
+
+        log.info("查询默认处理人: processKey={}, taskDefKey={}, areaId={}, SQL={}",
+                processKey, taskDefKey, areaId, sql.toString());
+
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql.toString(), params.toArray());
+            List<SysUser> result = new ArrayList<>();
+            for (Map<String, Object> row : rows) {
+                SysUser user = new SysUser();
+                user.setUserId(getLong(row, "user_id"));
+                user.setDeptId(getLong(row, "dept_id"));
+                user.setUserName(getStr(row, "user_name"));
+                user.setNickName(getStr(row, "nick_name"));
+                user.setPhonenumber(getStr(row, "phonenumber"));
+                result.add(user);
+            }
+            log.info("查询到默认处理人数量: {}", result.size());
+            return result;
+        } catch (Exception e) {
+            log.error("查询默认处理人失败: processKey={}, taskDefKey={}, areaId={}",
+                    processKey, taskDefKey, areaId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private Long getLong(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).longValue();
+        try { return Long.parseLong(v.toString()); } catch (NumberFormatException e) { return null; }
+    }
+
+    private String getStr(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v == null ? null : v.toString();
     }
 
 }

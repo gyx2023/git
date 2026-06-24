@@ -44,4 +44,10 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
         "LIMIT 1")  // 只查1条数据
     SysUsers selectUserByChannelHqCode(@Param("channelHqCode") String channelHqCode);
 
+    /**
+     * 根据 OA 账号查询用户
+     */
+    @Select("SELECT * FROM sys_user WHERE oa_account = #{oaAccount} AND is_valid = '1' LIMIT 1")
+    SysUsers findByOaAccount(@Param("oaAccount") String oaAccount);
+
 }

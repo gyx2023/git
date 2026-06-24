@@ -17,11 +17,16 @@ import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
+import org.flowable.engine.HistoryService;
+import org.flowable.task.api.Task;
+import org.flowable.task.api.history.HistoricTaskInstance;
+import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -46,6 +51,9 @@ public class PendingServiceImpl implements IPendingService {
 
     @Resource
     private OldWorkflowQueryService oldWorkflowQueryService;
+
+    @Resource
+    private HistoryService flowableHistoryService;
 
     private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
             "pendingCode", "pendingTitle", "pendingDate", "pendingUserID", "pendingURL", "pendingStatus",
@@ -142,57 +150,123 @@ public class PendingServiceImpl implements IPendingService {
                 continue;
             }
             try {
-                // 查询历史任务实例（老流程）
+                // 1. 先查老 Activiti 历史任务
                 Map<String, Object> task = oldWorkflowQueryService
                         .queryOldHistoricTaskByTaskId(pending.getPendingCode());
-                if (task == null) {
-                    it.remove();
-                    log.info("订单" + pending.getId() + "task为空");
-                    pending.setFailTimes(3);
-                    pending.setResponseMsg("订单" + pending.getId() + "task为空");
-                    saveOrUpdate(pending);
-                    continue;
-                }
-                String taskDefKey = (String) task.get("taskDefKey");
+                boolean isFlowable = false;
+                String taskDefKey;
+                String procInsId;
+                String assignee;
+                Long numericTaskId;
 
-                // 查询流程变量 dealUrl（老流程）
-                Map<String, Object> dealUrl = oldWorkflowQueryService
-                        .queryOldHistoricVariable(pending.getPendingCode(), taskDefKey + "_dealUrl");
-                if (dealUrl == null) {
-                    it.remove();
-                    log.info("订单" + pending.getId() + "varinst表dealUrl为空");
-                    pending.setFailTimes(3);
-                    pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
-                    saveOrUpdate(pending);
-                    continue;
-                }
-                //待办处理页面地址
-                String backlog = sysParamService.findValueByCode("Backlog");
-                //举例 /order/toOrderDeal&urlType=deal&orderId=758760
-                String dealUrlStr = dealUrl.get("textValue").toString().replace("?", "&");
-                pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
-
-                // 查询上一步处理人（老流程）
-                String procInsId = (String) task.get("procInsId");
-                List<Map<String, Object>> hisList = oldWorkflowQueryService
-                        .queryOldHistoricTaskInsts(procInsId);
-                hisList.sort((a, b) -> {
-                    long idA = Long.parseLong((String) a.get("id"));
-                    long idB = Long.parseLong((String) b.get("id"));
-                    return Long.compare(idB, idA);
-                });
-                Map<String, Object> prevTask = null;
-                long currentTaskId = Long.parseLong((String) task.get("id"));
-                for (Map<String, Object> his : hisList) {
-                    if (Long.parseLong((String) his.get("id")) < currentTaskId) {
-                        prevTask = his;
-                    }
-                }
-                int userId;
-                if (prevTask != null) {
-                    userId = Integer.parseInt(((String) prevTask.get("assignee")).replaceAll(",", ""));
+                if (task != null) {
+                    // 老 Activiti 流程
+                    taskDefKey = (String) task.get("taskDefKey");
+                    procInsId = (String) task.get("procInsId");
+                    assignee = (String) task.get("assignee");
+                    numericTaskId = Long.parseLong((String) task.get("id"));
                 } else {
-                    userId = Integer.parseInt(((String) task.get("assignee")).replaceAll(",", ""));
+                    // 2. 老流程未找到，尝试查 Flowable 历史任务（FLO_ACT_HI_* 表）
+                    HistoricTaskInstance flowableTask = flowableHistoryService
+                            .createHistoricTaskInstanceQuery()
+                            .taskId(pending.getPendingCode())
+                            .singleResult();
+                    if (flowableTask == null) {
+                        it.remove();
+                        log.info("订单" + pending.getId() + "task为空（老+新流程均未找到）");
+                        pending.setFailTimes(3);
+                        pending.setResponseMsg("订单" + pending.getId() + "task为空");
+                        saveOrUpdate(pending);
+                        continue;
+                    }
+                    isFlowable = true;
+                    taskDefKey = flowableTask.getTaskDefinitionKey();
+                    procInsId = flowableTask.getProcessInstanceId();
+                    assignee = flowableTask.getAssignee();
+                    numericTaskId = Long.parseLong(flowableTask.getId());
+                    log.info("{} 匹配到 Flowable 流程任务, procInsId={}", pending.getId(), procInsId);
+                }
+
+                // 查询 dealUrl
+                String dealUrlStr;
+                if (isFlowable) {
+                    // Flowable 流程：从 FLO_ACT_HI_VARINST 查 task 级别变量
+                    HistoricVariableInstance flowableVar = flowableHistoryService
+                            .createHistoricVariableInstanceQuery()
+                            .taskId(pending.getPendingCode())
+                            .variableName(taskDefKey + "_dealUrl")
+                            .singleResult();
+                    if (flowableVar == null || flowableVar.getValue() == null) {
+                        it.remove();
+                        log.info("订单" + pending.getId() + " Flowable dealUrl为空");
+                        pending.setFailTimes(3);
+                        pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
+                        saveOrUpdate(pending);
+                        continue;
+                    }
+                    // 新框架 dealUrl 已经是完整路径，不需要拼接 Backlog
+                    dealUrlStr = flowableVar.getValue().toString();
+                    pending.setPendingURL(dealUrlStr + "&taskId=" + pending.getPendingCode());
+                } else {
+                    // 老 Activiti 流程
+                    Map<String, Object> dealUrl = oldWorkflowQueryService
+                            .queryOldHistoricVariable(pending.getPendingCode(), taskDefKey + "_dealUrl");
+                    if (dealUrl == null) {
+                        it.remove();
+                        log.info("订单" + pending.getId() + "varinst表dealUrl为空");
+                        pending.setFailTimes(3);
+                        pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
+                        saveOrUpdate(pending);
+                        continue;
+                    }
+                    String backlog = sysParamService.findValueByCode("Backlog");
+                    dealUrlStr = dealUrl.get("textValue").toString().replace("?", "&");
+                    pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
+                }
+
+                // 查询上一步处理人
+                int userId;
+                if (isFlowable) {
+                    // Flowable: 查历史任务列表，找上一个任务的处理人
+                    List<HistoricTaskInstance> hisList = flowableHistoryService
+                            .createHistoricTaskInstanceQuery()
+                            .processInstanceId(procInsId)
+                            .orderByHistoricTaskInstanceEndTime().desc()
+                            .list();
+                    HistoricTaskInstance prevFlowableTask = null;
+                    for (HistoricTaskInstance his : hisList) {
+                        long hisId = Long.parseLong(his.getId());
+                        if (hisId < numericTaskId) {
+                            prevFlowableTask = his;
+                            break;
+                        }
+                    }
+                    if (prevFlowableTask != null && prevFlowableTask.getAssignee() != null) {
+                        userId = Integer.parseInt(prevFlowableTask.getAssignee().replaceAll(",", ""));
+                    } else if (assignee != null) {
+                        userId = Integer.parseInt(assignee.replaceAll(",", ""));
+                    } else {
+                        userId = 0;
+                    }
+                } else {
+                    List<Map<String, Object>> hisList = oldWorkflowQueryService
+                            .queryOldHistoricTaskInsts(procInsId);
+                    hisList.sort((a, b) -> {
+                        long idA = Long.parseLong((String) a.get("id"));
+                        long idB = Long.parseLong((String) b.get("id"));
+                        return Long.compare(idB, idA);
+                    });
+                    Map<String, Object> prevTask = null;
+                    for (Map<String, Object> his : hisList) {
+                        if (Long.parseLong((String) his.get("id")) < numericTaskId) {
+                            prevTask = his;
+                        }
+                    }
+                    if (prevTask != null) {
+                        userId = Integer.parseInt(((String) prevTask.get("assignee")).replaceAll(",", ""));
+                    } else {
+                        userId = Integer.parseInt(assignee.replaceAll(",", ""));
+                    }
                 }
 
                 SysUsers prev = sysUsersMapper.selectById(userId);
@@ -369,5 +443,109 @@ public class PendingServiceImpl implements IPendingService {
     @Override
     public void updateGroupTodoTask(PendingGroupTodo pendingTodo) {
         pendingGroupTodoMapper.updateById(pendingTodo);
+    }
+
+    // ==================== Flowable 事件监听触发的数据生产方法 ====================
+
+    @Override
+    public void savePending(Task task, String oaAppId) {
+        // 防重：检查是否已存在同 taskId + operatorType='a' 的记录
+        String pendingCode = task.getId();
+        if (findByPendingCodeAndType(pendingCode, "a") != null) {
+            log.debug("待办新增记录已存在，跳过: pendingCode={}", pendingCode);
+            return;
+        }
+        String now = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        Pending pending = new Pending();
+        pending.setPendingCode(pendingCode);
+        pending.setPendingTitle(task.getName());
+        pending.setPendingDate(now);
+        pending.setPendingUserID(getOaAccountByAssignee(task.getAssignee()));
+        pending.setPendingStatus("0");
+        pending.setPendingLevel(0);
+        pending.setPendingCityCode("12");
+        pending.setPendingNote(oaAppId);
+        pending.setSendStatus("0");
+        pending.setFailTimes(0);
+        pending.setOperatorType("a");
+        pending.setLastUpdateDate(now);
+        saveOrUpdate(pending);
+        log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
+    }
+
+    @Override
+    public void updatePending(Task task, String oaAppId) {
+        // 检查是否存在对应的 'a' 记录
+        String pendingCode = task.getId();
+        List<Pending> pendingList = pendingMapper.selectList(
+                new LambdaQueryWrapper<Pending>()
+                        .eq(Pending::getPendingCode, pendingCode)
+                        .eq(Pending::getOperatorType, "a"));
+        if (pendingList.isEmpty()) {
+            log.debug("待办新增记录不存在，跳过更新: pendingCode={}", pendingCode);
+            return;
+        }
+
+        Pending aRecord = pendingList.get(0);
+        String now = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        Pending upending = new Pending();
+        upending.setPendingCode(pendingCode);
+        upending.setPendingStatus("1");
+        upending.setLastUpdateDate(now);
+        upending.setPendingNote(oaAppId);
+        upending.setFailTimes(0);
+        upending.setSendStatus("0");
+        upending.setOperatorType("u");
+        upending.setPendingCityCode("12");
+        upending.setPendingDate(now);
+        upending.setPendingTitle(aRecord.getPendingTitle());
+        upending.setPendingUserID(aRecord.getPendingUserID());
+        upending.setPendingSource(aRecord.getPendingSource());
+        upending.setPendingSourceUserID(aRecord.getPendingSourceUserID());
+        upending.setPendingLevel(aRecord.getPendingLevel());
+        upending.setPendingURL(aRecord.getPendingURL());
+        saveOrUpdate(upending);
+        log.info("待办状态更新记录已创建: pendingCode={}", pendingCode);
+    }
+
+    @Override
+    public void addGroupTodoTask(String procInstId) {
+        // 防重：流程完结时只加一条 'u' 类型
+        Long count = pendingGroupTodoMapper.selectCount(
+                new LambdaQueryWrapper<PendingGroupTodo>()
+                        .eq(PendingGroupTodo::getProcInstId, procInstId)
+                        .eq(PendingGroupTodo::getOperatorType, "u"));
+        if (count > 0) {
+            log.debug("集团待办流程完结记录已存在，跳过: procInstId={}", procInstId);
+            return;
+        }
+        PendingGroupTodo todo = new PendingGroupTodo();
+        todo.setProcInstId(procInstId);
+        todo.setOperatorType("u");
+        todo.setSendStatus("0");
+        todo.setFailTimes(0);
+        todo.setCreateTime(new Date());
+        pendingGroupTodoMapper.insert(todo);
+        log.info("集团待办同步记录已创建: procInstId={}", procInstId);
+    }
+
+    /**
+     * 取 assignee OA 账号（assignee 格式为 ",userId," 或 "userId"）
+     */
+    private String getOaAccountByAssignee(String assignee) {
+        if (assignee == null || assignee.isEmpty()) {
+            return "";
+        }
+        try {
+            String userIdStr = assignee.replaceAll(",", "");
+            int userId = Integer.parseInt(userIdStr);
+            SysUsers user = sysUsersMapper.selectById(userId);
+            if (user != null && user.getOaAccount() != null) {
+                return user.getOaAccount();
+            }
+        } catch (Exception e) {
+            log.warn("解析 assignee OA 账号失败: {}", assignee, e);
+        }
+        return "";
     }
 }

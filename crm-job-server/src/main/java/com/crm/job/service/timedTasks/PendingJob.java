@@ -60,7 +60,7 @@ public class PendingJob {
         loadPendingConfig();
         XxlJobHelper.log("====== 待办统一调度开始执行（按ID逐条执行）======");
         log.info("====== 待办统一调度开始执行（按ID逐条执行）======");
-        String param = XxlJobHelper.getJobParam();
+        String param = "5";//XxlJobHelper.getJobParam();
         // 1. 获取按 ID 排序好的 a + u 列表 默认取30条数据
         List<Pending> pendingList = pendingService.getPendingList(StringUtils.isEmpty( param)? "30": param);
 
