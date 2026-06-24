@@ -101,7 +101,7 @@ public class EarlyWarningProcessingJob {
     private void sendMessage(String phone, String warningType, String count) {
         try {
             Map<String, Object> map = new HashMap<>();
-            map.put("TIME", DateUtils.getTime());
+            map.put("TIME", DateUtils.dateTimeNow("yyyy年MM月dd日 HH时mm分ss秒"));
             map.put("SPECIAL", warningType);
             map.put("REGION", count + "条");
             ConOpenSendImpl.sendMessageByTemplate("ALM_OPR07", map, phone);
