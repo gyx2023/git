@@ -14,9 +14,8 @@ import lombok.EqualsAndHashCode;
  * @author crm
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("early_warning_processing_config")
-public class EarlyWarningProcessingConfigDo extends BaseEntity {
+public class EarlyWarningProcessingConfigDo{
 
     private static final long serialVersionUID = 1L;
 
