@@ -55,4 +55,18 @@ public interface DwdRepSysPersonDMapper extends BaseMapperPlus<DwdRepSysPersonDM
      */
     @Select("SELECT COUNTY_NAME FROM dwd_rep_sys_person_d WHERE COUNTY_ID = #{mdmOrgCode} LIMIT 1")
     String selectMdmCodeName(@Param("mdmOrgCode") String mdmOrgCode);
+
+    /**
+     * 查询主库的领导列表（bossFlag: 1=区县, 2=市本级）
+     * 对应老框架 dao.createSQLQuery() 查主库
+     */
+    List<Map<String, Object>> selectBossLeaders(@Param("code") String code,
+                                                 @Param("posCode") int posCode,
+                                                 @Param("bossFlag") String bossFlag);
+
+    /**
+     * 查询 org code 匹配表（主库）
+     */
+    @Select("SELECT MDM_ORG_CODE_NEW AS mdmOrgCodeNew FROM jingfen_zero_leader_org_match WHERE MDM_ORG_CODE = #{mdmOrgCode} LIMIT 1")
+    Map<String, Object> selectMatchOrgCode(@Param("mdmOrgCode") String mdmOrgCode);
 }

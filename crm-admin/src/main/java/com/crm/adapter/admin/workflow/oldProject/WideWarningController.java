@@ -47,6 +47,7 @@ public class WideWarningController extends BaseController {
     @Resource private final com.crm.system.mapper.oldsyssyn.OldSysOrgMapper oldSysOrgMapper;
     @Resource private final com.crm.system.service.ISysAreaService sysAreaService;
     @Resource private final com.crm.system.service.IDwdRepSysPersonDService dwdRepSysPersonDService;
+    @Resource private final com.crm.system.mapper.DwdRepSysPersonDMapper dwdRepSysPersonDMapper;
 
     @GetMapping("/detail")
     public R<Map<String, Object>> detail(@RequestParam("orderId") Long orderId,
@@ -257,8 +258,8 @@ public class WideWarningController extends BaseController {
         try {
             if ("三级".equals(areaType)) {
                 // 区县：按 BSS_CODE 查总经理+副总经理（DM 数据源）
-                bossList.addAll(queryBossFromMainDB(bssCode != null ? bssCode : "", 1, "1"));
-                bossList.addAll(queryBossFromMainDB(bssCode != null ? bssCode : "", 2, "1"));
+                bossList.addAll(dwdRepSysPersonDMapper.selectBossLeaders(bssCode != null ? bssCode : "", 1, "1"));
+                bossList.addAll(dwdRepSysPersonDMapper.selectBossLeaders(bssCode != null ? bssCode : "", 2, "1"));
             } else {
                 // 市本级及以上：按当前人的 countyId 查
                 String oaAccount = user.getOaAccount();
@@ -271,15 +272,15 @@ public class WideWarningController extends BaseController {
                         countyId = String.valueOf(persons.get(0).get("COUNTY_ID"));
                     }
                     if (countyId != null && !"null".equals(countyId)) {
-                        bossList.addAll(queryBossFromMainDB(countyId, 1, "2"));
-                        bossList.addAll(queryBossFromMainDB(countyId, 2, "2"));
+                        bossList.addAll(dwdRepSysPersonDMapper.selectBossLeaders(countyId, 1, "2"));
+                        bossList.addAll(dwdRepSysPersonDMapper.selectBossLeaders(countyId, 2, "2"));
                         // 匹配表映射
-                        Map<String, Object> match = queryMatchOrgCode(countyId);
+                        Map<String, Object> match = dwdRepSysPersonDMapper.selectMatchOrgCode(countyId);
                         if (match != null) {
                             String mdmNew = (String) match.get("mdmOrgCodeNew");
                             if (mdmNew != null) {
-                                bossList.addAll(queryBossFromMainDB(mdmNew, 1, "2"));
-                                bossList.addAll(queryBossFromMainDB(mdmNew, 2, "2"));
+                                bossList.addAll(dwdRepSysPersonDMapper.selectBossLeaders(mdmNew, 1, "2"));
+                                bossList.addAll(dwdRepSysPersonDMapper.selectBossLeaders(mdmNew, 2, "2"));
                             }
                         }
                     }
@@ -382,33 +383,6 @@ public class WideWarningController extends BaseController {
         result.put("result", "SUCCESS");
         result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
         return R.ok(result);
-    }
-
-    /** 查询主库的领导，对应老框架 dao.createSQLQuery() 查主库（bossFlag: 1=区县, 2=市本级） */
-    private List<Map<String, Object>> queryBossFromMainDB(String code, int posCode, String bossFlag) {
-        try {
-            String sql;
-            if ("1".equals(bossFlag)) {
-                sql = "SELECT b.OA_USER_NAME, b.FULL_NAME FROM dwd_rep_gw_pst_d a "
-                    + "LEFT JOIN dwd_rep_sys_person_d b ON a.EMP_ID = b.EMP_ID "
-                    + "WHERE a.MDM_ORG_CODE = (SELECT EMP_COUNTY_ID FROM dim_county_id WHERE COUNTY_ID = ?) "
-                    + "AND a.POS_CODE = ?";
-            } else {
-                sql = "SELECT b.OA_USER_NAME, b.FULL_NAME FROM dwd_rep_gw_pst_d a "
-                    + "LEFT JOIN dwd_rep_sys_person_d b ON a.EMP_ID = b.EMP_ID "
-                    + "WHERE a.MDM_ORG_CODE = ? AND a.POS_CODE = ?";
-            }
-            return jdbcTemplate.queryForList(sql, code, posCode);
-        } catch (Exception e) { return new ArrayList<>(); }
-    }
-
-    /** 查询 org code 匹配表 */
-    private Map<String, Object> queryMatchOrgCode(String mdmOrgCode) {
-        try {
-            List<Map<String, Object>> list = jdbcTemplate.queryForList(
-                    "SELECT MDM_ORG_CODE_NEW AS mdmOrgCodeNew FROM jingfen_zero_leader_org_match WHERE MDM_ORG_CODE = ? LIMIT 1", mdmOrgCode);
-            return list.isEmpty() ? null : list.get(0);
-        } catch (Exception e) { return null; }
     }
 
     private String resolveUserName(String assignee) {
