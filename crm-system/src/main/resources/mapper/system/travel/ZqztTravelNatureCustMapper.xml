@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.travel.ZqztTravelNatureCustMapper">
+
+    <update id="truncateTable">
+        TRUNCATE TABLE zqzt_travel_nature_cust
+    </update>
+
+    <select id="searchByKeyword" resultType="com.crm.system.domain.dao.travel.ZqztTravelNatureCust">
+        SELECT a.nature_cust_id, b.nature_cust_name
+        FROM cust_t_nature_customer_developer a
+        INNER JOIN zqzt_travel_nature_cust b ON a.nature_cust_id = b.nature_cust_id
+        WHERE a.oa_code = #{oaAccount}
+          AND (b.nature_cust_name LIKE CONCAT('%', #{keyword}, '%')
+           OR a.nature_cust_id LIKE CONCAT('%', #{keyword}, '%'))
+        LIMIT 50
+    </select>
+
+</mapper>
