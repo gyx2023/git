@@ -176,7 +176,7 @@ public class AccountManagerResignEarlyWarningJob {
      * 查询长期未登录工号，逐人检测各业务系统角色挂靠情况，生成预警记录
      */
     private void queryLongTimeNoLoginOaUser(String cycleId) {
-        List<SysUsers> sysUserList = sysUsersService.selectFailureList(LONG_TIME_NO_LOGIN_DAYS);
+        List<SysUsers> sysUserList = sysUsersService.selectLongTimeNoLoginByOa(LONG_TIME_NO_LOGIN_DAYS);
 
         if (sysUserList.isEmpty()) {
             log.info(">>>>>>>>长期未登录工号:无");

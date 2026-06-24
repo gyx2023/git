@@ -74,4 +74,12 @@ public interface ISysUsersService {
      * @return 长期未登录用户列表
      */
     List<SysUsers> selectFailureList(Integer failureDays);
+
+    /**
+     * 查询长期未登录用户（老框架逻辑，按OA账号+登录记录判断）
+     *
+     * @param failureDays 超时时长
+     * @return 长期未登录用户列表
+     */
+    List<SysUsers> selectLongTimeNoLoginByOa(Integer failureDays);
 }
