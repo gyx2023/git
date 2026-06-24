@@ -12,6 +12,7 @@ import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysAreaTreeVo;
 import com.crm.system.service.ISysAreaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -53,6 +54,26 @@ public class SysAreaController extends BaseController {
     public R<List<SysAreaVo>> countyList(@RequestParam String areaId) {
         List<SysAreaVo> counties = iSysAreaService.queryCountyListByCityId(areaId);
         return R.ok(counties);
+    }
+
+    /**
+     * 根据地级市BSS编码查询其下辖的区县列表（维系预警Tab3/4/5 客户维度用）
+     */
+    @GetMapping("/county/listByBssCode")
+    public R<List<SysAreaVo>> countyListByBssCode(@RequestParam String bssCode) {
+        List<SysAreaVo> counties = iSysAreaService.queryCountyListByBssCode(bssCode);
+        return R.ok(counties);
+    }
+
+    /**
+     * 查询区域树（递归包含所有子节点）
+     */
+    @GetMapping("/tree")
+    public R<List<SysAreaTreeVo>> tree(@RequestParam(required = false) Long areaId) {
+        if (areaId == null) {
+            areaId = 330000L;
+        }
+        return R.ok(iSysAreaService.queryAreaTree(areaId));
     }
 
     /**

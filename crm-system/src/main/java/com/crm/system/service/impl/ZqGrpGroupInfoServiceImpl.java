@@ -70,7 +70,6 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     private ISysDeptService sysDeptService;
 
 
-
     /**
      * 查询政企集团客户信息
      */

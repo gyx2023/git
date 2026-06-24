@@ -6,7 +6,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectEndTimeByProcInstId" resultType="java.util.Date">
         SELECT end_time_
-        FROM flo_hi_procinst
+        FROM act_hi_procinst
         WHERE proc_inst_id_ = #{procInstId}
           AND end_time_ IS NOT NULL
         ORDER BY end_time_ DESC

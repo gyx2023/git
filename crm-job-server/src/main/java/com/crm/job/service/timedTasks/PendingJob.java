@@ -64,7 +64,7 @@ public class PendingJob {
 
         // 2. 逐条处理：a 新增，u 更新（核心修复版）
         if (pendingList != null && !pendingList.isEmpty()) {
-            List<Pending> list;
+            List<Pending> list = new ArrayList<>();
             for (Pending pending : pendingList) {
                 list = new ArrayList<>();
                 list.add(pending);
