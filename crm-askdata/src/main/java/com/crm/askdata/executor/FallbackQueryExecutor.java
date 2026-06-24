@@ -27,15 +27,15 @@ public class FallbackQueryExecutor implements QueryExecutor {
         if ("data_query".equals(intent) && toolName != null) {
             content = String.format(
                 "暂不支持「%s」相关指标的查询，请尝试其他表达方式，例如：\n" +
-                "• 查询销售额\n• 查看合同到期情况\n• 客户分布统计", toolName);
+                "• 查询合同金额\n• 查看合同数\n• 客户分布统计", toolName);
         } else if ("data_query".equals(intent)) {
             content = "未找到匹配的数据查询工具，请尝试更具体地描述您想查什么，例如：\n" +
-                      "• 本月销售额\n• 华北区合同数量\n• 客户行业分布";
+                      "• 本月合同数\n• 上月杭州合同金额";
         } else if ("knowledge".equals(intent)) {
             content = "暂不支持此类知识问答，请尝试查询具体业务数据。";
         } else {
             content = "抱歉，未能理解您的问题。请重新描述，例如：\n" +
-                      "• 上个月销售额是多少\n• 华北地区合同数量";
+                      "• 上个月合同数是多少\n• 上月杭州合同数是多少";
         }
 
         return QueryResult.success(RoutingStrategy.FALLBACK_KB.name(), content);
