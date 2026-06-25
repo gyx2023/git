@@ -80,7 +80,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
                 .selectUnvisitedAppointments(startTime, endTime);
 
         if (appointments.isEmpty()) {
-            log.info("未查询到T+2日未拜访的预约记录, startTime={}, endTime={}", startTime, endTime);
+            log.info("未查询到T+1日未拜访的预约记录, startTime={}, endTime={}", startTime, endTime);
             return 0;
         }
 

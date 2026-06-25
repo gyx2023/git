@@ -69,8 +69,8 @@ public class PreTravelReportJob {
                 Date nextDay = DateUtils.addDays(t2Date, 1);
                 endTime = DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, nextDay) + " 00:00:00";
 
-                XxlJobHelper.log("未接收到参数，使用默认T+2日期: {} ~ {}", startTime, endTime);
-                log.info("未接收到参数，使用默认T+2日期: {} ~ {}", startTime, endTime);
+                XxlJobHelper.log("未接收到参数，使用默认T+1日期: {} ~ {}", startTime, endTime);
+                log.info("未接收到参数，使用默认T+1日期: {} ~ {}", startTime, endTime);
             }
 
             int count = preTravelReportService.processPreTravelReports(startTime, endTime);
