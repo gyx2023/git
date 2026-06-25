@@ -79,11 +79,7 @@ public class PendingServiceImpl implements IPendingService {
         String url = addUrl + "/" + appId + "/" + token;
         String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), ADD_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
         log.info("新增待办请求URL:{}", url);
-        JSONObject resultMap = new JSONObject();
-        if (StringUtils.isNotEmpty(pending.getPendingCode())) {
-            resultMap.put(pending.getPendingCode(), "100-操作成功");
-        }
-        String result = resultMap.isEmpty() ? null : resultMap.toJSONString();
+        String result = HttpUtil.post(url, jsonStr, 60000);
         log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
 
         if (StringUtils.isEmpty(result)) {
@@ -230,11 +226,7 @@ public class PendingServiceImpl implements IPendingService {
         String url = updateUrl + "/" + appId + "/" + token;
         String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), UPDATE_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
         log.info("待办更新地址：{}，待办更新请求数据:{}", url, jsonStr);
-        JSONObject resultMap = new JSONObject();
-        if (StringUtils.isNotEmpty(pending.getPendingCode())) {
-            resultMap.put(pending.getPendingCode(), "100-操作成功");
-        }
-        String result = resultMap.isEmpty() ? null : resultMap.toJSONString();
+        String result = HttpUtil.post(url, jsonStr, 60000);
         log.info("推送OA待办更新,响应数据:{}", result);
 
         if (StringUtils.isEmpty(result)) {
