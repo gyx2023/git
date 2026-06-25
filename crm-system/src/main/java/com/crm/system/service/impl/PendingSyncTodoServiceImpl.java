@@ -15,15 +15,8 @@ import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.SSLClient;
+import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
 import org.springframework.stereotype.Service;
 
@@ -102,6 +95,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 currentTask = oldWorkflowQueryService
                     .queryOldHistoricTaskByTaskId(pendingTodo.getTaskId());
                 log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.get("id") : "null");
+                if (currentTask == null){
+                    throw new RuntimeException("历史任务不存在");
+                }
                 // 刷新任务列表数据
                 hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts((String) currentTask.get("procInsId"));
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
@@ -123,7 +119,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
             // HTTP POST请求
             String todoTaskSyncUrl = sysParamService.findValueByCode("todoTaskSyncUrl");
-            String result = doPost(todoTaskSyncUrl, jsonString, "utf-8");
+            String result = HttpClientUtil.doPostCustomBody(todoTaskSyncUrl, jsonString, "utf-8",10 * 1000);
             log.info("待办同步至集团运营平台接口返回消息:{}",result);
             pendingTodo.setRecMsg(result);
 
@@ -199,7 +195,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     private Map<String, Object> getOrderInfo(ToppOrder order,String operatorType) {
         Map<String, Object> orderInfo = new HashMap<>();
         orderInfo.put("PROCESS_CODE", "zjzqyypt-" + order.getOrderNumber());
-        orderInfo.put("PROCESS_TYPE", order.getOrderType() + ""); // 流程名称，暂用orderType
+        orderInfo.put("PROCESS_TYPE", order.getOrderType()); // 流程名称，暂用orderType
         orderInfo.put("SYSTEM_SOURCE", "浙江政企运营平台");
         orderInfo.put("PROCESS_NAME", order.getOrderName());
         // 获取创建人的OA账号
@@ -351,50 +347,6 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 进行http post请求
-     * @param url
-     * @param jsonstr
-     * @param charset
-     * @return
-     */
-    private  String doPost(String url, String jsonstr, String charset){
-        HttpClient httpClient;
-        HttpPost httpPost;
-        String result = null;
-        HttpResponse response = null;
-        try{
-            httpClient = new SSLClient();
-            httpPost = new HttpPost(url);
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(5000).build();
-            httpPost.setConfig(requestConfig);
-            httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-            httpPost.addHeader("Accept", "application/json");
-            httpPost.addHeader("Accept-Encoding", "utf-8");
-            if(jsonstr != null){
-                StringEntity se = new StringEntity(jsonstr,"utf-8");
-                httpPost.setEntity(se);
-            }
-            response = httpClient.execute(httpPost);
-            if(response != null){
-                HttpEntity resEntity = response.getEntity();
-                if(resEntity != null){
-                    result = EntityUtils.toString(resEntity,charset);
-                }
-            }
-        }catch(Exception ex){
-            ex.printStackTrace();
-            result = "(请求接口出错:" + ex.getMessage() + ")";
-
-        }finally {
-            // 确保实体内容被完全消费，连接可被复用或释放
-            if (response != null && response.getEntity() != null) {
-                EntityUtils.consumeQuietly(response.getEntity());
-            }
-        }
-        return result;
-    }
-
-    /**
      * 根据任务处理人获取OA账号
      */
     private String getOaByTaskAssignee(Map<String, Object> task) {
@@ -437,12 +389,11 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             try {
                 JSONObject obj = JSON.parseObject(json);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("json格式错误:串为:{}" , json, e);
                 return false;
             }
             return true;
         }
         return false;
     }
-
 }
