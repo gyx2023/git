@@ -132,7 +132,7 @@ public class PreTravelReportFormServiceImpl implements IPreTravelReportFormServi
         } catch (Exception e) {
             log.error("手动生成行前报告异常, reportId={}, customerId={}", reportId, customerId, e);
             report.setTaskStatus(TASK_STATUS_FAILED);
-            report.setTaskStatusDesc("生成失败: " + e.getMessage());
+            report.setTaskStatusDesc("调用Hiagent接口失败");
             report.setApiResponse(e.getMessage());
         }
 
