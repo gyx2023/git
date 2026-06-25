@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.WxCustUserListMapper">
+
+    <!-- 同老项目 getWxGroupAndTerminalSql：标准类型列 -->
+    <sql id="standardColumns">
+        o.id_ AS orderId, area.type_ AS areaType, area.name_ AS areaName, o.area_id,
+        a.GRP_CODE AS grpCode, o.cust_name AS custName, b.SVC_NUM AS svcNum,
+        b.WARNING_INFO AS warningInfo, b.EP_PURCHASE_SCHEME_NAME AS schemeName,
+        b.NEW_SCHEME_NAME AS schemeName2, b.EP_PURCHASE_CREATE_DATE AS schemeCreateDate,
+        b.NEW_CREATE_DATE AS xySchemeDate, b.EP_PURCHASE_EFF_DATE AS schemeEffDate,
+        b.NEW_EFF_DATE AS xySchemeEffDate, b.EP_PURCHASE_EXP_DATE AS schemeExpDate,
+        b.NEW_EXP_DATE AS xySchemeExpDate, o.order_number AS orderNumber,
+        b.WRITEOFF_FEE AS writeOffFee, b.FEEDBACK_FLAG AS feedbackFlag,
+        b.FEEDBACK_REMARK AS feedbackRemark, b.OPEN_DATE AS openDate,
+        b.USER_STATUS AS userStatus, b.PROD_ID AS prodId, b.PROD_NAME AS prodName,
+        b.DEVELOPER_ID AS developerId, b.DEVELOPER_NAME AS developerName,
+        area.parent_ AS parentId, b.FEEDBACK_EXP_DATE AS feedbackExpDate,
+        b.WARN_NEXT AS warnNext, b.RECTIFICATION_TIME AS rectificationTime,
+        c.name_ch AS creatorName, c.relation_tel AS creatorPhone
+    </sql>
+
+    <!-- 同老项目 getWxWideSql：Wide/double_wide 类型列 -->
+    <sql id="wideColumns">
+        o.id_ AS orderId, area.type_ AS areaType, area.name_ AS areaName, o.area_id,
+        a.GRP_CODE AS grpCode, o.cust_name AS custName, b.SVC_NUM AS svcNum,
+        b.scheme_name AS schemeName, DATE_FORMAT(b.eff_time,'%Y-%m-%d %H:%i:%s') AS effTime,
+        DATE_FORMAT(b.exp_time,'%Y-%m-%d %H:%i:%s') AS expTime, b.rate_ AS rate,
+        b.amount_per_year AS amountPerYear, b.NEW_SCHEME_NAME AS schemeName2,
+        DATE_FORMAT(b.NEW_CREATE_TIME,'%Y-%m-%d %H:%i:%s') AS newCreateTime,
+        DATE_FORMAT(b.NEW_EFF_TIME,'%Y-%m-%d %H:%i:%s') AS effTime2,
+        DATE_FORMAT(b.NEW_EXP_TIME,'%Y-%m-%d %H:%i:%s') AS expTime2,
+        b.NEW_SCHEME_PERIOD AS period, b.NEW_SCHEME_FEE AS amountPerYear2,
+        b.user_addr AS userAddr, o.order_type AS orderType, o.order_number AS orderNumber,
+        b.NEW_SCHEME_ID AS newSchemeId, b.RELATION_TYPE_NAME AS relationTypeName,
+        b.exte_flag AS exteFlag, b.order_flow_no AS orderFlowNo, o.wide_result AS wideResult,
+        area.parent_ AS parentId, c.name_ch AS creatorName, c.relation_tel AS creatorPhone
+    </sql>
+
+    <!-- 同老项目 getWxWideSql：cloud_expire_alarm 类型列 -->
+    <sql id="cloudColumns">
+        o.id_ AS orderId, area.type_ AS areaType, area.name_ AS areaName, o.area_id,
+        a.GRP_CODE AS grpCode, o.cust_name AS custName,
+        b.cloud_tag AS cloudTag, b.consume_type AS consumeType,
+        DATE_FORMAT(b.consume_time,'%Y-%m-%d %H:%i:%s') AS consumeTime,
+        DATE_FORMAT(b.end_time,'%Y-%m-%d %H:%i:%s') AS endTime,
+        b.server_duration AS serverDuration, b.amount_per_year AS amountPerYear,
+        CASE WHEN b.new_consume_time IS NULL THEN '否' ELSE '是' END AS exeFlag,
+        b.new_cloud_tag AS newCloudTag, b.new_consume_type AS newConsumeType,
+        DATE_FORMAT(b.new_consume_time,'%Y-%m-%d %H:%i:%s') AS newConsumeTime,
+        DATE_FORMAT(b.new_end_time,'%Y-%m-%d %H:%i:%s') AS newEndTime,
+        b.new_server_duration AS newServerDuration, b.new_amount_per_year AS newAmountPerYear,
+        o.order_number AS orderNumber, area.parent_ AS parentId,
+        c.name_ch AS creatorName, c.relation_tel AS creatorPhone
+    </sql>
+
+    <!-- 同老项目 getWxGroupAndTerminalSql：leaseline_relet 类型列 -->
+    <sql id="leaselineColumns">
+        o.id_ AS orderId, area.type_ AS areaType, area.name_ AS areaName, o.area_id,
+        a.GRP_CODE AS grpCode, o.cust_name AS custName, b.SVC_NUM AS svcNum,
+        b.LOCAL_CIRCUIT_CODE_A AS localCircuitCodeA, b.BUS_TYPE AS busType,
+        b.INSTALL_COMPLE_TIME AS installCompleTime, b.AVG_RENTAL_CHARGES AS avgRentalCharges,
+        b.CONTRACT_CODES AS contractCodes, b.CONTRACT_NAME AS contractName,
+        CASE WHEN b.IS_RENT='1' THEN '是' WHEN b.IS_RENT='0' THEN '否' ELSE '' END AS isRent,
+        b.START_RENT_TIME AS startRentTime, b.OPEN_DATE AS openDate,
+        o.order_number AS orderNumber, o.business_dep AS businessDep,
+        c.name_ch AS creatorName, c.relation_tel AS creatorPhone,
+        area.parent_ AS parentId
+    </sql>
+
+    <!-- 通用列 -->
+    <sql id="commonColumns">
+        , (SELECT sc.name_ FROM sys_code sc WHERE sc.type_ = 'order_status' AND sc.code_ = o.status_) AS statusName,
+        o.phase_name AS phaseName, o.actors_info AS actorsInfo,
+        o.create_time AS createTime, o.update_time AS updateTime,
+        (SELECT su1.name_ch FROM act_hi_taskinst his LEFT JOIN sys_user su1 ON su1.id_ = TRIM(BOTH ',' FROM his.ASSIGNEE_)
+         WHERE his.PROC_INST_ID_ = o.pi_id ORDER BY his.START_TIME_ DESC LIMIT 1) AS assignee,
+        (SELECT REPLACE(ahv.text_, 'null', '') FROM act_hi_taskinst his LEFT JOIN act_hi_varinst ahv ON ahv.task_id_ = his.id_
+         WHERE his.PROC_INST_ID_ = o.pi_id AND ahv.name_ = CONCAT(his.TASK_DEF_KEY_, '_resultMemo')
+         ORDER BY his.START_TIME_ DESC LIMIT 1) AS result
+    </sql>
+
+    <!-- 同老项目：标准类型 JOIN (hmd_warn/group_buy_warn/terminal_contract_warn/user_cust_owe_warn/etc) -->
+    <sql id="standardJoins">
+        FROM topp_order o
+        LEFT JOIN sys_user c ON o.creator_ = c.id_
+        LEFT JOIN sys_area area ON o.area_id = area.id_
+        LEFT JOIN maintenance_detail md ON o.id_ = md.order_id
+        INNER JOIN ftp_tc_user_cust_warning a ON o.info_id = a.id_
+        INNER JOIN ftp_tc_user_common_warning b ON a.MAIN_ORDER_FLOW_NO = b.MAIN_ORDER_FLOW_NO
+    </sql>
+
+    <!-- 同老项目：Wide/double_wide JOIN -->
+    <sql id="wideJoins">
+        FROM topp_order o
+        LEFT JOIN sys_user c ON o.creator_ = c.id_
+        LEFT JOIN sys_area area ON o.area_id = area.id_
+        INNER JOIN maintenance_detail md ON o.id_ = md.order_id
+        INNER JOIN ftp_tc_user_cust_warning a ON o.info_id = a.id_
+        INNER JOIN wide_sys_auto_warning b ON a.MAIN_ORDER_FLOW_NO = b.main_order_flow_no
+    </sql>
+
+    <!-- 同老项目：cloud_expire_alarm JOIN -->
+    <sql id="cloudJoins">
+        FROM topp_order o
+        LEFT JOIN sys_user c ON o.creator_ = c.id_
+        LEFT JOIN sys_area area ON o.area_id = area.id_
+        INNER JOIN maintenance_detail md ON o.id_ = md.order_id
+        INNER JOIN ftp_tc_user_cust_warning a ON o.info_id = a.id_
+        INNER JOIN ftp_tc_grp_cloud_expire_alarm b ON a.MAIN_ORDER_FLOW_NO = b.MAIN_ORDER_FLOW_NO
+    </sql>
+
+    <!-- 同老项目：leaseline_relet JOIN -->
+    <sql id="leaselineJoins">
+        FROM topp_order o
+        LEFT JOIN sys_user c ON o.creator_ = c.id_
+        LEFT JOIN sys_area area ON o.area_id = area.id_
+        LEFT JOIN maintenance_detail md ON o.id_ = md.order_id
+        INNER JOIN ftp_tc_leaseline_relet_cust_warning a ON o.info_id = a.id_
+        INNER JOIN ftp_tc_leaseline_relet_warning b ON a.MAIN_ORDER_FLOW_NO = b.MAIN_ORDER_FLOW_NO
+    </sql>
+
+    <!-- ==================== WHERE 条件 ==================== -->
+    <sql id="whereClause">
+        WHERE o.order_type = #{orderType}
+        <!-- Wide/cloud类型只查C类订单(同老项目 getWxWideSql) -->
+        <if test="orderType == 'Wide' or orderType == 'double_wide' or orderType == 'cloud_expire_alarm'">
+            AND o.order_category = 'C'
+        </if>
+        <!-- 地市过滤：Wide/cloud用o.area_id，标准类型用md.area_id -->
+        <choose>
+            <when test="orderType == 'Wide' or orderType == 'double_wide' or orderType == 'cloud_expire_alarm'">
+                <!-- 地市过滤：由前端解析的 areaId 决定，不再通过 selectId 判断 -->
+                <if test="areaId != null and areaId != ''">
+                    AND o.area_id IN
+                    <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                </if>
+            </when>
+            <otherwise>
+                <!-- selectId='null'：点击地市为空的行，只查 area_id IS NULL 的记录 -->
+                <if test="selectId != null and selectId == 'null'">
+                    AND md.area_id IS NULL
+                </if>
+                <!-- selectId='0'：老项目兼容 -->
+                <if test="selectId != null and selectId == '0'">
+                    AND md.area_id = '0'
+                </if>
+                <!-- 地市过滤：由前端解析的 areaId 决定（selectId 为正常值时会通过 areaId 参数传入） -->
+                <if test="areaId != null and areaId != ''">
+                    AND md.area_id IN
+                    <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+                </if>
+            </otherwise>
+        </choose>
+        <!-- 区县过滤 -->
+        <if test="countryId != null and countryId != ''">
+            AND md.county_id IN
+            <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <if test="grpCode != null and grpCode != ''">
+            AND a.GRP_CODE LIKE CONCAT('%', #{grpCode}, '%')
+        </if>
+        <if test="orderNumber != null and orderNumber != ''">
+            AND o.order_number LIKE CONCAT('%', #{orderNumber}, '%')
+        </if>
+        <if test="tabType != null and tabType == 3">
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND o.create_time &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND o.create_time &lt;= #{createTimeEnd}
+            </if>
+        </if>
+        <if test="custName != null and custName != ''">
+            AND o.cust_name = #{custName}
+        </if>
+        <if test="businessDep != null and businessDep != ''">
+            AND md.business_dep = #{businessDep}
+        </if>
+        <if test="isImpPrt != null and isImpPrt != ''">
+            AND md.is_imp_prt = #{isImpPrt}
+        </if>
+        <if test="grpType != null and grpType != ''">
+            AND md.grp_type = #{grpType}
+        </if>
+        <if test="svcNum != null and svcNum != ''">
+            AND b.SVC_NUM = #{svcNum}
+        </if>
+        <if test="isDistribute != null and isDistribute != ''">
+            AND md.status = #{isDistribute}
+        </if>
+        <!-- 权限过滤：同老项目 commonWxAssistantQuery（仅标准类型，Wide/cloud无此过滤） -->
+        <if test="orderType != 'Wide' and orderType != 'double_wide' and orderType != 'cloud_expire_alarm'">
+            <include refid="authClause"/>
+        </if>
+    </sql>
+
+    <!-- 同老项目 commonWxAssistantQuery -->
+    <sql id="authClause">
+        AND ( (o.creator_ = #{userId}
+               OR o.white_list LIKE CONCAT('%,', #{userId}, ',%')
+               OR o.actors_ LIKE CONCAT('%,', #{userId}, ',%') )
+        <if test="authAreaIds != null and authAreaIds != ''">
+            OR (1=2
+            <foreach collection="authAreaIds.split(',')" item="aid">
+                <if test="aid != null and aid != '' and aid != 'all'">
+                    OR o.area_id = #{aid}
+                </if>
+            </foreach>
+            )
+        </if>
+        )
+    </sql>
+
+    <!-- ==================== Wide/double_wide UNION ALL 子查询（同老项目 getWxWideSql） ==================== -->
+
+    <!-- Wide C类子查询 -->
+    <sql id="wideCSubQuery">
+        SELECT o.id_, o.area_id, o.cust_name, o.order_number, b.GRP_CODE,
+            b.SVC_NUM, b.order_flow_no, o.wide_result, o.order_type,
+            b.scheme_name, b.eff_time, b.exp_time, b.rate_, b.amount_per_year,
+            b.NEW_SCHEME_NAME, b.NEW_CREATE_TIME, b.NEW_EFF_TIME, b.NEW_EXP_TIME,
+            b.NEW_SCHEME_PERIOD, b.NEW_SCHEME_FEE, b.user_addr, o.status_,
+            b.NEW_SCHEME_ID, b.RELATION_TYPE_NAME, b.exte_flag
+            <if test="orderType == 'Wide'">, md.business_dep</if>
+            , o.pi_id, o.phase_name, o.actors_info, o.create_time, o.update_time
+        FROM topp_order o, ftp_tc_user_cust_warning a, wide_sys_auto_warning b, maintenance_detail md
+        WHERE o.info_id = a.id_ AND o.order_category = 'C'
+          AND a.MAIN_ORDER_FLOW_NO = b.main_order_flow_no
+          AND o.id_ = md.order_id AND o.order_type = #{orderType}
+        <include refid="wideCTimeFilter"/>
+        <include refid="wideCOnlyFilters"/>
+        <include refid="wideUnionFilters"/>
+    </sql>
+
+    <!-- Wide U类子查询 -->
+    <sql id="wideUSubQuery">
+        SELECT o.id_, o.area_id, o.cust_name, o.order_number, b.GRP_CODE,
+            b.SVC_NUM, b.order_flow_no, o.wide_result, o.order_type,
+            b.scheme_name, b.eff_time, b.exp_time, b.rate_, b.amount_per_year,
+            b.NEW_SCHEME_NAME, b.NEW_CREATE_TIME, b.NEW_EFF_TIME, b.NEW_EXP_TIME,
+            b.NEW_SCHEME_PERIOD, b.NEW_SCHEME_FEE, b.user_addr, o.status_,
+            b.NEW_SCHEME_ID, b.RELATION_TYPE_NAME, b.exte_flag
+            <if test="orderType == 'Wide'">, md.business_dep</if>
+            , o.pi_id, o.phase_name, o.actors_info, o.create_time, o.update_time
+        FROM topp_order o, wide_sys_auto_warning b, maintenance_detail md
+        WHERE o.info_id = b.id AND o.id_ = md.order_id
+          AND o.order_category = 'U' AND o.order_type = #{orderType}
+        <include refid="wideUTimeFilter"/>
+        <include refid="wideUnionFilters"/>
+    </sql>
+
+    <!-- Cloud C类子查询 -->
+    <sql id="cloudCSubQuery">
+        SELECT o.id_, o.area_id, o.cust_name, o.order_number, b.GRP_CODE,
+            b.cloud_tag, b.consume_type, b.consume_time, b.end_time, b.server_duration, b.amount_per_year,
+            b.new_cloud_tag, b.new_consume_type, b.new_consume_time, b.new_end_time,
+            b.new_server_duration, b.new_amount_per_year, o.status_,
+            o.pi_id, o.phase_name, o.actors_info, o.create_time, o.update_time
+        FROM topp_order o, ftp_tc_user_cust_warning a, ftp_tc_grp_cloud_expire_alarm b, maintenance_detail md
+        WHERE o.info_id = a.id_ AND o.order_category = 'C'
+          AND a.MAIN_ORDER_FLOW_NO = b.MAIN_ORDER_FLOW_NO
+          AND o.id_ = md.order_id AND o.order_type = #{orderType}
+        <include refid="wideCTimeFilter"/>
+        <include refid="wideCOnlyFilters"/>
+        <include refid="wideUnionFilters"/>
+    </sql>
+
+    <!-- Cloud U类子查询 -->
+    <sql id="cloudUSubQuery">
+        SELECT o.id_, o.area_id, o.cust_name, o.order_number, b.GRP_CODE,
+            b.cloud_tag, b.consume_type, b.consume_time, b.end_time, b.server_duration, b.amount_per_year,
+            b.new_cloud_tag, b.new_consume_type, b.new_consume_time, b.new_end_time,
+            b.new_server_duration, b.new_amount_per_year, o.status_,
+            o.pi_id, o.phase_name, o.actors_info, o.create_time, o.update_time
+        FROM topp_order o, ftp_tc_grp_cloud_expire_alarm b, maintenance_detail md
+        WHERE o.info_id = b.id_ AND o.id_ = md.order_id
+          AND o.order_category = 'U' AND o.order_type = #{orderType}
+        <include refid="wideUTimeFilter"/>
+        <include refid="wideUnionFilters"/>
+    </sql>
+
+    <!-- Wide/Cloud UNION ALL 共用过滤条件 -->
+    <sql id="wideUnionFilters">
+        <!-- 地市过滤：同老项目 getWxWideSql -->
+        <!-- selectId='null'：点击地市为空的行，只查 area_id IS NULL 的记录 -->
+        <if test="selectId != null and selectId == 'null'">
+            AND md.area_id IS NULL
+        </if>
+        <!-- 手动选择地市后通过 areaId 参数过滤（仅当 selectId 不是 'null'/'0' 等特殊值时） -->
+        <if test="areaId != null and areaId != ''">
+            AND md.area_id IN
+            <foreach collection="areaId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <!-- 区县过滤 -->
+        <if test="countryId != null and countryId != ''">
+            AND md.county_id IN
+            <foreach collection="countryId.split(',')" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <if test="orderNumber != null and orderNumber != ''">
+            AND o.order_number LIKE CONCAT('%', #{orderNumber}, '%')
+        </if>
+        <if test="custName != null and custName != ''">
+            AND o.cust_name = #{custName}
+        </if>
+        <if test="svcNum != null and svcNum != ''">
+            AND b.SVC_NUM = #{svcNum}
+        </if>
+        <if test="businessDep != null and businessDep != ''">
+            AND md.business_dep = #{businessDep}
+        </if>
+        <if test="isImpPrt != null and isImpPrt != ''">
+            AND md.is_imp_prt = #{isImpPrt}
+        </if>
+        <if test="grpType != null and grpType != ''">
+            AND md.grp_type = #{grpType}
+        </if>
+        <if test="isDistribute != null and isDistribute != ''">
+            AND md.status = #{isDistribute}
+        </if>
+    </sql>
+
+    <!-- Wide/Cloud C类专属过滤（老项目 grpCode 只过滤 C 类） -->
+    <sql id="wideCOnlyFilters">
+        <if test="grpCode != null and grpCode != ''">
+            AND a.GRP_CODE LIKE CONCAT('%', #{grpCode}, '%')
+        </if>
+    </sql>
+
+    <!-- Wide/Cloud C类时间过滤(老项目C类不加时分秒) -->
+    <sql id="wideCTimeFilter">
+        <if test="tabType != null and tabType == 3">
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND o.create_time &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND o.create_time &lt;= #{createTimeEnd}
+            </if>
+        </if>
+    </sql>
+
+    <!-- Wide/Cloud U类时间过滤(老项目U类加时分秒) -->
+    <sql id="wideUTimeFilter">
+        <if test="tabType != null and tabType == 3">
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND o.create_time &gt;= CONCAT(#{createTimeStart}, ' 00:00:00')
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND o.create_time &lt;= CONCAT(#{createTimeEnd}, ' 23:59:59')
+            </if>
+        </if>
+    </sql>
+
+    <!-- ==================== 查询 ==================== -->
+    <select id="queryList" resultType="java.util.Map">
+        <choose>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                SELECT info.id_ AS orderId, info.type_ AS areaType, info.name_ AS areaName, info.area_id,
+                    info.GRP_CODE AS grpCode, info.cust_name AS custName, info.SVC_NUM AS svcNum,
+                    info.scheme_name AS schemeName,
+                    info.eff_time AS effTime, info.exp_time AS expTime,
+                    info.rate AS rate, info.amount_per_year AS amountPerYear,
+                    info.scheme_name2 AS schemeName2,
+                    info.new_create_time AS newCreateTime, info.eff_time2, info.exp_time2,
+                    info.period, info.amount_per_year2 AS amountPerYear2,
+                    info.user_addr AS userAddr, info.order_type AS orderType,
+                    info.order_number AS orderNumber,
+                    (SELECT sc.name_ FROM sys_code sc WHERE sc.type_ = 'order_status' AND sc.code_ = info.status_) AS statusName,
+                    info.parent_ AS parentId, info.parentAreaName,
+                    info.NEW_SCHEME_ID AS newSchemeId, info.RELATION_TYPE_NAME AS relationTypeName,
+                    info.exte_flag AS exteFlag, info.order_flow_no AS orderFlowNo,
+                    info.wide_result AS wideResult,
+                    info.phase_name AS phaseName, info.actors_info AS actorsInfo,
+                    info.create_time AS createTime, info.update_time AS updateTime,
+                    info.assignee, info.result,
+                    w.user_status AS userStatus
+                    <if test="orderType == 'Wide'">, info.business_name AS businessName</if>
+                FROM (
+                    SELECT tt.id_, area.type_ AS type_, area.name_ AS name_, tt.area_id,
+                        tt.GRP_CODE, tt.cust_name, tt.SVC_NUM,
+                        tt.scheme_name, tt.eff_time, tt.exp_time,
+                        tt.rate_ AS rate, tt.amount_per_year,
+                        tt.NEW_SCHEME_NAME AS scheme_name2,
+                        tt.NEW_CREATE_TIME AS new_create_time,
+                        tt.NEW_EFF_TIME AS eff_time2, tt.NEW_EXP_TIME AS exp_time2,
+                        tt.NEW_SCHEME_PERIOD AS period, tt.NEW_SCHEME_FEE AS amount_per_year2,
+                        tt.user_addr, tt.order_type, tt.order_number, tt.status_,
+                        area.parent_ AS parent_, parentArea.name_ AS parentAreaName,
+                        tt.NEW_SCHEME_ID, tt.RELATION_TYPE_NAME,
+                        tt.exte_flag, tt.order_flow_no, tt.wide_result,
+                        tt.phase_name, tt.actors_info,
+                        tt.create_time, tt.update_time,
+                        (SELECT su1.name_ch FROM act_hi_taskinst his LEFT JOIN sys_user su1
+                         ON su1.id_ = TRIM(BOTH ',' FROM his.ASSIGNEE_)
+                         WHERE his.PROC_INST_ID_ = tt.pi_id ORDER BY his.START_TIME_ DESC LIMIT 1) AS assignee,
+                        (SELECT REPLACE(ahv.text_, 'null', '')
+                         FROM act_hi_taskinst his LEFT JOIN act_hi_varinst ahv ON ahv.task_id_ = his.id_
+                         WHERE his.PROC_INST_ID_ = tt.pi_id
+                           AND ahv.name_ = CONCAT(his.TASK_DEF_KEY_, '_resultMemo')
+                         ORDER BY his.START_TIME_ DESC LIMIT 1) AS result
+                        <if test="orderType == 'Wide'">, sc.name_ AS business_name</if>
+                    FROM (
+                        <include refid="wideCSubQuery"/>
+                        UNION ALL
+                        <include refid="wideUSubQuery"/>
+                    ) tt
+                    LEFT JOIN sys_area area ON tt.area_id = area.id_
+                    LEFT JOIN sys_area parentArea ON area.parent_ = parentArea.id_
+                    <if test="orderType == 'Wide'">
+                        LEFT JOIN sys_code sc ON sc.code_ = tt.business_dep
+                    </if>
+                    WHERE 1=1
+                    <if test="orderType == 'Wide'"> AND sc.type_ = 'expandDep'</if>
+                    ORDER BY tt.id_ DESC
+                    <if test="startRow != null and pageSize != null and pageSize > 0">
+                        LIMIT #{startRow}, #{pageSize}
+                    </if>
+                ) info
+                LEFT JOIN ftp_tc_user_cycle_warning w ON info.order_flow_no = w.order_flow_no
+            </when>
+            <when test="orderType == 'cloud_expire_alarm'">
+                SELECT tt.id_ AS orderId, area.type_ AS areaType, area.name_ AS areaName, tt.area_id,
+                    tt.GRP_CODE AS grpCode, tt.cust_name AS custName,
+                    tt.cloud_tag AS cloudTag,
+                    tt.consume_type AS consumeType,
+                    DATE_FORMAT(tt.consume_time,'%Y-%m-%d %H:%i:%s') AS consumeTime,
+                    DATE_FORMAT(tt.end_time,'%Y-%m-%d %H:%i:%s') AS endTime,
+                    tt.server_duration AS serverDuration, tt.amount_per_year AS amountPerYear,
+                    CASE WHEN tt.new_consume_time IS NULL THEN '否' ELSE '是' END AS exeFlag,
+                    tt.new_cloud_tag AS newCloudTag, tt.new_consume_type AS newConsumeType,
+                    DATE_FORMAT(tt.new_consume_time,'%Y-%m-%d %H:%i:%s') AS newConsumeTime,
+                    DATE_FORMAT(tt.new_end_time,'%Y-%m-%d %H:%i:%s') AS newEndTime,
+                    tt.new_server_duration AS newServerDuration, tt.new_amount_per_year AS newAmountPerYear,
+                    (SELECT sc.name_ FROM sys_code sc WHERE sc.type_ = 'order_status' AND sc.code_ = tt.status_) AS statusName,
+                    tt.order_number AS orderNumber,
+                    parentArea.name_ AS parentAreaName,
+                    area.parent_ AS parentId,
+                    tt.phase_name AS phaseName, tt.actors_info AS actorsInfo,
+                    DATE_FORMAT(tt.create_time,'%Y-%m-%d %H:%i:%s') AS createTime,
+                    DATE_FORMAT(tt.update_time,'%Y-%m-%d %H:%i:%s') AS updateTime,
+                    (SELECT su1.name_ch FROM act_hi_taskinst his LEFT JOIN sys_user su1
+                     ON su1.id_ = TRIM(BOTH ',' FROM his.ASSIGNEE_)
+                     WHERE his.PROC_INST_ID_ = tt.pi_id ORDER BY his.START_TIME_ DESC LIMIT 1) AS assignee,
+                    (SELECT REPLACE(ahv.text_, 'null', '')
+                     FROM act_hi_taskinst his LEFT JOIN act_hi_varinst ahv ON ahv.task_id_ = his.id_
+                     WHERE his.PROC_INST_ID_ = tt.pi_id
+                       AND ahv.name_ = CONCAT(his.TASK_DEF_KEY_, '_resultMemo')
+                     ORDER BY his.START_TIME_ DESC LIMIT 1) AS result
+                FROM (
+                    <include refid="cloudCSubQuery"/>
+                    UNION ALL
+                    <include refid="cloudUSubQuery"/>
+                ) tt
+                LEFT JOIN sys_area area ON tt.area_id = area.id_
+                LEFT JOIN sys_area parentArea ON area.parent_ = parentArea.id_
+                ORDER BY tt.create_time DESC
+                <if test="startRow != null and pageSize != null and pageSize > 0">
+                    LIMIT #{startRow}, #{pageSize}
+                </if>
+            </when>
+            <when test="orderType == 'leaseline_relet'">
+                SELECT <include refid="leaselineColumns"/>
+                <include refid="commonColumns"/>
+                <include refid="leaselineJoins"/>
+                <include refid="whereClause"/>
+                <if test="startRow != null and pageSize != null and pageSize > 0">
+                    LIMIT #{startRow}, #{pageSize}
+                </if>
+            </when>
+            <otherwise>
+                SELECT <include refid="standardColumns"/>
+                <include refid="commonColumns"/>
+                <include refid="standardJoins"/>
+                <include refid="whereClause"/>
+                <if test="startRow != null and pageSize != null and pageSize > 0">
+                    LIMIT #{startRow}, #{pageSize}
+                </if>
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryCount" resultType="java.lang.Long">
+        <choose>
+            <when test="orderType == 'Wide' or orderType == 'double_wide'">
+                SELECT COUNT(1) FROM (
+                    SELECT tt.id_ FROM (
+                        <include refid="wideCSubQuery"/>
+                        UNION ALL
+                        <include refid="wideUSubQuery"/>
+                    ) tt
+                    LEFT JOIN sys_code sc ON sc.code_ = tt.business_dep
+                    WHERE 1=1 AND sc.type_ = 'expandDep'
+                ) tt2
+            </when>
+            <when test="orderType == 'cloud_expire_alarm'">
+                SELECT COUNT(1) FROM (
+                    <include refid="cloudCSubQuery"/>
+                    UNION ALL
+                    <include refid="cloudUSubQuery"/>
+                ) tt
+            </when>
+            <when test="orderType == 'leaseline_relet'">
+                SELECT COUNT(1) <include refid="leaselineJoins"/> <include refid="whereClause"/>
+            </when>
+            <otherwise>
+                SELECT COUNT(1) <include refid="standardJoins"/> <include refid="whereClause"/>
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 同老项目 PositionAuthorUtils.getUserPositionAuthors：查询用户岗位授权的地市 -->
+    <select id="queryUserAreaIds" resultType="java.lang.String">
+        SELECT DISTINCT p.opp_areas FROM sys_position p
+        INNER JOIN sys_user_position up ON up.position_id = p.id_
+        WHERE up.user_id = #{userId} AND up.valid_ = 1 AND p.opp_areas IS NOT NULL AND p.opp_areas != ''
+    </select>
+
+</mapper>

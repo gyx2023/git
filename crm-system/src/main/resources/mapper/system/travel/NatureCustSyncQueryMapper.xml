@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.zbzq.NatureCustSyncQueryMapper">
+
+    <select id="countByCondition" resultType="int">
+        SELECT COUNT(*)
+        FROM cust_t_nature_cust
+        WHERE REG_PROVINCE_CODE = '36'
+    </select>
+
+    <select id="selectByPage" resultType="com.crm.system.domain.vo.NatureCustVo">
+        SELECT NATURE_CUST_ID AS natureCustId, NATURE_CUST_NAME AS natureCustName
+        FROM cust_t_nature_cust
+        WHERE REG_PROVINCE_CODE = '36'
+        ORDER BY NATURE_CUST_ID
+        LIMIT #{offset}, #{limit}
+    </select>
+
+</mapper>

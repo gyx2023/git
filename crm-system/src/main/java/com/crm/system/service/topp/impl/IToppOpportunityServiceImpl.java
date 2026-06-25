@@ -78,6 +78,20 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 查询签约时间在指定日期范围内的有效商机
+     * 用于商机签约到期提醒 Job
+     */
+    @Override
+    public List<ToppOpportunityDo> queryListBySignTimeRange(String currentDateStr, String targetDateStr) {
+        // 使用自定义SQL查询，条件与老系统一致：
+        // 1. signTime 等于起始日期或目标日期（第0天或第13天）
+        // 2. isValid = true (有效)
+        // 3. oppPhase <> 'new_create' (非新建阶段)
+        // 4. 不存在关联合同
+        // 5. 不存在关联电子表单
+        return baseMapper.selectListBySignTimeRange(currentDateStr, targetDateStr);
+    }
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
         LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();

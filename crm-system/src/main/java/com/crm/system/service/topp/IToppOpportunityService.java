@@ -1,13 +1,14 @@
 package com.crm.system.service.topp;
-import com.crm.common.core.domain.dto.OpportunityDTO;
-import com.crm.system.domain.dto.SignOppoFileExportDTO;
 
+import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
 import com.crm.system.domain.dao.topp.ToppOpportunityDo;
+import com.crm.system.domain.dto.SignOppoFileExportDTO;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -41,7 +42,15 @@ public interface IToppOpportunityService {
      */
     List<ToppOpportunityDo> queryListByStartTime(Date startTime);
 
-
+    /**
+     * 查询签约时间在指定日期范围内的有效商机列表
+     * 用于商机签约到期提醒 Job
+     *
+     * @param currentDateStr 起始日期 yyyy-MM-dd
+     * @param targetDateStr  结束日期 yyyy-MM-dd
+     * @return 符合条件的商机列表
+     */
+    List<ToppOpportunityDo> queryListBySignTimeRange(String currentDateStr, String targetDateStr);
 
     /**
      * 新增【请填写功能名称】

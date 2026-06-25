@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/process">
+    <process id="topp_contract_audit_process" name="合同审核流程" isExecutable="true">
+        <documentation>商机转化后发起的合同审核流程</documentation>
+
+        <!-- 开始事件 -->
+        <startEvent id="startevent1" name="开始"></startEvent>
+
+        <!-- 客户经理添加合同信息 -->
+        <userTask id="contract_add" name="客户经理添加合同" flowable:assignee="${contract_user1}">
+            <documentation>客户经理补充完善合同信息</documentation>
+        </userTask>
+
+        <!-- 网关1：判断是否送审 -->
+        <exclusiveGateway id="exclusivegateway2" name="是否送审判断"></exclusiveGateway>
+
+        <!-- 项目管理员审核 -->
+        <userTask id="xmgly_audit" name="项目管理员审核" flowable:assignee="${contract_user2}">
+            <documentation>项目管理员审核合同</documentation>
+        </userTask>
+
+        <!-- 网关2：审核结果判断 -->
+        <exclusiveGateway id="exclusivegateway1" name="审核结果判断"></exclusiveGateway>
+
+        <!-- 结束事件 -->
+        <endEvent id="endevent1" name="结束"></endEvent>
+
+        <!-- 流程连接线 -->
+        <sequenceFlow id="flow_start_to_add" sourceRef="startevent1" targetRef="contract_add"></sequenceFlow>
+        <sequenceFlow id="flow_add_to_gateway2" sourceRef="contract_add" targetRef="exclusivegateway2"></sequenceFlow>
+
+        <!-- 送审分支 -->
+        <sequenceFlow id="flow_gateway2_to_audit" name="送审" sourceRef="exclusivegateway2" targetRef="xmgly_audit">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${contract_flag1==0}]]></conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="flow_audit_to_gateway1" sourceRef="xmgly_audit" targetRef="exclusivegateway1"></sequenceFlow>
+
+        <!-- 审核通过 -->
+        <sequenceFlow id="flow_gateway1_to_end" name="通过" sourceRef="exclusivegateway1" targetRef="endevent1">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${contract_flag2==0}]]></conditionExpression>
+        </sequenceFlow>
+
+        <!-- 审核退回 -->
+        <sequenceFlow id="flow_gateway1_to_add" name="退回" sourceRef="exclusivegateway1" targetRef="contract_add">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${contract_flag2==1}]]></conditionExpression>
+        </sequenceFlow>
+
+        <!-- 设为无效 -->
+        <sequenceFlow id="flow_gateway2_to_end" name="无效" sourceRef="exclusivegateway2" targetRef="endevent1">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${contract_flag1==1}]]></conditionExpression>
+        </sequenceFlow>
+    </process>
+
+    <!-- 流程图可视化定义 -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_topp_contract_audit_process">
+        <bpmndi:BPMNPlane bpmnElement="topp_contract_audit_process" id="BPMNPlane_topp_contract_audit_process">
+            <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+                <omgdc:Bounds height="35.0" width="35.0" x="60.0" y="200.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="contract_add" id="BPMNShape_contract_add">
+                <omgdc:Bounds height="55.0" width="130.0" x="140.0" y="190.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+                <omgdc:Bounds height="40.0" width="40.0" x="310.0" y="207.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="xmgly_audit" id="BPMNShape_xmgly_audit">
+                <omgdc:Bounds height="55.0" width="130.0" x="400.0" y="190.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+                <omgdc:Bounds height="40.0" width="40.0" x="570.0" y="207.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+                <omgdc:Bounds height="35.0" width="35.0" x="660.0" y="212.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="flow_start_to_add" id="BPMNEdge_flow_start_to_add">
+                <omgdi:waypoint x="95.0" y="217.0"></omgdi:waypoint>
+                <omgdi:waypoint x="140.0" y="217.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow_add_to_gateway2" id="BPMNEdge_flow_add_to_gateway2">
+                <omgdi:waypoint x="270.0" y="217.0"></omgdi:waypoint>
+                <omgdi:waypoint x="310.0" y="227.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow_gateway2_to_audit" id="BPMNEdge_flow_gateway2_to_audit">
+                <omgdi:waypoint x="350.0" y="227.0"></omgdi:waypoint>
+                <omgdi:waypoint x="400.0" y="217.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow_audit_to_gateway1" id="BPMNEdge_flow_audit_to_gateway1">
+                <omgdi:waypoint x="530.0" y="217.0"></omgdi:waypoint>
+                <omgdi:waypoint x="570.0" y="227.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow_gateway1_to_end" id="BPMNEdge_flow_gateway1_to_end">
+                <omgdi:waypoint x="610.0" y="227.0"></omgdi:waypoint>
+                <omgdi:waypoint x="660.0" y="229.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow_gateway1_to_add" id="BPMNEdge_flow_gateway1_to_add">
+                <omgdi:waypoint x="590.0" y="207.0"></omgdi:waypoint>
+                <omgdi:waypoint x="590.0" y="140.0"></omgdi:waypoint>
+                <omgdi:waypoint x="205.0" y="140.0"></omgdi:waypoint>
+                <omgdi:waypoint x="205.0" y="190.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow_gateway2_to_end" id="BPMNEdge_flow_gateway2_to_end">
+                <omgdi:waypoint x="330.0" y="207.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="130.0"></omgdi:waypoint>
+                <omgdi:waypoint x="677.0" y="130.0"></omgdi:waypoint>
+                <omgdi:waypoint x="677.0" y="212.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>

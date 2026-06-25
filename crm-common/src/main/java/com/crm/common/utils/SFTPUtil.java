@@ -154,33 +154,54 @@ public class SFTPUtil {
      */
     public void upload(String basePath, String directory, String sftpFileName, InputStream input) throws SftpException {
         if (basePath != null && !"".equals(basePath)) {
-            sftp.cd(basePath);
+            try {
+                sftp.cd(basePath);
+            } catch (SftpException e) {
+                mkdirs(basePath);
+                sftp.cd(basePath);
+            }
         }
         if (directory != null && !"".equals(directory)) {
             try {
                 sftp.cd(directory);
             } catch (SftpException e) {
-                // 目录不存在，创建目录
-                String[] dirs = directory.split("/");
-                String tempPath = basePath;
-                if (tempPath == null || "".equals(tempPath)) {
-                    tempPath = "/";
-                }
-                for (String dir : dirs) {
-                    if (dir != null && !"".equals(dir)) {
-                        try {
-                            sftp.cd(tempPath);
-                            sftp.mkdir(dir);
-                            sftp.cd(dir);
-                            tempPath = tempPath + "/" + dir;
-                        } catch (SftpException e1) {
-                            sftp.cd(dir);
-                            tempPath = tempPath + "/" + dir;
-                        }
-                    }
-                }
+                // directory是相对路径时，拼上basePath构建完整路径
+                String fullPath = directory.startsWith("/") ? directory : basePath + "/" + directory;
+                mkdirs(fullPath);
             }
         }
         sftp.put(input, sftpFileName);
     }
+
+    /**
+     * 递归创建多级目录
+     * @param path 目录路径
+     */
+    private void mkdirs(String path) throws SftpException {
+        String[] dirs = path.split("/");
+        String tempPath = "";
+        for (String dir : dirs) {
+            if (dir != null && !"".equals(dir)) {
+                tempPath += "/" + dir;
+                try {
+                    sftp.cd(tempPath);
+                } catch (SftpException e) {
+                    sftp.mkdir(tempPath);
+                    sftp.cd(tempPath);
+                }
+            }
+        }
+    }
+
+    /**
+     * 修改文件名
+     * @param directory 要修改文件所在目录
+     * @param oldPath 旧名
+     * @param oldPath 新名
+     */
+    public void rename(String directory, String oldPath,String newPath) throws SftpException{
+        sftp.cd(directory);
+        sftp.rename(oldPath,newPath);
+    }
 }
+
