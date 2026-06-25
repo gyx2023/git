@@ -64,7 +64,7 @@ public class PreTravelReportJob {
                 log.info("使用参数日期: {} ~ {}", startTime, endTime);
             } else {
                 // 没有传参，使用默认的 T+2 逻辑
-                Date t2Date = DateUtils.addDays(new Date(), 2);
+                Date t2Date = DateUtils.addDays(new Date(), 1);
                 startTime = DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, t2Date) + " 00:00:00";
                 Date nextDay = DateUtils.addDays(t2Date, 1);
                 endTime = DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, nextDay) + " 00:00:00";

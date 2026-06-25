@@ -15,15 +15,8 @@ import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.SSLClient;
+import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
 import org.springframework.stereotype.Service;
 
@@ -53,100 +46,109 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     @Resource
     private ISysParamService sysParamService;
 
-    private PendingGroupTodo todoTask;
-    private ToppOrder order;
-    //任务列表
-    private List<Map<String, Object>> hisList;
-    //当前任务
-    private Map<String, Object> currentTask;
-    //当前任务在hisList索引位置
-    private int currentTaskInHisListIndex;
-    //第一个任务
-    private Map<String, Object> firstTask;
-    //最后一个任务
-    private Map<String, Object> lastTask;
-
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
 
     @Override
     public void syncTodoTask(PendingGroupTodo pendingTodo) {
-        this.todoTask = pendingTodo;
         try {
-            this.order = toppOrderMapper.selectOne(
+            ToppOrder order = toppOrderMapper.selectOne(
                 new LambdaQueryWrapper<ToppOrder>()
                     .eq(ToppOrder::getPiId, pendingTodo.getProcInstId())
             );
 
-            if (this.order == null) {
-                this.todoTask.setSendStatus("2");
-                this.todoTask.setFailTimes(3);
-                this.todoTask.setRecMsg("订单不存在");
-                pendingService.updateGroupTodoTask(this.todoTask);
+            if (order == null) {
+                pendingTodo.setSendStatus("2");
+                pendingTodo.setFailTimes(3);
+                pendingTodo.setRecMsg("订单不存在");
+                pendingService.updateGroupTodoTask(pendingTodo);
                 return;
             }
             // 指定时间以前的数据
             Date checkDate = DateUtils.parseDate("2023-08-25 22:15:00");
-            if (this.order.getCreateTime().before(checkDate)) {
-                this.todoTask.setSendStatus("2");
-                this.todoTask.setFailTimes(3);
-                this.todoTask.setRecMsg("订单不存在或者指定时间以前数据,不做处理");
-                pendingService.updateGroupTodoTask(this.todoTask);
+            if (order.getCreateTime().before(checkDate)) {
+                pendingTodo.setSendStatus("2");
+                pendingTodo.setFailTimes(3);
+                pendingTodo.setRecMsg("订单不存在或者指定时间以前数据,不做处理");
+                pendingService.updateGroupTodoTask(pendingTodo);
                 return;
             }
+            // 任务列表
+            List<Map<String, Object>> hisList;
+            // 第一个任务
+            Map<String, Object> firstTask;
+            // 最后一个任务
+            Map<String, Object> lastTask;
+            // 当前任务
+            Map<String, Object> currentTask;
+
             if ("u".equals(pendingTodo.getOperatorType())) {
-                this.refreshData(pendingTodo.getProcInstId());
-                this.currentTask = this.lastTask;
+                // 刷新任务列表数据
+                hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts(pendingTodo.getProcInstId());
+                hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
+                    .compareTo((java.util.Date) a.get("startTime")));
+                firstTask = hisList.get(hisList.size() - 1);
+                lastTask = hisList.get(0);
+
+                currentTask = lastTask;
             } else {
                 currentTask = oldWorkflowQueryService
-                        .queryOldHistoricTaskByTaskId(pendingTodo.getTaskId());
+                    .queryOldHistoricTaskByTaskId(pendingTodo.getTaskId());
                 log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.get("id") : "null");
-                this.refreshData((String) currentTask.get("procInsId"));
+                if (currentTask == null){
+                    throw new RuntimeException("历史任务不存在");
+                }
+                // 刷新任务列表数据
+                hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts((String) currentTask.get("procInsId"));
+                hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
+                    .compareTo((java.util.Date) a.get("startTime")));
+                firstTask = hisList.get(hisList.size() - 1);
+                lastTask = hisList.get(0);
             }
             // 获取当前任务在任务列表中的索引位置
-            this.setCurrentTaskInListIndex();
-
+            int currentTaskInHisListIndex = getCurrentTaskInListIndex(hisList, currentTask);
             // 构建请求体
             Map<String, Object> dataMap = new HashMap<>();
             dataMap.put("UNI_BSS_HEAD", this.buildHead());
-            dataMap.put("UNI_BSS_BODY", this.getBody());
+            dataMap.put("UNI_BSS_BODY", this.getBody(order, pendingTodo, currentTask,
+                firstTask, lastTask, hisList, currentTaskInHisListIndex));
 
             String jsonString = JSON.toJSONString(dataMap);
-            log.info("待办同步至集团运营平台请求消息:" + jsonString);
-            this.todoTask.setSendMsg(jsonString);
+            log.info("待办同步至集团运营平台请求消息:{}", jsonString);
+            pendingTodo.setSendMsg(jsonString);
 
             // HTTP POST请求
             String todoTaskSyncUrl = sysParamService.findValueByCode("todoTaskSyncUrl");
-            String result = doPost(todoTaskSyncUrl, jsonString, "utf-8");
-            log.info("待办同步至集团运营平台接口返回消息:" + result);
-            this.todoTask.setRecMsg(result);
+            String result = HttpClientUtil.doPostCustomBody(todoTaskSyncUrl, jsonString, "utf-8",10 * 1000);
+            log.info("待办同步至集团运营平台接口返回消息:{}",result);
+            pendingTodo.setRecMsg(result);
 
             // 解析返回结果
             if (!isJSON(result)) {
-                this.todoTask.setSendStatus("2");
-                this.todoTask.setFailTimes(3);
+                pendingTodo.setSendStatus("2");
+                pendingTodo.setFailTimes(3);
             } else {
                 JSONObject json = JSONObject.parseObject(result);
                 String headCode = JsonUtils.getNodeValueByPath(json, "UNI_BSS_HEAD.RESP_CODE");
                 String busiCode = JsonUtils.getNodeValueByPath(json, "UNI_BSS_BODY.SYNC_WAIT_SOLVE_INFO_SER_RSP.CODE");
                 if ("00000".equals(headCode) && "000".equals(busiCode)) {
                     //成功
-                    this.todoTask.setSendStatus("1");
-                    this.todoTask.setFailTimes(0);
+                    pendingTodo.setSendStatus("1");
+                    pendingTodo.setFailTimes(0);
                 } else {
                     //失败
-                    this.todoTask.setSendStatus("2");
-                    this.todoTask.setFailTimes(3);
+                    pendingTodo.setSendStatus("2");
+                    pendingTodo.setFailTimes(3);
                 }
             }
 
         } catch (Exception e) {
             log.error("同步集团待办任务异常, id:{}", pendingTodo.getId(), e);
-            this.todoTask.setSendStatus("2");
-            this.todoTask.setFailTimes(3);
-            this.todoTask.setRecMsg(e.getMessage());
+            pendingTodo.setSendStatus("2");
+            pendingTodo.setFailTimes(3);
+            pendingTodo.setRecMsg(e.getMessage());
         } finally {
-            pendingService.updateGroupTodoTask(this.todoTask);
+            pendingService.updateGroupTodoTask(pendingTodo);
         }
     }
 
@@ -160,13 +162,14 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 构建请求体
      */
-    private Map<String, Object> getBody() {
+    private Map<String, Object> getBody(ToppOrder order,PendingGroupTodo todoTask,Map<String, Object> currentTask,Map<String, Object> firstTask,Map<String, Object> lastTask,List<Map<String, Object>> hisList,int currentTaskInHisListIndex) {
         Map<String, Object> baseMap = new HashMap<>();
+        String operatorType = todoTask.getOperatorType();
         baseMap.put("TCP_CONT", this.getTcpCont());
-        baseMap.putAll(this.getOrderInfo());
-        baseMap.put("PROCESS_START_INFO", this.getProcessInfo());
-        baseMap.put("WAIT_SOLVE_INFO", this.getWaitSolveInfo());
-        baseMap.put("ALREADY_SOLVE_INFO", this.getAlreadySolveInfo());
+        baseMap.putAll(this.getOrderInfo(order,operatorType));
+        baseMap.put("PROCESS_START_INFO", this.getProcessInfo(currentTask,firstTask,order));
+        baseMap.put("WAIT_SOLVE_INFO", this.getWaitSolveInfo(currentTask,firstTask,lastTask,operatorType,hisList,order,currentTaskInHisListIndex));
+        baseMap.put("ALREADY_SOLVE_INFO", this.getAlreadySolveInfo(operatorType,lastTask,order,currentTask,firstTask,hisList));
         Map<String, Object> body = new HashMap<>();
         body.put("SYNC_WAIT_SOLVE_INFO_SER_REQ", baseMap);
         return body;
@@ -189,16 +192,16 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 订单信息
      */
-    private Map<String, Object> getOrderInfo() {
+    private Map<String, Object> getOrderInfo(ToppOrder order,String operatorType) {
         Map<String, Object> orderInfo = new HashMap<>();
-        orderInfo.put("PROCESS_CODE", "zjzqyypt-" + this.order.getOrderNumber());
-        orderInfo.put("PROCESS_TYPE", this.order.getOrderType() + ""); // 流程名称，暂用orderType
+        orderInfo.put("PROCESS_CODE", "zjzqyypt-" + order.getOrderNumber());
+        orderInfo.put("PROCESS_TYPE", order.getOrderType()); // 流程名称，暂用orderType
         orderInfo.put("SYSTEM_SOURCE", "浙江政企运营平台");
-        orderInfo.put("PROCESS_NAME", this.order.getOrderName());
+        orderInfo.put("PROCESS_NAME", order.getOrderName());
         // 获取创建人的OA账号
         String startUserCode = "";
-        if (this.order.getCreator() != null) {
-            SysUsers creator = sysUsersMapper.selectById(this.order.getCreator());
+        if (order.getCreator() != null) {
+            SysUsers creator = sysUsersMapper.selectById(order.getCreator());
             if (creator != null) {
                 startUserCode = creator.getOaAccount() != null ? creator.getOaAccount() : "";
             }
@@ -207,15 +210,15 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         orderInfo.put("BUSINESS_SYSTEM_CODE", "10202");
         // 指定时间以前的数据用旧编码
         Date checkDate = DateUtils.parseDate("2023-09-07 22:40:00");
-        if (checkDate != null && this.order.getCreateTime().before(checkDate)) {
+        if (checkDate != null && order.getCreateTime().before(checkDate)) {
             orderInfo.put("BUSINESS_SYSTEM_CODE", "ZJZQYYPT");
         }
         orderInfo.put("FIRST_BIZ_TYPE_CODE", "ywyy");
         orderInfo.put("ORDER_STATE", "B");
-        if ("u".equals(this.todoTask.getOperatorType())) {
+        if ("u".equals(operatorType)) {
             orderInfo.put("ORDER_STATE", "D");
         }
-        orderInfo.put("START_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.order.getCreateTime()));
+        orderInfo.put("START_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", order.getCreateTime()));
         orderInfo.put("ORDER_UPDATE_TIME", DateUtils.parseDateToStr("yyyyMMddHHmmss", new Date()));
         return orderInfo;
     }
@@ -223,15 +226,15 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 发起信息（只在第一个环节新增待办时获取）
      */
-    private List<JSONObject> getProcessInfo() {
+    private List<JSONObject> getProcessInfo(Map<String, Object> currentTask,Map<String, Object> firstTask,ToppOrder order) {
         List<JSONObject> processList = new ArrayList<>();
-        if (this.currentTask.get("id").equals(this.firstTask.get("id"))) {
+        if (currentTask.get("id").equals(firstTask.get("id"))) {
             JSONObject taskJson = new JSONObject();
             taskJson.put("OPERATION_STATE", "0");
-            taskJson.put("CURRENT_LINK", this.firstTask.get("name"));
-            String url = getUrl(ORDER_INFO_URL + this.order.getId());
+            taskJson.put("CURRENT_LINK", firstTask.get("name"));
+            String url = getUrl(ORDER_INFO_URL + order.getId());
             taskJson.put("URL", url);
-            taskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(this.firstTask));
+            taskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(firstTask));
             processList.add(taskJson);
         }
         return processList;
@@ -240,46 +243,46 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 待办信息
      */
-    private List<JSONObject> getWaitSolveInfo() {
+    private List<JSONObject> getWaitSolveInfo(Map<String, Object> currentTask,Map<String, Object> firstTask,Map<String, Object> lastTask,String operatorType,List<Map<String, Object>> hisList,ToppOrder order,int currentTaskInHisListIndex) {
         List<JSONObject> waitSolveInfoList = new ArrayList<>();
         JSONObject waitTaskJson = new JSONObject();
-        waitTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.currentTask.get("startTime")));
-        waitTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(this.currentTask));
-        waitTaskJson.put("WAIT_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
+        waitTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) currentTask.get("startTime")));
+        waitTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(currentTask));
+        waitTaskJson.put("WAIT_SOLVE_URL", getUrl(ORDER_INFO_URL + order.getId()));
         waitTaskJson.put("WAIT_SOLVE_LEVEL", "0");
         waitTaskJson.put("OPERATION_STATE", "0");
         waitTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36");
         waitTaskJson.put("PENDING_LEVEL", "0");
         waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", new Date()));
-        if (this.currentTask.get("startTime") != null) {
-            waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.currentTask.get("startTime")));
+        if (currentTask.get("startTime") != null) {
+            waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) currentTask.get("startTime")));
         }
-        waitTaskJson.put("WORKSHEET_ID", this.currentTask.get("id"));
-        waitTaskJson.put("FLOW_CODE", this.currentTask.get("taskDefKey"));
-        waitTaskJson.put("FLOW_NAME", this.currentTask.get("name"));
+        waitTaskJson.put("WORKSHEET_ID", currentTask.get("id"));
+        waitTaskJson.put("FLOW_CODE", currentTask.get("taskDefKey"));
+        waitTaskJson.put("FLOW_NAME", currentTask.get("name"));
 
-        if ("u".equals(this.todoTask.getOperatorType())) {
+        if ("u".equals(operatorType)) {
             waitTaskJson.put("OPERATION_STATE", "1");
-            if (this.lastTask.get("endTime") != null) {
-                waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.lastTask.get("endTime")));
+            if (lastTask.get("endTime") != null) {
+                waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) lastTask.get("endTime")));
             }
             waitSolveInfoList.add(waitTaskJson);
             return waitSolveInfoList;
         }
         // 第一个环节
-        if (this.currentTask.get("id").equals(this.firstTask.get("id"))) {
-            waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(this.currentTask));
+        if (currentTask.get("id").equals(firstTask.get("id"))) {
+            waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(currentTask));
             waitSolveInfoList.add(waitTaskJson);
             return waitSolveInfoList;
         }
-        waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(this.hisList.get(this.currentTaskInHisListIndex + 1)));
+        waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(hisList.get(currentTaskInHisListIndex + 1)));
         waitSolveInfoList.add(waitTaskJson);
-        if (this.hisList.size() > 1) {
+        if (hisList.size() > 1) {
             JSONObject preTaskJson = new JSONObject();
-            Map<String, Object> preTask = this.hisList.get(this.currentTaskInHisListIndex + 1);
+            Map<String, Object> preTask = hisList.get(currentTaskInHisListIndex + 1);
             preTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) preTask.get("startTime")));
             preTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(preTask));
-            preTaskJson.put("WAIT_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
+            preTaskJson.put("WAIT_SOLVE_URL", getUrl(ORDER_INFO_URL + order.getId()));
             preTaskJson.put("WAIT_SOLVE_LEVEL", "0");
             preTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36");
             preTaskJson.put("PENDING_LEVEL", "0");
@@ -301,28 +304,29 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 流程完结 → 已办不用删，待办删了就行，已办传空数组
      * 否则取上一个环节的信息
      */
-    private List<JSONObject> getAlreadySolveInfo() {
+    private List<JSONObject> getAlreadySolveInfo(String operatorType,Map<String, Object> lastTask,ToppOrder order,
+                                                 Map<String, Object> currentTask,Map<String, Object> firstTask,List<Map<String, Object>> hisList) {
         List<JSONObject> alreadySolveInfoList = new ArrayList<>();
-        if ("u".equals(this.todoTask.getOperatorType())) {
+        if ("u".equals(operatorType)) {
             JSONObject lastTaskJson = new JSONObject();
-            lastTaskJson.put("WORKSHEET_ID", this.lastTask.get("id"));
-            lastTaskJson.put("FLOW_CODE", this.lastTask.get("taskDefKey"));
-            lastTaskJson.put("FLOW_NAME", this.lastTask.get("name"));
-            lastTaskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(this.lastTask));
-            lastTaskJson.put("CURRENT_LINK", this.lastTask.get("taskDefKey"));
-            lastTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(this.lastTask));
-            if (this.lastTask.get("endTime") == null) {
-                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.order.getUpdateTime()));
+            lastTaskJson.put("WORKSHEET_ID", lastTask.get("id"));
+            lastTaskJson.put("FLOW_CODE", lastTask.get("taskDefKey"));
+            lastTaskJson.put("FLOW_NAME", lastTask.get("name"));
+            lastTaskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(lastTask));
+            lastTaskJson.put("CURRENT_LINK", lastTask.get("taskDefKey"));
+            lastTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(lastTask));
+            if (lastTask.get("endTime") == null) {
+                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", order.getUpdateTime()));
             } else {
-                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) this.lastTask.get("endTime")));
+                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) lastTask.get("endTime")));
             }
-            lastTaskJson.put("ALREADY_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
+            lastTaskJson.put("ALREADY_SOLVE_URL", getUrl(ORDER_INFO_URL + order.getId()));
             lastTaskJson.put("OPERATION_STATE", "0");
             alreadySolveInfoList.add(lastTaskJson);
         } else {
-            if (this.hisList.size() > 1 && !this.currentTask.get("id").equals(this.firstTask.get("id"))) {
+            if (hisList.size() > 1 && !currentTask.get("id").equals(firstTask.get("id"))) {
                 JSONObject preTaskJson = new JSONObject();
-                Map<String, Object> preTask = this.hisList.get(1);
+                Map<String, Object> preTask = hisList.get(1);
                 preTaskJson.put("WORKSHEET_ID", preTask.get("id"));
                 preTaskJson.put("FLOW_CODE", preTask.get("taskDefKey"));
                 preTaskJson.put("FLOW_NAME", preTask.get("name"));
@@ -330,83 +334,16 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 preTaskJson.put("CURRENT_LINK", preTask.get("taskDefKey"));
                 preTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(preTask));
                 if (preTask.get("endTime") == null) {
-                    preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", this.order.getUpdateTime()));
+                    preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", order.getUpdateTime()));
                 } else {
                     preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr("yyyyMMddHHmmss", (Date) preTask.get("endTime")));
                 }
-                preTaskJson.put("ALREADY_SOLVE_URL", getUrl(ORDER_INFO_URL + this.order.getId()));
+                preTaskJson.put("ALREADY_SOLVE_URL", getUrl(ORDER_INFO_URL + order.getId()));
                 preTaskJson.put("OPERATION_STATE", "0");
                 alreadySolveInfoList.add(preTaskJson);
             }
         }
         return alreadySolveInfoList;
-    }
-
-    /**
-     * 进行http post请求
-     * @param url
-     * @param jsonstr
-     * @param charset
-     * @return
-     */
-    private  String doPost(String url, String jsonstr, String charset){
-        HttpClient httpClient;
-        HttpPost httpPost;
-        String result = null;
-        HttpResponse response = null;
-        try{
-            httpClient = new SSLClient();
-            httpPost = new HttpPost(url);
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(5000).build();
-            httpPost.setConfig(requestConfig);
-            httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-            httpPost.addHeader("Accept", "application/json");
-            httpPost.addHeader("Accept-Encoding", "utf-8");
-            if(jsonstr != null){
-                StringEntity se = new StringEntity(jsonstr,"utf-8");
-                httpPost.setEntity(se);
-            }
-            response = httpClient.execute(httpPost);
-            if(response != null){
-                HttpEntity resEntity = response.getEntity();
-                if(resEntity != null){
-                    result = EntityUtils.toString(resEntity,charset);
-                }
-            }
-        }catch(Exception ex){
-            ex.printStackTrace();
-            result = "(请求接口出错:" + ex.getMessage() + ")";
-
-        }finally {
-            // 确保实体内容被完全消费，连接可被复用或释放
-            if (response != null && response.getEntity() != null) {
-                EntityUtils.consumeQuietly(response.getEntity());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * 刷新任务列表数据
-     */
-    private void refreshData(String procInstId) {
-        this.hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts(procInstId);
-        this.hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
-                .compareTo((java.util.Date) a.get("startTime")));
-        this.firstTask = hisList.get(hisList.size() - 1);
-        this.lastTask = hisList.get(0);
-    }
-
-    /**
-     * 设置当前任务在列表中的索引位置
-     */
-    private void setCurrentTaskInListIndex() {
-        for (int i = 0; i < this.hisList.size(); i++) {
-            if (((String) this.hisList.get(i).get("id")).equals((String) this.currentTask.get("id"))) {
-                this.currentTaskInHisListIndex = i;
-                break;
-            }
-        }
     }
 
     /**
@@ -420,6 +357,20 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         int userId = Integer.parseInt(assignee.replaceAll(",", ""));
         SysUsers user = sysUsersMapper.selectById(userId);
         return user != null && user.getOaAccount() != null ? user.getOaAccount() : "";
+    }
+
+    /**
+     * 设置当前任务在列表中的索引位置
+     */
+    private int getCurrentTaskInListIndex(List<Map<String, Object>> hisList,Map<String, Object> currentTask) {
+        int currentTaskInHisListIndex = -1;
+        for (int i = 0; i < hisList.size(); i++) {
+            if (((String) hisList.get(i).get("id")).equals((String) currentTask.get("id"))) {
+                currentTaskInHisListIndex = i;
+                break;
+            }
+        }
+        return currentTaskInHisListIndex;
     }
 
     /**
@@ -438,12 +389,11 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             try {
                 JSONObject obj = JSON.parseObject(json);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("json格式错误:串为:{}" , json, e);
                 return false;
             }
             return true;
         }
         return false;
     }
-
 }
