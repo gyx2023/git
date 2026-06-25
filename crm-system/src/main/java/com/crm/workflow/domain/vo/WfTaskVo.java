@@ -98,6 +98,10 @@ public class WfTaskVo implements Serializable {
      */
     private String hisProcInsId;
     /**
+     * 关联的合同ID（用于合同审核流程路由）
+     */
+    private Long contractId;
+    /**
      * 任务耗时
      */
     private String duration;
@@ -128,5 +132,34 @@ public class WfTaskVo implements Serializable {
      * 流程状态
      */
     private String processStatus;
+
+    /**
+     * 数据来源：new-新系统Flowable, old-老系统Activiti
+     */
+    private String source;
+
+    /**
+     * 工单ID（用于老系统流程跳转）
+     */
+    private Long orderId;
+
+    // ===== 业务字段（对应老系统列表展示列） =====
+    /** 订单名称 */
+    private String orderName;
+    /** 订单编号 */
+    private String orderNumber;
+    /** 商机名称 */
+    private String oppoName;
+    /** 商机/线索编号 */
+    private String oppCode;
+    /** 客户名称 */
+    private String custName;
+    /** 业务号码 */
+    private String accNbr;
+    /** 任务截止时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date dueTime;
+    /** 时限(小时) */
+    private Float dueLimit;
 
 }

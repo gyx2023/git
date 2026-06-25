@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 【请填写功能名称】Service接口
@@ -57,4 +58,20 @@ public interface IToppContractService {
      * @return 合同信息列表
      */
     List<ToppContractVo> selectByOpportunityIds(List<Long> opportunityIds);
+
+    /**
+     * 校验合同金额（对照老系统 ContractService.toValidContract）
+     * @param bo 合同信息
+     * @param includeTypeMoneyTotal 分项收入总和
+     * @return 校验结果，key=是否通过，value=错误信息
+     */
+    Map<Boolean, String> toValidContract(ToppContractBo bo, String includeTypeMoneyTotal);
+
+    /**
+     * 检查合同编号是否唯一（对照老系统 ContractAction.validbind）
+     * @param contractNo 合同编号
+     * @param oppoId 商机ID（用于排除自身）
+     * @return status: 1=当前商机已关联该合同, 2=其他商机已关联该合同, 3=合同编号可用
+     */
+    Map<String, Object> validContractNo(String contractNo, Long oppoId);
 }

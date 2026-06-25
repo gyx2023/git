@@ -1,10 +1,12 @@
 package com.crm.job.service.timedTasks;
 
+import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.service.sys.ISysParamService;
+import com.oceanbase.jdbc.internal.util.StringCacheUtil;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -58,23 +60,18 @@ public class PendingJob {
         loadPendingConfig();
         XxlJobHelper.log("====== 待办统一调度开始执行（按ID逐条执行）======");
         log.info("====== 待办统一调度开始执行（按ID逐条执行）======");
+        String param = XxlJobHelper.getJobParam();
+        // 1. 获取按 ID 排序好的 a + u 列表 默认取30条数据
+        List<Pending> pendingList = pendingService.getPendingList(StringUtils.isEmpty( param)? "30": param);
 
-        // 1. 获取按 ID 排序好的 a + u 列表
-        List<Pending> pendingList = pendingService.getPendingList();
-
-        // 2. 逐条处理：a 新增，u 更新（核心修复版）
+        // 2. 逐条处理：a 新增，u 更新
         if (pendingList != null && !pendingList.isEmpty()) {
-            List<Pending> list = new ArrayList<>();
             for (Pending pending : pendingList) {
-                list = new ArrayList<>();
-                list.add(pending);
                 try {
                     if ("a".equals(pending.getOperatorType())) {
-                        // 正确：单条传入新增
-                        pendingService.pushAddPending(list, addUrl, appId, token);
+                        pendingService.pushAddPending(pending, addUrl, appId, token);
                     } else if ("u".equals(pending.getOperatorType())) {
-                        // 正确：单条传入更新
-                        pendingService.pushUpdatePendingStatus(list, updateUrl, appId, token);
+                        pendingService.pushUpdatePendingStatus(pending, updateUrl, appId, token);
                     }
                 } catch (Exception e) {
                     log.error("单条待办处理失败，id=" + pending.getId(), e);

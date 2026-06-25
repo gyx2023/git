@@ -13,17 +13,17 @@ public interface IPendingService {
     /**
      * 获取待处理的待办数据
      */
-    List<Pending> getPendingList();
+    List<Pending> getPendingList(String limit);
 
     /**
      * 推送新增待办至OA系统
      */
-    void pushAddPending(List<Pending> addList, String addUrl, String appId, String token);
+    void pushAddPending(Pending pending, String addUrl, String appId, String token);
 
     /**
      * 推送待办状态更新至OA系统
      */
-    void pushUpdatePendingStatus(List<Pending> updateList, String updateUrl, String appId, String token);
+    void pushUpdatePendingStatus(Pending pending, String updateUrl, String appId, String token);
 
     /**
      * 根据pendingCode和operatorType查询待办

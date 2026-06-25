@@ -206,4 +206,9 @@ public class SysUsersServiceImpl implements ISysUsersService {
     public List<SysUsers> selectFailureList(Integer failureDays) {
         return baseMapper.selectFailureList(failureDays);
     }
+
+    @Override
+    public List<SysUsers> selectLongTimeNoLoginByOa(Integer failureDays) {
+        return baseMapper.selectLongTimeNoLoginByOa(failureDays);
+    }
 }

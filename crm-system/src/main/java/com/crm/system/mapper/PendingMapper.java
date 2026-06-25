@@ -1,5 +1,6 @@
 package com.crm.system.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.crm.system.domain.dao.Pending;
 import org.apache.ibatis.annotations.Mapper;
@@ -16,7 +17,19 @@ public interface PendingMapper extends BaseMapper<Pending> {
     /**
      * 查询待推送的待办数据
      */
-    List<Pending> selectPendingList();
+    default List<Pending> selectPendingList(String limit) {
+        LambdaQueryWrapper<Pending> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w ->
+            w.and(a -> a.eq(Pending::getOperatorType, "a")
+                        .eq(Pending::getPendingStatus, "0"))
+             .or(b -> b.eq(Pending::getOperatorType, "u")
+                        .eq(Pending::getPendingStatus, "1")))
+            .in(Pending::getSendStatus, "0", "2")
+            .lt(Pending::getFailTimes, 3)
+            .orderByAsc(Pending::getId)
+            .last("LIMIT " + limit);
+        return this.selectList(wrapper);
+    }
 
     /**
      * 批量更新失败次数

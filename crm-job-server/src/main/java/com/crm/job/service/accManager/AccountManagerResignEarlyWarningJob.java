@@ -1,15 +1,15 @@
 package com.crm.job.service.accManager;
 
-import com.crm.common.core.domain.entity.SysDept;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.accManager.WaringListTable;
+import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.IResignEarlyWarningService;
 import com.crm.system.service.IWaringListTableService;
 import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.ISysUsersService;
-import com.crm.system.service.sys.ISysDeptService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +69,7 @@ public class AccountManagerResignEarlyWarningJob {
     private ISysAreaService sysAreaService;
 
     @Resource
-    private ISysDeptService sysDeptService;
+    private OldSysOrgMapper oldSysOrgMapper;
 
     /**
      * 客户经理离职预警同步任务
@@ -176,7 +176,7 @@ public class AccountManagerResignEarlyWarningJob {
      * 查询长期未登录工号，逐人检测各业务系统角色挂靠情况，生成预警记录
      */
     private void queryLongTimeNoLoginOaUser(String cycleId) {
-        List<SysUsers> sysUserList = sysUsersService.selectFailureList(LONG_TIME_NO_LOGIN_DAYS);
+        List<SysUsers> sysUserList = sysUsersService.selectLongTimeNoLoginByOa(LONG_TIME_NO_LOGIN_DAYS);
 
         if (sysUserList.isEmpty()) {
             log.info(">>>>>>>>长期未登录工号:无");
@@ -241,11 +241,11 @@ public class AccountManagerResignEarlyWarningJob {
             return;
         }
         try {
-            SysDept dept = sysDeptService.selectDeptById(sysUser.getOrgId());
-            if (dept == null || dept.getAreaCode() == null) {
+            OldSysOrgDo org = oldSysOrgMapper.selectById(sysUser.getOrgId());
+            if (org == null || org.getAreaId() == null) {
                 return;
             }
-            SysAreaVo area = sysAreaService.queryById(Long.parseLong(dept.getAreaCode()));
+            SysAreaVo area = sysAreaService.queryById(org.getAreaId().longValue());
             if (area == null) {
                 return;
             }

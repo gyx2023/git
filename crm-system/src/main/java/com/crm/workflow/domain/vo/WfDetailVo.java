@@ -38,6 +38,11 @@ public class WfDetailVo {
     private WfViewerVo flowViewer;
 
     /**
+     * 业务上下文（订单详情、商机详情等）
+     */
+    private WfBusinessContext businessContext;
+
+    /**
      * 是否存在任务表单信息
      * @return true:存在；false:不存在
      */

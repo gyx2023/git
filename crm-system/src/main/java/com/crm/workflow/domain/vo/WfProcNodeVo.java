@@ -3,8 +3,6 @@ package com.crm.workflow.domain.vo;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import org.flowable.engine.task.Comment;
-
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
@@ -53,7 +51,7 @@ public class WfProcNodeVo implements Serializable {
     /**
      * 任务意见
      */
-    private List<Comment> commentList;
+    private List<WfCommentVo> commentList;
     /**
      * 创建时间
      */

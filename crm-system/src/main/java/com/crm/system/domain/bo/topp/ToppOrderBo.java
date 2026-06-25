@@ -285,5 +285,10 @@ public class ToppOrderBo extends BaseEntity {
     @NotBlank(message = "三方稽核原因不能为空", groups = { AddGroup.class, EditGroup.class })
     private String thirdCheckResult;
 
+    /**
+     * 流程引擎来源：ACTIVITI/FLOWABLE
+     */
+    private String processEngine;
+
 
 }
