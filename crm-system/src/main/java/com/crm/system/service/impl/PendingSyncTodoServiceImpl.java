@@ -5,6 +5,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
+import com.crm.system.client.unibss.UniBssApiClient;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.domain.dao.SysUsers;
@@ -106,7 +108,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
             // 构建请求体
             Map<String, Object> dataMap = new HashMap<>();
-            dataMap.put("UNI_BSS_HEAD", this.getHead());
+            dataMap.put("UNI_BSS_HEAD", this.buildHead());
             dataMap.put("UNI_BSS_BODY", this.getBody());
 
             String jsonString = JSON.toJSONString(dataMap);
@@ -148,21 +150,11 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         }
     }
 
-    /**
-     * 设置头部节点
-     */
-    private Map<String, Object> getHead() {
-        Map<String, Object> head = new HashMap<>();
-        String appId = sysParamService.findValueByCode("OPP_SYNC_APPID");
-        String appKey = sysParamService.findValueByCode("OPP_SYNC_APPKEY");
-        head.put("APP_ID", appId);
-        head.put("key", appKey);
-        // 构建签名参数（对应旧框架 HaoKaoSignUtil.buildAppParams）
-        head.put("sign", "");
-        head.put("timestamp", DateUtils.parseDateToStr("yyyyMMddHHmmss", new Date()));
-        head.put("nonce", UUID.randomUUID().toString().replaceAll("-", "").substring(0, 16));
-        head.put("RESERVED", new ArrayList<>());
-        return head;
+    private JSONObject buildHead() {
+        Map<String, String> params = sysParamService.findValueMapsByType("oppSyncGroupParam");
+        return new JSONObject(UniBssApiClient.buildHead(
+            params.getOrDefault("appId", ""),
+            params.getOrDefault("appKey", "")));
     }
 
     /**
@@ -185,7 +177,12 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      */
     private Map<String, Object> getTcpCont() {
         Map<String, Object> tcpCont = new HashMap<>();
-        tcpCont.put("APP_KEY", sysParamService.findValueByCode("OPP_SYNC_APPID"));
+        SysParamDo sysParamDo = sysParamService.findValueByTypeCode("oppSyncGroupParam","appId");
+        if(sysParamDo == null){
+            log.error("未配置appId");
+            return null;
+        }
+        tcpCont.put("APP_KEY", sysParamDo.getValue());
         return tcpCont;
     }
 

@@ -46,4 +46,16 @@ public class SysParamServiceImpl implements ISysParamService {
         SysParamDo param = findByCode(code);
         return param != null ? param.getValue() : null;
     }
+
+    @Override
+    public SysParamDo findValueByTypeCode(String type, String code){
+        List<SysParamDo> list = sysParamMapper.selectList(
+            new LambdaQueryWrapper<SysParamDo>()
+                .eq(SysParamDo::getType, type)
+                .eq(SysParamDo::getCode, code));
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        return list.get(0);
+    }
 }

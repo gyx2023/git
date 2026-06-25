@@ -5,8 +5,8 @@ import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.common.utils.HaoKaoSignUtil;
 import com.crm.common.utils.StringUtils;
+import com.crm.system.client.unibss.UniBssApiClient;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.sys.SysCode;
@@ -191,14 +191,11 @@ public class OrderSyncGroupJob {
     /**
      * 构建请求头
      */
-    private JSONObject buildHead() throws UnsupportedEncodingException, NoSuchAlgorithmException {
+    private JSONObject buildHead() {
         Map<String, String> params = sysParamService.findValueMapsByType("oppSyncGroupParam");
-        JSONObject head = new JSONObject();
-        head.put("APP_ID", params.getOrDefault("appId", ""));
-        head.put("key", params.getOrDefault("appKey", ""));
-        HaoKaoSignUtil.buildAppParams(head);
-        head.put("RESERVED", new ArrayList<>());
-        return head;
+        return new JSONObject(UniBssApiClient.buildHead(
+                params.getOrDefault("appId", ""),
+                params.getOrDefault("appKey", "")));
     }
 
     /**
@@ -388,11 +385,7 @@ public class OrderSyncGroupJob {
     private void sendInterface(String url, JSONObject body) {
         SysLog sysLog = new SysLog();
         JSONObject sendJson = new JSONObject();
-        try {
-            sendJson.put("UNI_BSS_HEAD", buildHead());
-        } catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
-            log.error("【订单同步集团任务】构建请求头异常", e);
-        }
+        sendJson.put("UNI_BSS_HEAD", buildHead());
         sendJson.put("UNI_BSS_BODY", body);
 
         String jsonStr = sendJson.toString();
