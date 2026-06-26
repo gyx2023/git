@@ -15,7 +15,7 @@ public interface VisitAppointmentQueryMapper {
                                                          @Param("endTime") String endTime);
 
     VisitRecordDo selectLastVisitRecord(@Param("customerId") String customerId,
-                                        @Param("userId") String userId);
+                                        @Param("oaAccount") String oaAccount);
 
     Map<String, Object> selectCustomerInfo(@Param("customerId") String customerId);
 }

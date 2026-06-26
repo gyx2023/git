@@ -66,6 +66,12 @@ public class OssClient {
                 // minio 使用https限制使用域名访问 需要此配置 站点填域名
                 build.enablePathStyleAccess();
             }
+            // 兼容老版本：对于联通云等云服务商，需要指定S3SignerType签名算法
+            if (StringUtils.containsAny(properties.getEndpoint(), OssConstant.CUCLOUD_SERVICE)
+                || StringUtils.containsAny(configKey, OssConstant.CUCLOUD_SERVICE)
+            ) {
+                clientConfig.withSignerOverride("S3SignerType");
+            }
             this.client = build.build();
 
             createBucket();

@@ -127,7 +127,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             try {
                 // 2. 查拜访信息 (slave_2)
                 VisitRecordDo visitRecord = visitAppointmentQueryMapper
-                        .selectLastVisitRecord(customerId, userId);
+                        .selectLastVisitRecord(customerId, appt.getCreateUser());
 
                 // 3. 查自然→实体客户映射 (slave_1)
                 List<CustNecRelationDo> necRelations = custNecRelationMapper
