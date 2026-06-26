@@ -19,4 +19,6 @@ public class VisitAppointmentDo implements Serializable {
     private String userId;
 
     private String createUser;
+
+    private String eparchyCode;
 }

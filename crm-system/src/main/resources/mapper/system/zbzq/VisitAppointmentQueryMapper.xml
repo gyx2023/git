@@ -9,7 +9,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                a.CUSTOMER_ID     as customerId,
                a.CUSTOM_NAME     as customName,
                a.user_id         as userId,
-               a.CREATE_USER     as createUser
+               a.EXECUTE_USER_CODE as createUser,
+               a.EPARCHY_CODE    as eparchyCode
         from hj_jkcust_tf_f_cust_visit_appointment a
         left join hj_jkcust_tf_f_cust_visit_record b on a.APPOINTMENT_ID = b.APPOINTMENT_ID
         where a.PROVINCE_CODE = '36'
