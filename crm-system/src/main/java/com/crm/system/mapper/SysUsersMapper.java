@@ -32,6 +32,18 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
     List<SysUsers> selectFailureList(@Param("failureDays") Integer failureDays);
 
     /**
+     * 查询长期未登录用户（按老框架逻辑：LEFT JOIN ON条件中过滤近期登录，WHERE中判断无登录记录）
+     *
+     * @param failureDays 超时时长
+     * @return 长期未登录用户列表
+     */
+    @Select("SELECT a.* FROM sys_user a " +
+        "LEFT JOIN sys_login_log b ON a.id_ = b.user_id " +
+        "  AND b.login_time > DATE_SUB(CURDATE(), INTERVAL #{failureDays} DAY) " +
+        "WHERE a.oa_account IS NOT NULL AND a.oa_account != '' AND b.user_id IS NULL")
+    List<SysUsers> selectLongTimeNoLoginByOa(@Param("failureDays") Integer failureDays);
+
+    /**
      * 根据渠道总部编码查询单个用户
      * @param channelHqCode 渠道总部编码
      * @return 单个用户对象，未查询到则返回 null

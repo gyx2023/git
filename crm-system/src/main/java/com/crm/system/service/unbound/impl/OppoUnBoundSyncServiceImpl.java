@@ -27,7 +27,7 @@ import com.crm.system.service.tcomm.TcommTaskService;
 import com.crm.system.service.topp.*;
 import com.crm.system.service.unbound.OppoUnBoundSyncService;
 import com.crm.system.utils.Constants;
-import com.crm.system.utils.HaoKaoSignUtil;
+import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.utils.SSLClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -121,13 +121,9 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
      * @throws UnsupportedEncodingException
      * @throws NoSuchAlgorithmException
      */
-    private Map getHead(Map<String, String> map) throws UnsupportedEncodingException, NoSuchAlgorithmException {
-        Map<String, Object> UNI_BSS_HEAD = new HashMap<String, Object>();//报文头（放置系统参数）
-        UNI_BSS_HEAD.put("APP_ID", MapUtil.getStr(map, "appId"));
-        UNI_BSS_HEAD.put("key", MapUtil.getStr(map, "appKey"));
-        HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
-        UNI_BSS_HEAD.put("RESERVED", new ArrayList<Object>());
-        return UNI_BSS_HEAD;
+    private Map<String, Object> getHead(Map<String, String> map) {
+        return UniBssApiClient.buildHead(
+                MapUtil.getStr(map, "appId"), MapUtil.getStr(map, "appKey"));
     }
 
 

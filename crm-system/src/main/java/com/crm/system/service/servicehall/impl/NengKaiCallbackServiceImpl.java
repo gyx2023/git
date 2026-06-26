@@ -5,7 +5,7 @@ import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.service.servicehall.INengKaiCallbackService;
-import com.crm.system.utils.HaoKaoSignUtil;
+import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -51,10 +51,7 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             String sequenceId = getCode(scene);
             String nlpt_wm_serial = "0" + "37" + today + sequenceId;
 
-            Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
-            UNI_BSS_HEAD.put("APP_ID", APP_ID);
-            UNI_BSS_HEAD.put("key", APP_SECRET);
-            HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
+            Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(APP_ID, APP_SECRET);
 
             Map<String, Object> UNI_BSS_BODY = new HashMap<>();
             Map<String, Object> WORKSHEETS_COMPLETE_REQ = new HashMap<>();

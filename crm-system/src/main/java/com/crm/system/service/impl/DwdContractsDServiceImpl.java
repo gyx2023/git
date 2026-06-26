@@ -21,7 +21,7 @@ import com.crm.system.domain.vo.DwdContractsDVo;
 import com.crm.system.mapper.DwdContractsDMapper;
 import com.crm.system.service.IDwdContractsDService;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.HaoKaoSignUtil;
+import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.utils.SSLClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -168,11 +168,8 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
         ContractEformRespVo eform = new ContractEformRespVo();
         Map dataMap = new HashMap();
         try {
-            Map<String, Object> UNI_BSS_HEAD = new HashMap<String, Object>();//报文头（放置系统参数）
-            UNI_BSS_HEAD.put("APP_ID", MapUtil.getStr(params, "appId"));
-            UNI_BSS_HEAD.put("key", MapUtil.getStr(params, "appKey"));
-            HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
-            UNI_BSS_HEAD.put("RESERVED", new ArrayList<Object>());
+            Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(
+                    MapUtil.getStr(params, "appId"), MapUtil.getStr(params, "appKey"));
             dataMap.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
             //
             Map<String, Object> UNI_BSS_BODY = new HashMap<String, Object>();//报文体（放置系统参数）

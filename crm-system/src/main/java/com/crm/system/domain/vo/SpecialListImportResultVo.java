@@ -18,13 +18,13 @@ public class SpecialListImportResultVo extends SpecialListImportVo {
     /**
      * 处理结果（成功/失败）
      */
-    @ExcelProperty(index = 6, value = "处理结果")
+    @ExcelProperty(index = 5, value = "处理结果")
     private String result;
 
     /**
      * 错误信息
      */
-    @ExcelProperty(index = 7, value = "错误信息")
+    @ExcelProperty(index = 6, value = "错误信息")
     @ColumnWidth(50)
     private String errorMsg;
 

@@ -63,7 +63,6 @@ public class SpecialListController extends BaseController {
     /**
      * 查询特殊名单列表
      */
-    @SaCheckPermission("system:specialList:list")
     @GetMapping("/list")
     public TableDataInfo<SpecialListVo> list(SpecialListBo bo, PageQuery pageQuery) {
         return specialListService.queryPageList(bo, pageQuery);
@@ -108,18 +107,7 @@ public class SpecialListController extends BaseController {
         return toAjax(specialListService.deleteWithValidByIds(Arrays.asList(ids)));
     }
 
-    /**
-     * 获取场景编码下拉选项
-     */
-    @GetMapping("/sceneCodeOptions")
-    public R<List<String>> sceneCodeOptions() {
-        return R.ok(specialListService.sceneCodeOptions());
-    }
 
-    /**
-     * 下载导入模板
-     */
-    @SaCheckPermission("system:specialList:import")
     @GetMapping("/downloadImportTemplate")
     public void downloadImportTemplate(HttpServletResponse response) {
         try {
@@ -128,17 +116,15 @@ public class SpecialListController extends BaseController {
             response.setCharacterEncoding("utf-8");
 
             List<List<String>> head = new ArrayList<>();
-            head.add(Arrays.asList("场景编码"));
-            head.add(Arrays.asList("目标类型"));
-            head.add(Arrays.asList("目标值"));
+            head.add(Arrays.asList("*场景名称"));
+            head.add(Arrays.asList("*特殊名单值"));
             head.add(Arrays.asList("生效时间"));
             head.add(Arrays.asList("失效时间"));
-            head.add(Arrays.asList("原因"));
+            head.add(Arrays.asList("备注"));
 
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream())
                     .head(head)
-                    .registerWriteHandler(new ExcelDropdownHandler(0, "special_list_scene_code"))
-                    .registerWriteHandler(new ExcelDropdownHandler(1, "special_list_target_type"))
+                    .registerWriteHandler(new ExcelDropdownHandler(0, "yunxi_type"))
                     .build();
 
             WriteSheet writeSheet = EasyExcel.writerSheet("导入模板").build();
@@ -153,7 +139,6 @@ public class SpecialListController extends BaseController {
     /**
      * 下载批量编辑模板
      */
-    @SaCheckPermission("system:specialList:edit")
     @GetMapping("/downloadBatchEditTemplate")
     public void downloadBatchEditTemplate(HttpServletResponse response) {
         try {
@@ -162,19 +147,17 @@ public class SpecialListController extends BaseController {
             response.setCharacterEncoding("utf-8");
 
             List<List<String>> head = new ArrayList<>();
-            head.add(Arrays.asList("场景编码"));
-            head.add(Arrays.asList("目标类型"));
-            head.add(Arrays.asList("目标值"));
-            head.add(Arrays.asList("状态"));
+            head.add(Arrays.asList("*场景名称"));
+            head.add(Arrays.asList("*特殊名单值"));
+            head.add(Arrays.asList("*状态"));
             head.add(Arrays.asList("生效时间"));
             head.add(Arrays.asList("失效时间"));
-            head.add(Arrays.asList("原因"));
+            head.add(Arrays.asList("备注"));
 
             ExcelWriter excelWriter = EasyExcel.write(response.getOutputStream())
                     .head(head)
-                    .registerWriteHandler(new ExcelDropdownHandler(0, "special_list_scene_code"))
-                    .registerWriteHandler(new ExcelDropdownHandler(1, "special_list_target_type"))
-                    .registerWriteHandler(new ExcelDropdownHandler(3, "special_list_status"))
+                    .registerWriteHandler(new ExcelDropdownHandler(0, "yunxi_type"))
+                    .registerWriteHandler(new ExcelDropdownHandler(2, "special_list_status"))
                     .build();
 
             WriteSheet writeSheet = EasyExcel.writerSheet("批量编辑模板").build();

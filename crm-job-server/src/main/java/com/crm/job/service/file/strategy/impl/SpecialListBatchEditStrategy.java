@@ -82,7 +82,7 @@ public class SpecialListBatchEditStrategy extends AbstractImportStrategy {
                 .doReadSync();
 
         // 处理数据并生成结果列表
-        List<SpecialListImportResultVo> resultList = specialListImportListener.processBatchEditData(dataList);
+        List<SpecialListImportResultVo> resultList = specialListImportListener.processBatchEditData(dataList, task.getCreateUserId());
 
         // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
         String prefix = "special_list_batch_edit_" + System.currentTimeMillis();

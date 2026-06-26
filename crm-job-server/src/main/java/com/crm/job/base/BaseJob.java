@@ -4,7 +4,6 @@ import com.crm.system.service.sys.ISysParamService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Map;
 

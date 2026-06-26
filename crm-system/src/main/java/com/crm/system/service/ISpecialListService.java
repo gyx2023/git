@@ -54,19 +54,12 @@ public interface ISpecialListService {
      * 检查是否重复
      *
      * @param sceneCode   场景编码
-     * @param targetType  目标类型
      * @param targetValue 目标值
      * @param excludeId   排除的主键ID
      * @return true=重复
      */
-    boolean checkDuplicate(String sceneCode, String targetType, String targetValue, Integer excludeId);
+    boolean checkDuplicate(String sceneCode, String targetValue, Integer excludeId);
 
-    /**
-     * 查询所有场景编码选项
-     *
-     * @return 场景编码列表
-     */
-    List<String> sceneCodeOptions();
 
     /**
      * 批量插入

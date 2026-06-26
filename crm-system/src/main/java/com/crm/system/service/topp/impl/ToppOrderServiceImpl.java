@@ -42,6 +42,15 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     }
 
     /**
+     * 按流程实例ID查询
+     */
+    @Override
+    public ToppOrderVo queryByPiId(String piId) {
+        return baseMapper.selectVoOne(new LambdaQueryWrapper<ToppOrder>()
+            .eq(ToppOrder::getPiId, piId));
+    }
+
+    /**
      * 查询【请填写功能名称】列表
      */
     @Override

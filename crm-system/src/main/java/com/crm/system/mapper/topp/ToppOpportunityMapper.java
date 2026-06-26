@@ -27,6 +27,19 @@ public interface ToppOpportunityMapper extends BaseMapperPlus<ToppOpportunityMap
     @InterceptorIgnore(dataPermission = "true")
     List<SignOppoFileExportDTO> selectToppOpportunity();
 
+    /**
+     * 查询签约时间在指定日期范围内的有效商机（用于商机关闭提醒Job）
+     */
+    @Select("SELECT op.* FROM topp_opportunity op " +
+            "WHERE (op.sign_time = #{currentDateStr} OR op.sign_time = #{targetDateStr}) " +
+            "  AND op.is_valid = 1 " +
+            "  AND op.opp_phase != 'new_create' " +
+            "  AND NOT EXISTS (SELECT 1 FROM topp_contract c WHERE c.project_id = op.id_) " +
+            "  AND NOT EXISTS (SELECT 1 FROM topp_contract_eform ce WHERE ce.project_id = op.id_) " +
+            "ORDER BY op.sign_time ASC")
+    List<ToppOpportunityDo> selectListBySignTimeRange(@Param("currentDateStr") String currentDateStr,
+                                                      @Param("targetDateStr") String targetDateStr);
+
     @Select("SELECT oppo_state_life_cycle(#{oppId})")
     String callGetOppoState(@Param("oppId") Long oppId);
 

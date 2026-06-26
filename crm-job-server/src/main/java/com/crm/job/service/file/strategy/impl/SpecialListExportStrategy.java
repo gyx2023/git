@@ -13,6 +13,7 @@ import com.crm.system.domain.dao.FileAsyncTaskDo;
 import com.crm.system.domain.vo.SpecialListVo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.service.ISpecialListService;
+import com.crm.system.service.sys.ISysDictTypeService;
 import com.crm.system.service.sys.ISysOssService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 特殊名单导出策略
@@ -34,6 +36,9 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
 
     @Resource
     private ISpecialListService specialListService;
+
+    @Resource
+    private ISysDictTypeService dictTypeService;
 
     @Resource
     private ISysOssService iSysOssService;
@@ -90,7 +95,7 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
             task.setTotalRows(totalRows);
             task.setSuccessRows(totalRows);
             task.setResultFileName(originalFileName);
-            task.setResultFileUrl(upload.getUrl());
+            task.setFileUrl(upload.getUrl());
             task.setRemark("特殊名单导出成功");
             return true;
         } catch (Exception e) {
@@ -111,6 +116,12 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
     private long exportToExcelStream(SpecialListBo queryParams, File outputFile) throws Exception {
         long totalRows = 0;
 
+        // 构建字典 value -> label 映射
+        Map<String, String> sceneValueLabelMap = dictTypeService.selectDictDataByType("yunxi_type").stream()
+            .collect(java.util.stream.Collectors.toMap(d -> d.getDictValue(), d -> d.getDictLabel(), (a, b) -> b));
+        Map<String, String> statusValueLabelMap = dictTypeService.selectDictDataByType("special_list_status").stream()
+            .collect(java.util.stream.Collectors.toMap(d -> d.getDictValue(), d -> d.getDictLabel(), (a, b) -> b));
+
         try (ExcelWriter excelWriter = EasyExcel.write(outputFile, SpecialListVo.class)
                 .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
                 .build()) {
@@ -129,12 +140,26 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
                 List<SpecialListVo> batchData = result.getRows();
 
                 if (batchData == null || batchData.isEmpty()) {
-                    hasMoreData = false;
                     break;
+                }
+
+                // 将字典value转换为label
+                for (SpecialListVo vo : batchData) {
+                    if (vo.getSceneCode() != null) {
+                        vo.setSceneCode(sceneValueLabelMap.getOrDefault(vo.getSceneCode(), vo.getSceneCode()));
+                    }
+                    if (vo.getStatus() != null) {
+                        vo.setStatus(statusValueLabelMap.getOrDefault(vo.getStatus(), vo.getStatus()));
+                    }
                 }
 
                 excelWriter.write(batchData, writeSheet);
                 totalRows += batchData.size();
+
+                // 返回数量小于分页大小，说明已是最后一页
+                if (batchData.size() < pageSize) {
+                    break;
+                }
                 currentPage++;
             }
         }

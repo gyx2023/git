@@ -33,11 +33,12 @@ public class BaikeClickStatController extends BaseController {
 
     @GetMapping("/list")
     @SaCheckPermission("statistics:baikeClickStat:list")
+    @Log(title = "百科点击量统计")
     public TableDataInfo<BaikeClickStatVO> list(BaikeClickStatDTO dto) {
         return baikeClickStatService.queryList(dto);
     }
 
-    @Log(title = "百科点击量统计", businessType = BusinessType.EXPORT)
+    @Log(title = "百科点击量统计导出", businessType = BusinessType.EXPORT)
     @SaCheckPermission("statistics:baikeClickStat:export")
     @PostMapping("/export")
     public void export(BaikeClickStatDTO dto, HttpServletResponse response) {

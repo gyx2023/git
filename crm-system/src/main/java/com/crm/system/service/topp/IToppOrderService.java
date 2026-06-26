@@ -23,6 +23,11 @@ public interface IToppOrderService {
     ToppOrderVo queryById(Long id);
 
     /**
+     * 按流程实例ID查询
+     */
+    ToppOrderVo queryByPiId(String piId);
+
+    /**
      * 查询【请填写功能名称】列表
      */
     TableDataInfo<ToppOrderVo> queryPageList(ToppOrderBo bo, PageQuery pageQuery);

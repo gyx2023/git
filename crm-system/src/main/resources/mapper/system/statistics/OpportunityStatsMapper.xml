@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.statistics.OpportunityStatsMapper">
+
+    <resultMap id="OpportunityStatsResultMap" type="com.crm.system.domain.dto.OpportunityStatsDTO">
+        <result property="orgId" column="orgId"/>
+        <result property="orgName" column="orgName"/>
+        <result property="opportunityCount" column="opportunityCount"/>
+        <result property="newOpportunityCount" column="newOpportunityCount"/>
+        <result property="signedOpportunityCount" column="signedOpportunityCount"/>
+        <result property="newSignedOpportunityCount" column="newSignedOpportunityCount"/>
+        <result property="supportOpportunityCount" column="supportOpportunityCount"/>
+        <result property="newSupportOpportunityCount" column="newSupportOpportunityCount"/>
+        <result property="contractCount" column="contractCount"/>
+        <result property="newContractCount" column="newContractCount"/>
+        <result property="contractAmount" column="contractAmount"/>
+        <result property="newContractAmount" column="newContractAmount"/>
+        <result property="expectAmount" column="expectAmount"/>
+    </resultMap>
+
+    <!-- 查询商机统计数据（优化版：单次JOIN+GROUP BY，避免相关子查询） -->
+    <select id="selectStatsByOrg" resultMap="OpportunityStatsResultMap">
+        <!-- 第一步：递归CTE获取所有需要统计的组织（当前组织+直接子组织） -->
+        WITH RECURSIVE org_tree AS (
+            <!-- 当前组织本身 -->
+            SELECT id_, name_, code_, parent_, 0 AS level_
+            FROM sys_org
+            WHERE id_ = #{orgId}
+
+            UNION ALL
+
+            <!-- 直接子组织（只查一层） -->
+            SELECT o.id_, o.name_, o.code_, o.parent_, 1 AS level_
+            FROM sys_org o
+            INNER JOIN org_tree ot ON o.parent_ = ot.id_
+            WHERE ot.level_ = 0  -- 限制只查直接子组织
+        ),
+
+        <!-- 第二步：为每个目标组织构建其统计范围（该组织及其所有下级） -->
+        org_scope AS (
+            SELECT
+                target_org.id_ AS target_org_id,
+                target_org.name_ AS target_org_name,
+                descendant.id_ AS descendant_org_id
+            FROM org_tree target_org
+            INNER JOIN sys_org descendant ON descendant.code_ LIKE CONCAT(target_org.code_, '%')
+        )
+
+        <!-- 第三步：基于统计范围进行单次聚合 -->
+        SELECT
+            os.target_org_id AS orgId,
+            os.target_org_name AS orgName,
+
+            <!-- 商机数 -->
+            COUNT(DISTINCT CASE WHEN t.id_ IS NOT NULL AND t.audit_time IS NOT NULL THEN t.id_ END) AS opportunityCount,
+
+            <!-- 时间段新增商机 -->
+            <choose>
+                <when test="leftTime == null or leftTime == '' or rightTime == null or rightTime == ''">
+                    COUNT(DISTINCT CASE WHEN t.id_ IS NOT NULL AND t.audit_time IS NOT NULL THEN t.id_ END) AS newOpportunityCount,
+                </when>
+                <otherwise>
+                    COUNT(DISTINCT CASE WHEN t.id_ IS NOT NULL AND t.audit_time IS NOT NULL
+                        AND DATE_FORMAT(t.audit_time, '%Y%m%d') BETWEEN #{leftTime} AND #{rightTime}
+                        THEN t.id_ END) AS newOpportunityCount,
+                </otherwise>
+            </choose>
+
+            <!-- 签约商机数 -->
+            COUNT(DISTINCT CASE WHEN c.project_id IS NOT NULL AND c.audit_time IS NOT NULL THEN c.project_id END) AS signedOpportunityCount,
+
+            <!-- 时间段新增签约商机 -->
+            <choose>
+                <when test="leftTime == null or leftTime == '' or rightTime == null or rightTime == ''">
+                    COUNT(DISTINCT CASE WHEN c.project_id IS NOT NULL AND c.audit_time IS NOT NULL THEN c.project_id END) AS newSignedOpportunityCount,
+                </when>
+                <otherwise>
+                    COUNT(DISTINCT CASE WHEN c.project_id IS NOT NULL AND c.audit_time IS NOT NULL
+                        AND DATE_FORMAT(c.audit_time, '%Y%m%d') BETWEEN #{leftTime} AND #{rightTime}
+                        THEN c.project_id END) AS newSignedOpportunityCount,
+                </otherwise>
+            </choose>
+
+            <!-- 支撑商机数 -->
+            SUM(CASE WHEN t.designer IS NOT NULL THEN 1 ELSE 0 END) AS supportOpportunityCount,
+
+            <!-- 时间段支撑商机数 -->
+            <choose>
+                <when test="leftTime == null or leftTime == '' or rightTime == null or rightTime == ''">
+                    SUM(CASE WHEN t.designer IS NOT NULL THEN 1 ELSE 0 END) AS newSupportOpportunityCount,
+                </when>
+                <otherwise>
+                    SUM(CASE WHEN t.designer IS NOT NULL
+                        AND DATE_FORMAT(t.designer_time, '%Y%m%d') BETWEEN #{leftTime} AND #{rightTime}
+                        THEN 1 ELSE 0 END) AS newSupportOpportunityCount,
+                </otherwise>
+            </choose>
+
+            <!-- 签订合同数 -->
+            COUNT(DISTINCT CASE WHEN c.id_ IS NOT NULL AND c.audit_time IS NOT NULL THEN c.id_ END) AS contractCount,
+
+            <!-- 时间段签订合同数 -->
+            <choose>
+                <when test="leftTime == null or leftTime == '' or rightTime == null or rightTime == ''">
+                    COUNT(DISTINCT CASE WHEN c.id_ IS NOT NULL AND c.audit_time IS NOT NULL THEN c.id_ END) AS newContractCount,
+                </when>
+                <otherwise>
+                    COUNT(DISTINCT CASE WHEN c.id_ IS NOT NULL AND c.audit_time IS NOT NULL
+                        AND DATE_FORMAT(c.audit_time, '%Y%m%d') BETWEEN #{leftTime} AND #{rightTime}
+                        THEN c.id_ END) AS newContractCount,
+                </otherwise>
+            </choose>
+
+            <!-- 签订合同金额(万元) -->
+            IFNULL(SUM(CASE WHEN c.total_money IS NOT NULL THEN ROUND(c.total_money, 0) ELSE 0 END), 0) AS contractAmount,
+
+            <!-- 时间段签订合同金额(万元) -->
+            <choose>
+                <when test="leftTime == null or leftTime == '' or rightTime == null or rightTime == ''">
+                    IFNULL(SUM(CASE WHEN c.total_money IS NOT NULL THEN ROUND(c.total_money, 0) ELSE 0 END), 0) AS newContractAmount,
+                </when>
+                <otherwise>
+                    IFNULL(SUM(CASE WHEN c.total_money IS NOT NULL
+                        AND DATE_FORMAT(c.audit_time, '%Y%m%d') BETWEEN #{leftTime} AND #{rightTime}
+                        THEN ROUND(c.total_money, 0) ELSE 0 END), 0) AS newContractAmount,
+                </otherwise>
+            </choose>
+
+            <!-- 商机金额(万元) -->
+            IFNULL(SUM(t.expect_contract_money), 0) AS expectAmount
+
+        FROM org_scope os
+        LEFT JOIN sys_user u ON u.org_id = os.descendant_org_id
+        LEFT JOIN topp_opportunity_base_view t ON t.cust_manager_id = u.id_
+            AND t.opp_source <![CDATA[ <> ]]> 'kssj'
+            AND t.audit_status NOT IN ('opp_notpass', 'opp_new')
+            <if test="types != null and types.size() > 0">
+                AND t.opp_type IN
+                <foreach collection="types" item="type" open="(" separator="," close=")">
+                    #{type}
+                </foreach>
+            </if>
+        LEFT JOIN topp_contract_base_view c ON c.project_id = t.id_ AND c.audit_status = 2
+        GROUP BY os.target_org_id, os.target_org_name
+        ORDER BY os.target_org_id ASC
+    </select>
+
+</mapper>

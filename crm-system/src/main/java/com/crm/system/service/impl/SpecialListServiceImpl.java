@@ -12,14 +12,18 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.exception.ServiceException;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.bo.SpecialListBo;
 import com.crm.system.domain.dao.SpecialListDo;
 import com.crm.system.domain.vo.SpecialListVo;
 import com.crm.system.mapper.SpecialListMapper;
 import com.crm.system.mapper.sys.SysUserMapper;
 import com.crm.system.service.ISpecialListService;
+import com.crm.system.service.sys.ISysDataScopeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +43,9 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
 
     @Resource
     private SysUserMapper sysUserMapper;
+
+    @Resource
+    private ISysDataScopeService sysDataScopeService;
 
     /**
      * 分页查询特殊名单列表
@@ -95,12 +102,15 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
      */
     @Override
     public Boolean insertByBo(SpecialListBo bo) {
-        if (checkDuplicate(bo.getSceneCode(), bo.getTargetType(), bo.getTargetValue(), null)) {
+        if (checkDuplicate(bo.getSceneCode(), bo.getTargetValue(), null)) {
             throw new ServiceException("记录已存在");
         }
         SpecialListDo addDo = BeanUtil.toBean(bo, SpecialListDo.class);
         Date now = new Date();
+        Integer userId = LoginHelper.getUserId().intValue();
+        addDo.setCreateBy(userId);
         addDo.setCreateTime(now);
+        addDo.setUpdateBy(userId);
         addDo.setUpdateTime(now);
         addDo.setStatus("1");
         return baseMapper.insert(addDo) > 0;
@@ -122,6 +132,7 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
         uw.set(bo.getEffectiveTime() != null, "effective_time", bo.getEffectiveTime());
         uw.set(bo.getExpireTime() != null, "expire_time", bo.getExpireTime());
         uw.set(StringUtils.isNotBlank(bo.getReason()), "reason", bo.getReason());
+        uw.set("update_by", LoginHelper.getUserId().intValue());
         uw.set("update_time", new Date());
         return baseMapper.update(null, uw) > 0;
     }
@@ -138,7 +149,7 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
             SpecialListDo existing = baseMapper.selectById(id);
             if (existing != null && !"0".equals(existing.getStatus())) {
                 UpdateWrapper<SpecialListDo> uw = Wrappers.update();
-                uw.eq("id", id).set("status", "0").set("update_time", new Date());
+                uw.eq("id", id).set("status", "0").set("update_by", LoginHelper.getUserId().intValue()).set("update_time", new Date());
                 baseMapper.update(null, uw);
             }
         }
@@ -149,28 +160,14 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
      * 检查重复
      */
     @Override
-    public boolean checkDuplicate(String sceneCode, String targetType, String targetValue, Integer excludeId) {
+    public boolean checkDuplicate(String sceneCode, String targetValue, Integer excludeId) {
         LambdaQueryWrapper<SpecialListDo> lqw = Wrappers.lambdaQuery();
         lqw.eq(SpecialListDo::getSceneCode, sceneCode)
-            .eq(SpecialListDo::getTargetType, targetType)
             .eq(SpecialListDo::getTargetValue, targetValue);
         if (excludeId != null) {
             lqw.ne(SpecialListDo::getId, excludeId);
         }
         return baseMapper.selectCount(lqw) > 0;
-    }
-
-    /**
-     * 查询场景编码选项
-     */
-    @Override
-    public List<String> sceneCodeOptions() {
-        List<SpecialListDo> list = baseMapper.selectList(
-            Wrappers.<SpecialListDo>lambdaQuery()
-                .select(SpecialListDo::getSceneCode)
-                .groupBy(SpecialListDo::getSceneCode)
-        );
-        return list.stream().map(SpecialListDo::getSceneCode).collect(Collectors.toList());
     }
 
     /**
@@ -195,7 +192,6 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
     private LambdaQueryWrapper<SpecialListDo> buildQueryWrapper(SpecialListBo bo) {
         LambdaQueryWrapper<SpecialListDo> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getSceneCode()), SpecialListDo::getSceneCode, bo.getSceneCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getTargetType()), SpecialListDo::getTargetType, bo.getTargetType());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SpecialListDo::getStatus, bo.getStatus());
         lqw.like(StringUtils.isNotBlank(bo.getTargetValue()), SpecialListDo::getTargetValue, bo.getTargetValue());
         lqw.ge(bo.getEffectiveTimeStart() != null, SpecialListDo::getEffectiveTime, bo.getEffectiveTimeStart());
@@ -208,7 +204,59 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
             lqw.in(SpecialListDo::getId, bo.getIds());
         }
 
+        // 数据权限：按create_by过滤（省/市/县分级）
+        applyDataScopeFilter(lqw);
+
         return lqw;
+    }
+
+    /**
+     * 应用数据权限过滤：根据当前用户的组织范围，限定可见的记录(create_by在范围内)
+     */
+    private void applyDataScopeFilter(LambdaQueryWrapper<SpecialListDo> lqw) {
+        try {
+            LoginUser loginUser = LoginHelper.getLoginUser();
+            if (loginUser == null) {
+                return;
+            }
+            // 超级管理员看全部
+            if (LoginHelper.isAdmin(loginUser.getUserId())) {
+                return;
+            }
+            Long deptId = loginUser.getDeptId();
+            if (deptId == null) {
+                return;
+            }
+            // 获取当前用户组织及其所有下级组织ID
+            String deptAndChild = sysDataScopeService.getDeptAndChild(deptId);
+            if (StringUtils.isBlank(deptAndChild)) {
+                // 只有本部门，查本部门下的用户
+                QueryWrapper<SysUser> uw = new QueryWrapper<>();
+                uw.eq("dept_id", deptId);
+                uw.select("user_id");
+                List<Object> userIds = sysUserMapper.selectObjs(uw);
+                if (CollUtil.isNotEmpty(userIds)) {
+                    lqw.in(SpecialListDo::getCreateBy, userIds);
+                } else {
+                    // 无用户时仅看自己的
+                    lqw.eq(SpecialListDo::getCreateBy, loginUser.getUserId().intValue());
+                }
+            } else {
+                List<Long> deptIds = Arrays.stream(deptAndChild.split(","))
+                    .map(Long::valueOf).collect(Collectors.toList());
+                QueryWrapper<SysUser> uw = new QueryWrapper<>();
+                uw.in("dept_id", deptIds);
+                uw.select("user_id");
+                List<Object> userIds = sysUserMapper.selectObjs(uw);
+                if (CollUtil.isNotEmpty(userIds)) {
+                    lqw.in(SpecialListDo::getCreateBy, userIds);
+                } else {
+                    lqw.eq(SpecialListDo::getCreateBy, loginUser.getUserId().intValue());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("数据权限过滤异常，跳过", e);
+        }
     }
 
 }

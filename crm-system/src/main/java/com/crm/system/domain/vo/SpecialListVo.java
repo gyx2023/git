@@ -27,19 +27,13 @@ public class SpecialListVo {
     /**
      * 场景编码
      */
-    @ExcelProperty(value = "场景编码")
+    @ExcelProperty(value = "场景名称")
     private String sceneCode;
-
-    /**
-     * 目标类型
-     */
-    @ExcelProperty(value = "目标类型")
-    private String targetType;
 
     /**
      * 目标值
      */
-    @ExcelProperty(value = "目标值")
+    @ExcelProperty(value = "特殊名单值")
     private String targetValue;
 
     /**
@@ -63,7 +57,7 @@ public class SpecialListVo {
     /**
      * 原因
      */
-    @ExcelProperty(value = "原因")
+    @ExcelProperty(value = "备注")
     private String reason;
 
     /**

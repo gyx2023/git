@@ -4,8 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.crm.common.utils.HaoKaoSignUtil;
 import com.crm.common.utils.StringUtils;
+import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.domain.dao.FtpCustBaseInfoNew;
 import com.crm.system.domain.dao.PolicyCenterProduct;
 import com.crm.system.domain.dao.PolicyCenterTask;
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.UnsupportedEncodingException;
+
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -278,13 +278,10 @@ public class PolicyCenterTaskJob {
     /**
      * 设置头部节点
      */
-    private Map<String, Object> setHead() throws NoSuchAlgorithmException, UnsupportedEncodingException {
-        Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
+    private Map<String, Object> setHead() {
+        Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(
+                POLICY_CENTER_GET_TASK_APPID, POLICY_CENTER_GET_TASK_APPKEY);
         Map<String, Object> headMap = new HashMap<>();
-        UNI_BSS_HEAD.put("APP_ID", POLICY_CENTER_GET_TASK_APPID);
-        UNI_BSS_HEAD.put("key", POLICY_CENTER_GET_TASK_APPKEY);
-        HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
-        UNI_BSS_HEAD.put("RESERVED", new ArrayList<>());
         headMap.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
         return headMap;
     }

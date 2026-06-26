@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.accManager.WaringListTableMapper">
+
+    <resultMap type="com.crm.system.domain.dao.accManager.WaringListTable" id="WaringListTableResult">
+        <result property="id" column="id"/>
+        <result property="cycleId" column="cycle_id"/>
+        <result property="oaUserName" column="oa_user_name"/>
+        <result property="fullName" column="full_name"/>
+        <result property="waringType" column="waring_type"/>
+        <result property="state" column="state"/>
+        <result property="areaId" column="area_id"/>
+        <result property="areaName" column="area_name"/>
+        <result property="countyId" column="county_id"/>
+        <result property="countyName" column="county_name"/>
+        <result property="custLevel4Manager" column="cust_level4_manager"/>
+        <result property="custLevel4ManagerCount" column="cust_level4_manager_count"/>
+        <result property="naturalCustManager" column="natural_cust_manager"/>
+        <result property="naturalCustManagerCount" column="natural_cust_manager_count"/>
+        <result property="entityCustManager" column="entity_cust_manager"/>
+        <result property="entityCustManagerCount" column="entity_cust_manager_count"/>
+        <result property="opportunityManager" column="opportunity_manager"/>
+        <result property="opportunityManagerCount" column="opportunity_manager_count"/>
+        <result property="contractManager" column="contract_manager"/>
+        <result property="contractManagerCount" column="contract_manager_count"/>
+        <result property="retentionCustManager" column="retention_cust_manager"/>
+        <result property="retentionCustManagerCount" column="retention_cust_manager_count"/>
+        <result property="contactPerson" column="contact_person"/>
+        <result property="contactPersonCount" column="contact_person_count"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <delete id="deleteByWaringType">
+        DELETE FROM waring_list_table WHERE waring_type = #{waringType}
+    </delete>
+
+</mapper>

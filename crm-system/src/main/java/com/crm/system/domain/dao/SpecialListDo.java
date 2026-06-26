@@ -31,10 +31,6 @@ public class SpecialListDo implements Serializable {
      */
     private String sceneCode;
 
-    /**
-     * 目标类型
-     */
-    private String targetType;
 
     /**
      * 目标值

@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         inner join (select max(RECORD_ID) as RECORD_ID
                     from hj_jkcust_tf_f_cust_visit_record vr
                     where vr.customer_id = #{customerId}
-                      and vr.user_id = #{userId}) vr
+                      and vr.CREATE_USER = #{oaAccount}) vr
             on vr.record_id = a.RECORD_ID
     </select>
 

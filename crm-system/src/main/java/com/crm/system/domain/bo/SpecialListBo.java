@@ -29,11 +29,6 @@ public class SpecialListBo extends BaseEntity {
     private String sceneCode;
 
     /**
-     * 目标类型
-     */
-    private String targetType;
-
-    /**
      * 目标值
      */
     private String targetValue;

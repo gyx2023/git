@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.HxProjectPutMapper">
+
+    <!-- 需求与合同关系 -->
+    <select id="getRemandContract" resultType="java.util.Map">
+        SELECT remand_code, hx.oppo_code, con.contract_no,
+            case when con.audit_time is not null
+                then DATE_FORMAT(con.audit_time,'%Y/%m/%d %H:%i:%s')
+                else DATE_FORMAT(con.create_time,'%Y/%m/%d %H:%i:%s')
+            end remandContract
+        FROM hx_project hx
+            left join topp_opportunity oppo on hx.oppo_id = oppo.id_
+            left join topp_contract con on oppo.id_= con.project_id
+        WHERE oppo.is_valid = 1 and con.is_valid =1 and remand_state &lt;&gt; '需求废弃'
+    </select>
+
+    <!-- 合同信息 -->
+    <select id="getContractInfo" resultType="java.util.Map">
+        select * from (
+            SELECT con.contract_no, con.contract_name,
+                DATE_FORMAT(con.start_date,'%Y/%m/%d') startTime,
+                DATE_FORMAT(con.end_date,'%Y/%m/%d') endTime
+            FROM hx_project hx
+                left join topp_opportunity oppo on hx.oppo_id = oppo.id_
+                left join topp_contract con on oppo.id_= con.project_id
+            WHERE oppo.is_valid = 1 and con.is_valid =1 and remand_state &lt;&gt; '需求废弃'
+        ) conn
+        group by contract_no having startTime = max(startTime)
+    </select>
+
+</mapper>

@@ -82,7 +82,7 @@ public class SpecialListImportStrategy extends AbstractImportStrategy {
                 .doReadSync();
 
         // 处理数据并生成结果列表
-        List<SpecialListImportResultVo> resultList = specialListImportListener.processImportData(dataList);
+        List<SpecialListImportResultVo> resultList = specialListImportListener.processImportData(dataList, task.getCreateUserId());
 
         // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
         String prefix = "special_list_import_" + System.currentTimeMillis();
