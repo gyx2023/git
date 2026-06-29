@@ -384,12 +384,12 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      */
     private String getUrl(Map<String, Object> task,String orderId) {
         Map<String, Object> dealUrl = oldWorkflowQueryService
-            .queryOldHistoricVariable(task.get("taskId").toString(), task.get("taskDefKey") + "_dealUrl");
+            .queryOldHistoricVariable(task.get("id").toString(), task.get("taskDefKey") + "_dealUrl");
         if (dealUrl == null) {
             return BASE_URL + ORDER_INFO_URL + orderId;
         }
-        String dealUrlStr = dealUrl.get("textValue").toString().replace("?", "&");
-        return BASE_URL + dealUrlStr + "&taskId=" + task.get("taskId").toString();
+        String dealUrlStr = dealUrl.get("textValue").toString();
+        return BASE_URL + dealUrlStr + "&taskId=" + task.get("id").toString();
     }
 
     /**
