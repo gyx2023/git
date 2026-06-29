@@ -300,6 +300,7 @@ public class PendingServiceImpl implements IPendingService {
 
     @Override
     public void updateGroupTodoTask(PendingGroupTodo pendingTodo) {
+        pendingTodo.setSendTime(new Date());
         pendingGroupTodoMapper.updateById(pendingTodo);
     }
 }
