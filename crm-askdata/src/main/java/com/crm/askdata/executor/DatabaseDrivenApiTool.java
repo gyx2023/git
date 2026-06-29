@@ -440,11 +440,18 @@ public class DatabaseDrivenApiTool {
             return (Map<String, Object>) obj;
         }
 
-        // 尝试转换为 Map
+        // 数组/列表类型：直接包装为 {"data": [...]}，无需异常降级
+        if (obj instanceof List || obj.getClass().isArray()) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("data", obj);
+            return map;
+        }
+
+        // JsonNode 及其他类型：尝试转换为 Map
         try {
             return objectMapper.convertValue(obj, Map.class);
         } catch (Exception e) {
-            log.warn("Failed to convert to Map", e);
+            log.warn("Failed to convert to Map, wrapping as 'data': {}", e.getMessage());
             Map<String, Object> map = new HashMap<>();
             map.put("data", obj);
             return map;
