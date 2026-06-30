@@ -275,6 +275,15 @@ public class ResultPostProcessorService {
         List<Map<String, Object>> dataRows = null;
         if (output.hasData()) {
             dataRows = output.getData();
+
+            // 2a. 自动剔除合计行：检测并移除数值字段等于其他行总和的行
+            List<Map<String, Object>> filtered = filterSummaryRow(dataRows);
+            if (filtered.size() < dataRows.size()) {
+                log.info("applyProcessing: summary row(s) removed, dataRows={} → filtered={}",
+                    dataRows.size(), filtered.size());
+                dataRows = filtered;
+            }
+
             Map<String, Object> newData = new LinkedHashMap<>();
             newData.put("data", dataRows);
             // 保留 chartConfig
@@ -294,6 +303,102 @@ public class ResultPostProcessorService {
             String evaluatedSummary = evaluateFormulas(output.getSummary(), dataRows);
             result.setContent(evaluatedSummary);
         }
+    }
+
+    /**
+     * 自动剔除合计行
+     * <p>
+     * API 返回的数据中可能混入合计/汇总行（如某行的数值字段等于其他所有行的总和）。
+     * 此方法自动检测并移除这类行，避免公式计算时重复计数。
+     * <p>
+     * 判定规则：
+     * 1. 数据至少 3 行才进行检测（数据太少无法判定）
+     * 2. 找出所有数值字段（所有行都是合法数值的字段）
+     * 3. 对每一行，检查其所有数值字段是否等于其他行同字段之和
+     * 4. 所有数值字段都满足则该行判定为合计行
+     * <p>
+     * 宽松的浮点容差（0.01）避免精度问题导致漏判。
+     *
+     * @param dataRows 原始数据行列表
+     * @return 剔除合计行后的数据行列表
+     */
+    private List<Map<String, Object>> filterSummaryRow(List<Map<String, Object>> dataRows) {
+        if (dataRows == null || dataRows.size() < 3) {
+            return dataRows;
+        }
+
+        // 1. 找出所有数值字段
+        Set<String> numericFields = new HashSet<>();
+        for (String key : dataRows.get(0).keySet()) {
+            boolean allNumeric = true;
+            boolean allSame = true;
+            Double firstVal = null;
+            for (Map<String, Object> row : dataRows) {
+                double v = parseNumeric(row.get(key));
+                if (Double.isNaN(v)) {
+                    allNumeric = false;
+                    break;
+                }
+                if (firstVal == null) {
+                    firstVal = v;
+                } else if (Math.abs(v - firstVal) > 0.001) {
+                    allSame = false;
+                }
+            }
+            // 只有数值字段且不是所有行值相同（如序号列）才纳入检测
+            if (allNumeric && !allSame && firstVal != null) {
+                numericFields.add(key);
+            }
+        }
+
+        if (numericFields.size() < 1) {
+            log.debug("filterSummaryRow: no numeric fields found for summary detection");
+            return dataRows;
+        }
+
+        // 2. 对每行检测是否所有数值字段 ≈ 其他行之和
+        List<Integer> summaryIndices = new ArrayList<>();
+        for (int i = 0; i < dataRows.size(); i++) {
+            Map<String, Object> candidate = dataRows.get(i);
+            boolean allFieldsMatch = true;
+
+            for (String field : numericFields) {
+                double thisValue = parseNumeric(candidate.get(field));
+                double othersSum = 0;
+                for (int j = 0; j < dataRows.size(); j++) {
+                    if (j != i) {
+                        othersSum += parseNumeric(dataRows.get(j).get(field));
+                    }
+                }
+                // 浮点容差 0.01
+                if (Math.abs(thisValue - othersSum) > 0.01) {
+                    allFieldsMatch = false;
+                    break;
+                }
+            }
+
+            if (allFieldsMatch) {
+                summaryIndices.add(i);
+                log.info("filterSummaryRow: detected summary row at index={}, fields={}, values={}",
+                    i, numericFields, candidate);
+            }
+        }
+
+        if (summaryIndices.isEmpty()) {
+            return dataRows;
+        }
+
+        // 3. 逆序移除，保持索引正确
+        List<Map<String, Object>> filtered = new ArrayList<>(dataRows);
+        summaryIndices.sort(Collections.reverseOrder());
+        for (int idx : summaryIndices) {
+            filtered.remove(idx);
+        }
+
+        log.info("filterSummaryRow: removed {} summary row(s) (rows={}→{}), numericFields={}",
+            summaryIndices.size(), dataRows.size(), filtered.size(), numericFields);
+
+        return filtered;
     }
 
     /**
