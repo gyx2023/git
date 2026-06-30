@@ -48,37 +48,74 @@ public class SseThreadPoolConfig {
             new ThreadPoolExecutor.CallerRunsPolicy()  // 拒绝策略：由调用线程执行
         );
 
+        // ==================== MDC 上下文包装器 ====================
+
+        /**
+         * 将 Runnable 包装为自动传递 MDC 上下文的版本
+         * <p>
+         * 捕获当前线程的 MDC 上下文，在子线程中恢复，执行完毕后清理。
+         * 防止线程复用导致上下文污染。
+         */
+        java.util.function.Function<Runnable, Runnable> wrapMdc = task -> {
+            Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+            return () -> {
+                if (mdcContext != null && !mdcContext.isEmpty()) {
+                    MDC.setContextMap(mdcContext);
+                }
+                try {
+                    task.run();
+                } finally {
+                    MDC.clear();
+                }
+            };
+        };
+
+        /**
+         * 将 Callable 包装为自动传递 MDC 上下文的版本
+         */
+        @SuppressWarnings("unchecked")
+        java.util.function.Function<java.util.concurrent.Callable<Object>, java.util.concurrent.Callable<Object>> wrapMdcCallable = task -> {
+            Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+            return () -> {
+                if (mdcContext != null && !mdcContext.isEmpty()) {
+                    MDC.setContextMap(mdcContext);
+                }
+                try {
+                    return task.call();
+                } finally {
+                    MDC.clear();
+                }
+            };
+        };
+
         // 包装任务，自动传递 MDC 上下文
         return new ExecutorService() {
             @Override
             public void execute(Runnable task) {
-                // 捕获当前 MDC 上下文
-                Map<String, String> mdcContext = MDC.getCopyOfContextMap();
-                
-                executor.execute(() -> {
-                    // 在异步线程中恢复 MDC 上下文
-                    if (mdcContext != null && !mdcContext.isEmpty()) {
-                        MDC.setContextMap(mdcContext);
-                    }
-                    
-                    try {
-                        task.run();
-                    } finally {
-                        // 清理 MDC，防止线程复用污染
-                        MDC.clear();
-                    }
-                });
+                executor.execute(wrapMdc.apply(task));
             }
-            
+
+            @Override
+            public java.util.concurrent.Future<?> submit(Runnable task) {
+                return executor.submit(wrapMdc.apply(task));
+            }
+
+            @Override
+            public <T> java.util.concurrent.Future<T> submit(Runnable task, T result) {
+                return executor.submit(wrapMdc.apply(task), result);
+            }
+
+            @Override
+            public <T> java.util.concurrent.Future<T> submit(java.util.concurrent.Callable<T> task) {
+                return executor.submit((java.util.concurrent.Callable<T>) wrapMdcCallable.apply((java.util.concurrent.Callable<Object>) task));
+            }
+
             // 委托其他方法到原始 executor
             @Override public void shutdown() { executor.shutdown(); }
             @Override public java.util.List<Runnable> shutdownNow() { return executor.shutdownNow(); }
             @Override public boolean isShutdown() { return executor.isShutdown(); }
             @Override public boolean isTerminated() { return executor.isTerminated(); }
             @Override public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException { return executor.awaitTermination(timeout, unit); }
-            @Override public <T> java.util.concurrent.Future<T> submit(java.util.concurrent.Callable<T> task) { return executor.submit(task); }
-            @Override public <T> java.util.concurrent.Future<T> submit(Runnable task, T result) { return executor.submit(task, result); }
-            @Override public java.util.concurrent.Future<?> submit(Runnable task) { return executor.submit(task); }
             @Override public <T> java.util.List<java.util.concurrent.Future<T>> invokeAll(java.util.Collection<? extends java.util.concurrent.Callable<T>> tasks) throws InterruptedException { return executor.invokeAll(tasks); }
             @Override public <T> java.util.List<java.util.concurrent.Future<T>> invokeAll(java.util.Collection<? extends java.util.concurrent.Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException { return executor.invokeAll(tasks, timeout, unit); }
             @Override public <T> T invokeAny(java.util.Collection<? extends java.util.concurrent.Callable<T>> tasks) throws InterruptedException, java.util.concurrent.ExecutionException { return executor.invokeAny(tasks); }

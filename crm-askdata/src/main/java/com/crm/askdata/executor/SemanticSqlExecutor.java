@@ -49,7 +49,7 @@ public class SemanticSqlExecutor implements QueryExecutor {
     private String semanticSqlAgentId;
 
     @Override
-    public QueryResult execute(IntentResult intentResult, String sessionId, String traceId) {
+    public QueryResult execute(IntentResult intentResult, String sessionId, String traceId, String userId) {
         String originalQuery = intentResult != null ? intentResult.getOriginalQuery() : null;
 
         log.info("traceId={} executing agent-driven semantic query, originalQuery={}", traceId, originalQuery);
@@ -68,7 +68,7 @@ public class SemanticSqlExecutor implements QueryExecutor {
 
         // 2. 构造 agent 输入并调用（全量 metric 定义发给 agent，由其自行选择）
         try {
-            return executeWithAgent(intentResult, executableMetrics, traceId);
+            return executeWithAgent(intentResult, executableMetrics, traceId, userId);
         } catch (Exception e) {
             log.error("traceId={} semantic SQL execution failed, error={}", traceId, e.getMessage(), e);
             return QueryResult.fail(RoutingStrategy.SEMANTIC_QUERY.name(),
@@ -79,17 +79,17 @@ public class SemanticSqlExecutor implements QueryExecutor {
     /**
      * 调用 semantic_sql_agent 生成 SQL 并执行
      */
-    private QueryResult executeWithAgent(IntentResult intent, List<MetaMetric> metrics, String traceId) {
+    private QueryResult executeWithAgent(IntentResult intent, List<MetaMetric> metrics, String traceId, String userId) {
         // 3a. 构造 agent 输入
         String agentInput = buildAgentInput(intent, metrics);
 
         log.info("traceId={} calling semantic_sql_agent, metrics={}", traceId,
             metrics.stream().map(MetaMetric::getMetricName).collect(Collectors.toList()));
 
-        // 3b. 调用 agent
-        String convId = getOrCreateConversation(traceId);
+        // 3b. 调用 agent（使用真实 userId 作为会话隔离 Key）
+        String convId = getOrCreateConversation(userId);
         HiAgentChatResponse response = hiAgentClient.chatQueryBlocking(
-            traceId, semanticSqlAgentId, convId, agentInput, traceId);
+            userId, semanticSqlAgentId, convId, agentInput, traceId);
 
         // 3c. 解析输出
         SemanticSqlOutput output = parseAgentOutput(response.getAnswer());
@@ -264,12 +264,15 @@ public class SemanticSqlExecutor implements QueryExecutor {
 
     /**
      * 获取或创建 agent 会话
+     * <p>
+     * 使用 userId 作为会话隔离 Key，确保每个用户的 HiAgent 会话独立，
+     * 避免多轮对话上下文串扰。userId 不允许为 null。
      */
-    private String getOrCreateConversation(String traceId) {
-        String key = traceId;
+    private String getOrCreateConversation(String userId) {
+        String key = userId;
         String convId = conversationManager.getConversationId(key, semanticSqlAgentId);
         if (convId == null) {
-            convId = hiAgentClient.createConversation(key, semanticSqlAgentId, traceId);
+            convId = hiAgentClient.createConversation(key, semanticSqlAgentId, java.util.UUID.randomUUID().toString().replace("-", ""));
             conversationManager.saveConversationId(key, semanticSqlAgentId, convId);
         }
         return convId;

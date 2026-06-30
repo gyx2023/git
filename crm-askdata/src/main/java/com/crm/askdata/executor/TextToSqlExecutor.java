@@ -45,7 +45,7 @@ public class TextToSqlExecutor implements QueryExecutor {
         new HashSet<>(Arrays.asList("tableName", "table", "from", "fields", "columns", "select", "metricCodes", "metrics", "metric")));
 
     @Override
-    public QueryResult execute(IntentResult intentResult, String sessionId, String traceId) {
+    public QueryResult execute(IntentResult intentResult, String sessionId, String traceId, String userId) {
         log.info("traceId={} executing text-to-sql query", traceId);
 
         // 1. 权限检查

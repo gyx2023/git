@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 结果后处理器
@@ -54,9 +56,10 @@ public class ResultPostProcessorService {
      * @param intent    意图识别结果（含 originalQuery）
      * @param rawResult 原始查询结果（工具调用返回的未加工数据）
      * @param traceId   链路追踪 ID
+     * @param userId    用户 ID（用于 HiAgent 会话隔离）
      * @return 后处理后的查询结果（失败时返回原始结果）
      */
-    public QueryResult postProcess(IntentResult intent, QueryResult rawResult, String traceId) {
+    public QueryResult postProcess(IntentResult intent, QueryResult rawResult, String traceId, String userId) {
         String originalQuery = intent.getOriginalQuery();
         if (originalQuery == null || originalQuery.trim().isEmpty()) {
             log.debug("traceId={} originalQuery is empty, skipping post-processing", traceId);
@@ -87,8 +90,8 @@ public class ResultPostProcessorService {
             log.info("traceId={} calling result_agent for post-processing, toolName={}, originalQuery={}",
                 traceId, intent.getToolName(), originalQuery);
 
-            // 调用 HiAgent result_agent
-            HiAgentChatResponse response = callResultAgent(traceId, agentInput);
+            // 调用 HiAgent result_agent（使用 userId 作为会话隔离 Key）
+            HiAgentChatResponse response = callResultAgent(userId, traceId, agentInput);
 
             // 解析 Agent 输出
             ResultProcessingOutput output = parseAgentOutput(response.getAnswer());
@@ -198,11 +201,12 @@ public class ResultPostProcessorService {
     /**
      * 调用 HiAgent result_agent
      * <p>
-     * 每个 traceId 使用独立的会话，互不干扰。会话由 ConversationManager 自动管理过期。
+     * 使用 userId 作为会话隔离 Key，确保每个用户的 HiAgent 会话独立，
+     * 避免多轮对话上下文串扰。traceId 仅用于链路追踪。
      */
-    private HiAgentChatResponse callResultAgent(String traceId, String agentInput) {
-        // 获取或创建该 traceId 对应的会话（key = traceId + resultAgentId）
-        String key = traceId;
+    private HiAgentChatResponse callResultAgent(String userId, String traceId, String agentInput) {
+        // 获取或创建该 userId 对应的会话（key = userId + resultAgentId）
+        String key = userId;
         String convId = conversationManager.getConversationId(key, resultAgentId);
         if (convId == null) {
             convId = hiAgentClient.createConversation(key, resultAgentId, traceId);
@@ -268,9 +272,11 @@ public class ResultPostProcessorService {
         }
 
         // 2. 替换数据（如果 Agent 返回了过滤后的数据）
+        List<Map<String, Object>> dataRows = null;
         if (output.hasData()) {
+            dataRows = output.getData();
             Map<String, Object> newData = new LinkedHashMap<>();
-            newData.put("data", output.getData());
+            newData.put("data", dataRows);
             // 保留 chartConfig
             if (output.getChartConfig() != null) {
                 newData.put("chartConfig", output.getChartConfig());
@@ -283,9 +289,134 @@ public class ResultPostProcessorService {
             result.setChartType(output.getDisplayType());
         }
 
-        // 4. 设置摘要文本
+        // 4. 设置摘要文本（含公式计算）
         if (output.getSummary() != null && !output.getSummary().isEmpty()) {
-            result.setContent(output.getSummary());
+            String evaluatedSummary = evaluateFormulas(output.getSummary(), dataRows);
+            result.setContent(evaluatedSummary);
         }
+    }
+
+    /**
+     * 精确计算公式占位符（方案 C）
+     * <p>
+     * Agent 在 summary 中使用公式占位符代替自行计算数值，
+     * Java 层精确计算后替换，避免 LLM 算术不可靠的问题。
+     * <p>
+     * 支持的公式：
+     * - {count}           → 数据行数
+     * - {sum:字段名}      → 字段求和
+     * - {avg:字段名}      → 字段平均值
+     * - {max:字段名}      → 字段最大值
+     * - {min:字段名}      → 字段最小值
+     * - {pct:字段名}      → 数据行中该行值占总额的百分比
+     */
+    @SuppressWarnings("unchecked")
+    private String evaluateFormulas(String summary, List<Map<String, Object>> dataRows) {
+        if (summary == null) return null;
+        if (dataRows == null || dataRows.isEmpty()) {
+            return summary
+                .replace("{count}", "0")
+                .replaceAll("\\{sum:[^}]+\\}", "0")
+                .replaceAll("\\{avg:[^}]+\\}", "0")
+                .replaceAll("\\{max:[^}]+\\}", "0")
+                .replaceAll("\\{min:[^}]+\\}", "0");
+        }
+
+        String result = summary;
+
+        // {count} → 行数
+        result = result.replace("{count}", String.valueOf(dataRows.size()));
+
+        // {sum:字段名} → 遍历所有行，对指定字段值累加
+        result = replaceFormula(result, "sum", (fieldName, rows) -> {
+            double total = 0;
+            for (Map<String, Object> row : rows) {
+                total += parseNumeric(row.get(fieldName));
+            }
+            return formatDecimal(total);
+        }, dataRows);
+
+        // {avg:字段名} → 总和 ÷ 行数
+        result = replaceFormula(result, "avg", (fieldName, rows) -> {
+            if (rows.isEmpty()) return "0";
+            double total = 0;
+            for (Map<String, Object> row : rows) {
+                total += parseNumeric(row.get(fieldName));
+            }
+            return formatDecimal(total / rows.size());
+        }, dataRows);
+
+        // {max:字段名} → 最大值
+        result = replaceFormula(result, "max", (fieldName, rows) -> {
+            double max = Double.MIN_VALUE;
+            boolean hasValue = false;
+            for (Map<String, Object> row : rows) {
+                double v = parseNumeric(row.get(fieldName));
+                if (!Double.isNaN(v)) {
+                    max = Math.max(max, v);
+                    hasValue = true;
+                }
+            }
+            return hasValue ? formatDecimal(max) : "0";
+        }, dataRows);
+
+        // {min:字段名} → 最小值
+        result = replaceFormula(result, "min", (fieldName, rows) -> {
+            double min = Double.MAX_VALUE;
+            boolean hasValue = false;
+            for (Map<String, Object> row : rows) {
+                double v = parseNumeric(row.get(fieldName));
+                if (!Double.isNaN(v)) {
+                    min = Math.min(min, v);
+                    hasValue = true;
+                }
+            }
+            return hasValue ? formatDecimal(min) : "0";
+        }, dataRows);
+
+        return result;
+    }
+
+    /**
+     * 通用的公式替换：匹配 {funcName:字段名} 模式，调用计算器，替换为格式化字符串
+     */
+    private String replaceFormula(String text, String funcName,
+                                  FormulaCalculator calculator,
+                                  List<Map<String, Object>> dataRows) {
+        Pattern pattern = Pattern.compile("\\{" + funcName + ":([^}]+)\\}");
+        Matcher matcher = pattern.matcher(text);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String fieldName = matcher.group(1).trim();
+            String computed = calculator.calculate(fieldName, dataRows);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(computed));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    @FunctionalInterface
+    private interface FormulaCalculator {
+        String calculate(String fieldName, List<Map<String, Object>> dataRows);
+    }
+
+    /**
+     * 将对象值解析为 double，非数值或 null 返回 NaN
+     */
+    private double parseNumeric(Object value) {
+        if (value == null) return Double.NaN;
+        try {
+            return Double.parseDouble(value.toString().replace(",", "").trim());
+        } catch (NumberFormatException e) {
+            return Double.NaN;
+        }
+    }
+
+    /**
+     * 保留两位小数格式化
+     */
+    private String formatDecimal(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) return "0";
+        return String.format("%.2f", value);
     }
 }

@@ -205,7 +205,7 @@ public class RouterService {
         transitionToExecuting(sessionId, intentRecog.intentResult, traceId);
 
         // 阶段5：执行查询
-        QueryResult result = executeQuery(decision, sessionId, traceId);
+        QueryResult result = executeQuery(decision, sessionId, traceId, userId);
         result.setLatencyMs(System.currentTimeMillis() - startTime);
 
         // 阶段6：清理会话状态
@@ -470,13 +470,13 @@ public class RouterService {
     /**
      * 阶段6：执行查询（带回退机制）
      */
-    private QueryResult executeQuery(RoutingDecision decision, String sessionId,String traceId) {
+    private QueryResult executeQuery(RoutingDecision decision, String sessionId, String traceId, String userId) {
         try {
             // 改造后：增加后端兜底校验，防止 Agent 跳过必要的追问
             validateParametersBeforeExecute(decision.getIntentResult(), traceId);
 
             QueryExecutor executor = getExecutor(decision.getStrategy());
-            QueryResult result = executor.execute(decision.getIntentResult(), sessionId, traceId);
+            QueryResult result = executor.execute(decision.getIntentResult(), sessionId, traceId, userId);
 
             if (result.isSuccess()) {
                 decision.markIrreversible();
@@ -490,7 +490,7 @@ public class RouterService {
                     decision.getRetryCount());
                 decision.incrementRetry();
                 decision.setStrategy(RoutingStrategy.FALLBACK_KB);
-                return executeQuery(decision, sessionId, traceId);
+                return executeQuery(decision, sessionId, traceId, userId);
             } else {
                 log.error("execution failed, max retries exceeded", e);
                 return QueryResult.fail(decision.getStrategy().name(),

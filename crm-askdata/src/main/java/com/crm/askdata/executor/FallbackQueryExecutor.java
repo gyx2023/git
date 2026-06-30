@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class FallbackQueryExecutor implements QueryExecutor {
 
     @Override
-    public QueryResult execute(IntentResult intentResult, String sessionId, String traceId) {
+    public QueryResult execute(IntentResult intentResult, String sessionId, String traceId, String userId) {
         log.info("traceId={} executing fallback query", traceId);
 
         String intent = intentResult != null ? intentResult.getIntent() : "unknown";

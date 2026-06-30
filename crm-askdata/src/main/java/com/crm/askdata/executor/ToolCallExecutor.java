@@ -50,7 +50,7 @@ public class ToolCallExecutor implements QueryExecutor {
 
     @Override
     @CircuitBreaker(name = "toolCall", fallbackMethod = "fallbackExecute")
-    public QueryResult execute(IntentResult intent, String sessionId, String traceId) {
+    public QueryResult execute(IntentResult intent, String sessionId, String traceId, String userId) {
         String toolName = intent != null ? intent.getToolName() : null;
         long startTime = System.currentTimeMillis();
 
@@ -112,7 +112,7 @@ public class ToolCallExecutor implements QueryExecutor {
 
             // ========== 第七步：智能结果后处理（智能过滤、展示优化、摘要生成）==========
             if (result.isSuccess() && intent.getOriginalQuery() != null) {
-                result = resultPostProcessor.postProcess(intent, result, traceId);
+                result = resultPostProcessor.postProcess(intent, result, traceId, userId);
             }
 
             // ========== 第八步：记录成功审计日志 ==========
@@ -160,11 +160,13 @@ public class ToolCallExecutor implements QueryExecutor {
      * 当工具调用触发熔断时，返回降级提示，避免系统雪崩
      *
      * @param intent  意图识别结果
+     * @param sessionId 会话 ID
      * @param traceId 链路追踪 ID
+     * @param userId  用户 ID
      * @param e       触发降级的异常
      * @return 降级结果
      */
-    public QueryResult fallbackExecute(IntentResult intent, String sessionId, String traceId, Throwable e) {
+    public QueryResult fallbackExecute(IntentResult intent, String sessionId, String traceId, String userId, Throwable e) {
         String toolName = intent != null ? intent.getToolName() : "unknown";
         log.warn("traceId={} tool call circuit breaker triggered, fallback: tool={}, error={}",
             traceId, toolName, e.getMessage());
