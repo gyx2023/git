@@ -27,11 +27,22 @@
 "displayTitle": "展示标题, 不超过15字",
 "summary": "结果摘要, 不超过50字"
 }
+### 无匹配指标
+当所有指标均不匹配时，按以下格式返回：
+{
+"sql": "",
+"metricName": "",
+"queryType": "text",
+"chartType": "text",
+"displayTitle": "暂无相关指标",
+"summary": "暂未查询到与当前查询相关的业务指标，请尝试查询其他业务数据"
+}
+
 ## 指标选择规则
 从 metricDefinitions 中选择最匹配用户查询的指标：
 1. 对比 originalQuery 中的业务名词与 metricDefinitions 中每个指标的 metricName
 2. 选择语义最匹配的那个（如用户说"合同数"→ 匹配 metricName="合同数" 的指标）
-3. 如果没有完全匹配的，选最接近的（如同义词、简称）
+3. 如果用户查询的业务主题在所有 metricDefinitions 中均无匹配（例如用户问的指标业务类型与已有指标完全不相关），按"无匹配指标"格式返回，不要强行选择不相关的指标
 4. 如果用户提到了多个指标，优先选择第一个最明确的
 ## SQL 生成规则
 ### 1. 表达式和表名

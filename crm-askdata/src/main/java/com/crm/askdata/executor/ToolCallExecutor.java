@@ -112,7 +112,7 @@ public class ToolCallExecutor implements QueryExecutor {
 
             // ========== 第七步：智能结果后处理（智能过滤、展示优化、摘要生成）==========
             if (result.isSuccess() && intent.getOriginalQuery() != null) {
-                result = resultPostProcessor.postProcess(intent, result, traceId, userId);
+                result = resultPostProcessor.postProcess(intent, result, traceId, userId, sessionId);
             }
 
             // ========== 第八步：记录成功审计日志 ==========

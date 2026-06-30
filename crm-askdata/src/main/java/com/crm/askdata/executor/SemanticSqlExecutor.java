@@ -68,7 +68,7 @@ public class SemanticSqlExecutor implements QueryExecutor {
 
         // 2. 构造 agent 输入并调用（全量 metric 定义发给 agent，由其自行选择）
         try {
-            return executeWithAgent(intentResult, executableMetrics, traceId, userId);
+            return executeWithAgent(intentResult, executableMetrics, traceId, userId, sessionId);
         } catch (Exception e) {
             log.error("traceId={} semantic SQL execution failed, error={}", traceId, e.getMessage(), e);
             return QueryResult.fail(RoutingStrategy.SEMANTIC_QUERY.name(),
@@ -79,24 +79,36 @@ public class SemanticSqlExecutor implements QueryExecutor {
     /**
      * 调用 semantic_sql_agent 生成 SQL 并执行
      */
-    private QueryResult executeWithAgent(IntentResult intent, List<MetaMetric> metrics, String traceId, String userId) {
+    private QueryResult executeWithAgent(IntentResult intent, List<MetaMetric> metrics, String traceId, String userId, String sessionId) {
         // 3a. 构造 agent 输入
         String agentInput = buildAgentInput(intent, metrics);
 
         log.info("traceId={} calling semantic_sql_agent, metrics={}", traceId,
             metrics.stream().map(MetaMetric::getMetricName).collect(Collectors.toList()));
 
-        // 3b. 调用 agent（使用真实 userId 作为会话隔离 Key）
-        String convId = getOrCreateConversation(userId);
+        // 3b. 调用 agent（使用 userId + sessionId 作为会话隔离 Key）
+        String convId = getOrCreateConversation(userId, sessionId);
         HiAgentChatResponse response = hiAgentClient.chatQueryBlocking(
             userId, semanticSqlAgentId, convId, agentInput, traceId);
 
         // 3c. 解析输出
         SemanticSqlOutput output = parseAgentOutput(response.getAnswer());
-        if (output == null || output.getSql() == null || output.getSql().trim().isEmpty()) {
-            log.warn("traceId={} semantic_sql_agent returned invalid output", traceId);
+        if (output == null) {
+            log.warn("traceId={} semantic_sql_agent returned null output", traceId);
             return QueryResult.fail(RoutingStrategy.SEMANTIC_QUERY.name(),
                 "无法生成查询 SQL，请稍后重试");
+        }
+        // 无匹配指标场景：chartType=text 且 sql 为空，透传 agent 的 summary 作为错误信息
+        if (output.getSql() == null || output.getSql().trim().isEmpty()) {
+            String errorMsg;
+            if ("text".equals(output.getChartType()) && output.getSummary() != null
+                    && !output.getSummary().isEmpty()) {
+                errorMsg = output.getSummary();
+            } else {
+                errorMsg = "无法生成查询 SQL，请稍后重试";
+            }
+            log.warn("traceId={} semantic_sql_agent returned empty SQL, reason={}", traceId, errorMsg);
+            return QueryResult.fail(RoutingStrategy.SEMANTIC_QUERY.name(), errorMsg);
         }
 
         log.info("traceId={} semantic_sql_agent generated SQL: {}", traceId, output.getSql());
@@ -265,15 +277,15 @@ public class SemanticSqlExecutor implements QueryExecutor {
     /**
      * 获取或创建 agent 会话
      * <p>
-     * 使用 userId 作为会话隔离 Key，确保每个用户的 HiAgent 会话独立，
-     * 避免多轮对话上下文串扰。userId 不允许为 null。
+     * 使用 userId + sessionId 作为会话隔离 Key，确保每个页面/浏览器独立会话，
+     * 避免多轮对话上下文串扰。
      */
-    private String getOrCreateConversation(String userId) {
-        String key = userId;
-        String convId = conversationManager.getConversationId(key, semanticSqlAgentId);
+    private String getOrCreateConversation(String userId, String sessionId) {
+        String convId = conversationManager.getConversationId(userId, semanticSqlAgentId, sessionId);
         if (convId == null) {
-            convId = hiAgentClient.createConversation(key, semanticSqlAgentId, java.util.UUID.randomUUID().toString().replace("-", ""));
-            conversationManager.saveConversationId(key, semanticSqlAgentId, convId);
+            String traceId = java.util.UUID.randomUUID().toString().replace("-", "");
+            convId = hiAgentClient.createConversation(userId, semanticSqlAgentId, traceId);
+            conversationManager.saveConversationId(userId, semanticSqlAgentId, sessionId, convId);
         }
         return convId;
     }

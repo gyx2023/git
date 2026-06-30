@@ -101,7 +101,15 @@ public class RouterService {
             try {
                 sendSseEvent(emitter, SseMessage.text(traceId, messageId, "正在识别意图...", 0.0));
 
-                QueryResult result = processInternal(query, traceId, sessionId, userId, startTime);
+                // 阶段间推送 SSE 进度状态
+                QueryResult result = processInternal(query, traceId, sessionId, userId, startTime,
+                    status -> {
+                        try {
+                            sendSseEvent(emitter, SseMessage.text(traceId, messageId, status, 0.0));
+                        } catch (IOException ignore) {
+                            // SSE 发送失败不中断流程
+                        }
+                    });
 
                 streamResultToClient(result, traceId, messageId, emitter, startTime);
                 emitter.complete();
@@ -178,11 +186,30 @@ public class RouterService {
      */
     private QueryResult processInternal(String query, String traceId, String sessionId,
                                         String userId, long startTime) {
+        return processInternal(query, traceId, sessionId, userId, startTime, s -> {});
+    }
+
+    /**
+     * 【核心方法】带状态回调的统一处理流程
+     * <p>
+     * 流程：意图识别 → 澄清处理 → 路由决策 → 执行查询
+     * <p>
+     * statusConsumer 用于在阶段切换时向调用方（如 SSE）推送进度状态，
+     * 同步调用时传入 no-op consumer。
+     *
+     * @return QueryResult（可能包含澄清提示或最终结果）
+     */
+    private QueryResult processInternal(String query, String traceId, String sessionId,
+                                        String userId, long startTime,
+                                        java.util.function.Consumer<String> statusConsumer) {
         // 阶段1：意图识别
         IntentRecognitionResult intentRecog = recognizeIntent(query, sessionId, userId, traceId);
 
         // 透传原始查询到 IntentResult，供结果处理和展示阶段使用
         intentRecog.intentResult.setOriginalQuery(query);
+
+        // 意图识别完成，推送进度
+        statusConsumer.accept("正在分析需求...");
 
         // 阶段2：澄清处理（如果需要）
         ClarificationOutcome clarification = handleClarificationIfNeeded(
@@ -205,6 +232,14 @@ public class RouterService {
         transitionToExecuting(sessionId, intentRecog.intentResult, traceId);
 
         // 阶段5：执行查询
+        String strategyName = decision.getStrategy().getDisplayName();
+        String strategyStatus = "正在查询数据... [" + strategyName + "]";
+        if (decision.getStrategy() == RoutingStrategy.TEXT_TO_SQL) {
+            strategyStatus = "正在执行 SQL 查询... [" + strategyName + "]";
+        } else if (decision.getStrategy() == RoutingStrategy.FALLBACK_KB) {
+            strategyStatus = "正在检索知识库... [" + strategyName + "]";
+        }
+        statusConsumer.accept(strategyStatus);
         QueryResult result = executeQuery(decision, sessionId, traceId, userId);
         result.setLatencyMs(System.currentTimeMillis() - startTime);
 
@@ -219,20 +254,23 @@ public class RouterService {
      * <p>
      * 改造后：所有 Agent 都复用会话，让 HiAgent 内部管理对话历史
      * Java 层只负责权限控制、工具调用和兜底限制
+     * <p>
+     * 会话隔离：Redis Key 包含 sessionId 维度，不同 sessionId 自动创建新会话，
+     * 实现「新页面 = 新会话」「不同浏览器互不影响」。
      *
-     * @param userId  业务用户 ID
-     * @param agentId Agent 业务标识
-     * @param traceId 链路 ID
+     * @param userId    业务用户 ID
+     * @param agentId   Agent 业务标识
+     * @param sessionId 前端会话 ID（隔离维度）
+     * @param traceId   链路 ID
      * @return AppConversationID
      */
-    private String getOrCreateConversation(String userId, String agentId, String traceId) {
-        // 改造后：Intent Agent 也复用会话，让 Agent 管理多轮对话历史
-        String convId = conversationManager.getConversationId(userId, agentId);
+    private String getOrCreateConversation(String userId, String agentId, String sessionId, String traceId) {
+        String convId = conversationManager.getConversationId(userId, agentId, sessionId);
         if (convId == null) {
-            log.info("userId={} agentId={} creating new conversation",
-                userId, agentId);
+            log.info("userId={} agentId={} sessionId={} creating new conversation",
+                userId, agentId, sessionId);
             convId = hiAgentClient.createConversation(userId, agentId, traceId);
-            conversationManager.saveConversationId(userId, agentId, convId);
+            conversationManager.saveConversationId(userId, agentId, sessionId, convId);
         } else {
             log.debug("reusing conversation: convId={}", convId);
         }
@@ -265,8 +303,8 @@ public class RouterService {
                                                     String userId, String traceId) {
         long start = System.currentTimeMillis();
 
-        // 1.1 获取或创建 HiAgent 会话（改造后：复用会话）
-        String convId = getOrCreateConversation(userId, intentAgentId, traceId);
+        // 1.1 获取或创建 HiAgent 会话（改造后：复用会话，按 sessionId 隔离）
+        String convId = getOrCreateConversation(userId, intentAgentId, sessionId, traceId);
 
         // 1.2 直接透传用户原始输入，让 Agent 从会话历史中获取上下文
         log.debug("sending raw query to agent: [{}]", query);
@@ -601,12 +639,6 @@ public class RouterService {
                 result.getStrategy(), System.currentTimeMillis() - startTime, null));
             return;
         }
-
-        // 发送执行过程提示
-        sendSseEvent(emitter, SseMessage.text(traceId, messageId,
-            "正在分析查询...", 0.7));
-        sendSseEvent(emitter, SseMessage.text(traceId, messageId,
-            "正在执行 [" + result.getStrategy() + "] 策略...", 0.8));
 
         // 发送文本内容（打字机效果）
         String content = result.getContent();
@@ -1021,7 +1053,7 @@ public class RouterService {
         contextManager.saveSession(old);
 
         // 清除 HiAgent 旧会话缓存，下次请求自动创建新会话
-        conversationManager.renewConversation(userId, intentAgentId);
+        conversationManager.renewConversation(userId, intentAgentId, old.getSessionId());
 
         log.info("session reset for new topic: sessionId={}, userId={}", old.getSessionId(), userId);
         return old;

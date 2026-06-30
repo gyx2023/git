@@ -56,10 +56,11 @@ public class ResultPostProcessorService {
      * @param intent    意图识别结果（含 originalQuery）
      * @param rawResult 原始查询结果（工具调用返回的未加工数据）
      * @param traceId   链路追踪 ID
-     * @param userId    用户 ID（用于 HiAgent 会话隔离）
+     * @param userId    用户 ID
+     * @param sessionId 前端会话 ID（会话隔离维度）
      * @return 后处理后的查询结果（失败时返回原始结果）
      */
-    public QueryResult postProcess(IntentResult intent, QueryResult rawResult, String traceId, String userId) {
+    public QueryResult postProcess(IntentResult intent, QueryResult rawResult, String traceId, String userId, String sessionId) {
         String originalQuery = intent.getOriginalQuery();
         if (originalQuery == null || originalQuery.trim().isEmpty()) {
             log.debug("traceId={} originalQuery is empty, skipping post-processing", traceId);
@@ -90,8 +91,8 @@ public class ResultPostProcessorService {
             log.info("traceId={} calling result_agent for post-processing, toolName={}, originalQuery={}",
                 traceId, intent.getToolName(), originalQuery);
 
-            // 调用 HiAgent result_agent（使用 userId 作为会话隔离 Key）
-            HiAgentChatResponse response = callResultAgent(userId, traceId, agentInput);
+            // 调用 HiAgent result_agent（使用 userId + sessionId 作为会话隔离 Key）
+            HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, agentInput);
 
             // 解析 Agent 输出
             ResultProcessingOutput output = parseAgentOutput(response.getAnswer());
@@ -201,20 +202,18 @@ public class ResultPostProcessorService {
     /**
      * 调用 HiAgent result_agent
      * <p>
-     * 使用 userId 作为会话隔离 Key，确保每个用户的 HiAgent 会话独立，
+     * 使用 userId + sessionId 作为会话隔离 Key，确保每个页面/浏览器独立会话，
      * 避免多轮对话上下文串扰。traceId 仅用于链路追踪。
      */
-    private HiAgentChatResponse callResultAgent(String userId, String traceId, String agentInput) {
-        // 获取或创建该 userId 对应的会话（key = userId + resultAgentId）
-        String key = userId;
-        String convId = conversationManager.getConversationId(key, resultAgentId);
+    private HiAgentChatResponse callResultAgent(String userId, String sessionId, String traceId, String agentInput) {
+        String convId = conversationManager.getConversationId(userId, resultAgentId, sessionId);
         if (convId == null) {
-            convId = hiAgentClient.createConversation(key, resultAgentId, traceId);
-            conversationManager.saveConversationId(key, resultAgentId, convId);
+            convId = hiAgentClient.createConversation(userId, resultAgentId, traceId);
+            conversationManager.saveConversationId(userId, resultAgentId, sessionId, convId);
         }
 
         return hiAgentClient.chatQueryBlocking(
-            key, resultAgentId, convId, agentInput, traceId);
+            userId, resultAgentId, convId, agentInput, traceId);
     }
 
     /**
@@ -286,9 +285,21 @@ public class ResultPostProcessorService {
 
             Map<String, Object> newData = new LinkedHashMap<>();
             newData.put("data", dataRows);
-            // 保留 chartConfig
+            // 保留 chartConfig（转为普通 Map，避免 ChartConfig POJO 序列化时字段名错位）
             if (output.getChartConfig() != null) {
-                newData.put("chartConfig", output.getChartConfig());
+                Map<String, String> flatConfig = new LinkedHashMap<>();
+                if (output.getChartConfig().getXField() != null) {
+                    flatConfig.put("xField", output.getChartConfig().getXField());
+                }
+                if (output.getChartConfig().getYField() != null) {
+                    flatConfig.put("yField", output.getChartConfig().getYField());
+                }
+                if (output.getChartConfig().getGroupField() != null) {
+                    flatConfig.put("groupField", output.getChartConfig().getGroupField());
+                }
+                if (!flatConfig.isEmpty()) {
+                    newData.put("chartConfig", flatConfig);
+                }
             }
             result.setData(newData);
         }
@@ -346,7 +357,8 @@ public class ResultPostProcessorService {
                 }
             }
             // 只有数值字段且不是所有行值相同（如序号列）才纳入检测
-            if (allNumeric && !allSame && firstVal != null) {
+            // 额外排除比率类字段（同比/环比/比例/率），这些字段不可累加
+            if (allNumeric && !allSame && firstVal != null && !isRateField(key)) {
                 numericFields.add(key);
             }
         }
@@ -503,6 +515,16 @@ public class ResultPostProcessorService {
     @FunctionalInterface
     private interface FormulaCalculator {
         String calculate(String fieldName, List<Map<String, Object>> dataRows);
+    }
+
+    /**
+     * 判断字段名是否为比率类字段（同比/环比/比例/率）
+     * 这类字段的数值不可累加，不适合用于合计行检测
+     */
+    private boolean isRateField(String fieldName) {
+        if (fieldName == null) return false;
+        return fieldName.contains("同比") || fieldName.contains("环比")
+            || fieldName.contains("比例") || fieldName.contains("率");
     }
 
     /**

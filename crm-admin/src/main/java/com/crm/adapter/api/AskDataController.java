@@ -138,6 +138,9 @@ public class AskDataController extends BaseController {
 
     /**
      * 清空用户某 Agent 的对话缓存并重建会话
+     * <p>
+     * 前端先调用此 API（此时 sessionId 仍是旧的），再重置前端 sessionId。
+     * 后端根据当前请求的 sessionId 定位并删除 HiAgent 会话缓存。
      *
      * @param agentId Agent 业务标识
      * @return 操作结果
@@ -145,8 +148,9 @@ public class AskDataController extends BaseController {
     @PostMapping("/conversation/reset")
     public R<Void> resetConversation(@RequestParam String agentId) {
         String userId = String.valueOf(getUserId());
-        conversationManager.removeConversationId(userId, agentId);
-        log.info("userId={} agentId={} conversation reset", userId, agentId);
+        String sessionId = TraceIdUtil.getSessionId();
+        conversationManager.removeConversationId(userId, agentId, sessionId);
+        log.info("userId={} agentId={} sessionId={} conversation reset", userId, agentId, sessionId);
         return R.ok();
     }
 }
