@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * 智能问数 API
@@ -48,8 +49,13 @@ public class AskDataController extends BaseController {
      */
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
-        @RequestParam String query
+        @RequestParam String query,
+        HttpServletResponse response
     ) {
+        // 禁用 Nginx/网关的 SSE 响应缓冲，保证进度状态实时推送
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+
         String resolvedTraceId = TraceIdUtil.getTraceId();
         String resolvedSessionId = TraceIdUtil.getSessionId();
         String userId = String.valueOf(getUserId());
