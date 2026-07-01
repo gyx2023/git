@@ -147,6 +147,12 @@ public class ToolConfig {
     private Integer cacheTtlSeconds;
 
     /**
+     * 是否跳过结果后处理（明细数据直接返回前端，规避大模型超时）
+     */
+    @TableField("skip_post_process")
+    private Boolean skipPostProcess;
+
+    /**
      * 创建人
      */
     @TableField("created_by")

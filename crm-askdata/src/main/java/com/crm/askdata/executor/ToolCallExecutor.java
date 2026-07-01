@@ -111,8 +111,23 @@ public class ToolCallExecutor implements QueryExecutor {
             QueryResult result = databaseDrivenApiTool.execute(intent, fullConfig, traceId);
 
             // ========== 第七步：智能结果后处理（智能过滤、展示优化、摘要生成）==========
-            if (result.isSuccess() && intent.getOriginalQuery() != null) {
+            // 明细工具（skipPostProcess=true）跳过 result_agent，直返前端规避大模型超时
+            boolean shouldSkipPostProcess = Boolean.TRUE.equals(config.getSkipPostProcess());
+            if (result.isSuccess() && intent.getOriginalQuery() != null && !shouldSkipPostProcess) {
                 result = resultPostProcessor.postProcess(intent, result, traceId, userId, sessionId);
+            }
+
+            // 跳过后处理的工具，用工具显示名+数据行数作为标题兜底
+            // 同时写入 displayTitle（chartOptions.title）和 content（文本消息）
+            if (shouldSkipPostProcess && result.isSuccess()) {
+                if (result.getDisplayTitle() == null || result.getDisplayTitle().isEmpty()) {
+                    String title = config.getToolDisplayName();
+                    if (result.getTotal() != null) {
+                        title += "（共" + result.getTotal() + "条）";
+                    }
+                    result.setDisplayTitle(title);
+                    result.setContent(title);
+                }
             }
 
             // ========== 第八步：记录成功审计日志 ==========
