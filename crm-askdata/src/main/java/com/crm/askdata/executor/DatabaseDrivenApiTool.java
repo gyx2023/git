@@ -322,6 +322,46 @@ public class DatabaseDrivenApiTool {
         for (String key : toRemove) {
             map.remove(key);
         }
+
+        // 按 response_schema.fields 定义顺序重排字段，确保前端表格列顺序可控
+        reorderMapByFieldSchema(map, fieldMap);
+    }
+
+    /**
+     * 按 schema 字段定义顺序重排 Map 条目
+     * <p>
+     * replaceFieldNamesFromSchema 原地 rename + remove 后，Map 顺序残留 API 响应顺序。
+     * 此方法在 schema 存在时，将字段重排为 schema.fields 定义顺序，
+     * 不在 schema 中的额外字段（如嵌套分组键 SJ/QY）追加到末尾。
+     */
+    private void reorderMapByFieldSchema(Map<String, Object> map, Map<String, FieldMapping> fieldMap) {
+        // 收集 schema 中定义的所有 label（已重命名的中文名），保持 schema 顺序
+        Set<String> schemaLabels = new LinkedHashSet<>();
+        for (FieldMapping f : fieldMap.values()) {
+            String label = f.getLabel();
+            if (label != null && !label.isEmpty()) {
+                schemaLabels.add(label);
+            }
+        }
+
+        // 按 schema 顺序构建新 Map
+        Map<String, Object> ordered = new LinkedHashMap<>();
+        for (String label : schemaLabels) {
+            if (map.containsKey(label)) {
+                ordered.put(label, map.get(label));
+            }
+        }
+
+        // 不在 schema 中的额外字段（如 SJ/QY 分组键）追加到末尾
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (!ordered.containsKey(entry.getKey())) {
+                ordered.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // 清空原 Map 并填入有序条目
+        map.clear();
+        map.putAll(ordered);
     }
 
     /**
