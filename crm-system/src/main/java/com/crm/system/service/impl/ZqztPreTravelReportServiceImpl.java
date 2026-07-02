@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
@@ -129,16 +130,12 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             // 1. 获取用户DB ID (master, 用oaAccount查)
             String userDbId = getSysUserDbId(oaAccount);
 
-            log.info("开始处理行前报告, reportId={}, customerId={}, userId={}, oaAccount={}, appointmentId={}",
-                    reportId, customerId, userId, oaAccount, appointmentId);
-
             ZqztPreTravelReport report = new ZqztPreTravelReport();
             report.setReportId(reportId);
             report.setCustomerId(customerId);
             report.setCustomerName(appt.getCustomName());
-            //这里存本系统userId
-            report.setCreator(userDbId);
             report.setOaAccount(oaAccount);
+            report.setCreator(userDbId != null ? userDbId : oaAccount);
             report.setRetryCount(0);
             report.setDataSource(DATA_SOURCE_JOB);
             if (appointmentId != null) {
@@ -146,6 +143,18 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             }
             report.setCreateTime(new Date());
             report.setUpdateTime(new Date());
+
+            if (ObjectUtil.isEmpty(userDbId)) {
+                log.warn("未找到该用户, oaAccount={}, 跳过生成并记录取消状态", oaAccount);
+                report.setTaskStatus("99");
+                report.setTaskStatusDesc("未找到该用户");
+                baseMapper.insert(report);
+                processed++;
+                continue;
+            }
+
+            log.info("开始处理行前报告, reportId={}, customerId={}, userId={}, oaAccount={}, appointmentId={}",
+                    reportId, customerId, userId, oaAccount, appointmentId);
 
             try {
                 // 2. 查拜访信息 (slave_2)
