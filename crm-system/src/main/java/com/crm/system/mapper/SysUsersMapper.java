@@ -50,4 +50,16 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
     @Select("SELECT * FROM sys_user WHERE oa_account = #{oaAccount} AND is_valid = '1' LIMIT 1")
     SysUsers findByOaAccount(@Param("oaAccount") String oaAccount);
 
+    /**
+     * 按区域范围分页查询有效用户，支持OA账号/姓名模糊搜索
+     * @param areaIds 区域ID列表，为null或空时不限制区域
+     */
+    List<SysUsers> selectByAreaScope(@Param("areaIds") List<Long> areaIds, @Param("keyword") String keyword,
+                                     @Param("offset") int offset, @Param("limit") int limit);
+
+    /**
+     * 按区域范围统计有效用户数
+     */
+    long countByAreaScope(@Param("areaIds") List<Long> areaIds, @Param("keyword") String keyword);
+
 }

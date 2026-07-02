@@ -33,4 +33,10 @@ public interface SysAreaMapper extends BaseMapperPlus<SysAreaMapper, SysArea, Sy
      */
     @Select("SELECT name_ FROM sys_area WHERE bss_code = #{bssCode} LIMIT 1")
     String selectAreaNameByBssCode(@Param("bssCode") String bssCode);
+
+    /**
+     * 根据父级ID查询子区域列表
+     */
+    @Select("SELECT * FROM sys_area WHERE parent_ = #{parentId}")
+    List<SysAreaVo> selectByParentId(@Param("parentId") Long parentId);
 }

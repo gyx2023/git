@@ -471,6 +471,37 @@ public class PendingServiceImpl implements IPendingService {
         pending.setLastUpdateDate(now);
         saveOrUpdate(pending);
         log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
+
+        // 同步插入 pending_group_todo（对应老框架 addGroupTodoTask）
+        addGroupTodoTaskForTask(task);
+    }
+
+    /**
+     * 任务创建时同步插入 pending_group_todo（对应老框架 addGroupTodoTask TaskEntity 分支）
+     */
+    private void addGroupTodoTaskForTask(Task task) {
+        String procInstId = task.getProcessInstanceId();
+        String taskId = task.getId();
+        Long count = pendingGroupTodoMapper.selectCount(
+                new LambdaQueryWrapper<PendingGroupTodo>()
+                        .eq(PendingGroupTodo::getProcInstId, procInstId)
+                        .eq(PendingGroupTodo::getTaskId, taskId)
+                        .eq(PendingGroupTodo::getOperatorType, "a"));
+        if (count > 0) {
+            log.debug("集团待办任务记录已存在，跳过: procInstId={}, taskId={}", procInstId, taskId);
+            return;
+        }
+        PendingGroupTodo todo = new PendingGroupTodo();
+        todo.setProcInstId(procInstId);
+        todo.setTaskId(taskId);
+        todo.setOperatorType("a");
+        todo.setPendingTitle(task.getName());
+        todo.setPendingUserId(getOaAccountByAssignee(task.getAssignee()));
+        todo.setSendStatus("0");
+        todo.setFailTimes(0);
+        todo.setCreateTime(new Date());
+        pendingGroupTodoMapper.insert(todo);
+        log.info("集团待办任务同步记录已创建: procInstId={}, taskId={}", procInstId, taskId);
     }
 
     @Override

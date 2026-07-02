@@ -15,10 +15,10 @@
         <!-- 流程连接线 -->
         <sequenceFlow id="flow1" sourceRef="startevent" targetRef="manager_handle"></sequenceFlow>
         <sequenceFlow id="flow2" sourceRef="manager_handle" targetRef="approvalGateway"></sequenceFlow>
-        <sequenceFlow id="flowApproved" sourceRef="approvalGateway" targetRef="endevent">
+        <sequenceFlow id="flowApproved" name="完成" sourceRef="approvalGateway" targetRef="endevent">
             <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'agree'}]]></conditionExpression>
         </sequenceFlow>
-        <sequenceFlow id="flowTransfer" sourceRef="approvalGateway" targetRef="manager_handle">
+        <sequenceFlow id="flowTransfer" name="转派" sourceRef="approvalGateway" targetRef="manager_handle">
             <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'transfer'}]]></conditionExpression>
         </sequenceFlow>
         <sequenceFlow id="flowRejected" sourceRef="approvalGateway" targetRef="endevent"></sequenceFlow>

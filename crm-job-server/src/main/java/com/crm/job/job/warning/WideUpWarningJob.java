@@ -26,11 +26,16 @@ public class WideUpWarningJob {
     @XxlJob("wideWarningUpJob")
     public void start() {
         log.info("【宽带升级预警Job】开始执行");
-        String jobParam = XxlJobHelper.getJobParam();
+        String jobParam = "202605";//XxlJobHelper.getJobParam();
         // 默认查询上个月数据，对应旧系统 calendar.add(Calendar.MONTH, -1)
         String yyyyMM;
         if (StringUtils.isNotBlank(jobParam)) {
-            yyyyMM = jobParam;
+            // 兼容 yyyyMM 格式（如 "202604"）转 yyyy-MM
+            if (jobParam.matches("\\d{6}")) {
+                yyyyMM = jobParam.substring(0, 4) + "-" + jobParam.substring(4);
+            } else {
+                yyyyMM = jobParam;
+            }
         } else {
             java.util.Calendar calendar = java.util.Calendar.getInstance();
             calendar.add(java.util.Calendar.MONTH, -1);

@@ -1756,7 +1756,7 @@ public class Constants {
     // 宽带升级预警(维系效果)
     public static final String ORDER_TYPE_WIDE_UP = "wide_up";
     public static final String ORDER_TYPE_NEW_WIDE_UP = "new_wide_up";
-    public static final String ORDER_TYPE_WIDE_UP_NAME = "宽带升级预警";
+    public static final String ORDER_TYPE_WIDE_UP_NAME = "宽带到期升级预警";
     public static final String ACT_PHASE_WIDE_UP_WARNING_MANAGER_DEAL = "wide_up_warn_manager_deal";
     public static final String ACT_PHASE_NEW_WIDE_UP_WARNING_MANAGER_DEAL = "leader";
     public static final String ACT_PHASE_WIDE_UP_WARNING_MANAGER_DEAL_NAME = "领导处理";

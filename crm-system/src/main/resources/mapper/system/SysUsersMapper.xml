@@ -51,4 +51,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
 
+
+    <select id="selectByAreaScope" resultMap="SysUserResult">
+        SELECT u.* FROM sys_user u
+        INNER JOIN sys_org o ON u.org_id = o.id_
+        WHERE u.is_valid = '1'
+        <if test="areaIds != null and areaIds.size() > 0">
+            AND o.area_id IN
+            <foreach collection="areaIds" item="areaId" open="(" separator="," close=")">
+                #{areaId}
+            </foreach>
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (u.oa_account LIKE CONCAT('%', #{keyword}, '%')
+                 OR u.name_ch LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY u.id_
+        <if test="limit > 0">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countByAreaScope" resultType="long">
+        SELECT COUNT(*) FROM sys_user u
+        INNER JOIN sys_org o ON u.org_id = o.id_
+        WHERE u.is_valid = '1'
+        <if test="areaIds != null and areaIds.size() > 0">
+            AND o.area_id IN
+            <foreach collection="areaIds" item="areaId" open="(" separator="," close=")">
+                #{areaId}
+            </foreach>
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (u.oa_account LIKE CONCAT('%', #{keyword}, '%')
+                 OR u.name_ch LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
 </mapper>
