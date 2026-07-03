@@ -12,11 +12,13 @@ public interface IZqztPreTravelReportService {
     int createPendingReports(String startTime, String endTime);
 
     /**
-     * 全流程处理行前报告：扫描近1小时创建且未拜访的预约 → 剔重 → 组装数据 → 调用Hiagent → 写入报告记录
+     * 全流程处理行前报告：扫描指定时间范围内创建且未拜访的预约 → 剔重 → 组装数据 → 调用Hiagent → 写入报告记录
      *
+     * @param startTime 创建时间起（格式：yyyy-MM-dd HH:mm:ss）
+     * @param endTime   创建时间止（格式：yyyy-MM-dd HH:mm:ss）
      * @return 处理的记录条数
      */
-    int processPreTravelReports();
+    int processPreTravelReports(String startTime, String endTime);
 
     /**
      * 重处理失败的行前报告（定时任务调用）

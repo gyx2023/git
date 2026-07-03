@@ -58,7 +58,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             .map(SysParamDo::getValue)
             .orElse("");
         List<VisitAppointmentDo> appointments = visitAppointmentQueryMapper
-                .selectUnvisitedAppointments(areaValue);
+                .selectUnvisitedAppointments(areaValue, startTime, endTime);
 
         if (appointments.isEmpty()) {
             log.info("未查询到近1小时创建且未拜访的预约记录");
@@ -86,7 +86,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
     }
 
     @Override
-    public int processPreTravelReports() {
+    public int processPreTravelReports(String startTime, String endTime) {
         SysParamDo param = sysParamMapper.selectOne(
             new LambdaQueryWrapper<SysParamDo>()
                 .eq(SysParamDo::getType, "travel_report_area_type")
@@ -97,7 +97,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             .map(SysParamDo::getValue)
             .orElse("");
         List<VisitAppointmentDo> appointments = visitAppointmentQueryMapper
-                .selectUnvisitedAppointments(areaValue);
+                .selectUnvisitedAppointments(areaValue, startTime, endTime);
 
         if (appointments.isEmpty()) {
             log.info("未查询到近1小时创建且未拜访的预约记录");

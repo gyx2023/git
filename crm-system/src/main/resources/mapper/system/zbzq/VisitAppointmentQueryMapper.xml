@@ -17,8 +17,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from hj_jkcust_tf_f_cust_visit_appointment a
         left join hj_jkcust_tf_f_cust_visit_record b on a.APPOINTMENT_ID = b.APPOINTMENT_ID
         where a.PROVINCE_CODE = '36'
-          and a.CREATE_TIME &gt;= (CURRENT_TIMESTAMP - INTERVAL '1' hour)
-          and a.CREATE_TIME &lt; CURRENT_TIMESTAMP
+          and a.CREATE_TIME &gt;= #{startTime}
+          and a.CREATE_TIME &lt; #{endTime}
           and b.APPOINTMENT_ID is null
         <if test="areaValue != null and areaValue != ''">
             and a.EPARCHY_CODE in (${areaValue})

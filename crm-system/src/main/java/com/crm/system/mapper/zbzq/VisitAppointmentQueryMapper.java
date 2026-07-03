@@ -11,7 +11,9 @@ import java.util.Map;
 @DS("slave_1")
 public interface VisitAppointmentQueryMapper {
 
-    List<VisitAppointmentDo> selectUnvisitedAppointments(@Param("areaValue") String areaValue);
+    List<VisitAppointmentDo> selectUnvisitedAppointments(@Param("areaValue") String areaValue,
+                                                       @Param("startTime") String startTime,
+                                                       @Param("endTime") String endTime);
 
     VisitRecordDo selectLastVisitRecord(@Param("customerId") String customerId,
                                         @Param("oaAccount") String oaAccount);
