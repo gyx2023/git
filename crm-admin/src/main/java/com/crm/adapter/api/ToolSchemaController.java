@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,15 +34,17 @@ public class ToolSchemaController extends BaseController {
      * @return 工具 Schema 列表
      */
     @GetMapping("/schemas")
-    public R<List<Map<String, Object>>> getAllSchemas() {
+    public Map<String, Object> getAllSchemas() {
         log.info("HiAgent fetching all tool schemas");
 
         try {
             List<Map<String, Object>> schemas = schemaService.generateAllSchemas();
-            return R.ok(schemas);
+            Map<String, Object> schemaMap = new HashMap<>();
+            schemaMap.put("UNI_BSS_BODY", schemas);
+            return schemaMap;
         } catch (Exception e) {
             log.error("Failed to generate tool schemas", e);
-            return R.fail("生成工具 Schema 失败：" + e.getMessage());
+            return null;
         }
     }
 
