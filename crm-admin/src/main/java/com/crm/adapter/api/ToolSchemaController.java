@@ -47,7 +47,7 @@ public class ToolSchemaController extends BaseController {
     }
 
 
-    @GetMapping("/schemasnew")
+    @PostMapping("/schemasnew")
     public Map<String, Object> getAllSchemasNew() {
         log.info("HiAgent fetching all tool schemas");
 
