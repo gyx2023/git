@@ -70,8 +70,8 @@ public class HxProjectPutJob extends BaseJob {
 
             //上传需求与合同关系文件
             try (FileInputStream fis = new FileInputStream(remandFile)) {
-                ftpUtil.upload(FTP_BASE_PATH, yyyyMMdd, REMAND_FILE_NAME, fis);
-                ftpUtil.rename(FTP_BASE_PATH + "/" + yyyyMMdd, REMAND_FILE_NAME,REMAND_FILE_NAME_TXT);
+                ftpUtil.upload(ftDirectory, yyyyMMdd, REMAND_FILE_NAME, fis);
+                ftpUtil.rename(ftDirectory + "/" + yyyyMMdd, REMAND_FILE_NAME,REMAND_FILE_NAME_TXT);
                 log.info("文件上传成功: {}", REMAND_FILE_NAME);
                 XxlJobHelper.log("文件上传成功: {}", REMAND_FILE_NAME);
             }
@@ -84,8 +84,8 @@ public class HxProjectPutJob extends BaseJob {
 
             //上传合同信息文件
             try (FileInputStream fis = new FileInputStream(contractFile)) {
-                ftpUtil.upload(FTP_BASE_PATH, yyyyMMdd, CONTRACT_FILE_NAME, fis);
-                ftpUtil.rename(FTP_BASE_PATH + "/" + yyyyMMdd, CONTRACT_FILE_NAME,CONTRACT_FILE_NAME_TXT);
+                ftpUtil.upload(ftDirectory, yyyyMMdd, CONTRACT_FILE_NAME, fis);
+                ftpUtil.rename(ftDirectory + "/" + yyyyMMdd, CONTRACT_FILE_NAME,CONTRACT_FILE_NAME_TXT);
                 log.info("文件上传成功: {}", CONTRACT_FILE_NAME);
                 XxlJobHelper.log("文件上传成功: {}", CONTRACT_FILE_NAME);
             }

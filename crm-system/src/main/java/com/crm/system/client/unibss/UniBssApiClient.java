@@ -106,9 +106,25 @@ public class UniBssApiClient {
     // ========== 签名 ==========
 
     /**
+     * 构建已签名的 UNI_BSS_HEAD（供外部自行 HTTP 调用）
+     *
+     * @param appId  应用ID
+     * @param appKey 应用密钥
+     * @return 已签名的报文头 Map，包含 APP_ID/TRANS_ID/TIMESTAMP/TOKEN/RESERVED
+     */
+    public static Map<String, Object> buildHead(String appId, String appKey) {
+        Map<String, Object> head = new HashMap<>();
+        head.put("APP_ID", appId);
+        head.put("key", appKey);
+        buildSign(head);
+        head.put("RESERVED", new ArrayList<>());
+        return head;
+    }
+
+    /**
      * 对 HEAD 进行签名：生成 TOKEN 并注入
      */
-    void buildSign(Map<String, Object> head) {
+    static void buildSign(Map<String, Object> head) {
         Date date = new Date();
         @SuppressWarnings("unchecked")
         SortedMap<Object, Object> parameters = new TreeMap<>(

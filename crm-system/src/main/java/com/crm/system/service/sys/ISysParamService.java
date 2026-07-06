@@ -15,4 +15,6 @@ public interface ISysParamService {
      * @return 参数值，不存在返回null
      */
     String findValueByCode(String code);
+
+    SysParamDo findValueByTypeCode(String type, String code);
 }

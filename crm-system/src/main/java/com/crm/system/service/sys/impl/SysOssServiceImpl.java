@@ -110,7 +110,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         }
         FileUtils.setAttachmentResponseHeader(response, sysOss.getOriginalName());
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
-        OssClient storage = OssFactory.instance();
+        OssClient storage = OssFactory.instance(sysOss.getService());
         try(InputStream inputStream = storage.getObjectContent(sysOss.getUrl())) {
             int available = inputStream.available();
             IoUtil.copy(inputStream, response.getOutputStream(), available);
@@ -134,7 +134,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         if (ObjectUtil.isNull(sysOss)) {
             throw new ServiceException("文件数据不存在!");
         }
-        OssClient storage = OssFactory.instance();
+        OssClient storage = OssFactory.instance(sysOss.getService());
         try {
             // 直接返回从S3获取的InputStream，不进行IO复制操作
             return storage.getObjectContent(sysOss.getUrl());

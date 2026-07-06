@@ -91,6 +91,11 @@ public class ZqztJtNoticeRecordDo implements Serializable {
      */
     private String resBody;
 
+    /**
+     * 重试次数
+     */
+    private Integer retryCount;
+
     private String failReason;
 
     /**

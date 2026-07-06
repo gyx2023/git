@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.zbzq.VisitAppointmentQueryMapper">
+
+    <select id="selectUnvisitedAppointments" resultType="com.crm.system.domain.dao.zbzq.VisitAppointmentDo">
+        select a.VISIT_TIME      as visitTime,
+               a.CUSTOMER_ID     as customerId,
+               a.CUSTOM_NAME     as customName,
+               a.user_id         as userId,
+               a.EXECUTE_USER_CODE as createUser,
+               a.EPARCHY_CODE    as eparchyCode
+        from hj_jkcust_tf_f_cust_visit_appointment a
+        left join hj_jkcust_tf_f_cust_visit_record b on a.APPOINTMENT_ID = b.APPOINTMENT_ID
+        where a.PROVINCE_CODE = '36'
+          and a.VISIT_TIME &gt;= #{startTime}
+          and a.VISIT_TIME &lt; #{endTime}
+          and b.APPOINTMENT_ID is null
+    </select>
+
+    <select id="selectLastVisitRecord" resultType="com.crm.system.domain.dao.zbzq.VisitRecordDo">
+        select ou.org_name                                                           as prov,
+               ou.org2_name                                                          as city,
+               ou.org3_name                                                          as district,
+               CONCAT(LEFT(nc.NATURE_CUST_NAME, 5), '********', RIGHT(nc.NATURE_CUST_NAME, 4)) as natureCustName,
+               nc.NATURE_CUST_ID                                                     as natureCustId,
+               CONCAT(LEFT(ou.name, 1), '*', RIGHT(ou.name, 1))                      as userName,
+               ou.login                                                              as oaAccount,
+               CONCAT(LEFT(ou.phone, 3), '****', RIGHT(ou.phone, 4))                 as phone,
+               a.VISIT_TITLE                                                         as visitTitle,
+               a.VISIT_TYPE                                                          as visitType,
+               a.VISIT_TIME                                                          as visitTime,
+               a.IS_INSERT_DIFF                                                      as isInsertDiff,
+               CONCAT(LEFT(cvri.INTERVIEW_NAME, 1), '*', RIGHT(cvri.INTERVIEW_NAME, 1)) as intervieweeName,
+               cvri.interview_job                                                    as intervieweeJob,
+               cvri.interview_content                                                as interviewContent,
+               a.VISIT_SUMMARY                                                       as visitSummary,
+               a.BUSINESS_CODE                                                       as businessCode,
+               a.BUSSINESS_NAME                                                      as businessName,
+               a.IMPORT_RECOMMEND_PRODUCT                                            as importProduct,
+               a.IS_SUPPORT                                                          as isSupport,
+               a.FROM_SOURCE                                                         as fromSource
+        from hj_jkcust_tf_f_cust_visit_record a
+        left join prodzqyypt_portal_oa_user ou on a.CREATE_USER = ou.login
+        left join hj_portal_td_m_political_location hpl on a.EPARCHY_CODE = hpl.AREA_CODE
+        left join cust_t_nature_cust nc on a.CUSTOMER_ID = nc.NATURE_CUST_ID
+        left join (select * from hj_jkcust_tf_f_cust_visit_record_intervie group by RECORD_ID) cvri
+            on cvri.record_id = a.RECORD_ID
+        inner join (select max(RECORD_ID) as RECORD_ID
+                    from hj_jkcust_tf_f_cust_visit_record vr
+                    where vr.customer_id = #{customerId}
+                      and vr.CREATE_USER = #{oaAccount}) vr
+            on vr.record_id = a.RECORD_ID
+    </select>
+
+    <select id="selectCustomerInfo" resultType="java.util.Map">
+        select a.NATURE_CUST_ID   as natureCustId,
+               b.NATURE_CUST_NAME as name,
+               b.ONE_LEVEL_NAME   as industry,
+               null               as level,
+               null               as region
+        from cust_t_nature_cust a
+        left join cust_t_nature_cust_trade_info b on a.NATURE_CUST_ID = b.NATURE_CUST_ID
+        where a.NATURE_CUST_ID = #{customerId}
+    </select>
+
+</mapper>

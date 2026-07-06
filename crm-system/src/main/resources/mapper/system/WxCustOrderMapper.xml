@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.WxCustOrderMapper">
+
+    <select id="selectOrderInfo" resultType="java.util.Map">
+        SELECT o.id_ AS orderId, o.order_name AS orderName, o.order_type AS orderType,
+            o.order_number AS orderNumber, o.cust_name AS custName, o.order_category AS orderCategory,
+            o.status_ AS status, o.phase_name AS phaseName, o.actors_info AS actorsInfo,
+            o.create_time AS createTime, o.update_time AS updateTime, o.pi_id AS piId,
+            o.business_dep AS businessDep, o.acc_nbr AS accNbr, o.creator_ AS creator,
+            o.area_id AS areaId, area.name_ AS areaName, area.type_ AS areaType,
+            c.name_ch AS creatorName, c.name_ AS creatorPhone
+        FROM topp_order o
+        LEFT JOIN sys_area area ON o.area_id = area.id_
+        LEFT JOIN sys_user c ON o.creator_ = c.id_
+        WHERE o.id_ = #{orderId}
+    </select>
+
+    <select id="selectProcessHistory" resultType="java.util.Map">
+        SELECT his.ID_ AS taskId, his.TASK_DEF_KEY_ AS taskDefKey,
+            his.NAME_ AS taskName, his.START_TIME_ AS startTime, his.END_TIME_ AS endTime,
+            his.DURATION_ AS duration, su.name_ch AS assignee
+        FROM act_hi_taskinst his
+        LEFT JOIN sys_user su ON su.id_ = TRIM(BOTH ',' FROM his.ASSIGNEE_)
+        WHERE his.PROC_INST_ID_ = #{piId}
+        ORDER BY his.START_TIME_ ASC
+    </select>
+
+</mapper>

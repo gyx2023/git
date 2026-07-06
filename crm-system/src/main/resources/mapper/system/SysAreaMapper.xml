@@ -20,6 +20,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="jtCode" column="jt_code"/>
     </resultMap>
 
+    <select id="selectAreaJtCodeList" resultType="java.util.Map">
+        SELECT
+            LEFT(id_, 4) AS area_code,
+            CASE
+                WHEN LEFT(id_, 4) = '3300' THEN '360'
+                ELSE jt_code
+            END AS jt_code
+        FROM sys_area
+        WHERE parent_ = '330000' OR id_ = '330000'
+        ORDER BY
+            CASE WHEN id_ = '330000' THEN 1 ELSE 0 END,
+            id_
+    </select>
 
 
 </mapper>
