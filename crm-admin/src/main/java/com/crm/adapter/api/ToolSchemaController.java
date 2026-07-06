@@ -48,17 +48,17 @@ public class ToolSchemaController extends BaseController {
 
 
     @GetMapping("/schemasnew")
-    public R<List<Map<String, Object>>> getAllSchemasNew() {
+    public Map<String, Object> getAllSchemasNew() {
         log.info("HiAgent fetching all tool schemas");
 
         try {
             List<Map<String, Object>> schemas = schemaService.generateAllSchemas();
             Map<String, Object> schemaMap = new HashMap<>();
             schemaMap.put("UNI_BSS_BODY", schemas);
-            return R.ok(schemas);
+            return schemaMap;
         } catch (Exception e) {
             log.error("Failed to generate tool schemas", e);
-            return R.fail("生成工具 Schema 失败：" + e.getMessage());
+            return null;
         }
     }
 
