@@ -149,6 +149,7 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /api/askdata/tools/schemas
+    - /api/askdata/tools/schemasnew
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
