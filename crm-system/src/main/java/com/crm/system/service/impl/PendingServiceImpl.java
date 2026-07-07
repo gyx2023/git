@@ -75,6 +75,7 @@ public class PendingServiceImpl implements IPendingService {
         try {
             addPending(pending, addUrl, appId, token);
         } catch (Exception e) {
+            updateFailTimes(Collections.singletonList(pending));
             log.error("推送新增待办异常", e);
         }
     }
@@ -294,6 +295,7 @@ public class PendingServiceImpl implements IPendingService {
                 updatePendingStatus(pending, updateUrl, appId, token);
             }
         } catch (Exception e) {
+            updateFailTimes(Collections.singletonList(pending));
             log.error("推送待办状态更新异常", e);
         }
     }
