@@ -1,6 +1,10 @@
 package com.crm.job.mapper.warning;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.crm.system.domain.dto.BossLeaderDto;
+import com.crm.system.domain.dto.LeaderDto;
+import com.crm.system.domain.dto.OrgDepartmentDto;
+import com.crm.system.domain.vo.SysAreaVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -36,7 +40,7 @@ public interface WideUpWarningMapper {
             + "WHERE mm.area_name != '省本级' AND mm.country_name != '市本级' AND mm.customer_no != '' "
             + "GROUP BY mm.country_name "
             + "ORDER BY sa.id_"})
-    List<Map<String, Object>> selectWarningAreas(@Param("yyyyMM") String yyyyMM);
+    List<SysAreaVo> selectWarningAreas(@Param("yyyyMM") String yyyyMM);
 
     /**
      * 查询市本级组织部门（有预警数据的）
@@ -69,7 +73,7 @@ public interface WideUpWarningMapper {
             + "  GROUP BY mm.user_id "
             + ") "
             + "GROUP BY a.COUNTY_ID"})
-    List<Map<String, Object>> selectOrgDepartments(@Param("yyyyMM") String yyyyMM);
+    List<OrgDepartmentDto> selectOrgDepartments(@Param("yyyyMM") String yyyyMM);
 
     /**
      * 按 code + 职位代码查询领导（区县或市本级）
@@ -97,9 +101,9 @@ public interface WideUpWarningMapper {
             + "  </when>"
             + "</choose>"
             + "</script>"})
-    List<Map<String, Object>> selectBossLeaders(@Param("code") String code,
-                                                 @Param("posCode") int posCode,
-                                                 @Param("bossFlag") String bossFlag);
+    List<BossLeaderDto> selectBossLeaders(@Param("code") String code,
+                                          @Param("posCode") int posCode,
+                                          @Param("bossFlag") String bossFlag);
 
     /**
      * 查询领导匹配表（org code 映射 fallback）
@@ -119,7 +123,7 @@ public interface WideUpWarningMapper {
             + "FROM sys_area a "
             + "WHERE a.bss_code IS NOT NULL "
             + "ORDER BY a.id_"})
-    List<Map<String, Object>> selectAllAreas();
+    List<SysAreaVo> selectAllAreas();
 
     /**
      * 查询所有 boss/vice_boss 角色用户（兜底用，地市接口人 fallback）
@@ -129,5 +133,5 @@ public interface WideUpWarningMapper {
             + "JOIN sys_user_role ur ON u.user_id = ur.user_id "
             + "JOIN sys_role r ON ur.role_id = r.role_id "
             + "WHERE r.role_key IN ('boss', 'vice_boss') AND u.del_flag = '0'"})
-    List<Map<String, Object>> selectLeaders();
+    List<LeaderDto> selectLeaders();
 }

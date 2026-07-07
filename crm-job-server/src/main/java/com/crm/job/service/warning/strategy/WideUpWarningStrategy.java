@@ -7,6 +7,9 @@ import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.IWarningStartService;
 import com.crm.job.service.warning.WarningRecord;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dto.BossLeaderDto;
+import com.crm.system.domain.dto.OrgDepartmentDto;
+import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.mapper.SysUsersMapper;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -65,13 +68,13 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
         StringBuffer yyyyMMFormat = new StringBuffer();
         yyyyMMFormat.append(yyyyMM).insert(4, "-");
         // ========== 一、区县维度 ==========
-        List<Map<String, Object>> areas = mapper.selectWarningAreas(yyyyMMFormat.toString());
+        List<SysAreaVo> areas = mapper.selectWarningAreas(yyyyMMFormat.toString());
         log.info("【{}】查询到预警区县: {}个", getOrderTypeName(), areas.size());
 
-        for (Map<String, Object> area : areas) {
-            Long areaId = toLong(area.get("id_"));
-            String areaName = getString(area.get("name_"));
-            String bssCode = getString(area.get("bss_code"));
+        for (SysAreaVo area : areas) {
+            Long areaId = area.getId();
+            String areaName = area.getName();
+            String bssCode = area.getBssCode();
 
             // 按优先级查找领导
             List<LeaderInfo> areaLeaders = findAreaLeaders(bssCode, areaName, areaId);
@@ -86,13 +89,13 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
         }
 
         // ========== 二、市本级组织部门维度 ==========
-        List<Map<String, Object>> orgs = mapper.selectOrgDepartments(yyyyMMFormat.toString());
+        List<OrgDepartmentDto> orgs = mapper.selectOrgDepartments(yyyyMMFormat.toString());
         log.info("【{}】查询到预警市本级部门: {}个", getOrderTypeName(), orgs.size());
 
-        for (Map<String, Object> org : orgs) {
-            String countyId = getString(org.get("countyId"));
-            String countyName = getString(org.get("countyName"));
-            String areaName = getString(org.get("areaName"));
+        for (OrgDepartmentDto org : orgs) {
+            String countyId = org.getCountyId();
+            String countyName = org.getCountyName();
+            String areaName = org.getAreaName();
 
             // 按优先级查找领导
             List<LeaderInfo> orgLeaders = findOrgLeaders(countyId, countyName, areaName);
@@ -135,10 +138,10 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
      */
     private List<LeaderInfo> queryLeaders(String code, int posCode, String bossFlag) {
         List<LeaderInfo> result = new ArrayList<>();
-        List<Map<String, Object>> list = mapper.selectBossLeaders(code, posCode, bossFlag);
-        for (Map<String, Object> row : list) {
-            String oaUserName = getString(row.get("OA_USER_NAME"));
-            String fullName = getString(row.get("FULL_NAME"));
+        List<BossLeaderDto> list = mapper.selectBossLeaders(code, posCode, bossFlag);
+        for (BossLeaderDto row : list) {
+            String oaUserName = row.getOaUserName();
+            String fullName = row.getFullName();
             if (oaUserName != null) {
                 LeaderInfo li = getUserByOa(oaUserName);
                 result.add(li);
@@ -249,7 +252,6 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
         extra.put("bssCode", bssCode);
         extra.put("mdmOrgCode", mdmOrgCode);
         extra.put("_needOrderNumber", true);
-        extra.put("orderCategory", "C");
         extra.put("manager_handle_name", "总经理/副总经理处理");
         if (leader.deptId != null) {
             extra.put("orgId", leader.deptId);
@@ -271,16 +273,6 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     private String getString(Object v) {
         return v == null ? null : v.toString();
-    }
-
-    private Long toLong(Object v) {
-        if (v == null) return null;
-        try {
-            if (v instanceof Number) return ((Number) v).longValue();
-            return Long.parseLong(v.toString());
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     /** 领导信息 */
