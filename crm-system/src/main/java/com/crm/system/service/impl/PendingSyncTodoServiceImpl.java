@@ -20,6 +20,9 @@ import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
+import org.flowable.engine.HistoryService;
+import org.flowable.task.api.history.HistoricTaskInstance;
+import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -44,6 +47,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     @Resource
     private OldWorkflowQueryService oldWorkflowQueryService;
+
+    @Resource
+    private HistoryService flowableHistoryService;
 
     @Resource
     private ISysParamService sysParamService;
@@ -85,8 +91,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             int currentTaskInHisListIndex; //当前任务在histList索引位置,为了查询上一环节处理任务信息
 
             if ("u".equals(pendingTodo.getOperatorType())) {
-                // 刷新任务列表数据
-                hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts(pendingTodo.getProcInstId());
+                // 刷新任务列表数据（优先老表，表不存在时回退 Flowable）
+                hisList = queryHistoricTaskInsts(pendingTodo.getProcInstId());
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
                     .compareTo((java.util.Date) a.get("startTime")));
                 firstTask = hisList.get(hisList.size() - 1);
@@ -94,14 +100,13 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
                 currentTask = lastTask;
             } else {
-                currentTask = oldWorkflowQueryService
-                    .queryOldHistoricTaskByTaskId(pendingTodo.getTaskId());
+                currentTask = queryHistoricTaskByTaskId(pendingTodo.getTaskId());
                 log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.get("id") : "null");
                 if (currentTask == null){
                     throw new RuntimeException("历史任务不存在");
                 }
                 // 刷新任务列表数据
-                hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts((String) currentTask.get("procInsId"));
+                hisList = queryHistoricTaskInsts((String) currentTask.get("procInsId"));
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
                     .compareTo((java.util.Date) a.get("startTime")));
                 firstTask = hisList.get(hisList.size() - 1);
@@ -382,14 +387,82 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 拼接完整URL
      */
-    private String getUrl(Map<String, Object> task,String orderId) {
-        Map<String, Object> dealUrl = oldWorkflowQueryService
-            .queryOldHistoricVariable(task.get("id").toString(), task.get("taskDefKey") + "_dealUrl");
-        if (dealUrl == null) {
+    private String getUrl(Map<String, Object> task, String orderId) {
+        String taskId = task.get("id").toString();
+        String procInstId = task.get("procInsId").toString();
+        String varName = task.get("taskDefKey") + "_dealUrl";
+        String dealUrlStr = null;
+
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            HistoricVariableInstance flowableVar = flowableHistoryService
+                    .createHistoricVariableInstanceQuery()
+                .processInstanceId(procInstId).variableName(varName).singleResult();
+            if (flowableVar != null && flowableVar.getValue() != null) {
+                dealUrlStr = flowableVar.getValue().toString();
+            }
+        } else {
+            Map<String, Object> dealUrl = oldWorkflowQueryService
+                    .queryOldHistoricVariable(taskId, varName);
+            if (dealUrl != null) {
+                dealUrlStr = dealUrl.get("textValue").toString();
+            }
+        }
+        if (dealUrlStr == null) {
             return BASE_URL + ORDER_INFO_URL + orderId;
         }
-        String dealUrlStr = dealUrl.get("textValue").toString();
-        return BASE_URL + dealUrlStr + "&taskId=" + task.get("id").toString();
+        return BASE_URL + dealUrlStr + "&taskId=" + taskId;
+    }
+
+    // ---- 历史任务查询（Activiti 优先，表不存在时回退 Flowable） ----
+
+    private Map<String, Object> queryHistoricTaskByTaskId(String taskId) {
+        Map<String, Object> task = null;
+        try {
+            task = oldWorkflowQueryService.queryOldHistoricTaskByTaskId(taskId);
+        } catch (Exception e) {
+            log.info("老 Activiti 表查询失败，回退 Flowable, taskId={}", taskId);
+        }
+        if (task != null) return task;
+        // Activiti 查不到，回退 Flowable
+        HistoricTaskInstance ht = flowableHistoryService.createHistoricTaskInstanceQuery()
+                .taskId(taskId).singleResult();
+        return ht != null ? toTaskMap(ht) : null;
+    }
+
+    private List<Map<String, Object>> queryHistoricTaskInsts(String procInstId) {
+        List<Map<String, Object>> result = null;
+        try {
+            result = oldWorkflowQueryService.queryOldHistoricTaskInsts(procInstId);
+        } catch (Exception e) {
+            log.info("老 Activiti 表查询失败，回退 Flowable, procInstId={}", procInstId);
+        }
+        if (result != null && !result.isEmpty()) return result;
+        // Activiti 查不到或为空，回退 Flowable
+        List<HistoricTaskInstance> list = flowableHistoryService
+                .createHistoricTaskInstanceQuery()
+                .processInstanceId(procInstId)
+                .orderByHistoricTaskInstanceStartTime().asc()
+                .list();
+        result = new ArrayList<>();
+        if (list != null) {
+            for (HistoricTaskInstance ht : list) {
+                result.add(toTaskMap(ht));
+            }
+        }
+        return result;
+    }
+
+    private Map<String, Object> toTaskMap(HistoricTaskInstance ht) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", ht.getId());
+        map.put("taskDefKey", ht.getTaskDefinitionKey());
+        map.put("procInsId", ht.getProcessInstanceId());
+        map.put("assignee", ht.getAssignee());
+        map.put("startTime", ht.getStartTime());
+        map.put("name", ht.getName());
+        map.put("endTime", ht.getEndTime());
+        map.put("_fromFlowable", Boolean.TRUE);
+        return map;
     }
 
     /**

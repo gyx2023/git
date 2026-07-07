@@ -851,13 +851,6 @@ public class Constants {
     public static final String SINGLE_APPROVAL_PROCESS_KEY = "single_approval";
     public static final String SINGLE_APPROVAL_PROCESS_NAME = "预警处理流程";
 
-    // order_status
-    public static final String ORDER_STATUS_DRAFT = "draft";// 待提交
-    public static final String ORDER_STATUS_RUNNING = "running";
-    public static final String ORDER_STATUS_TRACKING = "tracking";
-    public static final String ORDER_STATUS_END = "end";
-    public static final String ORDER_STATUS_ABANDON = "abandon";
-
     // 申请支撑
     public static final String APPLAY_SUPPORT_FLOW_CODE = "applay_support";
     public static final String APPLAY_SUPPORT_FLOW_NAME = "客户申请支撑";

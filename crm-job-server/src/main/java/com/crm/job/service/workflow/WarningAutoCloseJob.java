@@ -1,11 +1,11 @@
 package com.crm.job.service.workflow;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.topp.ToppOrderMapper;
-import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +55,7 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
         Date deadline = DateUtils.addDays(new Date(), -AUTO_CLOSE_DAYS);
         List<ToppOrder> overdueOrders = toppOrderMapper.selectList(
                 new LambdaQueryWrapper<ToppOrder>()
-                        .eq(ToppOrder::getStatus, Constants.ORDER_STATUS_RUNNING)
+                        .eq(ToppOrder::getStatus, OrderStatusEnum.RUNNING.getCode())
                         .eq(ToppOrder::getProcessEngine, "FLOWABLE")
                         .in(ToppOrder::getOrderType, WARNING_ORDER_TYPES)
                         .lt(ToppOrder::getCreateTime, deadline)
@@ -112,7 +112,7 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
         // 更新工单状态为已结束
         ToppOrder updateOrder = new ToppOrder();
         updateOrder.setId(order.getId());
-        updateOrder.setStatus(Constants.ORDER_STATUS_END);
+        updateOrder.setStatus(OrderStatusEnum.END.getCode());
         updateOrder.setEndReason("0");
         toppOrderMapper.updateById(updateOrder);
 

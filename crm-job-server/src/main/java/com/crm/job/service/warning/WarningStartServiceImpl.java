@@ -44,7 +44,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
     /** single_approval 流程定义标识 */
     private static final String PROCESS_KEY = "single_approval";
-    private static final String ORDER_STATUS_RUNNING = "running";
+    private static final String ORDER_STATUS_RUNNING = com.crm.common.enums.OrderStatusEnum.RUNNING.getCode();
 
     private static final ExecutorService executorService = new ThreadPoolExecutor(
             10, 10, 0, TimeUnit.MILLISECONDS,

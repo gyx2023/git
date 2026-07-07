@@ -516,7 +516,7 @@ public class WideWarningController extends BaseController {
         if (order != null) {
             com.crm.system.domain.bo.topp.ToppOrderBo bo = new com.crm.system.domain.bo.topp.ToppOrderBo();
             bo.setId(orderId);
-            bo.setStatus("end");
+            bo.setStatus(com.crm.common.enums.OrderStatusEnum.END.getCode());
             bo.setBatchFlag(0);
             orderService.updateByBo(bo);
         }

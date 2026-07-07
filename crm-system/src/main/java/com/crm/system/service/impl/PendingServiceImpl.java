@@ -22,7 +22,6 @@ import org.flowable.task.api.Task;
 import org.flowable.task.api.history.HistoricTaskInstance;
 import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
@@ -87,12 +86,7 @@ public class PendingServiceImpl implements IPendingService {
         String url = addUrl + "/" + appId + "/" + token;
         String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), ADD_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
         log.info("新增待办请求URL:{}", url);
-        //临时模拟成功返回串
-        JSONObject resultMap = new JSONObject();
-        if (StringUtils.isNotEmpty(pending.getPendingCode())) {
-            resultMap.put(pending.getPendingCode(), "100-操作成功");
-        }
-        String result = resultMap.isEmpty() ? null : resultMap.toJSONString();
+        String result = HttpUtil.post(url, jsonStr, 60000);
         log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
 
         if (StringUtils.isEmpty(result)) {
@@ -117,7 +111,6 @@ public class PendingServiceImpl implements IPendingService {
         }
     }
 
-    @Transactional(propagation = Propagation.NESTED)
     private boolean initPendingUrl(Pending pending) {
         log.info("{}开始处理", pending.getId());
         if (StringUtils.isNotEmpty(pending.getPendingURL())) {
@@ -125,139 +118,14 @@ public class PendingServiceImpl implements IPendingService {
             return true;
         }
         try {
-            // 1. 先查老 Activiti 历史任务
-            Map<String, Object> task = oldWorkflowQueryService
-                .queryOldHistoricTaskByTaskId(pending.getPendingCode());
-            boolean isFlowable = false;
-            String taskDefKey;
-            String procInsId;
-            String assignee;
-            Long numericTaskId;
+            TaskCtx ctx = resolveTaskContext(pending);
+            if (ctx == null) return false;
 
-            if (task != null) {
-                // 老 Activiti 流程
-                taskDefKey = (String) task.get("taskDefKey");
-                procInsId = (String) task.get("procInsId");
-                assignee = (String) task.get("assignee");
-                numericTaskId = Long.parseLong((String) task.get("id"));
-            } else {
-                // 2. 老流程未找到，尝试查 Flowable 历史任务（FLO_ACT_HI_* 表）
-                HistoricTaskInstance flowableTask = flowableHistoryService
-                    .createHistoricTaskInstanceQuery()
-                    .taskId(pending.getPendingCode())
-                    .singleResult();
-                if (flowableTask == null) {
-                    log.info("订单" + pending.getId() + "task为空（老+新流程均未找到）");
-                    pending.setFailTimes(3);
-                    pending.setResponseMsg("订单" + pending.getId() + "task为空");
-                    saveOrUpdate(pending);
-                    return false;
-                }
-                isFlowable = true;
-                taskDefKey = flowableTask.getTaskDefinitionKey();
-                procInsId = flowableTask.getProcessInstanceId();
-                assignee = flowableTask.getAssignee();
-                numericTaskId = Long.parseLong(flowableTask.getId());
-                log.info("{} 匹配到 Flowable 流程任务, procInsId={}", pending.getId(), procInsId);
-            }
+            if (!resolveDealUrl(pending, ctx)) return false;
 
-            // 查询 dealUrl
-            String dealUrlStr;
-            if (isFlowable) {
-                // Flowable 流程：从 FLO_ACT_HI_VARINST 查 task 级别变量
-                HistoricVariableInstance flowableVar = flowableHistoryService
-                    .createHistoricVariableInstanceQuery()
-                    .taskId(pending.getPendingCode())
-                    .variableName(taskDefKey + "_dealUrl")
-                    .singleResult();
-                if (flowableVar == null || flowableVar.getValue() == null) {
-                    log.info("订单" + pending.getId() + " Flowable dealUrl为空");
-                    pending.setFailTimes(3);
-                    pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
-                    saveOrUpdate(pending);
-                    return false;
-                }
-                // 新框架 dealUrl 已经是完整路径，不需要拼接 Backlog
-                dealUrlStr = flowableVar.getValue().toString();
-                pending.setPendingURL(dealUrlStr + "&taskId=" + pending.getPendingCode());
-            } else {
-                // 老 Activiti 流程
-                Map<String, Object> dealUrl = oldWorkflowQueryService
-                    .queryOldHistoricVariable(pending.getPendingCode(), taskDefKey + "_dealUrl");
-                if (dealUrl == null) {
-                    log.info("订单" + pending.getId() + "varinst表dealUrl为空");
-                    pending.setFailTimes(3);
-                    pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
-                    saveOrUpdate(pending);
-                    return false;
-                }
-                String backlog = sysParamService.findValueByCode("Backlog");
-                dealUrlStr = dealUrl.get("textValue").toString().replace("?", "&");
-                pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
-            }
+            int userId = resolvePreviousUser(ctx);
+            setPendingSourceInfo(pending, userId);
 
-            // 查询上一步处理人
-            int userId;
-            if (isFlowable) {
-                // Flowable: 查历史任务列表，找上一个任务的处理人
-                List<HistoricTaskInstance> hisList = flowableHistoryService
-                    .createHistoricTaskInstanceQuery()
-                    .processInstanceId(procInsId)
-                    .orderByHistoricTaskInstanceEndTime().desc()
-                    .list();
-                HistoricTaskInstance prevFlowableTask = null;
-                for (HistoricTaskInstance his : hisList) {
-                    long hisId = Long.parseLong(his.getId());
-                    if (hisId < numericTaskId) {
-                        prevFlowableTask = his;
-                        break;
-                    }
-                }
-                if (prevFlowableTask != null && prevFlowableTask.getAssignee() != null) {
-                    userId = Integer.parseInt(prevFlowableTask.getAssignee().replaceAll(",", ""));
-                } else if (assignee != null) {
-                    userId = Integer.parseInt(assignee.replaceAll(",", ""));
-                } else {
-                    userId = 0;
-                }
-            } else {
-                List<Map<String, Object>> hisList = oldWorkflowQueryService
-                    .queryOldHistoricTaskInsts(procInsId);
-                hisList.sort((a, b) -> {
-                    long idA = Long.parseLong((String) a.get("id"));
-                    long idB = Long.parseLong((String) b.get("id"));
-                    return Long.compare(idB, idA);
-                });
-                Map<String, Object> prevTask = null;
-                for (Map<String, Object> his : hisList) {
-                    if (Long.parseLong((String) his.get("id")) < numericTaskId) {
-                        prevTask = his;
-                    }
-                }
-                if (prevTask != null) {
-                    userId = Integer.parseInt(((String) prevTask.get("assignee")).replaceAll(",", ""));
-                } else {
-                    userId = Integer.parseInt(assignee.replaceAll(",", ""));
-                }
-            }
-
-            SysUsers prev = sysUsersMapper.selectById(userId);
-            if (prev != null) {
-                if (StringUtils.isNotEmpty(prev.getNameCh())) {
-                    pending.setPendingSource(prev.getNameCh());
-                } else {
-                    pending.setPendingSource("未知用户");
-                }
-                try {
-                    pending.setPendingSourceUserID(prev.getEmail().split("@")[0]);
-                } catch (Exception e) {
-                    pending.setPendingSourceUserID("未知用户");
-                    log.info("{}未知用户异常", pending.getId());
-                }
-            } else {
-                pending.setPendingSource("未知用户");
-                pending.setPendingSourceUserID("未知用户");
-            }
             saveOrUpdate(pending);
             log.info("{}处理结束", pending.getId());
             return true;
@@ -268,6 +136,151 @@ public class PendingServiceImpl implements IPendingService {
             log.error(e.getMessage(), e);
             saveOrUpdate(pending);
             return false;
+        }
+    }
+
+    private TaskCtx resolveTaskContext(Pending pending) {
+        // 1. 先查老 Activiti 历史任务（表可能不存在，catch 后回退到 Flowable）
+        try {
+            Map<String, Object> task = oldWorkflowQueryService
+                    .queryOldHistoricTaskByTaskId(pending.getPendingCode());
+            if (task != null) {
+                return new TaskCtx(false,
+                        (String) task.get("taskDefKey"),
+                        (String) task.get("procInsId"),
+                        (String) task.get("assignee"),
+                        Long.parseLong((String) task.get("id")));
+            }
+        } catch (Exception e) {
+            log.info("老 Activiti 表查询失败(表可能不存在), pendingCode={}, 回退到 Flowable", pending.getPendingCode());
+        }
+        // 2. 老流程未找到，尝试查 Flowable 历史任务
+        HistoricTaskInstance flowableTask = flowableHistoryService
+                .createHistoricTaskInstanceQuery()
+                .taskId(pending.getPendingCode())
+                .singleResult();
+        if (flowableTask == null) {
+            log.info("订单" + pending.getId() + "task为空（老+新流程均未找到）");
+            pending.setFailTimes(3);
+            pending.setResponseMsg("订单" + pending.getId() + "task为空");
+            saveOrUpdate(pending);
+            return null;
+        }
+        log.info("{} 匹配到 Flowable 流程任务, procInsId={}", pending.getId(),
+                flowableTask.getProcessInstanceId());
+        return new TaskCtx(true,
+                flowableTask.getTaskDefinitionKey(),
+                flowableTask.getProcessInstanceId(),
+                flowableTask.getAssignee(),
+                Long.parseLong(flowableTask.getId()));
+    }
+
+    private boolean resolveDealUrl(Pending pending, TaskCtx ctx) {
+        if (ctx.isFlowable) {
+            HistoricVariableInstance flowableVar = flowableHistoryService
+                    .createHistoricVariableInstanceQuery()
+                    .taskId(pending.getPendingCode())
+                    .variableName(ctx.taskDefKey + "_dealUrl")
+                    .singleResult();
+            if (flowableVar == null || flowableVar.getValue() == null) {
+                pending.setFailTimes(3);
+                pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
+                saveOrUpdate(pending);
+                return false;
+            }
+            pending.setPendingURL(flowableVar.getValue().toString()
+                    + "&taskId=" + pending.getPendingCode());
+        } else {
+            Map<String, Object> dealUrl = oldWorkflowQueryService
+                    .queryOldHistoricVariable(pending.getPendingCode(),
+                            ctx.taskDefKey + "_dealUrl");
+            if (dealUrl == null) {
+                pending.setFailTimes(3);
+                pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
+                saveOrUpdate(pending);
+                return false;
+            }
+            String backlog = sysParamService.findValueByCode("Backlog");
+            String dealUrlStr = dealUrl.get("textValue").toString().replace("?", "&");
+            pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
+        }
+        return true;
+    }
+
+    private int resolvePreviousUser(TaskCtx ctx) {
+        if (ctx.isFlowable) {
+            List<HistoricTaskInstance> hisList = flowableHistoryService
+                    .createHistoricTaskInstanceQuery()
+                    .processInstanceId(ctx.procInsId)
+                    .orderByHistoricTaskInstanceEndTime().desc()
+                    .list();
+            HistoricTaskInstance prevTask = null;
+            for (HistoricTaskInstance his : hisList) {
+                if (Long.parseLong(his.getId()) < ctx.numericTaskId) {
+                    prevTask = his;
+                    break;
+                }
+            }
+            if (prevTask != null && prevTask.getAssignee() != null) {
+                return Integer.parseInt(prevTask.getAssignee().replaceAll(",", ""));
+            }
+            return ctx.assignee != null
+                    ? Integer.parseInt(ctx.assignee.replaceAll(",", "")) : 0;
+        }
+        // 老 Activiti
+        List<Map<String, Object>> hisList = oldWorkflowQueryService
+                .queryOldHistoricTaskInsts(ctx.procInsId);
+        hisList.sort((a, b) -> {
+            long idA = Long.parseLong((String) a.get("id"));
+            long idB = Long.parseLong((String) b.get("id"));
+            return Long.compare(idB, idA);
+        });
+        Map<String, Object> prevTask = null;
+        for (Map<String, Object> his : hisList) {
+            if (Long.parseLong((String) his.get("id")) < ctx.numericTaskId) {
+                prevTask = his;
+            }
+        }
+        if (prevTask != null) {
+            return Integer.parseInt(
+                    ((String) prevTask.get("assignee")).replaceAll(",", ""));
+        }
+        return Integer.parseInt(ctx.assignee.replaceAll(",", ""));
+    }
+
+    private void setPendingSourceInfo(Pending pending, int userId) {
+        SysUsers prev = sysUsersMapper.selectById(userId);
+        if (prev != null) {
+            pending.setPendingSource(
+                    StringUtils.isNotEmpty(prev.getNameCh()) ? prev.getNameCh() : "未知用户");
+            try {
+                pending.setPendingSourceUserID(prev.getEmail().split("@")[0]);
+            } catch (Exception e) {
+                pending.setPendingSourceUserID("未知用户");
+                log.info("{}未知用户异常", pending.getId());
+            }
+        } else {
+            pending.setPendingSource("未知用户");
+            pending.setPendingSourceUserID("未知用户");
+        }
+    }
+
+    // ---- TaskCtx ----
+
+    private static class TaskCtx {
+        final boolean isFlowable;
+        final String taskDefKey;
+        final String procInsId;
+        final String assignee;
+        final long numericTaskId;
+
+        TaskCtx(boolean isFlowable, String taskDefKey, String procInsId,
+                String assignee, long numericTaskId) {
+            this.isFlowable = isFlowable;
+            this.taskDefKey = taskDefKey;
+            this.procInsId = procInsId;
+            this.assignee = assignee;
+            this.numericTaskId = numericTaskId;
         }
     }
 
@@ -285,7 +298,6 @@ public class PendingServiceImpl implements IPendingService {
         }
     }
 
-    @Transactional(propagation = Propagation.NESTED)
     private boolean checkUpdateData(Pending pending) {
         Pending a = findByPendingCodeAndType(pending.getPendingCode(), "a");
         if (a == null) {

@@ -2,13 +2,13 @@ package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.utils.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
@@ -173,10 +173,10 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     @Override
     public void updateByOppoId(Long oppoId, String endReason) {
         baseMapper.update(null, new LambdaUpdateWrapper<ToppOrder>()
-            .set(ToppOrder::getStatus, Constants.ORDER_STATUS_END)
+            .set(ToppOrder::getStatus, OrderStatusEnum.END.getCode())
             .set(ToppOrder::getEndReason, endReason)
             .eq(ToppOrder::getOppoId, oppoId)
-            .ne(ToppOrder::getStatus, Constants.ORDER_STATUS_END)
+            .ne(ToppOrder::getStatus, OrderStatusEnum.END.getCode())
         );
     }
 }
