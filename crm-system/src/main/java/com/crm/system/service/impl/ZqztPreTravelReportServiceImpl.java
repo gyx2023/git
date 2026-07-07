@@ -244,7 +244,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
         int maxRetry = 3;
         SysParamDo retryParam = sysParamMapper.selectOne(
             new LambdaQueryWrapper<SysParamDo>()
-                .eq(SysParamDo::getType, "travel_report_retry")
+                .eq(SysParamDo::getType, "travel_report_area_type")
                 .eq(SysParamDo::getCode, "max_retry_count")
                 .select(SysParamDo::getValue)
         );
@@ -375,6 +375,7 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
                 } else {
                     report.setMdContent(mdContent);
                     report.setTaskStatus(TASK_STATUS_SUCCESS);
+                    report.setRetryCount(report.getRetryCount() + 1);
                     report.setTaskStatusDesc("重试成功");
                 }
             } catch (Exception e) {
