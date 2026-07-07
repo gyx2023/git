@@ -62,9 +62,10 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
     @Override
     protected List<WarningRecord> doQuery(String yyyyMM) {
         List<WarningRecord> records = new ArrayList<>();
-
+        StringBuffer yyyyMMFormat = new StringBuffer();
+        yyyyMMFormat.append(yyyyMM).insert(4, "-");
         // ========== 一、区县维度 ==========
-        List<Map<String, Object>> areas = mapper.selectWarningAreas(yyyyMM);
+        List<Map<String, Object>> areas = mapper.selectWarningAreas(yyyyMMFormat.toString());
         log.info("【{}】查询到预警区县: {}个", getOrderTypeName(), areas.size());
 
         for (Map<String, Object> area : areas) {
@@ -80,12 +81,12 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
             }
 
             for (LeaderInfo leader : areaLeaders) {
-                records.add(buildRecord(areaId, areaName, bssCode, null, leader, yyyyMM, BOSS_FLAG_AREA));
+                records.add(buildRecord(areaId, areaName, bssCode, null, leader, yyyyMMFormat.toString(), BOSS_FLAG_AREA));
             }
         }
 
         // ========== 二、市本级组织部门维度 ==========
-        List<Map<String, Object>> orgs = mapper.selectOrgDepartments(yyyyMM);
+        List<Map<String, Object>> orgs = mapper.selectOrgDepartments(yyyyMMFormat.toString());
         log.info("【{}】查询到预警市本级部门: {}个", getOrderTypeName(), orgs.size());
 
         for (Map<String, Object> org : orgs) {
@@ -101,7 +102,7 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
             }
 
             for (LeaderInfo leader : orgLeaders) {
-                records.add(buildRecord(Long.parseLong(countyId), countyName, null, countyId, leader, yyyyMM, BOSS_FLAG_ORG));
+                records.add(buildRecord(Long.parseLong(countyId), countyName, null, countyId, leader, yyyyMMFormat.toString(), BOSS_FLAG_ORG));
             }
         }
 
