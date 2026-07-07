@@ -98,6 +98,16 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
         return "/userCustWarning/dealByWideSecond?orderId=" + orderId;
     }
 
+    @Override
+    public boolean isNotificationEnabled() {
+        return true;
+    }
+
+    @Override
+    public String getNotificationMessage(int count) {
+        return "温馨提醒：您收到" + count + "个" + getOrderTypeName() + "工单，已生成待处理任务，请至创新头条-省分专区-运营平台。";
+    }
+
     private String getString(Object v) {
         return v == null ? null : v.toString();
     }

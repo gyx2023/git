@@ -14,6 +14,7 @@ import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.system.service.topp.IToppOrderUpService;
 import com.crm.system.utils.OppClueCodeUtil;
+import com.crm.system.service.send.ISendDMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
@@ -71,6 +72,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired(required = false)
+    private ISendDMessageService sendDMessageService;
+
     @Override
     public void startByType(String orderType, String targetDate) {
         IWarningQueryStrategy strategy = findStrategy(orderType);
@@ -82,6 +86,13 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         List<WarningRecord> records = strategy.query(targetDate);
         log.info("【预警启动】类型={}, 待处理记录={}条", orderType, records.size());
 
+        if (records.isEmpty()) {
+            return;
+        }
+
+        java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(records.size());
+        java.util.Map<Long, Integer> managerTaskCount = new java.util.concurrent.ConcurrentHashMap<>();
+
         for (WarningRecord record : records) {
             // 将 targetDate 传递给 createAndStartOrder（部分类型需设为流程变量）
             Map<String, Object> extra = record.getExtraVariables();
@@ -92,7 +103,30 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             if (!extra.containsKey("_targetDate")) {
                 extra.put("_targetDate", targetDate);
             }
-            executorService.execute(() -> createAndStartOrder(record));
+            executorService.execute(() -> {
+                try {
+                    createAndStartOrder(record);
+                    // 统计客户经理处理条数（用于通知）
+                    managerTaskCount.merge(record.getCustManagerId(), 1, Integer::sum);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+            // 发送通知（对应旧系统 sendDMessageService.initNoticeMessageByWx）
+            if (strategy.isNotificationEnabled() && sendDMessageService != null) {
+                for (Map.Entry<Long, Integer> entry : managerTaskCount.entrySet()) {
+                    sendDMessageService.initNoticeMessage(
+                            java.util.Collections.singletonList(entry.getKey().intValue()),
+                            strategy.getNotificationMessage(entry.getValue()));
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("【预警启动】等待任务完成被中断", e);
         }
     }
 
