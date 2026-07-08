@@ -73,10 +73,20 @@ public class PlusDataPermissionHandler {
             invalidCacheSet.add(mappedStatementId);
             return where;
         }
-        LoginUser currentUser = DataPermissionHelper.getVariable("user");
+        LoginUser currentUser = null;
+        try {
+            currentUser = DataPermissionHelper.getVariable("user");
+        } catch (Exception e) {
+            // 非Web上下文，忽略
+        }
         if (ObjectUtil.isNull(currentUser)) {
-            currentUser = LoginHelper.getLoginUser();
-            DataPermissionHelper.setVariable("user", currentUser);
+            try {
+                currentUser = LoginHelper.getLoginUser();
+                DataPermissionHelper.setVariable("user", currentUser);
+            } catch (Exception e) {
+                // 非Web上下文（定时任务等场景），无法获取登录信息，跳过数据权限控制
+                return where;
+            }
         }
         // 如果没有登录信息，则不进行数据权限控制（定时任务等场景）
         if (ObjectUtil.isNull(currentUser)) {
@@ -116,13 +126,16 @@ public class PlusDataPermissionHandler {
         DataPermissionHelper.getContext().forEach(context::setVariable);
         Set<String> conditions = new HashSet<>();
 
-        // 先检查是否有客户经理OA账号数据权限
+        // 先检查是否有客户经理OA账号数据权限或通用特殊名单数据权限
         boolean hasCustManagerOaUserPermission = false;
+        boolean hasSpecialListPermission = false;
         for (RoleDTO role : user.getRoles()) {
             DataScopeType type = DataScopeType.findCode(role.getDataScope());
             if (type == DataScopeType.CUST_MANAGER_OAUSER) {
                 hasCustManagerOaUserPermission = true;
-                break;
+            }
+            if (type == DataScopeType.SPECIAL_LIST) {
+                hasSpecialListPermission = true;
             }
         }
 
@@ -133,13 +146,17 @@ public class PlusDataPermissionHandler {
             if (ObjectUtil.isNull(type)) {
                 throw new ServiceException("角色数据范围异常 => " + role.getDataScope());
             }
-            // 全部数据权限直接返回(但如果存在客户经理OA账号权限则不返回)
-            if (type == DataScopeType.ALL && !hasCustManagerOaUserPermission) {
+            // 全部数据权限直接返回(但如果存在客户经理OA账号权限或特殊名单权限则不返回)
+            if (type == DataScopeType.ALL && !hasCustManagerOaUserPermission && !hasSpecialListPermission) {
                 return "";
             }
-            // 如果是全部数据权限但存在客户经理权限,跳过该角色继续处理
-            if (type == DataScopeType.ALL && hasCustManagerOaUserPermission) {
+            // 如果是全部数据权限但存在客户经理权限或特殊名单权限,跳过该角色继续处理
+            if (type == DataScopeType.ALL && (hasCustManagerOaUserPermission || hasSpecialListPermission)) {
                 continue;
+            }
+            // 通用特殊名单数据权限 → 看全部，直接返回
+            if (type == DataScopeType.SPECIAL_LIST) {
+                return "";
             }
             boolean isSuccess = false;
             for (DataColumn dataColumn : dataColumns) {
@@ -169,8 +186,28 @@ public class PlusDataPermissionHandler {
         }
 
         if (CollUtil.isNotEmpty(conditions)) {
+            // 如果只有兜底方案(如 1=0)，且用户没有全部/特殊名单权限，则用 create_by 兜底
+            boolean allElseSql = conditions.stream().allMatch(c -> c.contains("1 = 0"));
+            if (allElseSql && !hasSpecialListPermission) {
+                for (DataColumn dataColumn : dataColumns) {
+                    if ("createBy".equals(dataColumn.key()[0])) {
+                        String defaultFilter = dataColumn.value()[0] + " = " + user.getUserId();
+                        conditions.clear();
+                        conditions.add(joinStr + defaultFilter);
+                        break;
+                    }
+                }
+            }
             String sql = StreamUtils.join(conditions, Function.identity(), "");
             return sql.substring(joinStr.length());
+        }
+        // 没有条件且无全部/特殊名单权限 → 默认仅看自己创建的
+        if (!hasSpecialListPermission) {
+            for (DataColumn dataColumn : dataColumns) {
+                if ("createBy".equals(dataColumn.key()[0])) {
+                    return dataColumn.value()[0] + " = " + user.getUserId();
+                }
+            }
         }
         return "";
     }

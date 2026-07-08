@@ -12,9 +12,6 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.exception.ServiceException;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.crm.common.core.domain.model.LoginUser;
-import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.bo.SpecialListBo;
@@ -23,7 +20,6 @@ import com.crm.system.domain.vo.SpecialListVo;
 import com.crm.system.mapper.SpecialListMapper;
 import com.crm.system.mapper.sys.SysUserMapper;
 import com.crm.system.service.ISpecialListService;
-import com.crm.system.service.sys.ISysDataScopeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -44,8 +40,6 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
     @Resource
     private SysUserMapper sysUserMapper;
 
-    @Resource
-    private ISysDataScopeService sysDataScopeService;
 
     /**
      * 分页查询特殊名单列表
@@ -54,21 +48,19 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
     public TableDataInfo<SpecialListVo> queryPageList(SpecialListBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SpecialListDo> lqw = buildQueryWrapper(bo);
         lqw.orderByDesc(SpecialListDo::getCreateTime);
-        Page<SpecialListDo> page = pageQuery.build();
-        baseMapper.selectPage(page, lqw);
+        Page<SpecialListVo> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
+        page = baseMapper.selectPageList(page, lqw);
 
-        List<SpecialListVo> voList = new ArrayList<>();
-        if (CollUtil.isNotEmpty(page.getRecords())) {
-            voList = BeanCopyUtils.copyList(page.getRecords(), SpecialListVo.class);
-
+        List<SpecialListVo> voList = page.getRecords();
+        if (CollUtil.isNotEmpty(voList)) {
             // 收集创建人和更新人ID
             Set<Integer> userIds = new HashSet<>();
-            page.getRecords().forEach(d -> {
-                if (d.getCreateBy() != null) {
-                    userIds.add(d.getCreateBy());
+            voList.forEach(v -> {
+                if (v.getCreateBy() != null) {
+                    userIds.add(v.getCreateBy());
                 }
-                if (d.getUpdateBy() != null) {
-                    userIds.add(d.getUpdateBy());
+                if (v.getUpdateBy() != null) {
+                    userIds.add(v.getUpdateBy());
                 }
             });
 
@@ -78,16 +70,14 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
                 Map<Long, String> userNameMap = users.stream()
                     .collect(Collectors.toMap(SysUser::getUserId, SysUser::getNickName, (a, b) -> b));
 
-                for (int i = 0; i < page.getRecords().size(); i++) {
-                    SpecialListDo d = page.getRecords().get(i);
-                    SpecialListVo v = voList.get(i);
-                    if (d.getCreateBy() != null && userNameMap.containsKey(d.getCreateBy().longValue())) {
-                        v.setCreateByName(userNameMap.get(d.getCreateBy().longValue()));
+                voList.forEach(v -> {
+                    if (v.getCreateBy() != null && userNameMap.containsKey(v.getCreateBy().longValue())) {
+                        v.setCreateByName(userNameMap.get(v.getCreateBy().longValue()));
                     }
-                    if (d.getUpdateBy() != null && userNameMap.containsKey(d.getUpdateBy().longValue())) {
-                        v.setUpdateByName(userNameMap.get(d.getUpdateBy().longValue()));
+                    if (v.getUpdateBy() != null && userNameMap.containsKey(v.getUpdateBy().longValue())) {
+                        v.setUpdateByName(userNameMap.get(v.getUpdateBy().longValue()));
                     }
-                }
+                });
             }
         }
 
@@ -194,6 +184,7 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
         lqw.eq(StringUtils.isNotBlank(bo.getSceneCode()), SpecialListDo::getSceneCode, bo.getSceneCode());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SpecialListDo::getStatus, bo.getStatus());
         lqw.like(StringUtils.isNotBlank(bo.getTargetValue()), SpecialListDo::getTargetValue, bo.getTargetValue());
+        lqw.eq(bo.getCreateBy() != null, SpecialListDo::getCreateBy, bo.getCreateBy());
         lqw.ge(bo.getEffectiveTimeStart() != null, SpecialListDo::getEffectiveTime, bo.getEffectiveTimeStart());
         lqw.le(bo.getEffectiveTimeEnd() != null, SpecialListDo::getEffectiveTime, bo.getEffectiveTimeEnd());
         lqw.ge(bo.getCreateTimeStart() != null, SpecialListDo::getCreateTime, bo.getCreateTimeStart());
@@ -204,59 +195,8 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
             lqw.in(SpecialListDo::getId, bo.getIds());
         }
 
-        // 数据权限：按create_by过滤（省/市/县分级）
-        applyDataScopeFilter(lqw);
-
         return lqw;
     }
 
-    /**
-     * 应用数据权限过滤：根据当前用户的组织范围，限定可见的记录(create_by在范围内)
-     */
-    private void applyDataScopeFilter(LambdaQueryWrapper<SpecialListDo> lqw) {
-        try {
-            LoginUser loginUser = LoginHelper.getLoginUser();
-            if (loginUser == null) {
-                return;
-            }
-            // 超级管理员看全部
-            if (LoginHelper.isAdmin(loginUser.getUserId())) {
-                return;
-            }
-            Long deptId = loginUser.getDeptId();
-            if (deptId == null) {
-                return;
-            }
-            // 获取当前用户组织及其所有下级组织ID
-            String deptAndChild = sysDataScopeService.getDeptAndChild(deptId);
-            if (StringUtils.isBlank(deptAndChild)) {
-                // 只有本部门，查本部门下的用户
-                QueryWrapper<SysUser> uw = new QueryWrapper<>();
-                uw.eq("dept_id", deptId);
-                uw.select("user_id");
-                List<Object> userIds = sysUserMapper.selectObjs(uw);
-                if (CollUtil.isNotEmpty(userIds)) {
-                    lqw.in(SpecialListDo::getCreateBy, userIds);
-                } else {
-                    // 无用户时仅看自己的
-                    lqw.eq(SpecialListDo::getCreateBy, loginUser.getUserId().intValue());
-                }
-            } else {
-                List<Long> deptIds = Arrays.stream(deptAndChild.split(","))
-                    .map(Long::valueOf).collect(Collectors.toList());
-                QueryWrapper<SysUser> uw = new QueryWrapper<>();
-                uw.in("dept_id", deptIds);
-                uw.select("user_id");
-                List<Object> userIds = sysUserMapper.selectObjs(uw);
-                if (CollUtil.isNotEmpty(userIds)) {
-                    lqw.in(SpecialListDo::getCreateBy, userIds);
-                } else {
-                    lqw.eq(SpecialListDo::getCreateBy, loginUser.getUserId().intValue());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("数据权限过滤异常，跳过", e);
-        }
-    }
 
 }

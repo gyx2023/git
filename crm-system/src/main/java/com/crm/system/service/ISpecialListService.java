@@ -1,5 +1,7 @@
 package com.crm.system.service;
 
+import com.crm.common.annotation.DataColumn;
+import com.crm.common.annotation.DataPermission;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.bo.SpecialListBo;
@@ -24,6 +26,9 @@ public interface ISpecialListService {
      * @param pageQuery 分页参数
      * @return 分页结果
      */
+    @DataPermission({
+        @DataColumn(key = "createBy", value = "SPECIAL_LIST")
+    })
     TableDataInfo<SpecialListVo> queryPageList(SpecialListBo bo, PageQuery pageQuery);
 
     /**

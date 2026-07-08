@@ -10,8 +10,10 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
 import com.crm.system.domain.bo.SpecialListBo;
 import com.crm.system.domain.dao.FileAsyncTaskDo;
+import com.crm.common.core.domain.entity.SysRole;
 import com.crm.system.domain.vo.SpecialListVo;
 import com.crm.system.domain.vo.SysOssVo;
+import com.crm.system.mapper.sys.SysRoleMapper;
 import com.crm.system.service.ISpecialListService;
 import com.crm.system.service.sys.ISysDictTypeService;
 import com.crm.system.service.sys.ISysOssService;
@@ -43,6 +45,9 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
     @Resource
     private ISysOssService iSysOssService;
 
+    @Resource
+    private SysRoleMapper sysRoleMapper;
+
     @Override
     public String getBusinessType() {
         return "special_list_export";
@@ -53,6 +58,7 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
         try {
             // 解析请求参数
             SpecialListBo queryParams = JSONUtil.toBean(task.getRequestParams(), SpecialListBo.class);
+            applyDataScope(queryParams, task.getCreateUserId());
             log.info("开始处理特殊名单导出任务，任务ID: {}", task.getTaskId());
 
             // 创建临时文件 - 使用英文文件名避免系统级中文文件名问题
@@ -165,5 +171,25 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
         }
 
         return totalRows;
+    }
+
+    /**
+     * 根据任务创建人的数据权限，决定是否按 create_by 过滤
+     * 无 SPECIAL_LIST 权限 → 仅导出自己创建的
+     */
+    private void applyDataScope(SpecialListBo queryParams, Long createUserId) {
+        if (createUserId == null) {
+            return;
+        }
+        try {
+            List<SysRole> roles = sysRoleMapper.selectRolePermissionByUserId(createUserId);
+            boolean hasSpecialList = roles != null && roles.stream().anyMatch(r -> "7".equals(r.getDataScope()));
+            if (!hasSpecialList) {
+                queryParams.setCreateBy(String.valueOf(createUserId));
+            }
+        } catch (Exception e) {
+            log.warn("导出数据权限检查异常，默认仅导出自己创建的", e);
+            queryParams.setCreateBy(String.valueOf(createUserId.intValue()));
+        }
     }
 }
