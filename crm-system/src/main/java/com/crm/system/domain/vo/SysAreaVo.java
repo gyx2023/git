@@ -105,5 +105,8 @@ public class SysAreaVo {
      */
     private int empCountyId;
 
-
+    /**
+     * 百强区县
+     */
+    private String top100Counties;
 }
