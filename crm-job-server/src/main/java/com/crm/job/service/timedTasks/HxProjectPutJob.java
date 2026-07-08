@@ -28,9 +28,9 @@ public class HxProjectPutJob extends BaseJob {
     private static final String[] CONTRACT_COLUMNS = {"contract_no", "contract_name", "startTime", "endTime"};
 
     private static final String REMAND_FILE_NAME = "remand_contract.TMP";
-    private static final String REMAND_FILE_NAME_TXT = "remand_contract.txt";
+    private static final String REMAND_FILE_NAME_TXT = "remand_contract.TXT";
     private static final String CONTRACT_FILE_NAME = "contract_info.TMP";
-    private static final String CONTRACT_FILE_NAME_TXT = "contract_info.txt";
+    private static final String CONTRACT_FILE_NAME_TXT = "contract_info.TXT";
     private static final String FTP_BASE_PATH = "/oppocontract";
 
     @Resource

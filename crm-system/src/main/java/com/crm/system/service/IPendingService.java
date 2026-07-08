@@ -38,7 +38,7 @@ public interface IPendingService {
     /**
      * 更新失败次数
      */
-    int updateFailTimes(List<Pending> pendingList);
+    int updateFailTimes(Pending pending);
 
     /**
      * 获取未发送的集团待办数据
