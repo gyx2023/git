@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
@@ -75,7 +76,9 @@ public class PendingServiceImpl implements IPendingService {
         try {
             addPending(pending, addUrl, appId, token);
         } catch (Exception e) {
-            updateFailTimes(Collections.singletonList(pending));
+            pending.setSendTime(new Date());
+            pending.setResponseMsg(e.getMessage() == null ? null : e.getMessage().substring(0, Math.min(e.getMessage().length(), 100)));
+            updateFailTimes(pending);
             log.error("推送新增待办异常", e);
         }
     }
@@ -91,7 +94,7 @@ public class PendingServiceImpl implements IPendingService {
         log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
 
         if (StringUtils.isEmpty(result)) {
-            updateFailTimes(Collections.singletonList(pending));
+            updateFailTimes(pending);
         } else {
             JSONObject resultJson = JSONObject.parseObject(result);
             for (String pendingCode : resultJson.keySet()) {
@@ -295,7 +298,7 @@ public class PendingServiceImpl implements IPendingService {
                 updatePendingStatus(pending, updateUrl, appId, token);
             }
         } catch (Exception e) {
-            updateFailTimes(Collections.singletonList(pending));
+            updateFailTimes(pending);
             log.error("推送待办状态更新异常", e);
         }
     }
@@ -327,7 +330,7 @@ public class PendingServiceImpl implements IPendingService {
         log.info("推送OA待办更新,响应数据:{}", result);
 
         if (StringUtils.isEmpty(result)) {
-            updateFailTimes(Collections.singletonList(pending));
+            updateFailTimes(pending);
         } else {
             JSONObject resultJson = JSONObject.parseObject(result);
             for (String pendingCode : resultJson.keySet()) {
@@ -370,17 +373,15 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     @Override
-    public int updateFailTimes(List<Pending> pendingList) {
-        if (pendingList.size() == 0) {
+    public int updateFailTimes(Pending pending) {
+        if (pending == null) {
             return 0;
         }
-        Map<String, Object> param = new HashMap<>();
-        List<Long> integerList = new ArrayList<>();
-        for (Pending p : pendingList) {
-            integerList.add(p.getId());
-        }
-        param.put("ids", integerList);
-        return pendingMapper.updateFailTimes(param);
+        UpdateWrapper<Pending> wrapper = new UpdateWrapper<>();
+        wrapper.eq("id_", pending.getId());
+        wrapper.set("fail_times",3);
+        wrapper.set("send_status","2");
+        return pendingMapper.update(pending, wrapper);
     }
 
     @Override
