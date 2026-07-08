@@ -17,7 +17,7 @@ public interface ZqztTravelNatureCustMapper extends BaseMapperPlus<ZqztTravelNat
     /**
      * 根据关键字模糊搜索自然客户（名称或编码），最多返回50条
      */
-    List<ZqztTravelNatureCust> searchByKeyword(@Param("keyword") String keyword, @Param("oaAccount") String oaAccount);
+    List<ZqztTravelNatureCust> searchByKeyword(@Param("keyword") String keyword);
 
     /**
      * 清空表（TRUNCATE，数据同步用）

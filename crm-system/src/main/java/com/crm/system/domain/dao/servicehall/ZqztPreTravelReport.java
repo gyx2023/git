@@ -48,4 +48,8 @@ public class ZqztPreTravelReport implements Serializable {
     private Date updateTime;
 
     private String remark;
+
+    private Long appointmentId;
+
+    private String dataSource;
 }
