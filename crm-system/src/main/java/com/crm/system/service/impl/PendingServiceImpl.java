@@ -107,8 +107,6 @@ public class PendingServiceImpl implements IPendingService {
             }
         }
     }
-
-    @Transactional(propagation = Propagation.NESTED)
     private boolean initPendingUrl(Pending pending) {
         log.info("{}开始处理", pending.getId());
         if (StringUtils.isNotEmpty(pending.getPendingURL())) {
@@ -207,7 +205,6 @@ public class PendingServiceImpl implements IPendingService {
         }
     }
 
-    @Transactional(propagation = Propagation.NESTED)
     private boolean checkUpdateData(Pending pending) {
         Pending a = findByPendingCodeAndType(pending.getPendingCode(), "a");
         if (a == null) {
