@@ -175,7 +175,7 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
 
     /**
      * 根据任务创建人的数据权限，决定是否按 create_by 过滤
-     * 无 SPECIAL_LIST 权限 → 仅导出自己创建的
+     * 有 SPECIAL_LIST 权限 → 仅导出自己创建的
      */
     private void applyDataScope(SpecialListBo queryParams, Long createUserId) {
         if (createUserId == null) {
@@ -184,12 +184,11 @@ public class SpecialListExportStrategy extends AbstractExportStrategy {
         try {
             List<SysRole> roles = sysRoleMapper.selectRolePermissionByUserId(createUserId);
             boolean hasSpecialList = roles != null && roles.stream().anyMatch(r -> "7".equals(r.getDataScope()));
-            if (!hasSpecialList) {
-                queryParams.setCreateBy(String.valueOf(createUserId));
+            if (hasSpecialList) {
+                queryParams.setCreateBy(String.valueOf(createUserId.intValue()));
             }
         } catch (Exception e) {
-            log.warn("导出数据权限检查异常，默认仅导出自己创建的", e);
-            queryParams.setCreateBy(String.valueOf(createUserId.intValue()));
+            log.warn("导出数据权限检查异常，跳过", e);
         }
     }
 }
