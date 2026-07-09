@@ -148,6 +148,8 @@ security:
     - /actuator/**
     # SSO自动登录接口
     - /sso/autoLogin
+    # 智能问数 iframe 嵌入 SSE 入口，内部仍强制校验宿主 Authorization
+    - /askdata/chat/stream
     - /api/askdata/tools/schemas
     - /api/askdata/tools/schemasnew
 

@@ -1,5 +1,6 @@
 package com.crm.adapter.api;
 
+import com.crm.askdata.config.AskDataEmbedProperties;
 import com.crm.askdata.client.HiAgentClient;
 import com.crm.askdata.model.*;
 import com.crm.askdata.service.HiAgentConversationManager;
@@ -17,6 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -36,6 +38,7 @@ public class AskDataController extends BaseController {
     private final HiAgentClient hiAgentClient;
     private final RouterService routerService;
     private final HiAgentConversationManager conversationManager;
+    private final AskDataEmbedProperties embedProperties;
 
     /**
      * 智能问数 SSE 流式接口
@@ -50,6 +53,7 @@ public class AskDataController extends BaseController {
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
         @RequestParam String query,
+        HttpServletRequest request,
         HttpServletResponse response
     ) {
         // 禁用 Nginx/网关的 SSE 响应缓冲，保证进度状态实时推送
@@ -58,20 +62,35 @@ public class AskDataController extends BaseController {
 
         String resolvedTraceId = TraceIdUtil.getTraceId();
         String resolvedSessionId = TraceIdUtil.getSessionId();
-        String userId = String.valueOf(getUserId());
 
         log.info("askdata stream request: queryLength={}, sessionId={}",
             query.length(), resolvedSessionId);
 
         // 从当前登录用户获取需透传给下游的身份信息
         Map<String, String> requestHeaders = new HashMap<>();
-        LoginUser loginUser = getLoginUser();
+        LoginUser loginUser = resolveLoginUser();
+        String userId;
         if (loginUser != null) {
+            userId = String.valueOf(loginUser.getUserId());
             if (loginUser.getUsername() != null && !loginUser.getUsername().isEmpty()) {
                 requestHeaders.put("loginoa", loginUser.getUsername().toUpperCase());
             }
             if (loginUser.getNickName() != null && !loginUser.getNickName().isEmpty()) {
                 requestHeaders.put("loginname", loginUser.getNickName());
+            }
+        } else {
+            validateEmbedRequest(request);
+            String loginoa = firstHeader(request, "loginoa", "loginOa", "oa");
+            String loginname = firstHeader(request, "loginname", "loginName", "userName", "nickName");
+            if (loginoa != null && !loginoa.trim().isEmpty()) {
+                String normalizedOa = loginoa.trim().toUpperCase();
+                requestHeaders.put("loginoa", normalizedOa);
+                userId = "embed:" + normalizedOa;
+            } else {
+                userId = "embed:anonymous";
+            }
+            if (loginname != null && !loginname.trim().isEmpty()) {
+                requestHeaders.put("loginname", loginname.trim());
             }
         }
 
@@ -88,6 +107,49 @@ public class AskDataController extends BaseController {
             userId, requestHeaders, emitter);
 
         return emitter;
+    }
+
+    private LoginUser resolveLoginUser() {
+        try {
+            return getLoginUser();
+        } catch (Exception e) {
+            log.debug("no zqzt login user, try embed mode: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void validateEmbedRequest(HttpServletRequest request) {
+        if (!embedProperties.isEnabled()) {
+            throw new RuntimeException("智能问数嵌入模式未开启");
+        }
+        String authorization = firstHeader(request, "Authorization", "authorization");
+        if (embedProperties.isRequireAuthHeader()
+            && (authorization == null || authorization.trim().isEmpty())) {
+            throw new RuntimeException("嵌入模式缺少 Authorization");
+        }
+        String loginoa = firstHeader(request, "loginoa", "loginOa", "oa");
+        if (embedProperties.isRequireOa()
+            && (loginoa == null || loginoa.trim().isEmpty())) {
+            throw new RuntimeException("嵌入模式缺少 loginoa");
+        }
+        if (embedProperties.getAllowedOrigins() != null && !embedProperties.getAllowedOrigins().isEmpty()) {
+            String origin = firstHeader(request, "Origin", "Referer");
+            boolean matched = origin != null && embedProperties.getAllowedOrigins().stream()
+                .anyMatch(origin::startsWith);
+            if (!matched) {
+                throw new RuntimeException("嵌入来源不在白名单");
+            }
+        }
+    }
+
+    private String firstHeader(HttpServletRequest request, String... names) {
+        for (String name : names) {
+            String value = request.getHeader(name);
+            if (value != null && !value.trim().isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     /**

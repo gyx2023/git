@@ -1,12 +1,15 @@
 package com.crm.askdata.service;
 
+import com.crm.askdata.client.ChinaUniconAgentClient;
 import com.crm.askdata.client.HiAgentClient;
+import com.crm.askdata.config.ChinaUniconAgentProperties;
 import com.crm.askdata.model.HiAgentChatResponse;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
 import com.crm.askdata.model.ResponseSchema;
 import com.crm.askdata.model.ResultProcessingOutput;
 import com.crm.askdata.model.ToolConfigWithParams;
+import com.crm.askdata.security.HeaderContextHolder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +24,7 @@ import java.util.regex.Pattern;
 /**
  * 结果后处理器
  * <p>
- * 在工具调用 API 返回原始数据后，调用 HiAgent result_agent
+ * 在工具调用 API 返回原始数据后，调用 result_agent
  * 对数据进行智能过滤、展示格式优化和摘要生成。
  * <p>
  * 设计原则：
@@ -37,6 +40,8 @@ import java.util.regex.Pattern;
 public class ResultPostProcessorService {
 
     private final HiAgentClient hiAgentClient;
+    private final ChinaUniconAgentClient chinaUniconAgentClient;
+    private final ChinaUniconAgentProperties chinaUniconAgentProperties;
     private final ToolConfigService configService;
     private final HiAgentConversationManager conversationManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -88,10 +93,11 @@ public class ResultPostProcessorService {
             // 构建 Agent 输入
             String agentInput = buildAgentInput(originalQuery, intent, rawData, schema);
 
-            log.info("traceId={} calling result_agent for post-processing, toolName={}, originalQuery={}",
-                traceId, intent.getToolName(), originalQuery);
+            log.info("traceId={} calling result_agent for post-processing, provider={}, toolName={}, originalQuery={}",
+                traceId, chinaUniconAgentProperties.isResultEnabled() ? "ChinaUnicon" : "HiAgent",
+                intent.getToolName(), originalQuery);
 
-            // 调用 HiAgent result_agent（使用 userId + sessionId 作为会话隔离 Key）
+            // 调用 result_agent（按配置选择 ChinaUnicon 或保留 HiAgent 回切）
             HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, agentInput);
 
             // 解析 Agent 输出
@@ -200,12 +206,28 @@ public class ResultPostProcessorService {
     }
 
     /**
-     * 调用 HiAgent result_agent
+     * 调用 result_agent
      * <p>
      * 使用 userId + sessionId 作为会话隔离 Key，确保每个页面/浏览器独立会话，
      * 避免多轮对话上下文串扰。traceId 仅用于链路追踪。
      */
     private HiAgentChatResponse callResultAgent(String userId, String sessionId, String traceId, String agentInput) {
+        if (chinaUniconAgentProperties.isResultEnabled()) {
+            // TODO: conversationId 当前暂用 sessionId + ":result" 隔离结果后处理智能体，后续按新的会话维护方案调整
+            String conversationId = sessionId != null && !sessionId.trim().isEmpty()
+                ? sessionId + ":result"
+                : traceId + ":result";
+
+            // TODO: userName 当前优先使用 loginoa，后续按统一用户身份字段调整
+            String userName = HeaderContextHolder.get("loginoa");
+            if (userName == null || userName.trim().isEmpty()) {
+                userName = userId;
+            }
+
+            return chinaUniconAgentClient.postProcessResult(
+                agentInput, conversationId, userId, userName, traceId);
+        }
+
         String convId = conversationManager.getConversationId(userId, resultAgentId, sessionId);
         if (convId == null) {
             convId = hiAgentClient.createConversation(userId, resultAgentId, traceId);

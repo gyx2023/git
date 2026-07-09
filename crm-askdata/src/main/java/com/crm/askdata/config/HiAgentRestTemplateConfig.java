@@ -19,11 +19,16 @@ import java.time.Duration;
  * @author crm
  */
 @Configuration
-@EnableConfigurationProperties({HiAgentProperties.class, RouterProperties.class})
+@EnableConfigurationProperties({
+    HiAgentProperties.class,
+    RouterProperties.class,
+    ChinaUniconAgentProperties.class
+})
 @RequiredArgsConstructor
 public class HiAgentRestTemplateConfig {
 
     private final HiAgentProperties properties;
+    private final ChinaUniconAgentProperties chinaUniconAgentProperties;
 
     /**
      * HiAgent 专用 RestTemplate
@@ -39,6 +44,22 @@ public class HiAgentRestTemplateConfig {
             .requestFactory(() -> factory)
             .setConnectTimeout(Duration.ofMillis(properties.getConnectTimeout().toMillis()))
             .setReadTimeout(Duration.ofMillis(properties.getReadTimeout().toMillis()))
+            .build();
+    }
+
+    /**
+     * ChinaUnicon 智能体专用 RestTemplate。
+     */
+    @Bean("chinaUniconAgentRestTemplate")
+    public RestTemplate chinaUniconAgentRestTemplate(RestTemplateBuilder builder) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout((int) chinaUniconAgentProperties.getConnectTimeout().toMillis());
+        factory.setReadTimeout((int) chinaUniconAgentProperties.getReadTimeout().toMillis());
+
+        return builder
+            .requestFactory(() -> factory)
+            .setConnectTimeout(Duration.ofMillis(chinaUniconAgentProperties.getConnectTimeout().toMillis()))
+            .setReadTimeout(Duration.ofMillis(chinaUniconAgentProperties.getReadTimeout().toMillis()))
             .build();
     }
 }

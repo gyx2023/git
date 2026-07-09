@@ -1,6 +1,8 @@
 package com.crm.askdata.service;
 
+import com.crm.askdata.client.ChinaUniconAgentClient;
 import com.crm.askdata.client.HiAgentClient;
+import com.crm.askdata.config.ChinaUniconAgentProperties;
 import com.crm.askdata.config.RouterProperties;
 import com.crm.askdata.executor.FallbackQueryExecutor;
 import com.crm.askdata.executor.QueryExecutor;
@@ -58,6 +60,8 @@ public class RouterService {
     private final ConversationContextManager contextManager;
     private final AuditLogger auditLogger;
     private final StateValidator stateValidator;
+    private final ChinaUniconAgentClient chinaUniconAgentClient;
+    private final ChinaUniconAgentProperties chinaUniconAgentProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** 意图识别 Agent ID（对应 hiagent.agents 配置 key） */
@@ -67,6 +71,11 @@ public class RouterService {
     /** SSE 异步执行线程池（从配置类注入，自动传递 MDC 上下文） */
     @Qualifier("sseExecutor")
     private final ExecutorService sseExecutor;
+
+    private enum IntentProvider {
+        HIAGENT,
+        CHINA_UNICON
+    }
 
     /**
      * SSE 流式接口（异步）
@@ -102,7 +111,12 @@ public class RouterService {
                 sendSseEvent(emitter, SseMessage.text(traceId, messageId, "正在识别意图...", 0.0));
 
                 // 阶段间推送 SSE 进度状态
+                IntentProvider intentProvider = chinaUniconAgentProperties.isIntentEnabled()
+                    ? IntentProvider.CHINA_UNICON
+                    : IntentProvider.HIAGENT;
+
                 QueryResult result = processInternal(query, traceId, sessionId, userId, startTime,
+                    intentProvider, requestHeaders,
                     status -> {
                         try {
                             sendSseEvent(emitter, SseMessage.text(traceId, messageId, status, 0.0));
@@ -186,7 +200,8 @@ public class RouterService {
      */
     private QueryResult processInternal(String query, String traceId, String sessionId,
                                         String userId, long startTime) {
-        return processInternal(query, traceId, sessionId, userId, startTime, s -> {});
+        return processInternal(query, traceId, sessionId, userId, startTime,
+            IntentProvider.HIAGENT, Collections.emptyMap(), s -> {});
     }
 
     /**
@@ -201,9 +216,12 @@ public class RouterService {
      */
     private QueryResult processInternal(String query, String traceId, String sessionId,
                                         String userId, long startTime,
+                                        IntentProvider intentProvider,
+                                        Map<String, String> requestHeaders,
                                         java.util.function.Consumer<String> statusConsumer) {
         // 阶段1：意图识别
-        IntentRecognitionResult intentRecog = recognizeIntent(query, sessionId, userId, traceId);
+        IntentRecognitionResult intentRecog = recognizeIntent(
+            query, sessionId, userId, traceId, intentProvider, requestHeaders);
 
         // 透传原始查询到 IntentResult，供结果处理和展示阶段使用
         intentRecog.intentResult.setOriginalQuery(query);
@@ -300,7 +318,20 @@ public class RouterService {
      * 改造后：直接透传用户原始输入，让 Agent 从会话历史中获取上下文
      */
     private IntentRecognitionResult recognizeIntent(String query, String sessionId,
-                                                    String userId, String traceId) {
+                                                    String userId, String traceId,
+                                                    IntentProvider provider,
+                                                    Map<String, String> requestHeaders) {
+        if (provider == IntentProvider.CHINA_UNICON) {
+            return recognizeIntentByChinaUnicon(query, sessionId, userId, traceId, requestHeaders);
+        }
+        return recognizeIntentByHiAgent(query, sessionId, userId, traceId);
+    }
+
+    /**
+     * 阶段1：调用 HiAgent 进行意图识别
+     */
+    private IntentRecognitionResult recognizeIntentByHiAgent(String query, String sessionId,
+                                                             String userId, String traceId) {
         long start = System.currentTimeMillis();
 
         // 1.1 获取或创建 HiAgent 会话（改造后：复用会话，按 sessionId 隔离）
@@ -332,6 +363,47 @@ public class RouterService {
             intentResult.getToolName(), intentResult.getNeedClarify());
 
         return new IntentRecognitionResult(convId, intentResult, latency);
+    }
+
+    /**
+     * 阶段1：调用 ChinaUnicon 智能体进行意图识别。
+     */
+    private IntentRecognitionResult recognizeIntentByChinaUnicon(String query, String sessionId,
+                                                                 String userId, String traceId,
+                                                                 Map<String, String> requestHeaders) {
+        long start = System.currentTimeMillis();
+
+        // TODO: conversationId 当前暂用 sessionId，后续按新的会话维护方案调整
+        String conversationId = sessionId != null && !sessionId.trim().isEmpty()
+            ? sessionId
+            : traceId;
+
+        // TODO: userName 当前暂用 loginoa，后续按统一用户身份字段调整
+        String userName = requestHeaders != null ? requestHeaders.get("loginoa") : null;
+        if (userName == null || userName.trim().isEmpty()) {
+            userName = userId;
+        }
+
+        HiAgentChatResponse chatResponse = chinaUniconAgentClient.recognizeIntent(
+            query, conversationId, userId, userName, traceId);
+
+        IntentResult intentResult = intentParser.parse(chatResponse.getAnswer(), traceId);
+        intentResult.setHiagentRequestId(chatResponse.getMessageId());
+
+        double rawConfidence = intentResult.getConfidenceSafe();
+        double calibrated = calibrator.calibrate(
+            rawConfidence, intentResult.getIntent(),
+            query != null ? query.length() : 0);
+        intentResult.setConfidence(calibrated);
+
+        long latency = System.currentTimeMillis() - start;
+        checkBudget("china_unicon_intent_recognition", latency);
+
+        log.info("ChinaUnicon intent recognized: type={}, confidence={}, toolName={}, needClarify={}",
+            intentResult.getIntent(), calibrated,
+            intentResult.getToolName(), intentResult.getNeedClarify());
+
+        return new IntentRecognitionResult(conversationId, intentResult, latency);
     }
 
     // ==================== 阶段2：澄清处理 ====================

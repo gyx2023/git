@@ -163,6 +163,8 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /zqzt_backend/health/**
+    # 智能问数嵌入入口，Controller 内部仍会校验宿主 Authorization
+    - /askdata/chat/stream
 # Swagger配置
 swagger:
   info:

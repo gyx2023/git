@@ -61,8 +61,37 @@ hiagent:
     permitted-number-of-calls-in-half-open-state: 3
     sliding-window-size: 10
 
+--- # ChinaUnicon 智能体配置
+china-unicon-agent:
+  # 控制 /askdata/chat/stream 的意图识别；同步 /askdata/query 仍走 HiAgent
+  enabled: true
+  base-url: https://ai-agent.chinaunicom.cn
+  chat-api: /uia/api/robot/chat/stream/v1
+  app-id: 686304240312774656
+  intent:
+    enabled: true
+    app-id: 686304240312774656
+  result:
+    enabled: true
+    app-id: 686990396490772480
+  # TODO: 待 ChinaUnicon 平台侧提供真实 teamId 后替换
+  team-id: 1724420776265
+  # TODO: 待 ChinaUnicon 平台侧提供真实 SK 后替换
+  sk: sk-bnlNb7zhGgqEtj3NJjKcbAVAazaFzfj9DG4bOD365ZI
+  stream: false
+  connect-timeout: 5s
+  read-timeout: 60s
+
 --- # 智能问数路由决策配置
 askdata:
+  embed:
+    # 内网 iframe 嵌入模式：允许无 zqzt 登录态访问，但必须携带宿主 Authorization
+    enabled: true
+    require-auth-header: true
+    # 宿主 OA 字段暂不强制，待 smart-brain-vue 传参稳定后可改为 true
+    require-oa: false
+    # 内网联调阶段暂不限制宿主来源；生产如需收紧可配置宿主域名
+    allowed-origins: []
   router:
     # 置信度閘值配置
     confidence-thresholds:
