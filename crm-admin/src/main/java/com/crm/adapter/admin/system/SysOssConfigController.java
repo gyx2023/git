@@ -40,6 +40,7 @@ public class SysOssConfigController extends BaseController {
     /**
      * 查询对象存储配置列表
      */
+    @Log(title = "对象存储配置", businessType = BusinessType.OTHER)
     @SaCheckPermission("system:oss:list")
     @GetMapping("/list")
     public TableDataInfo<SysOssConfigVo> list(@Validated(QueryGroup.class) SysOssConfigBo bo, PageQuery pageQuery) {

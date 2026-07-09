@@ -48,6 +48,7 @@ public class FileAsyncTaskController extends BaseController {
      * 查询任务管理列表
      */
     @GetMapping("/list")
+    @Log(title = "任务管理", businessType = BusinessType.OTHER)
     public TableDataInfo<FileAsyncTaskVo> list(FileAsyncTaskBo bo, PageQuery pageQuery) {
         return iFileAsyncTaskService.queryPageList(bo, pageQuery
         );

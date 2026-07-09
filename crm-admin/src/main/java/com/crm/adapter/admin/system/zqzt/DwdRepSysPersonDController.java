@@ -44,6 +44,7 @@ public class DwdRepSysPersonDController extends BaseController {
     /**
      * 查询【请填写功能名称】列表
      */
+    @Log(title = "【请填写功能名称】", businessType = BusinessType.OTHER)
     @SaCheckPermission("system:repSysPersonD:list")
     @GetMapping("/list")
     public TableDataInfo<DwdRepSysPersonDVo> list(DwdRepSysPersonDBo bo, PageQuery pageQuery) {

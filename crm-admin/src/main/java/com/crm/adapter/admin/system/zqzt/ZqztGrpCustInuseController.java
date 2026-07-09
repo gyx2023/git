@@ -44,6 +44,7 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询政企主体-实际使用客户（zqzt_grp_cust_inuse）列表
      */
+    @Log(title = "政企主体-实际使用客户（zqzt_grp_cust_inuse）", businessType = BusinessType.OTHER)
     @GetMapping("/list")
     public TableDataInfo<ZqztGrpCustInuseVo> list(ZqztGrpCustInuseBo bo, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(bo, pageQuery);

@@ -45,6 +45,7 @@ public class SysRoleController extends BaseController {
      * 获取角色信息列表
      */
     @SaCheckPermission("system:role:list")
+    @Log(title = "角色管理", businessType = BusinessType.OTHER)
     @GetMapping("/list")
     public TableDataInfo<SysRole> list(SysRole role, PageQuery pageQuery) {
         return roleService.selectPageRoleList(role, pageQuery);

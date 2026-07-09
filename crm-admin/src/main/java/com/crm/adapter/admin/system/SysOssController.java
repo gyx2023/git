@@ -43,6 +43,7 @@ public class SysOssController extends BaseController {
     /**
      * 查询OSS对象存储列表
      */
+    @Log(title = "OSS对象存储", businessType = BusinessType.OTHER)
     @GetMapping("/list")
     public TableDataInfo<SysOssVo> list(@Validated(QueryGroup.class) SysOssBo bo, PageQuery pageQuery) {
         return iSysOssService.queryPageList(bo, pageQuery);

@@ -43,6 +43,7 @@ public class MaintenanceWarningController {
      * 查询维系预警报表列表（Tab2 带分页，其他 Tab 不分页）
      */
     @InterfaceMonitor
+    @Log(title = "维系预警报表", businessType = BusinessType.EXPORT)
     @PostMapping("/getMaintenanceWarningList")
     public Object getMaintenanceWarningList(@RequestBody MaintenanceWarningReqDTO reqDTO) {
         if (reqDTO.getTabType() != null && reqDTO.getTabType() == 2) {

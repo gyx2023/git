@@ -40,6 +40,7 @@ public class WfDeployController extends BaseController {
     /**
      * 查询流程部署列表
      */
+    @Log(title = "流程部署", businessType = BusinessType.OTHER)
     @SaCheckPermission("workflow:deploy:list")
     @GetMapping("/list")
     public TableDataInfo<WfDeployVo> list(ProcessQuery processQuery, PageQuery pageQuery) {

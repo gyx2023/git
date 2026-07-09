@@ -40,6 +40,7 @@ public class SysCategoryController extends BaseController {
     /**
      * 查询行业大类-亚类-细类分类列表
      */
+    @Log(title = "行业大类-亚类-细类分类", businessType = BusinessType.OTHER)
     @GetMapping("/list")
     public TableDataInfo<SysCategoryVo> list(SysCategoryBo bo, PageQuery pageQuery) {
         return iSysCategoryService.queryPageList(bo, pageQuery);
