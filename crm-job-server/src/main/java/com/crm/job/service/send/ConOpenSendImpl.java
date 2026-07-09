@@ -107,18 +107,6 @@ public class ConOpenSendImpl {
 
     }
 
-    public static void main(String[] arg) {
-
-        Map map = new HashMap();
-        map.put("SYSTEM", "浙江政企运营平台");
-        map.put("ACCOUNT", "18627996912");
-        map.put("CAPTCHA", "058905");
-        Map busiParamMap = new HashMap();
-        busiParamMap.put("service_num", "17600575989");
-        busiParamMap.put("busi_code", "SERVICE_ALL01");
-        busiParamMap.put("template_content", mapToFormatCode(map));
-    }
-
     /**
      * 发送短信请求
      *
