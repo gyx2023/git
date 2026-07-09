@@ -21,7 +21,6 @@ public class SpecialListVo {
     /**
      * 主键ID
      */
-    @ExcelProperty(value = "主键ID")
     private Integer id;
 
     /**
@@ -84,13 +83,11 @@ public class SpecialListVo {
     @ExcelProperty(value = "更新时间")
     private Date updateTime;
 
-    @ExcelProperty(value = "创建人")
     private Integer createBy;
 
     /**
      * 更新人
      */
-    @ExcelProperty(value = "更新人")
     private Integer updateBy;
 
 }

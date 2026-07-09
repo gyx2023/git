@@ -40,7 +40,6 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
     @Resource
     private SysUserMapper sysUserMapper;
 
-
     /**
      * 分页查询特殊名单列表
      */
@@ -53,30 +52,20 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
 
         List<SpecialListVo> voList = page.getRecords();
         if (CollUtil.isNotEmpty(voList)) {
-            // 收集创建人和更新人ID
             Set<Integer> userIds = new HashSet<>();
             voList.forEach(v -> {
-                if (v.getCreateBy() != null) {
-                    userIds.add(v.getCreateBy());
-                }
-                if (v.getUpdateBy() != null) {
-                    userIds.add(v.getUpdateBy());
-                }
+                if (v.getCreateBy() != null) userIds.add(v.getCreateBy());
+                if (v.getUpdateBy() != null) userIds.add(v.getUpdateBy());
             });
-
-            // 批量查询用户名称
             if (!userIds.isEmpty()) {
                 List<SysUser> users = sysUserMapper.selectBatchIds(userIds);
                 Map<Long, String> userNameMap = users.stream()
                     .collect(Collectors.toMap(SysUser::getUserId, SysUser::getNickName, (a, b) -> b));
-
                 voList.forEach(v -> {
-                    if (v.getCreateBy() != null && userNameMap.containsKey(v.getCreateBy().longValue())) {
+                    if (v.getCreateBy() != null && userNameMap.containsKey(v.getCreateBy().longValue()))
                         v.setCreateByName(userNameMap.get(v.getCreateBy().longValue()));
-                    }
-                    if (v.getUpdateBy() != null && userNameMap.containsKey(v.getUpdateBy().longValue())) {
+                    if (v.getUpdateBy() != null && userNameMap.containsKey(v.getUpdateBy().longValue()))
                         v.setUpdateByName(userNameMap.get(v.getUpdateBy().longValue()));
-                    }
                 });
             }
         }
@@ -197,6 +186,5 @@ public class SpecialListServiceImpl extends ServiceImpl<SpecialListMapper, Speci
 
         return lqw;
     }
-
 
 }
