@@ -32,6 +32,9 @@ public class OldOpportunityVO {
     @ExcelProperty("所属一级行业")
     private String unicomType;
 
+    @ExcelProperty("客户二级行业")
+    private String unicomType2;
+
     @ExcelProperty("商机来源")
     private String oppSource;
 

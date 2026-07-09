@@ -238,7 +238,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             String[] codeTypes = {
                 "opp_type", "unicom_type", "clue_source",
                 "oppo_state", "select_type_1", "main_product",
-                "oppo_conversion_state_type"
+                "oppo_conversion_state_type", "unicom_type_new2"
             };
 
             for (String type : codeTypes) {
@@ -867,6 +867,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         final Map<String, String> oppoStateMap = SYS_CODE_CACHE.get("oppo_state");
         final Map<String, String> selectType1Map = SYS_CODE_CACHE.get("select_type_1");
         final Map<String, String> conversionStateMap = SYS_CODE_CACHE.get("oppo_conversion_state_type");
+        final Map<String, String> unicomType2Map = SYS_CODE_CACHE.get("unicom_type_new2");
 
         // 字典类型缓存
         List<SysDictData> growthTypeDictList = DICT_TYPE_CACHE.get("opp_growth_type");
@@ -887,8 +888,19 @@ public class OpportunityExport extends AbstractExportStrategy {
                 dto.setOppType(oppTypeMap.getOrDefault(dto.getOppType(), dto.getOppType()));
             }
 
-            if (StringUtils.isNotEmpty(dto.getUnicomType()) && unicomTypeMap != null) {
-                dto.setUnicomType(unicomTypeMap.getOrDefault(dto.getUnicomType(), dto.getUnicomType()));
+            // 先记录一级行业原始编码，二级行业需按原始编码判断
+            String rawUnicomType = dto.getUnicomType();
+            if (StringUtils.isNotEmpty(rawUnicomType) && unicomTypeMap != null) {
+                dto.setUnicomType(unicomTypeMap.getOrDefault(rawUnicomType, rawUnicomType));
+            }
+
+            // 客户二级行业：仅当一级行业=22（商企客户）时按 unicom_type_new2 翻译，翻不到留空；其余一律留空
+            if ("22".equals(rawUnicomType)
+                && StringUtils.isNotEmpty(dto.getUnicomType2())
+                && unicomType2Map != null) {
+                dto.setUnicomType2(unicomType2Map.getOrDefault(dto.getUnicomType2(), ""));
+            } else {
+                dto.setUnicomType2("");
             }
 
             if (StringUtils.isNotEmpty(dto.getOppSource()) && clueSourceMap != null) {
