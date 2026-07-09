@@ -22,43 +22,43 @@ import com.crm.common.core.domain.BaseEntity;
 public class SysAreaBo extends BaseEntity {
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { EditGroup.class })
     private Long id;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String name;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String type;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long parent;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String pinyin;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String latlng;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
@@ -76,7 +76,7 @@ public class SysAreaBo extends BaseEntity {
     private String bssCodeParent;
 
     /**
-     * 
+     *
      */
     @NotNull(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long order;
@@ -99,5 +99,6 @@ public class SysAreaBo extends BaseEntity {
     @NotBlank(message = "集团 县市编码不能为空", groups = { AddGroup.class, EditGroup.class })
     private String jtCode;
 
-
+    @NotBlank(message = "百强区县不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String top100Counties;
 }
