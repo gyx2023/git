@@ -494,6 +494,11 @@ public class WideWarningController extends BaseController {
 
     /**
      * 通过（对应老框架 dealUpWarningTask 结束逻辑）
+     * <p>
+     * 单节点流程（single_approval）：客户经理通过后流程结束 → 工单置 END。
+     * 双节点流程（double_approval）：客户经理通过后流程进入稽核节点 → 工单推进到稽核节点而非结单；
+     * 稽核通过后流程结束 → 工单置 END。逻辑由"流程是否仍在运行"自动区分，无需按类型硬编码。
+     * </p>
      */
     @PostMapping("/complete")
     public R<Map<String, Object>> complete(@RequestParam("taskId") String taskId,
@@ -501,30 +506,137 @@ public class WideWarningController extends BaseController {
                             @RequestParam(value = "comment", required = false) String comment) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) return R.fail("任务不存在或已处理");
-        if (comment != null) taskService.addComment(taskId, task.getProcessInstanceId(), comment);
-
-        LoginUser loginUser = getLoginUser();
-        Long currentUserId = loginUser.getUserId();
+        String piId = task.getProcessInstanceId();
+        if (comment != null) taskService.addComment(taskId, piId, comment);
 
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
 
-        // 更新工单白名单（追加当前操作人）+ 状态
         ToppOrderVo order = orderService.queryById(orderId);
-        if (order != null) {
-            com.crm.system.domain.bo.topp.ToppOrderBo bo = new com.crm.system.domain.bo.topp.ToppOrderBo();
-            bo.setId(orderId);
-            bo.setStatus(com.crm.common.enums.OrderStatusEnum.END.getCode());
-            bo.setBatchFlag(0);
-            orderService.updateByBo(bo);
+        String msg;
+        if (isProcessRunning(piId)) {
+            // 流程未结束（如进入稽核节点）：推进工单到下一节点，保持进行中
+            syncOrderToCurrentTask(orderId, piId, order);
+            msg = "处理完成，已进入下一处理环节";
+        } else {
+            // 流程已结束：置为完成
+            if (order != null) {
+                com.crm.system.domain.bo.topp.ToppOrderBo bo = new com.crm.system.domain.bo.topp.ToppOrderBo();
+                bo.setId(orderId);
+                bo.setStatus(com.crm.common.enums.OrderStatusEnum.END.getCode());
+                bo.setBatchFlag(0);
+                orderService.updateByBo(bo);
+            }
+            msg = "该流程已完成";
         }
 
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
-        result.put("msg", "该流程已完成");
+        result.put("msg", msg);
         return R.ok(result);
+    }
+
+    /**
+     * 退回（稽核人员将工单退回客户经理，对应旧 kd_addr.bpmn deal_flag2==4）
+     * <p>
+     * 完成当前稽核任务并置 action=reject，流程回到客户经理处理节点；工单节点同步回客户经理，保持进行中。
+     * </p>
+     */
+    @PostMapping("/reject")
+    public R<Map<String, Object>> reject(@RequestParam("taskId") String taskId,
+                            @RequestParam("orderId") Long orderId,
+                            @RequestParam(value = "comment", required = false) String comment) {
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) return R.fail("任务不存在或已处理");
+        String piId = task.getProcessInstanceId();
+        if (comment != null) taskService.addComment(taskId, piId, comment);
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("action", "reject");
+        taskService.setVariableLocal(taskId, "action", "reject");
+        taskService.complete(taskId, vars);
+
+        ToppOrderVo order = orderService.queryById(orderId);
+        String msg;
+        if (isProcessRunning(piId)) {
+            // 退回后回到客户经理节点：同步工单节点
+            syncOrderToCurrentTask(orderId, piId, order);
+            msg = "已退回客户经理";
+        } else {
+            if (order != null) {
+                com.crm.system.domain.bo.topp.ToppOrderBo bo = new com.crm.system.domain.bo.topp.ToppOrderBo();
+                bo.setId(orderId);
+                bo.setStatus(com.crm.common.enums.OrderStatusEnum.END.getCode());
+                bo.setBatchFlag(0);
+                orderService.updateByBo(bo);
+            }
+            msg = "流程已结束";
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", "SUCCESS");
+        result.put("msg", msg);
+        return R.ok(result);
+    }
+
+    /** 流程实例是否仍在运行 */
+    private boolean isProcessRunning(String piId) {
+        return runtimeService.createProcessInstanceQuery().processInstanceId(piId).count() > 0;
+    }
+
+    /**
+     * 将工单推进/同步到流程当前的处理任务节点（用于两节点流程流转）。
+     * 更新 phase/phaseName/actors/whiteList/actorsInfo，并为新任务设置展示用本地变量。
+     */
+    private void syncOrderToCurrentTask(Long orderId, String piId, ToppOrderVo order) {
+        Task next = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        if (next == null) return;
+
+        com.crm.system.domain.bo.topp.ToppOrderBo bo = new com.crm.system.domain.bo.topp.ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(com.crm.common.enums.OrderStatusEnum.RUNNING.getCode());
+        bo.setPhase(next.getTaskDefinitionKey());
+        bo.setPhaseName(next.getName());
+
+        String assignee = next.getAssignee();
+        if (assignee != null && !assignee.isEmpty()) {
+            String cleanId = assignee.replaceAll(",", "");
+            bo.setActors(",," + cleanId + ",,");
+
+            String whiteList = order != null ? order.getWhiteList() : null;
+            if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
+            String seg = "," + cleanId + ",";
+            if (!whiteList.contains(seg)) whiteList = whiteList + cleanId + ",";
+            bo.setWhiteList(whiteList);
+
+            try {
+                SysUsers u = sysUsersMapper.selectById(Long.parseLong(cleanId));
+                if (u != null) {
+                    String phone = u.getRelationTel();
+                    bo.setActorsInfo(u.getNameCh() + ":" + (phone != null ? phone : ""));
+                }
+            } catch (Exception ignored) {}
+        }
+        orderService.updateByBo(bo);
+
+        setNextTaskDisplayVars(next, order);
+    }
+
+    /** 为流转到的新任务设置展示用本地变量（供处理页展示），dealUrl 采用通用跳转，前端按 taskDefKey 区分页面 */
+    private void setNextTaskDisplayVars(Task next, ToppOrderVo order) {
+        if (order == null) return;
+        String k = next.getTaskDefinitionKey();
+        Map<String, Object> tv = new HashMap<>();
+        tv.put(k + "_infoId", order.getId() != null ? String.valueOf(order.getId()) : null);
+        tv.put(k + "_infoType", "order");
+        tv.put(k + "_custName", order.getCustName());
+        tv.put(k + "_orderName", order.getOrderName());
+        tv.put(k + "_remindContent", "预警类型：" + order.getOrderType() + "，客户：" + order.getCustName() + "，请及时处理");
+        tv.put(k + "_dealUrl", "/warning/toDeal?orderType=" + order.getOrderType()
+                + "&orderId=" + order.getId() + "&taskDefKey=" + k);
+        taskService.setVariablesLocal(next.getId(), tv);
     }
 
     /**

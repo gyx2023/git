@@ -196,6 +196,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             ToppOrderBo orderBo = buildOrderBo(record, task, extra);
             orderService.insertByBo(orderBo);
 
+            // 4.2 两节点流程：解析并设置稽核节点处理人（areaId 在 buildOrderBo 中已解析）
+            setAuditAssigneeIfNeeded(piId, strategy, orderBo);
+
             // 4.5 保存升级预警关联表（仅针对升级预警类型）
             saveToppOrderUpIfNeeded(orderBo, extra);
 
@@ -232,13 +235,17 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
     }
 
     private ProcessInstance startProcessInstance(WarningRecord record) {
+        // 按策略选择流程定义（单节点 single_approval / 两节点 double_approval）
+        IWarningQueryStrategy strategy = findStrategy(record.getOrderType());
+        String processKey = strategy != null ? strategy.getProcessKey() : PROCESS_KEY;
+
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(PROCESS_KEY)
+                .processDefinitionKey(processKey)
                 .latestVersion()
                 .singleResult();
 
         if (processDefinition == null) {
-            log.warn("【预警启动】未找到流程定义: {}", PROCESS_KEY);
+            log.warn("【预警启动】未找到流程定义: {}", processKey);
             return null;
         }
 
@@ -250,8 +257,37 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         ProcessInstance processInstance = runtimeService.startProcessInstanceById(
                 processDefinition.getId(), record.getOrderType(), variables);
 
-        log.info("【预警启动】流程已启动: type={}, piId={}", record.getOrderType(), processInstance.getId());
+        log.info("【预警启动】流程已启动: type={}, processKey={}, piId={}", record.getOrderType(), processKey, processInstance.getId());
         return processInstance;
+    }
+
+    /**
+     * 两节点流程（如 double_approval）：解析稽核节点处理人并设为流程变量。
+     * <p>
+     * 稽核人来源 sys_flow_user 默认处理人配置（process_key + task_def_key=audit_handle + 区域）。
+     * 稽核节点在客户经理"完成"后才到达，此处提前设置 {@code audit} 变量即可。
+     * 若未配置默认处理人，则稽核节点无指派人（可被认领），并打印告警。
+     * </p>
+     */
+    private void setAuditAssigneeIfNeeded(String piId, IWarningQueryStrategy strategy, ToppOrderBo orderBo) {
+        if (strategy == null || PROCESS_KEY.equals(strategy.getProcessKey())) {
+            return;
+        }
+        String processKey = strategy.getProcessKey();
+        Long areaId = orderBo.getAreaId();
+
+        Map<String, Object> vars = new HashMap<>();
+        List<SysUser> handlers = findDefaultHandlerByProcessAndArea(processKey, "audit_handle", areaId);
+        if (handlers != null && !handlers.isEmpty()) {
+            SysUser auditor = handlers.get(0);
+            vars.put("audit", String.valueOf(auditor.getUserId()));
+            log.info("【预警启动】稽核人已解析: piId={}, auditUserId={}, area={}", piId, auditor.getUserId(), areaId);
+        } else {
+            log.warn("【预警启动】未找到稽核默认处理人(process={}, task=audit_handle, area={})，稽核节点将无指派人，请在 sys_flow_user 配置",
+                    processKey, areaId);
+        }
+        vars.put("audit_handle_name", "稽核人员处理");
+        runtimeService.setVariables(piId, vars);
     }
 
     private Task getFirstTask(String piId) {

@@ -33,6 +33,17 @@ public interface IWarningQueryStrategy {
     // ==================== 可选扩展点 ====================
 
     /**
+     * 该预警使用的流程定义 key
+     * <p>
+     * 默认单节点通用流程 single_approval；两节点（客户经理 → 稽核）预警重写为 double_approval。
+     * 决定 {@code WarningStartService} 启动哪个 BPMN，以及是否需要解析稽核处理人。
+     * </p>
+     */
+    default String getProcessKey() {
+        return "single_approval";
+    }
+
+    /**
      * 构建前端跳转URL
      * <p>
      * 若不重写，使用默认 URL：/warning/toDeal?orderType=xxx&orderId=xxx

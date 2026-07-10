@@ -44,6 +44,15 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
         return "宽带装机地址疑似聚合或非真实预警";
     }
 
+    /**
+     * 两节点流程：客户经理处理 → 稽核人员处理。
+     * 迁移自旧系统 kd_addr.bpmn（manager_deal → audit_deal）。
+     */
+    @Override
+    public String getProcessKey() {
+        return "double_approval";
+    }
+
     @Override
     protected List<WarningRecord> doQuery(String targetDate) {
         List<Map<String, Object>> rows = mapper.selectKdAddrList(targetDate);

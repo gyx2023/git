@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/process">
+    <process id="double_approval" name="预警处理流程(双节点)" isExecutable="true">
+        <documentation>通用双节点预警处理流程：客户经理处理 → 稽核人员处理，通过 BUSINESS_KEY_ 区分预警类型。
+参数：manager/audit 为两节点处理人；manager_handle_name/audit_handle_name 为节点显示名；action 为决策变量(agree=通过/transfer=转派/reject=退回)。
+迁移自旧系统 kd_addr.bpmn（宽带装机地址疑似聚合或非真实预警），deal_flag1/deal_flag2 语义映射为统一 action 约定。</documentation>
+        <!-- 开始事件 -->
+        <startEvent id="startevent" name="开始"></startEvent>
+        <!-- 客户经理处理任务（对应旧 manager_deal） -->
+        <userTask id="manager_handle" name="${manager_handle_name}" flowable:assignee="${manager}">
+            <documentation>客户经理处理</documentation>
+        </userTask>
+        <!-- 客户经理审批网关 -->
+        <exclusiveGateway id="managerGateway" name="客户经理审批网关"></exclusiveGateway>
+        <!-- 稽核人员处理任务（对应旧 audit_deal） -->
+        <userTask id="audit_handle" name="${audit_handle_name}" flowable:assignee="${audit}">
+            <documentation>稽核人员处理</documentation>
+        </userTask>
+        <!-- 稽核审批网关 -->
+        <exclusiveGateway id="auditGateway" name="稽核审批网关"></exclusiveGateway>
+        <!-- 结束事件 -->
+        <endEvent id="endevent" name="结束"></endEvent>
+        <!-- 流程连接线 -->
+        <sequenceFlow id="flow1" sourceRef="startevent" targetRef="manager_handle"></sequenceFlow>
+        <sequenceFlow id="flow2" sourceRef="manager_handle" targetRef="managerGateway"></sequenceFlow>
+        <!-- 客户经理网关：完成→转稽核(旧 deal_flag1==1) / 转派→回客户经理(旧 deal_flag1==2) / 默认→结束(关闭) -->
+        <sequenceFlow id="flowToAudit" name="完成" sourceRef="managerGateway" targetRef="audit_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'agree'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowManagerTransfer" name="转派" sourceRef="managerGateway" targetRef="manager_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'transfer'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowManagerClose" sourceRef="managerGateway" targetRef="endevent"></sequenceFlow>
+        <sequenceFlow id="flow3" sourceRef="audit_handle" targetRef="auditGateway"></sequenceFlow>
+        <!-- 稽核网关：退回→回客户经理(旧 deal_flag2==4) / 默认(完成)→结束(旧 deal_flag2==1) -->
+        <sequenceFlow id="flowAuditReject" name="退回" sourceRef="auditGateway" targetRef="manager_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'reject'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowAuditPass" name="完成" sourceRef="auditGateway" targetRef="endevent"></sequenceFlow>
+    </process>
+    <!-- 流程图可视化定义 -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_double_approval">
+        <bpmndi:BPMNPlane bpmnElement="double_approval" id="BPMNPlane_double_approval">
+            <bpmndi:BPMNShape bpmnElement="startevent" id="BPMNShape_startevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="60.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="manager_handle" id="BPMNShape_manager_handle">
+                <omgdc:Bounds height="55.0" width="105.0" x="150.0" y="210.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="managerGateway" id="BPMNShape_managerGateway">
+                <omgdc:Bounds height="40.0" width="40.0" x="310.0" y="217.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="audit_handle" id="BPMNShape_audit_handle">
+                <omgdc:Bounds height="55.0" width="105.0" x="420.0" y="210.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="auditGateway" id="BPMNShape_auditGateway">
+                <omgdc:Bounds height="40.0" width="40.0" x="590.0" y="217.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="endevent" id="BPMNShape_endevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="700.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+                <omgdi:waypoint x="95.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="150.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+                <omgdi:waypoint x="255.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="310.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowToAudit" id="BPMNEdge_flowToAudit">
+                <omgdi:waypoint x="350.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="420.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowManagerTransfer" id="BPMNEdge_flowManagerTransfer">
+                <omgdi:waypoint x="330.0" y="257.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="320.0"></omgdi:waypoint>
+                <omgdi:waypoint x="202.0" y="320.0"></omgdi:waypoint>
+                <omgdi:waypoint x="202.0" y="265.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowManagerClose" id="BPMNEdge_flowManagerClose">
+                <omgdi:waypoint x="330.0" y="217.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="130.0"></omgdi:waypoint>
+                <omgdi:waypoint x="717.0" y="130.0"></omgdi:waypoint>
+                <omgdi:waypoint x="717.0" y="220.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+                <omgdi:waypoint x="525.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="590.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAuditReject" id="BPMNEdge_flowAuditReject">
+                <omgdi:waypoint x="610.0" y="257.0"></omgdi:waypoint>
+                <omgdi:waypoint x="610.0" y="380.0"></omgdi:waypoint>
+                <omgdi:waypoint x="175.0" y="380.0"></omgdi:waypoint>
+                <omgdi:waypoint x="175.0" y="265.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAuditPass" id="BPMNEdge_flowAuditPass">
+                <omgdi:waypoint x="630.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="700.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>

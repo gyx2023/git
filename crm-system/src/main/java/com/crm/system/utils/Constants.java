@@ -850,6 +850,9 @@ public class Constants {
     // 通用预警处理流程
     public static final String SINGLE_APPROVAL_PROCESS_KEY = "single_approval";
     public static final String SINGLE_APPROVAL_PROCESS_NAME = "预警处理流程";
+    // 通用双节点预警处理流程（客户经理处理 → 稽核人员处理），后续两节点预警统一复用
+    public static final String DOUBLE_APPROVAL_PROCESS_KEY = "double_approval";
+    public static final String DOUBLE_APPROVAL_PROCESS_NAME = "预警处理流程(双节点)";
 
     // 申请支撑
     public static final String APPLAY_SUPPORT_FLOW_CODE = "applay_support";
