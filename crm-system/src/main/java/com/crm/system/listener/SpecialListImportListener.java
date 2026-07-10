@@ -2,6 +2,7 @@ package com.crm.system.listener;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.common.utils.StringUtils;
@@ -26,6 +27,21 @@ import java.util.*;
 @Slf4j
 @Component
 public class SpecialListImportListener {
+
+    /** 默认失效时间：2050-12-31 23:59:59（导入未填失效时间时使用） */
+    private static final Date DEFAULT_EXPIRE_TIME = buildDefaultExpireTime();
+
+    private static Date buildDefaultExpireTime() {
+        try {
+            return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2050-12-31 23:59:59");
+        } catch (java.text.ParseException e) {
+            // 理论上不会发生（字面量固定），兜底用日历构造
+            Calendar c = Calendar.getInstance();
+            c.set(2050, Calendar.DECEMBER, 31, 23, 59, 59);
+            c.set(Calendar.MILLISECOND, 0);
+            return c.getTime();
+        }
+    }
 
     @Resource
     private SpecialListMapper baseMapper;
@@ -122,8 +138,9 @@ public class SpecialListImportListener {
                 insertDo.setSceneCode(sceneCodeValue);
                 insertDo.setTargetValue(vo.getTargetValue());
                 insertDo.setStatus("1");
-                insertDo.setEffectiveTime(vo.getEffectiveTime());
-                insertDo.setExpireTime(vo.getExpireTime());
+                // 生效/失效时间为空时给默认值：生效时间=当前时间，失效时间=2050-12-31 23:59:59
+                insertDo.setEffectiveTime(!ObjectUtil.isEmpty(vo.getEffectiveTime()) ? vo.getEffectiveTime() : new Date());
+                insertDo.setExpireTime(!ObjectUtil.isEmpty(vo.getExpireTime()) ? vo.getExpireTime() : DEFAULT_EXPIRE_TIME);
                 insertDo.setReason(vo.getReason());
                 if (createUserId != null) {
                     insertDo.setCreateBy(createUserId.intValue());
