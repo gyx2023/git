@@ -24,6 +24,7 @@ import com.crm.system.service.IZqGrpGroupInfoService;
 import com.crm.system.service.IZqztOperRecordService;
 import com.crm.system.utils.ExcelDropdownHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,7 @@ import java.util.*;
  * @author crm
  * @date 2025-11-20
  */
+@Slf4j
 @Validated
 @RequiredArgsConstructor
 @RestController
@@ -86,9 +88,9 @@ public class ZqGrpGroupInfoController extends BaseController {
                     Date endDate = sdf.parse(assignEndTime);
                     bo.setAssignTimeEnd(endDate);
                 }
-                System.out.println("分配时间参数处理成功: assignBeginTime=" + assignBeginTime + ", assignEndTime=" + assignEndTime);
+                log.info("分配时间参数处理成功: assignBeginTime={}, assignEndTime={}", assignBeginTime, assignEndTime);
             } catch (Exception e) {
-                System.out.println("分配时间参数解析失败: " + e.getMessage());
+                log.error("分配时间参数解析失败: {}", e.getMessage());
             }
         }
 
@@ -104,9 +106,9 @@ public class ZqGrpGroupInfoController extends BaseController {
                     Date endDate = sdf.parse(createEndTime);
                     bo.setCreateTimeEnd(endDate);
                 }
-                System.out.println("创建时间参数处理成功: createBeginTime=" + createBeginTime + ", createEndTime=" + createEndTime);
+                log.info("创建时间参数处理成功: createBeginTime={}, createEndTime={}", createBeginTime, createEndTime);
             } catch (Exception e) {
-                System.out.println("创建时间参数解析失败: " + e.getMessage());
+                log.error("创建时间参数解析失败: {}", e.getMessage());
             }
         }
 

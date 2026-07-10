@@ -1,7 +1,10 @@
 package com.crm.common.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.security.MessageDigest;
 
+@Slf4j
 public class MD5Utils {
     // MD5加码。32位
     public static String MD5(String inStr) {
@@ -9,15 +12,15 @@ public class MD5Utils {
         try {
             md5 = MessageDigest.getInstance("MD5");
         } catch (Exception e) {
-            System.out.println(e.toString());
-            e.printStackTrace();
+            log.error(e.toString(), e);
             return "";
         }
         char[] charArray = inStr.toCharArray();
         byte[] byteArray = new byte[charArray.length];
 
-        for (int i = 0; i < charArray.length; i++)
+        for (int i = 0; i < charArray.length; i++) {
             byteArray[i] = (byte) charArray[i];
+        }
 
         byte[] md5Bytes = md5.digest(byteArray);
 
@@ -25,8 +28,9 @@ public class MD5Utils {
 
         for (int i = 0; i < md5Bytes.length; i++) {
             int val = ((int) md5Bytes[i]) & 0xff;
-            if (val < 16)
+            if (val < 16) {
                 hexValue.append("0");
+            }
             hexValue.append(Integer.toHexString(val));
         }
 
