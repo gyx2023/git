@@ -2,9 +2,12 @@ package com.crm.job.service.rpa;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.ZqztRpaBusinessRetryConfigDo;
+import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.ZqztRpaBusinessRetryConfigMapper;
+import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
+import com.crm.system.service.rpa.servicehall.NengKaiService;
 import com.crm.system.service.rpa.strategy.MessageStrategyFactory;
 import com.crm.system.service.rpa.strategy.RpaMessageProcessStrategy;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -34,6 +37,8 @@ public class RpaBusinessRetryJob {
     private static final String STATUS_SUCCESS = "0";
     private static final String STATUS_RETRYING = "1";
     private static final String STATUS_PERMANENT_FAILURE = "9";
+    // 转派结果编码
+    private static final String ASSIGN_RESULT_CODE = "AA05";
 
     @Resource
     private ZqztRpaBusinessRetryConfigMapper configMapper;
@@ -43,6 +48,12 @@ public class RpaBusinessRetryJob {
 
     @Resource
     private MessageStrategyFactory messageStrategyFactory;
+
+    @Resource
+    private NengKaiService nengKaiService;
+
+    @Resource
+    private SysParamMapper sysParamMapper;
 
     /**
      * RPA业务重试任务
@@ -83,6 +94,8 @@ public class RpaBusinessRetryJob {
             int skippedTimeWindowCount = 0;
             int skippedNoConfigCount = 0;
             int permanentFailureCount = 0;
+            int assignSuccessCount = 0;
+            int assignFailedCount = 0;
 
             // 3. 逐条处理
             for (ZqztJtNoticeRecordDo record : pendingRecords) {
@@ -105,8 +118,14 @@ public class RpaBusinessRetryJob {
                 // 3c. 检查重试上限
                 int currentRetryCount = getRetryCount(record);
                 if (currentRetryCount >= config.maxRetries) {
-                    markPermanentFailure(record, currentRetryCount);
-                    permanentFailureCount++;
+                    // ★ 重试到达上限 → 转派给订单创建者
+                    String assignee = getAssignee(record);
+                    boolean assignSuccess = doAssign(record, assignee, now, currentRetryCount);
+                    if (assignSuccess) {
+                        assignSuccessCount++;
+                    } else {
+                        assignFailedCount++;
+                    }
                     continue;
                 }
 
@@ -127,16 +146,69 @@ public class RpaBusinessRetryJob {
                 processedCount++;
             }
 
-            log.info("[RPA重试] 任务完成: 处理{}条, 成功{}条, 失败{}条, 未到时间{}条, 无配置跳过{}条, 永久失败{}条",
-                processedCount, successCount, failedCount, skippedTimeWindowCount, skippedNoConfigCount, permanentFailureCount);
-            XxlJobHelper.log("任务完成: 处理%d条, 成功%d条, 失败%d条, 未到时间%d条, 无配置跳过%d条, 永久失败%d条",
-                processedCount, successCount, failedCount, skippedTimeWindowCount, skippedNoConfigCount, permanentFailureCount);
+            log.info("[RPA重试] 任务完成: 处理{}条, 成功{}条, 失败{}条, 未到时间{}条, 无配置跳过{}条, 永久失败{}条, 转派成功{}条, 转派失败{}条",
+                processedCount, successCount, failedCount, skippedTimeWindowCount, skippedNoConfigCount, permanentFailureCount, assignSuccessCount, assignFailedCount);
+            XxlJobHelper.log("任务完成: 处理{}条, 成功{}条, 失败{}条, 未到时间{}条, 无配置跳过{}条, 永久失败{}条, 转派成功{}条, 转派失败{}条",
+                processedCount, successCount, failedCount, skippedTimeWindowCount, skippedNoConfigCount, permanentFailureCount, assignSuccessCount, assignFailedCount);
 
         } catch (Exception e) {
             log.error("[RPA重试] 任务执行异常", e);
-            XxlJobHelper.log("任务执行异常: %s", e.getMessage());
+            XxlJobHelper.log("任务执行异常: {}", e.getMessage());
             throw new RuntimeException("RPA重试任务执行失败", e);
         }
+    }
+
+    /**
+     * 重试到达上限后执行转派
+     */
+    private boolean doAssign(ZqztJtNoticeRecordDo record, String assignee, Date now, int currentRetryCount) {
+        try {
+            log.info("[RPA重试] 重试到达上限，执行转派: id={}, bizCode={}, currentRetryCount={}, assignee={}",
+                record.getId(), record.getBizCode(), currentRetryCount, assignee);
+            XxlJobHelper.log("[RPA重试] 重试到达上限，执行转派: id={}, bizCode={}, assignee={}", record.getId(), record.getBizCode(), assignee);
+
+            // 设置转派参数
+            record.setDealResultCode(ASSIGN_RESULT_CODE);
+            // 调用能开接口转派
+            String response = nengKaiService.worksheetsComplete(record, "RPA-RETRY-ASSIGN", assignee);
+
+            // 转派成功：状态设置为永久不可重试
+            record.setDealResultCode(STATUS_PERMANENT_FAILURE);
+            record.setResBody(response);
+            record.setFailReason(null);
+            int newRetryCount = currentRetryCount + 1;
+            record.setRetryCount(newRetryCount);
+            record.setUpdateTime(now);
+            noticeRecordMapper.updateById(record);
+
+            log.info("[RPA重试] 转派成功: id={}, bizCode={}, assignee={}", record.getId(), record.getBizCode(), assignee);
+            XxlJobHelper.log("[RPA重试] 转派成功: id={}, bizCode={}, assignee={}", record.getId(), record.getBizCode(), assignee);
+            return true;
+        } catch (Exception e) {
+            // 转派失败：保持待重试状态，记录失败原因
+            record.setDealResultCode(STATUS_RETRYING);
+            int newRetryCount = currentRetryCount + 1;
+            record.setRetryCount(newRetryCount);
+            record.setFailReason("转派失败: " + e.getMessage());
+            record.setUpdateTime(now);
+            noticeRecordMapper.updateById(record);
+            log.error("[RPA重试] 转派失败: id={}, bizCode={}, assignee={}", record.getId(), record.getBizCode(), assignee, e);
+            return false;
+        }
+    }
+
+    /**
+     * 获取转派目标工号：统一查询 sys_param 中 RPA_RETRY_ASSIGN / DEFAULT 的兜底负责人
+     */
+    private String getAssignee(ZqztJtNoticeRecordDo record) {
+        SysParamDo defaultParam = sysParamMapper.selectOne(
+            new LambdaQueryWrapper<SysParamDo>()
+                .eq(SysParamDo::getType, "RPA_RETRY_ASSIGN")
+                .eq(SysParamDo::getCode, "DEFAULT"));
+        if (defaultParam != null && defaultParam.getValue() != null && !defaultParam.getValue().isEmpty()) {
+            return defaultParam.getValue();
+        }
+        return null;
     }
 
     /**

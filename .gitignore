@@ -46,3 +46,6 @@ nbdist/
 !*/build/*.xml
 .DS_Store
 **/.DS_Store
+
+# 本地部署调试用，不提交
+xxl-job-source/
