@@ -122,8 +122,9 @@ public class ZqztCustMaintInfoServiceImpl implements IZqztCustMaintInfoService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

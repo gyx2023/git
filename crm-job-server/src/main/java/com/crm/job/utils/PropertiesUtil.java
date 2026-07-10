@@ -1,11 +1,14 @@
 package com.crm.job.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class PropertiesUtil {
     public static Map<String, String> getPropertiesMap(String fileName) {
         ResourceBundle resourcesTable = ResourceBundle.getBundle(fileName);

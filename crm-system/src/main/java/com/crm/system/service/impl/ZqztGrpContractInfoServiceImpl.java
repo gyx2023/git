@@ -25,6 +25,7 @@ import com.crm.system.mapper.param.SysParamMapper;
 import com.crm.system.service.IZqztGrpContractInfoService;
 import com.crm.system.service.IZqztGrpContractOtherInfoService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoService {
 
     private final ZqztGrpContractInfoMapper baseMapper;
@@ -225,7 +227,7 @@ public class ZqztGrpContractInfoServiceImpl implements IZqztGrpContractInfoServi
             queryWrapper.eq(ZqztGrpContractInfo::getInuseContractId, inuseContractId);
 
             if (baseMapper.selectCount(queryWrapper) == 0) {
-                System.out.println("随机InuseContractId:" + inuseContractId);
+                log.debug("随机InuseContractId:{}", inuseContractId);
                 return inuseContractId; // 唯一性校验通过，返回合同编号
             }
         }

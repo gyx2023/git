@@ -12,6 +12,7 @@ import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.domain.vo.jt.ZqztJtNoticeRecordVo;
 import com.crm.system.mapper.servicehall.ZqztJtNoticeRecordMapper;
 import com.crm.system.service.jt.IZqztJtNoticeRecordService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import java.util.Collection;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ZqztJtNoticeRecordServiceImpl implements IZqztJtNoticeRecordService {
 
     @Resource
@@ -125,8 +127,9 @@ public class ZqztJtNoticeRecordServiceImpl implements IZqztJtNoticeRecordService
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
