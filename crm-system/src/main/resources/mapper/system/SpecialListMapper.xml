@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.SpecialListMapper">
+
+    <select id="selectPageList" resultType="com.crm.system.domain.vo.SpecialListVo">
+        select id, scene_code, target_value, status, effective_time, expire_time,
+               reason, create_by, create_time, update_by, update_time
+        from zqzt_sys_speciallist
+        ${ew.getCustomSqlSegment}
+    </select>
+
+</mapper>
