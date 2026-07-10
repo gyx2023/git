@@ -198,7 +198,9 @@ public class RpaBusinessRetryJob {
      * 计算两个时间之间的秒数差
      */
     private long getElapsedSeconds(Date startTime, Date endTime) {
-        if (startTime == null) return Long.MAX_VALUE;
+        if (startTime == null) {
+            return Long.MAX_VALUE;
+        }
         return (endTime.getTime() - startTime.getTime()) / 1000;
     }
 

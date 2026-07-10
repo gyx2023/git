@@ -40,6 +40,6 @@ public class PropertiesUtil {
     public static void main(String args[]) {
         Map<String, String> map = PropertiesUtil.getPropertiesMap("itf_ftp");
         String ftpUserName = map.get("ftp_default_pwd");
-        System.out.println(ftpUserName);
+        log.info(ftpUserName);
     }
 }

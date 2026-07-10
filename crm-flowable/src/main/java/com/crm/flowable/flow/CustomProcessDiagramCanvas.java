@@ -55,7 +55,7 @@ public class CustomProcessDiagramCanvas extends DefaultProcessDiagramCanvas {
         Paint originalPaint = this.g.getPaint();
         Stroke originalStroke = this.g.getStroke();
         this.g.setPaint(CONNECTION_COLOR);
-        if (connectionType.equals("association")) {
+        if ("association".equals(connectionType)) {
             this.g.setStroke(ASSOCIATION_STROKE);
         } else if (highLighted) {
             this.g.setPaint(HIGHLIGHT_SequenceFlow_COLOR);

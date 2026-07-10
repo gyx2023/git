@@ -34,6 +34,7 @@ public class CompensateOppoSyncJob {
             list.add(toppOpportunityVo);
         } else {
             //  list=toppOpportunityService.
+            log.debug("compensateOppoSyncJob: 无参数，跳过单条查询");
         }
         for (ToppOpportunityVo toppOpportunityVo : list) {
             ToppOpportunityVo newVo = new ToppOpportunityVo();

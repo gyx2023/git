@@ -74,9 +74,9 @@ public class OppoContractSyncJob {
             if(toppOpportunity.getId() != null){
                 //判断if_sign类型，为合同还是电子表单
                 try {
-                    if (signVo.getIfSign().equals("合同")) {
+                    if ("合同".equals(signVo.getIfSign())) {
                         syncContractData(signVo, toppOpportunity);
-                    } else if (signVo.getIfSign().equals("电子表单")) {
+                    } else if ("电子表单".equals(signVo.getIfSign())) {
                         syncContractEformData(signVo, toppOpportunity);
                     }
                 }catch (Exception e){

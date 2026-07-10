@@ -281,7 +281,9 @@ public class WxStrategyJob {
                 for (Map.Entry<String, JSONObject> entry : strategyMap.entrySet()) {
                     String key = entry.getKey();
                     JSONObject strategy = entry.getValue();
-                    if (strategy == null) continue;
+                    if (strategy == null) {
+                        continue;
+                    }
 
                     String topPolicyCode = strategy.getString("top_policy_code");
                     String businessScene = strategy.getString("business_scene");
