@@ -34,7 +34,7 @@ public class SSLClient extends DefaultHttpClient {
                 }
                 @Override
                 public X509Certificate[] getAcceptedIssuers() {
-                    return null;
+                    return new X509Certificate[0];
                 }
         };
         ctx.init(null, new TrustManager[]{tm}, null);
