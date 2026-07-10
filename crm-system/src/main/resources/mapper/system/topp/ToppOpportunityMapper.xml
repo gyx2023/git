@@ -388,7 +388,8 @@
                a.id_ as areaId,
                a.name_ as areaName,
                a.type_ as areaType,
-               a.parent_ as parentAreaId
+               a.parent_ as parentAreaId,
+               a.top100_counties as top100Counties
         FROM sys_user u
         LEFT JOIN sys_org o ON u.org_id = o.id_
         LEFT JOIN sys_area a ON o.area_id = a.id_
@@ -412,7 +413,8 @@
             a.id_ as areaId,
             a.name_ as areaName,
             a.type_ as areaType,
-            a.parent_ as parentAreaId
+            a.parent_ as parentAreaId,
+            a.top100_counties as top100Counties
         FROM sys_user u
         LEFT JOIN sys_org o ON u.org_id = o.id_
         LEFT JOIN sys_area a ON o.area_id = a.id_
@@ -436,7 +438,8 @@
         a.id_ as areaId,
         a.name_ as areaName,
         a.type_ as areaType,
-        a.parent_ as parentAreaId
+        a.parent_ as parentAreaId,
+        a.top100_counties as top100Counties
         FROM sys_user u
         LEFT JOIN sys_org o ON u.org_id = o.id_
         LEFT JOIN sys_area a ON o.area_id = a.id_

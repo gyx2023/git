@@ -575,6 +575,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                             dto.setCustManagerCity(parentAreaName);
                             dto.setCustManagerCounty(areaInfo.getName());
                         }
+                        dto.setTop100Counties(areaInfo.getTop100Counties());
                     }
                 }
 
@@ -1360,6 +1361,7 @@ public class OpportunityExport extends AbstractExportStrategy {
                         areaInfo.setName(areaName);
                         areaInfo.setType(areaType);
                         areaInfo.setParent(parentAreaId);
+                        areaInfo.setTop100Counties((String) row.get("top100Counties"));
                         areaInfoMap.put(userId, areaInfo);
                     }
                 }

@@ -61,6 +61,7 @@ public class PreTravelReportFormServiceImpl implements IPreTravelReportFormServi
         report.setCreator(currentUserId != null ? String.valueOf(currentUserId) : null);
         report.setOaAccount(LoginHelper.getUsername());
         report.setRetryCount(0);
+        report.setDataSource("web");
         report.setCreateTime(new Date());
         report.setUpdateTime(new Date());
 

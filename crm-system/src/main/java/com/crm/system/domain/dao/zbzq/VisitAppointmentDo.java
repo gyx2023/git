@@ -21,4 +21,10 @@ public class VisitAppointmentDo implements Serializable {
     private String createUser;
 
     private String eparchyCode;
+
+    private String appointmentId;
+
+    private Date createTime;
+
+    private String executeUserCode;
 }

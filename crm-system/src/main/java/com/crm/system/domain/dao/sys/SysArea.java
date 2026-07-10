@@ -86,4 +86,9 @@ public class SysArea implements Serializable {
     @TableField("emp_county_id")
     private int empCountyId;
 
+    /**
+     * 百强区县
+     */
+    @TableField("top100_counties")
+    private String top100Counties;
 }

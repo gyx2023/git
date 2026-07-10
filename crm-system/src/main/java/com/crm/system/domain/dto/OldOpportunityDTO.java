@@ -155,4 +155,7 @@ public class OldOpportunityDTO {
 
     /** 支撑经理id */
     private String designer;
+
+    /** 百强区县 */
+    private String top100Counties;
 }

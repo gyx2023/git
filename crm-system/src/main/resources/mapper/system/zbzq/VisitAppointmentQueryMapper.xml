@@ -9,14 +9,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                a.CUSTOMER_ID     as customerId,
                a.CUSTOM_NAME     as customName,
                a.user_id         as userId,
-               a.EXECUTE_USER_CODE as createUser,
+               a.CREATE_USER     as createUser,
+               a.EXECUTE_USER_CODE as executeUserCode,
+               a.CREATE_TIME     as createTime,
+               a.APPOINTMENT_ID  as appointmentId,
                a.EPARCHY_CODE    as eparchyCode
         from hj_jkcust_tf_f_cust_visit_appointment a
         left join hj_jkcust_tf_f_cust_visit_record b on a.APPOINTMENT_ID = b.APPOINTMENT_ID
         where a.PROVINCE_CODE = '36'
-          and a.VISIT_TIME &gt;= #{startTime}
-          and a.VISIT_TIME &lt; #{endTime}
+          and a.CREATE_TIME &gt;= #{startTime}
+          and a.CREATE_TIME &lt; #{endTime}
           and b.APPOINTMENT_ID is null
+        <if test="areaValue != null and areaValue != ''">
+            and a.EPARCHY_CODE in (${areaValue})
+        </if>
     </select>
 
     <select id="selectLastVisitRecord" resultType="com.crm.system.domain.dao.zbzq.VisitRecordDo">
@@ -63,6 +69,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from cust_t_nature_cust a
         left join cust_t_nature_cust_trade_info b on a.NATURE_CUST_ID = b.NATURE_CUST_ID
         where a.NATURE_CUST_ID = #{customerId}
+    </select>
+
+    <select id="countVisitRecordByAppointmentId" resultType="int">
+        SELECT COUNT(1)
+        FROM hj_jkcust_tf_f_cust_visit_record
+        WHERE APPOINTMENT_ID = #{appointmentId}
+    </select>
+
+    <select id="selectAppointmentById" resultType="com.crm.system.domain.dao.zbzq.VisitAppointmentDo">
+        select VISIT_TIME      as visitTime,
+               CUSTOMER_ID     as customerId,
+               CUSTOM_NAME     as customName,
+               user_id         as userId,
+               CREATE_USER     as createUser,
+               EPARCHY_CODE    as eparchyCode
+        from hj_jkcust_tf_f_cust_visit_appointment
+        where APPOINTMENT_ID = #{appointmentId}
     </select>
 
 </mapper>
