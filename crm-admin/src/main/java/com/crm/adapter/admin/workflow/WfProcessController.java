@@ -233,7 +233,11 @@ public class WfProcessController extends BaseController {
      * @param taskId 任务ID
      */
     @GetMapping("/detail")
-    public R detail(String procInsId, String taskId) {
+    public R detail(String procInsId, String taskId, Long orderId) {
+        if (procInsId == null && orderId != null) {
+            procInsId = processService.resolveProcInsId(orderId);
+        }
         return R.ok(processService.queryProcessDetail(procInsId, taskId));
     }
+
 }

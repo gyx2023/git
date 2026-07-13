@@ -15,18 +15,13 @@ import org.flowable.engine.HistoryService;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
-import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.task.api.Task;
-import org.flowable.task.api.history.HistoricTaskInstance;
 import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 宽带升级预警流程Controller
@@ -95,124 +90,6 @@ public class WideWarningController extends BaseController {
         return R.ok(result);
     }
 
-    // ==================== 流转记录 ====================
-
-    @GetMapping("/history")
-    public R<Map<String, Object>> history(@RequestParam("orderId") Long orderId) {
-        ToppOrderVo order = orderService.queryById(orderId);
-        if (order == null) return R.fail("工单不存在");
-        String piId = order.getPiId();
-        if (piId == null) return R.ok(new HashMap<>());
-
-        Task currentTask = findCurrentTask(piId, null);
-        List<Map<String, Object>> nodeList = buildHistoryNodeList(piId, currentTask);
-        Map<String, Object> result = new HashMap<>();
-        result.put("historyProcNodeList", nodeList);
-        return R.ok(result);
-    }
-
-    // ==================== 流程跟踪 ====================
-
-    @GetMapping("/flowViewer")
-    public R<Map<String, Object>> flowViewer(@RequestParam("orderId") Long orderId) {
-        ToppOrderVo order = orderService.queryById(orderId);
-        if (order == null) return R.fail("工单不存在");
-        String piId = order.getPiId();
-        if (piId == null) return R.ok(new HashMap<>());
-
-        Map<String, Object> procVars = loadProcVars(piId);
-        Task currentTask = findCurrentTask(piId, null);
-
-        // 获取历史任务列表用于计算 finished/unfinished
-        Map<String, Object> result = new HashMap<>();
-        List<HistoricTaskInstance> hisTasks = historyService.createHistoricTaskInstanceQuery()
-                .processInstanceId(piId).orderByHistoricTaskInstanceStartTime().asc().list();
-        Set<String> finishedTaskIds = new HashSet<>();
-        Set<String> unfinishedTaskIds = new HashSet<>();
-        finishedTaskIds.add("startevent");
-        for (HistoricTaskInstance ht : hisTasks) {
-            if (ht.getEndTime() != null) finishedTaskIds.add(ht.getTaskDefinitionKey());
-            else unfinishedTaskIds.add(ht.getTaskDefinitionKey());
-        }
-        if (currentTask == null && !hisTasks.isEmpty()) finishedTaskIds.add("endevent");
-
-        // 加载 BPMN XML（优先按 processKey 查询最新部署，避免旧流程定义被删导致查不到）
-        String procDefId = currentTask != null ? currentTask.getProcessDefinitionId()
-                : (!hisTasks.isEmpty() ? hisTasks.get(0).getProcessDefinitionId() : null);
-        String processKey = null;
-        if (procDefId != null) {
-            processKey = procDefId.contains(":") ? procDefId.substring(0, procDefId.indexOf(':')) : procDefId;
-        }
-        String bpmnXml = null;
-        if (processKey != null) {
-            try {
-                ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                        .processDefinitionKey(processKey).latestVersion().singleResult();
-                if (pd == null) {
-                    pd = repositoryService.createProcessDefinitionQuery()
-                            .processDefinitionId(procDefId).singleResult();
-                }
-                if (pd != null) {
-                    result.put("processName", pd.getName());
-                    result.put("processKey", pd.getKey());
-                    try {
-                        // 根据 processKey 从 classpath 读取 BPMN 文件
-                        String bpmnPath = "processes/" + pd.getKey() + ".bpmn";
-                        org.springframework.core.io.ClassPathResource cpr =
-                                new org.springframework.core.io.ClassPathResource(bpmnPath);
-                        if (cpr.exists()) {
-                            InputStream is = cpr.getInputStream();
-                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                            byte[] buf = new byte[4096];
-                            int n;
-                            while ((n = is.read(buf)) != -1) baos.write(buf, 0, n);
-                            is.close();
-                            bpmnXml = new String(baos.toByteArray(), "UTF-8");
-                            java.util.regex.Pattern exprP = java.util.regex.Pattern.compile(
-                                "name=\"\\$\\{([^}]+)}\"");
-                            java.util.regex.Matcher exprM = exprP.matcher(bpmnXml);
-                            StringBuffer sb = new StringBuffer();
-                            while (exprM.find()) {
-                                String varName = exprM.group(1);
-                                Object val = procVars.get(varName);
-                                String replacement = val != null
-                                    ? "name=\"" + java.util.regex.Matcher.quoteReplacement(val.toString()) + "\""
-                                    : exprM.group(0);
-                                exprM.appendReplacement(sb, replacement);
-                            }
-                            exprM.appendTail(sb);
-                            bpmnXml = sb.toString();
-                            result.put("bpmnXml", bpmnXml);
-                        }
-                    } catch (Exception e) { log.warn("获取BPMN XML失败", e); }
-                }
-            } catch (Exception e) { log.warn("获取BPMN失败", e); }
-        }
-
-        // 构建 flowViewer
-        String curTaskDefKey = currentTask != null ? currentTask.getTaskDefinitionKey() : null;
-        Map<String, Object> viewer = buildFlowViewerData(bpmnXml, finishedTaskIds, currentTask);
-        Set<String> finishedFlows = (Set<String>) viewer.get("finishedFlows");
-        List<String> currentTaskSet = (List<String>) viewer.get("currentTaskSet");
-
-        List<String> unfinishedNoCurrent = new ArrayList<>();
-        for (String uk : unfinishedTaskIds) {
-            if (!uk.equals(curTaskDefKey)) unfinishedNoCurrent.add(uk);
-        }
-
-        Map<String, Object> fv = new HashMap<>();
-        fv.put("finishedTaskSet", new ArrayList<>(finishedTaskIds));
-        fv.put("unfinishedTaskSet", unfinishedNoCurrent);
-        fv.put("currentTaskSet", currentTaskSet);
-        fv.put("finishedSequenceFlowSet", finishedFlows);
-        fv.put("rejectedTaskSet", new ArrayList<>());
-        result.put("flowViewer", fv);
-
-        return R.ok(result);
-    }
-
-    // ==================== 私有辅助方法 ====================
-
     /** 加载流程变量 */
     private Map<String, Object> loadProcVars(String piId) {
         Map<String, Object> procVars = new HashMap<>();
@@ -262,150 +139,6 @@ public class WideWarningController extends BaseController {
         ct.put("canAct", canAct);
         return ct;
     }
-
-    /** 构建流转记录节点列表 */
-    private List<Map<String, Object>> buildHistoryNodeList(String piId, Task currentTask) {
-        List<HistoricTaskInstance> hisTasks = historyService.createHistoricTaskInstanceQuery()
-                .processInstanceId(piId).orderByHistoricTaskInstanceStartTime().asc().list();
-        List<Map<String, Object>> nodeList = new ArrayList<>();
-
-        // 流程开始节点
-        if (!hisTasks.isEmpty()) {
-            Date startTime = hisTasks.get(0).getStartTime();
-            Map<String, Object> start = new HashMap<>();
-            start.put("activityId", "startevent");
-            start.put("activityName", "开始");
-            start.put("activityType", "startEvent");
-            start.put("assigneeName", "");
-            start.put("createTime", startTime);
-            start.put("endTime", startTime);
-            nodeList.add(start);
-        }
-        for (HistoricTaskInstance ht : hisTasks) {
-            Map<String, Object> node = new HashMap<>();
-            node.put("activityId", ht.getTaskDefinitionKey());
-            node.put("activityName", ht.getName());
-            node.put("activityType", "userTask");
-            node.put("assigneeName", resolveUserName(ht.getAssignee()));
-            node.put("candidate", "");
-            node.put("createTime", ht.getStartTime());
-            node.put("endTime", ht.getEndTime());
-            node.put("duration", ht.getDurationInMillis() != null
-                    ? formatDuration(ht.getDurationInMillis()) : null);
-            // 操作类型
-            String operation = "";
-            if (ht.getEndTime() != null) {
-                try {
-                    List<HistoricVariableInstance> hisVars = historyService
-                            .createHistoricVariableInstanceQuery()
-                            .taskId(ht.getId()).variableName("action").list();
-                    if (!hisVars.isEmpty()) {
-                        String action = (String) hisVars.get(0).getValue();
-                        if ("transfer".equals(action)) operation = "转派";
-                        else if ("agree".equals(action)) operation = "通过";
-                        else operation = action;
-                    }
-                } catch (Exception ignored) {}
-            }
-            node.put("operation", operation);
-            // 处理意见
-            try {
-                List<org.flowable.engine.task.Comment> comments =
-                        taskService.getTaskComments(ht.getId());
-                node.put("commentList", comments.stream()
-                        .map(c -> c.getFullMessage()).collect(Collectors.toList()));
-            } catch (Exception ignored) {
-                node.put("commentList", new ArrayList<>());
-            }
-            nodeList.add(node);
-        }
-        // 结束节点
-        if (currentTask == null && !hisTasks.isEmpty()) {
-            Date endTime = hisTasks.get(hisTasks.size() - 1).getEndTime();
-            Map<String, Object> end = new HashMap<>();
-            end.put("activityId", "endevent");
-            end.put("activityName", "结束");
-            end.put("activityType", "endEvent");
-            end.put("createTime", endTime);
-            end.put("endTime", endTime);
-            nodeList.add(end);
-        }
-        return nodeList;
-    }
-
-    /** 解析 BPMN XML 计算已完成连线和当前节点集合 */
-    private Map<String, Object> buildFlowViewerData(String bpmnXml, Set<String> finishedTaskIds, Task currentTask) {
-        Set<String> finishedFlows = new HashSet<>();
-        String curTaskDefKey = currentTask != null ? currentTask.getTaskDefinitionKey() : null;
-        List<String> currentTaskSet = curTaskDefKey != null
-                ? Collections.singletonList(curTaskDefKey) : new ArrayList<>();
-        if (bpmnXml == null) {
-            Map<String, Object> r = new HashMap<>();
-            r.put("finishedFlows", finishedFlows);
-            r.put("currentTaskSet", currentTaskSet);
-            return r;
-        }
-        try {
-            java.util.regex.Pattern flowTag2 = java.util.regex.Pattern.compile("<sequenceFlow\\s+([^>]*)>");
-            java.util.regex.Pattern idRe2 = java.util.regex.Pattern.compile("id=\"(\\w+)\"");
-            java.util.regex.Pattern srcRe2 = java.util.regex.Pattern.compile("sourceRef=\"(\\w+)\"");
-            java.util.regex.Pattern tgtRe2 = java.util.regex.Pattern.compile("targetRef=\"(\\w+)\"");
-
-            java.util.Map<String, String> elemTypes = new java.util.LinkedHashMap<>();
-            java.util.regex.Pattern elemPat2 = java.util.regex.Pattern.compile("<(\\w+)\\s+[^>]*id=\"(\\w+)\"");
-            java.util.regex.Matcher em2 = elemPat2.matcher(bpmnXml);
-            while (em2.find()) elemTypes.put(em2.group(2), em2.group(1));
-
-            java.util.Map<String, String[]> flows = new java.util.LinkedHashMap<>();
-            java.util.regex.Matcher fm2 = flowTag2.matcher(bpmnXml);
-            while (fm2.find()) {
-                String attrs = fm2.group(1);
-                java.util.regex.Matcher im = idRe2.matcher(attrs);
-                java.util.regex.Matcher sm = srcRe2.matcher(attrs);
-                java.util.regex.Matcher tm = tgtRe2.matcher(attrs);
-                if (im.find() && sm.find() && tm.find()) {
-                    flows.put(im.group(1), new String[]{sm.group(1), tm.group(1)});
-                }
-            }
-
-            Set<String> passed = new HashSet<>(finishedTaskIds);
-            boolean changed = true;
-            while (changed) {
-                changed = false;
-                for (java.util.Map.Entry<String, String[]> e : flows.entrySet()) {
-                    String src = e.getValue()[0], tgt = e.getValue()[1];
-                    if (passed.contains(src) && !passed.contains(tgt)) {
-                        String tgtType = elemTypes.getOrDefault(tgt, "");
-                        if (!tgtType.equals("userTask")) {
-                            passed.add(tgt);
-                            changed = true;
-                        }
-                    }
-                }
-            }
-
-            for (java.util.Map.Entry<String, String[]> e : flows.entrySet()) {
-                String flowId = e.getKey(), src = e.getValue()[0], tgt = e.getValue()[1];
-                if (!passed.contains(src)) continue;
-                String srcType = elemTypes.getOrDefault(src, "");
-                int outCount = 0;
-                for (String[] v : flows.values()) { if (v[0].equals(src)) outCount++; }
-                if (srcType.contains("Gateway") && outCount > 1) {
-                    boolean toEnd = "endEvent".equals(elemTypes.getOrDefault(tgt, ""));
-                    boolean toTask = "userTask".equals(elemTypes.getOrDefault(tgt, ""));
-                    if (toEnd && currentTask == null) finishedFlows.add(flowId);
-                    else if (toTask && currentTask != null) finishedFlows.add(flowId);
-                } else {
-                    finishedFlows.add(flowId);
-                }
-            }
-        } catch (Exception e) { log.warn("解析已完成连线失败", e); }
-        Map<String, Object> r = new HashMap<>();
-        r.put("finishedFlows", finishedFlows);
-        r.put("currentTaskSet", currentTaskSet);
-        return r;
-    }
-
     /**
      * 根据当前用户归属地市范围搜索可转派人员（按老框架 searchUsersByScope 逻辑）
      * @param keyword OA账号或姓名模糊搜索（可选）
@@ -511,6 +244,7 @@ public class WideWarningController extends BaseController {
 
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
+        // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
 
@@ -710,6 +444,8 @@ public class WideWarningController extends BaseController {
             vars.put("manager", String.valueOf(targetUserId));
             nextActorName = nextUser != null ? nextUser.getNameCh() : "";
         }
+        vars.put("action", "transfer");
+        // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
         taskService.setVariableLocal(taskId, "action", "transfer");
         taskService.complete(taskId, vars);
 
@@ -719,25 +455,9 @@ public class WideWarningController extends BaseController {
         return R.ok(result);
     }
 
-    private String resolveUserName(String assignee) {
-        if (assignee == null || assignee.isEmpty()) return "";
-        try {
-            String idStr = assignee.replaceAll(",", "");
-            Long userId = Long.parseLong(idStr);
-            SysUsers user = sysUsersMapper.selectById(userId);
-            return user != null ? user.getNameCh() : assignee;
-        } catch (Exception e) { return assignee; }
-    }
-
     private String str(Map<String, Object> m, String k) {
         Object v = m != null ? m.get(k) : null;
         return v != null ? v.toString() : null;
     }
 
-    private String formatDuration(long millis) {
-        long min = millis / 60000;
-        if (min < 60) return min + "分钟";
-        long h = min / 60, rm = min % 60;
-        return h + "小时" + (rm > 0 ? rm + "分钟" : "");
-    }
 }

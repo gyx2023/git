@@ -6,6 +6,7 @@ import com.crm.flowable.core.FormConf;
 import com.crm.flowable.core.domain.ProcessQuery;
 import com.crm.workflow.domain.vo.WfDefinitionVo;
 import com.crm.workflow.domain.vo.WfDetailVo;
+import com.crm.workflow.domain.vo.WfProcNodeVo;
 import com.crm.workflow.domain.vo.WfTaskVo;
 
 import java.util.List;
@@ -113,4 +114,10 @@ public interface IWfProcessService {
      * @param taskId 任务ID
      */
     WfDetailVo queryProcessDetail(String procInsId, String taskId);
+
+    /**
+     * 根据工单ID解析流程实例ID
+     */
+    String resolveProcInsId(Long orderId);
+
 }
