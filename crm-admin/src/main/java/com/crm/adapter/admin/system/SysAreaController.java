@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 【请填写功能名称】
+ * 区域管理
  *
  * @author crm
  * @date 2025-11-24
@@ -77,26 +77,26 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 查询【请填写功能名称】列表
+     * 查询区域管理列表
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.QUERY)
+    @Log(title = "区域管理", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SysAreaVo> list(SysAreaBo bo, PageQuery pageQuery) {
         return iSysAreaService.queryPageList(bo, pageQuery);
     }
 
     /**
-     * 导出【请填写功能名称】列表
+     * 导出区域管理列表
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
+    @Log(title = "区域管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(SysAreaBo bo, HttpServletResponse response) {
         List<SysAreaVo> list = iSysAreaService.queryList(bo);
-        ExcelUtil.exportExcel(list, "【请填写功能名称】", SysAreaVo.class, response);
+        ExcelUtil.exportExcel(list, "区域管理", SysAreaVo.class, response);
     }
 
     /**
-     * 获取【请填写功能名称】详细信息
+     * 获取区域管理详细信息
      *
      * @param id 主键
      */
@@ -107,9 +107,9 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 新增【请填写功能名称】
+     * 新增区域管理
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
+    @Log(title = "区域管理", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody SysAreaBo bo) {
@@ -117,9 +117,9 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 修改【请填写功能名称】
+     * 修改区域管理
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
+    @Log(title = "区域管理", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody SysAreaBo bo) {
@@ -127,11 +127,11 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 删除【请填写功能名称】
+     * 删除区域管理
      *
      * @param ids 主键串
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
+    @Log(title = "区域管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
