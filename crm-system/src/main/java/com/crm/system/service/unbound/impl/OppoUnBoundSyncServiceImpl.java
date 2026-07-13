@@ -2,8 +2,6 @@ package com.crm.system.service.unbound.impl;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.constant.OppoSyncConstants;
 import com.crm.common.utils.DateUtils;
@@ -28,16 +26,9 @@ import com.crm.system.service.topp.*;
 import com.crm.system.service.unbound.OppoUnBoundSyncService;
 import com.crm.system.utils.Constants;
 import com.crm.system.client.unibss.UniBssApiClient;
-import com.crm.system.utils.SSLClient;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -87,6 +78,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
     private IToppOpportunityService oppotunityService;
     @Resource
     private ISysParamService paramService;
+    @Resource
+    private UniBssApiClient uniBssApiClient;
 
 
     @Override
@@ -102,12 +95,16 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             if (ObjectUtil.isEmpty(customerVo.getCustNo())) {
                 return "客户经理编码为空";
             }
-            Map<String, Object> baseMap = new HashMap<String, Object>();
-            baseMap.put("UNI_BSS_HEAD", getHead(params));
-            baseMap.put("UNI_BSS_BODY", getBody(oppo, customerVo, params));
-            String jsonString = JsonUtils.toJsonString(baseMap);
+            Map<String, Object> head = getHead(params);
+            Map<String, Object> body = getBody(oppo, customerVo, params);
+            Map<String, Object> requestMap = new HashMap<>();
+            requestMap.put("UNI_BSS_HEAD", head);
+            requestMap.put("UNI_BSS_BODY", body);
+            String jsonString = JsonUtils.toJsonString(requestMap);
             log.info("商机信息同步集团接口转化后的json为:{}", jsonString);
-            return doPost(MapUtil.getStr(params, "postUrl"), jsonString, "utf-8", "集团商机信息同步接口");
+            UniBssResponse resp = uniBssApiClient.post(MapUtil.getStr(params, "postUrl"), head, body);
+            saveLog("集团商机信息同步接口", resp.toString());
+            return resp.toString();
         } catch (Exception e) {
             saveLog("集团商机信息同步接口", "商机同步接口异常:" + e.getMessage());
             e.printStackTrace();
@@ -122,8 +119,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
      * @throws NoSuchAlgorithmException
      */
     private Map<String, Object> getHead(Map<String, String> map) {
-        return UniBssApiClient.buildHead(
-                MapUtil.getStr(map, "appId"), MapUtil.getStr(map, "appKey"));
+        return uniBssApiClient.buildHead();
     }
 
 
@@ -593,55 +589,6 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
     }
 
 
-    /**
-     * 进行http post请求
-     *
-     * @param url
-     * @param jsonstr
-     * @param charset
-     * @return
-     */
-    public String doPost(String url, String jsonstr, String charset, String str) {
-        HttpClient httpClient = null;
-        HttpPost httpPost = null;
-        String result = null;
-        try {
-            httpClient = new SSLClient();
-            httpPost = new HttpPost(url);
-            RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(OppoSyncConstants.HTTP_CONNECT_TIMEOUT)
-                .build();
-            httpPost.setConfig(requestConfig);
-            httpPost.addHeader("Content-Type", OppoSyncConstants.CONTENT_TYPE_JSON);
-            httpPost.addHeader("Accept", OppoSyncConstants.ACCEPT_JSON);
-            httpPost.addHeader("Accept-Encoding", OppoSyncConstants.ACCEPT_ENCODING_UTF8);
-            sysLog = saveLog(str, jsonstr);
-            if (ObjectUtil.isNotEmpty(jsonstr)) {
-                StringEntity se = new StringEntity(jsonstr, "utf-8");
-                httpPost.setEntity(se);
-            }
-            HttpResponse response = httpClient.execute(httpPost);
-            if (response != null) {
-                HttpEntity resEntity = response.getEntity();
-                if (resEntity != null) {
-                    result = EntityUtils.toString(resEntity, charset);
-                    JSONObject json = JSONUtil.parseObj(result);
-                    log.info("请求接口返回消息" + json);
-                    sysLog.setRemark(json.toString());
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            sysLog.setRemark("请求接口出错" + ex.getMessage());
-            result = "(请求接口出错:" + ex.getMessage() + ")";
-            log.error("请求接口出错" + ex.getMessage());
-        } finally {
-            sysLogService.saveLog(sysLog);
-
-        }
-        return result;
-    }
-
     public static SysLog saveLog(String type, String content) {
         sysLog = new SysLog();
         sysLog.setType(type);
@@ -662,14 +609,11 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             return null;
         }
         try {
-            Map<String, Object> baseMap = new HashMap<String, Object>();
-            baseMap.put("UNI_BSS_HEAD", getHead(params));
-            baseMap.put("UNI_BSS_BODY", getSyncOppoStatusBody(oppo, status));
-            String jsonString = JsonUtils.toJsonString(baseMap);
-            log.info("同步商机状态给集团转化后的json为:" + jsonString);
-            String result = doPost(MapUtils.getString(params, "postSyncOppoStatusUrl"), jsonString, "utf-8", "集团商机状态同步接口");
-            log.info("同步商机状态给集团返回结果:" + result);
-            return result;
+            Map<String, Object> head = getHead(params);
+            Map<String, Object> body = getSyncOppoStatusBody(oppo, status);
+            UniBssResponse resp = uniBssApiClient.post(MapUtils.getString(params, "postSyncOppoStatusUrl"), head, body);
+            log.info("同步商机状态给集团返回结果:{}", resp);
+            return resp.toString();
         } catch (Exception e) {
             e.printStackTrace();
         }

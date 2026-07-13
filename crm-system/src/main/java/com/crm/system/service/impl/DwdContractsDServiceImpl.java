@@ -3,8 +3,6 @@ package com.crm.system.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -22,16 +20,9 @@ import com.crm.system.mapper.DwdContractsDMapper;
 import com.crm.system.service.IDwdContractsDService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.client.unibss.UniBssApiClient;
-import com.crm.system.utils.SSLClient;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -54,6 +45,8 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
     private final DwdContractsDMapper baseMapper;
     @Resource
     private ISysParamService paramService;
+    @Resource
+    private UniBssApiClient uniBssApiClient;
 
     /**
      * 根据合同编号查询DWD_CONTRACTS_D
@@ -166,27 +159,22 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
     public ContractEformRespVo getEformInfoByNo(String eFormNo) {
         Map<String, String> params = paramService.findValueMapsByType("oppSyncGroupParam");
         ContractEformRespVo eform = new ContractEformRespVo();
-        Map dataMap = new HashMap();
         try {
-            Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(
-                    MapUtil.getStr(params, "appId"), MapUtil.getStr(params, "appKey"));
-            dataMap.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
-            //
-            Map<String, Object> UNI_BSS_BODY = new HashMap<String, Object>();//报文体（放置系统参数）
-            Map reqMap = new HashMap<String, Object>();
+            Map<String, Object> head = uniBssApiClient.buildHead();
+            Map<String, Object> reqMap = new HashMap<>();
             reqMap.put("contract_code", eFormNo);
             reqMap.put("province_code", "36");
             reqMap.put("contract_type", "04");
-            UNI_BSS_BODY.put("QRY_EFORM_CONTRACT_REQ", reqMap);
-            dataMap.put("UNI_BSS_BODY", UNI_BSS_BODY);
-            String jsonString = JSON.toJSONString(dataMap);
-            log.info("查询表单电子化合同请求参数:" + jsonString);
-            String retStr = doPost(MapUtil.getStr(params, "qryEformContractUrl"), jsonString);
-            log.info("查询表单电子化合同响应消息:" + retStr);
-            if (!JSONUtil.isJson(retStr)) {
-                return null;
-            }
-            com.alibaba.fastjson.JSONObject rspObj = JSON.parseObject(retStr);
+            Map<String, Object> body = new HashMap<>();
+            body.put("QRY_EFORM_CONTRACT_REQ", reqMap);
+
+            UniBssResponse resp = uniBssApiClient.post(
+                    MapUtil.getStr(params, "qryEformContractUrl"), head, body);
+            log.info("查询表单电子化合同响应: {}", resp);
+
+            JSONObject rspObj = resp.getRawJson();
+            if (rspObj == null) return null;
+
             String retCode = JSONPath.eval(rspObj, "$UNI_BSS_BODY.QRY_EFORM_CONTRACT_RSP.RSP_CODE").toString();
             if (!"0000".equals(retCode)) {
                 return null;
@@ -214,56 +202,5 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
             return null;
         }
         return eform;
-    }
-
-    /**
-     * 进行http post请求
-     *
-     * @param url
-     * @param jsonstr
-     * @param charset
-     * @return
-     */
-    /**
-     * 进行http post请求
-     *
-     * @param url
-     * @param jsonstr
-     * @return
-     */
-    public String doPost(String url, String jsonstr) {
-        String charset = "utf-8";
-        HttpClient httpClient = null;
-        HttpPost httpPost = null;
-        String result = null;
-        try {
-            httpClient = new SSLClient();
-            httpPost = new HttpPost(url);
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(5000).setConnectionRequestTimeout(1000).setSocketTimeout(1000)
-                .build();
-            httpPost.setConfig(requestConfig);
-            httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-            httpPost.addHeader("Accept", "application/json");
-            httpPost.addHeader("Accept-Encoding", charset);
-            if (ObjectUtil.isNotEmpty(jsonstr)) {
-                StringEntity se = new StringEntity(jsonstr, charset);
-                httpPost.setEntity(se);
-            }
-            HttpResponse response = httpClient.execute(httpPost);
-            if (response != null) {
-                HttpEntity resEntity = response.getEntity();
-                if (resEntity != null) {
-                    result = EntityUtils.toString(resEntity, charset);
-                    com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSONObject.parseObject(result);
-
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            result = "(请求接口出错:" + ex.getMessage() + ")";
-        } finally {
-
-        }
-        return result;
     }
 }

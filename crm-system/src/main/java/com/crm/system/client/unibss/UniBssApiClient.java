@@ -2,6 +2,7 @@ package com.crm.system.client.unibss;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.crm.common.config.AbilityProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -10,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -39,6 +42,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class UniBssApiClient {
+
+    @Resource
+    private AbilityProperties abilityProperties;
 
     private static final SimpleDateFormat TIMESTAMP_SDF =
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS");
@@ -71,36 +77,63 @@ public class UniBssApiClient {
      * @return 统一响应结果
      */
     public UniBssResponse post(String url, Map<String, Object> head, Map<String, Object> body) {
-        // 1. 构建完整报文
-        Map<String, Object> headSigned = new HashMap<>(head);
-        buildSign(headSigned);
-        headSigned.put("RESERVED", new ArrayList<>());
+        return post(url, head, body, null);
+    }
 
+    /**
+     * POST 请求（自动签名 + 组装 UNI_BSS 报文，支持额外 HTTP 请求头）
+     * <p>用于需要传递 nlpt-wm-* 等自定义请求头的服务大厅接口。</p>
+     *
+     * @param url          接口地址
+     * @param head         报文头参数（必须包含 APP_ID 和 key）
+     * @param body         报文体参数
+     * @param extraHeaders 额外 HTTP 请求头，如 nlpt-wm-app-id；可为 null
+     * @return 统一响应结果
+     */
+    public UniBssResponse post(String url, Map<String, Object> head,
+                               Map<String, Object> body, Map<String, String> extraHeaders) {
         Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("UNI_BSS_HEAD", headSigned);
+        requestMap.put("UNI_BSS_HEAD", head);
         requestMap.put("UNI_BSS_BODY", body);
-
         String jsonString = JSON.toJSONString(requestMap);
         log.info("[UniBSS] --> POST {} body={}", url, jsonString);
 
-        // 2. POST
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
+        headers.setAcceptCharset(Collections.singletonList(StandardCharsets.UTF_8));
+        if (extraHeaders != null) {
+            extraHeaders.forEach(headers::set);
+        }
         HttpEntity<String> entity = new HttpEntity<>(jsonString, headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-            String respBody = response.getBody();
-            log.info("[UniBSS] <-- POST {} status={} body={}", url, response.getStatusCode(), respBody);
-
-            // 3. 解析响应
-            return parseResponse(respBody);
+            ResponseEntity<byte[]> response = restTemplate.postForEntity(url, entity, byte[].class);
+            byte[] respBytes = response.getBody();
+            if (respBytes != null) {
+                String respBody = new String(respBytes, StandardCharsets.UTF_8);
+                log.info("[UniBSS] <-- POST {} status={} body={}", url, response.getStatusCode(), respBody);
+                return parseResponse(respBody);
+            } else {
+                return parseResponse(null);
+            }
         } catch (Exception e) {
             log.error("[UniBSS] POST {} 失败: {}", url, e.getMessage(), e);
             return UniBssResponse.failure(-1, "HTTP请求异常: " + e.getMessage());
         }
+    }
+
+    /**
+     * POST 统一请求（自动签名 + 构建 UNI_BSS 报文）
+     * @param url 接口地址
+     * @param body 业务参数
+     * @return 统一响应结果
+     */
+    public UniBssResponse postCommonUniBss(String url, Map<String, Object> body) {
+        String appId = abilityProperties.getAppId();
+        String appKey = abilityProperties.getAppSecret();
+        Map<String, Object> head = buildHead(appId, appKey);
+        return post(url, head, body);
     }
 
     // ========== 签名 ==========
@@ -116,6 +149,15 @@ public class UniBssApiClient {
         Map<String, Object> head = new HashMap<>();
         head.put("APP_ID", appId);
         head.put("key", appKey);
+        buildSign(head);
+        head.put("RESERVED", new ArrayList<>());
+        return head;
+    }
+
+    public Map<String, Object> buildHead() {
+        Map<String, Object> head = new HashMap<>();
+        head.put("APP_ID", abilityProperties.getAppId());
+        head.put("key", abilityProperties.getAppSecret());
         buildSign(head);
         head.put("RESERVED", new ArrayList<>());
         return head;
@@ -276,6 +318,13 @@ public class UniBssApiClient {
         public int getRespCode() { return respCode; }
         public String getRespDesc() { return respDesc; }
         public String getBusiCode() { return busiCode; }
+
+        /**
+         * 获取原始响应 JSON 对象
+         */
+        public JSONObject getRawJson() {
+            return raw;
+        }
 
         /**
          * 按 JSON Path 获取原始响应中的值

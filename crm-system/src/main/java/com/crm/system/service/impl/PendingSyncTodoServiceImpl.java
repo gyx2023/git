@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.domain.dao.PendingGroupTodo;
@@ -17,7 +18,6 @@ import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysCodeService;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
 import org.springframework.stereotype.Service;
@@ -50,6 +50,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     @Resource
     private ISysCodeService sysCodeService;
+
+    @Resource
+    private UniBssApiClient uniBssApiClient;
 
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
@@ -110,38 +113,27 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             // 获取当前任务在任务列表中的索引位置
             currentTaskInHisListIndex = getCurrentTaskInListIndex(hisList, currentTask);
             // 构建请求体
-            Map<String, Object> dataMap = new HashMap<>();
-            dataMap.put("UNI_BSS_HEAD", this.buildHead());
-            dataMap.put("UNI_BSS_BODY", this.getBody(order, pendingTodo, currentTask,
-                firstTask, lastTask, hisList, currentTaskInHisListIndex));
+            Map<String, Object> head = this.buildHead();
+            Map<String, Object> body = this.getBody(order, pendingTodo, currentTask,
+                firstTask, lastTask, hisList, currentTaskInHisListIndex);
 
-            String jsonString = JSON.toJSONString(dataMap);
-            log.info("待办同步至集团运营平台请求消息:{}", jsonString);
-            pendingTodo.setSendMsg(jsonString);
-
-            // HTTP POST请求
             String todoTaskSyncUrl = sysParamService.findValueByCode("todoTaskSyncUrl");
-            String result = HttpClientUtil.doPostCustomBody(todoTaskSyncUrl, jsonString, "utf-8",10 * 1000);
-            log.info("待办同步至集团运营平台接口返回消息:{}",result);
-            pendingTodo.setRecMsg(result);
 
-            // 解析返回结果
-            if (!isJSON(result)) { //返回消息是非json格式,肯定报错了
+            Map<String, Object> dataMap = new HashMap<>();
+            dataMap.put("UNI_BSS_HEAD", head);
+            dataMap.put("UNI_BSS_BODY", body);
+            pendingTodo.setSendMsg(JSON.toJSONString(dataMap));
+
+            UniBssResponse resp = uniBssApiClient.post(todoTaskSyncUrl, head, body);
+            log.info("待办同步至集团运营平台接口返回: {}", resp);
+            pendingTodo.setRecMsg(resp.toString());
+
+            if (resp.isSuccess()) {
+                pendingTodo.setSendStatus("1");
+                pendingTodo.setFailTimes(0);
+            } else {
                 pendingTodo.setSendStatus("2");
                 pendingTodo.setFailTimes(3);
-            } else {
-                JSONObject json = JSONObject.parseObject(result);
-                String headCode = JsonUtils.getNodeValueByPath(json, "UNI_BSS_HEAD.RESP_CODE");
-                String busiCode = JsonUtils.getNodeValueByPath(json, "UNI_BSS_BODY.SYNC_WAIT_SOLVE_INFO_SER_RSP.CODE");
-                if ("00000".equals(headCode) && "000".equals(busiCode)) {
-                    //成功
-                    pendingTodo.setSendStatus("1");
-                    pendingTodo.setFailTimes(0);
-                } else {
-                    //失败
-                    pendingTodo.setSendStatus("2");
-                    pendingTodo.setFailTimes(3);
-                }
             }
 
         } catch (Exception e) {
@@ -155,10 +147,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     private JSONObject buildHead() {
-        Map<String, String> params = sysParamService.findValueMapsByType("oppSyncGroupParam");
-        return new JSONObject(UniBssApiClient.buildHead(
-            params.getOrDefault("appId", ""),
-            params.getOrDefault("appKey", "")));
+        return new JSONObject(uniBssApiClient.buildHead());
     }
 
     /**

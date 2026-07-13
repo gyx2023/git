@@ -6,7 +6,7 @@ import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.service.servicehall.INengKaiCallbackService;
 import com.crm.system.client.unibss.UniBssApiClient;
-import com.crm.system.utils.HttpClientUtil;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -33,10 +33,13 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
     @Resource
     private RedissonClient redissonClient;
 
-    @Value("${ability.app_id:}")
+    @Resource
+    private UniBssApiClient uniBssApiClient;
+
+    @Value("${ability.appId:}")
     private String APP_ID;
 
-    @Value("${ability.app_secret:}")
+    @Value("${ability.appSecret:}")
     private String APP_SECRET;
 
     @Value("${ability.url.worksheetsComplete:}")
@@ -44,14 +47,12 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
 
     @Override
     public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene) {
-        Map<String, Object> data = new HashMap<>();
-        String responseBody = "";
         try {
             String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
             String sequenceId = getCode(scene);
             String nlpt_wm_serial = "0" + "37" + today + sequenceId;
 
-            Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(APP_ID, APP_SECRET);
+            Map<String, Object> UNI_BSS_HEAD = uniBssApiClient.buildHead();
 
             Map<String, Object> UNI_BSS_BODY = new HashMap<>();
             Map<String, Object> WORKSHEETS_COMPLETE_REQ = new HashMap<>();
@@ -80,16 +81,15 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             WORKSHEETS_COMPLETE_REQ.put("worksheets", worksheetsList);
             UNI_BSS_BODY.put("WORKSHEETS_COMPLETE_REQ", WORKSHEETS_COMPLETE_REQ);
 
-            data.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
-            data.put("UNI_BSS_BODY", UNI_BSS_BODY);
+            Map<String, String> extraHeaders = new LinkedHashMap<>();
+            extraHeaders.put("nlpt-wm-app-id", "SC");
+            extraHeaders.put("nlpt-wm-tenant-id", "UC");
+            extraHeaders.put("nlpt-wm-serial", nlpt_wm_serial);
+            extraHeaders.put("nlpt-wm-touchpoint", "37");
 
-            String jsonString = JSONUtil.toJsonStr(data);
-            log.info("请求报文参数:{}", jsonString);
-            log.info("请求地址:{}", worksheetsCompleteURL);
-
-            responseBody = HttpClientUtil.doPost_nlpt(worksheetsCompleteURL, jsonString, "utf-8", nlpt_wm_serial);
-            log.info("响应报文:{}", responseBody);
-            return responseBody;
+            UniBssResponse resp = uniBssApiClient.post(worksheetsCompleteURL, UNI_BSS_HEAD, UNI_BSS_BODY, extraHeaders);
+            log.info("响应报文:{}", resp);
+            return resp.getValueByPath("$");
         } catch (Exception e) {
             log.error("能开回调失败: noticeRecordId={}, scene={}", recordDo != null ? recordDo.getId() : null, scene, e);
             throw new RuntimeException("能开回调失败");
