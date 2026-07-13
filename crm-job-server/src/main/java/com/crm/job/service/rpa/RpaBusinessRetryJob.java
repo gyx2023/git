@@ -204,7 +204,7 @@ public class RpaBusinessRetryJob {
         SysParamDo defaultParam = sysParamMapper.selectOne(
             new LambdaQueryWrapper<SysParamDo>()
                 .eq(SysParamDo::getType, "RPA_RETRY_ASSIGN")
-                .eq(SysParamDo::getCode, "DEFAULT"));
+                .eq(SysParamDo::getCode, "defaultEmployeeId"));
         if (defaultParam != null && defaultParam.getValue() != null && !defaultParam.getValue().isEmpty()) {
             return defaultParam.getValue();
         }
