@@ -32,7 +32,7 @@ public class SysDictTypeController extends BaseController {
     /**
      * 查询字典类型列表
      */
-    @Log(title = "字典类型", businessType = BusinessType.OTHER)
+    @Log(title = "字典类型", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SysDictType> list(SysDictType dictType, PageQuery pageQuery) {
         return dictTypeService.selectPageDictTypeList(dictType, pageQuery);

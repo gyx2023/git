@@ -40,7 +40,7 @@ public class WfCategoryController extends BaseController {
     /**
      * 查询流程分类列表
      */
-    @Log(title = "流程分类", businessType = BusinessType.OTHER)
+    @Log(title = "流程分类", businessType = BusinessType.QUERY)
     @SaCheckPermission("workflow:category:list")
     @GetMapping("/list")
     public TableDataInfo<WfCategoryVo> list(WfCategory category, PageQuery pageQuery) {

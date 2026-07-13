@@ -35,7 +35,7 @@ public class DwdContractsDController extends BaseController {
     /**
      * 查询DWD_CONTRACTS_D列表
      */
-    @Log(title = "DWD_CONTRACTS_D", businessType = BusinessType.OTHER)
+    @Log(title = "DWD_CONTRACTS_D", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<DwdContractsDVo> list(DwdContractsDBo bo, PageQuery pageQuery) {
         return dwdContractsDService.selectDwdContractsDPageList(bo, pageQuery);

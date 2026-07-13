@@ -29,7 +29,7 @@ public class SysNoticeController extends BaseController {
     /**
      * 获取通知公告列表
      */
-    @Log(title = "通知公告", businessType = BusinessType.OTHER)
+    @Log(title = "通知公告", businessType = BusinessType.QUERY)
     @SaCheckPermission("system:notice:list")
     @GetMapping("/list")
     public TableDataInfo<SysNotice> list(SysNotice notice, PageQuery pageQuery) {

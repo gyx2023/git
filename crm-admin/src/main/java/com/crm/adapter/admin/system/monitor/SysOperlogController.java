@@ -33,7 +33,7 @@ public class SysOperlogController extends BaseController {
     /**
      * 获取操作日志记录列表
      */
-    @Log(title = "操作日志", businessType = BusinessType.OTHER)
+    @Log(title = "操作日志", businessType = BusinessType.QUERY)
     @SaCheckPermission("monitor:operlog:list")
     @GetMapping("/list")
     public TableDataInfo<SysOperLog> list(SysOperLog operLog, PageQuery pageQuery) {

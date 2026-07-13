@@ -79,7 +79,7 @@ public class SysAreaController extends BaseController {
     /**
      * 查询【请填写功能名称】列表
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.OTHER)
+    @Log(title = "【请填写功能名称】", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SysAreaVo> list(SysAreaBo bo, PageQuery pageQuery) {
         return iSysAreaService.queryPageList(bo, pageQuery);

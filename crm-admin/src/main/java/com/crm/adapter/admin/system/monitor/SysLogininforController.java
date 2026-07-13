@@ -35,7 +35,7 @@ public class SysLogininforController extends BaseController {
     /**
      * 获取系统访问记录列表
      */
-    @Log(title = "登录日志", businessType = BusinessType.OTHER)
+    @Log(title = "登录日志", businessType = BusinessType.QUERY)
     @SaCheckPermission("monitor:logininfor:list")
     @GetMapping("/list")
     public TableDataInfo<SysLogininfor> list(SysLogininfor logininfor, PageQuery pageQuery) {

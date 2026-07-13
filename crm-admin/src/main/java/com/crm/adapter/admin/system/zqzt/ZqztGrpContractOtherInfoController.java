@@ -51,7 +51,7 @@ public class ZqztGrpContractOtherInfoController extends BaseController {
     /**
      * 查询集团合同扩展信息列表
      */
-    @Log(title = "集团合同扩展信息", businessType = BusinessType.OTHER)
+    @Log(title = "集团合同扩展信息", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<ZqztGrpContractOtherInfoVo> list(ZqztGrpContractOtherInfoBo bo, PageQuery pageQuery) {
         return iZqztGrpContractOtherInfoService.queryPageList(bo, pageQuery);

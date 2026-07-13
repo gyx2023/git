@@ -25,7 +25,7 @@ public class WxCustUserListController {
     /**
      * 查询维系预警-客户级用户清单
      */
-    @Log(title = "微信客户列表", businessType = BusinessType.OTHER)
+    @Log(title = "微信客户列表", businessType = BusinessType.QUERY)
     @PostMapping("/list")
     public TableDataInfo<Map<String, Object>> list(@RequestBody Map<String, Object> params) {
         return wxCustUserListService.queryList(params);

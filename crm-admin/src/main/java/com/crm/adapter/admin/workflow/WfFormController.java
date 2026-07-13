@@ -42,7 +42,7 @@ public class WfFormController extends BaseController {
     /**
      * 查询流程表单列表
      */
-    @Log(title = "流程表单", businessType = BusinessType.OTHER)
+    @Log(title = "流程表单", businessType = BusinessType.QUERY)
     @SaCheckPermission("workflow:form:list")
     @GetMapping("/list")
     public TableDataInfo<WfFormVo> list(@Validated(QueryGroup.class) WfFormBo bo, PageQuery pageQuery) {

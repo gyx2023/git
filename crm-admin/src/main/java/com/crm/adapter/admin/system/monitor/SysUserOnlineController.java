@@ -38,7 +38,7 @@ public class SysUserOnlineController extends BaseController {
      * @param ipaddr   IP地址
      * @param userName 用户名
      */
-    @Log(title = "在线用户", businessType = BusinessType.OTHER)
+    @Log(title = "在线用户", businessType = BusinessType.QUERY)
     @SaCheckPermission("monitor:online:list")
     @GetMapping("/list")
     public TableDataInfo<SysUserOnline> list(String ipaddr, String userName) {

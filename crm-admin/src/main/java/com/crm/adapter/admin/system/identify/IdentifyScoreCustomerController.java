@@ -40,7 +40,7 @@ public class IdentifyScoreCustomerController extends BaseController {
     /**
      * 查询三清单智能评分记录列表
      */
-    @Log(title = "三清单智能评分记录", businessType = BusinessType.OTHER)
+    @Log(title = "三清单智能评分记录", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<IdentifyScoreCustomerVo> list(IdentifyScoreCustomerBo bo, PageQuery pageQuery) {
         return iIdentifyScoreCustomerService.queryPageList(bo, pageQuery);
