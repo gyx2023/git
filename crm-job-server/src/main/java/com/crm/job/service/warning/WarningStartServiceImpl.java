@@ -2,7 +2,6 @@ package com.crm.job.service.warning;
 
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
-import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
@@ -23,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -247,8 +245,11 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         //节点名称可自定义
         variables.put("manager_handle_name", record.getExtraVariables().get("manager_handle_name")!= null ? record.getExtraVariables().get("manager_handle_name") :"客户经理处理");
 
+        org.flowable.common.engine.impl.identity.Authentication
+                .setAuthenticatedUserId(String.valueOf(record.getCustManagerId()));
         ProcessInstance processInstance = runtimeService.startProcessInstanceById(
                 processDefinition.getId(), record.getOrderType(), variables);
+        org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(null);
 
         log.info("【预警启动】流程已启动: type={}, piId={}", record.getOrderType(), processInstance.getId());
         return processInstance;
