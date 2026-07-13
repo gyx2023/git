@@ -94,7 +94,7 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
         record.setCustManagerId(userId);
 
         // 扩展字段
-        record.setExtraVariable("infoId", toLong(row.get("id")));
+        record.setExtraVariable("infoId", toLong(row.get("id_")));
         record.setExtraVariable("orgId", toLong(userRow.get("dept_id")));
         record.setExtraVariable("nickName", getString(userRow.get("nick_name")));
         record.setExtraVariable("phone", getString(userRow.get("phonenumber")));

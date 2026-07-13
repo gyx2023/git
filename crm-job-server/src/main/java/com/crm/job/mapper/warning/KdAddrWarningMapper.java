@@ -26,22 +26,21 @@ public interface KdAddrWarningMapper {
      * @param targetDate 目标日期（yyyyMMdd）
      * @return 预警记录列表
      */
-    @Select({"SELECT w.id, w.grp_name, w.grp_code, w.oa_id_dev, w.oa_name_dev, "
+    @Select({"SELECT w.id_, w.grp_name, w.grp_code, w.oa_id_dev, w.oa_name_dev, "
             + "w.serv_manager_id, w.warning_type, w.area_name, w.county_name, w.cust_grp_id "
             + "FROM ftp_tc_user_cust_warning w "
             + "WHERE w.warning_type = 'C00023' "
-            + "AND w.is_valid = '1' "
             + "AND DATE_FORMAT(w.create_date, '%Y%m%d') = #{targetDate} "
-            + "ORDER BY w.id"})
+            + "ORDER BY w.id_"})
     List<Map<String, Object>> selectKdAddrList(@Param("targetDate") String targetDate);
 
     /**
      * 按 OA 账号查询本地系统用户信息
      *
-     * @param oaId OA 账号（对应 sys_user.user_name）
+     * @param oaId OA 账号（对应 sys_user.oa_account）
      * @return 用户信息（user_id, dept_id, nick_name, phonenumber）
      */
-    @Select({"SELECT user_id, dept_id, nick_name, phonenumber FROM sys_user "
+    @Select({"SELECT user_id, dept_id, nick_name, phonenumber FROM zqzt_sys_user "
             + "WHERE user_name = #{oaId} AND del_flag = '0' LIMIT 1"})
     Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
 }
