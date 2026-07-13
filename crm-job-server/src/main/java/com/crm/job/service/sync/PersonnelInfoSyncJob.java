@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import java.io.*;
@@ -96,23 +95,7 @@ public class PersonnelInfoSyncJob {
     private static final String VALID_TRUE = "1";  //有效
     private static final String VALID_FALSE = "0"; //无效
 
-    static String FTP_USERNAME;
-    static String FTP_PASSWORD;
-    static String FTP_HOST;
-    static String FTP_PORT;
-    static String FTP_DIRECTORY;
-    static String LOCAL_PATH;
 
-    @PostConstruct
-    public void initStaticParam() {
-        Map<String, String> param = sysParamService.findValueMapsByType(PERSONNEL_FILE_FTP_INFO);
-        FTP_USERNAME = param.get("ftp_username");  //用户名
-        FTP_PASSWORD = param.get("ftp_password");  //密码
-        FTP_HOST = param.get("ftp_host");  //ip地址
-        FTP_PORT = param.get("ftp_port");  //端口号
-        FTP_DIRECTORY = param.get("ftp_directory");  //文件存放目录
-        LOCAL_PATH = param.get("ftp_local");  //本地下载目录
-    }
 
 
     /**
@@ -139,30 +122,39 @@ public class PersonnelInfoSyncJob {
         log.info("数据参数：1.日期参数：{}", targetDate);
         XxlJobHelper.log("数据参数：1.日期参数：{}", targetDate);
 
-        File dir = new File(LOCAL_PATH);
+        // 实时加载FTP配置
+        Map<String, String> ftpParam = sysParamService.findValueMapsByType(PERSONNEL_FILE_FTP_INFO);
+        String ftpUsername = ftpParam.get("ftp_username");
+        String ftpPassword = ftpParam.get("ftp_password");
+        String ftpHost = ftpParam.get("ftp_host");
+        String ftpPort = ftpParam.get("ftp_port");
+        String ftpDirectory = ftpParam.get("ftp_directory");
+        String localPath = ftpParam.get("ftp_local");
+
+        File dir = new File(localPath);
         if (!dir.exists()) {
             boolean mkdirsResult = dir.mkdirs();
             if (!mkdirsResult) {
-                log.error("创建本地目录失败：{}", LOCAL_PATH);
-                XxlJobHelper.log("创建本地目录失败：{}", LOCAL_PATH);
-                XxlJobHelper.handleFail("创建本地目录失败：" + LOCAL_PATH);
+                log.error("创建本地目录失败：{}", localPath);
+                XxlJobHelper.log("创建本地目录失败：{}", localPath);
+                XxlJobHelper.handleFail("创建本地目录失败：" + localPath);
                 return;
             }
-            log.info("创建本地目录成功：{}", LOCAL_PATH);
-            XxlJobHelper.log("创建本地目录成功：{}", LOCAL_PATH);
+            log.info("创建本地目录成功：{}", localPath);
+            XxlJobHelper.log("创建本地目录成功：{}", localPath);
         }
 
         SftpWebUtil ftpUtil = null;
 
         String saveFile = FTP_DOWNLOAD_NAME + targetDate + FTP_DOWNLOAD_END_FIX;
         String saveFileNew = FTP_DOWNLOAD_NAME + targetDate + "_new" + FTP_DOWNLOAD_END_FIX;
-        String ftpFile = FTP_DIRECTORY + File.separator + saveFile;
-        String localFile = LOCAL_PATH + File.separator + saveFile;
-        String localFileNew = LOCAL_PATH + File.separator + saveFileNew;
+        String ftpFile = ftpDirectory + File.separator + saveFile;
+        String localFile = localPath + File.separator + saveFile;
+        String localFileNew = localPath + File.separator + saveFileNew;
 
 
         try {
-            ftpUtil = new SftpWebUtil(FTP_USERNAME, FTP_PASSWORD, FTP_HOST, Integer.parseInt(FTP_PORT));
+            ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
             ftpUtil.login();
 
             log.info("saveFile:{}", saveFile);
@@ -179,7 +171,7 @@ public class PersonnelInfoSyncJob {
             }
 
             try {
-                ftpUtil.download(FTP_DIRECTORY, saveFile, localFile);
+                ftpUtil.download(ftpDirectory, saveFile, localFile);
                 log.info("ob库人员增量同步文件接口download完成：{}", localFile);
                 XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
             } catch (Exception e) {

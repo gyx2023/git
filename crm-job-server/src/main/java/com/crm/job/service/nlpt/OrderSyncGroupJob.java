@@ -5,9 +5,9 @@ import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.sys.SysCode;
 import com.crm.system.domain.dao.sys.SysLog;
@@ -39,7 +39,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
@@ -62,9 +61,9 @@ public class OrderSyncGroupJob {
     private static final String SEQ_NAME = "SYNC_GROOUP";
 
     /**
-     * 省份地市和集团地市区域编码映射关系（从sys_area表加载）
+     * 省份地市和集团地市区域编码映射关系（每次执行时刷新）
      */
-    private final Map<String, String> areaMap = new HashMap<>();
+    private Map<String, String> areaMap;
 
     @Resource
     private IToppOrderSyncGroupService orderSyncGroupService;
@@ -100,32 +99,33 @@ public class OrderSyncGroupJob {
     private SysAreaMapper sysAreaMapper;
 
     /**
-     * 需要发送集团服务大厅的订单类型配置缓存
-     * 与 OrderSyncGroupEventListener.needSendOrderTypeMap 加载逻辑一致
+     * 需要发送集团服务大厅的订单类型配置缓存（每次执行时刷新）
      */
-    private final Map<String, JSONObject> needSendOrderTypeMap = new HashMap<>();
+    private Map<String, JSONObject> needSendOrderTypeMap;
 
-    @PostConstruct
-    public void init() {
+    /**
+     * 每次执行前刷新缓存数据
+     */
+    private void refreshMaps() {
+        // 刷新订单类型配置
+        needSendOrderTypeMap = new HashMap<>();
         List<SysCode> codeList = sysCodeMapper.selectList(
             new LambdaQueryWrapper<SysCode>()
                 .in(SysCode::getSettingStr3, Arrays.asList("business_middle_order", "middle_service", "business_examine_order"))
         );
         for (SysCode code : codeList) {
             if (StringUtils.isNotEmpty(code.getSettingStr2())) {
-                JSONObject config = JSON.parseObject(code.getSettingStr2());
-                needSendOrderTypeMap.put(code.getCode(), config);
-                log.info("【订单同步集团任务】加载订单同步配置，orderType: {}", code.getCode());
+                needSendOrderTypeMap.put(code.getCode(), JSON.parseObject(code.getSettingStr2()));
             }
         }
-        log.info("【订单同步集团任务】订单同步配置加载完成，共{}个订单类型", needSendOrderTypeMap.size());
-
-        // 从sys_area表加载浙江省区域编码与集团地市编码的映射关系
+        // 刷新区域编码映射
+        areaMap = new HashMap<>();
         List<Map<String, Object>> areaJtCodeList = sysAreaMapper.selectAreaJtCodeList();
         for (Map<String, Object> row : areaJtCodeList) {
             areaMap.put((String) row.get("area_code"), (String) row.get("jt_code"));
         }
-        log.info("【订单同步集团任务】区域编码映射加载完成，共{}个区域", areaMap.size());
+        log.info("【订单同步集团任务】缓存刷新完成，订单类型配置{}个，区域映射{}个",
+            needSendOrderTypeMap.size(), areaMap.size());
     }
 
     /**
@@ -136,6 +136,9 @@ public class OrderSyncGroupJob {
         long startTime = System.currentTimeMillis();
         log.info("【订单同步集团任务】开始执行，时间：{}", DateUtil.now());
         XxlJobHelper.log("【订单同步集团任务】开始执行");
+
+        // 每次执行前刷新缓存
+        refreshMaps();
 
         try {
             List<ToppOrderSyncGroup> dataList = orderSyncGroupService.getPendingList();

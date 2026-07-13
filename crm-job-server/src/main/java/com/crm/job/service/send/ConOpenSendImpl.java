@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.HaoKaoSignUtil;
+import com.crm.common.utils.spring.SpringUtils;
 import com.crm.job.utils.HttpClientUtil;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.domain.vo.send.ConOpenSend;
@@ -13,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,12 +28,6 @@ import static com.crm.system.utils.Constants.SEND_MSG_INTERFACE;
 @Component
 public class ConOpenSendImpl {
 
-    @Resource
-    private ISysParamService sysParamService;
-
-    private static String APP_ID;
-    private static String APP_KEY;
-    private static String POST_URL;
     // 报文字段常量
     private static final String UNI_BSS_HEAD = "UNI_BSS_HEAD";
     private static final String UNI_BSS_BODY = "UNI_BSS_BODY";
@@ -42,15 +35,10 @@ public class ConOpenSendImpl {
     private static final String TEMPLATE_SMS_SEND_SUB_REQ = "TEMPLATE_SMS_SEND_SUB_REQ";
 
     /**
-     * 初始化短信发送参数
+     * 实时加载短信发送参数
      */
-    @PostConstruct
-    public void initRefresh() {
-        Map<String, String> param = sysParamService.findValueMapsByType(SEND_MSG_INTERFACE);
-        APP_ID = param.get("zj_app_id");
-        APP_KEY = param.get("zj_app_key");
-        POST_URL = param.get("zj_sms_url");
-        log.info("初始化短信发送参数成功");
+    private static Map<String, String> loadParams() {
+        return SpringUtils.getBean(ISysParamService.class).findValueMapsByType(SEND_MSG_INTERFACE);
     }
 
     /**
@@ -93,7 +81,7 @@ public class ConOpenSendImpl {
         busiParamMap.put("busi_code", busiCode);
         busiParamMap.put("template_content", mapToFormatCode(paramMap));
         ConOpenSend conOpenSend = doSendMessage(busiParamMap);
-        log.info("发送短信请求地址:" + POST_URL + ",业务参数:" + JSONObject.toJSONString(busiParamMap));
+        log.info("发送短信请求地址:" + loadParams().get("zj_sms_url") + ",业务参数:" + JSONObject.toJSONString(busiParamMap));
         return conOpenSend;
     }
 
@@ -121,19 +109,25 @@ public class ConOpenSendImpl {
         }
 
         try {
-            // 2. 组装报文头
+            // 2. 实时加载短信参数
+            Map<String, String> params = loadParams();
+            String appId = params.get("zj_app_id");
+            String appKey = params.get("zj_app_key");
+            String postUrl = params.get("zj_sms_url");
+
+            // 3. 组装报文头
             Map<String, Object> headMap = new HashMap<>(8);
-            headMap.put("APP_ID", APP_ID);
-            headMap.put("key", APP_KEY);
+            headMap.put("APP_ID", appId);
+            headMap.put("key", appKey);
             // 构建签名及公共参数
             HaoKaoSignUtil.buildAppParams(headMap);
             headMap.put(RESERVED, new ArrayList<>());
 
-            // 3. 组装报文体
+            // 4. 组装报文体
             Map<String, Object> bodyMap = new HashMap<>(4);
             bodyMap.put(TEMPLATE_SMS_SEND_SUB_REQ, reqMap);
 
-            // 4. 组装完整请求报文
+            // 5. 组装完整请求报文
             Map<String, Object> rootMap = new HashMap<>(4);
             rootMap.put(UNI_BSS_HEAD, headMap);
             rootMap.put(UNI_BSS_BODY, bodyMap);
@@ -142,13 +136,13 @@ public class ConOpenSendImpl {
             String requestJson = JSON.toJSONString(rootMap);
             log.info("短信发送请求报文：{}", requestJson);
 
-            // 5. 发起HTTP POST请求
-            String respJson = HttpClientUtil.doPost(POST_URL, requestJson, "UTF-8");
+            // 6. 发起HTTP POST请求
+            String respJson = HttpClientUtil.doPost(postUrl, requestJson, "UTF-8");
             log.info("短信发送响应报文：{}", respJson);
 
             // 响应空值判断，避免解析异常
             if (!StringUtils.hasText(respJson)) {
-                log.warn("短信接口返回空报文，请求地址：{}", POST_URL);
+                log.warn("短信接口返回空报文，请求地址：{}", postUrl);
                 return null;
             }
             JSONObject rootJson = JSON.parseObject(respJson);
@@ -177,7 +171,7 @@ public class ConOpenSendImpl {
             // 解析响应实体ccccc
             return conOpenSend;
         } catch (Exception e) {
-            log.error("短信发送接口调用异常，请求地址：{}", POST_URL, e);
+            log.error("短信发送接口调用异常，请求地址：{}", loadParams().get("zj_sms_url"), e);
             return null;
         }
     }
