@@ -21,6 +21,8 @@ import com.crm.system.service.IDwdContractsDService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
+import com.crm.system.domain.dao.sys.SysOperLog;
+import com.crm.system.service.sys.ISysOperLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +49,8 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
     private ISysParamService paramService;
     @Resource
     private UniBssApiClient uniBssApiClient;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     /**
      * 根据合同编号查询DWD_CONTRACTS_D
@@ -159,6 +163,13 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
     public ContractEformRespVo getEformInfoByNo(String eFormNo) {
         Map<String, String> params = paramService.findValueMapsByType("oppSyncGroupParam");
         ContractEformRespVo eform = new ContractEformRespVo();
+        // 操作日志记录
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("查询电子化表单合同");
+        operLog.setRequestMethod("POST");
+        operLog.setOperatorType(2);
+        operLog.setOperParam(eFormNo);
+        long startTime = System.currentTimeMillis();
         try {
             Map<String, Object> head = uniBssApiClient.buildHead();
             Map<String, Object> reqMap = new HashMap<>();
@@ -168,21 +179,31 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
             Map<String, Object> body = new HashMap<>();
             body.put("QRY_EFORM_CONTRACT_REQ", reqMap);
 
-            UniBssResponse resp = uniBssApiClient.post(
-                    MapUtil.getStr(params, "qryEformContractUrl"), head, body);
+            String url = MapUtil.getStr(params, "qryEformContractUrl");
+            operLog.setOperUrl(url);
+
+            UniBssResponse resp = uniBssApiClient.post(url, head, body);
             log.info("查询表单电子化合同响应: {}", resp);
 
             JSONObject rspObj = resp.getRawJson();
-            if (rspObj == null) return null;
+            if (rspObj == null) {
+                operLog.setStatus(1);
+                operLog.setErrorMsg("响应为空");
+                return null;
+            }
 
             String retCode = JSONPath.eval(rspObj, "$UNI_BSS_BODY.QRY_EFORM_CONTRACT_RSP.RSP_CODE").toString();
             if (!"0000".equals(retCode)) {
+                operLog.setStatus(1);
+                operLog.setErrorMsg("业务返回码非0000:" + retCode);
                 return null;
             }
             //提取数据，如果数组存在多条，只取第一条
             com.alibaba.fastjson.JSONArray array = rspObj.getJSONObject("UNI_BSS_BODY")
                 .getJSONObject("QRY_EFORM_CONTRACT_RSP").getJSONObject("RSP_DETAIL").getJSONArray("list");
             if (ObjectUtil.isEmpty(array)) {
+                operLog.setStatus(1);
+                operLog.setErrorMsg("查询结果为空");
                 return null;
             }
             JSONObject infoMap = array.getJSONObject(0);
@@ -197,9 +218,17 @@ public class DwdContractsDServiceImpl implements IDwdContractsDService {
             eform.setStartTime(infoMap.getJSONObject("detail").getString("startTime"));
             eform.setEndTime(infoMap.getJSONObject("detail").getString("endTime"));
             eform.setTradeType(infoMap.getString("trade_type"));
+
+            operLog.setStatus(0);
+            operLog.setJsonResult(resp.toString());
         } catch (Exception e) {
             log.error("查询表单电子化合同异常:{}", e.getMessage());
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
             return null;
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
         }
         return eform;
     }

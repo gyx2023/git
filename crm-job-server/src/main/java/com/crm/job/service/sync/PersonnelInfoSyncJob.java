@@ -9,18 +9,18 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
-import com.crm.job.utils.HttpClientUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.common.utils.signutil.SignUtil;
+import com.crm.system.client.yx.YxApiClient;
+import com.crm.system.client.yx.YxApiClient.YxResponse;
 import com.crm.system.domain.dao.PersonnelInfo;
-import com.crm.system.domain.dao.SysLogYxDo;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dao.SysUserOperateLog;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.vo.SysUsersVo;
-import com.crm.system.mapper.SysLogYxMapper;
 import com.crm.system.mapper.SysUserOperateLogMapper;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.*;
 import com.crm.system.service.sys.ISysParamService;
@@ -65,7 +65,10 @@ public class PersonnelInfoSyncJob {
     private SysUserOperateLogMapper sysUserOperateLogMapper;
 
     @Resource
-    private SysLogYxMapper sysLogYxMapper;
+    private ISysOperLogService sysOperLogService;
+
+    @Resource
+    private YxApiClient yxApiClient;
 
     /**
      * 文件名前缀
@@ -645,8 +648,14 @@ public class PersonnelInfoSyncJob {
 
     public boolean checkDataForYx(OldSysOrgDo org, SysUsers user, String operType) {
         if (StringUtils.isEmpty(org.getOrgIdYx()) || StringUtils.isEmpty(org.getOrgNameYx())) {
-            SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "人员组织结构数据错误", operType);
-            sysLogYxMapper.insertOrUpdate(logYx);
+            SysOperLog operLog = new SysOperLog();
+            operLog.setTitle("亚信楼宇同步");
+            operLog.setRequestMethod("POST");
+            operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
+            operLog.setStatus(1);
+            operLog.setErrorMsg("人员组织结构数据错误");
+            operLog.setOperatorType(2);
+            sysOperLogService.insertOperlog(operLog);
             return true;
         }
         return false;
@@ -673,89 +682,53 @@ public class PersonnelInfoSyncJob {
 
     public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
         String yxReturnMsg = "";
-        JSONObject retObj = null;
-        int i = 0;
-        do {
-            try {
-                String url = getYxSyncUrl(jsonStr);
-                log.info("亚信同步url信息:" + url);
-                log.info("亚信同步信息:" + jsonStr);
-                XxlJobHelper.log("亚信同步信息：{}", jsonStr);
-                String msg = HttpClientUtil.doPost(url, jsonStr, "utf-8");
-                log.info("亚信同步返回信息:" + msg);
-                XxlJobHelper.log("亚信同步返回信息：{}", msg);
-                retObj = JSONObject.parseObject(msg);
-                //调用亚信结果
-                if (!"00000".equals(retObj.getString("respCode")) || !"00000".equals(retObj.getJSONObject("result").getString("code"))) {
-                    yxReturnMsg = "修改成功,同步楼宇信息失败!";
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2",
-                        "亚信接口返回失败：respCode=" + retObj.getString("respCode") + ", result.code=" + retObj.getJSONObject("result").getString("code") +
-                            ", respDesc=" + retObj.getString("respDesc"), operType);
-                    sysLogYxMapper.insertOrUpdate(logYx);
-                    break;
-                }
-                if ("00000".equals(retObj.getString("respCode")) && "00000".equals(retObj.getJSONObject("result").getString("code"))) {
-                    yxReturnMsg = "修改成功";
-                    break;
-                }
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                i++;
-                if (i == 5) {
-                    yxReturnMsg = returnMsg;
-                    String errorMsg = "重试5次后仍然失败，最后返回：respCode=" + retObj.getString("respCode") +
-                        ", respDesc=" + retObj.getString("respDesc");
-                    log.error("亚信同步接口重试5次失败，用户ID：{}，错误详情：{}", user.getId(), errorMsg);
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
-                    sysLogYxMapper.insertOrUpdate(logYx);
-                }
-            } catch (Exception e) {
-                yxReturnMsg = returnMsg;
-                String exceptionType = e.getClass().getName();
-                String exceptionMsg = e.getMessage() != null ? e.getMessage() : "无详细消息";
-                String errorMsg = "接口调用失败：" + (retObj != null ? retObj.toJSONString() : "null") +
-                    ", 异常类型：" + exceptionType + ", 异常信息：" + exceptionMsg;
-                log.error("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
-                XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
-                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
-                sysLogYxMapper.insertOrUpdate(logYx);
-                break;
+        try {
+            Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
+            String baseUrl = param.get("doPostUrl");
+            String appKey = param.get("appKey");
+
+            Map<String, String> sysParam = new java.util.HashMap<>(param);
+            sysParam.remove("doPostUrl");
+            sysParam.remove("appKey");
+
+            log.info("亚信同步信息:{}", jsonStr);
+            XxlJobHelper.log("亚信同步信息：{}", jsonStr);
+
+            YxResponse resp = yxApiClient.post(baseUrl, jsonStr, sysParam, appKey);
+            log.info("亚信同步返回:{}", resp);
+            XxlJobHelper.log("亚信同步返回：{}", resp);
+
+            if (resp.isSuccess()) {
+                yxReturnMsg = "修改成功";
+            } else {
+                yxReturnMsg = "修改成功,同步楼宇信息失败!";
+                String errorMsg = "亚信接口返回失败：respCode=" + resp.getRespCode()
+                    + ", result.code=" + resp.getResultCode() + ", respDesc=" + resp.getRespDesc();
+                log.error(errorMsg);
+                SysOperLog operLog = new SysOperLog();
+                operLog.setTitle("亚信楼宇同步");
+                operLog.setRequestMethod("POST");
+                operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
+                operLog.setStatus(1);
+                operLog.setErrorMsg(errorMsg);
+                operLog.setOperatorType(2);
+                sysOperLogService.insertOperlog(operLog);
             }
-        } while (i < 5);
-        return yxReturnMsg;
-    }
-
-    public String getYxSyncUrl(String jsonStr) throws Exception {
-        Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
-        if (param == null || param.isEmpty()) {
-            XxlJobHelper.log("未配置亚信同步参数");
-            throw new Exception("未配置亚信同步参数");
+        } catch (Exception e) {
+            yxReturnMsg = returnMsg;
+            String errorMsg = "接口调用失败：" + e.getMessage();
+            log.error("亚信同步接口调用异常，用户ID：{}", user.getId(), e);
+            XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，{}", user.getId(), e.getMessage());
+            SysOperLog operLog = new SysOperLog();
+            operLog.setTitle("亚信楼宇同步");
+            operLog.setRequestMethod("POST");
+            operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(errorMsg);
+            operLog.setOperatorType(2);
+            sysOperLogService.insertOperlog(operLog);
         }
-
-        String url = param.get("doPostUrl");
-        String appKey = param.get("appKey");
-        String method = param.get("method");
-        String format = param.get("format");
-        String appId = param.get("appId");
-        String timestamp = System.currentTimeMillis() + "";
-        String random = ((int) (Math.random() * 9999) + 1000) + "";
-        String busiSerial = timestamp + random;
-
-        param.put("timestamp", timestamp);
-        param.put("busiSerial", busiSerial);
-        param.remove("doPostUrl");
-        param.remove("appKey");
-
-        // 调用签名方法，传入jsonStr作为业务参数
-        String sign = SignUtil.sign(param, jsonStr, "HmacSHA256", appKey);
-        log.info("亚信同步签名参数:{}", param.toString());
-        XxlJobHelper.log("亚信同步参数：{}", param);
-
-        url += "?method=" + method + "&format=" + format + "&appId=" + appId + "&timestamp=" + timestamp + "&busiSerial=" + busiSerial + "&sign=" + sign;
-        return url;
+        return yxReturnMsg;
     }
 
 }

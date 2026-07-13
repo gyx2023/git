@@ -1,10 +1,12 @@
 package com.crm.job.service.brain;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.utils.DateUtils;
-import com.crm.common.utils.MD5Utils;
+import com.crm.system.client.unibss.UniBssApiClient;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
+import com.crm.system.domain.dao.sys.SysOperLog;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.brain.SmartBrainKpiDataService;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -12,9 +14,7 @@ import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
@@ -32,10 +32,11 @@ public class SmartBrainKpiDataJob {
     @Resource
     private SmartBrainKpiDataService smartBrainKpiDataService;
     @Resource
-    private RestTemplate restTemplate;
-
+    private UniBssApiClient uniBssApiClient;
     @Resource
     private ISysParamService sysParamService;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     @XxlJob(value = "smartBrainKpiDataJob")
     public void wxOrderStatistics() {
@@ -174,74 +175,69 @@ public class SmartBrainKpiDataJob {
     }
 
     /**
-     * SpringBoot 标准写法：RestTemplate 发送请求
+     * 推送指标数据到智慧大脑（UNI_BSS 协议）
      */
     private boolean sendToNewInterface(String url, String appId, String appSecret, List<Map> kpiDataList) {
+        // 操作日志记录
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("智慧大脑KPI数据推送");
+        operLog.setRequestMethod("POST");
+        operLog.setOperUrl(url);
+        operLog.setOperatorType(2);
+        operLog.setOperParam("kpiDataList.size=" + (kpiDataList != null ? kpiDataList.size() : 0));
+        long startTime = System.currentTimeMillis();
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS");
-            SimpleDateFormat transIdFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-
-            String timestamp = sdf.format(new Date());
-            String transId = transIdFormat.format(new Date()) + (int) ((Math.random() * 9 + 1) * 100000);
-
-            // MD5签名
-            String tokenStr = "APP_ID" + appId + "TIMESTAMP" + timestamp + "TRANS_ID" + transId + appSecret;
-            String token = MD5Utils.MD5(tokenStr);
-
-            // 组装请求头
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
-            // 组装报文
-            Map<String, Object> requestMap = new HashMap<>();
-            Map<String, Object> uniBssHead = new HashMap<>();
-            uniBssHead.put("APP_ID", appId);
-            uniBssHead.put("TIMESTAMP", timestamp);
-            uniBssHead.put("TRANS_ID", transId);
-            uniBssHead.put("TOKEN", token);
-            uniBssHead.put("RESERVED", new ArrayList<>());
+            Map<String, Object> head = UniBssApiClient.buildHead(appId, appSecret);
 
             Map<String, Object> dataReq = new HashMap<>();
             dataReq.put("taskSource", "G");
             dataReq.put("kpiDataList", kpiDataList);
 
-            Map<String, Object> uniBssBody = new HashMap<>();
-            uniBssBody.put("INSERT_SYSTEM_KPI_DATA_REQ", dataReq);
+            Map<String, Object> body = new HashMap<>();
+            body.put("INSERT_SYSTEM_KPI_DATA_REQ", dataReq);
 
-            requestMap.put("UNI_BSS_HEAD", uniBssHead);
-            requestMap.put("UNI_BSS_BODY", uniBssBody);
-            requestMap.put("UNI_BSS_ATTACHED", new HashMap<String, Object>() {{
-                put("MEDIA_INFO", "");
-            }});
+            // 原报文中含 UNI_BSS_ATTACHED(MEDIA_INFO="")，仅为空占位，UniBssApiClient 不发送该字段
+            UniBssResponse resp = uniBssApiClient.post(url, head, body);
 
-            String json = JSON.toJSONString(requestMap);
-            log.info("请求地址：{}", url);
-            log.info("请求参数：{}", json);
-
-            // 发送
-            HttpEntity<String> entity = new HttpEntity<>(json, headers);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-
-            if (response.getStatusCode() == HttpStatus.OK && response.hasBody()) {
-                String result = response.getBody();
-                log.info("接口返回：{}", result);
-
-                JSONObject jsonObj = JSONObject.parseObject(result);
-                JSONObject head = jsonObj.getJSONObject("UNI_BSS_HEAD");
-
-                if (head != null && "00000".equals(head.getString("RESP_CODE"))) {
-                    JSONObject body = jsonObj.getJSONObject("UNI_BSS_BODY");
-                    if (body != null) {
-                        JSONObject rsp = body.getJSONObject("INSERT_SYSTEM_KPI_DATA_RSP");
-                        return rsp != null && rsp.getInteger("code") == 200;
-                    }
-                }
+            if (!resp.isSuccess()) {
+                operLog.setStatus(1);
+                operLog.setErrorMsg(resp.toString());
+                return false;
             }
+
+            JSONObject rspBody = resp.getRawJson();
+            if (rspBody == null) {
+                operLog.setStatus(1);
+                operLog.setErrorMsg("响应为空");
+                return false;
+            }
+
+            JSONObject uniBssBody = rspBody.getJSONObject("UNI_BSS_BODY");
+            if (uniBssBody == null) {
+                operLog.setStatus(1);
+                operLog.setErrorMsg("响应无UNI_BSS_BODY");
+                return false;
+            }
+
+            JSONObject rsp = uniBssBody.getJSONObject("INSERT_SYSTEM_KPI_DATA_RSP");
+            boolean success = rsp != null && rsp.getInteger("code") == 200;
+            if (success) {
+                operLog.setStatus(0);
+                operLog.setJsonResult(resp.toString());
+            } else {
+                operLog.setStatus(1);
+                operLog.setErrorMsg(resp != null ? resp.toString() : "业务返回code非200");
+            }
+            return success;
 
         } catch (Exception e) {
             log.error("调用接口异常", e);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
+            return false;
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
         }
-        return false;
     }
 }

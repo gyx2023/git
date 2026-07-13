@@ -7,6 +7,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.domain.dao.PendingGroupTodo;
@@ -17,6 +18,7 @@ import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysCodeService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
@@ -53,12 +55,19 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     @Resource
     private UniBssApiClient uniBssApiClient;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
 
     @Override
     public void syncTodoTask(PendingGroupTodo pendingTodo) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("待办同步集团");
+        operLog.setRequestMethod("POST");
+        operLog.setOperatorType(2);
+        long startTime = System.currentTimeMillis();
         try {
             ToppOrder order = toppOrderMapper.selectOne(
                 new LambdaQueryWrapper<ToppOrder>()
@@ -70,6 +79,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 pendingTodo.setFailTimes(3);
                 pendingTodo.setRecMsg("订单不存在");
                 pendingService.updateGroupTodoTask(pendingTodo);
+                operLog.setStatus(1);
+                operLog.setErrorMsg("订单不存在");
                 return;
             }
             // 指定时间以前的数据
@@ -79,6 +90,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 pendingTodo.setFailTimes(3);
                 pendingTodo.setRecMsg("订单不存在或者指定时间以前数据,不做处理");
                 pendingService.updateGroupTodoTask(pendingTodo);
+                operLog.setStatus(1);
+                operLog.setErrorMsg("订单不存在或者指定时间以前数据,不做处理");
                 return;
             }
             List<Map<String, Object>> hisList; //任务列表
@@ -124,6 +137,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             dataMap.put("UNI_BSS_BODY", body);
             pendingTodo.setSendMsg(JSON.toJSONString(dataMap));
 
+            operLog.setOperUrl(todoTaskSyncUrl);
+            operLog.setOperParam(JSON.toJSONString(dataMap));
+
             UniBssResponse resp = uniBssApiClient.post(todoTaskSyncUrl, head, body);
             log.info("待办同步至集团运营平台接口返回: {}", resp);
             pendingTodo.setRecMsg(resp.toString());
@@ -131,9 +147,13 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             if (resp.isSuccess()) {
                 pendingTodo.setSendStatus("1");
                 pendingTodo.setFailTimes(0);
+                operLog.setStatus(0);
+                operLog.setJsonResult(resp.toString());
             } else {
                 pendingTodo.setSendStatus("2");
                 pendingTodo.setFailTimes(3);
+                operLog.setStatus(1);
+                operLog.setErrorMsg(resp.toString());
             }
 
         } catch (Exception e) {
@@ -141,7 +161,11 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             pendingTodo.setSendStatus("2");
             pendingTodo.setFailTimes(3);
             pendingTodo.setRecMsg(e.getMessage());
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
         } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
             pendingService.updateGroupTodoTask(pendingTodo);
         }
     }

@@ -2,25 +2,27 @@ package com.crm.system.service.travel;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.crm.system.client.hiagent.HiagentApiClient;
+import com.crm.system.domain.dao.sys.SysOperLog;
+import com.crm.system.service.sys.ISysOperLogService;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 public class PreTravelReportApiService {
 
-    private static final int OKHTTP_TIMEOUT_SECONDS = 120;
-
     @Resource
     private PreTravelReportProperties preTravelReportProperties;
+    @Resource
+    private HiagentApiClient hiagentApiClient;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     private static final Map<String, String> WARNING_SCENARIOS = new HashMap<>();
     static {
@@ -40,23 +42,25 @@ public class PreTravelReportApiService {
         WARNING_SCENARIOS.put("C00022", "（实时余额-下个月月租费）<0");
     }
 
-    private final OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
-        .connectTimeout(OKHTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .readTimeout(OKHTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .writeTimeout(OKHTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .build();
-
     public String callHiagentApi(Map<String, Object> reportMeta,
                                  Map<String, Object> customer,
                                  Map<String, Object> visitTarget,
                                  Map<String, Object> lastVisit,
                                  List<Map<String, Object>> warnings,
                                  List<Map<String, Object>> opportunities) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("Hiagent行前报告接口");
+        operLog.setRequestMethod("POST");
+        operLog.setOperatorType(2);
+        operLog.setOperParam(JSON.toJSONString(reportMeta));
+        long startTime = System.currentTimeMillis();
         try {
             String url = preTravelReportProperties.getApiUrl();
             String apiKey = preTravelReportProperties.getApiKey();
             String appKey = preTravelReportProperties.getAppKey();
             String userId = preTravelReportProperties.getUserId();
+
+            operLog.setOperUrl(url);
 
             Map<String, Object> reportData = new HashMap<>();
             reportData.put("report_meta", reportMeta);
@@ -75,27 +79,26 @@ public class PreTravelReportApiService {
             reqBodyMap.put("InputData", JSON.toJSONString(inputDataMap));
             reqBodyMap.put("UserID", userId);
 
-            String reqBodyJson = JSON.toJSONString(reqBodyMap);
             log.info("调用Hiagent行前报告接口, report_id={}, url={}", reportMeta.get("report_id"), url);
+            String respStr = hiagentApiClient.post(url, apiKey, reqBodyMap);
 
-            MediaType mediaType = MediaType.parse("application/json");
-            RequestBody requestBody = RequestBody.create(mediaType, reqBodyJson);
-            Request request = new Request.Builder()
-                .url(url)
-                .method("POST", requestBody)
-                .addHeader("Apikey", apiKey)
-                .addHeader("Content-Type", "application/json")
-                .build();
-
-            try (Response response = okHttpClient.newCall(request).execute()) {
-                String respStr = Objects.requireNonNull(response.body()).string();
-                log.info("Hiagent行前报告接口返回, report_id={}, resp={}",
-                    reportMeta.get("report_id"), respStr);
-                return respStr;
+            if (respStr == null) {
+                throw new RuntimeException("Hiagent 接口返回为空");
             }
+
+            log.info("Hiagent行前报告接口返回, report_id={}, resp={}", reportMeta.get("report_id"), respStr);
+            operLog.setStatus(0);
+            operLog.setJsonResult(respStr);
+            return respStr;
+
         } catch (Exception e) {
             log.error("调用Hiagent行前报告接口异常, report_id={}", reportMeta.get("report_id"), e);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
             throw new RuntimeException("调用Hiagent接口失败: " + e.getMessage(), e);
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
         }
     }
 

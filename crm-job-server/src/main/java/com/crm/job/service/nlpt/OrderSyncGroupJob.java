@@ -11,7 +11,7 @@ import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.sys.SysCode;
-import com.crm.system.domain.dao.sys.SysLog;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dao.sys.SysUserOld;
 import com.crm.system.domain.dao.topp.ToppGeneralRequirements;
 import com.crm.system.domain.dao.topp.ToppOrder;
@@ -24,7 +24,7 @@ import com.crm.system.mapper.sys.SysUserOldMapper;
 import com.crm.system.mapper.topp.ToppGeneralRequirementsMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.mapper.topp.ToppOrderVariablesMapper;
-import com.crm.system.service.sys.ISysLogService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.topp.IToppOrderSyncGroupService;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -65,7 +65,7 @@ public class OrderSyncGroupJob {
     private ToppOrderMapper toppOrderMapper;
 
     @Resource
-    private ISysLogService sysLogService;
+    private ISysOperLogService sysOperLogService;
 
     @Resource
     private ISysParamService sysParamService;
@@ -379,15 +379,19 @@ public class OrderSyncGroupJob {
      * 发送接口请求
      */
     private void sendInterface(String url, JSONObject body) {
-        SysLog sysLog = new SysLog();
         JSONObject head = buildHead();
         JSONObject logJson = new JSONObject();
         logJson.put("UNI_BSS_HEAD", head);
         logJson.put("UNI_BSS_BODY", body);
-        sysLog.setType("省分订单数据同步服务大厅接口");
-        sysLog.setContent(logJson.toJSONString());
-        sysLog.setCreateTime(LocalDateTime.now());
-        log.info("【订单同步集团任务】请求数据:{}", sysLog.getContent());
+        String requestBody = logJson.toJSONString();
+        log.info("【订单同步集团任务】请求数据:{}", requestBody);
+
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("省分订单数据同步服务大厅接口");
+        operLog.setRequestMethod("POST");
+        operLog.setOperUrl(url);
+        operLog.setOperParam(requestBody);
+        operLog.setOperatorType(2);
 
         String serialNo = "037" + getCode();
         Map<String, String> extraHeaders = new LinkedHashMap<>();
@@ -399,12 +403,14 @@ public class OrderSyncGroupJob {
         try {
             UniBssResponse resp = uniBssApiClient.post(url, head, body, extraHeaders);
             log.info("【订单同步集团任务】返回消息:{}", resp);
-            sysLog.setRemark(resp.toString());
+            operLog.setStatus(0);
+            operLog.setJsonResult(resp.toString());
         } catch (Exception ex) {
             log.error("【订单同步集团任务】请求接口出错:{}", ex.getMessage(), ex);
-            sysLog.setRemark("请求接口出错" + ex.getMessage());
+            operLog.setStatus(1);
+            operLog.setErrorMsg("请求接口出错" + ex.getMessage());
         } finally {
-            sysLogService.saveLog(sysLog);
+            sysOperLogService.insertOperlog(operLog);
         }
     }
 
