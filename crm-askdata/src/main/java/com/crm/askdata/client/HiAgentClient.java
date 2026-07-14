@@ -2,6 +2,7 @@ package com.crm.askdata.client;
 
 import com.crm.askdata.config.HiAgentProperties;
 import com.crm.askdata.model.HiAgentChatResponse;
+import com.crm.askdata.util.LlmCallLogHelper;
 import com.crm.common.utils.TraceIdUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -56,6 +58,7 @@ public class HiAgentClient {
     @Retry(name = "hiagent")
     public String createConversation(String userId, String agentId, String traceId) {
         long startTime = System.currentTimeMillis();
+        Map<String, Object> logInput = null;
         try {
             String url = buildUrl(properties.getCreateConversationApi());
 
@@ -64,9 +67,13 @@ public class HiAgentClient {
 
             HttpHeaders headers = buildHeaders(agentId, traceId);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            logInput = buildLogInput(url, body);
+            LlmCallLogHelper.logStart(log, "HiAgent", "createConversation",
+                traceId, userId, agentId, logInput);
 
             ResponseEntity<JsonNode> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, JsonNode.class);
+            long latency = System.currentTimeMillis() - startTime;
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String convId = response.getBody()
@@ -77,12 +84,16 @@ public class HiAgentClient {
                     throw new RuntimeException("CreateConversation 返回的 AppConversationID 为空");
                 }
                 log.info("agentId={} created convId={}, latency={}ms",
-                    agentId, convId, System.currentTimeMillis() - startTime);
+                    agentId, convId, latency);
+                LlmCallLogHelper.logSuccess(log, "HiAgent", "createConversation",
+                    traceId, userId, agentId, latency, buildCreateConversationOutput(response, convId));
                 return convId;
             } else {
                 throw new RuntimeException("CreateConversation 失败，status=" + response.getStatusCode());
             }
         } catch (Exception e) {
+            LlmCallLogHelper.logFailure(log, "HiAgent", "createConversation",
+                traceId, userId, agentId, System.currentTimeMillis() - startTime, e, logInput);
             log.error("agentId={} createConversation failed, latency={}ms",
                 agentId, System.currentTimeMillis() - startTime, e);
             throw e;
@@ -107,6 +118,7 @@ public class HiAgentClient {
     public HiAgentChatResponse chatQueryBlocking(String userId, String agentId,
                                                   String convId, String query, String traceId) {
         long startTime = System.currentTimeMillis();
+        Map<String, Object> logInput = null;
         try {
             String url = buildUrl(properties.getChatQueryApi());
 
@@ -118,6 +130,9 @@ public class HiAgentClient {
 
             HttpHeaders headers = buildHeaders(agentId, traceId);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            logInput = buildLogInput(url, body);
+            LlmCallLogHelper.logStart(log, "HiAgent", "chatQueryBlocking",
+                traceId, userId, agentId, logInput);
 
             ResponseEntity<JsonNode> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, JsonNode.class);
@@ -142,11 +157,16 @@ public class HiAgentClient {
                 result.setMessageId(messageId);
                 result.setTaskId(taskId);
                 result.setLatencyMs(latency);
+                LlmCallLogHelper.logSuccess(log, "HiAgent", "chatQueryBlocking",
+                    traceId, userId, agentId, latency, buildChatOutput(root, answer, messageId, taskId));
                 return result;
             } else {
                 throw new RuntimeException("chatQueryBlocking 失败，status=" + response.getStatusCode());
             }
         } catch (Exception e) {
+            LlmCallLogHelper.logFailure(log, "HiAgent", "chatQueryBlocking",
+                traceId, userId, agentId, System.currentTimeMillis() - startTime, e,
+                logInput != null ? logInput : buildChatFailureInput(convId, query));
             log.error("agentId={} chatQueryBlocking failed, latency={}ms",
                 agentId, System.currentTimeMillis() - startTime, e);
             throw e;
@@ -216,6 +236,39 @@ public class HiAgentClient {
         }
 
         return headers;
+    }
+
+    private Map<String, Object> buildLogInput(String url, Map<String, Object> body) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("url", url);
+        input.put("body", body);
+        return input;
+    }
+
+    private Map<String, Object> buildCreateConversationOutput(ResponseEntity<JsonNode> response, String convId) {
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("statusCode", response.getStatusCodeValue());
+        output.put("appConversationId", convId);
+        output.put("body", response.getBody());
+        return output;
+    }
+
+    private Map<String, Object> buildChatOutput(JsonNode root, String answer, String messageId, String taskId) {
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("messageId", messageId);
+        output.put("taskId", taskId);
+        output.put("answerLength", answer != null ? answer.length() : 0);
+        output.put("answer", answer);
+        output.put("rawBody", root);
+        return output;
+    }
+
+    private Map<String, Object> buildChatFailureInput(String convId, String query) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("appConversationId", convId);
+        input.put("query", query);
+        input.put("responseMode", "blocking");
+        return input;
     }
 
     // ======================== 熔断降级方法 ========================

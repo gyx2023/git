@@ -2,6 +2,7 @@ package com.crm.askdata.client;
 
 import com.crm.askdata.config.ChinaUniconAgentProperties;
 import com.crm.askdata.model.HiAgentChatResponse;
+import com.crm.askdata.util.LlmCallLogHelper;
 import com.crm.common.utils.TraceIdUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -78,6 +79,7 @@ public class ChinaUniconAgentClient {
                                      String userId, String userName, String traceId,
                                      java.util.function.Function<String, String> answerExtractor) {
         long startTime = System.currentTimeMillis();
+        Map<String, Object> logInput = null;
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         Map<String, String> variable = Collections.emptyMap();
         String accessToken = ChinaUniconAgentAccessTokenUtil.generateAccessToken(
@@ -115,6 +117,9 @@ public class ChinaUniconAgentClient {
                 .path(properties.getChatApi())
                 .build()
                 .toUriString();
+            logInput = buildLogInput(url, body);
+            LlmCallLogHelper.logStart(log, "ChinaUnicon", agentType + "AgentChat",
+                traceId, userId, appId, logInput);
 
             log.info("calling ChinaUnicon {} agent: appId={}, conversationId={}, userName={}, contentLength={}",
                 agentType, appId, conversationId, userName, content != null ? content.length() : 0);
@@ -135,12 +140,35 @@ public class ChinaUniconAgentClient {
             result.setMessageId(extractMessageId(responseBody));
             result.setTaskId("");
             result.setLatencyMs(System.currentTimeMillis() - startTime);
+            LlmCallLogHelper.logSuccess(log, "ChinaUnicon", agentType + "AgentChat",
+                traceId, userId, appId, result.getLatencyMs(),
+                buildLogOutput(response.getStatusCodeValue(), responseBody, answer, result.getMessageId()));
             return result;
         } catch (Exception e) {
+            LlmCallLogHelper.logFailure(log, "ChinaUnicon", agentType + "AgentChat",
+                traceId, userId, appId, System.currentTimeMillis() - startTime, e, logInput);
             log.error("ChinaUnicon {} agent call failed, latency={}ms",
                 agentType, System.currentTimeMillis() - startTime, e);
             throw new RuntimeException("ChinaUnicon 智能体调用失败：" + e.getMessage(), e);
         }
+    }
+
+    private Map<String, Object> buildLogInput(String url, Map<String, Object> body) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("url", url);
+        input.put("body", body);
+        return input;
+    }
+
+    private Map<String, Object> buildLogOutput(int statusCode, String responseBody,
+                                               String answer, String messageId) {
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("statusCode", statusCode);
+        output.put("messageId", messageId);
+        output.put("answerLength", answer != null ? answer.length() : 0);
+        output.put("answer", answer);
+        output.put("rawBody", responseBody);
+        return output;
     }
 
     private String decodeResponse(byte[] responseBody) {
