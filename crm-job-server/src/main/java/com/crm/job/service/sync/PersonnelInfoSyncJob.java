@@ -2,18 +2,12 @@ package com.crm.job.service.sync;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.ValueFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
 import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.client.yx.YxApiClient;
-import com.crm.system.client.yx.YxApiClient.YxResponse;
 import com.crm.system.domain.dao.PersonnelInfo;
-import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dao.SysUserOperateLog;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
@@ -67,8 +61,8 @@ public class PersonnelInfoSyncJob {
     @Resource
     private ISysOperLogService sysOperLogService;
 
-    @Resource
-    private YxApiClient yxApiClient;
+//    @Resource
+//    private YxApiClient yxApiClient;
 
     /**
      * 文件名前缀
@@ -536,199 +530,198 @@ public class PersonnelInfoSyncJob {
      * @param operType 操作类型  add   mod  del
      * @return
      */
-    public String doPostForYxUser(SysUsers user, String operType) {
-        OldSysOrgDo oldSysOrgDo = oldSysOrgMapper.selectById(user.getOrgId());
-        String jsonStr = setUserPostForYx(user, operType, oldSysOrgDo);
-        log.info("亚信楼宇同步接口生成数据:" + jsonStr);
-        String baseMsg = "";
-        if ("add".equals(operType)) {
-            baseMsg = "添加成功";
-        } else if ("mod".equals(operType)) {
-            baseMsg = "修改成功";
-        } else {
-            baseMsg = "设置成功";
-        }
-        String msg = baseMsg + "，同步亚信故障，详情见日志！";
-        if ("error".equals(jsonStr)) {
-            return msg;
-        }
+//    public String doPostForYxUser(SysUsers user, String operType) {
+//        OldSysOrgDo oldSysOrgDo = oldSysOrgMapper.selectById(user.getOrgId());
+//        String jsonStr = setUserPostForYx(user, operType, oldSysOrgDo);
+//        log.info("亚信楼宇同步接口生成数据:" + jsonStr);
+//        String baseMsg = "";
+//        if ("add".equals(operType)) {
+//            baseMsg = "添加成功";
+//        } else if ("mod".equals(operType)) {
+//            baseMsg = "修改成功";
+//        } else {
+//            baseMsg = "设置成功";
+//        }
+//        String msg = baseMsg + "，同步亚信故障，详情见日志！";
+//        if ("error".equals(jsonStr)) {
+//            return msg;
+//        }
+//
+//        return doPostForUserYx(user, jsonStr, operType, msg);
+//    }
 
-        return doPostForUserYx(user, jsonStr, operType, msg);
-    }
+//    public String setUserPostForYx(SysUsers user, String operType, OldSysOrgDo org) {
+//        JSONObject json = new JSONObject();
+//        String cityOrgId = "";
+//        String cityOrgName = "";
+//        String countyOrgId = "";
+//        String countyOrgName = "";
+//        String gridOrgId = "";
+//        String gridOrgName = "";
+//        String gridCode = "";
+//        String userRoleYx = user.getUserRoleYx();
+//
+//        String[] s = org.getCode().split("_");
+//        switch (s.length) {
+//            case 1:
+//                //浙江省
+//                cityOrgId = "Z";
+//                cityOrgName = "浙江";
+//                countyOrgId = "Z00";
+//                countyOrgName = "省中心_00";
+//                gridOrgId = "1415";
+//                gridOrgName = "省公司";
+//                gridCode = "1415";  //渠道网格编码就是网格编码
+//                break;
+//            case 2:
+//                //地市
+//                if (checkDataForYx(org, user, operType)) {
+//                    return "error";
+//                }
+//                cityOrgId = org.getOrgIdYx();
+//                cityOrgName = org.getOrgNameYx();
+//                break;
+//            case 3:
+//                //区县
+//                OldSysOrgDo dsOrg = oldSysOrgMapper.selectById(org.getParent());
+//                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg, user, operType)) {
+//                    return "error";
+//                }
+//                cityOrgId = dsOrg.getOrgIdYx();
+//                cityOrgName = dsOrg.getOrgNameYx();
+//                countyOrgId = org.getOrgIdYx();
+//                countyOrgName = org.getOrgNameYx();
+//                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
+//                    return "error";
+//                }
+//                break;
+//            case 4:
+//                //网格
+//                OldSysOrgDo qxOrg = oldSysOrgMapper.selectById(org.getParent());
+//                OldSysOrgDo dsOrg1 = oldSysOrgMapper.selectById(qxOrg.getParent());
+//
+//                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg1, user, operType) || checkDataForYx(qxOrg, user, operType)) {
+//                    return "error";
+//                }
+//                cityOrgId = dsOrg1.getOrgIdYx();
+//                cityOrgName = dsOrg1.getOrgNameYx();
+//                countyOrgId = qxOrg.getOrgIdYx();
+//                countyOrgName = qxOrg.getOrgNameYx();
+//                gridOrgId = org.getOrgIdYx();
+//                gridOrgName = org.getOrgNameYx();
+//                gridCode = org.getGridCode();
+//                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
+//                    return "error";
+//                }
+//                break;
+//        }
+//        json.put("cityOrgId", cityOrgId);
+//        json.put("cityOrgName", cityOrgName);
+//        json.put("countyOrgId", countyOrgId);
+//        json.put("countyOrgName", countyOrgName);
+//        json.put("gridOrgId", gridOrgId);
+//        json.put("gridOrgName", gridOrgName);
+//        json.put("gridCode", gridCode);
+//        json.put("userId", user.getId());
+//        json.put("userName", user.getNameCh());
+//        json.put("userPhone", user.getName());
+//        json.put("userRoles", user.getUserRoleYx());
+//        json.put("developerCodes", user.getDeveloperCodes());
+//        json.put("cardNumber", user.getCardNumber());
+//        String email = user.getEmail();
+//        String oaAccount = "";
+//        if (StringUtils.isNotEmpty(email)) {
+//            oaAccount = email.split("@")[0];
+//        }
+//        json.put("oaAccount", oaAccount);
+//        json.put("staffType", user.getStaffType());
+//        json.put("operType", operType);
+//
+//        return JSON.toJSONString(json, new SimpleValueFilter());
+//    }
 
-    public String setUserPostForYx(SysUsers user, String operType, OldSysOrgDo org) {
-        JSONObject json = new JSONObject();
-        String cityOrgId = "";
-        String cityOrgName = "";
-        String countyOrgId = "";
-        String countyOrgName = "";
-        String gridOrgId = "";
-        String gridOrgName = "";
-        String gridCode = "";
-        String userRoleYx = user.getUserRoleYx();
+//    public boolean checkDataForYx(OldSysOrgDo org, SysUsers user, String operType) {
+//        if (StringUtils.isEmpty(org.getOrgIdYx()) || StringUtils.isEmpty(org.getOrgNameYx())) {
+//            SysOperLog operLog = new SysOperLog();
+//            operLog.setTitle("亚信楼宇同步");
+//            operLog.setRequestMethod("POST");
+//            operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
+//            operLog.setStatus(1);
+//            operLog.setErrorMsg("人员组织结构数据错误");
+//            operLog.setOperatorType(2);
+//            sysOperLogService.insertOperlog(operLog);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    public boolean checkCountryIdForYx(String countyOrgId, String userRoleYx) {
+//        if ("3".equals(userRoleYx) || "4".equals(userRoleYx) || "5".equals(userRoleYx)) {
+//            //如果选择区县、网格、楼长、园区长四个角色，(园区长角色删除了)
+//            // 则针对第三级组织判断县分渠道组织ID是否为空
+//            return StringUtils.isEmpty(countyOrgId);
+//        }
+//        return false;
+//    }
+//
+//    static class SimpleValueFilter implements ValueFilter {
+//        @Override
+//        public Object process(Object o, String s, Object v) {
+//            if (v == null) {
+//                return "";
+//            }
+//            return v;
+//        }
+//    }
+//
+//    public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
+//        String yxReturnMsg = "";
+//        try {
+//            Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
+//            String baseUrl = param.get("doPostUrl");
+//            String appKey = param.get("appKey");
+//
+//            Map<String, String> sysParam = new java.util.HashMap<>(param);
+//            sysParam.remove("doPostUrl");
+//            sysParam.remove("appKey");
+//
+//            log.info("亚信同步信息:{}", jsonStr);
+//            XxlJobHelper.log("亚信同步信息：{}", jsonStr);
+//
+//            YxResponse resp = yxApiClient.post(baseUrl, jsonStr, sysParam, appKey);
+//            log.info("亚信同步返回:{}", resp);
+//            XxlJobHelper.log("亚信同步返回：{}", resp);
+//
+//            if (resp.isSuccess()) {
+//                yxReturnMsg = "修改成功";
+//                syncLog("用户ID=" + user.getId() + ", 操作=" + operType, 0, resp.toString(), null);
+//            } else {
+//                yxReturnMsg = "修改成功,同步楼宇信息失败!";
+//                String errorMsg = "亚信接口返回失败：respCode=" + resp.getRespCode()
+//                    + ", result.code=" + resp.getResultCode() + ", respDesc=" + resp.getRespDesc();
+//                log.error(errorMsg);
+//                syncLog("用户ID=" + user.getId() + ", 操作=" + operType, 1, null, errorMsg);
+//            }
+//        } catch (Exception e) {
+//            yxReturnMsg = returnMsg;
+//            String errorMsg = "接口调用失败：" + e.getMessage();
+//            log.error("亚信同步接口调用异常，用户ID：{}", user.getId(), e);
+//            XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，{}", user.getId(), e.getMessage());
+//            syncLog("用户ID=" + user.getId() + ", 操作=" + operType, 1, null, errorMsg);
+//        }
+//        return yxReturnMsg;
+//    }
 
-        String[] s = org.getCode().split("_");
-        switch (s.length) {
-            case 1:
-                //浙江省
-                cityOrgId = "Z";
-                cityOrgName = "浙江";
-                countyOrgId = "Z00";
-                countyOrgName = "省中心_00";
-                gridOrgId = "1415";
-                gridOrgName = "省公司";
-                gridCode = "1415";  //渠道网格编码就是网格编码
-                break;
-            case 2:
-                //地市
-                if (checkDataForYx(org, user, operType)) {
-                    return "error";
-                }
-                cityOrgId = org.getOrgIdYx();
-                cityOrgName = org.getOrgNameYx();
-                break;
-            case 3:
-                //区县
-                OldSysOrgDo dsOrg = oldSysOrgMapper.selectById(org.getParent());
-                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg, user, operType)) {
-                    return "error";
-                }
-                cityOrgId = dsOrg.getOrgIdYx();
-                cityOrgName = dsOrg.getOrgNameYx();
-                countyOrgId = org.getOrgIdYx();
-                countyOrgName = org.getOrgNameYx();
-                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
-                    return "error";
-                }
-                break;
-            case 4:
-                //网格
-                OldSysOrgDo qxOrg = oldSysOrgMapper.selectById(org.getParent());
-                OldSysOrgDo dsOrg1 = oldSysOrgMapper.selectById(qxOrg.getParent());
-
-                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg1, user, operType) || checkDataForYx(qxOrg, user, operType)) {
-                    return "error";
-                }
-                cityOrgId = dsOrg1.getOrgIdYx();
-                cityOrgName = dsOrg1.getOrgNameYx();
-                countyOrgId = qxOrg.getOrgIdYx();
-                countyOrgName = qxOrg.getOrgNameYx();
-                gridOrgId = org.getOrgIdYx();
-                gridOrgName = org.getOrgNameYx();
-                gridCode = org.getGridCode();
-                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
-                    return "error";
-                }
-                break;
-        }
-        json.put("cityOrgId", cityOrgId);
-        json.put("cityOrgName", cityOrgName);
-        json.put("countyOrgId", countyOrgId);
-        json.put("countyOrgName", countyOrgName);
-        json.put("gridOrgId", gridOrgId);
-        json.put("gridOrgName", gridOrgName);
-        json.put("gridCode", gridCode);
-        json.put("userId", user.getId());
-        json.put("userName", user.getNameCh());
-        json.put("userPhone", user.getName());
-        json.put("userRoles", user.getUserRoleYx());
-        json.put("developerCodes", user.getDeveloperCodes());
-        json.put("cardNumber", user.getCardNumber());
-        String email = user.getEmail();
-        String oaAccount = "";
-        if (StringUtils.isNotEmpty(email)) {
-            oaAccount = email.split("@")[0];
-        }
-        json.put("oaAccount", oaAccount);
-        json.put("staffType", user.getStaffType());
-        json.put("operType", operType);
-
-        return JSON.toJSONString(json, new SimpleValueFilter());
-    }
-
-    public boolean checkDataForYx(OldSysOrgDo org, SysUsers user, String operType) {
-        if (StringUtils.isEmpty(org.getOrgIdYx()) || StringUtils.isEmpty(org.getOrgNameYx())) {
-            SysOperLog operLog = new SysOperLog();
-            operLog.setTitle("亚信楼宇同步");
-            operLog.setRequestMethod("POST");
-            operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
-            operLog.setStatus(1);
-            operLog.setErrorMsg("人员组织结构数据错误");
-            operLog.setOperatorType(2);
-            sysOperLogService.insertOperlog(operLog);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean checkCountryIdForYx(String countyOrgId, String userRoleYx) {
-        if ("3".equals(userRoleYx) || "4".equals(userRoleYx) || "5".equals(userRoleYx)) {
-            //如果选择区县、网格、楼长、园区长四个角色，(园区长角色删除了)
-            // 则针对第三级组织判断县分渠道组织ID是否为空
-            return StringUtils.isEmpty(countyOrgId);
-        }
-        return false;
-    }
-
-    static class SimpleValueFilter implements ValueFilter {
-        @Override
-        public Object process(Object o, String s, Object v) {
-            if (v == null) {
-                return "";
-            }
-            return v;
-        }
-    }
-
-    public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
-        String yxReturnMsg = "";
-        try {
-            Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
-            String baseUrl = param.get("doPostUrl");
-            String appKey = param.get("appKey");
-
-            Map<String, String> sysParam = new java.util.HashMap<>(param);
-            sysParam.remove("doPostUrl");
-            sysParam.remove("appKey");
-
-            log.info("亚信同步信息:{}", jsonStr);
-            XxlJobHelper.log("亚信同步信息：{}", jsonStr);
-
-            YxResponse resp = yxApiClient.post(baseUrl, jsonStr, sysParam, appKey);
-            log.info("亚信同步返回:{}", resp);
-            XxlJobHelper.log("亚信同步返回：{}", resp);
-
-            if (resp.isSuccess()) {
-                yxReturnMsg = "修改成功";
-            } else {
-                yxReturnMsg = "修改成功,同步楼宇信息失败!";
-                String errorMsg = "亚信接口返回失败：respCode=" + resp.getRespCode()
-                    + ", result.code=" + resp.getResultCode() + ", respDesc=" + resp.getRespDesc();
-                log.error(errorMsg);
-                SysOperLog operLog = new SysOperLog();
-                operLog.setTitle("亚信楼宇同步");
-                operLog.setRequestMethod("POST");
-                operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
-                operLog.setStatus(1);
-                operLog.setErrorMsg(errorMsg);
-                operLog.setOperatorType(2);
-                sysOperLogService.insertOperlog(operLog);
-            }
-        } catch (Exception e) {
-            yxReturnMsg = returnMsg;
-            String errorMsg = "接口调用失败：" + e.getMessage();
-            log.error("亚信同步接口调用异常，用户ID：{}", user.getId(), e);
-            XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，{}", user.getId(), e.getMessage());
-            SysOperLog operLog = new SysOperLog();
-            operLog.setTitle("亚信楼宇同步");
-            operLog.setRequestMethod("POST");
-            operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
-            operLog.setStatus(1);
-            operLog.setErrorMsg(errorMsg);
-            operLog.setOperatorType(2);
-            sysOperLogService.insertOperlog(operLog);
-        }
-        return yxReturnMsg;
-    }
+//    private void syncLog(String operParam, int status, String jsonResult, String errorMsg) {
+//        SysOperLog operLog = new SysOperLog();
+//        operLog.setTitle("亚信楼宇同步");
+//        operLog.setRequestMethod("POST");
+//        operLog.setOperParam(operParam);
+//        operLog.setStatus(status);
+//        operLog.setJsonResult(jsonResult);
+//        operLog.setErrorMsg(errorMsg);
+//        operLog.setOperatorType(2);
+//        sysOperLogService.insertOperlog(operLog);
+//    }
 
 }

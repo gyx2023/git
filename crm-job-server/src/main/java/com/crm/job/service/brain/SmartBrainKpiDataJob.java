@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.crm.common.utils.DateUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
-import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.brain.SmartBrainKpiDataService;
@@ -178,15 +177,8 @@ public class SmartBrainKpiDataJob {
      * 推送指标数据到智慧大脑（UNI_BSS 协议）
      */
     private boolean sendToNewInterface(String url, String appId, String appSecret, List<Map> kpiDataList) {
-        // 操作日志记录
-        SysOperLog operLog = new SysOperLog();
-        operLog.setTitle("智慧大脑KPI数据推送");
-        operLog.setRequestMethod("POST");
-        operLog.setOperUrl(url);
-        operLog.setOperatorType(2);
-        operLog.setOperParam("kpiDataList.size=" + (kpiDataList != null ? kpiDataList.size() : 0));
-        long startTime = System.currentTimeMillis();
-        try {
+        return sysOperLogService.tryApiCall("智慧大脑KPI数据推送", url,
+            "kpiDataList.size=" + (kpiDataList != null ? kpiDataList.size() : 0), () -> {
             Map<String, Object> head = UniBssApiClient.buildHead(appId, appSecret);
 
             Map<String, Object> dataReq = new HashMap<>();
@@ -200,44 +192,25 @@ public class SmartBrainKpiDataJob {
             UniBssResponse resp = uniBssApiClient.post(url, head, body);
 
             if (!resp.isSuccess()) {
-                operLog.setStatus(1);
-                operLog.setErrorMsg(resp.toString());
-                return false;
+                throw new RuntimeException("接口返回失败: " + resp);
             }
 
             JSONObject rspBody = resp.getRawJson();
             if (rspBody == null) {
-                operLog.setStatus(1);
-                operLog.setErrorMsg("响应为空");
-                return false;
+                throw new RuntimeException("响应为空");
             }
 
             JSONObject uniBssBody = rspBody.getJSONObject("UNI_BSS_BODY");
             if (uniBssBody == null) {
-                operLog.setStatus(1);
-                operLog.setErrorMsg("响应无UNI_BSS_BODY");
-                return false;
+                throw new RuntimeException("响应无UNI_BSS_BODY");
             }
 
             JSONObject rsp = uniBssBody.getJSONObject("INSERT_SYSTEM_KPI_DATA_RSP");
-            boolean success = rsp != null && rsp.getInteger("code") == 200;
-            if (success) {
-                operLog.setStatus(0);
-                operLog.setJsonResult(resp.toString());
-            } else {
-                operLog.setStatus(1);
-                operLog.setErrorMsg(resp != null ? resp.toString() : "业务返回code非200");
+            if (rsp == null || rsp.getInteger("code") != 200) {
+                throw new RuntimeException(rsp != null ? rsp.toString() : "业务返回code非200");
             }
-            return success;
 
-        } catch (Exception e) {
-            log.error("调用接口异常", e);
-            operLog.setStatus(1);
-            operLog.setErrorMsg(e.getMessage());
-            return false;
-        } finally {
-            operLog.setRequestTime(System.currentTimeMillis() - startTime);
-            sysOperLogService.insertOperlog(operLog);
-        }
+            return resp.toString();
+        });
     }
 }

@@ -3,7 +3,6 @@ package com.crm.system.service.travel;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.system.client.hiagent.HiagentApiClient;
-import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.service.sys.ISysOperLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,19 +47,11 @@ public class PreTravelReportApiService {
                                  Map<String, Object> lastVisit,
                                  List<Map<String, Object>> warnings,
                                  List<Map<String, Object>> opportunities) {
-        SysOperLog operLog = new SysOperLog();
-        operLog.setTitle("Hiagent行前报告接口");
-        operLog.setRequestMethod("POST");
-        operLog.setOperatorType(2);
-        operLog.setOperParam(JSON.toJSONString(reportMeta));
-        long startTime = System.currentTimeMillis();
-        try {
-            String url = preTravelReportProperties.getApiUrl();
+        String url = preTravelReportProperties.getApiUrl();
+        return sysOperLogService.logApiCall("Hiagent行前报告接口", url, JSON.toJSONString(reportMeta), () -> {
             String apiKey = preTravelReportProperties.getApiKey();
             String appKey = preTravelReportProperties.getAppKey();
             String userId = preTravelReportProperties.getUserId();
-
-            operLog.setOperUrl(url);
 
             Map<String, Object> reportData = new HashMap<>();
             reportData.put("report_meta", reportMeta);
@@ -87,19 +78,8 @@ public class PreTravelReportApiService {
             }
 
             log.info("Hiagent行前报告接口返回, report_id={}, resp={}", reportMeta.get("report_id"), respStr);
-            operLog.setStatus(0);
-            operLog.setJsonResult(respStr);
             return respStr;
-
-        } catch (Exception e) {
-            log.error("调用Hiagent行前报告接口异常, report_id={}", reportMeta.get("report_id"), e);
-            operLog.setStatus(1);
-            operLog.setErrorMsg(e.getMessage());
-            throw new RuntimeException("调用Hiagent接口失败: " + e.getMessage(), e);
-        } finally {
-            operLog.setRequestTime(System.currentTimeMillis() - startTime);
-            sysOperLogService.insertOperlog(operLog);
-        }
+        });
     }
 
     /**
