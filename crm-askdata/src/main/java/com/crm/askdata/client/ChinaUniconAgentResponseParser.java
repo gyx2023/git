@@ -49,11 +49,19 @@ public class ChinaUniconAgentResponseParser {
                 if (businessJson != null) {
                     return businessJson;
                 }
+                businessJson = tryExtractWrappedJson(content, validator);
+                if (businessJson != null) {
+                    return businessJson;
+                }
             }
 
             String context = result.path("context").asText("");
             if (!context.trim().isEmpty()) {
                 String businessJson = tryExtractJsonBlock(context, validator);
+                if (businessJson != null) {
+                    return businessJson;
+                }
+                businessJson = tryExtractWrappedJson(context, validator);
                 if (businessJson != null) {
                     return businessJson;
                 }
@@ -102,6 +110,10 @@ public class ChinaUniconAgentResponseParser {
                     if (businessJson != null) {
                         return businessJson;
                     }
+                    businessJson = tryExtractWrappedJson(data.asText(), validator);
+                    if (businessJson != null) {
+                        return businessJson;
+                    }
                 }
             }
 
@@ -119,6 +131,51 @@ public class ChinaUniconAgentResponseParser {
             log.debug("skip non-business ChinaUnicon json candidate: {}", e.getMessage());
             return null;
         }
+    }
+
+    private String tryExtractWrappedJson(String text, java.util.function.Predicate<JsonNode> validator) {
+        try {
+            JsonNode node = objectMapper.readTree(stripDataPrefix(text.trim()));
+            String extracted = tryExtractFromJsonNode(node, validator);
+            if (extracted != null) {
+                return extracted;
+            }
+        } catch (Exception e) {
+            log.debug("skip non-wrapper ChinaUnicon json candidate: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private String tryExtractFromJsonNode(JsonNode node, java.util.function.Predicate<JsonNode> validator) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        if (validator.test(node)) {
+            return node.toString();
+        }
+
+        String[] fields = {"output", "content", "text", "result", "data"};
+        for (String field : fields) {
+            JsonNode child = node.path(field);
+            if (child.isObject()) {
+                String extracted = tryExtractFromJsonNode(child, validator);
+                if (extracted != null) {
+                    return extracted;
+                }
+            }
+            if (child.isTextual() && !child.asText("").trim().isEmpty()) {
+                String extracted = tryExtractJsonBlock(child.asText(""), validator);
+                if (extracted != null) {
+                    return extracted;
+                }
+                extracted = tryExtractWrappedJson(child.asText(""), validator);
+                if (extracted != null) {
+                    return extracted;
+                }
+            }
+        }
+
+        return null;
     }
 
     private String extractText(JsonNode textNode) {

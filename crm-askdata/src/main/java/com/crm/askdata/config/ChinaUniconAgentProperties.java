@@ -74,6 +74,12 @@ public class ChinaUniconAgentProperties {
         /** 智能体应用 ID */
         private String appId;
 
+        /** 是否将 content 同步放入 variable，工作流智能体填槽入参通常需要开启 */
+        private boolean passContentAsInput = false;
+
+        /** 工作流智能体接收 content 的 variable 字段名 */
+        private String inputVariableName = "input";
+
         public AgentConfig() {
         }
 

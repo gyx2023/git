@@ -81,7 +81,7 @@ public class ChinaUniconAgentClient {
         long startTime = System.currentTimeMillis();
         Map<String, Object> logInput = null;
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-        Map<String, String> variable = Collections.emptyMap();
+        Map<String, String> variable = buildVariable(agentType, content);
         String accessToken = ChinaUniconAgentAccessTokenUtil.generateAccessToken(
             appId,
             timestamp,
@@ -153,6 +153,32 @@ public class ChinaUniconAgentClient {
         }
     }
 
+    private Map<String, String> buildVariable(String agentType, String content) {
+        ChinaUniconAgentProperties.AgentConfig agentConfig = resolveAgentConfig(agentType);
+        if (agentConfig == null || !agentConfig.isPassContentAsInput()) {
+            return Collections.emptyMap();
+        }
+
+        String inputVariableName = agentConfig.getInputVariableName();
+        if (inputVariableName == null || inputVariableName.trim().isEmpty()) {
+            inputVariableName = "input";
+        }
+
+        Map<String, String> variable = new LinkedHashMap<>();
+        variable.put(inputVariableName.trim(), content == null ? "" : content);
+        return variable;
+    }
+
+    private ChinaUniconAgentProperties.AgentConfig resolveAgentConfig(String agentType) {
+        if ("result".equals(agentType)) {
+            return properties.getResult();
+        }
+        if ("intent".equals(agentType)) {
+            return properties.getIntent();
+        }
+        return null;
+    }
+
     private Map<String, Object> buildLogInput(String url, Map<String, Object> body) {
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("url", url);
@@ -202,10 +228,30 @@ public class ChinaUniconAgentClient {
                 String detail = content != null && !content.trim().isEmpty() ? content : respDesc;
                 throw new IllegalArgumentException("respCode=" + respCode + ", respDesc=" + detail);
             }
+            validateResultContent(root.path("result").path("content").asText(""));
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception ignored) {
             // 直接返回 IntentResult JSON 时没有 respCode，交给后续解析处理。
+        }
+    }
+
+    private void validateResultContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return;
+        }
+        try {
+            JsonNode contentNode = objectMapper.readTree(stripDataPrefix(content.trim()));
+            String code = contentNode.path("code").asText("");
+            int status = contentNode.path("status").asInt(0);
+            if ("exception".equalsIgnoreCase(code) || status >= 400) {
+                String message = contentNode.path("message").asText(contentNode.toString());
+                throw new IllegalArgumentException("agentContent=" + message);
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception ignored) {
+            // 普通模型文本或业务 JSON 交给后续解析处理。
         }
     }
 

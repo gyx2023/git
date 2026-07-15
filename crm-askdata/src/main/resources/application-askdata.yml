@@ -71,9 +71,15 @@ china-unicon-agent:
   intent:
     enabled: true
     app-id: 686304240312774656
+    # 工作流智能体填槽节点需要从 variable.input 读取用户输入
+    pass-content-as-input: false
+    input-variable-name: input
   result:
     enabled: true
     app-id: 686990396490772480
+    # 工作流智能体填槽节点需要从 variable.input 读取结果处理入参
+    pass-content-as-input: false
+    input-variable-name: input
   # TODO: 待 ChinaUnicon 平台侧提供真实 teamId 后替换
   team-id: 1724420776265
   # TODO: 待 ChinaUnicon 平台侧提供真实 SK 后替换
