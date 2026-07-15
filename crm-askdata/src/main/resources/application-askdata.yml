@@ -86,7 +86,7 @@ china-unicon-agent:
   sk: sk-bnlNb7zhGgqEtj3NJjKcbAVAazaFzfj9DG4bOD365ZI
   stream: false
   connect-timeout: 5s
-  read-timeout: 60s
+  read-timeout: 180s
 
 --- # 智能问数路由决策配置
 askdata:

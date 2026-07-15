@@ -2,7 +2,7 @@ package com.crm.askdata.service;
 
 import com.crm.askdata.client.ChinaUniconAgentClient;
 import com.crm.askdata.client.HiAgentClient;
-import com.crm.askdata.config.ChinaUniconAgentProperties;
+import com.crm.askdata.config.AgentProvider;
 import com.crm.askdata.model.HiAgentChatResponse;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
@@ -41,9 +41,9 @@ public class ResultPostProcessorService {
 
     private final HiAgentClient hiAgentClient;
     private final ChinaUniconAgentClient chinaUniconAgentClient;
-    private final ChinaUniconAgentProperties chinaUniconAgentProperties;
     private final ToolConfigService configService;
     private final HiAgentConversationManager conversationManager;
+    private final AskDataAgentProviderService agentProviderService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${hiagent.result-agent-id:result_agent}")
@@ -92,13 +92,14 @@ public class ResultPostProcessorService {
 
             // 构建 Agent 输入
             String agentInput = buildAgentInput(originalQuery, intent, rawData, schema);
+            AgentProvider resultProvider = agentProviderService.resolveResultProvider();
 
             log.info("traceId={} calling result_agent for post-processing, provider={}, toolName={}, originalQuery={}",
-                traceId, chinaUniconAgentProperties.isResultEnabled() ? "ChinaUnicon" : "HiAgent",
+                traceId, resultProvider.getConfigValue(),
                 intent.getToolName(), originalQuery);
 
             // 调用 result_agent（按配置选择 ChinaUnicon 或保留 HiAgent 回切）
-            HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, agentInput);
+            HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, agentInput, resultProvider);
 
             // 解析 Agent 输出
             ResultProcessingOutput output = parseAgentOutput(response.getAnswer());
@@ -211,8 +212,9 @@ public class ResultPostProcessorService {
      * 使用 userId + sessionId 作为会话隔离 Key，确保每个页面/浏览器独立会话，
      * 避免多轮对话上下文串扰。traceId 仅用于链路追踪。
      */
-    private HiAgentChatResponse callResultAgent(String userId, String sessionId, String traceId, String agentInput) {
-        if (chinaUniconAgentProperties.isResultEnabled()) {
+    private HiAgentChatResponse callResultAgent(String userId, String sessionId, String traceId,
+                                                String agentInput, AgentProvider resultProvider) {
+        if (resultProvider == AgentProvider.CHINA_UNICON) {
             // TODO: conversationId 当前暂用 sessionId + ":result" 隔离结果后处理智能体，后续按新的会话维护方案调整
             String conversationId = sessionId != null && !sessionId.trim().isEmpty()
                 ? sessionId + ":result"

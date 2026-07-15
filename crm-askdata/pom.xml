@@ -23,6 +23,12 @@
             <artifactId>crm-common</artifactId>
         </dependency>
 
+        <!-- 系统参数，用于从 sys_param 读取智能体平台运行时开关 -->
+        <dependency>
+            <groupId>com.crm</groupId>
+            <artifactId>crm-system</artifactId>
+        </dependency>
+
         <!-- Spring Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
