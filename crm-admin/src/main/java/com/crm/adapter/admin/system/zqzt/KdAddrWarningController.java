@@ -4,9 +4,11 @@ import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.enums.OrderStatusEnum;
+import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
+import com.crm.system.domain.vo.KdAddrWarningDetailExportVo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.SysUsersMapper;
@@ -24,6 +26,7 @@ import org.flowable.task.api.Task;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -116,6 +119,53 @@ public class KdAddrWarningController extends BaseController {
         Map<String, Object> result = new HashMap<>();
         result.put("allDone", allDone);
         return R.ok(result);
+    }
+
+    /**
+     * 导出预警明细（对齐旧处理页"导出"按钮）
+     */
+    @PostMapping("/export")
+    public void export(@RequestParam("orderId") Long orderId, HttpServletResponse response) {
+        List<Map<String, Object>> records = detailService.queryRecords(orderId);
+        List<KdAddrWarningDetailExportVo> list = new ArrayList<>();
+        for (Map<String, Object> r : records) {
+            KdAddrWarningDetailExportVo vo = new KdAddrWarningDetailExportVo();
+            vo.setCheckType(str(r, "checkType"));
+            vo.setAreaName(str(r, "areaName"));
+            vo.setCountyName(str(r, "countyName"));
+            vo.setIndustry(str(r, "industry"));
+            vo.setSvcNum(str(r, "svcNum"));
+            vo.setCustName(str(r, "custName"));
+            vo.setUserAddr(str(r, "userAddr"));
+            vo.setOpenDate(str(r, "openDate"));
+            vo.setUserStatus(str(r, "userStatus"));
+            vo.setStatusChgTime(str(r, "statusChgTime"));
+            vo.setProdId(str(r, "prodId"));
+            vo.setProdName(str(r, "prodName"));
+            vo.setUpRate(str(r, "upRate"));
+            vo.setDownRate(str(r, "downRate"));
+            vo.setChnlCode(str(r, "chnlCode"));
+            vo.setChnlName(str(r, "chnlName"));
+            vo.setDeveloperId(str(r, "developerId"));
+            vo.setDeveloperName(str(r, "developerName"));
+            vo.setSameRoomCount(str(r, "sameRoomCount"));
+            vo.setFeedback(buildFeedbackText(r));
+            list.add(vo);
+        }
+        ExcelUtil.exportExcel(list, "宽带装机地址明细", KdAddrWarningDetailExportVo.class, response);
+    }
+
+    /** 反馈情况列文案：未反馈 / 正常 / 不正常：整改措施 */
+    private String buildFeedbackText(Map<String, Object> r) {
+        Object flag = r.get("feedbackFlag");
+        if (flag == null || flag.toString().isEmpty()) {
+            return "未反馈";
+        }
+        if ("0".equals(flag.toString())) {
+            return "正常";
+        }
+        String remark = str(r, "feedbackRemark");
+        return remark != null && !remark.isEmpty() ? "不正常：" + remark : "不正常";
     }
 
     // ==================== 流程操作（独立处理页专用） ====================
@@ -308,6 +358,28 @@ public class KdAddrWarningController extends BaseController {
     }
 
     /**
+     * 跟踪中（对齐旧处理页 taskFlag=3：工单置 tracking 状态，任务保留在当前处理人待办，流程不动）。
+     */
+    @PostMapping("/track")
+    public R<Map<String, Object>> track(@RequestParam("taskId") String taskId,
+                                        @RequestParam("orderId") Long orderId,
+                                        @RequestParam(value = "comment", required = false) String comment) {
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) return R.fail("任务不存在或已处理");
+        if (comment != null) taskService.addComment(taskId, task.getProcessInstanceId(), comment);
+
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(OrderStatusEnum.TRACKING.getCode());
+        orderService.updateByBo(bo);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", "SUCCESS");
+        result.put("msg", "该流程正在跟踪中");
+        return R.ok(result);
+    }
+
+    /**
      * 退回（稽核人员将工单退回客户经理，对应旧 kd_addr.bpmn deal_flag2==4）。
      */
     @PostMapping("/reject")
@@ -342,7 +414,12 @@ public class KdAddrWarningController extends BaseController {
     }
 
     /**
-     * 转派（经理节点转派其他客户经理）。
+     * 转派。
+     * <p>
+     * 经理节点：完成任务走 BPMN 转派回路（action=transfer），产生流转记录；
+     * 稽核节点：新 BPMN 稽核网关无转派回路，改派任务（setAssignee + 覆盖 audit 变量），
+     * 任务不完成，对齐旧"转派稽核人员"语义。
+     * </p>
      */
     @PostMapping("/transfer")
     public R<Map<String, Object>> transfer(@RequestParam("taskId") String taskId,
@@ -387,7 +464,21 @@ public class KdAddrWarningController extends BaseController {
             orderService.updateByBo(bo);
         }
 
-        // 转派：完成当前任务，流程回到经理处理节点，产生流转记录
+        String nextActorName = nextUser != null ? nextUser.getNameCh() : "";
+
+        // 稽核节点：改派任务，不完成（稽核网关无转派回路，完成会走默认线直接结束流程）
+        if ("audit_handle".equals(task.getTaskDefinitionKey())) {
+            if (targetUserId == null) return R.fail("请选择转派人员");
+            taskService.setAssignee(taskId, String.valueOf(targetUserId));
+            runtimeService.setVariable(task.getProcessInstanceId(), "audit", String.valueOf(targetUserId));
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("result", "SUCCESS");
+            result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
+            return R.ok(result);
+        }
+
+        // 经理节点：完成当前任务，流程回到经理处理节点，产生流转记录
         Map<String, Object> procVars = new HashMap<>();
         try {
             procVars = taskService.getVariables(taskId);
@@ -405,10 +496,8 @@ public class KdAddrWarningController extends BaseController {
         String handleName = str(procVars, "manager_handle_name");
         if (handleName != null) vars.put("manager_handle_name", handleName);
 
-        String nextActorName = "";
         if (targetUserId != null) {
             vars.put("manager", String.valueOf(targetUserId));
-            nextActorName = nextUser != null ? nextUser.getNameCh() : "";
         }
         vars.put("action", "transfer");
         taskService.setVariableLocal(taskId, "action", "transfer");
