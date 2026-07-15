@@ -171,6 +171,15 @@ public class KdAddrWarningController extends BaseController {
     // ==================== 流程操作（独立处理页专用） ====================
 
     /**
+     * 按流程实例ID反查工单ID（流程详情页内嵌组件用：流程变量中无 orderId 的存量工单兜底）
+     */
+    @GetMapping("/orderByPiId")
+    public R<Long> orderByPiId(@RequestParam("piId") String piId) {
+        ToppOrderVo order = orderService.queryByPiId(piId);
+        return R.ok(order != null ? order.getId() : null);
+    }
+
+    /**
      * 工单与当前任务信息（独立处理页初始化）
      */
     @GetMapping("/warnInfo")
