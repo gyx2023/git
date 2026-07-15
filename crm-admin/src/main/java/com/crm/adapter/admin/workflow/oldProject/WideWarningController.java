@@ -291,14 +291,24 @@ public class WideWarningController extends BaseController {
     @PostMapping("/complete")
     public R<Map<String, Object>> complete(@RequestParam("taskId") String taskId,
                             @RequestParam("orderId") Long orderId,
+                            @RequestParam(value = "auditUserId", required = false) Long auditUserId,
                             @RequestParam(value = "comment", required = false) String comment) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) return R.fail("任务不存在或已处理");
+        // double_approval 经理节点：必须携带稽核人（对齐旧系统必选行为），否则 ${audit} 无法解析
+        boolean needAudit = task.getProcessDefinitionId().startsWith("double_approval:")
+                && "manager_handle".equals(task.getTaskDefinitionKey());
+        if (needAudit && auditUserId == null) {
+            return R.fail("请选择稽核人员");
+        }
         String piId = task.getProcessInstanceId();
         if (comment != null) taskService.addComment(taskId, piId, comment);
 
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
+        if (needAudit) {
+            vars.put("audit", String.valueOf(auditUserId));
+        }
         // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
