@@ -248,7 +248,12 @@ public class WideWarningController extends BaseController {
             }
         }
 
-        return R.ok(sysFlowUserMapper.selectHandlersByProcessAndAreas(processKey, taskDefKey, areaIds));
+        try {
+            return R.ok(sysFlowUserMapper.selectHandlersByProcessAndAreas(processKey, taskDefKey, areaIds));
+        } catch (Exception e) {
+            log.error("查询候选稽核人失败: processKey={}, taskDefKey={}, areaIds={}", processKey, taskDefKey, areaIds, e);
+            return R.ok(new ArrayList<>());
+        }
     }
 
     /** 追加某区域的全部子区域ID */

@@ -103,16 +103,13 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
                 "[自动完结]超时" + AUTO_CLOSE_DAYS + "天未处理，系统自动结束");
         taskService.setVariablesLocal(task.getId(), localVariables);
 
-        if (task.getProcessDefinitionId().startsWith("double_approval:")) {
-            // 两节点流程：对齐旧系统 autoEndOrder，强制终止流程，不推进到稽核节点
-            // （原 action=agree 会把经理节点推到稽核节点，与工单置 END 不一致；稽核人改为提交时选择后 ${audit} 也无值）
-            runtimeService.deleteProcessInstance(piId, "[自动完结]超时" + AUTO_CLOSE_DAYS + "天未处理，系统自动结束");
-        } else {
-            // 单节点流程：完成任务即流程结束
-            Map<String, Object> variables = new HashMap<>();
-            variables.put("action", "agree");
-            taskService.complete(task.getId(), variables);
-        }
+        // double_approval（两节点）：对齐旧系统 autoEndOrder —— 用非 agree/transfer/reject 的 action 走网关默认线直达结束，
+        // 流程正常完结（TASK_COMPLETED/PROCESS_COMPLETED 事件正常触发，OA 待办可被清理），不推进到稽核节点；
+        // single_approval（单节点）维持 agree，完成任务即流程结束
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("action",
+                task.getProcessDefinitionId().startsWith("double_approval:") ? "auto_close" : "agree");
+        taskService.complete(task.getId(), variables);
 
         // 更新工单状态为已结束
         ToppOrder updateOrder = new ToppOrder();
