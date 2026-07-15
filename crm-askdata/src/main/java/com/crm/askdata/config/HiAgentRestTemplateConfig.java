@@ -1,7 +1,6 @@
 package com.crm.askdata.config;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +19,6 @@ import java.time.Duration;
  * @author crm
  */
 @Configuration
-@Slf4j
 @EnableConfigurationProperties({
     HiAgentProperties.class,
     RouterProperties.class,
@@ -53,16 +51,15 @@ public class HiAgentRestTemplateConfig {
      * ChinaUnicon 智能体专用 RestTemplate。
      */
     @Bean("chinaUniconAgentRestTemplate")
-    public RestTemplate chinaUniconAgentRestTemplate() {
+    public RestTemplate chinaUniconAgentRestTemplate(RestTemplateBuilder builder) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        int connectTimeoutMs = Math.toIntExact(chinaUniconAgentProperties.getConnectTimeout().toMillis());
-        int readTimeoutMs = Math.toIntExact(chinaUniconAgentProperties.getReadTimeout().toMillis());
-        factory.setConnectTimeout(connectTimeoutMs);
-        factory.setReadTimeout(readTimeoutMs);
+        factory.setConnectTimeout((int) chinaUniconAgentProperties.getConnectTimeout().toMillis());
+        factory.setReadTimeout((int) chinaUniconAgentProperties.getReadTimeout().toMillis());
 
-        // ChinaUnicon uses a dedicated client so shared RestTemplate customizers cannot override its timeout.
-        log.info("ChinaUnicon REST client configured: requestFactory={}, connectTimeoutMs={}, readTimeoutMs={}",
-            factory.getClass().getSimpleName(), connectTimeoutMs, readTimeoutMs);
-        return new RestTemplate(factory);
+        return builder
+            .requestFactory(() -> factory)
+            .setConnectTimeout(Duration.ofMillis(chinaUniconAgentProperties.getConnectTimeout().toMillis()))
+            .setReadTimeout(Duration.ofMillis(chinaUniconAgentProperties.getReadTimeout().toMillis()))
+            .build();
     }
 }

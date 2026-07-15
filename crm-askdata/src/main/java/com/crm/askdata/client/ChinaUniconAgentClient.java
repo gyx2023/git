@@ -6,7 +6,6 @@ import com.crm.askdata.util.LlmCallLogHelper;
 import com.crm.common.utils.TraceIdUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
@@ -34,7 +33,6 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ChinaUniconAgentClient {
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER =
@@ -44,8 +42,15 @@ public class ChinaUniconAgentClient {
     private final ChinaUniconAgentResponseParser responseParser;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Qualifier("chinaUniconAgentRestTemplate")
     private final RestTemplate restTemplate;
+
+    public ChinaUniconAgentClient(ChinaUniconAgentProperties properties,
+                                  ChinaUniconAgentResponseParser responseParser,
+                                  @Qualifier("chinaUniconAgentRestTemplate") RestTemplate restTemplate) {
+        this.properties = properties;
+        this.responseParser = responseParser;
+        this.restTemplate = restTemplate;
+    }
 
     public HiAgentChatResponse recognizeIntent(String query, String conversationId, String userId,
                                                String userName, String traceId) {
