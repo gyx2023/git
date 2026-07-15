@@ -43,7 +43,6 @@ public class WideWarningController extends BaseController {
     @Resource private final com.crm.system.mapper.oldsyssyn.OldSysOrgMapper oldSysOrgMapper;
     @Resource private final com.crm.system.service.ISysAreaService sysAreaService;
     @Resource private final com.crm.system.mapper.sys.SysAreaMapper sysAreaMapper;
-    @Resource private final com.crm.system.mapper.sys.SysFlowUserMapper sysFlowUserMapper;
 
     // ==================== 预警记录 ====================
 
@@ -207,65 +206,6 @@ public class WideWarningController extends BaseController {
         return R.ok(result);
     }
 
-    /**
-     * 查询候选稽核人（对齐老框架 SysFlowUserService.getNextUserListByNodeAndUserArea）
-     * <p>
-     * 按当前登录人归属区域过滤 sys_flow_user 配置：
-     * 一级（省）→ 候选人区域=登录人区域；二级（市）→ 本地市+子区县；
-     * 三级（县）→ 父地市+其全部子区县（等价老框架 area id 前4位前缀匹配=全地市，县级用户也可见全地市候选）。
-     * 注意与 transferList（三级只能本县）口径不同，这是老系统两个接口本来的差异。
-     * </p>
-     */
-    @GetMapping("/auditHandlers")
-    public R<List<Map<String, Object>>> auditHandlers(@RequestParam("processKey") String processKey,
-                                                      @RequestParam("taskDefKey") String taskDefKey) {
-        LoginUser loginUser = getLoginUser();
-        SysUsers currentUser = sysUsersMapper.selectById(loginUser.getUserId());
-        if (currentUser == null || currentUser.getOrgId() == null) return R.ok(new ArrayList<>());
-
-        com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo org = oldSysOrgMapper.selectById(currentUser.getOrgId());
-        if (org == null || org.getAreaId() == null) return R.ok(new ArrayList<>());
-
-        SysAreaVo area = sysAreaService.queryById(Long.valueOf(org.getAreaId()));
-        if (area == null) return R.ok(new ArrayList<>());
-
-        List<Long> areaIds = new ArrayList<>();
-        if ("一级".equals(area.getType())) {
-            // 省本级：候选人区域=登录人区域（老框架：省本部处理人）
-            areaIds.add(area.getId());
-        } else if ("二级".equals(area.getType())) {
-            // 市级：本地市+子区县
-            areaIds.add(area.getId());
-            addChildAreaIds(areaIds, area.getId());
-        } else {
-            // 县级（三级）：父地市+其全部子区县；无父区域时退化为本区域
-            SysAreaVo city = area.getParent() != null ? sysAreaService.queryById(area.getParent()) : null;
-            if (city != null) {
-                areaIds.add(city.getId());
-                addChildAreaIds(areaIds, city.getId());
-            } else {
-                areaIds.add(area.getId());
-            }
-        }
-
-        try {
-            return R.ok(sysFlowUserMapper.selectHandlersByProcessAndAreas(processKey, taskDefKey, areaIds));
-        } catch (Exception e) {
-            log.error("查询候选稽核人失败: processKey={}, taskDefKey={}, areaIds={}", processKey, taskDefKey, areaIds, e);
-            return R.ok(new ArrayList<>());
-        }
-    }
-
-    /** 追加某区域的全部子区域ID */
-    private void addChildAreaIds(List<Long> areaIds, Long parentId) {
-        List<SysAreaVo> children = sysAreaMapper.selectByParentId(parentId);
-        if (children != null) {
-            for (SysAreaVo child : children) {
-                areaIds.add(child.getId());
-            }
-        }
-    }
-
     @GetMapping("/custList")
     public R<Map<String, Object>> custList(@RequestParam("orderId") Long orderId,
                                             @RequestParam(defaultValue = "1") int pageNum,
@@ -296,24 +236,14 @@ public class WideWarningController extends BaseController {
     @PostMapping("/complete")
     public R<Map<String, Object>> complete(@RequestParam("taskId") String taskId,
                             @RequestParam("orderId") Long orderId,
-                            @RequestParam(value = "auditUserId", required = false) Long auditUserId,
                             @RequestParam(value = "comment", required = false) String comment) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) return R.fail("任务不存在或已处理");
-        // double_approval 经理节点：必须携带稽核人（对齐旧系统必选行为），否则 ${audit} 无法解析
-        boolean needAudit = task.getProcessDefinitionId().startsWith("double_approval:")
-                && "manager_handle".equals(task.getTaskDefinitionKey());
-        if (needAudit && auditUserId == null) {
-            return R.fail("请选择稽核人员");
-        }
         String piId = task.getProcessInstanceId();
         if (comment != null) taskService.addComment(taskId, piId, comment);
 
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
-        if (needAudit) {
-            vars.put("audit", String.valueOf(auditUserId));
-        }
         // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
