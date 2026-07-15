@@ -186,7 +186,7 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     private boolean resolveDealUrl(Pending pending, TaskCtx ctx) {
-        if (ctx.isFlowable) {
+        if (ctx.isFlowable()) {
             HistoricVariableInstance flowableVar = flowableHistoryService
                     .createHistoricVariableInstanceQuery()
                     .taskId(pending.getPendingCode())
@@ -216,7 +216,7 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     private int resolvePreviousUser(TaskCtx ctx) {
-        if (ctx.isFlowable) {
+        if (ctx.isFlowable()) {
             List<HistoricTaskInstance> hisList = flowableHistoryService
                     .createHistoricTaskInstanceQuery()
                     .processInstanceId(ctx.procInsId)
@@ -275,21 +275,14 @@ public class PendingServiceImpl implements IPendingService {
 
     // ---- TaskCtx ----
 
+    @lombok.Getter
+    @lombok.RequiredArgsConstructor
     private static class TaskCtx {
-        final boolean isFlowable;
-        final String taskDefKey;
-        final String procInsId;
-        final String assignee;
-        final long numericTaskId;
-
-        TaskCtx(boolean isFlowable, String taskDefKey, String procInsId,
-                String assignee, long numericTaskId) {
-            this.isFlowable = isFlowable;
-            this.taskDefKey = taskDefKey;
-            this.procInsId = procInsId;
-            this.assignee = assignee;
-            this.numericTaskId = numericTaskId;
-        }
+        private final boolean flowable;
+        private final String taskDefKey;
+        private final String procInsId;
+        private final String assignee;
+        private final long numericTaskId;
     }
 
     @Override
