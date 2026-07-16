@@ -18,6 +18,8 @@ import com.crm.system.mapper.sys.SysFlowUserMapper;
 import com.crm.system.service.IKdAddrWarningDetailService;
 import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.topp.IToppOrderService;
+import com.crm.workflow.domain.vo.WfDetailVo;
+import com.crm.workflow.service.IWfProcessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RuntimeService;
@@ -52,6 +54,7 @@ public class KdAddrWarningController extends BaseController {
     private final TaskService taskService;
     private final RuntimeService runtimeService;
     private final IToppOrderService orderService;
+    private final IWfProcessService wfProcessService;
     private final SysUsersMapper sysUsersMapper;
     private final OldSysOrgMapper oldSysOrgMapper;
     private final ISysAreaService sysAreaService;
@@ -208,6 +211,18 @@ public class KdAddrWarningController extends BaseController {
                     && assignee.replaceAll(",", "").equals(String.valueOf(loginUser.getUserId()));
             ct.put("canAct", canAct);
             result.put("currentTask", ct);
+        }
+
+        // 查询流程详情（流转记录、流程图、流程跟踪数据）
+        try {
+            WfDetailVo flowDetail = wfProcessService.queryProcessDetail(piId, taskId);
+            if (flowDetail != null) {
+                result.put("historyProcNodeList", flowDetail.getHistoryProcNodeList());
+                result.put("bpmnXml", flowDetail.getBpmnXml());
+                result.put("flowViewer", flowDetail.getFlowViewer());
+            }
+        } catch (Exception e) {
+            log.warn("查询流程详情失败: orderId={}, piId={}", orderId, piId, e);
         }
         return R.ok(result);
     }
@@ -512,6 +527,9 @@ public class KdAddrWarningController extends BaseController {
         taskService.setVariableLocal(taskId, "action", "transfer");
         taskService.complete(taskId, vars);
 
+        // 转派后流程产生新的 manager_handle 任务，需同步任务本地变量供旧系统待办列表展示
+        syncOrderToCurrentTask(orderId, task.getProcessInstanceId(), order);
+
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
         result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
@@ -581,6 +599,10 @@ public class KdAddrWarningController extends BaseController {
             } catch (Exception ignored) {}
         }
         orderService.updateByBo(bo);
+
+        // 设置为"显示"，旧系统待办SQL按 DESCRIPTION_='显示' 过滤 ACT_RU_TASK
+        next.setDescription("显示");
+        taskService.saveTask(next);
 
         setNextTaskDisplayVars(next, order);
     }

@@ -1,8 +1,12 @@
 package com.crm.job.service.warning.strategy;
 
+import com.crm.common.utils.DateUtils;
 import com.crm.job.mapper.warning.KdAddrWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.domain.bo.topp.ToppOrderBo;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.service.IMaintenanceDetailSyncService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -33,6 +37,9 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
     private KdAddrWarningMapper mapper;
+
+    @Resource
+    private IMaintenanceDetailSyncService maintenanceDetailSyncService;
 
     @Override
     public String getOrderType() {
@@ -70,28 +77,39 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
     private WarningRecord toWarningRecord(Map<String, Object> row) {
         String oaIdDev = getString(row.get("oa_id_dev"));
         if (oaIdDev == null) {
-            log.warn("【{}】oa_id_dev 为空, 跳过", getOrderTypeName());
+            // 复刻旧系统：无有效客户经理仍写一条 status=0 维系明细，再跳过建单
+            log.warn("【{}】oa_id_dev 为空, 写 status=0 维系明细并跳过建单", getOrderTypeName());
+            writeNoManagerSafe(row);
             return null;
         }
 
-        // 按 oaId 查 sys_user 表，获取真实 userId 及相关信息
+        // 按 oaId 查 zqzt_sys_user，获取真实 userId 及相关信息（决定是否建单）
         Map<String, Object> userRow = mapper.selectUserByOaId(oaIdDev);
         if (userRow == null || userRow.isEmpty()) {
-            log.warn("【{}】未找到对应客户经理, oaId: {}", getOrderTypeName(), oaIdDev);
+            log.warn("【{}】未找到对应客户经理, oaId: {}, 写 status=0 维系明细并跳过建单", getOrderTypeName(), oaIdDev);
+            writeNoManagerSafe(row);
             return null;
         }
 
         Long userId = toLong(userRow.get("user_id"));
         if (userId == null) {
-            log.warn("【{}】客户经理ID为空, oaId: {}", getOrderTypeName(), oaIdDev);
+            log.warn("【{}】客户经理ID为空, oaId: {}, 写 status=0 维系明细并跳过建单", getOrderTypeName(), oaIdDev);
+            writeNoManagerSafe(row);
             return null;
         }
 
         WarningRecord record = new WarningRecord();
         record.setOrderType(getOrderType());
-        record.setOrderName(getOrderTypeName());
+        record.setOrderName(DateUtils.dateTime() + "__" + getOrderTypeName());
         record.setCustName(getString(row.get("grp_name")));
         record.setCustManagerId(userId);
+
+        // 设置创建人信息
+        SysUsers sysUser = new SysUsers();
+        sysUser.setId(userId);
+        sysUser.setOrgId(toLong(userRow.get("dept_id")));
+        sysUser.setNameCh(getString(userRow.get("nick_name")));
+        record.setSysUser(sysUser);
 
         // 扩展字段
         record.setExtraVariable("infoId", toLong(row.get("id_")));
@@ -103,8 +121,37 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
         // 地市/区县信息
         record.setExtraVariable("areaName", getString(row.get("area_name")));
         record.setExtraVariable("countyName", getString(row.get("county_name")));
+        // 维系明细写入所需字段（afterStart → writeSuccess）
+        record.setExtraVariable("grpCode", getString(row.get("grp_code")));
+        record.setExtraVariable("custGrpId", getString(row.get("cust_grp_id")));
+        record.setExtraVariable("oaIdDev", oaIdDev);
+        record.setExtraVariable("oaNameDev", getString(row.get("oa_name_dev")));
 
         return record;
+    }
+
+    /**
+     * 建单成功后写维系明细：maintenance_detail(status=1) + maintenance_detail_new。
+     * 复刻旧系统 TcUserCustWarningNewJob 中 maintenanceDetailService.save / maintenanceDetailNewService.save。
+     * 写入失败仅记录日志，不影响预警主流程。
+     */
+    @Override
+    public void afterStart(WarningRecord record, ToppOrderBo orderBo) {
+        try {
+            maintenanceDetailSyncService.writeSuccess(orderBo, record.getExtraVariables());
+        } catch (Exception e) {
+            log.error("【{}】写维系明细(status=1)失败, orderId={}", getOrderTypeName(),
+                    orderBo != null ? orderBo.getId() : null, e);
+        }
+    }
+
+    /** 无有效客户经理时写 status=0 维系明细，失败不影响查询主流程 */
+    private void writeNoManagerSafe(Map<String, Object> row) {
+        try {
+            maintenanceDetailSyncService.writeNoManager(getOrderType(), row);
+        } catch (Exception e) {
+            log.error("【{}】写维系明细(status=0)失败", getOrderTypeName(), e);
+        }
     }
 
     @Override

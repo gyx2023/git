@@ -98,4 +98,12 @@ public class MaintenanceDetailDo implements Serializable {
     /** C客户级U用户N不区分 */
     @TableField("order_category")
     private String orderCategory;
+
+    /** 地市ID（新口径，按客户经理归属，对齐 maintenance_detail_new.area_id） */
+    @TableField("area_id_new")
+    private Long areaIdNew;
+
+    /** 区县ID（新口径，与 area_id_new 同值，对齐 maintenance_detail_new.county_id） */
+    @TableField("county_id_new")
+    private Long countyIdNew;
 }

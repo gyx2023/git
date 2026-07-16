@@ -121,6 +121,9 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
         d.setAreaId(area.areaId);
         d.setCountyId(area.countyId);
         d.setBusinessDep(area.businessDep);
+        // 新口径：area_id_new/county_id_new 按客户经理归属地市（对齐 maintenance_detail_new）
+        d.setAreaIdNew(orderBo.getAreaId());
+        d.setCountyIdNew(orderBo.getAreaId());
         maintenanceDetailMapper.insert(d);
 
         // maintenance_detail_new（status=1）——area/county 走客户经理组织维度，简化为其所在地市（orderBo.areaId）
@@ -176,6 +179,8 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
         d.setAreaId(area.areaId);
         d.setCountyId(area.countyId);
         d.setBusinessDep(area.businessDep);
+        d.setAreaIdNew(null);
+        d.setCountyIdNew(null);
         maintenanceDetailMapper.insert(d);
     }
 
