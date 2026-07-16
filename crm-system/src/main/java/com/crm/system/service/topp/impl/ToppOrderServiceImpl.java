@@ -2,7 +2,9 @@ package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.crm.common.core.service.UserService;
 import com.crm.common.enums.OrderStatusEnum;
+import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
@@ -10,6 +12,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
+import org.flowable.engine.TaskService;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
@@ -17,6 +20,8 @@ import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.topp.IToppOrderService;
 
+import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -32,6 +37,13 @@ import java.util.Collection;
 public class ToppOrderServiceImpl implements IToppOrderService {
 
     private final ToppOrderMapper baseMapper;
+
+    @Resource
+    private TaskService taskService;
+    @Resource
+    private UserService userService;
+    @Resource
+    private com.crm.system.mapper.SysUsersMapper sysUsersMapper;
 
     /**
      * 查询【请填写功能名称】
@@ -178,5 +190,64 @@ public class ToppOrderServiceImpl implements IToppOrderService {
             .eq(ToppOrder::getOppoId, oppoId)
             .ne(ToppOrder::getStatus, OrderStatusEnum.END.getCode())
         );
+    }
+
+    @Override
+    public String resolveProcInsId(Long orderId) {
+        ToppOrderVo order = queryById(orderId);
+        return order != null ? order.getPiId() : null;
+    }
+
+    @Override
+    public String transferOrder(String taskId, Long orderId, Long targetUserId, String comment, Long currentUserId) {
+        ToppOrderVo order = queryById(orderId);
+        if (order == null) throw new ServiceException("工单不存在: " + orderId);
+
+        // 更新工单白名单（追加操作人+转派目标人，去重）
+        String whiteList = order.getWhiteList();
+        if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
+        if (currentUserId != null) {
+            String seg = "," + currentUserId + ",";
+            if (!whiteList.contains(seg)) whiteList = whiteList + currentUserId + ",";
+        }
+        if (targetUserId != null) {
+            String seg = "," + targetUserId + ",";
+            if (!whiteList.contains(seg)) whiteList = whiteList + targetUserId + ",";
+        }
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setWhiteList(whiteList);
+        String nextActorName = "";
+        if (targetUserId != null) {
+            bo.setActors(",," + targetUserId + ",,");
+            nextActorName = userService.selectNickNameById(targetUserId);
+            if (nextActorName == null) nextActorName = "";
+            String phone = "";
+            try {
+                com.crm.system.domain.dao.SysUsers u = sysUsersMapper.selectById(targetUserId);
+                if (u != null && u.getRelationTel() != null) phone = u.getRelationTel();
+            } catch (Exception ignored) {}
+            bo.setActorsInfo(nextActorName + ":" + phone);
+        }
+        updateByBo(bo);
+
+        // 保留原有流程变量 + 设置转派参数
+        Map<String, Object> procVars = new HashMap<>();
+        try { procVars = taskService.getVariables(taskId); } catch (Exception e) { /* ignore */ }
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("manager_handle_custName", order.getCustName() != null ? order.getCustName() : procVars.get("manager_handle_custName"));
+        vars.put("manager_handle_dealUrl", procVars.get("manager_handle_dealUrl"));
+        vars.put("manager_handle_infoType", procVars.get("manager_handle_infoType"));
+        vars.put("manager_handle_infoId", order.getInfoId() != null ? String.valueOf(order.getInfoId()) : procVars.get("manager_handle_infoId"));
+        vars.put("manager_handle_remindContent", procVars.get("manager_handle_remindContent"));
+        vars.put("manager_handle_orderName", order.getOrderName() != null ? order.getOrderName() : procVars.get("manager_handle_orderName"));
+        if (procVars.get("manager_handle_name") != null) vars.put("manager_handle_name", procVars.get("manager_handle_name"));
+        if (targetUserId != null) vars.put("manager", String.valueOf(targetUserId));
+        vars.put("action", "transfer");
+        taskService.setVariableLocal(taskId, "action", "transfer");
+        taskService.complete(taskId, vars);
+
+        return nextActorName;
     }
 }

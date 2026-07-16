@@ -61,4 +61,21 @@ public interface IToppOrderService {
 
    void updateByOppoId(Long oppoId,String endOppTypeMemo);
 
+    /**
+     * 根据工单ID解析流程实例ID
+     */
+    String resolveProcInsId(Long orderId);
+
+    /**
+     * Flowable 工单转派（完成当前任务 + 流程回到经理处理节点）
+     *
+     * @param taskId        当前任务ID
+     * @param orderId       工单ID
+     * @param targetUserId  目标用户ID
+     * @param comment       转派意见（可选）
+     * @param currentUserId 当前操作人ID（可选，仅用于追加白名单）
+     * @return 下一步处理人名称
+     */
+    String transferOrder(String taskId, Long orderId, Long targetUserId, String comment, Long currentUserId);
+
 }

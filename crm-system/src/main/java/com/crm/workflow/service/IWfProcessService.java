@@ -115,9 +115,4 @@ public interface IWfProcessService {
      */
     WfDetailVo queryProcessDetail(String procInsId, String taskId);
 
-    /**
-     * 根据工单ID解析流程实例ID
-     */
-    String resolveProcInsId(Long orderId);
-
 }
