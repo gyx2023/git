@@ -11,6 +11,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.flowable.core.domain.ProcessQuery;
+import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.domain.bo.WfCopyBo;
 import com.crm.workflow.domain.vo.*;
 import com.crm.workflow.service.IWfCopyService;
@@ -38,6 +39,7 @@ public class WfProcessController extends BaseController {
 
     private final IWfProcessService processService;
     private final IWfCopyService copyService;
+    private final IToppOrderService orderService;
 
     /**
      * 查询可发起流程列表
@@ -235,7 +237,7 @@ public class WfProcessController extends BaseController {
     @GetMapping("/detail")
     public R detail(String procInsId, String taskId, Long orderId) {
         if (procInsId == null && orderId != null) {
-            procInsId = processService.resolveProcInsId(orderId);
+            procInsId = orderService.resolveProcInsId(orderId);
         }
         return R.ok(processService.queryProcessDetail(procInsId, taskId));
     }
