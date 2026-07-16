@@ -33,14 +33,4 @@ public interface KdAddrWarningMapper {
             + "AND DATE_FORMAT(w.create_date, '%Y%m%d') = #{targetDate} "
             + "ORDER BY w.id_"})
     List<Map<String, Object>> selectKdAddrList(@Param("targetDate") String targetDate);
-
-    /**
-     * 按 OA 账号查询本地系统用户信息
-     *
-     * @param oaId OA 账号（对应 sys_user.oa_account）
-     * @return 用户信息（user_id, dept_id, nick_name, phonenumber）
-     */
-    @Select({"SELECT user_id, dept_id, nick_name, phonenumber FROM zqzt_sys_user "
-            + "WHERE user_name = #{oaId} AND del_flag = '0' LIMIT 1"})
-    Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
 }

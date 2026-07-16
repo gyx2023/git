@@ -6,6 +6,7 @@ import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.IMaintenanceDetailSyncService;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +38,9 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
     private KdAddrWarningMapper mapper;
+
+    @Resource
+    private SysUsersMapper sysUsersMapper;
 
     @Resource
     private IMaintenanceDetailSyncService maintenanceDetailSyncService;
@@ -83,8 +87,8 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
             return null;
         }
 
-        // 按 oaId 查 zqzt_sys_user，获取真实 userId 及相关信息（决定是否建单）
-        Map<String, Object> userRow = mapper.selectUserByOaId(oaIdDev);
+        // 按 oaId 查用户，获取真实 userId 及相关信息（决定是否建单）
+        Map<String, Object> userRow = sysUsersMapper.selectUserByOaId(oaIdDev);
         if (userRow == null || userRow.isEmpty()) {
             log.warn("【{}】未找到对应客户经理, oaId: {}, 写 status=0 维系明细并跳过建单", getOrderTypeName(), oaIdDev);
             writeNoManagerSafe(row);
