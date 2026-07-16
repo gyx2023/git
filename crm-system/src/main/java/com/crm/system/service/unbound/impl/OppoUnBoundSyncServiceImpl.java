@@ -10,6 +10,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.JsonUtils;
 import com.crm.system.domain.dao.sys.SysLog;
 import com.crm.system.domain.bo.SysCodeBo;
+import com.crm.system.domain.bo.topp.ToppBidSuboppoBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.bo.topp.ToppMemberBo;
 import com.crm.system.domain.vo.SysCodeVo;
@@ -86,6 +87,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
     @Resource
     private IToppOpportunityService oppotunityService;
     @Resource
+    private IToppBidSuboppoService bidSuboppoService;
+    @Resource
     private ISysParamService paramService;
 
 
@@ -143,6 +146,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             setSupportInfo(reqMap, oppo);
             //设置扩展信息,前评估信息
             setExtendInfo(reqMap, oppo);
+            //设置bidInfo 标讯信息
+            setBidInfo(reqMap, oppo);
             UNI_BSS_BODY.put("SYN_PROVINCE_OPPORTUNITY_REQ", reqMap);
             return UNI_BSS_BODY;
         } catch (Exception e) {
@@ -547,6 +552,34 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
         }
 
+    }
+
+    /***
+     * 设置bidInfo 标讯信息（接口规范: 单个object, 约束?=0-1）
+     * 字段: infoId, releaseDate(yyyy-MM-dd HH:mm:ss), projectName, projectNumber
+     */
+    private void setBidInfo(Map reqMap, ToppOpportunityVo oppo) throws Exception {
+        try {
+            ToppBidSuboppoBo queryBo = new ToppBidSuboppoBo();
+            queryBo.setProjectId(oppo.getId());
+            queryBo.setValid(true);
+            List<ToppBidSuboppoVo> bidList = bidSuboppoService.queryList(queryBo);
+            if (bidList == null || bidList.isEmpty()) return;
+            // 接口规范: bidInfo是单个对象(?=0-1)，取第一条有效记录
+            ToppBidSuboppoVo bid = bidList.get(0);
+            Map<String, Object> bidInfo = new HashMap<>();
+            bidInfo.put("infoId", bid.getInfoId() != null ? bid.getInfoId() : "");
+            if (bid.getReleaseDate() != null) {
+                bidInfo.put("releaseDate", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(bid.getReleaseDate()));
+            } else {
+                bidInfo.put("releaseDate", "");
+            }
+            bidInfo.put("projectName", bid.getProjectName() != null ? bid.getProjectName() : "");
+            bidInfo.put("projectNumber", bid.getProjectCode() != null ? bid.getProjectCode() : "");
+            reqMap.put("bidInfo", bidInfo);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**

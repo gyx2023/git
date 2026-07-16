@@ -4,6 +4,8 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import lombok.Data;
 
+import java.util.Date;
+
 
 /**
  * 商机标讯信息视图对象 topp_bid_suboppo
@@ -53,5 +55,28 @@ public class ToppBidSuboppoVo {
     @ExcelProperty(value = "项目名称")
     private String projectName;
 
+    /**
+     * 项目编码
+     */
+    @ExcelProperty(value = "项目编码")
+    private String projectCode;
+
+    /**
+     * 发布日期
+     */
+    @ExcelProperty(value = "发布日期")
+    private Date releaseDate;
+
+    /**
+     * 商机编号（联表查询字段）
+     */
+    @ExcelProperty(value = "商机编号")
+    private String oppoCode;
+
+    /**
+     * 商机名称（联表查询字段）
+     */
+    @ExcelProperty(value = "商机名称")
+    private String oppoName;
 
 }
