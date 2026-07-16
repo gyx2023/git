@@ -49,6 +49,16 @@ public class AskDataAgentProviderService {
             : AgentProvider.HIAGENT;
     }
 
+    public AgentProvider resolveSemanticSqlProvider() {
+        AgentProvider configured = resolveFromSysParam();
+        if (configured != null) {
+            return configured;
+        }
+        return chinaUniconAgentProperties.isSemanticSqlEnabled()
+            ? AgentProvider.CHINA_UNICON
+            : AgentProvider.HIAGENT;
+    }
+
     private AgentProvider resolveFromSysParam() {
         String value = loadProviderValue();
         if (value == null || value.trim().isEmpty()) {

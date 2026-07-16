@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * ChinaUnicon 智能体客户端。
  * <p>
- * 本阶段仅用于 /askdata/chat/stream 的意图识别。
+ * 用于 /askdata/chat/stream 的意图识别、结果后处理和语义 SQL 生成。
  *
  * @author crm
  */
@@ -77,6 +77,24 @@ public class ChinaUniconAgentClient {
             userName,
             traceId,
             responseParser::extractResultJson
+        );
+    }
+
+    public HiAgentChatResponse generateSemanticSql(String agentInput, String conversationId, String userId,
+                                                   String userName, String traceId) {
+        String appId = properties.getSemanticSqlAppId();
+        if (appId == null || appId.trim().isEmpty()) {
+            throw new IllegalStateException("ChinaUnicon semantic-sql app-id 未配置");
+        }
+        return chat(
+            "semanticSql",
+            appId,
+            agentInput,
+            conversationId,
+            userId,
+            userName,
+            traceId,
+            responseParser::extractSemanticSqlJson
         );
     }
 
@@ -180,6 +198,9 @@ public class ChinaUniconAgentClient {
         }
         if ("intent".equals(agentType)) {
             return properties.getIntent();
+        }
+        if ("semanticSql".equals(agentType)) {
+            return properties.getSemanticSql();
         }
         return null;
     }

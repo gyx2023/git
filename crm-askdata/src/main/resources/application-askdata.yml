@@ -80,9 +80,13 @@ china-unicon-agent:
     # 工作流智能体填槽节点需要从 variable.input 读取结果处理入参
     pass-content-as-input: false
     input-variable-name: input
-  # TODO: 待 ChinaUnicon 平台侧提供真实 teamId 后替换
+  semantic-sql:
+    # 待创建/确认 ChinaUnicon 语义 SQL 智能体后填写 app-id，再将数据库开关设为 china_unicon
+    enabled: false
+    app-id: ""
+    pass-content-as-input: false
+    input-variable-name: input
   team-id: 1724420776265
-  # TODO: 待 ChinaUnicon 平台侧提供真实 SK 后替换
   sk: sk-bnlNb7zhGgqEtj3NJjKcbAVAazaFzfj9DG4bOD365ZI
   stream: false
   connect-timeout: 5s

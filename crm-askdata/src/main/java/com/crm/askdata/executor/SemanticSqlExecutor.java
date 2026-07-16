@@ -1,9 +1,13 @@
 package com.crm.askdata.executor;
 
+import com.crm.askdata.client.ChinaUniconAgentClient;
 import com.crm.askdata.client.HiAgentClient;
+import com.crm.askdata.config.AgentProvider;
 import com.crm.askdata.entity.MetaMetric;
 import com.crm.askdata.model.*;
 import com.crm.askdata.router.RoutingStrategy;
+import com.crm.askdata.security.HeaderContextHolder;
+import com.crm.askdata.service.AskDataAgentProviderService;
 import com.crm.askdata.service.HiAgentConversationManager;
 import com.crm.askdata.service.MetricService;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -41,7 +45,9 @@ public class SemanticSqlExecutor implements QueryExecutor {
 
     private final MetricService metricService;
     private final HiAgentClient hiAgentClient;
+    private final ChinaUniconAgentClient chinaUniconAgentClient;
     private final HiAgentConversationManager conversationManager;
+    private final AskDataAgentProviderService agentProviderService;
     private final SqlSandboxExecutor sqlSandboxExecutor;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -83,13 +89,14 @@ public class SemanticSqlExecutor implements QueryExecutor {
         // 3a. 构造 agent 输入
         String agentInput = buildAgentInput(intent, metrics);
 
-        log.info("traceId={} calling semantic_sql_agent, metrics={}", traceId,
+        AgentProvider agentProvider = agentProviderService.resolveSemanticSqlProvider();
+        log.info("traceId={} calling semantic_sql_agent, provider={}, metrics={}", traceId,
+            agentProvider.getConfigValue(),
             metrics.stream().map(MetaMetric::getMetricName).collect(Collectors.toList()));
 
-        // 3b. 调用 agent（使用 userId + sessionId 作为会话隔离 Key）
-        String convId = getOrCreateConversation(userId, sessionId);
-        HiAgentChatResponse response = hiAgentClient.chatQueryBlocking(
-            userId, semanticSqlAgentId, convId, agentInput, traceId);
+        // 3b. 按运行时配置调用对应平台
+        HiAgentChatResponse response = callSemanticSqlAgent(
+            userId, sessionId, traceId, agentInput, agentProvider);
 
         // 3c. 解析输出
         SemanticSqlOutput output = parseAgentOutput(response.getAnswer());
@@ -137,6 +144,25 @@ public class SemanticSqlExecutor implements QueryExecutor {
 
         // 3g. 构造结果
         return buildQueryResult(output, rows);
+    }
+
+    private HiAgentChatResponse callSemanticSqlAgent(String userId, String sessionId, String traceId,
+                                                     String agentInput, AgentProvider agentProvider) {
+        if (agentProvider == AgentProvider.CHINA_UNICON) {
+            String conversationId = sessionId != null && !sessionId.trim().isEmpty()
+                ? sessionId + ":semantic_sql"
+                : traceId + ":semantic_sql";
+            String userName = HeaderContextHolder.get("loginoa");
+            if (userName == null || userName.trim().isEmpty()) {
+                userName = userId;
+            }
+            return chinaUniconAgentClient.generateSemanticSql(
+                agentInput, conversationId, userId, userName, traceId);
+        }
+
+        String convId = getOrCreateConversation(userId, sessionId);
+        return hiAgentClient.chatQueryBlocking(
+            userId, semanticSqlAgentId, convId, agentInput, traceId);
     }
 
     /**

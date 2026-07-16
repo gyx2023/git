@@ -27,6 +27,10 @@ public class ChinaUniconAgentResponseParser {
         return extractBusinessJson(responseBody, this::isResultJson, "结果后处理");
     }
 
+    public String extractSemanticSqlJson(String responseBody) {
+        return extractBusinessJson(responseBody, this::isSemanticSqlJson, "语义 SQL");
+    }
+
     private String extractBusinessJson(String responseBody,
                                        java.util.function.Predicate<JsonNode> validator,
                                        String resultName) {
@@ -227,5 +231,11 @@ public class ChinaUniconAgentResponseParser {
     private boolean isResultJson(JsonNode node) {
         return node != null && node.isObject()
             && (node.has("displayType") || node.has("displayTitle") || node.has("summary") || node.has("data"));
+    }
+
+    private boolean isSemanticSqlJson(JsonNode node) {
+        return node != null && node.isObject()
+            && (node.has("sql") || node.has("metricName") || node.has("queryType")
+            || node.has("chartType") || node.has("displayTitle") || node.has("summary"));
     }
 }

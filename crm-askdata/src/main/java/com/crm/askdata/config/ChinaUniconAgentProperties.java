@@ -32,6 +32,9 @@ public class ChinaUniconAgentProperties {
     /** 结果后处理智能体配置 */
     private AgentConfig result = new AgentConfig(false, "686990396490772480");
 
+    /** 语义 SQL 智能体配置 */
+    private AgentConfig semanticSql = new AgentConfig(false, "");
+
     /** 团队 ID */
     private String teamId = "todo_team_id";
 
@@ -64,6 +67,14 @@ public class ChinaUniconAgentProperties {
 
     public String getResultAppId() {
         return result.getAppId();
+    }
+
+    public boolean isSemanticSqlEnabled() {
+        return semanticSql.isEnabled();
+    }
+
+    public String getSemanticSqlAppId() {
+        return semanticSql.getAppId();
     }
 
     @Data
