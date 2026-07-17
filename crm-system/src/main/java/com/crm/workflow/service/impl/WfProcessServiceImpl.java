@@ -1013,15 +1013,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     /**
      * 流程详情信息
      *
-     * @param orderId 订单ID
+     * @param procInsId 程序ID
+     * @param taskId 流程ID
      * @return
      */
-    @Override
-    public String resolveProcInsId(Long orderId) {
-        ToppOrderVo order = orderService.queryById(orderId);
-        return order != null ? order.getPiId() : null;
-    }
-
     @Override
     public WfDetailVo queryProcessDetail(String procInsId, String taskId) {
         // 检测是否为老系统流程：优先查 topp_order.process_engine 落表字段，兜底查 ACT_HI_PROCINST

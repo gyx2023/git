@@ -1,13 +1,13 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.http.HttpUtil;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.crm.common.enums.PendingOpType;
+import com.crm.common.enums.SendStatus;
+import com.crm.common.utils.JsonUtils;
 import com.crm.common.utils.StringUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.domain.dao.SysUsers;
@@ -37,6 +37,17 @@ import java.util.*;
 @Transactional
 public class PendingServiceImpl implements IPendingService {
 
+    // 失败次数上限
+    private static final int MAX_FAIL_TIMES = 3;
+    // OA 返回成功前缀
+    private static final String OA_SUCCESS_PREFIX = "100-";
+    // 默认地市编码
+    private static final String DEFAULT_CITY_CODE = "12";
+    // OA 接口超时（毫秒）
+    private static final int OA_HTTP_TIMEOUT = 60000;
+    // 集团待办查询限制
+    private static final int DEFAULT_GROUP_LIMIT = 100;
+
     @Resource
     private PendingMapper pendingMapper;
 
@@ -55,13 +66,8 @@ public class PendingServiceImpl implements IPendingService {
     @Resource
     private HistoryService flowableHistoryService;
 
-    private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
-            "pendingCode", "pendingTitle", "pendingDate", "pendingUserID", "pendingURL", "pendingStatus",
-            "pendingLevel", "pendingCityCode", "pendingSourceUserID", "pendingSource", "pendingNote");
-
-    private static final SimplePropertyPreFilter UPDATE_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
-            "pendingCode", "pendingStatus", "lastUpdateDate", "pendingURL", "pendingDate", "pendingTitle",
-            "pendingSourceUserID", "pendingSource", "pendingLevel", "pendingNote");
+    @Resource
+    private org.flowable.engine.RuntimeService flowableRuntimeService;
 
     @Override
     public List<Pending> getPendingList(String limit) {
@@ -85,29 +91,32 @@ public class PendingServiceImpl implements IPendingService {
 
     private void addPending(Pending pending, String addUrl, String appId, String token) {
         if (!initPendingUrl(pending)) {
+            saveOrUpdate(pending);
             return;
         }
         String url = addUrl + "/" + appId + "/" + token;
-        String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), ADD_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
+        String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
         log.info("新增待办请求URL:{}", url);
-        String result = HttpUtil.post(url, jsonStr, 60000);
+        String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
         log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
 
         if (StringUtils.isEmpty(result)) {
             updateFailTimes(pending);
         } else {
-            JSONObject resultJson = JSONObject.parseObject(result);
-            for (String pendingCode : resultJson.keySet()) {
-                String msg = resultJson.getString(pendingCode);
-                Pending p = findByPendingCodeAndType(pendingCode, "a");
+            Map<String, String> resultMap = JsonUtils.parseObject(result,
+                new TypeReference<Map<String, String>>() {});
+            for (Map.Entry<String, String> entry : resultMap.entrySet()) {
+                String pendingCode = entry.getKey();
+                String msg = entry.getValue();
+                Pending p = findByPendingCodeAndType(pendingCode, PendingOpType.ADD.getCode());
                 p.setResponseMsg(msg);
                 log.info("待办新增返回值:{} 待办ID={}", msg, p.getId());
-                if (msg.startsWith("100-")) {
-                    p.setSendStatus("1");
+                if (msg.startsWith(OA_SUCCESS_PREFIX)) {
+                    p.setSendStatus(SendStatus.SUCCESS.getCode());
                     p.setSendTime(new Date());
                 } else {
-                    p.setSendStatus("1");
-                    p.setFailTimes(3);
+                    p.setSendStatus(SendStatus.SUCCESS.getCode());
+                    p.setFailTimes(MAX_FAIL_TIMES);
                     p.setResponseMsg(msg);
                 }
                 saveOrUpdate(p);
@@ -130,15 +139,13 @@ public class PendingServiceImpl implements IPendingService {
             int userId = resolvePreviousUser(ctx);
             setPendingSourceInfo(pending, userId);
 
-            saveOrUpdate(pending);
             log.info("{}处理结束", pending.getId());
             return true;
         } catch (Exception e) {
-            log.info("(报错后)订单{}dealUrl为空", pending.getId());
-            pending.setFailTimes(3);
+            pending.setFailTimes(MAX_FAIL_TIMES);
             pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
+            log.error("(报错后)订单{}dealUrl为空", pending.getId());
             log.error(e.getMessage(), e);
-            saveOrUpdate(pending);
             return false;
         }
     }
@@ -165,9 +172,8 @@ public class PendingServiceImpl implements IPendingService {
                 .singleResult();
         if (flowableTask == null) {
             log.info("订单" + pending.getId() + "task为空（老+新流程均未找到）");
-            pending.setFailTimes(3);
+            pending.setFailTimes(MAX_FAIL_TIMES);
             pending.setResponseMsg("订单" + pending.getId() + "task为空");
-            saveOrUpdate(pending);
             return null;
         }
         log.info("{} 匹配到 Flowable 流程任务, procInsId={}", pending.getId(),
@@ -180,16 +186,15 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     private boolean resolveDealUrl(Pending pending, TaskCtx ctx) {
-        if (ctx.isFlowable) {
+        if (ctx.isFlowable()) {
             HistoricVariableInstance flowableVar = flowableHistoryService
                     .createHistoricVariableInstanceQuery()
                     .taskId(pending.getPendingCode())
                     .variableName(ctx.taskDefKey + "_dealUrl")
                     .singleResult();
             if (flowableVar == null || flowableVar.getValue() == null) {
-                pending.setFailTimes(3);
+                pending.setFailTimes(MAX_FAIL_TIMES);
                 pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
-                saveOrUpdate(pending);
                 return false;
             }
             pending.setPendingURL(flowableVar.getValue().toString()
@@ -199,9 +204,8 @@ public class PendingServiceImpl implements IPendingService {
                     .queryOldHistoricVariable(pending.getPendingCode(),
                             ctx.taskDefKey + "_dealUrl");
             if (dealUrl == null) {
-                pending.setFailTimes(3);
+                pending.setFailTimes(MAX_FAIL_TIMES);
                 pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
-                saveOrUpdate(pending);
                 return false;
             }
             String backlog = sysParamService.findValueByCode("Backlog");
@@ -212,7 +216,7 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     private int resolvePreviousUser(TaskCtx ctx) {
-        if (ctx.isFlowable) {
+        if (ctx.isFlowable()) {
             List<HistoricTaskInstance> hisList = flowableHistoryService
                     .createHistoricTaskInstanceQuery()
                     .processInstanceId(ctx.procInsId)
@@ -271,21 +275,14 @@ public class PendingServiceImpl implements IPendingService {
 
     // ---- TaskCtx ----
 
+    @lombok.Getter
+    @lombok.RequiredArgsConstructor
     private static class TaskCtx {
-        final boolean isFlowable;
-        final String taskDefKey;
-        final String procInsId;
-        final String assignee;
-        final long numericTaskId;
-
-        TaskCtx(boolean isFlowable, String taskDefKey, String procInsId,
-                String assignee, long numericTaskId) {
-            this.isFlowable = isFlowable;
-            this.taskDefKey = taskDefKey;
-            this.procInsId = procInsId;
-            this.assignee = assignee;
-            this.numericTaskId = numericTaskId;
-        }
+        private final boolean flowable;
+        private final String taskDefKey;
+        private final String procInsId;
+        private final String assignee;
+        private final long numericTaskId;
     }
 
     @Override
@@ -304,17 +301,17 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     private boolean checkUpdateData(Pending pending) {
-        Pending a = findByPendingCodeAndType(pending.getPendingCode(), "a");
+        Pending a = findByPendingCodeAndType(pending.getPendingCode(), PendingOpType.ADD.getCode());
         if (a == null) {
-            pending.setFailTimes(3);
+            pending.setFailTimes(MAX_FAIL_TIMES);
             pending.setResponseMsg("a记录找不到");
             saveOrUpdate(pending);
             return false;
         }
-        if (a.getResponseMsg() != null && a.getResponseMsg().startsWith("100-")) {
+        if (a.getResponseMsg() != null && a.getResponseMsg().startsWith(OA_SUCCESS_PREFIX)) {
             return true;
         } else {
-            pending.setFailTimes(3);
+            pending.setFailTimes(MAX_FAIL_TIMES);
             pending.setResponseMsg("a发送失败");
             saveOrUpdate(pending);
             return false;
@@ -324,30 +321,32 @@ public class PendingServiceImpl implements IPendingService {
     private void updatePendingStatus(Pending pending, String updateUrl, String appId, String token) {
         log.info("开始推送OA待办更新");
         String url = updateUrl + "/" + appId + "/" + token;
-        String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), UPDATE_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
+        String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
         log.info("待办更新地址：{}，待办更新请求数据:{}", url, jsonStr);
-        String result = HttpUtil.post(url, jsonStr, 60000);
+        String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
         log.info("推送OA待办更新,响应数据:{}", result);
 
         if (StringUtils.isEmpty(result)) {
             updateFailTimes(pending);
         } else {
-            JSONObject resultJson = JSONObject.parseObject(result);
-            for (String pendingCode : resultJson.keySet()) {
-                String msg = resultJson.getString(pendingCode);
-                Pending p = findByPendingCodeAndType(pendingCode, "u");
+            Map<String, String> resultMap = JsonUtils.parseObject(result,
+                new TypeReference<Map<String, String>>() {});
+            for (Map.Entry<String, String> entry : resultMap.entrySet()) {
+                String pendingCode = entry.getKey();
+                String msg = entry.getValue();
+                Pending p = findByPendingCodeAndType(pendingCode, PendingOpType.UPDATE.getCode());
                 if (p == null) {
                     return;
                 }
                 p.setResponseMsg(msg);
                 log.info("待办更新返回值:{} 待办ID={}", msg, p.getId());
-                if (msg.startsWith("100-")) {
-                    p.setSendStatus("1");
+                if (msg.startsWith(OA_SUCCESS_PREFIX)) {
+                    p.setSendStatus(SendStatus.SUCCESS.getCode());
                     p.setSendTime(new Date());
                 } else {
-                    p.setSendStatus("1");
+                    p.setSendStatus(SendStatus.SUCCESS.getCode());
                     p.setResponseMsg(msg);
-                    p.setFailTimes(3);
+                    p.setFailTimes(MAX_FAIL_TIMES);
                 }
                 saveOrUpdate(p);
             }
@@ -377,22 +376,22 @@ public class PendingServiceImpl implements IPendingService {
         if (pending == null) {
             return 0;
         }
-        UpdateWrapper<Pending> wrapper = new UpdateWrapper<>();
-        wrapper.eq("id_", pending.getId());
-        wrapper.set("fail_times",3);
-        wrapper.set("send_status","2");
-        return pendingMapper.update(pending, wrapper);
+        LambdaUpdateWrapper<Pending> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Pending::getId, pending.getId())
+               .set(Pending::getFailTimes, MAX_FAIL_TIMES)
+               .set(Pending::getSendStatus, SendStatus.FAIL.getCode());
+        return pendingMapper.update(null, wrapper);
     }
 
     @Override
     public List<PendingGroupTodo> getGroupTodoList() {
         return pendingGroupTodoMapper.selectList(
                 new LambdaQueryWrapper<PendingGroupTodo>()
-                        .eq(PendingGroupTodo::getSendStatus, "0")
-                        .or(w -> w.eq(PendingGroupTodo::getSendStatus, "2")
-                                .lt(PendingGroupTodo::getFailTimes, 3))
+                        .eq(PendingGroupTodo::getSendStatus, SendStatus.PENDING.getCode())
+                        .or(w -> w.eq(PendingGroupTodo::getSendStatus, SendStatus.FAIL.getCode())
+                                .lt(PendingGroupTodo::getFailTimes, MAX_FAIL_TIMES))
                         .orderByAsc(PendingGroupTodo::getId)
-                        .last("LIMIT 100")
+                        .last("LIMIT " + DEFAULT_GROUP_LIMIT)
         );
     }
 
@@ -408,8 +407,8 @@ public class PendingServiceImpl implements IPendingService {
     public void savePending(Task task, String oaAppId) {
         // 防重：检查是否已存在同 taskId + operatorType='a' 的记录
         String pendingCode = task.getId();
-        if (findByPendingCodeAndType(pendingCode, "a") != null) {
-            log.debug("待办新增记录已存在，跳过: pendingCode={}", pendingCode);
+        if (findByPendingCodeAndType(pendingCode, PendingOpType.ADD.getCode()) != null) {
+            log.debug("待办新增记录已创建，跳过: pendingCode={}", pendingCode);
             return;
         }
         String now = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
@@ -418,14 +417,24 @@ public class PendingServiceImpl implements IPendingService {
         pending.setPendingTitle(task.getName());
         pending.setPendingDate(now);
         pending.setPendingUserID(getOaAccountByAssignee(task.getAssignee()));
-        pending.setPendingStatus("0");
+        pending.setPendingStatus(SendStatus.PENDING.getCode());
         pending.setPendingLevel(0);
-        pending.setPendingCityCode("12");
+        pending.setPendingCityCode(DEFAULT_CITY_CODE);
         pending.setPendingNote(oaAppId);
-        pending.setSendStatus("0");
+        pending.setSendStatus(SendStatus.PENDING.getCode());
         pending.setFailTimes(0);
-        pending.setOperatorType("a");
+        pending.setOperatorType(PendingOpType.ADD.getCode());
         pending.setLastUpdateDate(now);
+        // 创建时即计算 dealUrl，避免后续 job 处理时逐条查询历史变量（消除 N+1）
+        try {
+            String dealUrlVar = task.getTaskDefinitionKey() + "_dealUrl";
+            Object dealUrlVal = flowableRuntimeService.getVariable(task.getProcessInstanceId(), dealUrlVar);
+            if (dealUrlVal != null) {
+                pending.setPendingURL(dealUrlVal.toString() + "&taskId=" + pendingCode);
+            }
+        } catch (Exception e) {
+            log.warn("创建待办时获取dealUrl失败，将交由job处理: pendingCode={}", pendingCode);
+        }
         saveOrUpdate(pending);
         log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
 
@@ -443,7 +452,7 @@ public class PendingServiceImpl implements IPendingService {
                 new LambdaQueryWrapper<PendingGroupTodo>()
                         .eq(PendingGroupTodo::getProcInstId, procInstId)
                         .eq(PendingGroupTodo::getTaskId, taskId)
-                        .eq(PendingGroupTodo::getOperatorType, "a"));
+                        .eq(PendingGroupTodo::getOperatorType, PendingOpType.ADD.getCode()));
         if (count > 0) {
             log.debug("集团待办任务记录已存在，跳过: procInstId={}, taskId={}", procInstId, taskId);
             return;
@@ -451,10 +460,10 @@ public class PendingServiceImpl implements IPendingService {
         PendingGroupTodo todo = new PendingGroupTodo();
         todo.setProcInstId(procInstId);
         todo.setTaskId(taskId);
-        todo.setOperatorType("a");
+        todo.setOperatorType(PendingOpType.ADD.getCode());
         todo.setPendingTitle(task.getName());
         todo.setPendingUserId(getOaAccountByAssignee(task.getAssignee()));
-        todo.setSendStatus("0");
+        todo.setSendStatus(SendStatus.PENDING.getCode());
         todo.setFailTimes(0);
         todo.setCreateTime(new Date());
         pendingGroupTodoMapper.insert(todo);
@@ -468,7 +477,7 @@ public class PendingServiceImpl implements IPendingService {
         List<Pending> pendingList = pendingMapper.selectList(
                 new LambdaQueryWrapper<Pending>()
                         .eq(Pending::getPendingCode, pendingCode)
-                        .eq(Pending::getOperatorType, "a"));
+                        .eq(Pending::getOperatorType, PendingOpType.ADD.getCode()));
         if (pendingList.isEmpty()) {
             log.debug("待办新增记录不存在，跳过更新: pendingCode={}", pendingCode);
             return;
@@ -478,13 +487,13 @@ public class PendingServiceImpl implements IPendingService {
         String now = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         Pending upending = new Pending();
         upending.setPendingCode(pendingCode);
-        upending.setPendingStatus("1");
+        upending.setPendingStatus(SendStatus.SUCCESS.getCode());
         upending.setLastUpdateDate(now);
         upending.setPendingNote(oaAppId);
         upending.setFailTimes(0);
-        upending.setSendStatus("0");
-        upending.setOperatorType("u");
-        upending.setPendingCityCode("12");
+        upending.setSendStatus(SendStatus.PENDING.getCode());
+        upending.setOperatorType(PendingOpType.UPDATE.getCode());
+        upending.setPendingCityCode(DEFAULT_CITY_CODE);
         upending.setPendingDate(now);
         upending.setPendingTitle(aRecord.getPendingTitle());
         upending.setPendingUserID(aRecord.getPendingUserID());
@@ -502,15 +511,15 @@ public class PendingServiceImpl implements IPendingService {
         Long count = pendingGroupTodoMapper.selectCount(
                 new LambdaQueryWrapper<PendingGroupTodo>()
                         .eq(PendingGroupTodo::getProcInstId, procInstId)
-                        .eq(PendingGroupTodo::getOperatorType, "u"));
+                        .eq(PendingGroupTodo::getOperatorType, PendingOpType.UPDATE.getCode()));
         if (count > 0) {
             log.debug("集团待办流程完结记录已存在，跳过: procInstId={}", procInstId);
             return;
         }
         PendingGroupTodo todo = new PendingGroupTodo();
         todo.setProcInstId(procInstId);
-        todo.setOperatorType("u");
-        todo.setSendStatus("0");
+        todo.setOperatorType(PendingOpType.UPDATE.getCode());
+        todo.setSendStatus(SendStatus.PENDING.getCode());
         todo.setFailTimes(0);
         todo.setCreateTime(new Date());
         pendingGroupTodoMapper.insert(todo);

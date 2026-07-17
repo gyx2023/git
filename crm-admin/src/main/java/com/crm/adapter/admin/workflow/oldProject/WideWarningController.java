@@ -386,69 +386,7 @@ public class WideWarningController extends BaseController {
         if (comment != null) taskService.addComment(taskId, task.getProcessInstanceId(), comment);
 
         LoginUser loginUser = getLoginUser();
-        Long currentUserId = loginUser.getUserId();
-
-        ToppOrderVo order = orderService.queryById(orderId);
-        SysUsers nextUser = targetUserId != null ? sysUsersMapper.selectById(targetUserId) : null;
-
-        // 更新工单白名单（追加当前操作人+转派目标人，去重）
-        if (order != null) {
-            String whiteList = order.getWhiteList();
-            if (whiteList == null || whiteList.isEmpty()) {
-                whiteList = ",";
-            }
-            // 追加当前操作人
-            String currentUserIdStr = "," + currentUserId + ",";
-            if (!whiteList.contains(currentUserIdStr)) {
-                whiteList = whiteList + currentUserId + ",";
-            }
-            // 追加转派目标人
-            if (targetUserId != null) {
-                String targetUserIdStr = "," + targetUserId + ",";
-                if (!whiteList.contains(targetUserIdStr)) {
-                    whiteList = whiteList + targetUserId + ",";
-                }
-            }
-            com.crm.system.domain.bo.topp.ToppOrderBo bo = new com.crm.system.domain.bo.topp.ToppOrderBo();
-            bo.setId(orderId);
-            bo.setWhiteList(whiteList);
-            if (targetUserId != null) {
-                bo.setActors(",," + targetUserId + ",,");
-                String nextNickName = nextUser != null ? nextUser.getNameCh() : "";
-                String nextPhone = nextUser != null ? nextUser.getRelationTel() : "";
-                bo.setActorsInfo(nextNickName + ":" + (nextPhone != null ? nextPhone : ""));
-            }
-            orderService.updateByBo(bo);
-        }
-
-        // 转派：完成当前任务，流程回到经理处理节点，产生流转记录
-        Map<String, Object> procVars = new HashMap<>();
-        try {
-            procVars = taskService.getVariables(taskId);
-        } catch (Exception e) {
-            log.warn("获取流程变量失败", e);
-        }
-
-        Map<String, Object> vars = new HashMap<>();
-        vars.put("manager_handle_custName", order != null ? order.getCustName() : str(procVars, "manager_handle_custName"));
-        vars.put("manager_handle_dealUrl", str(procVars, "manager_handle_dealUrl"));
-        vars.put("manager_handle_infoType", str(procVars, "manager_handle_infoType"));
-        vars.put("manager_handle_infoId", order != null && order.getInfoId() != null ? String.valueOf(order.getInfoId()) : str(procVars, "manager_handle_infoId"));
-        vars.put("manager_handle_remindContent", str(procVars, "manager_handle_remindContent"));
-        vars.put("manager_handle_orderName", order != null ? order.getOrderName() : str(procVars, "manager_handle_orderName"));
-        String handleName = str(procVars, "manager_handle_name");
-        if (handleName != null) vars.put("manager_handle_name", handleName);
-
-        String nextActorName = "";
-        if (targetUserId != null) {
-            vars.put("manager", String.valueOf(targetUserId));
-            nextActorName = nextUser != null ? nextUser.getNameCh() : "";
-        }
-        vars.put("action", "transfer");
-        // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
-        taskService.setVariableLocal(taskId, "action", "transfer");
-        taskService.complete(taskId, vars);
-
+        String nextActorName = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
         result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
