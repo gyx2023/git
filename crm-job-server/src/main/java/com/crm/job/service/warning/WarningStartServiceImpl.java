@@ -118,7 +118,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             if (strategy.isNotificationEnabled() && sendDMessageService != null) {
                 for (Map.Entry<Long, Integer> entry : managerTaskCount.entrySet()) {
                     sendDMessageService.initNoticeMessage(
-                            java.util.Collections.singletonList(entry.getKey().intValue()),
+                            new java.util.ArrayList<>(java.util.Collections.singletonList(entry.getKey().intValue())),
                             strategy.getNotificationMessage(entry.getValue()));
                 }
             }
@@ -190,12 +190,16 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             Task task = getFirstTask(piId);
             if (task == null) return;
 
+            // 3.1 设置为"显示"，旧系统待办SQL按 DESCRIPTION_='显示' 过滤 ACT_RU_TASK
+            task.setDescription("显示");
+            taskService.saveTask(task);
+
             // 4. 构建并插入工单
             ToppOrderBo orderBo = buildOrderBo(record, task, extra);
             orderService.insertByBo(orderBo);
 
-            // 4.2 两节点流程：解析并设置稽核节点处理人（areaId 在 buildOrderBo 中已解析）
-            setAuditAssigneeIfNeeded(piId, strategy, orderBo);
+            // 4.2 两节点流程：设置稽核节点显示名（稽核人由客户经理提交"通过"时选择，对齐旧系统）
+            setAuditNodeNameIfNeeded(piId, strategy);
 
             // 4.5 保存升级预警关联表（仅针对升级预警类型）
             saveToppOrderUpIfNeeded(orderBo, extra);
@@ -263,30 +267,18 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
     }
 
     /**
-     * 两节点流程（如 double_approval）：解析稽核节点处理人并设为流程变量。
+     * 两节点流程（如 double_approval）：设置稽核节点显示名变量。
      * <p>
-     * 稽核人来源 sys_flow_user 默认处理人配置（process_key + task_def_key=audit_handle + 区域）。
-     * 稽核节点在客户经理"完成"后才到达，此处提前设置 {@code audit} 变量即可。
-     * 若未配置默认处理人，则稽核节点无指派人（可被认领），并打印告警。
+     * 稽核人不在发起时固化：由客户经理在"通过"提交时从候选列表中必选一人
+     * （/wideWarning/auditHandlers，对齐旧系统 getNextUserListByNodeAndUserArea），
+     * 随任务完成写入流程变量 {@code audit}。
      * </p>
      */
-    private void setAuditAssigneeIfNeeded(String piId, IWarningQueryStrategy strategy, ToppOrderBo orderBo) {
+    private void setAuditNodeNameIfNeeded(String piId, IWarningQueryStrategy strategy) {
         if (strategy == null || PROCESS_KEY.equals(strategy.getProcessKey())) {
             return;
         }
-        String processKey = strategy.getProcessKey();
-        Long areaId = orderBo.getAreaId();
-
         Map<String, Object> vars = new HashMap<>();
-        List<SysUser> handlers = findDefaultHandlerByProcessAndArea(processKey, "audit_handle", areaId);
-        if (handlers != null && !handlers.isEmpty()) {
-            SysUser auditor = handlers.get(0);
-            vars.put("audit", String.valueOf(auditor.getUserId()));
-            log.info("【预警启动】稽核人已解析: piId={}, auditUserId={}, area={}", piId, auditor.getUserId(), areaId);
-        } else {
-            log.warn("【预警启动】未找到稽核默认处理人(process={}, task=audit_handle, area={})，稽核节点将无指派人，请在 sys_flow_user 配置",
-                    processKey, areaId);
-        }
         vars.put("audit_handle_name", "稽核人员处理");
         runtimeService.setVariables(piId, vars);
     }
@@ -323,6 +315,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         if(record.getSysUser()!= null){
             orderBo.setCreator(record.getSysUser().getId());
             orderBo.setOrgId(record.getSysUser().getOrgId());
+        } else {
+            // 对齐旧系统 sysUserService.get(1)：创建人为空时默认取系统用户(id=1)
+            orderBo.setCreator(1L);
         }
         orderBo.setAreaId(record.getAreaId());
         if (extra == null) return orderBo;
@@ -486,15 +481,13 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         StringBuilder sql = new StringBuilder(
                 "SELECT DISTINCT u.user_id, u.dept_id, u.user_name, u.nick_name, u.phonenumber " +
                 "FROM sys_flow_user fu " +
-                "INNER JOIN sys_user u ON fu.user_id = u.user_id AND u.del_flag = '0' ");
+                "INNER JOIN zqzt_sys_user u ON fu.user_id = u.user_id AND u.del_flag = '0' ");
 
         List<Object> params = new ArrayList<>();
-        params.add(processKey);
-        params.add(taskDefKey);
 
         // 如果指定了区域ID，添加部门关联和区域过滤条件
         if (areaId != null) {
-            sql.append("INNER JOIN sys_dept d ON u.dept_id = d.dept_id AND d.area_code = ? ");
+            sql.append("INNER JOIN zqzt_sys_dept d ON u.dept_id = d.dept_id AND d.area_code = ? ");
             params.add(String.valueOf(areaId));
             sql.append("WHERE fu.is_valid = 1 AND fu.process_key = ? AND fu.task_def_key = ? ");
             sql.append("AND (fu.area_id IS NULL OR fu.area_id = ?) ");
@@ -503,6 +496,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             params.add(areaId);
         } else {
             sql.append("WHERE fu.is_valid = 1 AND fu.process_key = ? AND fu.task_def_key = ? ");
+            params.add(processKey);
+            params.add(taskDefKey);
         }
 
         sql.append("ORDER BY u.user_id ASC LIMIT 10");

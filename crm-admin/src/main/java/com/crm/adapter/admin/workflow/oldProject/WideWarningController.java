@@ -4,15 +4,21 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.model.LoginUser;
+import com.crm.common.enums.OrderStatusEnum;
+import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
+import com.crm.system.mapper.sys.SysFlowUserMapper;
+import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.stats.IStatsService;
 import com.crm.system.service.topp.IToppOrderService;
+import com.crm.workflow.domain.vo.WfDetailVo;
+import com.crm.workflow.service.IWfProcessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.HistoryService;
-import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
@@ -24,7 +30,11 @@ import javax.annotation.Resource;
 import java.util.*;
 
 /**
- * 宽带升级预警流程Controller
+ * 通用预警流程Controller（single_approval / double_approval 均适用）。
+ * <p>
+ * 提供 warnInfo / transferList / complete / reject / transfer / auditHandlers / track 等通用流程接口，
+ * 各预警类型可复用。业务专属接口（如反馈、客户列表统计等）由各自 Controller 提供。
+ * </p>
  */
 @Slf4j
 @Validated
@@ -37,12 +47,13 @@ public class WideWarningController extends BaseController {
     @Resource private final IToppOrderService orderService;
     @Resource private final IStatsService statsService;
     @Resource private final HistoryService historyService;
-    @Resource private final RepositoryService repositoryService;
     @Resource private final RuntimeService runtimeService;
     @Resource private final com.crm.system.mapper.SysUsersMapper sysUsersMapper;
     @Resource private final com.crm.system.mapper.oldsyssyn.OldSysOrgMapper oldSysOrgMapper;
-    @Resource private final com.crm.system.service.ISysAreaService sysAreaService;
+    @Resource private final ISysAreaService sysAreaService;
     @Resource private final com.crm.system.mapper.sys.SysAreaMapper sysAreaMapper;
+    @Resource private final IWfProcessService wfProcessService;
+    @Resource private final SysFlowUserMapper sysFlowUserMapper;
 
     // ==================== 预警记录 ====================
 
@@ -87,6 +98,16 @@ public class WideWarningController extends BaseController {
                 result.put("codeName", statsService.getCodeName(codeInfo, orderFlag));
             } catch (Exception e) { log.warn("查询区域名称失败", e); }
         }
+
+        // 流程详情（流转记录、流程图、流程跟踪数据）
+        try {
+            WfDetailVo flowDetail = wfProcessService.queryProcessDetail(piId, taskId);
+            if (flowDetail != null) {
+                result.put("historyProcNodeList", flowDetail.getHistoryProcNodeList());
+                result.put("bpmnXml", flowDetail.getBpmnXml());
+                result.put("flowViewer", flowDetail.getFlowViewer());
+            }
+        } catch (Exception e) { log.warn("查询流程详情失败: orderId={}, piId={}", orderId, piId, e); }
         return R.ok(result);
     }
 
@@ -226,16 +247,17 @@ public class WideWarningController extends BaseController {
     }
 
     /**
-     * 通过（对应老框架 dealUpWarningTask 结束逻辑）
+     * 通过（通用：single_approval / double_approval 均适用）。
      * <p>
-     * 单节点流程（single_approval）：客户经理通过后流程结束 → 工单置 END。
-     * 双节点流程（double_approval）：客户经理通过后流程进入稽核节点 → 工单推进到稽核节点而非结单；
-     * 稽核通过后流程结束 → 工单置 END。逻辑由"流程是否仍在运行"自动区分，无需按类型硬编码。
+     * 经理节点（manager_handle）可通过 auditUserId 指定稽核人，写入流程变量 audit；
+     * 单节点流程不传此参数即可。
+     * 流程结束后自动置 END，未结束则推进到下一节点。
      * </p>
      */
     @PostMapping("/complete")
     public R<Map<String, Object>> complete(@RequestParam("taskId") String taskId,
                             @RequestParam("orderId") Long orderId,
+                            @RequestParam(value = "auditUserId", required = false) Long auditUserId,
                             @RequestParam(value = "comment", required = false) String comment) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) return R.fail("任务不存在或已处理");
@@ -244,6 +266,9 @@ public class WideWarningController extends BaseController {
 
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
+        if ("manager_handle".equals(task.getTaskDefinitionKey()) && auditUserId != null) {
+            vars.put("audit", String.valueOf(auditUserId));
+        }
         // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
@@ -374,7 +399,11 @@ public class WideWarningController extends BaseController {
     }
 
     /**
-     * 转派（对应老框架 dealUpWarningTask 逻辑）
+     * 转派（通用：single_approval / double_approval 均适用）。
+     * <p>
+     * 经理节点：完成任务走 BPMN 转派回路（action=transfer），产生流转记录；
+     * 稽核节点：改派任务（setAssignee + 覆盖 audit 变量），任务不完成。
+     * </p>
      */
     @PostMapping("/transfer")
     public R<Map<String, Object>> transfer(@RequestParam("taskId") String taskId,
@@ -383,14 +412,127 @@ public class WideWarningController extends BaseController {
                             @RequestParam(value = "comment", required = false) String comment) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) return R.fail("任务不存在或已处理");
-        if (comment != null) taskService.addComment(taskId, task.getProcessInstanceId(), comment);
+        String piId = task.getProcessInstanceId();
+        if (comment != null) taskService.addComment(taskId, piId, comment);
 
         LoginUser loginUser = getLoginUser();
-        String nextActorName = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
+        ToppOrderVo order = orderService.queryById(orderId);
+        SysUsers nextUser = targetUserId != null ? sysUsersMapper.selectById(targetUserId) : null;
+        String nextActorName = nextUser != null ? nextUser.getNameCh() : "";
+
+        // 更新工单白名单
+        if (order != null) {
+            String whiteList = order.getWhiteList();
+            if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
+            String curSeg = "," + loginUser.getUserId() + ",";
+            if (!whiteList.contains(curSeg)) whiteList = whiteList + loginUser.getUserId() + ",";
+            if (targetUserId != null) {
+                String tgtSeg = "," + targetUserId + ",";
+                if (!whiteList.contains(tgtSeg)) whiteList = whiteList + targetUserId + ",";
+            }
+            ToppOrderBo bo = new ToppOrderBo();
+            bo.setId(orderId);
+            bo.setWhiteList(whiteList);
+            if (targetUserId != null) {
+                bo.setActors(",," + targetUserId + ",,");
+                String phone = nextUser != null ? nextUser.getRelationTel() : "";
+                bo.setActorsInfo(nextActorName + ":" + (phone != null ? phone : ""));
+            }
+            orderService.updateByBo(bo);
+        }
+
+        // 稽核节点：改派任务，不完成（稽核网关无转派回路，完成会走默认线直接结束流程）
+        if ("audit_handle".equals(task.getTaskDefinitionKey())) {
+            if (targetUserId == null) return R.fail("请选择转派人员");
+            taskService.setAssignee(taskId, String.valueOf(targetUserId));
+            runtimeService.setVariable(piId, "audit", String.valueOf(targetUserId));
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("result", "SUCCESS");
+            result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
+            return R.ok(result);
+        }
+
+        // 经理节点：完成当前任务，流程回到经理处理节点，产生流转记录
+        String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
+        syncOrderToCurrentTask(orderId, piId, order);
+
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
-        result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
+        result.put("msg", "处理完成，下一步由[" + nextActor + "]进行处理");
         return R.ok(result);
+    }
+
+    /**
+     * 查询候选稽核人（按 processKey + taskDefKey 查 sys_flow_user 配置，按登录人地市过滤）。
+     */
+    @GetMapping("/auditHandlers")
+    public R<List<Map<String, Object>>> auditHandlers(@RequestParam("processKey") String processKey,
+                                                      @RequestParam("taskDefKey") String taskDefKey) {
+        LoginUser loginUser = getLoginUser();
+        SysUsers currentUser = sysUsersMapper.selectById(loginUser.getUserId());
+        if (currentUser == null || currentUser.getOrgId() == null) return R.ok(new ArrayList<>());
+
+        OldSysOrgDo org = oldSysOrgMapper.selectById(currentUser.getOrgId());
+        if (org == null || org.getAreaId() == null) return R.ok(new ArrayList<>());
+
+        SysAreaVo area = sysAreaService.queryById(Long.valueOf(org.getAreaId()));
+        if (area == null) return R.ok(new ArrayList<>());
+
+        List<Long> areaIds = new ArrayList<>();
+        if ("一级".equals(area.getType())) {
+            areaIds.add(area.getId());
+        } else if ("二级".equals(area.getType())) {
+            areaIds.add(area.getId());
+            addChildAreaIds(areaIds, area.getId());
+        } else {
+            SysAreaVo city = area.getParent() != null ? sysAreaService.queryById(area.getParent()) : null;
+            if (city != null) {
+                areaIds.add(city.getId());
+                addChildAreaIds(areaIds, city.getId());
+            } else {
+                areaIds.add(area.getId());
+            }
+        }
+
+        try {
+            return R.ok(sysFlowUserMapper.selectHandlersByProcessAndAreas(processKey, taskDefKey, areaIds));
+        } catch (Exception e) {
+            log.error("查询候选稽核人失败: processKey={}, taskDefKey={}, areaIds={}", processKey, taskDefKey, areaIds, e);
+            return R.ok(new ArrayList<>());
+        }
+    }
+
+    /**
+     * 跟踪中（工单置 tracking 状态，任务保留在当前处理人待办，流程不动）。
+     */
+    @PostMapping("/track")
+    public R<Map<String, Object>> track(@RequestParam("taskId") String taskId,
+                                        @RequestParam("orderId") Long orderId,
+                                        @RequestParam(value = "comment", required = false) String comment) {
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) return R.fail("任务不存在或已处理");
+        if (comment != null) taskService.addComment(taskId, task.getProcessInstanceId(), comment);
+
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(OrderStatusEnum.TRACKING.getCode());
+        orderService.updateByBo(bo);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", "SUCCESS");
+        result.put("msg", "该流程正在跟踪中");
+        return R.ok(result);
+    }
+
+    /** 追加某区域的全部子区域ID */
+    private void addChildAreaIds(List<Long> areaIds, Long parentId) {
+        List<SysAreaVo> children = sysAreaMapper.selectByParentId(parentId);
+        if (children != null) {
+            for (SysAreaVo child : children) {
+                areaIds.add(child.getId());
+            }
+        }
     }
 
     private String str(Map<String, Object> m, String k) {

@@ -3,6 +3,7 @@ package com.crm.job.service.warning.strategy;
 import com.crm.job.mapper.warning.WideSecondWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.mapper.SysUsersMapper;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -33,6 +34,9 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
     private WideSecondWarningMapper mapper;
+
+    @Resource
+    private SysUsersMapper sysUsersMapper;
 
     @Override
     public String getOrderType() {
@@ -66,7 +70,7 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
         }
 
         // 按 oaId 查 sys_user 表，获取真实 userId 及相关信息
-        Map<String, Object> userRow = mapper.selectUserByOaId(oaIdDev);
+        Map<String, Object> userRow = sysUsersMapper.selectUserByOaId(oaIdDev);
         if (userRow == null || userRow.isEmpty()) {
             log.warn("【{}】未找到对应客户经理, oaId: {}", getOrderTypeName(), oaIdDev);
             return null;

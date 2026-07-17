@@ -30,8 +30,4 @@ public interface WideSecondWarningMapper {
             + "GROUP BY w.MAIN_ORDER_FLOW_NO "
             + "ORDER BY w.id"})
     List<Map<String, Object>> selectSecondWarnList(@Param("targetDate") String targetDate);
-
-    @Select({"SELECT user_id, dept_id, nick_name, phonenumber FROM sys_user "
-            + "WHERE user_name = #{oaId} AND del_flag = '0' LIMIT 1"})
-    Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
 }

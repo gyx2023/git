@@ -4,6 +4,8 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import lombok.Data;
 
+import java.util.Date;
+
 
 /**
  * 【请填写功能名称】视图对象 topp_order
@@ -286,6 +288,18 @@ public class ToppOrderVo {
      */
     @ExcelProperty(value = "流程引擎来源")
     private String processEngine;
+
+    /**
+     * 创建时间
+     */
+    @ExcelProperty(value = "创建时间")
+    private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    @ExcelProperty(value = "更新时间")
+    private Date updateTime;
 
 
 }
