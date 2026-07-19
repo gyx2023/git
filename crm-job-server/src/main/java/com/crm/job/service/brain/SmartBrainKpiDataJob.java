@@ -179,7 +179,7 @@ public class SmartBrainKpiDataJob {
     private boolean sendToNewInterface(String url, String appId, String appSecret, List<Map> kpiDataList) {
         return sysOperLogService.tryApiCall("智慧大脑KPI数据推送", url,
             "kpiDataList.size=" + (kpiDataList != null ? kpiDataList.size() : 0), () -> {
-            Map<String, Object> head = UniBssApiClient.buildHead(appId, appSecret);
+            Map<String, Object> head = uniBssApiClient.buildHead();
 
             Map<String, Object> dataReq = new HashMap<>();
             dataReq.put("taskSource", "G");
