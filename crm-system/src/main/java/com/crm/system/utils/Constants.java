@@ -177,6 +177,7 @@ public class Constants {
 
     public static final String TASK_TYPE_DUTY_CHANGE = "duty_change";// 主责支撑经理职责转让
     public static final String TASK_TYPE_DUTY_CHANGE_NAME = "主责支撑经理职责转让";
+    public static final String ORDER_STATUS_END = "end";
 
     /*
      * 支撑工单类型的任务
