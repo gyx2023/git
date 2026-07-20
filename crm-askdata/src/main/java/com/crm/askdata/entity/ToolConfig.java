@@ -153,6 +153,12 @@ public class ToolConfig {
     private Boolean skipPostProcess;
 
     /**
+     * 适用页面编码，必须与请求 pageCode 精确相等。
+     */
+    @TableField("page_codes")
+    private String pageCodes;
+
+    /**
      * 创建人
      */
     @TableField("created_by")

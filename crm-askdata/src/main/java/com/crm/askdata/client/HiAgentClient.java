@@ -117,6 +117,14 @@ public class HiAgentClient {
     @Retry(name = "hiagent")
     public HiAgentChatResponse chatQueryBlocking(String userId, String agentId,
                                                   String convId, String query, String traceId) {
+        return chatQueryBlocking(userId, agentId, convId, query, traceId, null);
+    }
+
+    @CircuitBreaker(name = "hiagent", fallbackMethod = "fallbackChatQuery")
+    @Retry(name = "hiagent")
+    public HiAgentChatResponse chatQueryBlocking(String userId, String agentId,
+                                                  String convId, String query, String traceId,
+                                                  Map<String, Object> queryExtends) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> logInput = null;
         try {
@@ -127,6 +135,9 @@ public class HiAgentClient {
             body.put("AppConversationID", convId);
             body.put("Query", query);
             body.put("ResponseMode", "blocking");
+            if (queryExtends != null && !queryExtends.isEmpty()) {
+                body.put("QueryExtends", queryExtends);
+            }
 
             HttpHeaders headers = buildHeaders(agentId, traceId);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
@@ -295,5 +306,12 @@ public class HiAgentClient {
         fallback.setTaskId("");
         fallback.setLatencyMs(0L);
         return fallback;
+    }
+
+    public HiAgentChatResponse fallbackChatQuery(String userId, String agentId,
+                                                  String convId, String query,
+                                                  String traceId, Map<String, Object> queryExtends,
+                                                  Throwable e) {
+        return fallbackChatQuery(userId, agentId, convId, query, traceId, e);
     }
 }

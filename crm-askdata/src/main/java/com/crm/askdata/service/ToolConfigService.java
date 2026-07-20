@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -126,26 +127,33 @@ public class ToolConfigService {
     }
 
     /**
-     * 获取所有启用的工具配置
+     * 获取所有启用的工具配置。
+     * <p>
+     * 工具 Schema 查询必须携带页面编码；未传 pageCode 时不返回任何工具。
      *
      * @return 工具配置列表
      */
     public List<ToolConfig> getAllEnabledTools() {
-        String cacheKey = CACHE_KEY_PREFIX + "all:enabled";
+        return Collections.emptyList();
+    }
 
-        // 尝试从缓存获取
-        @SuppressWarnings("unchecked")
-//        List<ToolConfig> cached = RedisUtils.getCacheObject(cacheKey);
-//        if (cached != null) {
-//            return cached;
-//        }
+    /**
+     * 获取指定页面可用的启用工具配置。
+     * <p>
+     * pageCode 为空时不返回工具；非空时要求 page_codes 与 pageCode 精确相等。
+     *
+     * @param pageCode 页面编码
+     * @return 工具配置列表
+     */
+    public List<ToolConfig> getAllEnabledTools(String pageCode) {
+        if (pageCode == null || pageCode.trim().isEmpty()) {
+            log.warn("traceId={} pageCode is empty, no enabled tools returned", getTraceId());
+            return Collections.emptyList();
+        }
 
-        // 从数据库查询
-        List<ToolConfig> configs = configMapper.selectEnabledTools();
-
-        // 写入缓存
-        RedisUtils.setCacheObject(cacheKey, configs, DEFAULT_CACHE_TTL);
-
+        List<ToolConfig> configs = configMapper.selectEnabledToolsByPageCode(pageCode.trim());
+        log.info("traceId={} loaded {} enabled tools for pageCode={}",
+            getTraceId(), configs.size(), pageCode);
         return configs;
     }
 
@@ -158,8 +166,7 @@ public class ToolConfigService {
         String cacheKey = CACHE_KEY_PREFIX + toolName;
         RedisUtils.deleteObject(cacheKey);
 
-        // 同时清除全量缓存和完整对象缓存
-        RedisUtils.deleteObject(CACHE_KEY_PREFIX + "all:enabled");
+        // 同时清除完整对象缓存
         RedisUtils.deleteObject(CACHE_KEY_PREFIX + "full:" + toolName);
 
         log.info("traceId={} cache cleared for tool: {}", getTraceId(), toolName);

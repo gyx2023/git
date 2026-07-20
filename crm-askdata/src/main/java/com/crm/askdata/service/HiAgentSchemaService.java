@@ -34,7 +34,17 @@ public class HiAgentSchemaService {
      * @return Schema 列表
      */
     public List<Map<String, Object>> generateAllSchemas() {
-        List<ToolConfig> configs = configService.getAllEnabledTools();
+        return generateAllSchemas("");
+    }
+
+    /**
+     * 生成指定页面可用工具的 Schema 列表。
+     *
+     * @param pageCode 页面编码，空值不返回工具
+     * @return Schema 列表
+     */
+    public List<Map<String, Object>> generateAllSchemas(String pageCode) {
+        List<ToolConfig> configs = configService.getAllEnabledTools(pageCode);
         List<Map<String, Object>> schemas = new ArrayList<>();
 
         for (ToolConfig config : configs) {
@@ -47,7 +57,7 @@ public class HiAgentSchemaService {
             }
         }
 
-        log.info("Generated {} tool schemas", schemas.size());
+        log.info("Generated {} tool schemas, pageCode={}", schemas.size(), pageCode);
         return schemas;
     }
 

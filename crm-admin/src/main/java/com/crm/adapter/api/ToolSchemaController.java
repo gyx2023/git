@@ -34,11 +34,15 @@ public class ToolSchemaController extends BaseController {
      * @return 工具 Schema 列表
      */
     @GetMapping("/schemas")
-    public R<List<Map<String, Object>>> getAllSchemas() {
-        log.info("HiAgent fetching all tool schemas");
+    public R<List<Map<String, Object>>> getAllSchemas(
+        @RequestParam(required = false) String pageCode,
+        @RequestHeader(value = "pageCode", required = false) String pageCodeHeader
+    ) {
+        String resolvedPageCode = resolvePageCode(pageCode, pageCodeHeader);
+        log.info("HiAgent fetching all tool schemas, pageCode={}", resolvedPageCode);
 
         try {
-            List<Map<String, Object>> schemas = schemaService.generateAllSchemas();
+            List<Map<String, Object>> schemas = schemaService.generateAllSchemas(resolvedPageCode);
             return R.ok(schemas);
         } catch (Exception e) {
             log.error("Failed to generate tool schemas", e);
@@ -46,18 +50,45 @@ public class ToolSchemaController extends BaseController {
         }
     }
 
-
     @PostMapping("/schemasnew")
-    public R<List<Map<String, Object>>> getAllSchemasNew() {
-        log.info("HiAgent fetching all tool schemas");
+    public R<List<Map<String, Object>>> getAllSchemasNew(
+        @RequestBody(required = false) Map<String, Object> request,
+        @RequestParam(required = false) String pageCode,
+        @RequestHeader(value = "pageCode", required = false) String pageCodeHeader
+    ) {
+        String bodyPageCode = request != null && request.get("pageCode") != null
+            ? String.valueOf(request.get("pageCode"))
+            : null;
+        String resolvedPageCode = resolvePageCode(bodyPageCode, pageCode, pageCodeHeader);
+        log.info("HiAgent fetching all tool schemas, pageCode={}", resolvedPageCode);
 
         try {
-            List<Map<String, Object>> schemas = schemaService.generateAllSchemas();
+            List<Map<String, Object>> schemas = schemaService.generateAllSchemas(resolvedPageCode);
             return R.ok(schemas);
         } catch (Exception e) {
             log.error("Failed to generate tool schemas", e);
             return R.fail("生成工具 Schema 失败：" + e.getMessage());
         }
+    }
+
+    private String resolvePageCode(String... candidates) {
+        if (candidates == null) {
+            return "";
+        }
+        for (String candidate : candidates) {
+            if (candidate == null) {
+                continue;
+            }
+            String value = candidate.trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            if (!value.matches("^[A-Za-z0-9_-]{1,64}$")) {
+                throw new IllegalArgumentException("非法页面标识");
+            }
+            return value;
+        }
+        return "";
     }
 
     /**

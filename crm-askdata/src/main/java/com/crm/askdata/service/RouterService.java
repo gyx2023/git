@@ -78,7 +78,7 @@ public class RouterService {
      * @param requestHeaders 需透传给下游工具的 Header 键值对（由 Controller 从 HttpServletRequest 提取传入）
      */
     public void processStream(String query, String traceId, String sessionId,
-                              String userId, Map<String, String> requestHeaders,
+                              String userId, String pageCode, Map<String, String> requestHeaders,
                               SseEmitter emitter) {
         // 捕获当前线程的 MDC 上下文，用于异步线程恢复
         Map<String, String> mdcContext = MDC.getCopyOfContextMap();
@@ -110,7 +110,7 @@ public class RouterService {
                 log.info("askdata intent provider resolved: {}", intentProvider.getConfigValue());
 
                 QueryResult result = processInternal(query, traceId, sessionId, userId, startTime,
-                    intentProvider, requestHeaders,
+                    intentProvider, pageCode, requestHeaders,
                     status -> {
                         try {
                             sendSseEvent(emitter, SseMessage.text(traceId, messageId, status, 0.0));
@@ -195,7 +195,7 @@ public class RouterService {
     private QueryResult processInternal(String query, String traceId, String sessionId,
                                         String userId, long startTime) {
         return processInternal(query, traceId, sessionId, userId, startTime,
-            AgentProvider.HIAGENT, Collections.emptyMap(), s -> {});
+            AgentProvider.HIAGENT, "", Collections.emptyMap(), s -> {});
     }
 
     /**
@@ -211,11 +211,12 @@ public class RouterService {
     private QueryResult processInternal(String query, String traceId, String sessionId,
                                         String userId, long startTime,
                                         AgentProvider intentProvider,
+                                        String pageCode,
                                         Map<String, String> requestHeaders,
                                         java.util.function.Consumer<String> statusConsumer) {
         // 阶段1：意图识别
         IntentRecognitionResult intentRecog = recognizeIntent(
-            query, sessionId, userId, traceId, intentProvider, requestHeaders);
+            query, sessionId, userId, traceId, intentProvider, pageCode, requestHeaders);
 
         // 透传原始查询到 IntentResult，供结果处理和展示阶段使用
         intentRecog.intentResult.setOriginalQuery(query);
@@ -261,21 +262,6 @@ public class RouterService {
         return result;
     }
 
-    /**
-     * 获取或创建 HiAgent 会话
-     * <p>
-     * 改造后：所有 Agent 都复用会话，让 HiAgent 内部管理对话历史
-     * Java 层只负责权限控制、工具调用和兜底限制
-     * <p>
-     * 会话隔离：Redis Key 包含 sessionId 维度，不同 sessionId 自动创建新会话，
-     * 实现「新页面 = 新会话」「不同浏览器互不影响」。
-     *
-     * @param userId    业务用户 ID
-     * @param agentId   Agent 业务标识
-     * @param sessionId 前端会话 ID（隔离维度）
-     * @param traceId   链路 ID
-     * @return AppConversationID
-     */
     private String getOrCreateConversation(String userId, String agentId, String sessionId, String traceId) {
         String convId = conversationManager.getConversationId(userId, agentId, sessionId);
         if (convId == null) {
@@ -287,6 +273,15 @@ public class RouterService {
             log.debug("reusing conversation: convId={}", convId);
         }
         return convId;
+    }
+
+    private Map<String, Object> buildQueryExtends(String pageCode) {
+        if (pageCode == null || pageCode.trim().isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> queryExtends = new LinkedHashMap<>();
+        queryExtends.put("pageCode", pageCode.trim());
+        return queryExtends;
     }
 
     // ==================== 阶段1：意图识别 ====================
@@ -314,18 +309,20 @@ public class RouterService {
     private IntentRecognitionResult recognizeIntent(String query, String sessionId,
                                                     String userId, String traceId,
                                                     AgentProvider provider,
+                                                    String pageCode,
                                                     Map<String, String> requestHeaders) {
         if (provider == AgentProvider.CHINA_UNICON) {
-            return recognizeIntentByChinaUnicon(query, sessionId, userId, traceId, requestHeaders);
+            return recognizeIntentByChinaUnicon(query, sessionId, userId, traceId, pageCode, requestHeaders);
         }
-        return recognizeIntentByHiAgent(query, sessionId, userId, traceId);
+        return recognizeIntentByHiAgent(query, sessionId, userId, traceId, pageCode);
     }
 
     /**
      * 阶段1：调用 HiAgent 进行意图识别
      */
     private IntentRecognitionResult recognizeIntentByHiAgent(String query, String sessionId,
-                                                             String userId, String traceId) {
+                                                             String userId, String traceId,
+                                                             String pageCode) {
         long start = System.currentTimeMillis();
 
         // 1.1 获取或创建 HiAgent 会话（改造后：复用会话，按 sessionId 隔离）
@@ -336,7 +333,7 @@ public class RouterService {
 
         // 1.3 调用 HiAgent
         HiAgentChatResponse chatResponse = hiAgentClient.chatQueryBlocking(
-            userId, intentAgentId, convId, query, traceId);
+            userId, intentAgentId, convId, query, traceId, buildQueryExtends(pageCode));
 
         // 1.4 解析意图
         IntentResult intentResult = intentParser.parse(chatResponse.getAnswer(), traceId);
@@ -364,6 +361,7 @@ public class RouterService {
      */
     private IntentRecognitionResult recognizeIntentByChinaUnicon(String query, String sessionId,
                                                                  String userId, String traceId,
+                                                                 String pageCode,
                                                                  Map<String, String> requestHeaders) {
         long start = System.currentTimeMillis();
 
@@ -379,7 +377,7 @@ public class RouterService {
         }
 
         HiAgentChatResponse chatResponse = chinaUniconAgentClient.recognizeIntent(
-            query, conversationId, userId, userName, traceId);
+            query, conversationId, userId, userName, traceId, pageCode);
 
         IntentResult intentResult = intentParser.parse(chatResponse.getAnswer(), traceId);
         intentResult.setHiagentRequestId(chatResponse.getMessageId());

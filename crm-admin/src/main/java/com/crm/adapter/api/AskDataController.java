@@ -53,6 +53,7 @@ public class AskDataController extends BaseController {
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
         @RequestParam String query,
+        @RequestParam(required = false) String pageCode,
         HttpServletRequest request,
         HttpServletResponse response
     ) {
@@ -62,9 +63,10 @@ public class AskDataController extends BaseController {
 
         String resolvedTraceId = TraceIdUtil.getTraceId();
         String resolvedSessionId = TraceIdUtil.getSessionId();
+        String normalizedPageCode = normalizePageCode(pageCode);
 
-        log.info("askdata stream request: queryLength={}, sessionId={}",
-            query.length(), resolvedSessionId);
+        log.info("askdata stream request: queryLength={}, sessionId={}, pageCode={}",
+            query.length(), resolvedSessionId, normalizedPageCode);
 
         // 从当前登录用户获取需透传给下游的身份信息
         Map<String, String> requestHeaders = new HashMap<>();
@@ -93,6 +95,9 @@ public class AskDataController extends BaseController {
                 requestHeaders.put("loginname", loginname.trim());
             }
         }
+        if (normalizedPageCode != null && !normalizedPageCode.isEmpty()) {
+            requestHeaders.put("pageCode", normalizedPageCode);
+        }
 
         // 超时设置 5 分钟（SSE 长连接）
         SseEmitter emitter = new SseEmitter(5 * 60 * 1000L);
@@ -104,7 +109,7 @@ public class AskDataController extends BaseController {
         emitter.onError(e -> log.error("sse emitter error", e));
 
         routerService.processStream(query, resolvedTraceId, resolvedSessionId,
-            userId, requestHeaders, emitter);
+            userId, normalizedPageCode, requestHeaders, emitter);
 
         return emitter;
     }
@@ -150,6 +155,20 @@ public class AskDataController extends BaseController {
             }
         }
         return null;
+    }
+
+    private String normalizePageCode(String pageCode) {
+        if (pageCode == null) {
+            return "";
+        }
+        String normalized = pageCode.trim();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        if (!normalized.matches("^[A-Za-z0-9_-]{1,64}$")) {
+            throw new RuntimeException("非法页面标识");
+        }
+        return normalized;
     }
 
     /**

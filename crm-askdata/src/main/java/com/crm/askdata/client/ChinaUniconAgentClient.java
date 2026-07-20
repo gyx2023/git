@@ -54,6 +54,11 @@ public class ChinaUniconAgentClient {
 
     public HiAgentChatResponse recognizeIntent(String query, String conversationId, String userId,
                                                String userName, String traceId) {
+        return recognizeIntent(query, conversationId, userId, userName, traceId, null);
+    }
+
+    public HiAgentChatResponse recognizeIntent(String query, String conversationId, String userId,
+                                               String userName, String traceId, String pageCode) {
         return chat(
             "intent",
             properties.getIntentAppId(),
@@ -62,6 +67,7 @@ public class ChinaUniconAgentClient {
             userId,
             userName,
             traceId,
+            pageCode,
             responseParser::extractIntentJson
         );
     }
@@ -76,6 +82,7 @@ public class ChinaUniconAgentClient {
             userId,
             userName,
             traceId,
+            null,
             responseParser::extractResultJson
         );
     }
@@ -94,17 +101,19 @@ public class ChinaUniconAgentClient {
             userId,
             userName,
             traceId,
+            null,
             responseParser::extractSemanticSqlJson
         );
     }
 
     private HiAgentChatResponse chat(String agentType, String appId, String content, String conversationId,
                                      String userId, String userName, String traceId,
+                                     String pageCode,
                                      java.util.function.Function<String, String> answerExtractor) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> logInput = null;
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-        Map<String, String> variable = buildVariable(agentType, content);
+        Map<String, String> variable = buildVariable(agentType, content, pageCode);
         String accessToken = ChinaUniconAgentAccessTokenUtil.generateAccessToken(
             appId,
             timestamp,
@@ -176,19 +185,24 @@ public class ChinaUniconAgentClient {
         }
     }
 
-    private Map<String, String> buildVariable(String agentType, String content) {
+    private Map<String, String> buildVariable(String agentType, String content, String pageCode) {
         ChinaUniconAgentProperties.AgentConfig agentConfig = resolveAgentConfig(agentType);
-        if (agentConfig == null || !agentConfig.isPassContentAsInput()) {
+        boolean hasPageCode = pageCode != null && !pageCode.trim().isEmpty();
+        if ((agentConfig == null || !agentConfig.isPassContentAsInput()) && !hasPageCode) {
             return Collections.emptyMap();
         }
 
-        String inputVariableName = agentConfig.getInputVariableName();
-        if (inputVariableName == null || inputVariableName.trim().isEmpty()) {
-            inputVariableName = "input";
-        }
-
         Map<String, String> variable = new LinkedHashMap<>();
-        variable.put(inputVariableName.trim(), content == null ? "" : content);
+        if (agentConfig != null && agentConfig.isPassContentAsInput()) {
+            String inputVariableName = agentConfig.getInputVariableName();
+            if (inputVariableName == null || inputVariableName.trim().isEmpty()) {
+                inputVariableName = "input";
+            }
+            variable.put(inputVariableName.trim(), content == null ? "" : content);
+        }
+        if (hasPageCode) {
+            variable.put("pageCode", pageCode.trim());
+        }
         return variable;
     }
 
