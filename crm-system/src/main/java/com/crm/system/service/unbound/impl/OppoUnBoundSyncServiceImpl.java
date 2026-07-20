@@ -83,6 +83,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
     @Resource
     private ISysLogService sysLogService;
     private static SysLog sysLog;
+    /** 支撑贡献度总分 */
+    private static final int TOTAL_CONTRIBUTION_SCORE = 100;
     @Resource
     private IToppOpportunityService oppotunityService;
     @Resource
@@ -498,25 +500,31 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                     }
                 }
 
-                for (ToppMemberVo m : list) {
-                    Map<String, Object> supMgrBo = new HashMap<String, Object>();
-                    SysUser memberUser = sysUserService.selectUserById(m.getMemberId());
-                    String email = memberUser.getEmail();
-                    //做过支撑贡献度,那么按照每个人实际记录的支撑贡献度记录
-                    if (isSupMgrContri) {
-                        if (ObjectUtil.isEmpty(m.getContri())) {
-                            supMgrBo.put("supMgrContri", 0);
-                        } else {
-                            supMgrBo.put("supMgrContri", new DecimalFormat("#").format(m.getContri()));
+                int memberCount = list.size();
+                if (memberCount > 0) {
+                    int baseContri = TOTAL_CONTRIBUTION_SCORE / memberCount;
+                    int remainder = TOTAL_CONTRIBUTION_SCORE % memberCount;
+                    for (int i = 0; i < memberCount; i++) {
+                        ToppMemberVo m = list.get(i);
+                        Map<String, Object> supMgrBo = new HashMap<String, Object>();
+                        SysUser memberUser = sysUserService.selectUserById(m.getMemberId());
+                        String email = memberUser.getEmail();
+                        //做过支撑贡献度,那么按照每个人实际记录的支撑贡献度记录
+                        if (isSupMgrContri) {
+                            if (ObjectUtil.isEmpty(m.getContri())) {
+                                supMgrBo.put("supMgrContri", 0);
+                            } else {
+                                supMgrBo.put("supMgrContri", new DecimalFormat("#").format(m.getContri()));
+                            }
+                        } else { //如果没做过支撑贡献度打分,那么按照100分平均下,余数分配给前N个人确保总和为100
+                            supMgrBo.put("supMgrContri", String.valueOf(baseContri + (i < remainder ? 1 : 0)));
                         }
-                    } else { //如果没做过支撑贡献度打分,那么按照100分平均下
-                        supMgrBo.put("supMgrContri", new DecimalFormat("#").format(100.00 / list.size()));
+                        //支撑经理账号
+                        if (ObjectUtil.isNotEmpty(email) && email.contains("@")) {
+                            supMgrBo.put("supMgr", email.substring(0, email.indexOf("@")));
+                        }
+                        supMgrList.add(supMgrBo);
                     }
-                    //支撑经理账号
-                    if (ObjectUtil.isNotEmpty(email) && email.contains("@")) {
-                        supMgrBo.put("supMgr", email.substring(0, email.indexOf("@")));
-                    }
-                    supMgrList.add(supMgrBo);
                 }
                 supportInfo.put("supMgrList", supMgrList);
                 reqMap.put("supportInfo", supportInfo);
