@@ -57,6 +57,16 @@ public class HiAgentClient {
     @CircuitBreaker(name = "hiagent", fallbackMethod = "fallbackCreateConversation")
     @Retry(name = "hiagent")
     public String createConversation(String userId, String agentId, String traceId) {
+        return createConversation(userId, agentId, traceId, null);
+    }
+
+    /**
+     * 创建会话，获取 AppConversationID，并写入应用编排变量。
+     */
+    @CircuitBreaker(name = "hiagent", fallbackMethod = "fallbackCreateConversation")
+    @Retry(name = "hiagent")
+    public String createConversation(String userId, String agentId, String traceId,
+                                     Map<String, String> inputs) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> logInput = null;
         try {
@@ -64,6 +74,9 @@ public class HiAgentClient {
 
             Map<String, Object> body = new HashMap<>();
             body.put("UserID", userId);
+            if (inputs != null && !inputs.isEmpty()) {
+                body.put("Inputs", inputs);
+            }
 
             HttpHeaders headers = buildHeaders(agentId, traceId);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
@@ -117,14 +130,6 @@ public class HiAgentClient {
     @Retry(name = "hiagent")
     public HiAgentChatResponse chatQueryBlocking(String userId, String agentId,
                                                   String convId, String query, String traceId) {
-        return chatQueryBlocking(userId, agentId, convId, query, traceId, null);
-    }
-
-    @CircuitBreaker(name = "hiagent", fallbackMethod = "fallbackChatQuery")
-    @Retry(name = "hiagent")
-    public HiAgentChatResponse chatQueryBlocking(String userId, String agentId,
-                                                  String convId, String query, String traceId,
-                                                  Map<String, Object> queryExtends) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> logInput = null;
         try {
@@ -135,9 +140,6 @@ public class HiAgentClient {
             body.put("AppConversationID", convId);
             body.put("Query", query);
             body.put("ResponseMode", "blocking");
-            if (queryExtends != null && !queryExtends.isEmpty()) {
-                body.put("QueryExtends", queryExtends);
-            }
 
             HttpHeaders headers = buildHeaders(agentId, traceId);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
@@ -292,6 +294,12 @@ public class HiAgentClient {
         throw new RuntimeException("HiAgent 创建会话失败，服务暂不可用", e);
     }
 
+    public String fallbackCreateConversation(String userId, String agentId, String traceId,
+                                             Map<String, String> inputs, Throwable e) {
+        log.error("agentId={} createConversation fallback triggered", agentId, e);
+        throw new RuntimeException("HiAgent 创建会话失败，服务暂不可用", e);
+    }
+
     /**
      * 熔断降级：chatQueryBlocking
      */
@@ -308,10 +316,4 @@ public class HiAgentClient {
         return fallback;
     }
 
-    public HiAgentChatResponse fallbackChatQuery(String userId, String agentId,
-                                                  String convId, String query,
-                                                  String traceId, Map<String, Object> queryExtends,
-                                                  Throwable e) {
-        return fallbackChatQuery(userId, agentId, convId, query, traceId, e);
-    }
 }

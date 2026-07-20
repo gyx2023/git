@@ -262,26 +262,35 @@ public class RouterService {
         return result;
     }
 
-    private String getOrCreateConversation(String userId, String agentId, String sessionId, String traceId) {
-        String convId = conversationManager.getConversationId(userId, agentId, sessionId);
+    private String getOrCreateConversation(String userId, String agentId, String sessionId,
+                                           String traceId, String pageCode) {
+        String conversationSessionId = buildConversationSessionId(sessionId, pageCode);
+        String convId = conversationManager.getConversationId(userId, agentId, conversationSessionId);
         if (convId == null) {
-            log.info("userId={} agentId={} sessionId={} creating new conversation",
-                userId, agentId, sessionId);
-            convId = hiAgentClient.createConversation(userId, agentId, traceId);
-            conversationManager.saveConversationId(userId, agentId, sessionId, convId);
+            log.info("userId={} agentId={} sessionId={} pageCode={} creating new conversation",
+                userId, agentId, sessionId, pageCode);
+            convId = hiAgentClient.createConversation(userId, agentId, traceId, buildAgentInputs(pageCode));
+            conversationManager.saveConversationId(userId, agentId, conversationSessionId, convId);
         } else {
             log.debug("reusing conversation: convId={}", convId);
         }
         return convId;
     }
 
-    private Map<String, Object> buildQueryExtends(String pageCode) {
+    private String buildConversationSessionId(String sessionId, String pageCode) {
+        if (pageCode == null || pageCode.trim().isEmpty()) {
+            return sessionId;
+        }
+        return sessionId + ":page:" + pageCode.trim();
+    }
+
+    private Map<String, String> buildAgentInputs(String pageCode) {
         if (pageCode == null || pageCode.trim().isEmpty()) {
             return Collections.emptyMap();
         }
-        Map<String, Object> queryExtends = new LinkedHashMap<>();
-        queryExtends.put("pageCode", pageCode.trim());
-        return queryExtends;
+        Map<String, String> inputs = new LinkedHashMap<>();
+        inputs.put("pageCode", pageCode.trim());
+        return inputs;
     }
 
     // ==================== 阶段1：意图识别 ====================
@@ -326,14 +335,14 @@ public class RouterService {
         long start = System.currentTimeMillis();
 
         // 1.1 获取或创建 HiAgent 会话（改造后：复用会话，按 sessionId 隔离）
-        String convId = getOrCreateConversation(userId, intentAgentId, sessionId, traceId);
+        String convId = getOrCreateConversation(userId, intentAgentId, sessionId, traceId, pageCode);
 
         // 1.2 直接透传用户原始输入，让 Agent 从会话历史中获取上下文
         log.debug("sending raw query to agent: [{}]", query);
 
         // 1.3 调用 HiAgent
         HiAgentChatResponse chatResponse = hiAgentClient.chatQueryBlocking(
-            userId, intentAgentId, convId, query, traceId, buildQueryExtends(pageCode));
+            userId, intentAgentId, convId, query, traceId);
 
         // 1.4 解析意图
         IntentResult intentResult = intentParser.parse(chatResponse.getAnswer(), traceId);
