@@ -56,9 +56,7 @@ public class ToolSchemaController extends BaseController {
         @RequestParam(required = false) String pageCode,
         @RequestHeader(value = "pageCode", required = false) String pageCodeHeader
     ) {
-        String bodyPageCode = request != null && request.get("pageCode") != null
-            ? String.valueOf(request.get("pageCode"))
-            : null;
+        String bodyPageCode = extractBodyPageCode(request);
         String resolvedPageCode = resolvePageCode(bodyPageCode, pageCode, pageCodeHeader);
         log.info("HiAgent fetching all tool schemas, pageCode={}", resolvedPageCode);
 
@@ -69,6 +67,25 @@ public class ToolSchemaController extends BaseController {
             log.error("Failed to generate tool schemas", e);
             return R.fail("生成工具 Schema 失败：" + e.getMessage());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractBodyPageCode(Map<String, Object> request) {
+        if (request == null) {
+            return null;
+        }
+        Object pageCode = request.get("pageCode");
+        if (pageCode != null) {
+            return String.valueOf(pageCode);
+        }
+        Object uniBssBody = request.get("UNI_BSS_BODY");
+        if (uniBssBody instanceof Map) {
+            Object nestedPageCode = ((Map<String, Object>) uniBssBody).get("pageCode");
+            if (nestedPageCode != null) {
+                return String.valueOf(nestedPageCode);
+            }
+        }
+        return null;
     }
 
     private String resolvePageCode(String... candidates) {
