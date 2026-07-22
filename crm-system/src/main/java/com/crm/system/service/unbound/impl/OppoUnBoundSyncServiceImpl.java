@@ -514,7 +514,7 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                             if (ObjectUtil.isEmpty(m.getContri())) {
                                 supMgrBo.put("supMgrContri", 0);
                             } else {
-                                supMgrBo.put("supMgrContri", new DecimalFormat("#").format(m.getContri()));
+                                supMgrBo.put("supMgrContri", m.getContri());
                             }
                         } else { //如果没做过支撑贡献度打分,那么按照100分平均下,余数分配给前N个人确保总和为100
                             supMgrBo.put("supMgrContri", String.valueOf(baseContri + (i < remainder ? 1 : 0)));
