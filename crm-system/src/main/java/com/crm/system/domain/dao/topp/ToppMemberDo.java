@@ -19,7 +19,8 @@ import com.crm.common.core.domain.BaseEntity;
  */
 @Data
 @TableName("topp_member")
-public class ToppMemberDo  {
+@EqualsAndHashCode(callSuper = true)
+public class ToppMemberDo extends BaseEntity  {
 
     private static final long serialVersionUID=1L;
 
@@ -88,5 +89,24 @@ public class ToppMemberDo  {
      *
      */
     private String teamLeaderFlag;
+
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
+
 
 }
