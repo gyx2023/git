@@ -1,6 +1,7 @@
 package com.crm.job.service.warning;
 
 import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
@@ -223,7 +224,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         orderBo.setOrderName(record.getOrderName());
         orderBo.setCustName(record.getCustName());
         orderBo.setWarningLevel(record.getWarningLevel());
-        orderBo.setProcessEngine("FLOWABLE");
+        orderBo.setProcessEngine(ProcessEngineEnum.FLOWABLE.name());
         orderBo.setStatus(ORDER_STATUS_RUNNING);
         orderBo.setPhase(task.getTaskDefinitionKey());
         orderBo.setPhaseName(task.getName());
