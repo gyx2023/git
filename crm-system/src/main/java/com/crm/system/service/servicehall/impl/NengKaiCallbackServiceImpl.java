@@ -44,6 +44,11 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
 
     @Override
     public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene) {
+        return callWorksheetsComplete(recordDo, scene, null);
+    }
+
+    @Override
+    public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene, String assignee) {
         Map<String, Object> data = new HashMap<>();
         String responseBody = "";
         try {
@@ -63,6 +68,10 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             worksheetItem.put("dealResultCode", recordDo.getDealResultCode());
             if (!"0".equals(recordDo.getDealResultCode())) {
                 worksheetItem.put("failReason", recordDo.getFailReason());
+            }
+            // 转派场景：传入 assignee 目标工号
+            if (assignee != null && !assignee.isEmpty()) {
+                worksheetItem.put("assignee", assignee);
             }
 
             Map<String, Object> orderUpdate = new HashMap<>();
@@ -91,7 +100,7 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             log.info("响应报文:{}", responseBody);
             return responseBody;
         } catch (Exception e) {
-            log.error("能开回调失败: noticeRecordId={}, scene={}", recordDo != null ? recordDo.getId() : null, scene, e);
+            log.error("能开回调失败: noticeRecordId={}, scene={}, assignee={}", recordDo != null ? recordDo.getId() : null, scene, assignee, e);
             throw new RuntimeException("能开回调失败");
         }
     }
