@@ -2,6 +2,7 @@ package com.crm.job.service.workflow;
 
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
+import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
@@ -240,7 +241,7 @@ public class ToppCloseStartJob extends FlowServiceFactory {
         orderBo.setActorsInfo(nextUser.getNickName() + ":" + nextUser.getPhonenumber());
         orderBo.setCustName(opportunity.getCustName());
         orderBo.setWarningLevel(warningLevel);
-        orderBo.setProcessEngine("FLOWABLE");
+        orderBo.setProcessEngine(ProcessEngineEnum.FLOWABLE.name());
         orderBo.setCreateTime(new Date());
         orderBo.setUpdateTime(new Date());
 
