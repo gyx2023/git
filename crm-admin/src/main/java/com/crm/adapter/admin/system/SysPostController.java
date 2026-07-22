@@ -34,6 +34,7 @@ public class SysPostController extends BaseController {
      * 获取岗位列表
      */
     @SaCheckPermission("system:post:list")
+    @Log(title = "岗位管理", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SysPost> list(SysPost post, PageQuery pageQuery) {
         return postService.selectPagePostList(post, pageQuery);

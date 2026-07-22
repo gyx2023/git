@@ -40,6 +40,7 @@ public class SupportCityStatsController extends BaseController {
     /**
      * 查询支撑情况地市统计列表
      */
+    @Log(title = "支撑情况地市统计", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SupportCityStatsVO> list(SupportCityStatsDTO dto) {
         List<SupportCityStatsVO> list = supportCityStatsService.selectSupportCityStatsList(dto);

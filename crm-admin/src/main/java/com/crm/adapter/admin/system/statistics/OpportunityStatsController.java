@@ -38,6 +38,7 @@ public class OpportunityStatsController {
     /**
      * 查询商机统计列表
      */
+    @Log(title = "商机统计", businessType = BusinessType.QUERY)
     @SaCheckPermission("statistics:opportunity:list")
     @GetMapping("/list")
     public R<List<OpportunityStatsDTO>> list(OpportunityStatsBo bo) {
