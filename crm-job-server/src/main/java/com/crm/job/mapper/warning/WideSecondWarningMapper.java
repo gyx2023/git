@@ -15,7 +15,7 @@ import java.util.Map;
 @Mapper
 public interface WideSecondWarningMapper {
 
-    @Select({"SELECT w.id, w.grp_name, w.grp_code, w.oa_id_dev, w.serv_manager_id, w.warning_type "
+    @Select({"SELECT w.id_, w.grp_name, w.grp_code, w.oa_id_dev, w.serv_manager_id, w.warning_type "
             + "FROM ftp_tc_user_cust_warning w "
             + "JOIN ("
             + "  SELECT DISTINCT ftucw.MAIN_ORDER_FLOW_NO "
@@ -28,6 +28,6 @@ public interface WideSecondWarningMapper {
             + ") b ON w.MAIN_ORDER_FLOW_NO = b.MAIN_ORDER_FLOW_NO "
             + "WHERE w.WARNING_TYPE = 'C00002' "
             + "GROUP BY w.MAIN_ORDER_FLOW_NO "
-            + "ORDER BY w.id"})
+            + "ORDER BY w.id_"})
     List<Map<String, Object>> selectSecondWarnList(@Param("targetDate") String targetDate);
 }

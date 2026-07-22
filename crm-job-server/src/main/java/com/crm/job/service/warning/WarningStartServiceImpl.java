@@ -333,6 +333,12 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             orderBo.setOrderCategory(orderCategory);
         }
 
+        // 可选：businessDep
+        String businessDep = (String) extra.get("businessDep");
+        if (StringUtils.isNotBlank(businessDep)) {
+            orderBo.setBusinessDep(businessDep);
+        }
+
         // 可选：orgId、actorsInfo、areaId
         resolveOrgInfo(orderBo, extra);
 
