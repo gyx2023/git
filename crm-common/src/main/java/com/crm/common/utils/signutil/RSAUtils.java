@@ -1,5 +1,7 @@
 package com.crm.common.utils.signutil;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.crypto.Cipher;
 import java.io.ByteArrayOutputStream;
 import java.security.*;
@@ -13,6 +15,7 @@ import java.util.Map;
 /**
  * RSA加密工具类（从asiainfo-openplatform搬迁）
  */
+@Slf4j
 public class RSAUtils {
 
     public static final String KEY_ALGORITHM = "RSA";
@@ -244,12 +247,12 @@ public class RSAUtils {
         String content = "亚信科技能力开放平台V1.0";
         String md5Content = AESUtil.getMD5Str(content);
         
-        System.out.println("MD5加密后：" + md5Content);
+        log.info("MD5加密后：" + md5Content);
         
         String encrypted = encryptByPrivateKey(md5Content, privateKey);
-        System.out.println("RSA加密后：" + encrypted);
+        log.info("RSA加密后：" + encrypted);
         
         String decrypted = decryptByPublicKey(encrypted, publicKey);
-        System.out.println("RSA解密后：" + decrypted);
+        log.info("RSA解密后：" + decrypted);
     }
 }

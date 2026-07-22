@@ -95,7 +95,10 @@ public class OpportunityExport extends AbstractExportStrategy {
     private final Object cacheInitLock = new Object();
 
     // 创建固定线程池用于并行处理
-    private final ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private final ExecutorService executorService = new java.util.concurrent.ThreadPoolExecutor(
+        8, 8, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+        new java.util.concurrent.LinkedBlockingQueue<>());
+
 
     @PostConstruct
     public void init() {
@@ -701,7 +704,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                     StringBuilder contractNos = new StringBuilder();
                     for (int i = 0; i < contracts.size(); i++) {
                         ToppContractVo contract = contracts.get(i);
-                        if (i > 0) contractNos.append(",");
+                        if (i > 0) {
+                            contractNos.append(",");
+                        }
                         if (StringUtils.isNotEmpty(contract.getContractNo())) {
                             contractNos.append(contract.getContractNo());
                         }
@@ -715,7 +720,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                     StringBuilder eformNos = new StringBuilder();
                     for (int i = 0; i < eforms.size(); i++) {
                         ToppContractEformVo eform = eforms.get(i);
-                        if (i > 0) eformNos.append(",");
+                        if (i > 0) {
+                            eformNos.append(",");
+                        }
                         if (StringUtils.isNotEmpty(eform.getEformNo())) {
                             eformNos.append(eform.getEformNo());
                         }
@@ -1392,7 +1399,9 @@ public class OpportunityExport extends AbstractExportStrategy {
      * 类型转换
      */
     private Long convertToLong(Object obj) {
-        if (obj == null) return null;
+        if (obj == null) {
+            return null;
+        }
 
         if (obj instanceof Long) {
             return (Long) obj;

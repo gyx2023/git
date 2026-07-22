@@ -12,6 +12,7 @@ import com.crm.system.domain.dao.topp.ToppBidSuboppoDo;
 import com.crm.system.domain.vo.topp.ToppBidSuboppoVo;
 import com.crm.system.mapper.topp.ToppBidSuboppoMapper;
 import com.crm.system.service.topp.IToppBidSuboppoService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,7 @@ import java.util.*;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ToppBidSuboppoServiceImpl implements IToppBidSuboppoService {
 
     private final ToppBidSuboppoMapper baseMapper;
@@ -105,6 +107,7 @@ public class ToppBidSuboppoServiceImpl implements IToppBidSuboppoService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

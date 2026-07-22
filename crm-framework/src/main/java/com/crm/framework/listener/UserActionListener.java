@@ -58,6 +58,7 @@ public class UserActionListener implements SaTokenListener {
             log.info("user doLogin, userId:{}, token:{}", loginId, tokenValue);
         } else if (userType == UserType.APP_USER) {
             // app端 自行根据业务编写
+            log.info("app端登录，userType={}, loginId={}", userType, loginId);
         }
     }
 

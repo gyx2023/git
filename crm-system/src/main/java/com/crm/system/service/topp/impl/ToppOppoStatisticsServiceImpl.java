@@ -27,7 +27,7 @@ public class ToppOppoStatisticsServiceImpl implements IToppOppoStatisticsService
     private final ISysAreaService sysAreaService;
 
     private static final long SHENG_AREA_ID = Constants.SHENG_AREA_ID;
-    private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final ThreadLocal<SimpleDateFormat> DATE_FMT = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd"));
 
     @Override
     public boolean isTodayStatsDone(int type, String areaType) {
@@ -197,7 +197,7 @@ public class ToppOppoStatisticsServiceImpl implements IToppOppoStatisticsService
     // ============ 日期工具方法 ============
 
     private String getToday() {
-        return DATE_FMT.format(new Date()) + " 00:00:00";
+        return DATE_FMT.get().format(new Date()) + " 00:00:00";
     }
 
     /**
@@ -207,7 +207,7 @@ public class ToppOppoStatisticsServiceImpl implements IToppOppoStatisticsService
         Calendar cale = Calendar.getInstance();
         cale.add(Calendar.MONTH, 1 - monthsBefore);
         cale.set(Calendar.DAY_OF_MONTH, 1);
-        return DATE_FMT.format(cale.getTime()) + " 00:00:00";
+        return DATE_FMT.get().format(cale.getTime()) + " 00:00:00";
     }
 
     /**
@@ -217,7 +217,7 @@ public class ToppOppoStatisticsServiceImpl implements IToppOppoStatisticsService
         Calendar cale = Calendar.getInstance();
         cale.set(Calendar.MONTH, 0);
         cale.set(Calendar.DAY_OF_MONTH, 1);
-        return DATE_FMT.format(cale.getTime()) + " 00:00:00";
+        return DATE_FMT.get().format(cale.getTime()) + " 00:00:00";
     }
 
     /**
@@ -227,6 +227,6 @@ public class ToppOppoStatisticsServiceImpl implements IToppOppoStatisticsService
         Calendar cale = Calendar.getInstance();
         cale.set(Calendar.MONTH, 11);
         cale.set(Calendar.DAY_OF_MONTH, 31);
-        return DATE_FMT.format(cale.getTime()) + " 00:00:00";
+        return DATE_FMT.get().format(cale.getTime()) + " 00:00:00";
     }
 }

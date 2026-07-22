@@ -525,7 +525,7 @@ public class TfFCustGroupDSyncJob {
      * @param createDate        创建时间
      */
     private void processGrpGroupInfo(List<TfFCustGroupDDo> tfFCustGroupDList, String createDate) {
-        System.out.println("-----------------存入政企集团客户信息开始-----------------");
+        log.info("-----------------存入政企集团客户信息开始-----------------");
         XxlJobHelper.log("-----------------存入政企集团客户信息开始-----------------");
 
         List<ZqGrpGroupInfo> groupInfoList = new ArrayList<>();
@@ -671,7 +671,7 @@ public class TfFCustGroupDSyncJob {
         }
 
 
-        System.out.println("-----------------存入政企集团客户信息结束-----------------");
+        log.info("-----------------存入政企集团客户信息结束-----------------");
         XxlJobHelper.log("-----------------存入政企集团客户信息结束-----------------");
     }
 

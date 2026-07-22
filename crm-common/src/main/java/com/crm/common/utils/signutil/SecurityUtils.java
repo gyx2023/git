@@ -1,5 +1,6 @@
 package com.crm.common.utils.signutil;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -12,6 +13,7 @@ import java.security.*;
  * 安全工具类（从asiainfo-openplatform搬迁）
  * 提供HmacSHA256、AES、RSA等加密算法支持
  */
+@Slf4j
 public final class SecurityUtils {
 
     public static final String ENCODE = "UTF-8";
@@ -161,6 +163,6 @@ public final class SecurityUtils {
     public static void main(String[] args) throws Exception {
         String content = "test";
         String key = "3888bd16498334490f5eaf4355be982f";
-        System.out.println(encodeHmacSHA256HexUpper(content, decodeHexUpper(key)));
+        log.info(encodeHmacSHA256HexUpper(content, decodeHexUpper(key)));
     }
 }
