@@ -202,13 +202,17 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
             // 商机主业务是组网业务默认同步其他（但是数据库存的还是组网业务对应的code，不同步给总部）
             if (!"opp_type_zwyw".equals(oppo.getOppType()) && ObjectUtil.isNotEmpty(oppo.getProductCode())) {
-                oppoMap.put("productCode", oppo.getProductCode());
-                if ("1".equals(oppo.getProductCode())) {
+                String productCode = oppo.getProductCode();
+                if (",".equals(productCode)) {
+                    productCode = "1";
+                }
+                oppoMap.put("productCode", productCode);
+                if ("1".equals(productCode)) {
                     oppoMap.put("productName", oppo.getSfProductName() == null ? "" : oppo.getSfProductName());
                     oppoMap.put("customerTypeName", oppo.getSfCustomerType() == null ? "" : sysCodeService.findCode(Constants.CODE_UNICOM_TYPE, oppo.getSfCustomerType()).getName());
                 } else {
-                    oppoMap.put("productName", oppo.getProductCode() == null ? "" : sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, oppo.getProductCode()).getName());
-                    SysCodeVo productCodeSysCode = sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, oppo.getProductCode());
+                    oppoMap.put("productName", productCode == null ? "" : sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, productCode).getName());
+                    SysCodeVo productCodeSysCode = sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, productCode);
                     SysCodeVo customerTypeCodeSysCode = sysCodeService.findCode("industry", productCodeSysCode.getSettingStr1());
                     oppoMap.put("customerTypeCode", customerTypeCodeSysCode.getCode());
                     oppoMap.put("customerTypeName", customerTypeCodeSysCode.getName());
