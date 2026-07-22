@@ -420,30 +420,25 @@ public class WideWarningController extends BaseController {
         SysUsers nextUser = targetUserId != null ? sysUsersMapper.selectById(targetUserId) : null;
         String nextActorName = nextUser != null ? nextUser.getNameCh() : "";
 
-        // 更新工单白名单
-        if (order != null) {
-            String whiteList = order.getWhiteList();
-            if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
-            String curSeg = "," + loginUser.getUserId() + ",";
-            if (!whiteList.contains(curSeg)) whiteList = whiteList + loginUser.getUserId() + ",";
-            if (targetUserId != null) {
-                String tgtSeg = "," + targetUserId + ",";
-                if (!whiteList.contains(tgtSeg)) whiteList = whiteList + targetUserId + ",";
-            }
-            ToppOrderBo bo = new ToppOrderBo();
-            bo.setId(orderId);
-            bo.setWhiteList(whiteList);
-            if (targetUserId != null) {
-                bo.setActors(",," + targetUserId + ",,");
-                String phone = nextUser != null ? nextUser.getRelationTel() : "";
-                bo.setActorsInfo(nextActorName + ":" + (phone != null ? phone : ""));
-            }
-            orderService.updateByBo(bo);
-        }
-
         // 稽核节点：改派任务，不完成（稽核网关无转派回路，完成会走默认线直接结束流程）
         if ("audit_handle".equals(task.getTaskDefinitionKey())) {
             if (targetUserId == null) return R.fail("请选择转派人员");
+            // 稽核节点只改派不完成任务，需自行更新白名单（不走 transferOrder）
+            if (order != null) {
+                String whiteList = order.getWhiteList();
+                if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
+                String curSeg = "," + loginUser.getUserId() + ",";
+                if (!whiteList.contains(curSeg)) whiteList = whiteList + loginUser.getUserId() + ",";
+                String tgtSeg = "," + targetUserId + ",";
+                if (!whiteList.contains(tgtSeg)) whiteList = whiteList + targetUserId + ",";
+                ToppOrderBo bo = new ToppOrderBo();
+                bo.setId(orderId);
+                bo.setWhiteList(whiteList);
+                bo.setActors(",," + targetUserId + ",,");
+                String phone = nextUser != null ? nextUser.getRelationTel() : "";
+                bo.setActorsInfo(nextActorName + ":" + (phone != null ? phone : ""));
+                orderService.updateByBo(bo);
+            }
             taskService.setAssignee(taskId, String.valueOf(targetUserId));
             runtimeService.setVariable(piId, "audit", String.valueOf(targetUserId));
 
@@ -453,7 +448,7 @@ public class WideWarningController extends BaseController {
             return R.ok(result);
         }
 
-        // 经理节点：完成当前任务，流程回到经理处理节点，产生流转记录
+        // 经理节点：完成当前任务，流程回到经理处理节点，产生流转记录（白名单由 transferOrder 内部更新）
         String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
         syncOrderToCurrentTask(orderId, piId, order);
 
