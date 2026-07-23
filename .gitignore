@@ -46,4 +46,3 @@ nbdist/
 !*/build/*.xml
 .DS_Store
 **/.DS_Store
-node_modules/

@@ -146,6 +146,11 @@ public class NengKaiServiceImpl implements NengKaiService {
         return nengKaiCallbackCoreService.callWorksheetsComplete(zqztJtNoticeRecordDo, scene);
     }
 
+    @Override
+    public String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo, String scene, String assignee) {
+        return nengKaiCallbackCoreService.callWorksheetsComplete(zqztJtNoticeRecordDo, scene, assignee);
+    }
+
 
     /**
      * 将OrderProcessInfoRequestVo的属性复制到OrderProcessInfo

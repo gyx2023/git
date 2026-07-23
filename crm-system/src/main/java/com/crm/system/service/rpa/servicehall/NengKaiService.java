@@ -12,4 +12,12 @@ public interface NengKaiService {
     NengKaiResponseVo nengKaiNotice(NengKaiRequestVo requestVo);
 
     String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo, String scene);
+
+    /**
+     * 调用能开 worksheetsComplete 接口（支持转派）
+     * @param zqztJtNoticeRecordDo 通知记录
+     * @param scene                调用场景标识
+     * @param assignee             转派目标工号（dealResultCode=AA05时使用）
+     */
+    String worksheetsComplete(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo, String scene, String assignee);
 }
