@@ -264,6 +264,9 @@ public class WideWarningController extends BaseController {
         String piId = task.getProcessInstanceId();
         if (comment != null) taskService.addComment(taskId, piId, comment);
 
+        // 保留当前任务展示变量到流程变量，避免 task local 随任务完成而丢失
+        preserveDisplayVarsToProcess(taskId, task);
+
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
         if ("manager_handle".equals(task.getTaskDefinitionKey()) && auditUserId != null) {
@@ -276,8 +279,13 @@ public class WideWarningController extends BaseController {
         ToppOrderVo order = orderService.queryById(orderId);
         String msg;
         if (isProcessRunning(piId)) {
-            // 流程未结束（如进入稽核节点）：推进工单到下一节点，保持进行中
-            syncOrderToCurrentTask(orderId, piId, order);
+            // 流程未结束（如进入稽核节点）：同步工单节点 + 白名单/处理人（一次 updateByBo）
+            Task nextComplete = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+            Long nextAssignee = null;
+            if (nextComplete != null && nextComplete.getAssignee() != null && !nextComplete.getAssignee().isEmpty()) {
+                nextAssignee = Long.parseLong(nextComplete.getAssignee().replaceAll(",", ""));
+            }
+            syncOrderToCurrentTask(orderId, piId, order, nextAssignee);
             msg = "处理完成，已进入下一处理环节";
         } else {
             // 流程已结束：置为完成
@@ -312,6 +320,9 @@ public class WideWarningController extends BaseController {
         String piId = task.getProcessInstanceId();
         if (comment != null) taskService.addComment(taskId, piId, comment);
 
+        // 保留当前任务展示变量到流程变量，避免 task local 随任务完成而丢失
+        preserveDisplayVarsToProcess(taskId, task);
+
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "reject");
         taskService.setVariableLocal(taskId, "action", "reject");
@@ -320,8 +331,13 @@ public class WideWarningController extends BaseController {
         ToppOrderVo order = orderService.queryById(orderId);
         String msg;
         if (isProcessRunning(piId)) {
-            // 退回后回到客户经理节点：同步工单节点
-            syncOrderToCurrentTask(orderId, piId, order);
+            // 退回后回到客户经理节点：同步工单节点 + 白名单/处理人（一次 updateByBo）
+            Task nextReject = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+            Long rejectAssignee = null;
+            if (nextReject != null && nextReject.getAssignee() != null && !nextReject.getAssignee().isEmpty()) {
+                rejectAssignee = Long.parseLong(nextReject.getAssignee().replaceAll(",", ""));
+            }
+            syncOrderToCurrentTask(orderId, piId, order, rejectAssignee);
             msg = "已退回客户经理";
         } else {
             if (order != null) {
@@ -346,10 +362,10 @@ public class WideWarningController extends BaseController {
     }
 
     /**
-     * 将工单推进/同步到流程当前的处理任务节点（用于两节点流程流转）。
-     * 更新 phase/phaseName/actors/whiteList/actorsInfo，并为新任务设置展示用本地变量。
+     * 将工单同步到当前流程节点（更新 phase/phaseName/status + 展示变量）。
+     * 若 whitelistUserId 非空，同时更新白名单和处理人（一次 updateByBo）。
      */
-    private void syncOrderToCurrentTask(Long orderId, String piId, ToppOrderVo order) {
+    private void syncOrderToCurrentTask(Long orderId, String piId, ToppOrderVo order, Long whitelistUserId) {
         Task next = taskService.createTaskQuery().processInstanceId(piId).singleResult();
         if (next == null) return;
 
@@ -359,42 +375,129 @@ public class WideWarningController extends BaseController {
         bo.setPhase(next.getTaskDefinitionKey());
         bo.setPhaseName(next.getName());
 
-        String assignee = next.getAssignee();
-        if (assignee != null && !assignee.isEmpty()) {
-            String cleanId = assignee.replaceAll(",", "");
-            bo.setActors(",," + cleanId + ",,");
-
+        if (whitelistUserId != null) {
+            bo.setActors(",," + whitelistUserId + ",,");
             String whiteList = order != null ? order.getWhiteList() : null;
             if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
-            String seg = "," + cleanId + ",";
-            if (!whiteList.contains(seg)) whiteList = whiteList + cleanId + ",";
+            String seg = "," + whitelistUserId + ",";
+            if (!whiteList.contains(seg)) whiteList = whiteList + whitelistUserId + ",";
             bo.setWhiteList(whiteList);
-
             try {
-                SysUsers u = sysUsersMapper.selectById(Long.parseLong(cleanId));
+                SysUsers u = sysUsersMapper.selectById(whitelistUserId);
                 if (u != null) {
                     String phone = u.getRelationTel();
                     bo.setActorsInfo(u.getNameCh() + ":" + (phone != null ? phone : ""));
                 }
             } catch (Exception ignored) {}
         }
-        orderService.updateByBo(bo);
 
+        orderService.updateByBo(bo);
         setNextTaskDisplayVars(next, order);
     }
 
-    /** 为流转到的新任务设置展示用本地变量（供处理页展示），dealUrl 采用通用跳转，前端按 taskDefKey 区分页面 */
+    /**
+     * 更新工单白名单和处理人（唯一入口）。
+     * @param orderId         工单ID
+     * @param order           工单（读取当前白名单基准）
+     * @param targetActor     当前处理人（写入 actors + 加入白名单）
+     * @param extraUserIds    额外加入白名单的用户ID（如转派操作人）
+     */
+    private void updateOrderWhiteListAndActors(Long orderId, ToppOrderVo order, Long targetActor, Long... extraUserIds) {
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setActors(",," + targetActor + ",,");
+
+        // 拼白名单
+        String whiteList = order != null ? order.getWhiteList() : null;
+        if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
+        String seg = "," + targetActor + ",";
+        if (!whiteList.contains(seg)) whiteList = whiteList + targetActor + ",";
+        if (extraUserIds != null) {
+            for (Long uid : extraUserIds) {
+                if (uid == null) continue;
+                seg = "," + uid + ",";
+                if (!whiteList.contains(seg)) whiteList = whiteList + uid + ",";
+            }
+        }
+        bo.setWhiteList(whiteList);
+
+        // 处理人信息
+        try {
+            SysUsers u = sysUsersMapper.selectById(targetActor);
+            if (u != null) {
+                String phone = u.getRelationTel();
+                bo.setActorsInfo(u.getNameCh() + ":" + (phone != null ? phone : ""));
+            }
+        } catch (Exception ignored) {}
+
+        orderService.updateByBo(bo);
+    }
+
+    /**
+     * 将流程变量中的展示信息原样复制到新任务本地变量（用于转派等不改变节点的场景），
+     * 保留 transferOrder 设置的正确 dealUrl，不覆盖。
+     */
+    private void copyDisplayVarsFromProcVars(String piId, Task task) {
+        Map<String, Object> procVars = runtimeService.getVariables(piId);
+        String prefix = task.getTaskDefinitionKey() + "_";
+        Map<String, Object> tv = new HashMap<>();
+        for (Map.Entry<String, Object> e : procVars.entrySet()) {
+            if (e.getKey().startsWith(prefix)) {
+                tv.put(e.getKey(), e.getValue());
+            }
+        }
+        if (!tv.isEmpty()) {
+            taskService.setVariablesLocal(task.getId(), tv);
+        }
+    }
+
+    /**
+     * 将当前任务的展示变量（task local）复制到流程变量，防止随任务完成丢失。
+     * 后续 setNextTaskDisplayVars / copyDisplayVarsFromProcVars 可以从流程变量中找回。
+     */
+    private void preserveDisplayVarsToProcess(String taskId, Task task) {
+        Map<String, Object> taskVars = taskService.getVariables(taskId);
+        String prefix = task.getTaskDefinitionKey() + "_";
+        Map<String, Object> toPreserve = new HashMap<>();
+        for (Map.Entry<String, Object> e : taskVars.entrySet()) {
+            if (e.getKey().startsWith(prefix)) {
+                toPreserve.put(e.getKey(), e.getValue());
+            }
+        }
+        if (!toPreserve.isEmpty()) {
+            runtimeService.setVariables(task.getProcessInstanceId(), toPreserve);
+        }
+    }
+
+    /**
+     * 为流转到的新任务设置展示用本地变量。
+     * dealUrl 优先沿用流程变量中已有的（任意前缀匹配），没有则构造默认值。
+     */
     private void setNextTaskDisplayVars(Task next, ToppOrderVo order) {
         if (order == null) return;
         String k = next.getTaskDefinitionKey();
+        String piId = next.getProcessInstanceId();
         Map<String, Object> tv = new HashMap<>();
         tv.put(k + "_infoId", order.getId() != null ? String.valueOf(order.getId()) : null);
         tv.put(k + "_infoType", "order");
         tv.put(k + "_custName", order.getCustName());
         tv.put(k + "_orderName", order.getOrderName());
         tv.put(k + "_remindContent", "预警类型：" + order.getOrderType() + "，客户：" + order.getCustName() + "，请及时处理");
-        tv.put(k + "_dealUrl", "/warning/toDeal?orderType=" + order.getOrderType()
-                + "&orderId=" + order.getId() + "&taskDefKey=" + k);
+
+        // dealUrl：优先从流程变量中查找（先精确匹配当前节点，再匹配任意 *_dealUrl），都没有则构造默认值
+        Map<String, Object> procVars = runtimeService.getVariables(piId);
+        String existingUrl = str(procVars, k + "_dealUrl");
+        if (existingUrl == null) {
+            for (Map.Entry<String, Object> e : procVars.entrySet()) {
+                if (e.getKey().endsWith("_dealUrl") && e.getValue() != null) {
+                    existingUrl = e.getValue().toString();
+                    break;
+                }
+            }
+        }
+        tv.put(k + "_dealUrl", existingUrl != null ? existingUrl
+                : "/wideWarning/deal?orderId=" + order.getId());
+
         taskService.setVariablesLocal(next.getId(), tv);
     }
 
@@ -423,22 +526,8 @@ public class WideWarningController extends BaseController {
         // 稽核节点：改派任务，不完成（稽核网关无转派回路，完成会走默认线直接结束流程）
         if ("audit_handle".equals(task.getTaskDefinitionKey())) {
             if (targetUserId == null) return R.fail("请选择转派人员");
-            // 稽核节点只改派不完成任务，需自行更新白名单（不走 transferOrder）
-            if (order != null) {
-                String whiteList = order.getWhiteList();
-                if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
-                String curSeg = "," + loginUser.getUserId() + ",";
-                if (!whiteList.contains(curSeg)) whiteList = whiteList + loginUser.getUserId() + ",";
-                String tgtSeg = "," + targetUserId + ",";
-                if (!whiteList.contains(tgtSeg)) whiteList = whiteList + targetUserId + ",";
-                ToppOrderBo bo = new ToppOrderBo();
-                bo.setId(orderId);
-                bo.setWhiteList(whiteList);
-                bo.setActors(",," + targetUserId + ",,");
-                String phone = nextUser != null ? nextUser.getRelationTel() : "";
-                bo.setActorsInfo(nextActorName + ":" + (phone != null ? phone : ""));
-                orderService.updateByBo(bo);
-            }
+            // 稽核节点只改派不完成任务，不走 transferOrder，白名单通过公共方法更新
+            updateOrderWhiteListAndActors(orderId, order, targetUserId, loginUser.getUserId());
             taskService.setAssignee(taskId, String.valueOf(targetUserId));
             runtimeService.setVariable(piId, "audit", String.valueOf(targetUserId));
 
@@ -448,9 +537,13 @@ public class WideWarningController extends BaseController {
             return R.ok(result);
         }
 
-        // 经理节点：完成当前任务，流程回到经理处理节点，产生流转记录（白名单由 transferOrder 内部更新）
+        // 经理节点：完成当前任务走 BPMN 转派回路，transferOrder 内部已更新白名单/处理人，
+        // 并保留原始 dealUrl 到流程变量；此处复制到新任务本地变量，不覆盖
         String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
-        syncOrderToCurrentTask(orderId, piId, order);
+        Task nextTask = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        if (nextTask != null) {
+            copyDisplayVarsFromProcVars(piId, nextTask);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
