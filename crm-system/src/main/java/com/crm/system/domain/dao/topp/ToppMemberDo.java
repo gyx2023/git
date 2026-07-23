@@ -18,9 +18,9 @@ import com.crm.common.core.domain.BaseEntity;
  * @date 2025-12-02
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("topp_member")
-public class ToppMemberDo extends BaseEntity {
+@EqualsAndHashCode(callSuper = true)
+public class ToppMemberDo extends BaseEntity  {
 
     private static final long serialVersionUID=1L;
 
@@ -52,6 +52,7 @@ public class ToppMemberDo extends BaseEntity {
     /**
      * 	姓名
      */
+    @TableField("name_")
     private String name;
     /**
      * 	职责说明
@@ -64,10 +65,12 @@ public class ToppMemberDo extends BaseEntity {
     /**
      * 	备注说明
      */
+    @TableField("memo_")
     private String memo;
     /**
      *
      */
+    @TableField("score_")
     private String score;
     /**
      *
@@ -80,10 +83,30 @@ public class ToppMemberDo extends BaseEntity {
     /**
      *
      */
+    @TableField("contri_")
     private String contri;
     /**
      *
      */
     private String teamLeaderFlag;
+
+    /**
+     * 创建者
+     */
+    @TableField(exist = false)
+    private String createBy;
+
+    /**
+     * 更新者
+     */
+    @TableField(exist = false)
+    private String updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(exist = false)
+    private Date updateTime;
+
 
 }

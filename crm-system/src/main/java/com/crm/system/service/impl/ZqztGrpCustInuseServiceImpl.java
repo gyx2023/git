@@ -128,8 +128,9 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -168,6 +169,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
 
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         // 删除客户用户数据
         baseMapper.updateUserlistByInuseId(ids, loginUser);
@@ -214,6 +216,7 @@ public class ZqztGrpCustInuseServiceImpl implements IZqztGrpCustInuseService {
         Map<String, String> loginUser = getLoginUser();
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.updateBySubscrbid(subscrbids, loginUser);
     }

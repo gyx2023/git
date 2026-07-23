@@ -223,7 +223,7 @@ public class PlusDataPermissionHandler {
             dataPermissionCacheMap.put(clazz.getName(), dataPermission);
             return dataPermission.value();
         }
-        return null;
+        return new DataColumn[0];
     }
 
     /**

@@ -1,11 +1,14 @@
 package com.crm.job.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class PropertiesUtil {
     public static Map<String, String> getPropertiesMap(String fileName) {
         ResourceBundle resourcesTable = ResourceBundle.getBundle(fileName);
@@ -40,6 +43,6 @@ public class PropertiesUtil {
     public static void main(String args[]) {
         Map<String, String> map = PropertiesUtil.getPropertiesMap("itf_ftp");
         String ftpUserName = map.get("ftp_default_pwd");
-        System.out.println(ftpUserName);
+        log.info(ftpUserName);
     }
 }

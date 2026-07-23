@@ -44,7 +44,7 @@ public class SupportHoursController extends BaseController {
      */
 
     @GetMapping("/list")
-    @Log(title = "支撑工时统计")
+    @Log(title = "支撑工时统计", businessType = BusinessType.QUERY)
     public TableDataInfo<SupportHoursVO> list(SupportHoursQueryDTO queryDTO) {
         return supportHoursService.querySupportHoursList(queryDTO);
     }

@@ -273,13 +273,12 @@ public class SensitiveFieldEncryptUtil {
 //            String decryptedStr = decrypt(encryptedStr);
 //            System.out.println("解密结果：" + decryptedStr);
             String s = encrypt( str);
-            System.out.println(s);
+            log.info(s);
 
         } catch (Exception e) {
-            System.err.println("解密失败：" + e.getMessage());
-            e.printStackTrace();
+            log.error("解密失败：{}", e.getMessage(), e);
         } finally {
-            System.out.println("========== 测试结束 ==========");
+            log.info("========== 测试结束 ==========");
         }
     }
 

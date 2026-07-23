@@ -44,6 +44,7 @@ public class WfProcessController extends BaseController {
      *
      * @param pageQuery 分页参数
      */
+    @Log(title = "可发起流程", businessType = BusinessType.QUERY)
     @GetMapping(value = "/list")
     @SaCheckPermission("workflow:process:startList")
     public TableDataInfo<WfDefinitionVo> startProcessList(ProcessQuery processQuery, PageQuery pageQuery) {

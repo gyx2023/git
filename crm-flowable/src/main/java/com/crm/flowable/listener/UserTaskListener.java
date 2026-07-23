@@ -1,5 +1,6 @@
 package com.crm.flowable.listener;
 
+import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.delegate.TaskListener;
 import org.flowable.task.service.delegate.DelegateTask;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
  * @author KonBAI
  * @since 2023/5/13
  */
+@Slf4j
 @Component(value = "userTaskListener")
 public class UserTaskListener implements TaskListener {
 
@@ -21,7 +23,7 @@ public class UserTaskListener implements TaskListener {
     @Override
     public void notify(DelegateTask delegateTask) {
         //TODO 实现你的任务监听器逻辑
-        System.out.println("执行任务监听器...");
+        log.info("执行任务监听器...");
     }
 
 }

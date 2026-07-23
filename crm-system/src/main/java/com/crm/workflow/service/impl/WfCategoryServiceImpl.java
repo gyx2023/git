@@ -12,6 +12,7 @@ import com.crm.workflow.domain.WfCategory;
 import com.crm.workflow.domain.vo.WfCategoryVo;
 import com.crm.workflow.mapper.WfCategoryMapper;
 import com.crm.workflow.service.IWfCategoryService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class WfCategoryServiceImpl implements IWfCategoryService {
 
     private final WfCategoryMapper baseMapper;
@@ -71,8 +73,9 @@ public class WfCategoryServiceImpl implements IWfCategoryService {
 
     @Override
     public int deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids);
     }

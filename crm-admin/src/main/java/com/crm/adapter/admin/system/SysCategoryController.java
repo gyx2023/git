@@ -14,6 +14,7 @@ import com.crm.system.domain.bo.SysCategoryBo;
 import com.crm.system.domain.vo.SysCategoryVo;
 import com.crm.system.service.ISysCategoryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ import java.util.List;
  * @author crm
  * @date 2025-11-24
  */
+@Slf4j
 @Validated
 @RequiredArgsConstructor
 @RestController
@@ -40,6 +42,7 @@ public class SysCategoryController extends BaseController {
     /**
      * 查询行业大类-亚类-细类分类列表
      */
+    @Log(title = "行业大类-亚类-细类分类", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SysCategoryVo> list(SysCategoryBo bo, PageQuery pageQuery) {
         return iSysCategoryService.queryPageList(bo, pageQuery);
@@ -59,9 +62,9 @@ public class SysCategoryController extends BaseController {
      */
     @GetMapping("/subCategories")
     public R<List<SysCategoryVo>> listSubCategoriesByParentId(@RequestParam("parentId") String parentId) {
-        System.out.println("Received request for subCategories with parentId: " + parentId);
+        log.info("Received request for subCategories with parentId: {}", parentId);
         List<SysCategoryVo> list = iSysCategoryService.selectSubCategoriesByParentId(parentId);
-        System.out.println("Returning " + (list != null ? list.size() : 0) + " sub categories");
+        log.info("Returning {} sub categories", list != null ? list.size() : 0);
         return R.ok(list);
     }
 

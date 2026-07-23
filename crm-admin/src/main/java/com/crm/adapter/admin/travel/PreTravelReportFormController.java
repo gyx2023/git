@@ -2,11 +2,13 @@ package com.crm.adapter.admin.travel;
 
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
+import com.crm.common.enums.BusinessType;
 import com.crm.system.domain.bo.PreTravelReportFormBo;
 import com.crm.system.domain.vo.NatureCustVo;
 import com.crm.system.service.IPreTravelReportFormService;
 import com.crm.system.service.ITravelNatureCustService;
 import lombok.RequiredArgsConstructor;
+import com.crm.common.annotation.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -44,6 +46,7 @@ public class PreTravelReportFormController extends BaseController {
      * 提交行前报告生成
      */
     @PostMapping("/submit")
+    @Log(title = "行前报告表单", businessType = BusinessType.INSERT)
     public R<Map<String, Object>> submit(@Validated @RequestBody PreTravelReportFormBo bo) {
         Map<String, Object> result = preTravelReportFormService.submitPreTravelReport(bo);
         return R.ok(result);

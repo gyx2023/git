@@ -1,5 +1,6 @@
 package com.crm;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
@@ -10,6 +11,7 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
  *
  * @author crm
  */
+@Slf4j
 @SpringBootApplication
 @EnableRabbit
 public class CrmRpaApplication {
@@ -19,7 +21,7 @@ public class CrmRpaApplication {
         SpringApplication application = new SpringApplication(CrmRpaApplication.class);
         application.setApplicationStartup(new BufferingApplicationStartup(2048));
         application.run(args);
-        System.out.println("zqzt_backend_rpa启动成功");
+        log.info("zqzt_backend_rpa启动成功");
     }
 
 }

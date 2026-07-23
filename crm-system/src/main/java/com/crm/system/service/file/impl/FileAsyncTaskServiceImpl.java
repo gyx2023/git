@@ -89,9 +89,9 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
             throw new RuntimeException("任务不存在");
         }
         String fileUrl="";
-        if(fileType.equals("export")){
+        if ("export".equals(fileType)) {
             fileUrl = taskVo.getFileUrl();
-        }else if(fileType.equals("import")){
+        } else if ("import".equals(fileType)) {
             fileUrl = taskVo.getResultFileUrl();
         }
         try {
@@ -112,10 +112,10 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
         LambdaQueryWrapper<FileAsyncTaskDo> lqw = buildQueryWrapper(bo);
         Page<FileAsyncTaskVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         result.getRecords().forEach(task -> {
-            if(task.getTaskType().equals("import") && StringUtils.isNotEmpty(task.getResultFileUrl())){
+            if ("import".equals(task.getTaskType()) && StringUtils.isNotEmpty(task.getResultFileUrl())) {
                 SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getResultFileUrl()));
                 task.setResultFileUrlOssId(sysOss.getOssId());
-            }else if(task.getTaskType().equals("export") && StringUtils.isNotEmpty(task.getFileUrl())){
+            } else if ("export".equals(task.getTaskType()) && StringUtils.isNotEmpty(task.getFileUrl())) {
                 SysOss sysOss = ossMapper.selectOne(new LambdaQueryWrapper<SysOss>().eq(SysOss::getUrl, task.getFileUrl()));
                 task.setFileUrlOssId(sysOss.getOssId());
             }
@@ -196,8 +196,9 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

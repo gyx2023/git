@@ -177,7 +177,9 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
         log.info("启动多线程处理，线程数: {}, 总数据量: {}", threadCount, totalCount);
 
         // 创建固定大小的线程池
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        ExecutorService executorService = new java.util.concurrent.ThreadPoolExecutor(
+            threadCount, threadCount, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+            new java.util.concurrent.LinkedBlockingQueue<>());
         CountDownLatch latch = new CountDownLatch(threadCount);
         AtomicLong totalUpdated = new AtomicLong(0);
         // 用于跟踪线程异常
@@ -262,14 +264,18 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
             // 构造 UPDATE SQL（只构造一次）
             StringBuilder setClause = new StringBuilder();
             for (int i = 0; i < fieldNames.size(); i++) {
-                if (i > 0) setClause.append(", ");
+                if (i > 0) {
+                    setClause.append(", ");
+                }
                 setClause.append(fieldNames.get(i)).append(" = ?");
             }
 
             String[] keys = primaryKey.split(",");
             StringBuilder whereClause = new StringBuilder();
             for (int i = 0; i < keys.length; i++) {
-                if (i > 0) whereClause.append(" AND ");
+                if (i > 0) {
+                    whereClause.append(" AND ");
+                }
                 whereClause.append(keys[i].trim()).append(" = ?");
             }
 
@@ -421,9 +427,15 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
      * @return -1: id1 < id2, 0: id1 == id2, 1: id1 > id2
      */
     private int compareIds(Object id1, Object id2) {
-        if (id1 == null && id2 == null) return 0;
-        if (id1 == null) return -1;
-        if (id2 == null) return 1;
+        if (id1 == null && id2 == null) {
+            return 0;
+        }
+        if (id1 == null) {
+            return -1;
+        }
+        if (id2 == null) {
+            return 1;
+        }
 
         if (id1 instanceof Comparable && id1.getClass().equals(id2.getClass())) {
             return ((Comparable) id1).compareTo(id2);
@@ -449,14 +461,18 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
             // 构造 UPDATE SQL（只构造一次）
             StringBuilder setClause = new StringBuilder();
             for (int i = 0; i < fieldNames.size(); i++) {
-                if (i > 0) setClause.append(", ");
+                if (i > 0) {
+                    setClause.append(", ");
+                }
                 setClause.append(fieldNames.get(i)).append(" = ?");
             }
 
             String[] keys = primaryKey.split(",");
             StringBuilder whereClause = new StringBuilder();
             for (int i = 0; i < keys.length; i++) {
-                if (i > 0) whereClause.append(" AND ");
+                if (i > 0) {
+                    whereClause.append(" AND ");
+                }
                 whereClause.append(keys[i].trim()).append(" = ?");
             }
 
@@ -541,14 +557,18 @@ public class DataEncryptionServiceImpl implements IDataEncryptionService {
             // 构造 UPDATE SQL（只构造一次）
             StringBuilder setClause = new StringBuilder();
             for (int i = 0; i < fieldNames.size(); i++) {
-                if (i > 0) setClause.append(", ");
+                if (i > 0) {
+                    setClause.append(", ");
+                }
                 setClause.append(fieldNames.get(i)).append(" = ?");
             }
 
             String[] keys = primaryKey.split(",");
             StringBuilder whereClause = new StringBuilder();
             for (int i = 0; i < keys.length; i++) {
-                if (i > 0) whereClause.append(" AND ");
+                if (i > 0) {
+                    whereClause.append(" AND ");
+                }
                 whereClause.append(keys[i].trim()).append(" = ?");
             }
 

@@ -3,6 +3,7 @@ package com.crm.framework.satoken.dao;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.util.SaFoxUtil;
 import com.crm.common.utils.redis.RedisUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Slf4j
 public class PlusSaTokenDao implements SaTokenDao {
 
     /**
@@ -80,6 +82,7 @@ public class PlusSaTokenDao implements SaTokenDao {
             long expire = getTimeout(key);
             if (expire == SaTokenDao.NEVER_EXPIRE) {
                 // 如果其已经被设置为永久，则不作任何处理
+                log.debug("key {} 已设置为永久，无需处理", key);
             } else {
                 // 如果尚未被设置为永久，那么再次set一次
                 this.set(key, this.get(key), timeout);
@@ -154,6 +157,7 @@ public class PlusSaTokenDao implements SaTokenDao {
             long expire = getObjectTimeout(key);
             if (expire == SaTokenDao.NEVER_EXPIRE) {
                 // 如果其已经被设置为永久，则不作任何处理
+                log.debug("key {} 已设置为永久，无需处理", key);
             } else {
                 // 如果尚未被设置为永久，那么再次set一次
                 this.setObject(key, this.getObject(key), timeout);

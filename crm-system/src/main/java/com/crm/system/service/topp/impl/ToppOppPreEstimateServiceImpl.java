@@ -8,6 +8,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppOppPreEstimateBo;
@@ -28,6 +29,7 @@ import java.util.Collection;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService {
 
     private final ToppOppPreEstimateMapper baseMapper;
@@ -110,8 +112,9 @@ public class ToppOppPreEstimateServiceImpl implements IToppOppPreEstimateService
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
