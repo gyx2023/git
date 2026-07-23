@@ -164,7 +164,7 @@ public class ZqGrpGroupLogVo {
     /**
      * 资料录入时间
      */
-    @ExcelProperty(value = "资料录入时间")
+    @ExcelProperty(value = "集团创建时间")
     private Date grpCreateTime;
 
     /**
@@ -233,7 +233,7 @@ public class ZqGrpGroupLogVo {
     /**
      * 创建时间
      */
-    @ExcelProperty(value = "创建时间")
+    @ExcelProperty(value = "入库时间")
     private Date createTime;
 
     /**
