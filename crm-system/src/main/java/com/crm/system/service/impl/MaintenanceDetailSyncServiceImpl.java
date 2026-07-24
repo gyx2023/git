@@ -1,17 +1,20 @@
 package com.crm.system.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;
 import com.crm.system.domain.dao.MaintenanceDetailDo;
 import com.crm.system.domain.dao.MaintenanceDetailNewDo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.mapper.InterCountyCodeMapper;
 import com.crm.system.mapper.MaintenanceDetailMapper;
 import com.crm.system.mapper.MaintenanceDetailNewMapper;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
+import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.service.IMaintenanceDetailSyncService;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +52,7 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
     private final FtpCustBaseInfoMapper ftpCustBaseInfoMapper;
     private final InterCountyCodeMapper interCountyCodeMapper;
     private final SysUsersMapper sysUsersMapper;
+    private final OldSysOrgMapper sysOrgMapper;
 
     /** transAreaByName 硬编码地市名 → sys_area.id_（复刻 MaintenanceDetailService.transAreaByName） */
     private static final Map<String, Long> CITY_AREA_ID = new HashMap<>();
@@ -122,8 +126,7 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
         d.setCountyId(area.countyId);
         d.setBusinessDep(area.businessDep);
         // 新口径：area_id_new/county_id_new 按客户经理归属地市（对齐 maintenance_detail_new）
-        d.setAreaIdNew(orderBo.getAreaId());
-        d.setCountyIdNew(orderBo.getAreaId());
+        setAreaAndOrg(d, manager);
         maintenanceDetailMapper.insert(d);
 
         // maintenance_detail_new（status=1）——area/county 走客户经理组织维度，简化为其所在地市（orderBo.areaId）
@@ -141,8 +144,8 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
         dn.setGrpType(grpType);
         dn.setCreateTime(new Date());
         dn.setOrderCategory("C");
-        dn.setAreaId(mgrArea);
-        dn.setCountyId(mgrArea);
+        dn.setAreaId(d.getAreaIdNew());
+        dn.setCountyId(d.getCountyIdNew());
         maintenanceDetailNewMapper.insert(dn);
     }
 
@@ -311,5 +314,35 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
         Long areaId;
         Long countyId;
         String businessDep;
+    }
+
+    /**
+     * 新增维系预警报表的地市区县和行业部信息
+     * @param maintenance
+     * @param user
+     */
+    public void setAreaAndOrg(MaintenanceDetailDo maintenance, SysUsers user){
+        //从集团客户维度改为客户经理维度
+        if(null == user || null == user.getOrgId() ){
+            return ;
+        }
+        OldSysOrgDo sysOrgDo = sysOrgMapper.selectById(user.getOrgId());
+        if(ObjectUtil.isEmpty(sysOrgDo.getAreaId())){
+            return ;
+        }
+        SysArea area = sysAreaMapper.selectById(sysOrgDo.getAreaId());
+        if(null == area){
+            return ;
+        }
+        if("一级".equals(area.getType()) || "二级".equals(area.getType())){
+            //省本级和市本级
+            maintenance.setAreaIdNew(area.getId());
+            maintenance.setCountyIdNew(area.getId());
+        }else if("三级".equals(area.getType())){
+            SysArea parentArea = sysAreaMapper.selectById(area.getParent());
+            //区县
+            maintenance.setAreaIdNew(parentArea.getId());
+            maintenance.setCountyIdNew(area.getId());
+        }
     }
 }
