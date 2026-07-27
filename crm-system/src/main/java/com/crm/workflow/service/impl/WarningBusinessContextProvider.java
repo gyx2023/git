@@ -119,10 +119,11 @@ public class WarningBusinessContextProvider implements BusinessContextProvider {
         return vars;
     }
 
-    /** 查找当前任务 */
+    /** 查找当前任务（可能有多个并行任务，取第一条） */
     private Task findCurrentTask(String procInsId, String source) {
         try {
-            return taskService.createTaskQuery().processInstanceId(procInsId).singleResult();
+            List<Task> tasks = taskService.createTaskQuery().processInstanceId(procInsId).listPage(0, 1);
+            return tasks.isEmpty() ? null : tasks.get(0);
         } catch (Exception e) {
             return null;
         }

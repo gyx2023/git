@@ -33,7 +33,10 @@ public class BusinessContextRegistry {
         }
         for (BusinessContextProvider provider : providers) {
             if (provider.supports(procDefKey, source)) {
-                return provider.provide(procInsId, source, procDefKey);
+                WfBusinessContext ctx = provider.provide(procInsId, source, procDefKey);
+                if (ctx != null) {
+                    return ctx;
+                }
             }
         }
         return null;
