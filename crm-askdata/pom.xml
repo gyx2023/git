@@ -35,6 +35,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- ChinaUnicon test environment TLS client -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+
         <!-- Spring AOP (Resilience4j 注解需要) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

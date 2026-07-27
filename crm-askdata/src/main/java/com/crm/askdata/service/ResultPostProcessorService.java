@@ -44,6 +44,7 @@ public class ResultPostProcessorService {
     private final ToolConfigService configService;
     private final HiAgentConversationManager conversationManager;
     private final AskDataAgentProviderService agentProviderService;
+    private final ResultDataReferenceService resultDataReferenceService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${hiagent.result-agent-id:result_agent}")
@@ -98,8 +99,11 @@ public class ResultPostProcessorService {
                 traceId, resultProvider.getConfigValue(),
                 intent.getToolName(), originalQuery);
 
+            // 启用 dataRef 模式后，仅将问题和引用传给工作流；完整输入由工作流固定节点回调获取。
+            String platformInput = buildPlatformInput(agentInput, originalQuery, traceId, resultProvider);
+
             // 调用 result_agent（按配置选择 ChinaUnicon 或保留 HiAgent 回切）
-            HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, agentInput, resultProvider);
+            HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, platformInput, resultProvider);
 
             // 解析 Agent 输出
             ResultProcessingOutput output = parseAgentOutput(response.getAnswer());
@@ -203,6 +207,32 @@ public class ResultPostProcessorService {
             log.warn("traceId={} failed to serialize agent input, using minimal input", query, e);
             return "{\"task\":\"post_process\",\"originalQuery\":\"" +
                 query.replace("\"", "\\\"") + "\",\"error\":\"serialization_failed\"}";
+        }
+    }
+
+    /**
+     * 为 ChinaUnicon 结果处理工作流生成轻量输入。
+     * <p>
+     * dataRef 模式仅改变后端到工作流的传输方式，工作流回调接口返回的仍是
+     * {@link #buildAgentInput(String, IntentResult, Object, ResponseSchema)} 生成的原始协议，
+     * 因而无需改变大模型节点的输入契约。
+     */
+    private String buildPlatformInput(String agentInput, String originalQuery, String traceId,
+                                      AgentProvider resultProvider) {
+        if (resultProvider != AgentProvider.CHINA_UNICON || !resultDataReferenceService.isActive()) {
+            return agentInput;
+        }
+
+        try {
+            String dataRef = resultDataReferenceService.save(agentInput, traceId);
+            Map<String, Object> workflowInput = new LinkedHashMap<>();
+            workflowInput.put("originalQuery", originalQuery);
+            workflowInput.put("dataRef", dataRef);
+            return objectMapper.writeValueAsString(workflowInput);
+        } catch (Exception e) {
+            // 取数缓存失败时保持旧链路，结果后处理不因 Redis 瞬时异常而不可用。
+            log.warn("traceId={} failed to create result data reference, falling back to direct input", traceId, e);
+            return agentInput;
         }
     }
 

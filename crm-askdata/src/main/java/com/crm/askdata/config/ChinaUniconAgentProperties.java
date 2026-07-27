@@ -44,6 +44,12 @@ public class ChinaUniconAgentProperties {
     /** 是否流式返回。本阶段意图识别使用非流式。 */
     private boolean stream = false;
 
+    /**
+     * 是否跳过 ChinaUnicon Agent HTTPS 证书链和主机名校验。
+     * 仅用于无法取得测试环境证书的临时联调，默认必须关闭。
+     */
+    private boolean insecureTls = false;
+
     /** 连接超时 */
     private Duration connectTimeout = Duration.ofSeconds(5);
 

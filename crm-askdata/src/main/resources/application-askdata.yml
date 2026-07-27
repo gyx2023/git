@@ -65,20 +65,20 @@ hiagent:
 china-unicon-agent:
   # 控制 /askdata/chat/stream 的意图识别；同步 /askdata/query 仍走 HiAgent
   enabled: true
-  base-url: https://ai-agent.chinaunicom.cn
+  base-url: https://ai-test.unicom.local
   chat-api: /uia/api/robot/chat/stream/v1
   app-id: 686304240312774656
   intent:
     enabled: true
-    app-id: 686304240312774656
+    app-id: 692525900605542400
     # 工作流智能体填槽节点需要从 variable.input 读取用户输入
     pass-content-as-input: false
     input-variable-name: input
   result:
     enabled: true
-    app-id: 686990396490772480
+    app-id: 692527270230347776
     # 工作流智能体填槽节点需要从 variable.input 读取结果处理入参
-    pass-content-as-input: false
+    pass-content-as-input: true
     input-variable-name: input
   semantic-sql:
     # 待创建/确认 ChinaUnicon 语义 SQL 智能体后填写 app-id，再将数据库开关设为 china_unicon
@@ -86,14 +86,20 @@ china-unicon-agent:
     app-id: ""
     pass-content-as-input: false
     input-variable-name: input
-  team-id: 1724420776265
-  sk: sk-bnlNb7zhGgqEtj3NJjKcbAVAazaFzfj9DG4bOD365ZI
+  team-id: 1724421776279
+  sk: sk-4rrvB7rWjbxpvWIDP-4yzJBKax6H0P6ihqV--lWSFH4
   stream: false
+  # 仅测试环境临时联调使用，其他环境必须保持 false。
+  insecure-tls: false
   connect-timeout: 5s
   read-timeout: 180s
 
 --- # 智能问数路由决策配置
 askdata:
+  # 结果处理工作流 dataRef 模式。平台工作流通过固定 HTTP 节点获取完整结果输入。
+  result-data-reference:
+    enabled: true
+    ttl: 10m
   embed:
     # 内网 iframe 嵌入模式：允许无 zqzt 登录态访问，但必须携带宿主 Authorization
     enabled: true
