@@ -105,6 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFilteredCustomersByRange" resultMap="TcommCustomerResult">
+
         SELECT *
         FROM tcomm_customer f
         WHERE f.id_ IN (
@@ -112,7 +113,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             FROM topp_opportunity
             WHERE DATE_FORMAT(CREATE_TIME, '%Y%m%d') >= DATE_FORMAT(#{createTime}, '%Y%m%d')
         )
-          AND f.id_ >= #{startId} AND f.id_ < #{endId}
+          AND f.id_ >= #{startId} AND f.id_ &lt; #{endId}
         ORDER BY f.id_ ASC
     </select>
 
