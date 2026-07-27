@@ -1,6 +1,5 @@
 package com.crm.adapter.api;
 
-import com.crm.askdata.model.ResultDataReferenceRequest;
 import com.crm.askdata.service.ResultDataReferenceService;
 import com.crm.askdata.service.HiAgentSchemaService;
 import com.crm.common.core.controller.BaseController;
@@ -145,9 +144,15 @@ public class ToolSchemaController extends BaseController {
      */
     @PostMapping(value = "/result-data", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<R<Object>> getResultData(
-        @Validated @RequestBody ResultDataReferenceRequest request
+        @RequestBody(required = false) Map<String, Object> request
     ) {
-        String agentInput = resultDataReferenceService.get(request.getDataRef());
+        String dataRef = extractDataRef(request);
+        if (dataRef == null || dataRef.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(R.fail(HttpStatus.BAD_REQUEST.value(), "dataRef 不能为空"));
+        }
+
+        String agentInput = resultDataReferenceService.get(dataRef);
         if (agentInput == null) {
             log.info("askdata result-data reference not found or expired");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -161,5 +166,24 @@ public class ToolSchemaController extends BaseController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(R.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "查询结果读取失败"));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractDataRef(Map<String, Object> request) {
+        if (request == null) {
+            return null;
+        }
+        Object dataRef = request.get("dataRef");
+        if (dataRef != null) {
+            return String.valueOf(dataRef);
+        }
+        Object uniBssBody = request.get("UNI_BSS_BODY");
+        if (uniBssBody instanceof Map) {
+            Object nestedDataRef = ((Map<String, Object>) uniBssBody).get("dataRef");
+            if (nestedDataRef != null) {
+                return String.valueOf(nestedDataRef);
+            }
+        }
+        return null;
     }
 }
