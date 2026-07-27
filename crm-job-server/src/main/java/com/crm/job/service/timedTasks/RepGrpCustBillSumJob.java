@@ -1,13 +1,12 @@
 package com.crm.job.service.timedTasks;
 
 import com.crm.common.utils.FieldAnnotaionUtil;
-import com.crm.common.utils.SFTPUtil;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.base.BaseJob;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.RepGrpCustBillSumWarning;
 import com.crm.system.service.IRepGrpCustBillSumWarningService;
 import com.crm.system.utils.Constants;
-import com.jcraft.jsch.SftpException;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +30,9 @@ public class RepGrpCustBillSumJob extends BaseJob {
 
     @Resource
     private IRepGrpCustBillSumWarningService repGrpCustBillSumWarningService;
+
+    @Resource
+    private SftpUtil sftpUtil;
 
     /**
      * 集团客户账单汇总预警数据下载定时任务
@@ -78,8 +80,7 @@ public class RepGrpCustBillSumJob extends BaseJob {
         log.info("下载波动预警数据 开始  download>>>>>>>>>>>> : ");
         XxlJobHelper.log("开始下载账期为 {} 的波动预警数据", yyyyMM);
 
-        SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
-        ftpUtil.login();
+        final String configType = "tc_user_common_warning";
 
         Date date;
         try {
@@ -98,9 +99,7 @@ public class RepGrpCustBillSumJob extends BaseJob {
 
         try {
             // 下载文件
-            ftpUtil.download(ftpDirectory, saveFile, localFile);
-            // 释放连接
-            ftpUtil.logout();
+            sftpUtil.downloadFile(configType, ftpDirectory + "/" + saveFile, localFile);
 
             File file = new File(localFile);
             if (file.exists()) {
@@ -157,9 +156,6 @@ public class RepGrpCustBillSumJob extends BaseJob {
                 log.error("name: 下载波动预警数据接口 error: {}文件未找到!", localFile);
                 XxlJobHelper.log("文件未找到：{}", localFile);
             }
-        } catch (SftpException e) {
-            log.error("SFTP下载异常", e);
-            XxlJobHelper.log("SFTP下载异常:{}", e.getMessage());
         } catch (FileNotFoundException e) {
             log.error("文件未找到异常", e);
             XxlJobHelper.log("文件未找到异常:{}", e.getMessage());

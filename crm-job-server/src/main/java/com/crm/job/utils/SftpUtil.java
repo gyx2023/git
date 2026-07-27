@@ -6,37 +6,15 @@ import com.crm.system.mapper.param.SysParamMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-/**
- * 大文件行处理器接口
- * 用于处理按行读取的文件内容
- */
-@FunctionalInterface
-interface LineProcessor {
-    /**
-     * 处理一行数据
-     * @param line 行数据
-     * @param lineNumber 行号
-     * @return 是否继续处理下一行
-     */
-    boolean process(String line, long lineNumber);
-}
 
 /**
  * SFTP工具类
@@ -46,13 +24,11 @@ interface LineProcessor {
  */
 @Slf4j
 @Component
-public class SftpUtil implements InitializingBean {
+public class SftpUtil {
 
     @Resource
     private SysParamMapper sysParamMapper;
 
-    // SFTP配置参数的键前缀
-    private static final String SFTP_CONFIG_PREFIX = "sftp.";
     /**
      * -- GETTER --
      *  获取配置类型
@@ -62,8 +38,6 @@ public class SftpUtil implements InitializingBean {
     // SFTP配置类型标识（默认为"SFTP"，可通过setter方法修改）
     @Getter
     private String configType = "SFTP";
-    // 多SFTP配置缓存，按配置类型分组
-    private final Map<String, Map<String, String>> sftpConfigCaches = new HashMap<>();
 
     // 当前活跃的配置类型
     @Getter
@@ -86,14 +60,6 @@ public class SftpUtil implements InitializingBean {
      */
     private static final int DEFAULT_BUFFER_SIZE = 8192;
 
-    // 缓存锁，用于保证缓存初始化和刷新的线程安全
-    private final ReentrantLock cacheLock = new ReentrantLock();
-
-    // 定时刷新配置的线程池
-    private ScheduledExecutorService scheduler;
-    // 配置刷新间隔（分钟）
-    private static final long CONFIG_REFRESH_INTERVAL = 30; // 30分钟刷新一次
-
     /**
      * 设置当前活跃的配置类型
      * @param activeConfigType 配置类型标识
@@ -103,11 +69,6 @@ public class SftpUtil implements InitializingBean {
             String oldType = this.activeConfigType;
             this.activeConfigType = activeConfigType.trim();
             log.info("SFTP活跃配置类型已从 '{}' 更改为 '{}'", oldType, activeConfigType);
-
-            // 如果该配置类型的缓存不存在，则初始化它
-            if (!sftpConfigCaches.containsKey(activeConfigType)) {
-                refreshConfigCache(activeConfigType);
-            }
         } else {
             log.warn("尝试设置无效的配置类型，保持当前值: {}", this.activeConfigType);
         }
@@ -126,124 +87,32 @@ public class SftpUtil implements InitializingBean {
     }
 
     /**
-     * 初始化指定配置类型的缓存
-     * 如果缓存不存在，则创建并刷新
-     * @param configType 配置类型
-     */
-    private void initConfigCache(String configType) {
-        if (!sftpConfigCaches.containsKey(configType)) {
-            log.info("初始化SFTP配置类型 '{}' 的缓存", configType);
-            refreshConfigCache(configType);
-        }
-    }
-
-    /**
-     * 初始化当前活跃配置类型的缓存
-     * 保持向后兼容性的方法
-     */
-    private void initConfigCache() {
-        initConfigCache(activeConfigType);
-    }
-
-    /**
-     * 刷新指定配置类型的缓存
-     * @param configType 配置类型
-     */
-    public void refreshConfigCache(String configType) {
-        cacheLock.lock();
-        try {
-            log.info("刷新SFTP配置类型 '{}' 的缓存", configType);
-
-            // 按type查询所有SFTP配置
-            List<SysParamDo> sftpParams = sysParamMapper.selectList(
-                new LambdaQueryWrapper<SysParamDo>().eq(SysParamDo::getType, configType)
-            );
-            log.debug("使用配置类型 '{}' 查询系统参数", configType);
-
-            Map<String, String> newCache = new HashMap<>();
-            if (sftpParams != null && !sftpParams.isEmpty()) {
-                log.info("找到 {} 个系统参数记录", sftpParams.size());
-                int loadedCount = 0;
-
-                for (SysParamDo param : sftpParams) {
-                    if (param.getCode() != null && param.getValue() != null &&
-                        param.getCode().startsWith(SFTP_CONFIG_PREFIX)) {
-                        // 验证配置值不为空
-                        String value = param.getValue().trim();
-                        if (!value.isEmpty()) {
-                            newCache.put(param.getCode(), value);
-                            loadedCount++;
-                            log.debug("加载SFTP配置: {}={}", param.getCode(), value);
-                        } else {
-                            log.warn("忽略空值配置项: {}", param.getCode());
-                        }
-                    }
-                }
-
-                if (loadedCount == 0) {
-                    log.warn("未找到有效的SFTP配置项，将使用默认值");
-                }
-            } else {
-                log.warn("未找到类型为 '{}' 的系统参数配置，将使用默认值", configType);
-            }
-
-            // 更新缓存
-            sftpConfigCaches.put(configType, newCache);
-            log.info("SFTP配置类型 '{}' 的缓存刷新完成，加载了 {} 个配置项", configType, newCache.size());
-        } catch (Exception e) {
-            log.error("刷新SFTP配置类型 '{}' 的缓存失败: {}", configType, e.getMessage(), e);
-            // 确保即使失败也有一个空映射，而不是没有映射
-            sftpConfigCaches.put(configType, new HashMap<>());
-        } finally {
-            cacheLock.unlock();
-        }
-    }
-
-    /**
-     * 刷新当前活跃配置类型的缓存
-     * 保持向后兼容性的方法
-     */
-    public void refreshConfigCache() {
-        refreshConfigCache(activeConfigType);
-    }
-
-    /**
-     * 从指定配置类型的缓存获取SFTP配置值
-     * 如果缓存未初始化或获取失败，回退到直接查询数据库
+     * 从指定配置类型获取SFTP配置值
+     * 直接查询数据库，支持 sftp.xxx 和 ftp_xxx 两种键名约定
      *
      * @param configType 配置类型
-     * @param paramKey 配置键名（不包含前缀）
+     * @param paramKey 配置键名（不含前缀，如 "host"）
      * @param defaultValue 默认值
      * @return 配置值
      */
     private String getSftpParam(String configType, String paramKey, String defaultValue) {
-        // 确保缓存已初始化
-        initConfigCache(configType);
-
-        // 从缓存中获取配置
-        Map<String, String> configCache = sftpConfigCaches.get(configType);
-        if (configCache != null) {
-            String value = configCache.get(paramKey);
-            if (value != null) {
-                return value;
+        try {
+            // 1. 优先尝试 sftp.xxx 约定
+            SysParamDo param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
+                    .eq(SysParamDo::getType, configType)
+                    .eq(SysParamDo::getCode, "sftp." + paramKey));
+            if (param != null && param.getValue() != null) {
+                return param.getValue();
             }
-            log.debug("SFTP配置类型 '{}' 的配置项 {} 在缓存中未找到，使用默认值: {}",
-                     configType, paramKey, defaultValue);
-        } else {
-            log.warn("SFTP配置类型 '{}' 的缓存未初始化，回退到直接查询数据库", configType);
-            // 缓存未初始化时，回退到直接查询数据库
-        //    String fullKey = SFTP_CONFIG_PREFIX + paramKey;
-            try {
-                SysParamDo param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
-                        .eq(SysParamDo::getType, configType)
-                        .eq(SysParamDo::getCode, paramKey));
-                if (param != null && param.getValue() != null) {
-                    return param.getValue();
-                }
-            } catch (Exception e) {
-                log.error("获取SFTP配置类型 '{}' 的配置项 {} 失败: {}",
-                         configType, paramKey, e.getMessage());
+            // 2. 兼容回退 ftp_xxx 约定
+            param = sysParamMapper.selectOne(new LambdaQueryWrapper<SysParamDo>()
+                    .eq(SysParamDo::getType, configType)
+                    .eq(SysParamDo::getCode, "ftp_" + paramKey));
+            if (param != null && param.getValue() != null) {
+                return param.getValue();
             }
+        } catch (Exception e) {
+            log.error("获取SFTP配置失败: type={}, key={}, {}", configType, paramKey, e.getMessage());
         }
         return defaultValue;
     }
@@ -376,7 +245,7 @@ public class SftpUtil implements InitializingBean {
      * @return 数据文件根路径
      */
     public String getDataRootPath(String configType) {
-        return getSftpParam(configType, "sftp.dataRootPath", DEFAULT_DATA_ROOT_PATH);
+        return getSftpParam(configType, "dataRootPath", DEFAULT_DATA_ROOT_PATH);
     }
 
     /**
@@ -456,33 +325,6 @@ public class SftpUtil implements InitializingBean {
     }
 
     /**
-     * Spring初始化完成后执行
-     * 启动定时刷新配置的任务
-     */
-    @Override
-    public void afterPropertiesSet() {
-        log.info("初始化SFTP配置管理，启动定时刷新任务");
-
-        // 创建单线程调度池
-        scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread thread = new Thread(r, "sftp-config-refresh-thread");
-            thread.setDaemon(true); // 设置为守护线程，避免阻止JVM关闭
-            return thread;
-        });
-
-        // 定时执行配置刷新任务
-        // 首次延迟0秒执行，之后每间隔CONFIG_REFRESH_INTERVAL分钟执行一次
-        scheduler.scheduleAtFixedRate(() -> {
-            // 刷新所有已加载的配置类型
-            for (String configType : new ArrayList<>(sftpConfigCaches.keySet())) {
-                refreshConfigCache(configType);
-            }
-        }, 0, CONFIG_REFRESH_INTERVAL, TimeUnit.MINUTES);
-
-        log.info("SFTP配置定时刷新任务启动成功，刷新间隔: {}分钟", CONFIG_REFRESH_INTERVAL);
-    }
-
-    /**
      * 使用指定配置类型获取SFTP连接
      * 此方法可以在不改变活跃配置类型的情况下使用不同的SFTP配置
      *
@@ -491,11 +333,11 @@ public class SftpUtil implements InitializingBean {
      */
     public Sftp getSftp(String configType) {
         try {
-            String host = getSftpParam(configType, "sftp.host", DEFAULT_HOST);
-            String portStr = getSftpParam(configType, "sftp.port", String.valueOf(DEFAULT_PORT));
-            String username = getSftpParam(configType, "sftp.username", DEFAULT_USERNAME);
-            String password = getSftpParam(configType, "sftp.password", DEFAULT_PASSWORD);
-            String timeoutStr = getSftpParam(configType, "sftp.timeout", String.valueOf(DEFAULT_TIMEOUT));
+            String host = getSftpParam(configType, "host", DEFAULT_HOST);
+            String portStr = getSftpParam(configType, "port", String.valueOf(DEFAULT_PORT));
+            String username = getSftpParam(configType, "username", DEFAULT_USERNAME);
+            String password = getSftpParam(configType, "password", DEFAULT_PASSWORD);
+            String timeoutStr = getSftpParam(configType, "timeout", String.valueOf(DEFAULT_TIMEOUT));
 
             int port;
             try {
@@ -759,7 +601,7 @@ public class SftpUtil implements InitializingBean {
             // 如果configType为null或空字符串，则使用默认配置类型
             String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
             sftp = getSftp(actualConfigType);
-            String remortDir = getSftpParam(configType,"sftp.directory","");
+            String remortDir = getSftpParam(configType,"directory","");
             String remotePath = remortDir.endsWith("/") ? remortDir + date + "/" + remoteFilePath : remortDir + "/" + date + "/" + remoteFilePath;
 
             // 获取远程目录路径（不包含文件名）
@@ -842,6 +684,70 @@ public class SftpUtil implements InitializingBean {
      */
     public void downloadFile(String remoteFilePath, String localFilePath) {
         downloadFile(activeConfigType, remoteFilePath, localFilePath);
+    }
+
+    /**
+     * 重命名SFTP远程文件（指定配置类型）
+     *
+     * @param configType 配置类型
+     * @param srcPath 原文件完整路径
+     * @param dstPath 目标文件完整路径
+     */
+    public void rename(String configType, String srcPath, String dstPath) {
+        Sftp sftp = null;
+        try {
+            sftp = getSftp(configType);
+            com.jcraft.jsch.ChannelSftp channel = (com.jcraft.jsch.ChannelSftp) sftp.getClient();
+            channel.rename(srcPath, dstPath);
+            log.info("SFTP重命名成功: {} → {}", srcPath, dstPath);
+        } catch (Exception e) {
+            log.error("SFTP重命名失败: {} → {}", srcPath, dstPath, e);
+            throw new RuntimeException("SFTP文件重命名失败", e);
+        } finally {
+            close(sftp);
+        }
+    }
+
+    /**
+     * 重命名SFTP远程文件（使用当前活跃配置类型）
+     *
+     * @param srcPath 原文件完整路径
+     * @param dstPath 目标文件完整路径
+     */
+    public void rename(String srcPath, String dstPath) {
+        rename(activeConfigType, srcPath, dstPath);
+    }
+
+    /**
+     * 上传文件到SFTP服务器（完整路径模式）
+     * 直接上传到指定的远程路径，不拼接目录，自动创建父目录
+     *
+     * @param configType 配置类型
+     * @param localFilePath 本地文件路径
+     * @param remoteFilePath 远程文件完整路径
+     */
+    public void uploadFile(String configType, String localFilePath, String remoteFilePath) {
+        Sftp sftp = null;
+        try {
+            String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
+            sftp = getSftp(actualConfigType);
+
+            // 自动创建远程父目录
+            String remoteDir = remoteFilePath.substring(0, remoteFilePath.lastIndexOf("/"));
+            if (!sftp.exist(remoteDir)) {
+                sftp.mkdir(remoteDir);
+                log.info("创建远程目录: {}", remoteDir);
+            }
+
+            sftp.getClient().put(localFilePath, remoteFilePath);
+            log.info("文件上传成功，配置类型: {}, 远程文件: {}", actualConfigType, remoteFilePath);
+        } catch (Exception e) {
+            String actualConfigType = (configType == null || configType.trim().isEmpty()) ? activeConfigType : configType;
+            log.error("使用配置类型 '{}' 上传文件失败: {}", actualConfigType, e.getMessage(), e);
+            throw new RuntimeException("文件上传失败", e);
+        } finally {
+            close(sftp);
+        }
     }
 
 
