@@ -6,8 +6,8 @@ import com.crm.flowable.core.FormConf;
 import com.crm.flowable.core.domain.ProcessQuery;
 import com.crm.workflow.domain.vo.WfDefinitionVo;
 import com.crm.workflow.domain.vo.WfDetailVo;
-import com.crm.workflow.domain.vo.WfProcNodeVo;
 import com.crm.workflow.domain.vo.WfTaskVo;
+import org.flowable.task.api.Task;
 
 import java.util.List;
 import java.util.Map;
@@ -114,5 +114,32 @@ public interface IWfProcessService {
      * @param taskId 任务ID
      */
     WfDetailVo queryProcessDetail(String procInsId, String taskId);
+
+    /**
+     * 判断流程实例是否仍在运行
+     */
+    boolean isProcessRunning(String piId);
+
+    /**
+     * 将任务的展示变量（task local）暂存到流程变量，防止随任务完成丢失。
+     * 后续 setNextTaskDisplayVars 可以从流程变量中找回 dealUrl。
+     */
+    void preserveDisplayVarsToProcess(String taskId, Task task);
+
+    /**
+     * 加载流程实例的所有变量（运行中走 runtime，已结束走 history）。
+     */
+    Map<String, Object> loadProcVars(String procInsId);
+
+    /**
+     * 查找流程当前任务。优先按 taskId 精确查找（查不到抛 ServiceException），
+     * taskId 无效时回退按 piId 查找（允许为 null，如 warnInfo 场景）。
+     */
+    Task findCurrentTask(String piId, String taskId);
+
+    /**
+     * 构建当前任务的基本信息（供前端展示），包含当前用户是否可操作判断。
+     */
+    Map<String, Object> buildCurrentTaskInfo(Task currentTask, Long curUserId);
 
 }

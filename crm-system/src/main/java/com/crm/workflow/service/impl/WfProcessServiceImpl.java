@@ -1081,10 +1081,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     }
 
     /** 加载流程变量（运行中走 runtime，已结束走 history） */
-    private Map<String, Object> loadProcVars(String procInsId) {
+    @Override
+    public Map<String, Object> loadProcVars(String procInsId) {
         Map<String, Object> vars = new HashMap<>();
         try {
-            if (runtimeService.createProcessInstanceQuery().processInstanceId(procInsId).count() > 0) {
+            if (isProcessRunning(procInsId)) {
                 vars = runtimeService.getVariables(procInsId);
             } else {
                 List<HistoricVariableInstance> hisVars = historyService
@@ -1666,5 +1667,58 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         // DFS 查询未通过的元素集合
         Set<String> rejectedSet = FlowableUtils.dfsFindRejects(bpmnModel, unfinishedTaskSet, finishedSequenceFlowSet, finishedTaskSet);
         return new WfViewerVo(finishedTaskSet, finishedSequenceFlowSet, unfinishedTaskSet, rejectedSet);
+    }
+
+    @Override
+    public boolean isProcessRunning(String piId) {
+        return runtimeService.createProcessInstanceQuery().processInstanceId(piId).count() > 0;
+    }
+
+    @Override
+    public void preserveDisplayVarsToProcess(String taskId, Task task) {
+        Map<String, Object> taskVars = taskService.getVariables(taskId);
+        String prefix = task.getTaskDefinitionKey() + "_";
+        Map<String, Object> toPreserve = new HashMap<>();
+        for (Map.Entry<String, Object> e : taskVars.entrySet()) {
+            if (e.getKey().startsWith(prefix)) {
+                toPreserve.put(e.getKey(), e.getValue());
+            }
+        }
+        if (!toPreserve.isEmpty()) {
+            runtimeService.setVariables(task.getProcessInstanceId(), toPreserve);
+        }
+    }
+
+    @Override
+    public Task findCurrentTask(String piId, String taskId) {
+        Task currentTask = null;
+        if (taskId != null && !taskId.isEmpty() && !"0".equals(taskId)) {
+            currentTask = taskService.createTaskQuery().taskId(taskId).singleResult();
+            if (currentTask == null) {
+                throw new ServiceException("任务不存在或已处理");
+            }
+            return currentTask;
+        }
+        // taskId 无效时回退按 piId 查找（warnInfo 等场景允许为 null）
+        currentTask = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        return currentTask;
+    }
+
+    @Override
+    public Map<String, Object> buildCurrentTaskInfo(Task currentTask, Long curUserId) {
+        Map<String, Object> ct = new HashMap<>();
+        ct.put("taskId", currentTask.getId());
+        ct.put("taskName", currentTask.getName());
+        ct.put("taskDefKey", currentTask.getTaskDefinitionKey());
+        ct.put("assignee", currentTask.getAssignee());
+        ct.put("createTime", currentTask.getCreateTime());
+        ct.put("processInstanceId", currentTask.getProcessInstanceId());
+        boolean canAct = false;
+        String assignee = currentTask.getAssignee();
+        if (assignee != null && !assignee.isEmpty()) {
+            canAct = assignee.replaceAll(",", "").equals(String.valueOf(curUserId));
+        }
+        ct.put("canAct", canAct);
+        return ct;
     }
 }

@@ -12,7 +12,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
+import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
+import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
@@ -40,6 +42,8 @@ public class ToppOrderServiceImpl implements IToppOrderService {
 
     @Resource
     private TaskService taskService;
+    @Resource
+    private RuntimeService runtimeService;
     @Resource
     private UserService userService;
     @Resource
@@ -203,51 +207,115 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         ToppOrderVo order = queryById(orderId);
         if (order == null) throw new ServiceException("工单不存在: " + orderId);
 
-        // 更新工单白名单（追加操作人+转派目标人，去重）
-        String whiteList = order.getWhiteList();
-        if (whiteList == null || whiteList.isEmpty()) whiteList = ",";
-        if (currentUserId != null) {
-            String seg = "," + currentUserId + ",";
-            if (!whiteList.contains(seg)) whiteList = whiteList + currentUserId + ",";
-        }
-        if (targetUserId != null) {
-            String seg = "," + targetUserId + ",";
-            if (!whiteList.contains(seg)) whiteList = whiteList + targetUserId + ",";
-        }
-        ToppOrderBo bo = new ToppOrderBo();
-        bo.setId(orderId);
-        bo.setWhiteList(whiteList);
-        String nextActorName = "";
-        if (targetUserId != null) {
-            bo.setActors(",," + targetUserId + ",,");
-            nextActorName = userService.selectNickNameById(targetUserId);
-            if (nextActorName == null) nextActorName = "";
-            String phone = "";
-            try {
-                com.crm.system.domain.dao.SysUsers u = sysUsersMapper.selectById(targetUserId);
-                if (u != null && u.getRelationTel() != null) phone = u.getRelationTel();
-            } catch (Exception ignored) {}
-            bo.setActorsInfo(nextActorName + ":" + phone);
-        }
-        updateByBo(bo);
-
-        // 保留原有流程变量 + 设置转派参数
-        Map<String, Object> procVars = new HashMap<>();
-        try { procVars = taskService.getVariables(taskId); } catch (Exception e) { /* ignore */ }
-
+        // 设置转派流程变量（展示变量已在 Controller 层由 preserveDisplayVarsToProcess 暂存到流程变量）
         Map<String, Object> vars = new HashMap<>();
-        vars.put("manager_handle_custName", order.getCustName() != null ? order.getCustName() : procVars.get("manager_handle_custName"));
-        vars.put("manager_handle_dealUrl", procVars.get("manager_handle_dealUrl"));
-        vars.put("manager_handle_infoType", procVars.get("manager_handle_infoType"));
-        vars.put("manager_handle_infoId", order.getInfoId() != null ? String.valueOf(order.getInfoId()) : procVars.get("manager_handle_infoId"));
-        vars.put("manager_handle_remindContent", procVars.get("manager_handle_remindContent"));
-        vars.put("manager_handle_orderName", order.getOrderName() != null ? order.getOrderName() : procVars.get("manager_handle_orderName"));
-        if (procVars.get("manager_handle_name") != null) vars.put("manager_handle_name", procVars.get("manager_handle_name"));
         if (targetUserId != null) vars.put("manager", String.valueOf(targetUserId));
         vars.put("action", "transfer");
         taskService.setVariableLocal(taskId, "action", "transfer");
         taskService.complete(taskId, vars);
 
+        // 转派后同步工单到新任务节点（status/phase/whiteList/actors + 展示变量统一在此更新）
+        syncOrderToCurrentTask(orderId, order.getPiId(), targetUserId);
+
+        String nextActorName = "";
+        if (targetUserId != null) {
+            nextActorName = userService.selectNickNameById(targetUserId);
+            if (nextActorName == null) nextActorName = "";
+        }
         return nextActorName;
+    }
+
+    /**
+     * 将工单同步到当前流程节点（更新 phase/phaseName/status + 展示变量）。
+     * <p>
+     * 查询流程当前任务，将工单的节点信息同步为当前任务状态。
+     * 若 whitelistUserId 非空，同时更新白名单和处理人。
+     * </p>
+     */
+    @Override
+    public void syncOrderToCurrentTask(Long orderId, String piId, Long whitelistUserId, Long... extraUserIds) {
+        Task next = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        if (next == null) return;
+
+        ToppOrderVo order = queryById(orderId);
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(OrderStatusEnum.RUNNING.getCode());
+        bo.setPhase(next.getTaskDefinitionKey());
+        bo.setPhaseName(next.getName());
+
+        if (whitelistUserId != null) {
+            bo.setActors(",," + whitelistUserId + ",,");
+            StringBuilder whiteList = new StringBuilder(order != null ? order.getWhiteList() : null);
+            if (whiteList.length() == 0) whiteList.append(",");
+            addToWhiteList(whiteList, whitelistUserId);
+            if (extraUserIds != null) {
+                for (Long uid : extraUserIds) {
+                    if (uid != null) addToWhiteList(whiteList, uid);
+                }
+            }
+            bo.setWhiteList(whiteList.toString());
+            try {
+                com.crm.system.domain.dao.SysUsers u = sysUsersMapper.selectById(whitelistUserId);
+                if (u != null) {
+                    String phone = u.getRelationTel();
+                    bo.setActorsInfo(u.getNameCh() + ":" + (phone != null ? phone : ""));
+                }
+            } catch (Exception ignored) {}
+        }
+
+        updateByBo(bo);
+       // setNextTaskDisplayVars(next, order);
+    }
+
+    @Override
+    public void markOrderEnd(Long orderId) {
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(OrderStatusEnum.END.getCode());
+        bo.setBatchFlag(0);
+        updateByBo(bo);
+    }
+
+    private void addToWhiteList(StringBuilder whiteList, Long userId) {
+        String seg = "," + userId + ",";
+        if (whiteList.indexOf(seg) < 0) {
+            whiteList.append(userId).append(",");
+        }
+    }
+
+    /** 为流转到的新任务设置展示用本地变量，供处理页展示 */
+    private void setNextTaskDisplayVars(Task next, ToppOrderVo order) {
+        if (order == null) return;
+        String k = next.getTaskDefinitionKey();
+        String piId = next.getProcessInstanceId();
+        Map<String, Object> tv = new HashMap<>();
+        tv.put(k + "_infoId", order.getId() != null ? String.valueOf(order.getId()) : null);
+        tv.put(k + "_infoType", "order");
+        if(StringUtils.isNotBlank( order.getCustName())){
+            tv.put(k + "_custName", order.getCustName());
+            tv.put(k + "_remindContent", "预警类型：" + order.getOrderType() + "，客户：" + order.getCustName() + "，请及时处理");
+        }else{
+            tv.put(k + "_remindContent", "预警类型：" + order.getOrderType() + "，请及时处理");
+        }
+        tv.put(k + "_orderName", order.getOrderName());
+
+        // dealUrl：优先从流程变量中查找（先精确匹配当前节点，再匹配任意 *_dealUrl），都没有则构造默认值
+        Map<String, Object> procVars = runtimeService.getVariables(piId);
+        String existingUrl = null;
+        Object v = procVars != null ? procVars.get(k + "_dealUrl") : null;
+        if (v != null) existingUrl = v.toString();
+        if (existingUrl == null && procVars != null) {
+            for (Map.Entry<String, Object> e : procVars.entrySet()) {
+                if (e.getKey().endsWith("_dealUrl") && e.getValue() != null) {
+                    existingUrl = e.getValue().toString();
+                    break;
+                }
+            }
+        }
+        tv.put(k + "_dealUrl", existingUrl != null ? existingUrl
+                : "/wideWarning/deal?orderId=" + order.getId());
+
+        taskService.setVariablesLocal(next.getId(), tv);
     }
 }

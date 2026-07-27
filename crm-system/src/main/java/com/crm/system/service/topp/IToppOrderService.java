@@ -78,4 +78,23 @@ public interface IToppOrderService {
      */
     String transferOrder(String taskId, Long orderId, Long targetUserId, String comment, Long currentUserId);
 
+    /**
+     * 将工单同步到当前流程节点（更新 phase/phaseName/status + 展示变量）。
+     * <p>
+     * 查询流程当前任务，将工单的节点信息同步为当前任务状态。
+     * 若 whitelistUserId 非空，同时更新白名单和处理人。
+     * </p>
+     *
+     * @param orderId         工单ID
+     * @param piId            流程实例ID
+     * @param whitelistUserId 处理人ID（非空时同步白名单/actors/actorsInfo）
+     * @param extraUserIds    额外加入白名单的用户ID（如转派操作人等）
+     */
+    void syncOrderToCurrentTask(Long orderId, String piId, Long whitelistUserId, Long... extraUserIds);
+
+    /**
+     * 将工单置为已结束
+     */
+    void markOrderEnd(Long orderId);
+
 }

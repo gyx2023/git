@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.SysAreaBo;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class SysAreaServiceImpl implements ISysAreaService {
 
     private final SysAreaMapper baseMapper;
@@ -164,8 +166,9 @@ public class SysAreaServiceImpl implements ISysAreaService {
     @Override
     @CacheEvict(cacheNames = {CacheNames.SYS_AREA, CacheNames.SYS_AREA_COUNTY}, allEntries = true)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -292,6 +295,61 @@ public class SysAreaServiceImpl implements ISysAreaService {
         List<SysAreaTreeVo> result = new ArrayList<>();
         result.add(rootNode);
         return result;
+    }
+
+    /**
+     * 根据区域ID解析为地市级范围（含其下辖区县）。
+     */
+    @Override
+    public List<Long> resolveCityLevelScope(Long areaId) {
+        List<Long> areaIds = new ArrayList<>();
+        SysAreaVo area = queryById(areaId);
+        if (area == null) {
+            return areaIds;
+        }
+        if ("一级".equals(area.getType())) {
+            areaIds.add(area.getId());
+        } else if ("二级".equals(area.getType())) {
+            areaIds.add(area.getId());
+            appendChildAreaIds(areaIds, area.getId());
+        } else {
+            // 三级(区县)：向上找到所属地市
+            SysAreaVo city = area.getParent() != null ? queryById(area.getParent()) : null;
+            if (city != null) {
+                areaIds.add(city.getId());
+                appendChildAreaIds(areaIds, city.getId());
+            } else {
+                areaIds.add(area.getId());
+            }
+        }
+        return areaIds;
+    }
+
+    @Override
+    public List<Long> resolveAreaScope(Long areaId) {
+        SysAreaVo area = queryById(areaId);
+        if (area == null) {
+            return new ArrayList<>();
+        }
+        if ("一级".equals(area.getType())) {
+            return null;
+        }
+        List<Long> areaIds = new ArrayList<>();
+        areaIds.add(area.getId());
+        if ("二级".equals(area.getType())) {
+            appendChildAreaIds(areaIds, area.getId());
+        }
+        return areaIds;
+    }
+
+    private void appendChildAreaIds(List<Long> areaIds, Long parentId) {
+        List<SysAreaVo> children = baseMapper.selectVoList(new LambdaQueryWrapper<SysArea>()
+            .eq(SysArea::getParent, parentId));
+        if (children != null) {
+            for (SysAreaVo child : children) {
+                areaIds.add(child.getId());
+            }
+        }
     }
 
     private SysAreaTreeVo buildTreeNode(SysAreaVo area) {

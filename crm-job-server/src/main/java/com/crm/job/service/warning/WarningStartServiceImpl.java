@@ -405,10 +405,16 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         taskVars.put(task.getTaskDefinitionKey() + "_dealUrl", dealUrl);
         taskVars.put(task.getTaskDefinitionKey() + "_infoId", orderBo.getId());
         taskVars.put(task.getTaskDefinitionKey() + "_infoType", "order");
-        taskVars.put(task.getTaskDefinitionKey() + "_custName", record.getCustName());
         taskVars.put(task.getTaskDefinitionKey() + "_orderName", record.getOrderName());
-        taskVars.put(task.getTaskDefinitionKey() + "_remindContent",
+        if(StringUtils.isNotBlank( record.getCustName())){
+            taskVars.put(task.getTaskDefinitionKey() + "_custName", record.getCustName());
+            taskVars.put(task.getTaskDefinitionKey() + "_remindContent",
                 "预警类型：" + record.getOrderType() + "，客户：" + record.getCustName() + "，请及时处理");
+        }else{
+            taskVars.put(task.getTaskDefinitionKey() + "_remindContent",
+                "预警类型：" + record.getOrderType() + "，请及时处理");
+        }
+
         taskService.setVariablesLocal(task.getId(), taskVars);
     }
 

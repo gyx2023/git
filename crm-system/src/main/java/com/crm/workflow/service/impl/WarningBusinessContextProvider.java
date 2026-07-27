@@ -1,5 +1,6 @@
 package com.crm.workflow.service.impl;
 
+import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.stats.IStatsService;
 import com.crm.system.service.topp.IToppOrderService;
@@ -136,6 +137,7 @@ public class WarningBusinessContextProvider implements BusinessContextProvider {
         ct.put("assignee", task.getAssignee());
         ct.put("createTime", task.getCreateTime());
         ct.put("processInstanceId", task.getProcessInstanceId());
+        ct.put("canAct", task.getAssignee() != null && LoginHelper.getUserId() == Integer.parseInt(task.getAssignee()));
         return ct;
     }
 

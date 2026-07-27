@@ -247,8 +247,6 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
         extra.put("wide_second_new_orderFlag", orderFlag);
         extra.put("wide_second_new_codeInfo", codeInfo);
         extra.put("wide_second_new_period", yyyyMM);
-        extra.put("orderFlag", orderFlag);
-        extra.put("codeInfo", codeInfo);
         extra.put("bssCode", bssCode);
         extra.put("mdmOrgCode", mdmOrgCode);
         extra.put("_needOrderNumber", true);
@@ -263,11 +261,13 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
         return record;
     }
 
+/*
     @Override
     public String buildDealUrl(Long orderId, Map<String, Object> extra) {
         // 指向新框架前端 Vue 页面，taskId 由老框架待办列表拼接
         return "/wideWarning/deal?orderId=" + orderId;
     }
+*/
 
     // ==================== 辅助方法 ====================
 
