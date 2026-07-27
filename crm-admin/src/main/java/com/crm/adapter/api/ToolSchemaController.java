@@ -6,9 +6,6 @@ import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -142,29 +139,26 @@ public class ToolSchemaController extends BaseController {
      * <p>
      * 此路径用于内网工作流调用，dataRef 是短期随机引用。
      */
-    @PostMapping(value = "/result-data", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<R<Object>> getResultData(
+    @PostMapping(value = "resultdata")
+    public R<Object> getResultData(
         @RequestBody(required = false) Map<String, Object> request
     ) {
         String dataRef = extractDataRef(request);
         if (dataRef == null || dataRef.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(R.fail(HttpStatus.BAD_REQUEST.value(), "dataRef 不能为空"));
+            return R.fail("dataRef 不能为空");
         }
 
         String agentInput = resultDataReferenceService.get(dataRef);
         if (agentInput == null) {
             log.info("askdata result-data reference not found or expired");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(R.fail(HttpStatus.NOT_FOUND.value(), "查询结果已过期，请重新提问"));
+            return R.fail("查询结果已过期，请重新提问");
         }
 
         try {
-            return ResponseEntity.ok(R.ok(new com.fasterxml.jackson.databind.ObjectMapper().readTree(agentInput)));
+            return R.ok(new com.fasterxml.jackson.databind.ObjectMapper().readTree(agentInput));
         } catch (Exception e) {
             log.error("askdata result-data cached payload is invalid JSON", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(R.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "查询结果读取失败"));
+            return R.fail("查询结果读取失败");
         }
     }
 

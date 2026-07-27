@@ -166,7 +166,7 @@ security:
     # 智能问数嵌入入口，Controller 内部仍会校验宿主 Authorization
     - /askdata/chat/stream
     # 数据处理工作流内网取数入口，使用短期随机 dataRef
-    - /api/askdata/tools/result-data
+    - /api/askdata/tools/resultdata
 # Swagger配置
 swagger:
   info:
