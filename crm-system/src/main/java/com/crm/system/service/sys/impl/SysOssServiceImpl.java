@@ -24,6 +24,7 @@ import com.crm.system.domain.bo.SysOssBo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.mapper.sys.SysOssMapper;
 import com.crm.system.service.sys.ISysOssService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class SysOssServiceImpl implements ISysOssService, OssService {
 
     private final SysOssMapper baseMapper;

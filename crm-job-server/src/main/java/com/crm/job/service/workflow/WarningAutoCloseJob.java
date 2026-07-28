@@ -1,6 +1,7 @@
 package com.crm.job.service.workflow;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
@@ -56,7 +57,7 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
         List<ToppOrder> overdueOrders = toppOrderMapper.selectList(
                 new LambdaQueryWrapper<ToppOrder>()
                         .eq(ToppOrder::getStatus, OrderStatusEnum.RUNNING.getCode())
-                        .eq(ToppOrder::getProcessEngine, "FLOWABLE")
+                        .eq(ToppOrder::getProcessEngine, ProcessEngineEnum.FLOWABLE.name())
                         .in(ToppOrder::getOrderType, WARNING_ORDER_TYPES)
                         .lt(ToppOrder::getCreateTime, deadline)
         );

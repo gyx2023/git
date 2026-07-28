@@ -32,6 +32,9 @@ public class OldOpportunityDTO {
     /** 5. 所属一级行业 */
     private String unicomType;
 
+    /** 5.1 客户二级行业（仅一级行业=22 商企客户时有效） */
+    private String unicomType2;
+
     /** 6. 商机来源 */
     private String oppSource;
 

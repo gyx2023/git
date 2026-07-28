@@ -13,6 +13,7 @@ import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.ISysUsersService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ import java.util.Collection;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class SysUsersServiceImpl implements ISysUsersService {
 
     private final SysUsersMapper baseMapper;
@@ -142,8 +144,9 @@ public class SysUsersServiceImpl implements ISysUsersService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

@@ -2,6 +2,7 @@ package com.crm.adapter.admin.workflow.oldProject;
 
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.entity.SysUser;
+import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.helper.LoginHelper;
@@ -94,7 +95,7 @@ public class OppoCloseController {
         // 引擎来源判断：优先查 topp_order.process_engine 落表字段，兜底查 ACT_HI_PROCINST
         boolean isOld;
         if (order != null && StringUtils.isNotBlank(order.getProcessEngine())) {
-            isOld = "ACTIVITI".equals(order.getProcessEngine());
+            isOld = ProcessEngineEnum.ACTIVITI.name().equals(order.getProcessEngine());
         } else {
             isOld = StringUtils.isNotBlank(pi) && oldWorkflowQueryService.isOldProcess(pi);
         }
@@ -479,7 +480,7 @@ public class OppoCloseController {
         auditOrderBo.setContractId(contractId);
         auditOrderBo.setPiId(pi.getId());
         auditOrderBo.setStatus(OrderStatusEnum.RUNNING.getCode());
-        auditOrderBo.setProcessEngine("FLOWABLE");
+        auditOrderBo.setProcessEngine(ProcessEngineEnum.FLOWABLE.name());
         orderService.insertByBo(auditOrderBo);
 
         // 5. 完成第一个任务（contract_add），自动路由到 xmgly_audit

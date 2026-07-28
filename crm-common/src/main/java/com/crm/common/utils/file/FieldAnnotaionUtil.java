@@ -172,13 +172,19 @@ public class FieldAnnotaionUtil {
      */
     @SuppressWarnings("rawtypes")
     public static boolean setFiledValFromValuesByIndex(Object obj, String[] values) {
-        if (null == obj) return false;
-        if (null == values || values.length < 1) return false;
+            if (null == obj) {
+            return false;
+        }
+        if (null == values || values.length < 1) {
+            return false;
+        }
 
         boolean flag = true;
         Class clazz = obj.getClass();
         Field[] fields = clazz.getDeclaredFields();//获得所有字段
-        if (fields.length < 1) return false;
+        if (fields.length < 1) {
+            return false;
+        }
 
         Map<Integer, Field> indexFieldMap = new HashMap<Integer, Field>();
         for (Field f : fields) {
@@ -187,7 +193,7 @@ public class FieldAnnotaionUtil {
                 int i = dv.index();
                 if (i >= 0) {
                     if (null != indexFieldMap.get(i)) {
-                        System.out.println("error---------------注解index重复");
+                        log.info("error---------------注解index重复");
                         return false;
                     } else {
                         indexFieldMap.put(i, f);
@@ -197,13 +203,13 @@ public class FieldAnnotaionUtil {
         }
 
         if (indexFieldMap.size() != values.length) {
-            System.out.println("error---------------字段数与values个数不一致");
+            log.info("error---------------字段数与values个数不一致");
             return false;
         }
         for (int i = 0; i < values.length; i++) {
             Field f = indexFieldMap.get(i);
             if (!setFieldValueFromObject(obj, f, values[i])) {
-                System.out.println("error---------------value在插入属性时因类型不一致导致异常");
+                log.info("error---------------value在插入属性时因类型不一致导致异常");
                 return false;
             }
         }
@@ -236,8 +242,12 @@ public class FieldAnnotaionUtil {
      * @return
      */
     public static boolean setFiledValFromValuesByOrder(Object obj, String[] values, Integer extraColumn) {
-        if (null == obj) return false;
-        if (null == values || values.length < 1) return false;
+        if (null == obj) {
+            return false;
+        }
+        if (null == values || values.length < 1) {
+            return false;
+        }
         boolean flag = true;
         Class<?> clazz = obj.getClass();
         Field[] fields = classFieldsMap.get(clazz);
@@ -245,7 +255,9 @@ public class FieldAnnotaionUtil {
             fields = clazz.getDeclaredFields();//获得所有字段
             classFieldsMap.put(clazz, fields);
         }
-        if (fields.length < 1) return false;
+        if (fields.length < 1) {
+            return false;
+        }
 //        if (fields.length != values.length + extraColumn) {
 //            System.out.println("error---------------字段数与values个数不一致");
 //            return false;

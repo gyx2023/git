@@ -38,6 +38,7 @@ public class SysDictDataController extends BaseController {
      * 查询字典数据列表
      */
     @GetMapping("/list")
+    @Log(title = "字典数据", businessType = BusinessType.QUERY)
     public TableDataInfo<SysDictData> list(SysDictData dictData, PageQuery pageQuery) {
         return dictDataService.selectPageDictDataList(dictData, pageQuery);
     }

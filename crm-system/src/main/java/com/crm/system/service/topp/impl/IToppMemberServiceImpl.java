@@ -12,6 +12,7 @@ import com.crm.system.domain.dao.topp.ToppMemberDo;
 import com.crm.system.domain.vo.topp.ToppMemberVo;
 import com.crm.system.mapper.topp.ToppMemberMapper;
 import com.crm.system.service.topp.IToppMemberService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class IToppMemberServiceImpl implements IToppMemberService {
     @Resource
     private ToppMemberMapper baseMapper;
@@ -117,6 +119,7 @@ public class IToppMemberServiceImpl implements IToppMemberService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

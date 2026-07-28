@@ -1,5 +1,7 @@
 package com.crm.common.utils.signutil;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,6 +10,7 @@ import java.util.Map;
  * 签名工具类（从asiainfo-openplatform搬迁）
  * 用于能力汇聚平台接口调用签名
  */
+@Slf4j
 public class SignUtil {
 
     private static final String SIGN_METHOD_RSAWITHMD5 = "RSAWithMD5";
@@ -72,7 +75,7 @@ public class SignUtil {
             }
         }
 
-        System.out.println(buf.toString());
+        log.debug(buf.toString());
 
         // MD5签名实现（简化版，实际可能需要完整的RSA实现）
         return SecurityUtils.encodeMd5HexUpper(buf.toString() + key);
@@ -99,7 +102,7 @@ public class SignUtil {
 
         buf.append(key);
 
-        System.out.println("signStr=" + buf.toString());
+        log.debug("signStr={}", buf.toString());
 
         // 计算HmacSHA256并返回大写十六进制字符串
         byte[] decodedKey = SecurityUtils.decodeHexUpper(key);

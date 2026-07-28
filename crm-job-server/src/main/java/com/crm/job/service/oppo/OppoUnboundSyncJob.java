@@ -5,6 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.enums.SwitchStatus;
+import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.system.domain.bo.SysUsersBo;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
@@ -328,6 +329,7 @@ public class OppoUnboundSyncJob {
         order.setCreateTime(new Date());
         order.setUpdateTime(new Date());
         order.setCreator(su.getId());
+        order.setProcessEngine(ProcessEngineEnum.OTHER.name());
         //结束原因 0:客户经理已处理 1:未处理但已续约 2:用户离网 3:工单超时 4:预计签约时间到期未转化商机作废 5:未拜访未转化商机作废 6：三个月未支撑商机作废 7:客户经理做商机终止
          // 对应码表end_reason类型
          if(ObjectUtil.equal("预计签约时间到期后7天，系统自动关闭！", oppotunity.getFinalEndOppTypeMemo())){

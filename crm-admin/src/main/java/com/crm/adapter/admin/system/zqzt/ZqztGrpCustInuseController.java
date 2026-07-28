@@ -44,6 +44,7 @@ public class ZqztGrpCustInuseController extends BaseController {
     /**
      * 查询政企主体-实际使用客户（zqzt_grp_cust_inuse）列表
      */
+    @Log(title = "政企主体-实际使用客户（zqzt_grp_cust_inuse）", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<ZqztGrpCustInuseVo> list(ZqztGrpCustInuseBo bo, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(bo, pageQuery);
@@ -141,7 +142,7 @@ public class ZqztGrpCustInuseController extends BaseController {
      * 查询合同和关联客户ID列表
      */
     @GetMapping("/listAll")
-    @Log(title = "集团用户关联客户管理")
+    @Log(title = "集团用户关联客户管理", businessType = BusinessType.QUERY)
     public TableDataInfo<ZqztGrpCustInuseRespDTO> listAll(ZqztGrpCustReqDTO reqDTO, PageQuery pageQuery) {
         return iZqztGrpCustInuseService.queryPageList(reqDTO, pageQuery);
     }

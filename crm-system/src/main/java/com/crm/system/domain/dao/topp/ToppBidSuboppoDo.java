@@ -62,6 +62,16 @@ public class ToppBidSuboppoDo extends BaseEntity {
     private String updateBy;
 
     /**
+     * 项目编码
+     */
+    private String projectCode;
+
+    /**
+     * 发布日期
+     */
+    private Date releaseDate;
+
+    /**
      *  是否有效
      */
     @TableField("is_valid")

@@ -20,6 +20,7 @@ import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.utils.Constants;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,7 @@ import java.util.*;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     @Resource
     private ToppOpportunityMapper baseMapper;
@@ -268,6 +270,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -332,7 +335,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         ToppOpportunityDo opportunity = baseMapper.selectById(oppId);
         String oppoState = baseMapper.callGetOppoState(oppId);
         opportunity.setOppoState(oppoState);
-        System.out.println("更新商机"+oppId+"状态为:"+oppoState);
+        log.info("更新商机{}状态为:{}", oppId, oppoState);
         baseMapper.updateById(opportunity);
         return oppoState;
     }
