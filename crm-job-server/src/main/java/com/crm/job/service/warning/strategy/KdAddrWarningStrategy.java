@@ -1,12 +1,16 @@
 package com.crm.job.service.warning.strategy;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
+import com.crm.common.utils.StringUtils;
 import com.crm.job.mapper.warning.KdAddrWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.mapper.SysUsersMapper;
+import com.crm.system.mapper.tcomm.TcommCustomerMapper;
 import com.crm.system.service.IMaintenanceDetailSyncService;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +45,9 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
     private SysUsersMapper sysUsersMapper;
+
+    @Resource
+    private TcommCustomerMapper tcommCustomerMapper;
 
     @Resource
     private IMaintenanceDetailSyncService maintenanceDetailSyncService;
@@ -80,7 +87,7 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
 
     private WarningRecord toWarningRecord(Map<String, Object> row) {
         String oaIdDev = getString(row.get("oa_id_dev"));
-        if (oaIdDev == null) {
+        if (oaIdDev == null || oaIdDev.isEmpty()) {
             // 复刻旧系统：无有效客户经理仍写一条 status=0 维系明细，再跳过建单
             log.warn("【{}】oa_id_dev 为空, 写 status=0 维系明细并跳过建单", getOrderTypeName());
             writeNoManagerSafe(row);
@@ -107,6 +114,16 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
         record.setOrderName(DateUtils.dateTime() + "__" + getOrderTypeName());
         record.setCustName(getString(row.get("grp_name")));
         record.setCustManagerId(userId);
+
+        // 根据 grp_code 查客户，设置 custId（对齐旧系统 customerService.getByCustNo）
+        String grpCode = getString(row.get("grp_code"));
+        if (StringUtils.isNotBlank(grpCode)) {
+            TcommCustomer customer = tcommCustomerMapper.selectOne(
+                    new LambdaQueryWrapper<TcommCustomer>().eq(TcommCustomer::getCustNo, grpCode));
+            if (customer != null) {
+                record.setCustId(customer.getId());
+            }
+        }
 
         // 设置创建人信息
         SysUsers sysUser = new SysUsers();

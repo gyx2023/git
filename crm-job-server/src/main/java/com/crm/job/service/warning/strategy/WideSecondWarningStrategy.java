@@ -78,7 +78,7 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
     private WarningRecord toWarningRecord(Map<String, Object> row) {
         String oaIdDev = getString(row.get("oa_id_dev"));
-        if (oaIdDev == null) {
+        if (oaIdDev == null || oaIdDev.isEmpty()) {
             log.warn("【{}】oa_id_dev 为空, 跳过", getOrderTypeName());
             return null;
         }

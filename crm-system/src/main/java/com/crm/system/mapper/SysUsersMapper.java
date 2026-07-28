@@ -58,18 +58,19 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
     SysUsers selectUserByChannelHqCode(@Param("channelHqCode") String channelHqCode);
 
     /**
-     * 根据 OA 账号查询用户
+     * 根据 OA 账号查询用户（大小写不敏感，对齐旧系统 SysUserService.findByOaId）
      */
-    @Select("SELECT * FROM sys_user WHERE oa_account = #{oaAccount} AND is_valid = '1' LIMIT 1")
+    @Select("SELECT * FROM sys_user WHERE LOWER(oa_account) = LOWER(#{oaAccount}) AND is_valid = '1' LIMIT 1")
     SysUsers findByOaAccount(@Param("oaAccount") String oaAccount);
 
     /**
      * 按 OA 账号查询用户信息（返回 Map，供预警策略使用）
+     * 大小写不敏感，对齐旧系统 SysUserService.findByOaId
      * @param oaId OA 账号
      * @return user_id, dept_id, nick_name, phonenumber
      */
     @Select("SELECT id_ as user_id, org_id as dept_id, name_ch as nick_name, relation_tel as phonenumber "
-            + "FROM sys_user WHERE oa_account = #{oaId} AND is_valid = '1' LIMIT 1")
+            + "FROM sys_user WHERE LOWER(oa_account) = LOWER(#{oaId}) AND is_valid = '1' LIMIT 1")
     Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
 
     /**
