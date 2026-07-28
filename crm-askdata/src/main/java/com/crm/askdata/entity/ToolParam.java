@@ -117,6 +117,24 @@ public class ToolParam {
     private String transformConfig;
 
     /**
+     * 枚举值域编码。
+     * <p>
+     * 非空时，Schema 生成优先从 askdata_value_domain / askdata_value_item
+     * 读取可选编码及其中文语义。
+     */
+    @TableField("value_domain_code")
+    private String valueDomainCode;
+
+    /**
+     * 依赖的父级参数名。
+     * <p>
+     * 仅用于向智能体声明枚举层级关系，例如 countyCode 依赖 areaCode；
+     * 当前版本不在工具执行前校验该关系。
+     */
+    @TableField("depends_on_param_name")
+    private String dependsOnParamName;
+
+    /**
      * 澄清优先级（数字越小越优先追问）
      */
     @TableField("clarify_priority")

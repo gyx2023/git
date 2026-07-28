@@ -2,6 +2,7 @@ package com.crm.askdata.service;
 
 import com.crm.askdata.entity.ToolConfig;
 import com.crm.askdata.entity.ToolParam;
+import com.crm.askdata.entity.ValueItem;
 import com.crm.askdata.mapper.ToolParamMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,9 +14,9 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 /**
- * HiAgent Schema 生成服务
+ * 智能体工具 Schema 生成服务
  * <p>
- * 将数据库中的工具配置转换为 HiAgent 所需的 JSON Schema 格式
+ * 将数据库中的工具配置转换为 HiAgent 与 ChinaUniconAgent 共用的 JSON Schema 格式。
  *
  * @author crm
  */
@@ -26,6 +27,7 @@ public class HiAgentSchemaService {
 
     private final ToolConfigService configService;
     private final ToolParamMapper paramMapper;
+    private final ValueDomainService valueDomainService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -107,23 +109,7 @@ public class HiAgentSchemaService {
             // 类型映射
             paramSchema.put("type", mapParamType(param.getParamType()));
 
-            // 描述
-            if (param.getDescription() != null && !param.getDescription().trim().isEmpty()) {
-                paramSchema.put("description", param.getDescription());
-            }
-
-            // 枚举值
-            if (param.getEnumValues() != null && !param.getEnumValues().trim().isEmpty()) {
-                try {
-                    List<String> enumList = objectMapper.readValue(
-                        param.getEnumValues(),
-                        new TypeReference<List<String>>() {}
-                    );
-                    paramSchema.put("enum", enumList);
-                } catch (JsonProcessingException e) {
-                    log.warn("Failed to parse enum values for param: {}", param.getParamName(), e);
-                }
-            }
+            applyEnumSchema(param, paramSchema);
 
             // 默认值
             if (param.getDefaultValue() != null && !param.getDefaultValue().trim().isEmpty()) {
@@ -152,6 +138,148 @@ public class HiAgentSchemaService {
         }
 
         return parametersSchema;
+    }
+
+    /**
+     * 写入参数枚举定义。
+     * <p>
+     * value_domain_code 是统一的、优先级最高的枚举来源。除了标准 JSON Schema
+     * enum 外，同时输出 description 中的 code=label 映射和 x-enum-options 扩展，
+     * 使 HiAgent 与 ChinaUniconAgent 都能理解编码的业务语义。
+     * 未绑定或空枚举域时兼容既有 enum_values 配置。
+     */
+    private void applyEnumSchema(ToolParam param, Map<String, Object> paramSchema) {
+        List<ValueItem> domainItems = valueDomainService.getEnabledItems(param.getValueDomainCode());
+        if (!domainItems.isEmpty()) {
+            applyValueDomainSchema(param, paramSchema, domainItems);
+            return;
+        }
+
+        if (hasText(param.getValueDomainCode())) {
+            log.warn("Value domain has no enabled items, fallback to enum_values. param={}, domain={}",
+                param.getParamName(), param.getValueDomainCode());
+        }
+        applyLegacyEnumSchema(param, paramSchema);
+    }
+
+    private void applyValueDomainSchema(ToolParam param, Map<String, Object> paramSchema,
+                                        List<ValueItem> items) {
+        List<String> codes = new ArrayList<>();
+        List<Map<String, Object>> options = new ArrayList<>();
+        List<String> descriptions = new ArrayList<>();
+
+        for (ValueItem item : items) {
+            if (!hasText(item.getCode())) {
+                log.warn("Skip value item without code. domain={}, itemId={}",
+                    param.getValueDomainCode(), item.getId());
+                continue;
+            }
+            codes.add(item.getCode());
+
+            Map<String, Object> option = new LinkedHashMap<>();
+            option.put("code", item.getCode());
+            option.put("label", item.getLabel());
+            option.put("aliases", parseAliases(item.getAliases()));
+            if (hasText(item.getParentCode())) {
+                option.put("parentCode", item.getParentCode());
+            }
+            Object attributes = parseJson(item.getAttributes(), "attributes", param);
+            if (attributes != null) {
+                option.put("attributes", attributes);
+            }
+            options.add(option);
+
+            String label = hasText(item.getLabel()) ? item.getLabel() : item.getCode();
+            String parent = hasText(item.getParentCode())
+                ? "(父编码=" + item.getParentCode() + ")" : "";
+            descriptions.add(item.getCode() + "=" + label + parent);
+        }
+
+        if (codes.isEmpty()) {
+            applyLegacyEnumSchema(param, paramSchema);
+            return;
+        }
+
+        Map<String, Object> enumTarget = enumTarget(param, paramSchema);
+        enumTarget.put("enum", codes);
+        enumTarget.put("x-enum-options", options);
+        enumTarget.put("x-value-domain", param.getValueDomainCode());
+        if (hasText(param.getDependsOnParamName())) {
+            paramSchema.put("x-depends-on", param.getDependsOnParamName());
+        }
+
+        String enumDescription = "可选编码（请传 code）：" + String.join("；", descriptions) + "。";
+        String currentDescription = param.getDescription();
+        paramSchema.put("description", hasText(currentDescription)
+            ? currentDescription + " " + enumDescription
+            : enumDescription);
+    }
+
+    private void applyLegacyEnumSchema(ToolParam param, Map<String, Object> paramSchema) {
+        if (hasText(param.getDescription())) {
+            paramSchema.put("description", param.getDescription());
+        }
+        if (!hasText(param.getEnumValues())) {
+            return;
+        }
+        try {
+            List<String> enumList = objectMapper.readValue(
+                param.getEnumValues(),
+                new TypeReference<List<String>>() {}
+            );
+            enumTarget(param, paramSchema).put("enum", enumList);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse enum values for param: {}", param.getParamName(), e);
+        }
+    }
+
+    /** 数组参数的元素才是枚举值，其他类型直接在参数节点定义 enum。 */
+    private Map<String, Object> enumTarget(ToolParam param, Map<String, Object> paramSchema) {
+        if (!"array".equals(mapParamType(param.getParamType()))) {
+            return paramSchema;
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> items = (Map<String, Object>) paramSchema.computeIfAbsent("items", key -> {
+            Map<String, Object> itemSchema = new LinkedHashMap<>();
+            itemSchema.put("type", "string");
+            return itemSchema;
+        });
+        return items;
+    }
+
+    private List<String> parseAliases(String aliases) {
+        if (!hasText(aliases)) {
+            return Collections.emptyList();
+        }
+        try {
+            List<String> jsonAliases = objectMapper.readValue(aliases, new TypeReference<List<String>>() {});
+            return jsonAliases == null ? Collections.emptyList() : jsonAliases;
+        } catch (JsonProcessingException ignored) {
+            List<String> result = new ArrayList<>();
+            for (String alias : aliases.split("[,，]")) {
+                if (hasText(alias)) {
+                    result.add(alias.trim());
+                }
+            }
+            return result;
+        }
+    }
+
+    private Object parseJson(String json, String fieldName, ToolParam param) {
+        if (!hasText(json)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, Object.class);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse value item {}. param={}, valueDomain={}",
+                fieldName, param.getParamName(), param.getValueDomainCode());
+            return null;
+        }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     /**

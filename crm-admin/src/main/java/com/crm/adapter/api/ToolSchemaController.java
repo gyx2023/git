@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * 工具 Schema API
  * <p>
- * 供 HiAgent 平台拉取工具定义，用于注册工具
+ * 供 HiAgent、ChinaUniconAgent 平台拉取工具定义，用于注册工具
  *
  * @author crm
  */
@@ -31,9 +31,9 @@ public class ToolSchemaController extends BaseController {
     private final ResultDataReferenceService resultDataReferenceService;
 
     /**
-     * 获取所有工具的 Schema（供 HiAgent 拉取注册）
+     * 获取所有工具的 Schema（供智能体平台拉取注册）
      * <p>
-     * HiAgent 定时调用此接口，获取最新的工具定义
+     * 智能体平台定时调用此接口，获取最新的工具定义
      *
      * @return 工具 Schema 列表
      */
@@ -43,7 +43,7 @@ public class ToolSchemaController extends BaseController {
         @RequestHeader(value = "pageCode", required = false) String pageCodeHeader
     ) {
         String resolvedPageCode = resolvePageCode(pageCode, pageCodeHeader);
-        log.info("HiAgent fetching all tool schemas, pageCode={}", resolvedPageCode);
+        log.info("Agent platform fetching all tool schemas, pageCode={}", resolvedPageCode);
 
         try {
             List<Map<String, Object>> schemas = schemaService.generateAllSchemas(resolvedPageCode);
@@ -62,7 +62,7 @@ public class ToolSchemaController extends BaseController {
     ) {
         String bodyPageCode = extractBodyPageCode(request);
         String resolvedPageCode = resolvePageCode(bodyPageCode, pageCode, pageCodeHeader);
-        log.info("HiAgent fetching all tool schemas, pageCode={}", resolvedPageCode);
+        log.info("Agent platform fetching all tool schemas, pageCode={}", resolvedPageCode);
 
         try {
             List<Map<String, Object>> schemas = schemaService.generateAllSchemas(resolvedPageCode);
@@ -120,7 +120,7 @@ public class ToolSchemaController extends BaseController {
      */
     @GetMapping("/schemas/{toolName}")
     public R<Map<String, Object>> getSchema(@PathVariable String toolName) {
-        log.info("HiAgent fetching schema for tool: {}", toolName);
+        log.info("Agent platform fetching schema for tool: {}", toolName);
 
         try {
             Map<String, Object> schema = schemaService.generateSchema(toolName);
