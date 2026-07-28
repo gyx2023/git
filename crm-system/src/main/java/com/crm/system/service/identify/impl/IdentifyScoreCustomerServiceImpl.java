@@ -22,6 +22,7 @@ import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.sys.ISysUserService;
 import com.crm.system.service.identify.IIdentifyScoreCustomerService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -37,6 +38,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerService {
     @Resource
     private  IdentifyScoreCustomerMapper identifyScoreCustomerMapper;
@@ -155,6 +157,7 @@ public class IdentifyScoreCustomerServiceImpl implements IIdentifyScoreCustomerS
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+                log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return identifyScoreCustomerMapper.deleteBatchIds(ids) > 0;
     }

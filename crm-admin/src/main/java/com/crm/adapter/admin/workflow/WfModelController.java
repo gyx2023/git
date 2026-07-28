@@ -53,6 +53,7 @@ public class WfModelController extends BaseController {
      * @param modelBo 流程模型对象
      * @param pageQuery 分页参数
      */
+    @Log(title = "流程模型", businessType = BusinessType.QUERY)
     @SaCheckPermission("workflow:model:list")
     @GetMapping("/list")
     public TableDataInfo<WfModelVo> list(WfModelBo modelBo, PageQuery pageQuery) {

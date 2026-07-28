@@ -179,6 +179,7 @@
         <result property="oppType" column="opp_type"/>
         <result property="oppIncludeType" column="opp_include_type"/>
         <result property="unicomType" column="unicom_type"/>
+        <result property="unicomType2" column="unicom_type2"/>
         <result property="oppSource" column="opp_source"/>
         <result property="expectContractMoney" column="expect_contract_money"/>
         <result property="monthIncomeContribution" column="month_income_contribution"/>

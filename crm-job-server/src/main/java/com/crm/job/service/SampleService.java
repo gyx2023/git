@@ -109,6 +109,7 @@ public class SampleService {
 
         if (exitValue == 0) {
             // default success
+            log.debug("commandJobHandler exit success, exitValue={}", exitValue);
         } else {
             XxlJobHelper.handleFail("command exit value(" + exitValue + ") is failed");
         }
@@ -164,7 +165,7 @@ public class SampleService {
             XxlJobHelper.handleFail();
             return;
         }
-        boolean isPostMethod = method.equals("POST");
+        boolean isPostMethod = "POST".equals(method);
 
         // request
         HttpURLConnection connection = null;

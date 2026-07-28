@@ -50,10 +50,14 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
 
     @Override
     public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene) {
+        return callWorksheetsComplete(recordDo, scene, null);
+    }
+
+    @Override
+    public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene, String assignee) {
         String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
         String sequenceId = getCode(scene);
         String nlpt_wm_serial = "0" + "37" + today + sequenceId;
-
         Map<String, Object> UNI_BSS_HEAD = uniBssApiClient.buildHead();
 
         Map<String, Object> UNI_BSS_BODY = new HashMap<>();
@@ -66,6 +70,10 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
         worksheetItem.put("dealResultCode", recordDo.getDealResultCode());
         if (!"0".equals(recordDo.getDealResultCode())) {
             worksheetItem.put("failReason", recordDo.getFailReason());
+        }
+        // 转派场景：传入 assignee 目标工号
+        if (assignee != null && !assignee.isEmpty()) {
+            worksheetItem.put("assignee", assignee);
         }
 
         Map<String, Object> orderUpdate = new HashMap<>();

@@ -260,6 +260,7 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
             // 建议：对于大量数据，考虑直接写入文件而不是累积到内存
             if (allResults.size() > 10000) { // 每1万条处理一次
                 // 这里可以触发文件写入逻辑
+                log.debug("数据量超过10000条，当前size={}", allResults.size());
             }
         }
 
@@ -815,8 +816,9 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

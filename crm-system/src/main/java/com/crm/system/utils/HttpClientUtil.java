@@ -209,7 +209,7 @@ public class HttpClientUtil {
             connection.connect();
             Map<String, List<String>> map = connection.getHeaderFields();
             for (String key : map.keySet()) {
-                System.out.println(key + "--->" + map.get(key));
+                log.debug("{}--->{}", key, map.get(key));
             }
             in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line;
@@ -217,8 +217,7 @@ public class HttpClientUtil {
                 result += line;
             }
         } catch (Exception e) {
-            System.out.println("发送GET请求出现异常！" + e);
-            e.printStackTrace();
+            log.error("发送GET请求出现异常！", e);
         } finally {
             try {
                 if (in != null) {
@@ -254,8 +253,7 @@ public class HttpClientUtil {
                 result += line;
             }
         } catch (Exception e) {
-            System.out.println("发送 POST 请求出现异常！" + e);
-            e.printStackTrace();
+            log.error("发送 POST 请求出现异常！", e);
         } finally {
             try {
                 if (out != null) out.close();

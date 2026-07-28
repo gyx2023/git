@@ -1,5 +1,6 @@
 package com.crm;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
@@ -10,6 +11,7 @@ import org.springframework.boot.context.metrics.buffering.BufferingApplicationSt
  *
  * @author crm
  */
+@Slf4j
 @SpringBootApplication(exclude = {
         RabbitAutoConfiguration.class
 })
@@ -20,7 +22,7 @@ public class CrmApplication {
         SpringApplication application = new SpringApplication(CrmApplication.class);
         application.setApplicationStartup(new BufferingApplicationStartup(2048));
         application.run(args);
-        System.out.println("zqzt_backend启动成功");
+        log.info("zqzt_backend启动成功");
     }
 
 }

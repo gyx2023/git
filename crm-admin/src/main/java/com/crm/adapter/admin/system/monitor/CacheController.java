@@ -2,9 +2,11 @@ package com.crm.adapter.admin.system.monitor;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.collection.CollUtil;
+import com.crm.common.annotation.Log;
 import com.crm.common.constant.CacheConstants;
 import com.crm.common.constant.CacheNames;
 import com.crm.common.core.domain.R;
+import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.JsonUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.redis.CacheUtils;
@@ -47,6 +49,7 @@ public class CacheController {
      * 获取缓存监控列表
      */
     @SaCheckPermission("monitor:cache:list")
+    @Log(title = "缓存监控", businessType = BusinessType.OTHER)
     @GetMapping()
     public R<Map<String, Object>> getInfo() throws Exception {
         RedisConnection connection = connectionFactory.getConnection();
@@ -76,6 +79,7 @@ public class CacheController {
      * 获取缓存监控缓存名列表
      */
     @SaCheckPermission("monitor:cache:list")
+    @Log(title = "缓存监控", businessType = BusinessType.OTHER)
     @GetMapping("/getNames")
     public R<List<SysCache>> cache() {
         return R.ok(CACHES);

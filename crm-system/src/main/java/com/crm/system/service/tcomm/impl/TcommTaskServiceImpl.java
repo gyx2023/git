@@ -12,6 +12,7 @@ import com.crm.system.domain.dao.tcomm.TcommTaskDo;
 import com.crm.system.domain.vo.tcomm.TcommTaskVo;
 import com.crm.system.mapper.tcomm.TcommTaskMapper;
 import com.crm.system.service.tcomm.TcommTaskService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class TcommTaskServiceImpl implements TcommTaskService {
     @Resource
     private TcommTaskMapper baseMapper;
@@ -137,6 +139,7 @@ public class TcommTaskServiceImpl implements TcommTaskService {
     public Boolean deleteWithValidByIds(Collection<Integer> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import java.util.Collection;
  * @author crm
  * @date 2025-11-24
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class SysCategoryServiceImpl implements ISysCategoryService {
@@ -77,19 +79,19 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
      */
     @Override
     public List<SysCategoryVo> selectSubCategoriesByParentId(String parentId) {
-        System.out.println("Selecting sub categories for parentId: " + parentId);
+        log.info("Selecting sub categories for parentId: {}", parentId);
         SysCategoryBo bo = new SysCategoryBo();
         bo.setParent(parentId);
         bo.setType("亚类");
         List<SysCategoryVo> result = queryList(bo);
-        System.out.println("Found " + (result != null ? result.size() : 0) + " sub categories");
+        log.info("Found {} sub categories", result != null ? result.size() : 0);
         return result;
     }
 
     private LambdaQueryWrapper<SysCategory> buildQueryWrapper(SysCategoryBo bo) {
-        System.out.println("Building query wrapper with bo: " + bo);
+        log.info("Building query wrapper with bo: {}", bo);
         if (bo != null) {
-            System.out.println("BO values - name: " + bo.getName() + ", type: " + bo.getType() + ", parent: " + bo.getParent() + ", pinyin: " + bo.getPinyin());
+            log.debug("BO values - name: {}, type: {}, parent: {}, pinyin: {}", bo.getName(), bo.getType(), bo.getParent(), bo.getPinyin());
         }
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysCategory> lqw = Wrappers.lambdaQuery();
@@ -97,7 +99,7 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
         lqw.eq(StringUtils.isNotBlank(bo.getType()), SysCategory::getType, bo.getType());
         lqw.eq(StringUtils.isNotBlank(bo.getParent()), SysCategory::getParent, bo.getParent());
         lqw.eq(StringUtils.isNotBlank(bo.getPinyin()), SysCategory::getPinyin, bo.getPinyin());
-        System.out.println("Query wrapper built: " + lqw.getSqlSegment());
+        log.debug("Query wrapper built: {}", lqw.getSqlSegment());
         return lqw;
     }
 
@@ -160,8 +162,9 @@ public class SysCategoryServiceImpl implements ISysCategoryService {
     @Override
     @CacheEvict(cacheNames = CacheNames.SYS_CATEGORY, allEntries = true)
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

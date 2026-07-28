@@ -95,7 +95,10 @@ public class OpportunityExport extends AbstractExportStrategy {
     private final Object cacheInitLock = new Object();
 
     // 创建固定线程池用于并行处理
-    private final ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private final ExecutorService executorService = new java.util.concurrent.ThreadPoolExecutor(
+        8, 8, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+        new java.util.concurrent.LinkedBlockingQueue<>());
+
 
     @PostConstruct
     public void init() {
@@ -238,7 +241,7 @@ public class OpportunityExport extends AbstractExportStrategy {
             String[] codeTypes = {
                 "opp_type", "unicom_type", "clue_source",
                 "oppo_state", "select_type_1", "main_product",
-                "oppo_conversion_state_type"
+                "oppo_conversion_state_type", "unicom_type_new2"
             };
 
             for (String type : codeTypes) {
@@ -701,7 +704,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                     StringBuilder contractNos = new StringBuilder();
                     for (int i = 0; i < contracts.size(); i++) {
                         ToppContractVo contract = contracts.get(i);
-                        if (i > 0) contractNos.append(",");
+                        if (i > 0) {
+                            contractNos.append(",");
+                        }
                         if (StringUtils.isNotEmpty(contract.getContractNo())) {
                             contractNos.append(contract.getContractNo());
                         }
@@ -715,7 +720,9 @@ public class OpportunityExport extends AbstractExportStrategy {
                     StringBuilder eformNos = new StringBuilder();
                     for (int i = 0; i < eforms.size(); i++) {
                         ToppContractEformVo eform = eforms.get(i);
-                        if (i > 0) eformNos.append(",");
+                        if (i > 0) {
+                            eformNos.append(",");
+                        }
                         if (StringUtils.isNotEmpty(eform.getEformNo())) {
                             eformNos.append(eform.getEformNo());
                         }
@@ -868,6 +875,7 @@ public class OpportunityExport extends AbstractExportStrategy {
         final Map<String, String> oppoStateMap = SYS_CODE_CACHE.get("oppo_state");
         final Map<String, String> selectType1Map = SYS_CODE_CACHE.get("select_type_1");
         final Map<String, String> conversionStateMap = SYS_CODE_CACHE.get("oppo_conversion_state_type");
+        final Map<String, String> unicomType2Map = SYS_CODE_CACHE.get("unicom_type_new2");
 
         // 字典类型缓存
         List<SysDictData> growthTypeDictList = DICT_TYPE_CACHE.get("opp_growth_type");
@@ -888,8 +896,19 @@ public class OpportunityExport extends AbstractExportStrategy {
                 dto.setOppType(oppTypeMap.getOrDefault(dto.getOppType(), dto.getOppType()));
             }
 
-            if (StringUtils.isNotEmpty(dto.getUnicomType()) && unicomTypeMap != null) {
-                dto.setUnicomType(unicomTypeMap.getOrDefault(dto.getUnicomType(), dto.getUnicomType()));
+            // 先记录一级行业原始编码，二级行业需按原始编码判断
+            String rawUnicomType = dto.getUnicomType();
+            if (StringUtils.isNotEmpty(rawUnicomType) && unicomTypeMap != null) {
+                dto.setUnicomType(unicomTypeMap.getOrDefault(rawUnicomType, rawUnicomType));
+            }
+
+            // 客户二级行业：仅当一级行业=22（商企客户）时按 unicom_type_new2 翻译，翻不到留空；其余一律留空
+            if ("22".equals(rawUnicomType)
+                && StringUtils.isNotEmpty(dto.getUnicomType2())
+                && unicomType2Map != null) {
+                dto.setUnicomType2(unicomType2Map.getOrDefault(dto.getUnicomType2(), ""));
+            } else {
+                dto.setUnicomType2("");
             }
 
             if (StringUtils.isNotEmpty(dto.getOppSource()) && clueSourceMap != null) {
@@ -1380,7 +1399,9 @@ public class OpportunityExport extends AbstractExportStrategy {
      * 类型转换
      */
     private Long convertToLong(Object obj) {
-        if (obj == null) return null;
+        if (obj == null) {
+            return null;
+        }
 
         if (obj instanceof Long) {
             return (Long) obj;

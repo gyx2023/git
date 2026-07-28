@@ -228,7 +228,9 @@ public class PersonnelInfoSyncJob {
                     while ((currentLine = bufferedReader.readLine()) != null) {
                         PersonnelInfo personnelInfo = new PersonnelInfo();
                         String[] strs = currentLine.split(FILE_SEPARATOR_LIST, -1);
-                        if (strs.length != 35) continue;
+                        if (strs.length != 35) {
+                            continue;
+                        }
                         FieldAnnotaionUtil.setFiledValFromValuesByIndex(personnelInfo, strs);
 
                         List<PersonnelInfo> personnelInfoList = personnelInfoService.findList(personnelInfo);

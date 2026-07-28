@@ -16,6 +16,9 @@ public class HaoKaoSignUtil {
     public static final SimpleDateFormat TIMESTAMP_SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS");
     public static final SimpleDateFormat SERIAL_NUMBER_SDF = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
+    private static final ThreadLocal<SimpleDateFormat> THREAD_LOCAL_TIMESTAMP_SDF = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS"));
+    private static final ThreadLocal<SimpleDateFormat> THREAD_LOCAL_SERIAL_NUMBER_SDF = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMddHHmmssSSS"));
+
     public static void buildAppParams(Map<String, Object> map) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         Date date = new Date();
         SortedMap<Object, Object> parameters = new TreeMap<Object, Object>();
@@ -23,7 +26,7 @@ public class HaoKaoSignUtil {
         if(map.containsKey(_trans_id) && map.get(_trans_id) != null && !"".equals(map.get(_trans_id))){
             parameters.put(_trans_id, map.get(_trans_id));
         }else{
-            String serialNumber = SERIAL_NUMBER_SDF.format(date) + String.valueOf(1000000 + (int)(Math.random()*1000000)).substring(1);
+            String serialNumber = THREAD_LOCAL_SERIAL_NUMBER_SDF.get().format(date) + String.valueOf(1000000 + (int)(Math.random()*1000000)).substring(1);
             parameters.put(_trans_id, serialNumber);
             map.put(_trans_id, serialNumber);
         }
@@ -31,7 +34,7 @@ public class HaoKaoSignUtil {
         if(map.containsKey(_timestamp) && map.get(_timestamp) != null && !"".equals(map.get(_timestamp))){
             parameters.put(_timestamp, map.get(_timestamp));
         }else{
-            String timestamp = TIMESTAMP_SDF.format(date);
+            String timestamp = THREAD_LOCAL_TIMESTAMP_SDF.get().format(date);
             parameters.put(_timestamp, timestamp);
             map.put(_timestamp, timestamp);
         }
@@ -76,16 +79,18 @@ public class HaoKaoSignUtil {
 
     private static String byteArrayToHexString(byte b[]) {
         StringBuffer resultSb = new StringBuffer();
-        for (int i = 0; i < b.length; i++)
+        for (int i = 0; i < b.length; i++) {
             resultSb.append(byteToHexString(b[i]));
+        }
 
         return resultSb.toString();
     }
 
     private static String byteToHexString(byte b) {
         int n = b;
-        if (n < 0)
+        if (n < 0) {
             n += 256;
+        }
         int d1 = n / 16;
         int d2 = n % 16;
         return hexDigits[d1] + hexDigits[d2];

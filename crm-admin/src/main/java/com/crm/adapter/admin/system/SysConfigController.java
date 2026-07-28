@@ -33,6 +33,7 @@ public class SysConfigController extends BaseController {
     /**
      * 获取参数配置列表
      */
+    @Log(title = "参数管理", businessType = BusinessType.QUERY)
     @SaCheckPermission("system:config:list")
     @GetMapping("/list")
     public TableDataInfo<SysConfig> list(SysConfig config, PageQuery pageQuery) {

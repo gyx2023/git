@@ -299,7 +299,9 @@ public class ContractBaseImportJob extends AbstractImportJob<ZqztDwdContractsBo,
     }
 
     private void batchInsert(List<ZqztDwdContractsBo> list) {
-        if (list.isEmpty()) return;
+        if (list.isEmpty()) {
+            return;
+        }
         try {
             int insertCount = contractsMapper.batchInsert(list);
             log.info("批量入库{}条数据，成功{}条", list.size(), insertCount);

@@ -35,6 +35,7 @@ public class SysMenuController extends BaseController {
      * 获取菜单列表
      */
     @SaCheckPermission("system:menu:list")
+    @Log(title = "菜单管理", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public R<List<SysMenu>> list(SysMenu menu) {
         List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());

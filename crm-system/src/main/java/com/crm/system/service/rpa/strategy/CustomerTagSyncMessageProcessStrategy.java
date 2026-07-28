@@ -261,14 +261,22 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
     // ── 工具方法（生产代码搬运） ──────────────────────────────────────────
 
     private Object convertValueType(String valueType, Object sourceValue) {
-        if (sourceValue == null) return null;
+        if (sourceValue == null) {
+            return null;
+        }
         if ("Integer".equals(valueType)) {
-            if (sourceValue instanceof Number) return ((Number) sourceValue).intValue();
+            if (sourceValue instanceof Number) {
+                return ((Number) sourceValue).intValue();
+            }
             return Integer.valueOf(String.valueOf(sourceValue));
         }
-        if ("String".equals(valueType)) return String.valueOf(sourceValue);
+        if ("String".equals(valueType)) {
+            return String.valueOf(sourceValue);
+        }
         if ("BigDecimal".equals(valueType)) {
-            if (sourceValue instanceof BigDecimal) return sourceValue;
+            if (sourceValue instanceof BigDecimal) {
+                return sourceValue;
+            }
             return new BigDecimal(String.valueOf(sourceValue));
         }
         return sourceValue;
@@ -283,7 +291,9 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
     }
 
     private Object convertJsonValue(Object value) {
-        if (value instanceof cn.hutool.json.JSONObject) return convertJsonToMap((cn.hutool.json.JSONObject) value);
+        if (value instanceof cn.hutool.json.JSONObject) {
+            return convertJsonToMap((cn.hutool.json.JSONObject) value);
+        }
         if (value instanceof cn.hutool.json.JSONArray) {
             cn.hutool.json.JSONArray arr = (cn.hutool.json.JSONArray) value;
             List<Object> list = new ArrayList<>();
@@ -312,7 +322,9 @@ public class CustomerTagSyncMessageProcessStrategy implements RpaMessageProcessS
      * @return true=admin 同步成功，false=存入重试队列
      */
     private boolean syncCustomerTagAsync(String bizCode, String syncDataJson, Map<String, Object> syncData, long noticeRecordId) {
-        if (StringUtils.isBlank(bizCode) || StringUtils.isBlank(syncDataJson)) return false;
+        if (StringUtils.isBlank(bizCode) || StringUtils.isBlank(syncDataJson)) {
+            return false;
+        }
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

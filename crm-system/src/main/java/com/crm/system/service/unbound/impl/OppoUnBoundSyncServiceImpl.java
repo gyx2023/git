@@ -7,6 +7,7 @@ import com.crm.common.constant.OppoSyncConstants;
 import com.crm.common.utils.DateUtils;
 import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.bo.SysCodeBo;
+import com.crm.system.domain.bo.topp.ToppBidSuboppoBo;
 import com.crm.system.domain.bo.topp.ToppContractEformBo;
 import com.crm.system.domain.bo.topp.ToppMemberBo;
 import com.crm.system.domain.vo.SysCodeVo;
@@ -66,8 +67,12 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
     @Resource
     private ISysOperLogService sysOperLogService;
+    /** 支撑贡献度总分 */
+    private static final int TOTAL_CONTRIBUTION_SCORE = 100;
     @Resource
     private IToppOpportunityService oppotunityService;
+    @Resource
+    private IToppBidSuboppoService bidSuboppoService;
     @Resource
     private ISysParamService paramService;
     @Resource
@@ -115,6 +120,8 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
         setSupportInfo(reqMap, oppo);
         //设置扩展信息,前评估信息
         setExtendInfo(reqMap, oppo);
+        //设置bidInfo 标讯信息
+        setBidInfo(reqMap, oppo);
         UNI_BSS_BODY.put("SYN_PROVINCE_OPPORTUNITY_REQ", reqMap);
         return UNI_BSS_BODY;
 
@@ -167,13 +174,17 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
 
         // 商机主业务是组网业务默认同步其他（但是数据库存的还是组网业务对应的code，不同步给总部）
         if (!"opp_type_zwyw".equals(oppo.getOppType()) && ObjectUtil.isNotEmpty(oppo.getProductCode())) {
-            oppoMap.put("productCode", oppo.getProductCode());
-            if ("1".equals(oppo.getProductCode())) {
+            String productCode = oppo.getProductCode();
+            if (",".equals(productCode)) {
+                productCode = "1";
+            }
+            oppoMap.put("productCode", productCode);
+            if ("1".equals(productCode)) {
                 oppoMap.put("productName", oppo.getSfProductName() == null ? "" : oppo.getSfProductName());
                 oppoMap.put("customerTypeName", oppo.getSfCustomerType() == null ? "" : sysCodeService.findCode(Constants.CODE_UNICOM_TYPE, oppo.getSfCustomerType()).getName());
             } else {
-                oppoMap.put("productName", oppo.getProductCode() == null ? "" : sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, oppo.getProductCode()).getName());
-                SysCodeVo productCodeSysCode = sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, oppo.getProductCode());
+                oppoMap.put("productName", productCode == null ? "" : sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, productCode).getName());
+                SysCodeVo productCodeSysCode = sysCodeService.findCode(Constants.CODE_MAIN_PRODUCT, productCode);
                 SysCodeVo customerTypeCodeSysCode = sysCodeService.findCode("industry", productCodeSysCode.getSettingStr1());
                 oppoMap.put("customerTypeCode", customerTypeCodeSysCode.getCode());
                 oppoMap.put("customerTypeName", customerTypeCodeSysCode.getName());
@@ -457,26 +468,31 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
                         break;
                     }
                 }
-
-                for (ToppMemberVo m : list) {
-                    Map<String, Object> supMgrBo = new HashMap<>();
-                    SysUser memberUser = sysUserService.selectUserById(m.getMemberId());
-                    String email = memberUser.getEmail();
-                    //做过支撑贡献度,那么按照每个人实际记录的支撑贡献度记录
-                    if (isSupMgrContri) {
-                        if (ObjectUtil.isEmpty(m.getContri())) {
-                            supMgrBo.put("supMgrContri", 0);
-                        } else {
-                            supMgrBo.put("supMgrContri", new DecimalFormat("#").format(m.getContri()));
+                int memberCount = list.size();
+                if (memberCount > 0) {
+                    int baseContri = TOTAL_CONTRIBUTION_SCORE / memberCount;
+                    int remainder = TOTAL_CONTRIBUTION_SCORE % memberCount;
+                    for (int i = 0; i < memberCount; i++) {
+                        ToppMemberVo m = list.get(i);
+                        Map<String, Object> supMgrBo = new HashMap<String, Object>();
+                        SysUser memberUser = sysUserService.selectUserById(m.getMemberId());
+                        String email = memberUser.getEmail();
+                        //做过支撑贡献度,那么按照每个人实际记录的支撑贡献度记录
+                        if (isSupMgrContri) {
+                            if (ObjectUtil.isEmpty(m.getContri())) {
+                                supMgrBo.put("supMgrContri", 0);
+                            } else {
+                                supMgrBo.put("supMgrContri", m.getContri());
+                            }
+                        } else { //如果没做过支撑贡献度打分,那么按照100分平均下,余数分配给前N个人确保总和为100
+                            supMgrBo.put("supMgrContri", String.valueOf(baseContri + (i < remainder ? 1 : 0)));
                         }
-                    } else { //如果没做过支撑贡献度打分,那么按照100分平均下
-                        supMgrBo.put("supMgrContri", new DecimalFormat("#").format(100.00 / list.size()));
+                        //支撑经理账号
+                        if (ObjectUtil.isNotEmpty(email) && email.contains("@")) {
+                            supMgrBo.put("supMgr", email.substring(0, email.indexOf("@")));
+                        }
+                        supMgrList.add(supMgrBo);
                     }
-                    //支撑经理账号
-                    if (ObjectUtil.isNotEmpty(email) && email.contains("@")) {
-                        supMgrBo.put("supMgr", email.substring(0, email.indexOf("@")));
-                    }
-                    supMgrList.add(supMgrBo);
                 }
                 supportInfo.put("supMgrList", supMgrList);
                 reqMap.put("supportInfo", supportInfo);
@@ -505,6 +521,34 @@ public class OppoUnBoundSyncServiceImpl implements OppoUnBoundSyncService {
             log.error("设置扩展信息异常", e);
         }
 
+    }
+
+    /***
+     * 设置bidInfo 标讯信息（接口规范: 单个object, 约束?=0-1）
+     * 字段: infoId, releaseDate(yyyy-MM-dd HH:mm:ss), projectName, projectNumber
+     */
+    private void setBidInfo(Map reqMap, ToppOpportunityVo oppo) throws Exception {
+        try {
+            ToppBidSuboppoBo queryBo = new ToppBidSuboppoBo();
+            queryBo.setProjectId(oppo.getId());
+            queryBo.setValid(true);
+            List<ToppBidSuboppoVo> bidList = bidSuboppoService.queryList(queryBo);
+            if (bidList == null || bidList.isEmpty()) return;
+            // 接口规范: bidInfo是单个对象(?=0-1)，取第一条有效记录
+            ToppBidSuboppoVo bid = bidList.get(0);
+            Map<String, Object> bidInfo = new HashMap<>();
+            bidInfo.put("infoId", bid.getInfoId() != null ? bid.getInfoId() : "");
+            if (bid.getReleaseDate() != null) {
+                bidInfo.put("releaseDate", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(bid.getReleaseDate()));
+            } else {
+                bidInfo.put("releaseDate", "");
+            }
+            bidInfo.put("projectName", bid.getProjectName() != null ? bid.getProjectName() : "");
+            bidInfo.put("projectNumber", bid.getProjectCode() != null ? bid.getProjectCode() : "");
+            reqMap.put("bidInfo", bidInfo);
+        } catch (Exception e) {
+            log.error("设置标讯信息异常", e);
+        }
     }
 
     /**
