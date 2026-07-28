@@ -175,7 +175,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             Map<String, Object> extra = record.getExtraVariables();
 
             // 1. 去重检查
-//            if (isDuplicate(record, extra)) return;
+           if (isDuplicate(record, extra)) return;
 
             // 1.5 策略前置处理（可选）
             IWarningQueryStrategy strategy = findStrategy(record.getOrderType());
