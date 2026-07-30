@@ -200,8 +200,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             ToppOrderBo orderBo = buildOrderBo(record, task, extra);
             orderService.insertByBo(orderBo);
 
-            // 4.2 两节点流程：设置稽核节点显示名（稽核人由客户经理提交"通过"时选择，对齐旧系统）
-            setAuditNodeNameIfNeeded(piId, strategy);
+            // 4.2 两节点流程：预置稽核节点流程变量（dealUrl/节点名等，稽核任务创建时老系统从 FLO_ACT_RU_VARIABLE 读取）
+            setAuditVariablesIfNeeded(piId, strategy, orderBo, record, extra);
 
             // 4.5 保存升级预警关联表（仅针对升级预警类型）
             saveToppOrderUpIfNeeded(orderBo, extra);
@@ -276,12 +276,19 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
      * 随任务完成写入流程变量 {@code audit}。
      * </p>
      */
-    private void setAuditNodeNameIfNeeded(String piId, IWarningQueryStrategy strategy) {
+    private void setAuditVariablesIfNeeded(String piId, IWarningQueryStrategy strategy,
+                                            ToppOrderBo orderBo, WarningRecord record, Map<String, Object> extra) {
         if (strategy == null || PROCESS_KEY.equals(strategy.getProcessKey())) {
             return;
         }
         Map<String, Object> vars = new HashMap<>();
         vars.put("audit_handle_name", "稽核人员处理");
+        vars.put("audit_handle_dealUrl", strategy.buildDealUrl(orderBo.getId(), extra));
+        vars.put("audit_handle_infoId", String.valueOf(orderBo.getId()));
+        vars.put("audit_handle_infoType", "order");
+        if (StringUtils.isNotBlank(record.getCustName())) {
+            vars.put("audit_handle_custName", record.getCustName());
+        }
         runtimeService.setVariables(piId, vars);
     }
 
@@ -408,6 +415,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         taskVars.put(task.getTaskDefinitionKey() + "_infoId", orderBo.getId());
         taskVars.put(task.getTaskDefinitionKey() + "_infoType", "order");
         taskVars.put(task.getTaskDefinitionKey() + "_orderName", record.getOrderName());
+        if (StringUtils.isNotBlank(orderBo.getOrderNumber())) {
+            taskVars.put(task.getTaskDefinitionKey() + "flowNo", orderBo.getOrderNumber());
+        }
         if(StringUtils.isNotBlank( record.getCustName())){
             taskVars.put(task.getTaskDefinitionKey() + "_custName", record.getCustName());
             taskVars.put(task.getTaskDefinitionKey() + "_remindContent",
