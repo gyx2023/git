@@ -1,31 +1,18 @@
 package com.crm.job.service.file;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.base.AbstractFtpImportJob;
+import com.crm.job.service.warning.IWarningStartService;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.FtpBroadbandMarketCust;
 import com.crm.system.domain.dao.FtpBroadbandMarketUser;
-import com.crm.system.domain.dao.SysUsers;
-import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.FtpBroadbandMarketCustMapper;
 import com.crm.system.mapper.FtpBroadbandMarketUserMapper;
-import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
-import com.crm.system.mapper.sys.SysDeptMapper;
-import com.crm.system.mapper.topp.ToppOrderMapper;
-import com.crm.common.core.domain.entity.SysDept;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.Constants;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.flowable.engine.RepositoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.engine.repository.ProcessDefinition;
-import org.flowable.engine.runtime.ProcessInstance;
-import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +23,10 @@ import java.util.*;
 /**
  * 宽带专项营销文件导入 + 工作流启动
  * <p>
- * 流程：解析账期 → 下载客户/用户文件 → 解析入库 → 重建产品字典 → 启动工作流
+ * 流程：解析账期 → 下载客户/用户文件 → 解析入库 → 重建产品字典 → 调用 warningStartService 启动流程
+ * <p>
+ * 流程启动委托给 CustSalesWarningStrategy + WarningStartService（single_approval 通用审批流程），
+ * 不再直接操作 Flowable API。
  * <p>
  * XXL-Job 参数：只传 yyyyMM 账期（如 202607），不传则默认上月
  *
@@ -49,9 +39,6 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
     // ==================== 文件常量 ====================
     private static final String CUST_FILE_NAME = "TC_CUST_BROADBAND_MARKETING_M_";
     private static final String USER_FILE_NAME = "TC_USER_BROADBAND_MARKETING_M_";
-
-    /** 流程定义Key */
-    private static final String PROCESS_KEY = "custSales";
 
     /** 用户文件本地路径（download 时赋值，afterImport 中使用） */
     private String userLocalPath;
@@ -66,18 +53,7 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
     @Autowired
     private SysCodeMapper sysCodeMapper;
     @Autowired
-    private SysUsersMapper sysUsersMapper;
-    @Autowired
-    private SysDeptMapper sysDeptMapper;
-    @Autowired
-    private ToppOrderMapper toppOrderMapper;
-
-    @Autowired
-    private RepositoryService repositoryService;
-    @Autowired
-    private RuntimeService runtimeService;
-    @Autowired
-    private TaskService taskService;
+    private IWarningStartService warningStartService;
 
     // ==================== AbstractFtpImportJob 实现 ====================
 
@@ -185,8 +161,10 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         sysCodeMapper.insertCustSaleProduct();
         log.info("产品字典重建完成");
 
-        // 3. 启动工作流
-        startTasks(currentDateStr);
+        // 3. 委托 WarningStartService 启动流程
+        //  CustSalesWarningStrategy 会从 ftp_broadband_market_cust 表查询未生成订单的记录
+        //  逐条启动 single_approval 流程（流程定义 key=single_approval），创建工单并设置任务变量
+        warningStartService.startByType("cust_sales", currentDateStr);
 
         log.info("【{}】完成: 客户{}条, 用户{}条", getJobName(), custCount, userCount);
     }
@@ -279,7 +257,6 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         if (StringUtils.isNotEmpty(data[25])) { user.setCustCountyName(data[25]); }
         if (StringUtils.isNotEmpty(data[26])) { user.setDeveloperId(data[26]); }
         if (StringUtils.isNotEmpty(data[27])) { user.setDeveloperName(data[27]); }
-        if (StringUtils.isNotEmpty(data[28])) { user.setSpeed(data[28]); }
         if (StringUtils.isNotEmpty(data[29])) { user.setUserAddr(data[29]); }
         if (StringUtils.isNotEmpty(data[30])) { user.setCycleStartTime(data[30]); }
         if (StringUtils.isNotEmpty(data[31])) { user.setCycleEndTime(data[31]); }
@@ -296,78 +273,6 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         if (StringUtils.isNotEmpty(data[42])) { user.setMktDiscntName2(data[42]); }
         if (StringUtils.isNotEmpty(data[43])) { user.setMktDiscntFee2(data[43]); }
         return user;
-    }
-
-    // ==================== 工作流启动 ====================
-
-    private void startTasks(String yyyyMM) {
-        LambdaQueryWrapper<FtpBroadbandMarketCust> qw = new LambdaQueryWrapper<>();
-        qw.eq(FtpBroadbandMarketCust::getStatCycle, yyyyMM)
-            .isNull(FtpBroadbandMarketCust::getOrderId);
-        List<FtpBroadbandMarketCust> custList = ftpBroadbandMarketCustMapper.selectList(qw);
-
-        for (FtpBroadbandMarketCust cust : custList) {
-            SysUsers user = sysUsersMapper.selectUserByChannelHqCode(cust.getServManagerId());
-            if (user == null) {
-                log.info("根据发展人编码{}查询客户经理为空", cust.getServManagerId());
-                ftpBroadbandMarketCustMapper.updateCustOrderId(0, Long.valueOf(cust.getId()));
-                continue;
-            }
-
-            log.info("开始处理客户表ID为{}，账期：{}，发展人编码：{}，客户ID：{}，营销类型：{}",
-                cust.getId(), cust.getStatCycle(), cust.getServManagerId(),
-                cust.getCustGrpId(), cust.getMarketingName());
-            long startTime = System.currentTimeMillis();
-
-            ToppOrder order = new ToppOrder();
-            order.setOrderType(PROCESS_KEY);
-            order.setCreateTime(new Date());
-            order.setStatus(Constants.ORDER_STATUS_RUNNING);
-            order.setOrderName(cust.getGrpName() + "宽带专项营销");
-            order.setCustManagerId(user.getId());
-            order.setCustName(cust.getGrpName());
-            order.setCreator(user.getId());
-            if (user.getOrgId() != null) {
-                order.setOrgId(user.getOrgId());
-                SysDept dept = sysDeptMapper.selectById(user.getOrgId());
-                if (dept != null && dept.getAreaCode() != null) {
-                    order.setAreaId(Long.parseLong(dept.getAreaCode()));
-                }
-            }
-
-            Map<String, Object> startVariables = new HashMap<>();
-            startVariables.put("custManager", "," + user.getId() + ",");
-
-            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(PROCESS_KEY)
-                .latestVersion()
-                .singleResult();
-            ProcessInstance processInstance = runtimeService.startProcessInstanceById(
-                processDefinition.getId(), startVariables);
-            String piId = processInstance.getId();
-
-            Task task = taskService.createTaskQuery()
-                .processInstanceId(piId)
-                .singleResult();
-
-            order.setPiId(piId);
-            order.setPhase(task.getTaskDefinitionKey());
-            order.setPhaseName(task.getName());
-            toppOrderMapper.insert(order);
-
-            Map<String, Object> taskVariables = new HashMap<>();
-            taskVariables.put(task.getTaskDefinitionKey() + "_dealUrl",
-                "/custSales/toCustManagerDeal?orderId=" + order.getId() + "&taskId=" + task.getId());
-            taskVariables.put(task.getTaskDefinitionKey() + "_infoId", order.getId());
-            taskVariables.put(task.getTaskDefinitionKey() + "_infoType", "order");
-            taskVariables.put(task.getTaskDefinitionKey() + "_custName", order.getCustName());
-            taskService.setVariablesLocal(task.getId(), taskVariables);
-
-            ftpBroadbandMarketCustMapper.updateCustOrderId(order.getId().intValue(), Long.valueOf(cust.getId()));
-
-            long endTime = System.currentTimeMillis();
-            log.info("发起宽带专项营销流程耗时：{}ms", endTime - startTime);
-        }
     }
 
     // ==================== XXL-Job 入口 ====================
