@@ -97,6 +97,31 @@ public class Desensitization {
     }
 
     /**
+     * 脱敏手机号：保留前3后4，中间****
+     */
+    public static String desensitizePhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) return phone;
+        String s = phone.trim();
+        if (s.length() <= 7) return s;
+        return s.substring(0, 3) + "****" + s.substring(s.length() - 4);
+    }
+
+    /**
+     * 脱敏证件号码：保留前6后4，中间用 * 填充
+     */
+    public static String desensitizeCertificate(String certNo) {
+        if (certNo == null || certNo.trim().isEmpty()) return certNo;
+        String s = certNo.trim();
+        if (s.length() <= 10) return s;
+        String prefix = s.substring(0, 6);
+        String suffix = s.substring(s.length() - 4);
+        StringBuilder sb = new StringBuilder(prefix);
+        for (int i = 0; i < s.length() - 10; i++) sb.append('*');
+        sb.append(suffix);
+        return sb.toString();
+    }
+
+    /**
      * 脱敏合同名称
      * 规则：保留前两位和后两位字符，中间的所有字符用 '*' 替换。
      *
