@@ -53,24 +53,23 @@ public class ResultSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketR
         return RESULT_FILE_NAME + dateStr + ".txt";
     }
 
-    @Override
     protected FtpBroadbandMarketResult parseRow(String[] data) {
         FtpBroadbandMarketResult result = new FtpBroadbandMarketResult();
-        if (StringUtils.isNotEmpty(data[0])) result.setStatCycle(data[0]);
-        if (StringUtils.isNotEmpty(data[1])) result.setMarketingType(data[1]);
-        if (StringUtils.isNotEmpty(data[2])) result.setMarketingName(data[2]);
-        if (StringUtils.isNotEmpty(data[3])) result.setUserMarketingId(data[3]);
-        if (StringUtils.isNotEmpty(data[4])) result.setUserId(data[4]);
-        if (StringUtils.isNotEmpty(data[5])) result.setSvcNum(data[5]);
-        if (StringUtils.isNotEmpty(data[6])) result.setIsSucc(data[6]);
-        if (StringUtils.isNotEmpty(data[7])) result.setCreateDate(data[7]);
-        if (StringUtils.isNotEmpty(data[8])) result.setStartDate(data[8]);
-        if (StringUtils.isNotEmpty(data[9])) result.setEndDate(data[9]);
-        if (StringUtils.isNotEmpty(data[10])) result.setOrderProductCode(data[10]);
-        if (StringUtils.isNotEmpty(data[11])) result.setOrderProductName(data[11]);
-        if (StringUtils.isNotEmpty(data[12])) result.setOrderDiscntCode(data[12]);
-        if (StringUtils.isNotEmpty(data[13])) result.setOrderDiscntName(data[13]);
-        if (StringUtils.isNotEmpty(data[14])) result.setNewSpeed(data[14]);
+        if (StringUtils.isNotEmpty(data[0])) { result.setStatCycle(data[0]); }
+        if (StringUtils.isNotEmpty(data[1])) { result.setMarketingType(data[1]); }
+        if (StringUtils.isNotEmpty(data[2])) { result.setMarketingName(data[2]); }
+        if (StringUtils.isNotEmpty(data[3])) { result.setUserMarketingId(data[3]); }
+        if (StringUtils.isNotEmpty(data[4])) { result.setUserId(data[4]); }
+        if (StringUtils.isNotEmpty(data[5])) { result.setSvcNum(data[5]); }
+        if (StringUtils.isNotEmpty(data[6])) { result.setIsSucc(data[6]); }
+        if (StringUtils.isNotEmpty(data[7])) { result.setCreateDate(data[7]); }
+        if (StringUtils.isNotEmpty(data[8])) { result.setStartDate(data[8]); }
+        if (StringUtils.isNotEmpty(data[9])) { result.setEndDate(data[9]); }
+        if (StringUtils.isNotEmpty(data[10])) { result.setOrderProductCode(data[10]); }
+        if (StringUtils.isNotEmpty(data[11])) { result.setOrderProductName(data[11]); }
+        if (StringUtils.isNotEmpty(data[12])) { result.setOrderDiscntCode(data[12]); }
+        if (StringUtils.isNotEmpty(data[13])) { result.setOrderDiscntName(data[13]); }
+        if (StringUtils.isNotEmpty(data[14])) { result.setNewSpeed(data[14]); }
         return result;
     }
 

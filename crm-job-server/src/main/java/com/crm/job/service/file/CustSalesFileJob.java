@@ -171,7 +171,7 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         log.info("{}账期历史数据清理完成", currentDateStr);
     }
 
-    // ==================== 覆盖 afterImport()：用户文件入库 + 重建字典 + 启动工作流 ====================
+    // ==================== 覆盖 afterImport()：用户文件入库 + 重建字典 + 委托启动流程 ====================
 
     @Override
     protected void afterImport(int custCount) {
@@ -195,20 +195,20 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
 
     private FtpBroadbandMarketCust parseCustRow(String[] data) {
         FtpBroadbandMarketCust cust = new FtpBroadbandMarketCust();
-        if (StringUtils.isNotEmpty(data[0])) cust.setStatCycle(data[0]);
-        if (StringUtils.isNotEmpty(data[1])) cust.setCustMarketingId(data[1]);
-        if (StringUtils.isNotEmpty(data[2])) cust.setAreaName(data[2]);
-        if (StringUtils.isNotEmpty(data[3])) cust.setCountyName(data[3]);
-        if (StringUtils.isNotEmpty(data[4])) cust.setCustGrpId(data[4]);
-        if (StringUtils.isNotEmpty(data[5])) cust.setGrpCode(data[5]);
-        if (StringUtils.isNotEmpty(data[6])) cust.setGrpName(data[6]);
-        if (StringUtils.isNotEmpty(data[7])) cust.setServManagerId(data[7]);
-        if (StringUtils.isNotEmpty(data[8])) cust.setServManagerName(data[8]);
-        if (StringUtils.isNotEmpty(data[9])) cust.setGrpExpandType(data[9]);
-        if (StringUtils.isNotEmpty(data[10])) cust.setGrpBusiDeptType(data[10]);
-        if (StringUtils.isNotEmpty(data[11])) cust.setMarketingType(data[11]);
-        if (StringUtils.isNotEmpty(data[12])) cust.setMarketingName(data[12]);
-        if (StringUtils.isNotEmpty(data[13])) cust.setUserScale(data[13]);
+        if (StringUtils.isNotEmpty(data[0])) { cust.setStatCycle(data[0]); }
+        if (StringUtils.isNotEmpty(data[1])) { cust.setCustMarketingId(data[1]); }
+        if (StringUtils.isNotEmpty(data[2])) { cust.setAreaName(data[2]); }
+        if (StringUtils.isNotEmpty(data[3])) { cust.setCountyName(data[3]); }
+        if (StringUtils.isNotEmpty(data[4])) { cust.setCustGrpId(data[4]); }
+        if (StringUtils.isNotEmpty(data[5])) { cust.setGrpCode(data[5]); }
+        if (StringUtils.isNotEmpty(data[6])) { cust.setGrpName(data[6]); }
+        if (StringUtils.isNotEmpty(data[7])) { cust.setServManagerId(data[7]); }
+        if (StringUtils.isNotEmpty(data[8])) { cust.setServManagerName(data[8]); }
+        if (StringUtils.isNotEmpty(data[9])) { cust.setGrpExpandType(data[9]); }
+        if (StringUtils.isNotEmpty(data[10])) { cust.setGrpBusiDeptType(data[10]); }
+        if (StringUtils.isNotEmpty(data[11])) { cust.setMarketingType(data[11]); }
+        if (StringUtils.isNotEmpty(data[12])) { cust.setMarketingName(data[12]); }
+        if (StringUtils.isNotEmpty(data[13])) { cust.setUserScale(data[13]); }
         return cust;
     }
 
@@ -251,50 +251,50 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
 
     private FtpBroadbandMarketUser parseUserRow(String[] data) {
         FtpBroadbandMarketUser user = new FtpBroadbandMarketUser();
-        if (StringUtils.isNotEmpty(data[0])) user.setStatCycle(data[0]);
-        if (StringUtils.isNotEmpty(data[1])) user.setMarketingType(data[1]);
-        if (StringUtils.isNotEmpty(data[2])) user.setMarketingName(data[2]);
-        if (StringUtils.isNotEmpty(data[3])) user.setUserMarketingId(data[3]);
-        if (StringUtils.isNotEmpty(data[4])) user.setAreaName(data[4]);
-        if (StringUtils.isNotEmpty(data[5])) user.setUserId(data[5]);
-        if (StringUtils.isNotEmpty(data[6])) user.setSvcNum(data[6]);
-        if (StringUtils.isNotEmpty(data[7])) user.setCountyName(data[7]);
-        if (StringUtils.isNotEmpty(data[8])) user.setOpenDate(data[8]);
-        if (StringUtils.isNotEmpty(data[9])) user.setCustKind(data[9]);
-        if (StringUtils.isNotEmpty(data[10])) user.setCustId(data[10]);
-        if (StringUtils.isNotEmpty(data[11])) user.setCustName(data[11]);
-        if (StringUtils.isNotEmpty(data[12])) user.setCertType(data[12]);
-        if (StringUtils.isNotEmpty(data[13])) user.setIsGrpKey(data[13]);
-        if (StringUtils.isNotEmpty(data[14])) user.setCustGrpId(data[14]);
-        if (StringUtils.isNotEmpty(data[15])) user.setGrpCode(data[15]);
-        if (StringUtils.isNotEmpty(data[16])) user.setGrpName(data[16]);
-        if (StringUtils.isNotEmpty(data[17])) user.setServManagerId(data[17]);
-        if (StringUtils.isNotEmpty(data[18])) user.setServManagerName(data[18]);
-        if (StringUtils.isNotEmpty(data[19])) user.setGrpExpandType(data[19]);
-        if (StringUtils.isNotEmpty(data[20])) user.setGrpBusiDeptType(data[20]);
-        if (StringUtils.isNotEmpty(data[21])) user.setProdId(data[21]);
-        if (StringUtils.isNotEmpty(data[22])) user.setProdName(data[22]);
-        if (StringUtils.isNotEmpty(data[23])) user.setUserStatus(data[23]);
-        if (StringUtils.isNotEmpty(data[24])) user.setHqSvcType(data[24]);
-        if (StringUtils.isNotEmpty(data[25])) user.setCustCountyName(data[25]);
-        if (StringUtils.isNotEmpty(data[26])) user.setDeveloperId(data[26]);
-        if (StringUtils.isNotEmpty(data[27])) user.setDeveloperName(data[27]);
-        if (StringUtils.isNotEmpty(data[28])) user.setSpeed(data[28]);
-        if (StringUtils.isNotEmpty(data[29])) user.setUserAddr(data[29]);
-        if (StringUtils.isNotEmpty(data[30])) user.setCycleStartTime(data[30]);
-        if (StringUtils.isNotEmpty(data[31])) user.setCycleEndTime(data[31]);
-        if (StringUtils.isNotEmpty(data[32])) user.setCycleLength(data[32]);
-        if (StringUtils.isNotEmpty(data[33])) user.setCycleFee(data[33]);
-        if (StringUtils.isNotEmpty(data[34])) user.setMktProductId1(data[34]);
-        if (StringUtils.isNotEmpty(data[35])) user.setMktProductName1(data[35]);
-        if (StringUtils.isNotEmpty(data[36])) user.setMktDiscntCode1(data[36]);
-        if (StringUtils.isNotEmpty(data[37])) user.setMktDiscntName1(data[37]);
-        if (StringUtils.isNotEmpty(data[38])) user.setMktDiscntFee1(data[38]);
-        if (StringUtils.isNotEmpty(data[39])) user.setMktProductId2(data[39]);
-        if (StringUtils.isNotEmpty(data[40])) user.setMktProductName2(data[40]);
-        if (StringUtils.isNotEmpty(data[41])) user.setMktDiscntCode2(data[41]);
-        if (StringUtils.isNotEmpty(data[42])) user.setMktDiscntName2(data[42]);
-        if (StringUtils.isNotEmpty(data[43])) user.setMktDiscntFee2(data[43]);
+        if (StringUtils.isNotEmpty(data[0])) { user.setStatCycle(data[0]); }
+        if (StringUtils.isNotEmpty(data[1])) { user.setMarketingType(data[1]); }
+        if (StringUtils.isNotEmpty(data[2])) { user.setMarketingName(data[2]); }
+        if (StringUtils.isNotEmpty(data[3])) { user.setUserMarketingId(data[3]); }
+        if (StringUtils.isNotEmpty(data[4])) { user.setAreaName(data[4]); }
+        if (StringUtils.isNotEmpty(data[5])) { user.setUserId(data[5]); }
+        if (StringUtils.isNotEmpty(data[6])) { user.setSvcNum(data[6]); }
+        if (StringUtils.isNotEmpty(data[7])) { user.setCountyName(data[7]); }
+        if (StringUtils.isNotEmpty(data[8])) { user.setOpenDate(data[8]); }
+        if (StringUtils.isNotEmpty(data[9])) { user.setCustKind(data[9]); }
+        if (StringUtils.isNotEmpty(data[10])) { user.setCustId(data[10]); }
+        if (StringUtils.isNotEmpty(data[11])) { user.setCustName(data[11]); }
+        if (StringUtils.isNotEmpty(data[12])) { user.setCertType(data[12]); }
+        if (StringUtils.isNotEmpty(data[13])) { user.setIsGrpKey(data[13]); }
+        if (StringUtils.isNotEmpty(data[14])) { user.setCustGrpId(data[14]); }
+        if (StringUtils.isNotEmpty(data[15])) { user.setGrpCode(data[15]); }
+        if (StringUtils.isNotEmpty(data[16])) { user.setGrpName(data[16]); }
+        if (StringUtils.isNotEmpty(data[17])) { user.setServManagerId(data[17]); }
+        if (StringUtils.isNotEmpty(data[18])) { user.setServManagerName(data[18]); }
+        if (StringUtils.isNotEmpty(data[19])) { user.setGrpExpandType(data[19]); }
+        if (StringUtils.isNotEmpty(data[20])) { user.setGrpBusiDeptType(data[20]); }
+        if (StringUtils.isNotEmpty(data[21])) { user.setProdId(data[21]); }
+        if (StringUtils.isNotEmpty(data[22])) { user.setProdName(data[22]); }
+        if (StringUtils.isNotEmpty(data[23])) { user.setUserStatus(data[23]); }
+        if (StringUtils.isNotEmpty(data[24])) { user.setHqSvcType(data[24]); }
+        if (StringUtils.isNotEmpty(data[25])) { user.setCustCountyName(data[25]); }
+        if (StringUtils.isNotEmpty(data[26])) { user.setDeveloperId(data[26]); }
+        if (StringUtils.isNotEmpty(data[27])) { user.setDeveloperName(data[27]); }
+        if (StringUtils.isNotEmpty(data[28])) { user.setSpeed(data[28]); }
+        if (StringUtils.isNotEmpty(data[29])) { user.setUserAddr(data[29]); }
+        if (StringUtils.isNotEmpty(data[30])) { user.setCycleStartTime(data[30]); }
+        if (StringUtils.isNotEmpty(data[31])) { user.setCycleEndTime(data[31]); }
+        if (StringUtils.isNotEmpty(data[32])) { user.setCycleLength(data[32]); }
+        if (StringUtils.isNotEmpty(data[33])) { user.setCycleFee(data[33]); }
+        if (StringUtils.isNotEmpty(data[34])) { user.setMktProductId1(data[34]); }
+        if (StringUtils.isNotEmpty(data[35])) { user.setMktProductName1(data[35]); }
+        if (StringUtils.isNotEmpty(data[36])) { user.setMktDiscntCode1(data[36]); }
+        if (StringUtils.isNotEmpty(data[37])) { user.setMktDiscntName1(data[37]); }
+        if (StringUtils.isNotEmpty(data[38])) { user.setMktDiscntFee1(data[38]); }
+        if (StringUtils.isNotEmpty(data[39])) { user.setMktProductId2(data[39]); }
+        if (StringUtils.isNotEmpty(data[40])) { user.setMktProductName2(data[40]); }
+        if (StringUtils.isNotEmpty(data[41])) { user.setMktDiscntCode2(data[41]); }
+        if (StringUtils.isNotEmpty(data[42])) { user.setMktDiscntName2(data[42]); }
+        if (StringUtils.isNotEmpty(data[43])) { user.setMktDiscntFee2(data[43]); }
         return user;
     }
 
