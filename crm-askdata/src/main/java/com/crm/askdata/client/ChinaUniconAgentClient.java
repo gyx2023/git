@@ -68,21 +68,30 @@ public class ChinaUniconAgentClient {
             userName,
             traceId,
             pageCode,
+            Collections.emptyMap(),
             responseParser::extractIntentJson
         );
     }
 
-    public HiAgentChatResponse postProcessResult(String agentInput, String conversationId, String userId,
+    /**
+     * 调用结果处理智能体。
+     *
+     * @param content             传给平台会话的用户问题
+     * @param additionalVariables 结果数据等平台自定义变量
+     */
+    public HiAgentChatResponse postProcessResult(String content, Map<String, String> additionalVariables,
+                                                 String conversationId, String userId,
                                                  String userName, String traceId) {
         return chat(
             "result",
             properties.getResultAppId(),
-            agentInput,
+            content,
             conversationId,
             userId,
             userName,
             traceId,
             null,
+            additionalVariables,
             responseParser::extractResultJson
         );
     }
@@ -102,6 +111,7 @@ public class ChinaUniconAgentClient {
             userName,
             traceId,
             null,
+            Collections.emptyMap(),
             responseParser::extractSemanticSqlJson
         );
     }
@@ -109,11 +119,13 @@ public class ChinaUniconAgentClient {
     private HiAgentChatResponse chat(String agentType, String appId, String content, String conversationId,
                                      String userId, String userName, String traceId,
                                      String pageCode,
+                                     Map<String, String> additionalVariables,
                                      java.util.function.Function<String, String> answerExtractor) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> logInput = null;
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-        Map<String, String> variable = buildVariable(agentType, content, pageCode);
+        Map<String, String> variable = buildVariable(
+            agentType, content, pageCode, additionalVariables);
         String accessToken = ChinaUniconAgentAccessTokenUtil.generateAccessToken(
             appId,
             timestamp,
@@ -185,16 +197,20 @@ public class ChinaUniconAgentClient {
         }
     }
 
-    private Map<String, String> buildVariable(String agentType, String content, String pageCode) {
+    private Map<String, String> buildVariable(String agentType, String content, String pageCode,
+                                              Map<String, String> additionalVariables) {
         ChinaUniconAgentProperties.AgentConfig agentConfig = resolveAgentConfig(agentType);
         boolean hasPageCode = pageCode != null && !pageCode.trim().isEmpty();
-        if ((agentConfig == null || !agentConfig.isPassContentAsInput()) && !hasPageCode) {
+        boolean hasAdditionalVariables = additionalVariables != null && !additionalVariables.isEmpty();
+        boolean passContentAsInput = agentConfig != null && agentConfig.isPassContentAsInput();
+        if (!passContentAsInput
+            && !hasPageCode && !hasAdditionalVariables) {
             return Collections.emptyMap();
         }
 
         Map<String, String> variable = new LinkedHashMap<>();
-        if (agentConfig != null && agentConfig.isPassContentAsInput()) {
-            String inputVariableName = agentConfig.getInputVariableName();
+        if (passContentAsInput) {
+            String inputVariableName = agentConfig != null ? agentConfig.getInputVariableName() : "input";
             if (inputVariableName == null || inputVariableName.trim().isEmpty()) {
                 inputVariableName = "input";
             }
@@ -202,6 +218,13 @@ public class ChinaUniconAgentClient {
         }
         if (hasPageCode) {
             variable.put("pageCode", pageCode.trim());
+        }
+        if (hasAdditionalVariables) {
+            additionalVariables.forEach((key, value) -> {
+                if (key != null && !key.trim().isEmpty()) {
+                    variable.put(key.trim(), value == null ? "" : value);
+                }
+            });
         }
         return variable;
     }

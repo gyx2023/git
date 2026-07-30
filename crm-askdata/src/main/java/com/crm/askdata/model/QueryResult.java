@@ -2,6 +2,8 @@ package com.crm.askdata.model;
 
 import lombok.Data;
 
+import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +14,9 @@ import java.util.Map;
  */
 @Data
 public class QueryResult {
+
+    /** 查询未命中或接口未返回明细数据时展示给用户的统一文案。 */
+    public static final String NO_DATA_MESSAGE = "暂未查询到数据，请换个条件试试";
 
     /** 是否成功 */
     private boolean success = true;
@@ -94,5 +99,47 @@ public class QueryResult {
         result.setStrategy(strategy);
         result.setErrorMessage(errorMessage);
         return result;
+    }
+
+    /**
+     * 判断工具 API 是否返回空结果。
+     * <p>
+     * 仅识别空容器，不把数值为 0 的正常统计结果当成无数据。
+     */
+    public boolean hasNoData() {
+        if (data == null || data.isEmpty()) {
+            return true;
+        }
+        if (data.containsKey("data")) {
+            return isEmptyContainer(data.get("data"));
+        }
+        for (String key : new String[] {"rows", "list", "records", "items"}) {
+            if (data.containsKey(key)) {
+                return isEmptyContainer(data.get(key));
+            }
+        }
+        return false;
+    }
+
+    private boolean isEmptyContainer(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof Collection) {
+            return ((Collection<?>) value).isEmpty();
+        }
+        if (value instanceof Map) {
+            Map<?, ?> mapValue = (Map<?, ?>) value;
+            if (mapValue.isEmpty()) {
+                return true;
+            }
+            for (String key : new String[] {"data", "rows", "list", "records", "items"}) {
+                if (mapValue.containsKey(key)) {
+                    return isEmptyContainer(mapValue.get(key));
+                }
+            }
+            return false;
+        }
+        return value.getClass().isArray() && Array.getLength(value) == 0;
     }
 }

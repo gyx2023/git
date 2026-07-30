@@ -74,6 +74,14 @@ public class ConversationSession implements Serializable {
      */
     private String lockedToolName;
 
+    // ==================== 澄清上下文 ====================
+
+    /** 首轮触发澄清时的完整用户问题 */
+    private String clarificationOriginalQuery;
+
+    /** 用户对每轮澄清问题的补充回答，按输入顺序保存 */
+    private List<String> clarificationAnswers = new ArrayList<>();
+
 
     // ==================== 方法 ====================
 
@@ -107,6 +115,59 @@ public class ConversationSession implements Serializable {
      */
     public boolean isMaxTurnsReached() {
         return currentTurnCount >= MAX_TURN_COUNT;
+    }
+
+    /**
+     * 开始一轮新的澄清，保存首轮完整问题并清空旧回答。
+     */
+    public void beginClarification(String originalQuery) {
+        this.clarificationOriginalQuery = originalQuery;
+        this.clarificationAnswers = new ArrayList<>();
+    }
+
+    /**
+     * 记录用户对当前澄清问题的回答。
+     */
+    public void appendClarificationAnswer(String answer) {
+        if (answer == null || answer.trim().isEmpty()) {
+            return;
+        }
+        if (clarificationAnswers == null) {
+            clarificationAnswers = new ArrayList<>();
+        }
+        clarificationAnswers.add(answer.trim());
+        touch();
+    }
+
+    /**
+     * 是否保留了可用于恢复完整语义的澄清上下文。
+     */
+    public boolean hasClarificationContext() {
+        return clarificationOriginalQuery != null && !clarificationOriginalQuery.trim().isEmpty();
+    }
+
+    /**
+     * 组装供下游智能体理解的完整问题。
+     */
+    public String buildClarifiedQuery() {
+        if (!hasClarificationContext()) {
+            return "";
+        }
+        StringBuilder query = new StringBuilder("用户原始需求：")
+            .append(clarificationOriginalQuery.trim());
+        if (clarificationAnswers != null && !clarificationAnswers.isEmpty()) {
+            query.append("\n澄清补充：")
+                .append(String.join("；", clarificationAnswers));
+        }
+        return query.toString();
+    }
+
+    /**
+     * 清除已完成、超时或切换话题后的澄清上下文。
+     */
+    public void clearClarificationContext() {
+        clarificationOriginalQuery = null;
+        clarificationAnswers = new ArrayList<>();
     }
 
     /**

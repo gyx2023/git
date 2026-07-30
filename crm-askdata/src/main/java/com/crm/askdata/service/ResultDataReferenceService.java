@@ -51,10 +51,6 @@ public class ResultDataReferenceService {
         return RedisUtils.getCacheObject(buildKey(dataRef));
     }
 
-    public boolean isActive() {
-        return properties.isActive();
-    }
-
     private String buildKey(String dataRef) {
         return KEY_PREFIX + dataRef;
     }

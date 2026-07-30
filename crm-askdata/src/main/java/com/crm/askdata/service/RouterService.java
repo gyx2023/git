@@ -218,8 +218,10 @@ public class RouterService {
         IntentRecognitionResult intentRecog = recognizeIntent(
             query, sessionId, userId, traceId, intentProvider, pageCode, requestHeaders);
 
-        // 透传原始查询到 IntentResult，供结果处理和展示阶段使用
-        intentRecog.intentResult.setOriginalQuery(query);
+        // 澄清回复不能覆盖首轮完整问题；下游展示和结果处理使用恢复后的完整语义。
+        String effectiveOriginalQuery = resolveEffectiveOriginalQuery(
+            query, sessionId, userId, traceId);
+        intentRecog.intentResult.setOriginalQuery(effectiveOriginalQuery);
 
         // 意图识别完成，推送进度
         statusConsumer.accept("正在分析需求...");
@@ -456,16 +458,18 @@ public class RouterService {
         if (sessionId != null) {
             ConversationSession session = getOrInitSession(sessionId, userId, traceId);
 
-            // 【新增】检测意图切换：如果用户在新问题中提供了完整的 toolName，说明转移了话题
-            if (detectIntentSwitch(session, intent, query)) {
-                log.info("intent switch detected during clarification, resetting session: sessionId={}", sessionId);
-                session = resetSessionForNewTopic(session, userId);
-            }
-
             // 超时检查（保留）
             if (session.checkTimeout()) {
                 log.info("session timeout, resetting");
                 session = resetSession(session, userId);
+            }
+
+            // 首次触发澄清时保存完整问题；后续澄清轮次沿用已保存的首轮问题。
+            if (!session.hasClarificationContext()) {
+                session.beginClarification(query);
+            }
+            if (session.getLockedToolName() == null && intent.getToolName() != null) {
+                session.setLockedToolName(intent.getToolName());
             }
 
             // 仅记录轮次和状态（用于后端兜底）
@@ -493,6 +497,34 @@ public class RouterService {
             .orElse(Collections.singletonList("请输入补充说明"));
 
         return ClarificationOutcome.returnClarify(question, options);
+    }
+
+    /**
+     * 澄清回复通常只是“某天”“杭州”等片段。恢复首轮完整问题并拼入全部补充回答，
+     * 保证结果处理智能体始终能看到完整查询语义。
+     */
+    private String resolveEffectiveOriginalQuery(String query, String sessionId,
+                                                 String userId, String traceId) {
+        if (sessionId == null) {
+            return query;
+        }
+        ConversationSession session = contextManager.getSession(sessionId);
+        if (session == null || session.getStatus() != ConversationSession.ConversationStatus.CLARIFYING) {
+            return query;
+        }
+        if (session.checkTimeout()) {
+            log.info("clarification session timed out before reply, discarding context: sessionId={}", sessionId);
+            resetSession(session, userId);
+            return query;
+        }
+        if (!session.hasClarificationContext()) {
+            log.warn("traceId={} clarification context missing, using current reply only", traceId);
+            return query;
+        }
+
+        session.appendClarificationAnswer(query);
+        contextManager.saveSession(session);
+        return session.buildClarifiedQuery();
     }
 
     // ==================== 阶段3：状态转换 ====================
@@ -678,6 +710,7 @@ public class RouterService {
         // 改造后：仅重置计数器和状态（保留 lockedToolName 用于下一轮快速匹配）
         session.setCurrentTurnCount(0);
         session.setStatus(ConversationSession.ConversationStatus.COMPLETED);
+        session.clearClarificationContext();
         session.touch();
 
         contextManager.saveSession(session);
@@ -798,8 +831,8 @@ public class RouterService {
      * <br>
      * 决策矩阵：
      * - data_query + confidence ≥ high + toolName 非空 → TOOL_CALL
-     * - data_query + confidence ≥ high + toolName 为空 → SEMANTIC_QUERY
-     * - data_query + confidence ∈ [medium, high)    → SEMANTIC_QUERY（或 TEXT_TO_SQL）
+     * - data_query + confidence ≥ high + toolName 为空 → FALLBACK_KB（返回无数据提示）
+     * - data_query + confidence ∈ [medium, high) 且 toolName 为空 → FALLBACK_KB（返回无数据提示）
      * - data_query + confidence < medium             → FALLBACK_KB
      * - knowledge / chat / unknown                  → FALLBACK_KB
      */
@@ -852,12 +885,11 @@ public class RouterService {
                         candidates.add("TOOL_CALL");
                         scores.put("TOOL_CALL", confidence);
                     } else {
-                        // Intent Agent 未返回工具名，降级到语义查询
-                        strategy = RoutingStrategy.SEMANTIC_QUERY;
-                        reason = "data_query 高置信度 (" + confidence + ")，未匹配工具，执行语义查询";
-                        candidates.add("TOOL_CALL");
-                        candidates.add("SEMANTIC_QUERY");
-                        scores.put("SEMANTIC_QUERY", confidence);
+                        // 未命中工具时直接返回统一的无数据提示，避免无效的二次语义查询。
+                        strategy = RoutingStrategy.FALLBACK_KB;
+                        reason = "data_query 高置信度 (" + confidence + ")，未匹配工具，返回无数据提示";
+                        candidates.add("FALLBACK_KB");
+                        scores.put("FALLBACK_KB", confidence);
                         rejections.add("未匹配工具");
                     }
                 } else if (confidence >= thresholds.getMedium()) {
@@ -871,17 +903,12 @@ public class RouterService {
                         scores.put("TOOL_CALL", confidence);
                         log.info("medium confidence but toolName present, routing to TOOL_CALL: {}",
                             toolNameMedium);
-                    } else if (properties.getSecurity().getEnableSqlSandbox()
-                        && permissionService.hasSqlSandboxPermission(userId)) {
-                        strategy = RoutingStrategy.TEXT_TO_SQL;
-                        reason = "data_query 意图，置信度 " + confidence + " 达到阈值，执行 SQL 查询";
-                        candidates.add("TEXT_TO_SQL");
-                        scores.put("TEXT_TO_SQL", confidence);
                     } else {
-                        strategy = RoutingStrategy.SEMANTIC_QUERY;
-                        reason = "data_query 意图，置信度 " + confidence + "，SQL 沙箱未开启，执行语义查询";
-                        candidates.add("SEMANTIC_QUERY");
-                        scores.put("SEMANTIC_QUERY", confidence);
+                        strategy = RoutingStrategy.FALLBACK_KB;
+                        reason = "data_query 中置信度 (" + confidence + ")，未匹配工具，返回无数据提示";
+                        candidates.add("FALLBACK_KB");
+                        scores.put("FALLBACK_KB", confidence);
+                        rejections.add("未匹配工具");
                     }
                 } else {
                     // 置信度不足（前端已处理 needClarify 澄清）：降级到知识库
@@ -1062,74 +1089,12 @@ public class RouterService {
             session.setCurrentTurnCount(0);
             session.setStatus(ConversationSession.ConversationStatus.INITIAL);
             session.setLockedToolName(null);
+            session.clearClarificationContext();
             session.touch();
             contextManager.saveSession(session);
         }
 
         return session;
-    }
-
-    /**
-     * 检测意图切换（用户是否转移了话题）
-     * <p>
-     * 判断条件：
-     * 1. 会话处于 CLARIFYING 状态
-     * 2. 本轮识别出新的 toolName，且与锁定的 toolName 不同
-     * 3. 或者本轮 intent 类型发生根本变化（如 data_query → knowledge）
-     *
-     * @param session 当前会话
-     * @param intent  本轮意图识别结果
-     * @param query   用户原始输入
-     * @return true 表示检测到意图切换
-     */
-    private boolean detectIntentSwitch(ConversationSession session, IntentResult intent, String query) {
-        if (session == null) {
-            return false;
-        }
-
-        String lockedToolName = session.getLockedToolName();
-        String newToolName = intent.getToolName();
-
-        if (session.getStatus() == ConversationSession.ConversationStatus.CLARIFYING) {
-            // 原有逻辑：CLARIFYING 状态下 toolName 变化
-            if (lockedToolName != null && newToolName != null && !lockedToolName.equals(newToolName)) {
-                log.info("toolName changed from '{}' to '{}' during CLARIFYING, topic switch detected",
-                    lockedToolName, newToolName);
-                return true;
-            }
-            return false;
-        }
-
-        // 新增：INITIAL 阶段检测话题切换
-        // 场景：上一轮 lockedToolName 与本轮 toolName 完全不同
-        if (lockedToolName != null && newToolName != null && !lockedToolName.equals(newToolName)) {
-            log.info("toolName changed from '{}' to '{}' on new turn, topic switch detected",
-                lockedToolName, newToolName);
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * 为新话题重置会话（保留 sessionId，清空所有锁定状态）
-     *
-     * @param old    旧会话
-     * @param userId 用户 ID
-     * @return 重置后的会话
-     */
-    private ConversationSession resetSessionForNewTopic(ConversationSession old, String userId) {
-        old.setCurrentTurnCount(0);
-        old.setStatus(ConversationSession.ConversationStatus.INITIAL);
-        old.setLockedToolName(null);
-        old.touch();
-        contextManager.saveSession(old);
-
-        // 清除 HiAgent 旧会话缓存，下次请求自动创建新会话
-        conversationManager.renewConversation(userId, intentAgentId, old.getSessionId());
-
-        log.info("session reset for new topic: sessionId={}, userId={}", old.getSessionId(), userId);
-        return old;
     }
 
     /**

@@ -6,9 +6,7 @@ import com.crm.askdata.config.AgentProvider;
 import com.crm.askdata.model.HiAgentChatResponse;
 import com.crm.askdata.model.IntentResult;
 import com.crm.askdata.model.QueryResult;
-import com.crm.askdata.model.ResponseSchema;
 import com.crm.askdata.model.ResultProcessingOutput;
-import com.crm.askdata.model.ToolConfigWithParams;
 import com.crm.askdata.security.HeaderContextHolder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,8 +27,8 @@ import java.util.regex.Pattern;
  * <p>
  * 设计原则：
  * 1. 失败不阻塞：Agent 调用失败时返回原始数据，保障可用性
- * 2. Token 控制：大数据集仅传前 50 行样本 + 总数
- * 3. 无状态调用：每次调用独立，不依赖 Agent 的会话历史
+ * 2. 输入精简：仅向结果智能体传递原始查询数据，避免元数据干扰
+ * 3. 会话隔离：按用户与前端会话隔离平台上下文，避免多轮问题串扰
  *
  * @author crm
  */
@@ -41,17 +39,12 @@ public class ResultPostProcessorService {
 
     private final HiAgentClient hiAgentClient;
     private final ChinaUniconAgentClient chinaUniconAgentClient;
-    private final ToolConfigService configService;
     private final HiAgentConversationManager conversationManager;
     private final AskDataAgentProviderService agentProviderService;
-    private final ResultDataReferenceService resultDataReferenceService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${hiagent.result-agent-id:result_agent}")
     private String resultAgentId;
-
-    /** 发送给 Agent 的最大数据行数 */
-    private static final int MAX_SAMPLE_ROWS = 50;
 
     /**
      * 对工具调用结果进行后处理
@@ -88,22 +81,18 @@ public class ResultPostProcessorService {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 获取字段映射（从 response_schema 或旧表）
-            ResponseSchema schema = loadResponseSchema(intent.getToolName());
-
-            // 构建 Agent 输入
-            String agentInput = buildAgentInput(originalQuery, intent, rawData, schema);
+            // 结果智能体只接收原始数据本身；用户问题已通过消息正文单独传递。
+            String agentInput = serializeRawData(rawData);
+            String agentQuery = buildAgentQuery(originalQuery);
             AgentProvider resultProvider = agentProviderService.resolveResultProvider();
 
             log.info("traceId={} calling result_agent for post-processing, provider={}, toolName={}, originalQuery={}",
                 traceId, resultProvider.getConfigValue(),
                 intent.getToolName(), originalQuery);
 
-            // 启用 dataRef 模式后，仅将问题和引用传给工作流；完整输入由工作流固定节点回调获取。
-            String platformInput = buildPlatformInput(agentInput, originalQuery, traceId, resultProvider);
-
             // 调用 result_agent（按配置选择 ChinaUnicon 或保留 HiAgent 回切）
-            HiAgentChatResponse response = callResultAgent(userId, sessionId, traceId, platformInput, resultProvider);
+            HiAgentChatResponse response = callResultAgent(
+                userId, sessionId, traceId, agentQuery, agentInput, resultProvider);
 
             // 解析 Agent 输出
             ResultProcessingOutput output = parseAgentOutput(response.getAnswer());
@@ -129,111 +118,27 @@ public class ResultPostProcessorService {
     }
 
     /**
-     * 获取工具的字段映射定义
-     */
-    private ResponseSchema loadResponseSchema(String toolName) {
-        if (toolName == null) return null;
-        try {
-            ToolConfigWithParams fullConfig =
-                configService.getToolConfigWithParams(toolName);
-            String schemaJson = fullConfig.getConfig().getResponseSchema();
-            if (schemaJson != null && !schemaJson.trim().isEmpty()) {
-                return objectMapper.readValue(schemaJson, ResponseSchema.class);
-            }
-        } catch (Exception e) {
-            log.warn("failed to load response_schema for toolName={}", toolName, e);
-        }
-        return null;
-    }
-
-    /**
-     * 构建发送给 Agent 的输入 JSON
+     * 将工具返回的原始数据序列化后直接发送给结果智能体。
+     * 用户问题已作为会话消息单独传入，因此这里不再重复包装任务、意图、字段映射等元数据。
      *
-     * @param query      用户原始查询
-     * @param intent     意图识别结果
-     * @param rawData    原始数据（List 或 Map，由 postProcess 预处理）
-     * @param schema     响应 Schema
+     * @param rawData 原始数据（List 或 Map，由 postProcess 预处理）
      */
-    private String buildAgentInput(String query, IntentResult intent,
-                                    Object rawData, ResponseSchema schema) {
-        Map<String, Object> input = new LinkedHashMap<>();
-        input.put("task", "post_process");
-
-        // 用户原始查询
-        input.put("originalQuery", query);
-
-        // IntentAgent 解析后的完整上下文
-        Map<String, Object> context = new LinkedHashMap<>();
-        context.put("toolName", intent.getToolName() != null ? intent.getToolName() : "");
-        context.put("intent", intent.getIntent() != null ? intent.getIntent() : "");
-        if (intent.getEntities() != null && !intent.getEntities().isEmpty()) {
-            context.put("entities", intent.getEntities());
-        }
-        input.put("resolvedContext", context);
-
-        // 字段映射（给 Agent 看的中文含义）
-        if (schema != null && schema.isValid()) {
-            input.put("fieldMappings", schema.getFields());
-            if (schema.getDisplayHints() != null) {
-                input.put("displayHints", schema.getDisplayHints());
-            }
-        }
-
-        // 原始数据（Token 控制：最多传 MAX_SAMPLE_ROWS 行）
-        // 支持两种数据结构：
-        // 1. List 类型 - 扁平行列表，如 [{AREA_NAME: "杭州", TOTAL_COUNT: 28}, ...]
-        // 2. Map 类型 - 嵌套分组结构，如 {SJ: [{...}], QY: [{...}]}
-        if (rawData instanceof List) {
-            @SuppressWarnings("unchecked")
-            List<Object> dataList = (List<Object>) rawData;
-            if (dataList.size() > MAX_SAMPLE_ROWS) {
-                input.put("rawData", dataList.subList(0, MAX_SAMPLE_ROWS));
-                input.put("totalRows", dataList.size());
-                input.put("note", "数据较多，仅展示前 " + MAX_SAMPLE_ROWS + " 行样本");
-            } else {
-                input.put("rawData", dataList);
-                input.put("totalRows", dataList.size());
-            }
-        } else {
-            // Map 等嵌套结构，全量传给 agent 做智能提取
-            input.put("rawData", rawData);
-            input.put("dataStructure", rawData instanceof Map ? "grouped" : "other");
-            input.put("note", "嵌套数据结构，由 agent 智能提取用户所需数据");
-        }
-
+    private String serializeRawData(Object rawData) {
         try {
-            return objectMapper.writeValueAsString(input);
+            return objectMapper.writeValueAsString(rawData);
         } catch (Exception e) {
-            log.warn("traceId={} failed to serialize agent input, using minimal input", query, e);
-            return "{\"task\":\"post_process\",\"originalQuery\":\"" +
-                query.replace("\"", "\\\"") + "\",\"error\":\"serialization_failed\"}";
+            log.warn("failed to serialize raw result data for result_agent", e);
+            return "[]";
         }
     }
 
     /**
-     * 为 ChinaUnicon 结果处理工作流生成轻量输入。
-     * <p>
-     * dataRef 模式仅改变后端到工作流的传输方式，工作流回调接口返回的仍是
-     * {@link #buildAgentInput(String, IntentResult, Object, ResponseSchema)} 生成的原始协议，
-     * 因而无需改变大模型节点的输入契约。
+     * 构建结果智能体的消息正文。
+     * 结果后处理仅依据完整用户问题和原始数据判断展示范围，不能把工具调用入参
+     * 错当成结果行过滤条件。
      */
-    private String buildPlatformInput(String agentInput, String originalQuery, String traceId,
-                                      AgentProvider resultProvider) {
-        if (resultProvider != AgentProvider.CHINA_UNICON || !resultDataReferenceService.isActive()) {
-            return agentInput;
-        }
-
-        try {
-            String dataRef = resultDataReferenceService.save(agentInput, traceId);
-            Map<String, Object> workflowInput = new LinkedHashMap<>();
-            workflowInput.put("originalQuery", originalQuery);
-            workflowInput.put("dataRef", dataRef);
-            return objectMapper.writeValueAsString(workflowInput);
-        } catch (Exception e) {
-            // 取数缓存失败时保持旧链路，结果后处理不因 Redis 瞬时异常而不可用。
-            log.warn("traceId={} failed to create result data reference, falling back to direct input", traceId, e);
-            return agentInput;
-        }
+    private String buildAgentQuery(String originalQuery) {
+        return "【用户输入】\n" + originalQuery;
     }
 
     /**
@@ -243,7 +148,8 @@ public class ResultPostProcessorService {
      * 避免多轮对话上下文串扰。traceId 仅用于链路追踪。
      */
     private HiAgentChatResponse callResultAgent(String userId, String sessionId, String traceId,
-                                                String agentInput, AgentProvider resultProvider) {
+                                                String originalQuery, String agentInput,
+                                                AgentProvider resultProvider) {
         if (resultProvider == AgentProvider.CHINA_UNICON) {
             // TODO: conversationId 当前暂用 sessionId + ":result" 隔离结果后处理智能体，后续按新的会话维护方案调整
             String conversationId = sessionId != null && !sessionId.trim().isEmpty()
@@ -256,8 +162,10 @@ public class ResultPostProcessorService {
                 userName = userId;
             }
 
+            // content 仅包含完整用户问题，data 自定义变量仅包含原始 JSON 数据。
             return chinaUniconAgentClient.postProcessResult(
-                agentInput, conversationId, userId, userName, traceId);
+                originalQuery, Collections.singletonMap("data", agentInput),
+                conversationId, userId, userName, traceId);
         }
 
         String convId = conversationManager.getConversationId(userId, resultAgentId, sessionId);
@@ -266,8 +174,9 @@ public class ResultPostProcessorService {
             conversationManager.saveConversationId(userId, resultAgentId, sessionId, convId);
         }
 
+        String hiAgentInput = originalQuery + "\n\n【数据输入】\n" + agentInput;
         return hiAgentClient.chatQueryBlocking(
-            userId, resultAgentId, convId, agentInput, traceId);
+            userId, resultAgentId, convId, hiAgentInput, traceId);
     }
 
     /**

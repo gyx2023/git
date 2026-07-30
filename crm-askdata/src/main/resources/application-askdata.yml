@@ -70,16 +70,15 @@ china-unicon-agent:
   app-id: 686304240312774656
   intent:
     enabled: true
-    app-id: 692525900605542400
+    app-id: 694295166763388928
     # 工作流智能体填槽节点需要从 variable.input 读取用户输入
     pass-content-as-input: false
     input-variable-name: input
   result:
     enabled: true
-    app-id: 692527270230347776
-    # 工作流智能体填槽节点需要从 variable.input 读取结果处理入参
-    pass-content-as-input: true
-    input-variable-name: input
+    app-id: 694301181080752128
+    # 结果处理智能体通过 variable.data 获取完整数据包，content 仅保留用户问题。
+    pass-content-as-input: false
   semantic-sql:
     # 待创建/确认 ChinaUnicon 语义 SQL 智能体后填写 app-id，再将数据库开关设为 china_unicon
     enabled: false
@@ -96,10 +95,6 @@ china-unicon-agent:
 
 --- # 智能问数路由决策配置
 askdata:
-  # 结果处理工作流 dataRef 模式。平台工作流通过固定 HTTP 节点获取完整结果输入。
-  result-data-reference:
-    enabled: true
-    ttl: 10m
   embed:
     # 内网 iframe 嵌入模式：允许无 zqzt 登录态访问，但必须携带宿主 Authorization
     enabled: true

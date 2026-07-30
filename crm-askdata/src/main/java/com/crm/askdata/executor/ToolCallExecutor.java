@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -72,14 +73,12 @@ public class ToolCallExecutor implements QueryExecutor {
             try {
                 fullConfig = configService.getToolConfigWithParams(toolName);
             } catch (IllegalArgumentException e) {
-                log.error("", e);
-                // 工具配置不存在
                 log.warn("traceId={} tool config not found: {}", traceId, toolName);
                 auditLog.setStatus("REJECT");
                 auditLog.setErrorMessage("工具配置不存在");
                 auditLog.setExecutionLatencyMs(System.currentTimeMillis() - startTime);
                 auditLogger.logToolCallAuditAsync(auditLog);
-                return QueryResult.fail(RoutingStrategy.TOOL_CALL.name(), "工具配置不存在：" + toolName);
+                return QueryResult.success(RoutingStrategy.TOOL_CALL.name(), QueryResult.NO_DATA_MESSAGE);
             }
 
             ToolConfig config = fullConfig.getConfig();
@@ -110,16 +109,25 @@ public class ToolCallExecutor implements QueryExecutor {
             // ========== 第六步：执行数据库驱动的工具（参数校验、API调用、结果格式化）==========
             QueryResult result = databaseDrivenApiTool.execute(intent, fullConfig, traceId);
 
+            // 空列表、空对象等 API 空结果不再进入结果处理智能体，直接给出统一提示。
+            boolean noData = result.isSuccess() && result.hasNoData();
+            if (noData) {
+                log.info("traceId={} tool={} returned no data", traceId, toolName);
+                result.setContent(QueryResult.NO_DATA_MESSAGE);
+                result.setData(Collections.emptyMap());
+                result.setDisplayTitle(null);
+            }
+
             // ========== 第七步：智能结果后处理（智能过滤、展示优化、摘要生成）==========
             // 明细工具（skipPostProcess=true）跳过 result_agent，直返前端规避大模型超时
             boolean shouldSkipPostProcess = Boolean.TRUE.equals(config.getSkipPostProcess());
-            if (result.isSuccess() && intent.getOriginalQuery() != null && !shouldSkipPostProcess) {
+            if (result.isSuccess() && !noData && intent.getOriginalQuery() != null && !shouldSkipPostProcess) {
                 result = resultPostProcessor.postProcess(intent, result, traceId, userId, sessionId);
             }
 
             // 跳过后处理的工具，用工具显示名+数据行数作为标题兜底
             // 同时写入 displayTitle（chartOptions.title）和 content（文本消息）
-            if (shouldSkipPostProcess && result.isSuccess()) {
+            if (shouldSkipPostProcess && result.isSuccess() && !noData) {
                 if (result.getDisplayTitle() == null || result.getDisplayTitle().isEmpty()) {
                     String title = config.getToolDisplayName();
                     if (result.getTotal() != null) {
