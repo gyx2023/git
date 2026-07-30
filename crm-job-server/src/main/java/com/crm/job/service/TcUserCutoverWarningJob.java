@@ -2,15 +2,15 @@ package com.crm.job.service;
 
 import com.crm.common.utils.StringUtils;
 import com.crm.job.base.BaseJob;
-import com.crm.job.utils.SftpWebUtil;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.FtpTcUserCutOverWarningDo;
 import com.crm.system.service.IFtpTcUserCutOverWarningService;
+import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.*;
 import java.text.ParseException;
@@ -24,7 +24,7 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class TcUserCutoverWarningJob extends BaseJob {
+public class TcUserCutoverWarningJob {
 
     private static final String FTP_DOWNLOAD_NAME = "TC_USER_CUTOVER_CIRCUIT_";
     private static final String FIELD_SEPARATOR = "\\x1b";
@@ -33,23 +33,22 @@ public class TcUserCutoverWarningJob extends BaseJob {
     /** 文件中字段个数，与 FtpTcUserCutOverWarningDo 中非DB额外字段(非id_/serv_manager_id/create_date)数量一致 */
     private static final int EXPECTED_FIELD_COUNT = 20;
 
+    private static final String CONFIG_TYPE = "dwd_cust_base_info";
+
     @Resource
     private IFtpTcUserCutOverWarningService ftpTcUserCutOverWarningService;
 
-    private  static String ftpUsername;
-    private  static String ftpPassword;
-    private  static  String ftpHost;
-    private  static  String ftpPort;
-    private  static String ftpDirectory;
-    private  static String localPath;
+    @Resource
+    private SftpUtil sftpUtil;
 
+    @Resource
+    private ISysParamService sysParamService;
 
     /**
      * 文件下发时间:8点 (D1文件)
      */
     @XxlJob("tcUserCutoverWarningJob1")
     public void download() {
-        initStaticSftp("dwd_cust_base_info");
         String yyyyMMdd = getDate();
         download(yyyyMMdd, "1");
     }
@@ -59,7 +58,6 @@ public class TcUserCutoverWarningJob extends BaseJob {
      */
     @XxlJob("tcUserCutoverWarningJob2")
     public void download1() {
-        initStaticSftp("dwd_cust_base_info");
         String yyyyMMdd = getDate();
         download(yyyyMMdd, "2");
     }
@@ -77,8 +75,13 @@ public class TcUserCutoverWarningJob extends BaseJob {
 
     public void download(String yyyyMMdd, String fileIndex) {
         log.info("用户级割接预警接口同步 开始  download>>>>>>>>>>>> : ");
-        String ftDirectory= ftpDirectory + yyyyMMdd;
-        String saveFile = FTP_DOWNLOAD_NAME + "D" + fileIndex + "_" + yyyyMMdd + FTP_DOWNLOAD_END_FIX;
+
+        Map<String, String> param = sysParamService.findValueMapsByType(CONFIG_TYPE);
+        String ftpDirectory = param != null ? param.get("ftp_directory") : "";
+        String localPath = param != null ? param.get("ftp_local_new") : "";
+
+        String ftDirectory = ftpDirectory + yyyyMMdd;
+        String saveFile = FTP_DOWNLOAD_NAME + "D" + fileIndex + "_" + yyyyMMdd + BaseJob.FTP_DOWNLOAD_END_FIX;
         String localFile = localPath + File.separator + saveFile;
 
         System.out.println("ftDirectory----" + ftDirectory);
@@ -93,9 +96,8 @@ public class TcUserCutoverWarningJob extends BaseJob {
             return;
         }
 
-        try (SftpWebUtil ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort))) {
-            ftpUtil.login();
-            ftpUtil.download(ftDirectory, saveFile, localFile);
+        try {
+            sftpUtil.downloadFile(CONFIG_TYPE, ftDirectory + "/" + saveFile, localFile);
 
             System.out.println("localFile====" + localFile);
             File file = new File(localFile);
@@ -189,29 +191,5 @@ public class TcUserCutoverWarningJob extends BaseJob {
 
     private String getField(String[] fields, int index) {
         return index < fields.length ? fields[index].trim() : "";
-    }
-
-    private void initStaticSftp(String type) {
-        try {
-            Map<String, String> param = sysParamService.findValueMapsByType(type);
-            if (param != null) {
-                //用户名
-                ftpUsername = param.get("ftp_username");
-                //密码
-                ftpPassword = param.get("ftp_password");
-                //ip地址
-                ftpHost = param.get("ftp_host");
-                //端口号
-                ftpPort = param.get("ftp_port");
-                //文件存放目录
-                ftpDirectory = param.get("ftp_directory");
-                //本地下载目录
-                localPath = param.get("ftp_local_new");
-            } else {
-                log.error("type:{}的数据为空", type);
-            }
-        } catch (Exception e) {
-            log.error("FTP参数初始化失败, type:{}", type, e);
-        }
     }
 }

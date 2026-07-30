@@ -129,7 +129,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             Map<String, Object> extra = record.getExtraVariables();
 
             // 1. 去重检查
-            if (isDuplicate(record, extra)) return;
+            if (isDuplicate(record, extra)) {
+                return;
+            }
 
             // 1.5 策略前置处理（可选）
             IWarningQueryStrategy strategy = findStrategy(record.getOrderType());
@@ -139,12 +141,16 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
             // 2. 启动流程
             ProcessInstance processInstance = startProcessInstance(record);
-            if (processInstance == null) return;
+            if (processInstance == null) {
+                return;
+            }
             String piId = processInstance.getId();
 
             // 3. 获取首个待办任务
             Task task = getFirstTask(piId);
-            if (task == null) return;
+            if (task == null) {
+                return;
+            }
 
             // 4. 构建并插入工单
             ToppOrderBo orderBo = buildOrderBo(record, task, extra);
@@ -170,7 +176,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
     private boolean isDuplicate(WarningRecord record, Map<String, Object> extra) {
         Long infoId = extra != null ? (Long) extra.get("infoId") : null;
-        if (infoId == null) return false;
+        if (infoId == null) {
+            return false;
+        }
 
         ToppOrderBo queryBo = new ToppOrderBo();
         queryBo.setInfoId(infoId);
@@ -234,7 +242,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         orderBo.setCreateTime(new Date());
         orderBo.setUpdateTime(new Date());
 
-        if (extra == null) return orderBo;
+        if (extra == null) {
+            return orderBo;
+        }
 
         // 可选：orderNumber
         if (sequenceService != null && extra.containsKey("_needOrderNumber")) {
@@ -255,7 +265,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
     private void resolveOrgInfo(ToppOrderBo orderBo, Map<String, Object> extra) {
         Object orgIdObj = extra.get("orgId");
-        if (!(orgIdObj instanceof Number)) return;
+        if (!(orgIdObj instanceof Number)) {
+            return;
+        }
 
         long orgId = ((Number) orgIdObj).longValue();
         orderBo.setOrgId(orgId);
@@ -298,7 +310,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
     }
 
     private void setRuntimeVariables(String piId, WarningRecord record, Map<String, Object> extra) {
-        if (extra == null || extra.isEmpty()) return;
+        if (extra == null || extra.isEmpty()) {
+            return;
+        }
 
         Map<String, Object> procVars = new HashMap<>();
         String[] filterKeys = {"areaId", "areaName", "bssCode", "infoId", "_targetDate",
@@ -325,7 +339,9 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
     private static boolean isFilteredKey(String key, String[] filterKeys) {
         for (String fk : filterKeys) {
-            if (fk.equals(key)) return true;
+            if (fk.equals(key)) {
+                return true;
+            }
         }
         return false;
     }

@@ -2,7 +2,7 @@ package com.crm.job.service.sync;
 
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
-import com.crm.job.utils.SftpWebUtil;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.TcIctMilestone;
 import com.crm.system.mapper.TcIctMilestoneMapper;
 import com.crm.system.service.sys.ISysParamService;
@@ -27,7 +27,8 @@ import java.util.*;
 @Slf4j
 @Component
 public class TcIctMilestoneSyncJob {
-    private static final String ftpDownloadName = "TC_ICT_MILESTONE_D_";// 下载的文件名前缀
+    private static final String FTP_DOWNLOAD_NAME = "TC_ICT_MILESTONE_D_";// 下载的文件名前缀
+    private static final String CONFIG_TYPE = "tc_ict_milestone";
 
     @Autowired
     private ISysParamService sysParamService;
@@ -35,6 +36,8 @@ public class TcIctMilestoneSyncJob {
     private TcIctMilestoneService tcIctMilestoneService;
     @Autowired
     private TcIctMilestoneMapper tcIctMilestoneMapper;
+    @Autowired
+    private SftpUtil sftpUtil;
 
     @XxlJob(value="tcIctMilestoneSyncJob")
     public void execute(){
@@ -52,16 +55,10 @@ public class TcIctMilestoneSyncJob {
 
         //开始同步 — 实时加载FTP配置
         log.info("========== 开始同步合同里程碑信息 ==========");
-        Map<String, String> param = sysParamService.findValueMapsByType("tc_ict_milestone");
-        SftpWebUtil sftpWebUtil = new SftpWebUtil(
-            param.get("ftp_username"), param.get("ftp_password"),
-            param.get("ftp_host"), Integer.parseInt(param.get("ftp_port")));
-        sftpWebUtil.login();
-        log.info("SFTP登录成功");
-
+        Map<String, String> param = sysParamService.findValueMapsByType(CONFIG_TYPE);
         String ftpDirectory = param.get("ftp_directory");  	//文件存放目录
         ftpDirectory += yyyyMMdd;
-        String saveFile = ftpDownloadName + yyyyMMdd + ".txt";
+        String saveFile = FTP_DOWNLOAD_NAME + yyyyMMdd + ".txt";
         String localFile = param.get("ftp_local") + File.separator + saveFile;
 
         log.info("FTP目录: {}", ftpDirectory);
@@ -70,7 +67,7 @@ public class TcIctMilestoneSyncJob {
 
         Date date = new Date();
         try{
-            sftpWebUtil.download(ftpDirectory,saveFile,localFile);
+            sftpUtil.downloadFile(CONFIG_TYPE, ftpDirectory + "/" + saveFile, localFile);
             log.info("文件下载成功");
 
             File file = new File(localFile);
@@ -138,9 +135,6 @@ public class TcIctMilestoneSyncJob {
             }
         } catch (Exception e) {
             log.error("同步合同里程碑信息失败", e);
-        } finally {
-            sftpWebUtil.logout();
-            log.info("SFTP连接已释放");
         }
     }
 }

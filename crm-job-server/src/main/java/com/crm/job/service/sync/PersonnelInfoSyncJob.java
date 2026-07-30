@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
-import com.crm.job.utils.SftpWebUtil;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.PersonnelInfo;
 import com.crm.system.domain.dao.SysUserOperateLog;
 import com.crm.system.domain.dao.SysUsers;
@@ -60,6 +60,9 @@ public class PersonnelInfoSyncJob {
 
     @Resource
     private ISysOperLogService sysOperLogService;
+
+    @Resource
+    private SftpUtil sftpUtil;
 
 //    @Resource
 //    private YxApiClient yxApiClient;
@@ -121,10 +124,6 @@ public class PersonnelInfoSyncJob {
 
         // 实时加载FTP配置
         Map<String, String> ftpParam = sysParamService.findValueMapsByType(PERSONNEL_FILE_FTP_INFO);
-        String ftpUsername = ftpParam.get("ftp_username");
-        String ftpPassword = ftpParam.get("ftp_password");
-        String ftpHost = ftpParam.get("ftp_host");
-        String ftpPort = ftpParam.get("ftp_port");
         String ftpDirectory = ftpParam.get("ftp_directory");
         String localPath = ftpParam.get("ftp_local");
 
@@ -141,43 +140,37 @@ public class PersonnelInfoSyncJob {
             XxlJobHelper.log("创建本地目录成功：{}", localPath);
         }
 
-        SftpWebUtil ftpUtil = null;
-
         String saveFile = FTP_DOWNLOAD_NAME + targetDate + FTP_DOWNLOAD_END_FIX;
         String saveFileNew = FTP_DOWNLOAD_NAME + targetDate + "_new" + FTP_DOWNLOAD_END_FIX;
-        String ftpFile = ftpDirectory + File.separator + saveFile;
+        String remotePath = ftpDirectory + "/" + saveFile;
         String localFile = localPath + File.separator + saveFile;
         String localFileNew = localPath + File.separator + saveFileNew;
 
+        log.info("saveFile:{}", saveFile);
+        XxlJobHelper.log("saveFile:{}", saveFile);
+        log.info("localFile:{}", localFile);
+        XxlJobHelper.log("localFile:{}", localFile);
+
+        boolean fileExists = sftpUtil.exists(PERSONNEL_FILE_FTP_INFO, remotePath);
+        if (!fileExists) {
+            log.error("SFTP服务器上文件不存在：{}", remotePath);
+            XxlJobHelper.log("SFTP服务器上文件不存在：{}", remotePath);
+            XxlJobHelper.handleFail("SFTP服务器上文件不存在：" + remotePath);
+            return;
+        }
 
         try {
-            ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
-            ftpUtil.login();
+            sftpUtil.downloadFile(PERSONNEL_FILE_FTP_INFO, remotePath, localFile);
+            log.info("ob库人员增量同步文件接口download完成：{}", localFile);
+            XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
+        } catch (Exception e) {
+            log.error("ob库人员增量同步文件接口download异常", e);
+            XxlJobHelper.log("ob库人员增量同步文件接口download异常：{}", e.getMessage());
+            XxlJobHelper.handleFail("ob库人员增量同步文件接口download异常：" + e.getMessage());
+            return;
+        }
 
-            log.info("saveFile:{}", saveFile);
-            XxlJobHelper.log("saveFile:{}", saveFile);
-            log.info("localFile:{}", localFile);
-            XxlJobHelper.log("localFile:{}", localFile);
-
-            boolean fileExists = ftpUtil.existFile(ftpFile);
-            if (!fileExists) {
-                log.error("SFTP服务器上文件不存在：{}", ftpFile);
-                XxlJobHelper.log("SFTP服务器上文件不存在：{}", ftpFile);
-                XxlJobHelper.handleFail("SFTP服务器上文件不存在：" + ftpFile);
-                return;
-            }
-
-            try {
-                ftpUtil.download(ftpDirectory, saveFile, localFile);
-                log.info("ob库人员增量同步文件接口download完成：{}", localFile);
-                XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
-            } catch (Exception e) {
-                log.error("ob库人员增量同步文件接口download异常", e);
-                XxlJobHelper.log("ob库人员增量同步文件接口download异常：{}", e.getMessage());
-                XxlJobHelper.handleFail("ob库人员增量同步文件接口download异常：" + e.getMessage());
-                return;
-            }
-
+        try {
             File file = new File(localFile);
             if (!file.exists() || file.length() == 0) {
                 log.error("人员增量文件下载失败或文件为空：{}", localFile);
@@ -287,17 +280,6 @@ public class PersonnelInfoSyncJob {
             log.error("【管理中台人员信息同步文件】任务失败：", e);
             XxlJobHelper.log("【管理中台人员信息同步文件】任务失败：{}", e.getMessage());
             XxlJobHelper.handleFail("【管理中台人员信息同步文件】任务失败：" + e.getMessage());
-        } finally {
-            if (ftpUtil != null) {
-                try {
-                    ftpUtil.close();
-                    log.info("SFTP连接已关闭，文件：{}", localFile);
-                    XxlJobHelper.log("【管理中台人员信息同步文件】SFTP连接已关闭");
-                } catch (Exception e) {
-                    log.error("关闭SFTP连接失败，文件：{}", localFile, e);
-                    XxlJobHelper.log("【管理中台人员信息同步文件】关闭SFTP连接失败，错误信息：{}", e.getMessage());
-                }
-            }
         }
     }
 

@@ -144,7 +144,9 @@ public abstract class AbstractTableDataExporter<T> extends TextFileExporter<Text
         if (headers != null && headers.length > 0) {
             StringBuilder row = new StringBuilder();
             for (int i = 0; i < headers.length; i++) {
-                if (i > 0) row.append(SEPARATOR);
+                if (i > 0) {
+                    row.append(SEPARATOR);
+                }
                 row.append(headers[i]);
             }
             row.append('\n');
@@ -178,7 +180,9 @@ public abstract class AbstractTableDataExporter<T> extends TextFileExporter<Text
         // 按 COUNT(*) 算桶数，把 ID 范围切成 N 段
         long bucketCount = (totalCount + RANGE_BUCKET_PAGE_SIZE - 1) / RANGE_BUCKET_PAGE_SIZE;
         long rangeStep = (maxId - minId + 1) / bucketCount;
-        if (rangeStep <= 0) rangeStep = 1;
+        if (rangeStep <= 0) {
+            rangeStep = 1;
+        }
 
         long totalRows = 0;
         for (long i = 0; i < bucketCount; i++) {
@@ -186,13 +190,17 @@ public abstract class AbstractTableDataExporter<T> extends TextFileExporter<Text
             long endId = (i == bucketCount - 1) ? maxId + 1 : startId + rangeStep;
 
             List<T> records = queryByRange(startId, endId);
-            if (records == null || records.isEmpty()) continue;
+            if (records == null || records.isEmpty()) {
+                continue;
+            }
 
             for (T record : records) {
                 Object[] columns = getColumns(record);
                 StringBuilder row = new StringBuilder();
                 for (int j = 0; j < columns.length; j++) {
-                    if (j > 0) row.append(SEPARATOR);
+                    if (j > 0) {
+                        row.append(SEPARATOR);
+                    }
                     row.append(ExportToolsUtils.formatField(columns[j]));
                 }
                 row.append('\n');
@@ -220,7 +228,8 @@ public abstract class AbstractTableDataExporter<T> extends TextFileExporter<Text
 
         // 上传 SFTP
         String configType = getConfigType();
-        String remoteFileName = getFileNamePrefix() + ".txt";
+        // 远程文件名带日期，与旧版各独立类行为一致：{prefix}_{yyyyMMdd}.txt
+        String remoteFileName = getFileNamePrefix() + "_" + ctx.getExportDate() + ".txt";
         sftpUtil.uploadFile(configType, ctx.getLocalFile().getAbsolutePath(), remoteFileName, ctx.getExportDate());
         log.info("文件上传成功: {}", remoteFileName);
         XxlJobHelper.log("文件上传成功: {}", remoteFileName);

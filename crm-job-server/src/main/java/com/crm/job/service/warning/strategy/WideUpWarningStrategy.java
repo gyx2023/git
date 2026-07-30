@@ -108,9 +108,13 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
     }
 
     private Long toLong(Object v) {
-        if (v == null) return null;
+        if (v == null) {
+            return null;
+        }
         try {
-            if (v instanceof Number) return ((Number) v).longValue();
+            if (v instanceof Number) {
+                return ((Number) v).longValue();
+            }
             return Long.parseLong(v.toString());
         } catch (NumberFormatException e) {
             return null;

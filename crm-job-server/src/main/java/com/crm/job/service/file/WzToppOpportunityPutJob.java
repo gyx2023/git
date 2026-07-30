@@ -4,10 +4,8 @@ import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.constant.RedisKeyConstants;
 import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.job.utils.FilePath;
-import com.crm.job.utils.SftpWebUtil;
-import com.crm.system.service.sys.ISysParamService;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.service.topp.IToppOpportunityService;
-import com.jcraft.jsch.SftpException;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,12 +32,14 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class WzToppOpportunityPutJob {
 
-    @Resource
-    private ISysParamService sysParamService;
+    private static final String CONFIG_TYPE = "wz_cust_signin_opportunity_contract_put";
+
     @Resource
     private IToppOpportunityService opportunityService;
     @Resource
     private RedissonClient redissonClient;
+    @Resource
+    private SftpUtil sftpUtil;
 
     /**
      * 每日凌晨1点
@@ -75,6 +74,7 @@ public class WzToppOpportunityPutJob {
             }
         }
     }
+
     public void creatFile(String yesterday) {
         log.info("商机推送Job 开始  >>>>>>>>>>>> : ");
         String filePath = FilePath.rootPath;
@@ -115,23 +115,15 @@ public class WzToppOpportunityPutJob {
             }
             log.info("商机文件写入完成，条数：{}，文件：{}", list.size(), file.getAbsolutePath());
 
-
         } catch (IOException e) {
             log.error("商机文件写入失败", e);
             return; // 写入失败直接退出，不执行上传
         }
 
         // ====================== FTP 上传 ======================
-        Map<String, String> param = sysParamService.findValueMapsByType("wz_cust_signin_opportunity_contract_put");
-        String ftpUsername = param.get("ftp_username");
-        String ftpPassword = param.get("ftp_password");
-        String ftpHost = param.get("ftp_host");
-        String ftpPort = param.get("ftp_port");
-
-        // 自动关闭流：try-with-resources
-        try (InputStream input = new FileInputStream(file)) {
+        try {
             log.info("开始上传文件到FTP：{}", fileName);
-            putFile(ftpUsername, ftpPassword, ftpHost, ftpPort, fileName, input);
+            sftpUtil.uploadFile(CONFIG_TYPE, file.getAbsolutePath(), "/upload/" + fileName);
             log.info("FTP上传成功：{}", fileName);
 
             // 上传成功后再删除文件
@@ -139,22 +131,9 @@ public class WzToppOpportunityPutJob {
                 boolean deleteSuccess = file.delete();
                 log.info("文件删除结果：{}，文件：{}", deleteSuccess, file.getAbsolutePath());
             }
-
         } catch (Exception e) {
             log.error("FTP上传或文件操作失败：{}", fileName, e);
             // 上传失败，不删除文件，方便排查
         }
-    }
-
-    public void putFile(String ftpUsername, String ftpPassword, String ftpHost, String ftpPort, String fileName, InputStream input) {
-        SftpWebUtil ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
-        ftpUtil.login();
-        try {
-            ftpUtil.upload("/", "upload", fileName, input);
-        } catch (SftpException e) {
-            e.printStackTrace();
-        }
-        ftpUtil.logout();// 释放连接
-        log.info("商机推送Job 结束  >>>>>>>>>>>> : ");
     }
 }
