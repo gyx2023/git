@@ -49,7 +49,7 @@ public class TfFCustGroupDSyncJob extends AbstractFtpImportJob<TfFCustGroupDDo> 
      * 集团编码长度
      */
     private static final int GRP_CODE_LENGTH = 15;
-    private static final String LOG_UPDATE_TYPE = "auto";
+    private static final String LOG_UPDATE_TYPE = "T1";
     /**
      * 变更类型 - 变更前
      */
@@ -143,8 +143,8 @@ public class TfFCustGroupDSyncJob extends AbstractFtpImportJob<TfFCustGroupDDo> 
     }
 
     private void processGrpGroupInfo(List<TfFCustGroupDDo> tfFCustGroupDList, String createDate) {
-        log.info("存入政企集团客户信息开始");
-        XxlJobHelper.log("存入政企集团客户信息开始");
+        log.info("-----------------存入政企集团客户信息开始-----------------");
+        XxlJobHelper.log("-----------------存入政企集团客户信息开始-----------------");
 
         List<ZqGrpGroupInfo> groupInfoList = new ArrayList<>();
         int batchSize = DEFAULT_BATCH_SIZE, totalProcessed = 0, totalSuccess = 0, batchCount = 0, successBatchCount = 0, failBatchCount = 0;
@@ -174,13 +174,23 @@ public class TfFCustGroupDSyncJob extends AbstractFtpImportJob<TfFCustGroupDDo> 
 
             if (groupInfoList.size() >= batchSize) {
                 batchCount++;
+                log.info("第 {} 批次开始批量插入政企集团客户信息，本次处理 {} 条", batchCount, batchSize);
+                XxlJobHelper.log("第 {} 批次开始批量插入政企集团客户信息，本次处理 {} 条", batchCount, batchSize);
                 try {
                     if (zqGrpGroupInfoMapper.insertBatch(groupInfoList)) {
                         successBatchCount++; totalSuccess += groupInfoList.size();
+                        log.info("第 {} 批次处理完成，当前已处理 {} 条记录，成功导入 {} 条", batchCount, totalProcessed, totalSuccess);
+                        XxlJobHelper.log("第 {} 批次处理完成，当前已处理 {} 条记录，成功导入 {} 条", batchCount, totalProcessed, totalSuccess);
                         batchInsertGroupLogForNewRecords(groupInfoList);
-                    } else { failBatchCount++; }
+                    } else {
+                        failBatchCount++;
+                        log.error("第 {} 批次批量插入失败，本次处理 {} 条", batchCount, batchSize);
+                        XxlJobHelper.log("第 {} 批次批量插入失败，本次处理 {} 条", batchCount, batchSize);
+                    }
                 } catch (Exception e) {
-                    failBatchCount++; log.error("批次插入异常", e);
+                    failBatchCount++;
+                    log.error("第 {} 批次批量插入异常: {}", batchCount, e.getMessage(), e);
+                    XxlJobHelper.log("第 {} 批次批量插入异常: {}", batchCount, e.getMessage());
                 }
                 groupInfoList.clear();
             }
@@ -188,32 +198,53 @@ public class TfFCustGroupDSyncJob extends AbstractFtpImportJob<TfFCustGroupDDo> 
         if (!groupInfoList.isEmpty()) {
             batchCount++;
             int size = groupInfoList.size();
+            log.info("第 {} 批次(最后批次)开始批量插入政企集团客户信息，本次处理剩余 {} 条", batchCount, size);
+            XxlJobHelper.log("第 {} 批次(最后批次)开始批量插入政企集团客户信息，本次处理剩余 {} 条", batchCount, size);
             try {
                 if (zqGrpGroupInfoMapper.insertBatch(groupInfoList)) {
                     successBatchCount++;
                     totalSuccess += size;
+                    log.info("第 {} 批次(最后批次)处理完成，当前已处理 {} 条记录，成功导入 {} 条", batchCount, totalProcessed, totalSuccess);
+                    XxlJobHelper.log("第 {} 批次(最后批次)处理完成，当前已处理 {} 条记录，成功导入 {} 条", batchCount, totalProcessed, totalSuccess);
                     batchInsertGroupLogForNewRecords(groupInfoList);
                 } else {
                     failBatchCount++;
+                    log.error("第 {} 批次(最后批次)批量插入失败，本次处理 {} 条", batchCount, size);
+                    XxlJobHelper.log("第 {} 批次(最后批次)批量插入失败，本次处理 {} 条", batchCount, size);
                 }
             } catch (Exception e) {
                 failBatchCount++;
-                log.error("最后批次插入异常", e);
+                log.error("第 {} 批次(最后批次)批量插入异常: {}", batchCount, e.getMessage(), e);
+                XxlJobHelper.log("第 {} 批次(最后批次)批量插入异常: {}", batchCount, e.getMessage());
             }
         }
-        log.info("政企集团客户信息完成：处理总条数={}，总批次={}，成功批次={}，失败批次={}，成功导入数={}",
+        log.info("政企集团客户信息表总计处理完成，累计处理 {} 条记录，成功导入 {} 条", totalProcessed, totalSuccess);
+        XxlJobHelper.log("政企集团客户信息表总计处理完成，累计处理 {} 条记录，成功导入 {} 条", totalProcessed, totalSuccess);
+        log.info("数据处理统计：处理总条数={}，总批次={}，成功批次={}，失败批次={}，成功导入数={}",
             totalProcessed, batchCount, successBatchCount, failBatchCount, totalSuccess);
         XxlJobHelper.log("数据处理统计：处理总条数={}，总批次={}，成功批次={}，失败批次={}，成功导入数={}",
             totalProcessed, batchCount, successBatchCount, failBatchCount, totalSuccess);
 
+        // 更新集团级别与集团状态信息
         List<ZqGrpGroupInfo> updList = zqGrpGroupInfoMapper.getUpdQuery(createDate);
         if (updList != null && !updList.isEmpty()) {
+            log.info("开始更新集团级别与集团状态信息，需要更新 {} 条", updList.size());
+            XxlJobHelper.log("开始更新集团级别与集团状态信息，需要更新 {} 条", updList.size());
             batchInsertGroupLogForUpdateBefore(updList);
             if (zqGrpGroupInfoMapper.updateBatchById(updList)) {
-                log.info("更新集团级别与状态完成: {}", updList.size());
+                log.info("更新集团级别与集团状态信息完成：处理总条数={}", updList.size());
+                XxlJobHelper.log("更新集团级别与集团状态信息完成：处理总条数={}", updList.size());
                 batchInsertGroupLog(updList, AFTER_LOG_DATA_TYPE);
+            } else {
+                log.info("更新集团级别与集团状态信息失败");
+                XxlJobHelper.log("更新集团级别与集团状态信息失败");
             }
+        } else {
+            log.info("更新集团级别与集团状态信息完成：处理总条数=0");
+            XxlJobHelper.log("更新集团级别与集团状态信息完成：处理总条数=0");
         }
+        log.info("-----------------存入政企集团客户信息结束-----------------");
+        XxlJobHelper.log("-----------------存入政企集团客户信息结束-----------------");
     }
 
     private void batchInsertGroupLogForNewRecords(List<ZqGrpGroupInfo> groupInfoList) {
@@ -272,7 +303,7 @@ public class TfFCustGroupDSyncJob extends AbstractFtpImportJob<TfFCustGroupDDo> 
         Random r = new SecureRandom();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < GRP_CODE_LENGTH; i++) {
-            sb.append(r.nextInt(GENERATE_GRP_CODE_MAX_ATTEMPTS));
+            sb.append(r.nextInt(10));
         }
         return sb.toString();
     }
