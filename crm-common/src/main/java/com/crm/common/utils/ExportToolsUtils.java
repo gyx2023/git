@@ -80,7 +80,7 @@ public class ExportToolsUtils {
 
         // 第二步：快速预检——绝大多数业务字段不含特殊字符，直接返回原文（零分配）
         if (!needsCleaning(value)) {
-            return value;
+            return value.trim();
         }
 
         String cleanedValue = value;
