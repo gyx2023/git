@@ -84,4 +84,19 @@ public interface ISysOperLogService {
      * @return true=成功，false=失败
      */
     boolean tryApiCall(String title, String url, String operParam, Callable<String> apiCall);
+
+
+    /**
+     * 日志表记录日志，用于导出
+     * <p>
+     * 与 logApiCall 行为一致，但异常时不 rethrow，返回 false 表示失败
+     * 适用于调用方不需要抛异常的场景（如 XXL-Job 定时任务）
+     *
+     * @param title     操作标题
+     * @param url       请求URL
+     * @param operParam 请求参数
+     * @param apiCall   实际API调用逻辑，成功返回响应字符串，失败抛异常
+     * @return true=成功，false=失败
+     */
+    boolean tryExportCall(String title, String url, String operParam, Callable<String> apiCall);
 }

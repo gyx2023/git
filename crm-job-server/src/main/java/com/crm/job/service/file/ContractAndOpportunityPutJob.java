@@ -66,7 +66,7 @@ public class ContractAndOpportunityPutJob {
         String currentDate = (jobParam != null && !jobParam.trim().isEmpty())
             ? jobParam
             : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        sysOperLogService.tryApiCall("合同商机数据上传任务",
+        sysOperLogService.tryExportCall("合同商机数据上传任务",
             "contract_and_opportunity_put_job", "currentDate=" + currentDate, () -> {
                 ftpUsername = param.get("ftp_username");  //用户名
                 ftpPassword = param.get("ftp_password");  //密码

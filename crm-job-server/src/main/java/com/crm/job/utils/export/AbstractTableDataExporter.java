@@ -2,6 +2,8 @@ package com.crm.job.utils.export;
 
 import com.crm.common.utils.ExportToolsUtils;
 import com.crm.job.utils.SftpUtil;
+import com.crm.system.domain.dao.sys.SysOperLog;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.xxl.job.core.context.XxlJobHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,6 +42,9 @@ public abstract class AbstractTableDataExporter<T> extends TextFileExporter<Text
     public void setSftpUtil(SftpUtil sftpUtil) {
         this.sftpUtil = sftpUtil;
     }
+
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     // ========== 子类必须实现的抽象方法 ==========
 
@@ -233,5 +238,28 @@ public abstract class AbstractTableDataExporter<T> extends TextFileExporter<Text
         sftpUtil.uploadFile(configType, ctx.getLocalFile().getAbsolutePath(), remoteFileName, ctx.getExportDate());
         log.info("文件上传成功: {}", remoteFileName);
         XxlJobHelper.log("文件上传成功: {}", remoteFileName);
+    }
+
+    /**
+     * 操作日志记录：覆写基类钩子，在导出生命周期结束后记录 SysOperLog
+     * 所有继承本类的导出任务（如 SysCodeExport）都会自动记录操作日志
+     */
+    @Override
+    protected void recordOperLog(TextFileExportContext context, long startTime, String errorMsg) {
+        try {
+            SysOperLog operLog = new SysOperLog();
+            operLog.setTitle("表数据导出任务-" + getFileNamePrefix());
+            operLog.setRequestMethod("JOB");
+            operLog.setOperatorType(2);
+            operLog.setOperName("system");
+            operLog.setOperParam("fileName=" + context.getFileName() + ", date=" + context.getExportDate());
+            operLog.setStatus(errorMsg == null ? 0 : 1);
+            operLog.setJsonResult("导出行数=" + context.getTotalRows());
+            operLog.setErrorMsg(errorMsg);
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
+        } catch (Exception e) {
+            log.error("记录操作日志异常, 表: {}", getFileNamePrefix(), e);
+        }
     }
 }

@@ -5,7 +5,9 @@ import com.crm.job.utils.SftpUtil;
 import com.crm.job.utils.export.TextFileExportContext;
 import com.crm.job.utils.export.TextFileExporter;
 import com.crm.job.utils.export.SummaryHolder;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.service.IHxProjectPutService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,9 @@ public class HxProjectPutJob extends BaseJob {
 
     @Resource
     private SftpUtil sftpUtil;
+
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     @XxlJob(value = "hxProjectPutJob")
     public void doPut() {
@@ -91,6 +96,25 @@ public class HxProjectPutJob extends BaseJob {
                 sftpUtil.uploadFile(configType, ctx.getLocalFile().getAbsolutePath(), tmpName, yyyyMMdd);
                 sftpUtil.rename(configType, remoteDir + "/" + tmpName, remoteDir + "/" + txtName);
                 XxlJobHelper.log("文件上传成功: {}", tmpName);
+            }
+
+            @Override
+            protected void recordOperLog(TextFileExportContext ctx, long startTime, String errorMsg) {
+                try {
+                    SysOperLog operLog = new SysOperLog();
+                    operLog.setTitle("划小数据推送工建系统-" + tmpName);
+                    operLog.setRequestMethod("JOB");
+                    operLog.setOperatorType(2);
+                    operLog.setOperName("system");
+                    operLog.setOperParam("fileName=" + ctx.getFileName() + ", date=" + yyyyMMdd);
+                    operLog.setStatus(errorMsg == null ? 0 : 1);
+                    operLog.setJsonResult("导出行数=" + ctx.getTotalRows());
+                    operLog.setErrorMsg(errorMsg);
+                    operLog.setRequestTime(System.currentTimeMillis() - startTime);
+                    sysOperLogService.insertOperlog(operLog);
+                } catch (Exception e) {
+                    log.error("记录操作日志异常, 文件: {}", tmpName, e);
+                }
             }
         }.execute(ctx);
     }
