@@ -76,20 +76,25 @@ public class WarningBusinessContextProvider implements BusinessContextProvider {
         String orderFlag = str(procVars, "wide_second_new_orderFlag");
         if (codeInfo != null && period != null && orderFlag != null) {
             try {
-                // 一次查询同时拿到客户列表和总数，避免重复调用
-                String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
+                // 根据预警类型选择不同的 SQL 和话术统计方法
+                // 红名单升级预警使用 HMD 专用数据源，其他升级预警使用宽带数据源
+                String sql;
+                Map<String, Object> speechcraftMap;
+                if ("new_hmd_up".equals(orderType)) {
+                    sql = statsService.buildHmdWarnCustSql(codeInfo, period, orderFlag);
+                    speechcraftMap = statsService.getHmdUpSpeechcraftStats(codeInfo, period, orderFlag);
+                } else {
+                    sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
+                    speechcraftMap = statsService.getWideUpSpeechcraftStats(codeInfo, period, orderFlag);
+                }
                 com.baomidou.mybatisplus.core.metadata.IPage<Map<String, Object>> custPage =
                     statsService.queryWideCustInfoStats(sql, 1, 100);
                 extraData.put("custList", custPage.getRecords());
                 extraData.put("custTotal", custPage.getTotal());
-            } catch (Exception e) { log.warn("查询客户列表失败", e); }
-            try {
-                // 话术统计内含 codeName，不再单独查询
-                Map<String, Object> speechcraftMap = statsService.getWideUpSpeechcraftStats(codeInfo, period, orderFlag);
                 extraData.put("speechcraftMap", speechcraftMap);
                 extraData.put("codeName", speechcraftMap.getOrDefault("codeName",
                     statsService.getCodeName(codeInfo, orderFlag)));
-            } catch (Exception e) { log.warn("查询话术统计失败", e); }
+            } catch (Exception e) { log.warn("查询预警业务数据失败", e); }
         }
 
         ctx.setSections(sections);
@@ -269,6 +274,11 @@ public class WarningBusinessContextProvider implements BusinessContextProvider {
             case "ictArrearsWarn":
                 sections.add(new WfBusinessSection("ict", "ICT欠费信息", 2, Collections.singletonMap(
                     "提醒内容", "ICT欠费预警"
+                )));
+                break;
+            case "new_hmd_up":
+                sections.add(new WfBusinessSection("hmdUp", "红名单升级信息", 2, Collections.singletonMap(
+                    "提醒内容", "红名单即将到期，以下客户的客户经理未及时处理，请领导关注督办"
                 )));
                 break;
             default:
