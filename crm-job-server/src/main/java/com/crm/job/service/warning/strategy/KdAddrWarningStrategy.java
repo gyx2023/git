@@ -111,7 +111,7 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
 
         WarningRecord record = new WarningRecord();
         record.setOrderType(getOrderType());
-        record.setOrderName(DateUtils.dateTime() + "__" + getOrderTypeName());
+        record.setOrderName(DateUtils.dateTime() + "_" + getString(row.get("grp_name")) + "_" + getOrderTypeName());
         record.setCustName(getString(row.get("grp_name")));
         record.setCustManagerId(userId);
 
