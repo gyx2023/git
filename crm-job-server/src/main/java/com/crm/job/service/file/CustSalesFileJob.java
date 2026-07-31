@@ -2,7 +2,7 @@ package com.crm.job.service.file;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
-import com.crm.job.utils.SftpUtil;
+import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.FtpBroadbandMarketCust;
 import com.crm.system.domain.dao.FtpBroadbandMarketResult;
 import com.crm.system.domain.dao.FtpBroadbandMarketUser;
@@ -73,9 +73,6 @@ public class CustSalesFileJob {
     @Autowired
     private TaskService taskService;
 
-    @Autowired
-    private SftpUtil sftpUtil;
-
 
     @XxlJob(value="custSalesFileJob")
     public void custSalesFileJob() {
@@ -129,14 +126,24 @@ public class CustSalesFileJob {
         String resultFileName = RESULT_FILE_NAME + yyyyMM + ".txt";
         String localFilePath = MapUtils.getString(param, "ftp_local") + File.separator + resultFileName;
 
+        SftpWebUtil ftpUtil = new SftpWebUtil(
+            param.get("ftp_username"),
+            param.get("ftp_password"),
+            param.get("ftp_host"),
+            MapUtils.getIntValue(param, "ftp_port")
+        );
+
         boolean downloadSuccess = false;
         try {
             log.info("宽带专项营销下载结果文件开始");
-            sftpUtil.downloadFile("broadband_market", resultFileDirectory + "/" + resultFileName, localFilePath);
+            ftpUtil.login();
+            ftpUtil.download(resultFileDirectory, resultFileName, localFilePath);
             log.info("宽带专项营销下载结果文件成功");
             downloadSuccess = true;
         } catch (Exception e) {
             log.error("宽带专项营销文件下载失败", e);
+        } finally {
+            ftpUtil.logout();
         }
 
         // 3. 下载失败直接退出
@@ -249,24 +256,33 @@ public class CustSalesFileJob {
      */
     private boolean download(String yyyyMM){
         Map<String, String> param = sysParamService.findValueMapsByType("broadband_market");
+        SftpWebUtil ftpUtil = new SftpWebUtil(
+            param.get("ftp_username"),
+            param.get("ftp_password"),
+            param.get("ftp_host"),
+            MapUtils.getIntValue(param, "ftp_port")
+        );
 
         try{
             log.info("宽带专项营销下载文件开始");
+            ftpUtil.login();
             //下载宽带专项营销客户文件
             String custFileDirectory = param.get("ftp_cust_directory")+yyyyMM;  //文件存放目录
             String custFileName=CUST_FILE_NAME+yyyyMM+".txt";
             CUST_FILE_FULL_PATCH=MapUtils.getString(param,"ftp_local")+File.separator+custFileName;
-            sftpUtil.downloadFile("broadband_market", custFileDirectory + "/" + custFileName, CUST_FILE_FULL_PATCH);
+            ftpUtil.download(custFileDirectory, custFileName, CUST_FILE_FULL_PATCH);
             //下载宽带专项用户客户文件
             String userFileDirectory = param.get("ftp_user_directory")+yyyyMM;  //文件存放目录
             String userFileName=USER_FILE_NAME+yyyyMM+".txt";
             USER_FILE_FULL_PATCH=MapUtils.getString(param,"ftp_local")+File.separator+userFileName;
-            sftpUtil.downloadFile("broadband_market", userFileDirectory + "/" + userFileName, USER_FILE_FULL_PATCH);
+            ftpUtil.download(userFileDirectory, userFileName, USER_FILE_FULL_PATCH);
             log.info("宽带专项营销下载文件成功");
             return true;
         }catch(Exception e){
             e.printStackTrace();
             return false;
+        }finally{
+            ftpUtil.logout();
         }
     }
 
