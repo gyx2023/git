@@ -53,8 +53,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
 
     <select id="selectByAreaScope" resultMap="SysUserResult">
-        SELECT u.* FROM sys_user u
+        SELECT DISTINCT u.* FROM sys_user u
         INNER JOIN sys_org o ON u.org_id = o.id_
+        INNER JOIN sys_user_position up ON u.id_ = up.user_id AND up.valid_ = 1
+        INNER JOIN sys_position sp ON up.position_id = sp.id_
+            AND sp.post_ LIKE CONCAT('%,', 'cust_manager', ',%')
         WHERE u.is_valid = '1'
         <if test="areaIds != null and areaIds.size() > 0">
             AND o.area_id IN
@@ -73,8 +76,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="countByAreaScope" resultType="long">
-        SELECT COUNT(*) FROM sys_user u
+        SELECT COUNT(DISTINCT u.id_) FROM sys_user u
         INNER JOIN sys_org o ON u.org_id = o.id_
+        INNER JOIN sys_user_position up ON u.id_ = up.user_id AND up.valid_ = 1
+        INNER JOIN sys_position sp ON up.position_id = sp.id_
+            AND sp.post_ LIKE CONCAT('%,', 'cust_manager', ',%')
         WHERE u.is_valid = '1'
         <if test="areaIds != null and areaIds.size() > 0">
             AND o.area_id IN

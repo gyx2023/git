@@ -128,6 +128,15 @@ public class WideSecondWarningBusinessContextProvider implements BusinessContext
             extraData.put("totalCount", 0);
         }
 
+        // 用户明细列表（放入 extraData）
+        try {
+            List<Map<String, Object>> records = wideSecondService.queryAllRecords(order.getId(), targetDate);
+            extraData.put("records", records);
+        } catch (Exception e) {
+            log.warn("【wide_second】查询用户明细失败", e);
+            extraData.put("records", new ArrayList<>());
+        }
+
         ctx.setSections(sections);
         ctx.setExtraData(extraData);
         return ctx;
