@@ -2,7 +2,7 @@ package com.crm.job.service.sync;
 
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
-import com.crm.job.utils.SftpUtil;
+import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.TcIctMilestone;
 import com.crm.system.mapper.TcIctMilestoneMapper;
 import com.crm.system.service.sys.ISysParamService;
@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -27,8 +28,14 @@ import java.util.*;
 @Slf4j
 @Component
 public class TcIctMilestoneSyncJob {
-    private static final String FTP_DOWNLOAD_NAME = "TC_ICT_MILESTONE_D_";// 下载的文件名前缀
-    private static final String CONFIG_TYPE = "tc_ict_milestone";
+    private static final String ftpDownloadName = "TC_ICT_MILESTONE_D_";// 下载的文件名前缀
+
+    private static String ftpUsername;
+    private static String ftpPassword;
+    private static String ftpHost;
+    private static String ftpPort;
+    private static String ftpDirectory;
+    private static String localPath;
 
     @Autowired
     private ISysParamService sysParamService;
@@ -36,8 +43,20 @@ public class TcIctMilestoneSyncJob {
     private TcIctMilestoneService tcIctMilestoneService;
     @Autowired
     private TcIctMilestoneMapper tcIctMilestoneMapper;
-    @Autowired
-    private SftpUtil sftpUtil;
+
+    /**
+     * 初始化静态参数
+     */
+    @PostConstruct
+    public void initStaticParam() {
+        Map<String, String> param = sysParamService.findValueMapsByType("tc_ict_milestone");
+        ftpUsername = param.get("ftp_username");  //用户名
+        ftpPassword = param.get("ftp_password");  //密码
+        ftpHost = param.get("ftp_host");  //ip地址
+        ftpPort = param.get("ftp_port");  //端口号
+        ftpDirectory = param.get("ftp_directory");  //文件存放目录
+        localPath = param.get("ftp_local");  //本地下载目录
+    }
 
     @XxlJob(value="tcIctMilestoneSyncJob")
     public void execute(){
@@ -53,13 +72,18 @@ public class TcIctMilestoneSyncJob {
             log.info("使用默认日期（前2天）: {}", yyyyMMdd);
         }
 
-        //开始同步 — 实时加载FTP配置
+        //开始同步
         log.info("========== 开始同步合同里程碑信息 ==========");
-        Map<String, String> param = sysParamService.findValueMapsByType(CONFIG_TYPE);
+        SftpWebUtil sftpWebUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
+        sftpWebUtil.login();
+        log.info("SFTP登录成功");
+
+        //获取ftp配置
+        Map<String, String> param = sysParamService.findValueMapsByType("tc_ict_milestone");
         String ftpDirectory = param.get("ftp_directory");  	//文件存放目录
         ftpDirectory += yyyyMMdd;
-        String saveFile = FTP_DOWNLOAD_NAME + yyyyMMdd + ".txt";
-        String localFile = param.get("ftp_local") + File.separator + saveFile;
+        String saveFile = ftpDownloadName + yyyyMMdd + ".txt";
+        String localFile = localPath + File.separator + saveFile;
 
         log.info("FTP目录: {}", ftpDirectory);
         log.info("文件名: {}", saveFile);
@@ -67,7 +91,7 @@ public class TcIctMilestoneSyncJob {
 
         Date date = new Date();
         try{
-            sftpUtil.downloadFile(CONFIG_TYPE, ftpDirectory + "/" + saveFile, localFile);
+            sftpWebUtil.download(ftpDirectory,saveFile,localFile);
             log.info("文件下载成功");
 
             File file = new File(localFile);
@@ -135,6 +159,9 @@ public class TcIctMilestoneSyncJob {
             }
         } catch (Exception e) {
             log.error("同步合同里程碑信息失败", e);
+        } finally {
+            sftpWebUtil.logout();
+            log.info("SFTP连接已释放");
         }
     }
 }

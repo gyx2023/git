@@ -1,8 +1,8 @@
 package com.crm.job.service.timedTasks;
 
 import com.crm.common.utils.FieldAnnotaionUtil;
+import com.crm.common.utils.SFTPUtil;
 import com.crm.job.base.BaseJob;
-import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.RepCustContractMillSumM;
 import com.crm.system.service.IRepCustContractMillSumMService;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -36,9 +36,6 @@ public class repCustContractMillSumMJob extends BaseJob {
 
     @Resource
     private IRepCustContractMillSumMService repCustContractMillSumMService;
-
-    @Resource
-    private SftpUtil sftpUtil;
 
     /**
      * 定时任务入口
@@ -91,15 +88,16 @@ public class repCustContractMillSumMJob extends BaseJob {
     public void start(String yyyyMM) {
         XxlJobHelper.log("开始下载账期为 {} 的合同收入报表数据", yyyyMM);
 
-        final String configType = "rep_cust_contract_mill_sum_m";
+        SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
         try {
+            ftpUtil.login();
             String fileNamePrefix = FTP_DOWNLOAD_NAME + yyyyMM;
             String saveFile = fileNamePrefix + FTP_DOWNLOAD_END_FIX;
             String ftDirectory1 = ftDirectory + yyyyMM;
             String localFile = localPath + File.separator + saveFile;
             log.info("合同收入报表需求接口ftp开始下载文件:" + ftDirectory1 + File.separator + saveFile);
             XxlJobHelper.log("FTP目录：{}，本地文件：{}", ftDirectory1, localFile);
-            sftpUtil.downloadFile(configType, ftDirectory1 + "/" + saveFile, localFile);
+            ftpUtil.download(ftDirectory1, saveFile, localFile);
             log.info("合同收入报表需求接口ftp下载文件完成:" + localFile);
 
             File file = new File(localFile);
