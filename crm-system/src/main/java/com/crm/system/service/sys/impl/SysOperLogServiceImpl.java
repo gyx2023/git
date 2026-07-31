@@ -222,6 +222,31 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
         }
     }
 
+    @Override
+    public boolean tryExportCall(String title, String url, String operParam, Callable<String> apiCall) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle(title);
+        operLog.setRequestMethod("JOB");
+        operLog.setOperatorType(0);
+        operLog.setOperUrl(url);
+        operLog.setOperParam(operParam);
+        long startTime = System.currentTimeMillis();
+        try {
+            String result = apiCall.call();
+            operLog.setStatus(0);
+            operLog.setJsonResult(result);
+            return true;
+        } catch (Exception e) {
+            log.error("导出文件异常: title={}, url={}", title, url, e);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
+            return false;
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            insertOperlog(operLog);
+        }
+    }
+
     public String truncateString(String str, int maxLength) {
         if (str != null && str.length() > maxLength) {
             return str.substring(0, maxLength);

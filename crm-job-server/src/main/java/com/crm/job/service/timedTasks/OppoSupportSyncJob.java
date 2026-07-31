@@ -4,8 +4,10 @@ import com.crm.job.utils.SftpUtil;
 import com.crm.job.utils.export.SummaryHolder;
 import com.crm.job.utils.export.TextFileExportContext;
 import com.crm.job.utils.export.TextFileExporter;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dto.OppoSupportInfoDTO;
 import com.crm.system.service.IOppoSupportInfoService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -39,6 +41,9 @@ public class OppoSupportSyncJob {
 
     @Resource
     private ISysParamService sysParamService;
+
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     /**
      * 每日凌晨6:00执行 - 商机支撑信息同步给外围系统
@@ -85,6 +90,25 @@ public class OppoSupportSyncJob {
                 sftpUtil.uploadFile("opp_support_info_file", ctx.getLocalFile().getAbsolutePath(), remotePath);
                 log.info("文件上传成功: {}", ctx.getFileName());
                 XxlJobHelper.log("文件上传成功:{}", ctx.getFileName());
+            }
+
+            @Override
+            protected void recordOperLog(TextFileExportContext ctx, long startTime, String errorMsg) {
+                try {
+                    SysOperLog operLog = new SysOperLog();
+                    operLog.setTitle("商机支撑信息同步给外围系统");
+                    operLog.setRequestMethod("JOB");
+                    operLog.setOperatorType(2);
+                    operLog.setOperName("system");
+                    operLog.setOperParam("fileName=" + ctx.getFileName() + ", date=" + ctx.getExportDate());
+                    operLog.setStatus(errorMsg == null ? 0 : 1);
+                    operLog.setJsonResult("导出行数=" + ctx.getTotalRows());
+                    operLog.setErrorMsg(errorMsg);
+                    operLog.setRequestTime(System.currentTimeMillis() - startTime);
+                    sysOperLogService.insertOperlog(operLog);
+                } catch (Exception e) {
+                    log.error("记录操作日志异常, 文件: {}", ctx.getFileName(), e);
+                }
             }
         }.execute(ctx);
 

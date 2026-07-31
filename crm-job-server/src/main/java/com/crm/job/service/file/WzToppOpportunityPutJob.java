@@ -5,6 +5,7 @@ import com.crm.common.constant.RedisKeyConstants;
 import com.crm.common.core.domain.dto.OpportunityDTO;
 import com.crm.job.utils.FilePath;
 import com.crm.job.utils.SftpUtil;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -40,6 +41,8 @@ public class WzToppOpportunityPutJob {
     private RedissonClient redissonClient;
     @Resource
     private SftpUtil sftpUtil;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     /**
      * 每日凌晨1点
@@ -56,13 +59,13 @@ public class WzToppOpportunityPutJob {
             cal.add(Calendar.DATE, -1);
             Date d = cal.getTime();
             SimpleDateFormat sp = new SimpleDateFormat("yyyyMMdd");
-            String yesterday = sp.format(d);
-
             String jobparam = XxlJobHelper.getJobParam();
-            if (ObjectUtil.isNotEmpty(jobparam)) {
-                yesterday = jobparam;
-            }
-            creatFile(yesterday);
+            String yesterday = ObjectUtil.isNotEmpty(jobparam) ? jobparam : sp.format(d);
+
+            sysOperLogService.tryExportCall("温州商机数据推送", CONFIG_TYPE, "date=" + yesterday, () -> {
+                creatFile(yesterday);
+                return "温州商机数据推送成功";
+            });
         } catch (Exception e) {
             log.error("【温州商机数据推送】任务执行异常", e);
             throw new RuntimeException("同步任务异常", e);

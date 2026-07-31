@@ -34,6 +34,7 @@ public class TextFileExporter<T extends TextFileExportContext> {
     public final T execute(T context) {
         long startTime = System.currentTimeMillis();
         context.setSuccess(false);
+        String errorMsg = null;
 
         try {
             context = createFile(context);
@@ -57,13 +58,26 @@ public class TextFileExporter<T extends TextFileExportContext> {
             log.info("文件导出完成: {}, {} 行, 耗时 {}ms", context.getFileName(), context.getTotalRows(), cost);
         } catch (Exception e) {
             context.setSuccess(false);
+            errorMsg = e.getMessage();
             log.error("文件导出失败: {}", context.getFileName(), e);
             throw new RuntimeException("文件导出失败: " + context.getFileName(), e);
         } finally {
             cleanup(context);
+            recordOperLog(context, startTime, errorMsg);
         }
 
         return context;
+    }
+
+    /**
+     * 操作日志钩子：子类可覆写以记录 SysOperLog
+     * 在导出生命周期结束后（finally）调用，无论成功或失败都会执行
+     *
+     * @param context   文件上下文
+     * @param startTime 导出开始时间戳
+     * @param errorMsg  失败时的错误信息，成功时为 null
+     */
+    protected void recordOperLog(T context, long startTime, String errorMsg) {
     }
 
     /**
