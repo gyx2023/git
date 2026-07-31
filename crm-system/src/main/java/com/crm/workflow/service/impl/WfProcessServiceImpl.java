@@ -1675,21 +1675,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     }
 
     @Override
-    public void preserveDisplayVarsToProcess(String taskId, Task task) {
-        Map<String, Object> taskVars = taskService.getVariables(taskId);
-        String prefix = task.getTaskDefinitionKey() + "_";
-        Map<String, Object> toPreserve = new HashMap<>();
-        for (Map.Entry<String, Object> e : taskVars.entrySet()) {
-            if (e.getKey().startsWith(prefix)) {
-                toPreserve.put(e.getKey(), e.getValue());
-            }
-        }
-        if (!toPreserve.isEmpty()) {
-            runtimeService.setVariables(task.getProcessInstanceId(), toPreserve);
-        }
-    }
-
-    @Override
     public Task findCurrentTask(String piId, String taskId) {
         Task currentTask = null;
         if (taskId != null && !taskId.isEmpty() && !"0".equals(taskId)) {
