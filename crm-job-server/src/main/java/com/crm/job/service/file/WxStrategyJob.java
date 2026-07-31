@@ -5,6 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.core.domain.dto.WorkOrderDTO;
 import com.crm.job.utils.SftpUtil;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.WxStrategyService;
 import com.crm.system.service.cust.CustTCustomerProvinceService;
@@ -117,6 +118,8 @@ public class WxStrategyJob {
     private CustTCustomerProvinceService customerProvinceService;
     @Resource
     private SftpUtil sftpUtil;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     // ====================== XXL-JOB 任务 ======================
 
@@ -127,7 +130,11 @@ public class WxStrategyJob {
     public void sendWorkOrder() {
         String yyyyMMdd = getJobDate();
         log.info("====== 任务工单文件下发开始，日期：" + yyyyMMdd + " ======");
-        sendsendWorkOrder(yyyyMMdd);
+        sysOperLogService.tryApiCall("策略中心-任务工单信息文件下发",
+            FTP_SEND_WORK_ORDER_FILE_NAME + yyyyMMdd, "date=" + yyyyMMdd, () -> {
+                sendsendWorkOrder(yyyyMMdd);
+                return "任务工单文件下发成功";
+            });
         log.info("====== 任务工单文件下发结束 ======");
     }
 
@@ -138,7 +145,11 @@ public class WxStrategyJob {
     public void sendStrategy() {
         String yyyyMMdd = getJobDate();
         log.info("====== 策略主信息文件下发开始，日期：" + yyyyMMdd + " ======");
-        sendStrategyInfo(yyyyMMdd);
+        sysOperLogService.tryApiCall("策略中心-策略主信息文件下发",
+            FTP_SEND_STRATEGY_INFO_FILE_NAME + yyyyMMdd, "date=" + yyyyMMdd, () -> {
+                sendStrategyInfo(yyyyMMdd);
+                return "策略主信息文件下发成功";
+            });
         log.info("====== 策略主信息文件下发结束 ======");
     }
 
@@ -149,7 +160,11 @@ public class WxStrategyJob {
     public void sendMonitor() {
         String yyyyMMdd = getJobDate();
         log.info("====== 策略监控文件下发开始，日期：" + yyyyMMdd + " ======");
-        sendStrategyMonitor(yyyyMMdd);
+        sysOperLogService.tryApiCall("策略中心-策略监控信息文件下发",
+            FTP_SEND_STRATEGY_MONITOR_FILE_NAME + yyyyMMdd, "date=" + yyyyMMdd, () -> {
+                sendStrategyMonitor(yyyyMMdd);
+                return "策略监控信息文件下发成功";
+            });
         log.info("====== 策略监控文件下发结束 ======");
     }
 

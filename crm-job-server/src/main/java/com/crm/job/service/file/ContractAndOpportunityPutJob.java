@@ -12,7 +12,6 @@ import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;
 import com.crm.system.mapper.ContractAndOpportunityPutConfigMapper;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
-import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.service.sys.ISysCodeService;
 import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
@@ -62,109 +61,90 @@ public class ContractAndOpportunityPutJob {
 
     @XxlJob("contractAndOpportunityPutJob")
     public void execute(){
-        // 操作日志记录
-        SysOperLog operLog = new SysOperLog();
-        operLog.setTitle("合同商机数据上传任务");
-        operLog.setRequestMethod("JOB");
-        operLog.setOperatorType(2);
-        operLog.setOperName("system");
-        long startTime = System.currentTimeMillis();
-        StringBuilder resultMsg = new StringBuilder();
-        try{
-            Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
-            ftpUsername = param.get("ftp_username");  //用户名
-            ftpPassword = param.get("ftp_password");  //密码
-            ftpHost = param.get("ftp_host");  //ip地址
-            ftpPort = param.get("ftp_port");  //端口号
+        Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
+        String jobParam = XxlJobHelper.getJobParam();
+        String currentDate = (jobParam != null && !jobParam.trim().isEmpty())
+            ? jobParam
+            : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        sysOperLogService.tryApiCall("合同商机数据上传任务",
+            "contract_and_opportunity_put_job", "currentDate=" + currentDate, () -> {
+                ftpUsername = param.get("ftp_username");  //用户名
+                ftpPassword = param.get("ftp_password");  //密码
+                ftpHost = param.get("ftp_host");  //ip地址
+                ftpPort = param.get("ftp_port");  //端口号
 
-            String currentDate = null;
-            String jobParam = XxlJobHelper.getJobParam();
-            if (jobParam != null && !jobParam.trim().isEmpty()) {
-                currentDate = jobParam;
-            } else {
-                currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            }
-            operLog.setOperParam("currentDate=" + currentDate);
+                List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
 
-            List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
+                // 一次性加载所有字典，避免每个地市重复加载
+                Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
+                Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
+                Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
+                Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
+                Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
+                Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
+                Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
+                Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
+                Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
+                Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
+                Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
+                Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
 
-            // 一次性加载所有字典，避免每个地市重复加载
-            Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
-            Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
-            Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
-            Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
-            Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
-            Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
-            Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
-            Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
-            Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
-            Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
-            Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
-            Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
+                StringBuilder resultMsg = new StringBuilder();
+                for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
+                    long l1 = System.currentTimeMillis();
+                    ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
+                    String areaEng = contractAndOpportunityPutConfig.getAreaEng();
+                    Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-            for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
-                long l1 = System.currentTimeMillis();
-                ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
-                String areaEng = contractAndOpportunityPutConfig.getAreaEng();
-                Integer areaId = contractAndOpportunityPutConfig.getAreaId();
+                    String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
+                    String contract = areaEng + "Contract" + currentDate + ".xls";//合同
+                    String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
 
-                String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
-                String contract = areaEng + "Contract" + currentDate + ".xls";//合同
-                String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
+                    // 使用SftpUtil直连上传（每个文件独立连接，自动管理生命周期）
+                    final String configType = "contract_and_opportunity_put_job";
 
-                // 使用SftpUtil直连上传（每个文件独立连接，自动管理生命周期）
-                final String configType = "contract_and_opportunity_put_job";
+                    // 创建并上传合同收入文件
+                    File incomeFile = createContractIncomeFile(areaId, areaEng);
+                    long l2 = System.currentTimeMillis();
+                    log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
+                    if (incomeFile != null) {
+                        uploadSingleFileToSftp(configType, incomeFile, contractIncome, currentDate, ftpDirectory);
+                        deleteTempFile(incomeFile);
+                    }
 
-                // 创建并上传合同收入文件
-                File incomeFile = createContractIncomeFile(areaId, areaEng);
-                long l2 = System.currentTimeMillis();
-                log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
-                if (incomeFile != null) {
-                    uploadSingleFileToSftp(configType, incomeFile, contractIncome, currentDate, ftpDirectory);
-                    deleteTempFile(incomeFile);
+                    // 创建并上传合同统计数据文件
+                    File contractFile = createContractStatisticsFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
+                            unicomType2Map, clueSourceMap, contractAddTypeMap, contractTypeMap, incomeTypeMap);
+                    long l3 = System.currentTimeMillis();
+                    log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
+                    if (contractFile != null) {
+                        uploadSingleFileToSftp(configType, contractFile, contract, currentDate, ftpDirectory);
+                        deleteTempFile(contractFile);
+                    }
+
+                    // 创建并上传商机数据文件
+                    File opportunityFile = createOpportunityFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
+                            unicomType2Map, unicomType2Settingstr1Map, clueSourceMap, selectType1Map,
+                            oppoStateMap, bidResultMap, bgTypeResultMap);
+                    long l4 = System.currentTimeMillis();
+                    log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
+                    if (opportunityFile != null) {
+                        uploadSingleFileToSftp(configType, opportunityFile, opportunity, currentDate, ftpDirectory);
+                        deleteTempFile(opportunityFile);
+                    }
+
+                    log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
+
+                    log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
+
+                    resultMsg.append(contractAndOpportunityPutConfig.getAreaName())
+                        .append(": 合同收入=").append(incomeFile != null ? "成功" : "失败")
+                        .append(", 合同统计=").append(contractFile != null ? "成功" : "失败")
+                        .append(", 商机=").append(opportunityFile != null ? "成功" : "失败")
+                        .append("; ");
                 }
-
-                // 创建并上传合同统计数据文件
-                File contractFile = createContractStatisticsFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
-                        unicomType2Map, clueSourceMap, contractAddTypeMap, contractTypeMap, incomeTypeMap);
-                long l3 = System.currentTimeMillis();
-                log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
-                if (contractFile != null) {
-                    uploadSingleFileToSftp(configType, contractFile, contract, currentDate, ftpDirectory);
-                    deleteTempFile(contractFile);
-                }
-
-                // 创建并上传商机数据文件
-                File opportunityFile = createOpportunityFile(areaId, areaEng, oppTypeMap, unicomTypeMap,
-                        unicomType2Map, unicomType2Settingstr1Map, clueSourceMap, selectType1Map,
-                        oppoStateMap, bidResultMap, bgTypeResultMap);
-                long l4 = System.currentTimeMillis();
-                log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
-                if (opportunityFile != null) {
-                    uploadSingleFileToSftp(configType, opportunityFile, opportunity, currentDate, ftpDirectory);
-                    deleteTempFile(opportunityFile);
-                }
-
-                log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
-
-                log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
-
-                resultMsg.append(contractAndOpportunityPutConfig.getAreaName())
-                    .append(": 合同收入=").append(incomeFile != null ? "成功" : "失败")
-                    .append(", 合同统计=").append(contractFile != null ? "成功" : "失败")
-                    .append(", 商机=").append(opportunityFile != null ? "成功" : "失败")
-                    .append("; ");
-            }
-            operLog.setStatus(0);
-            operLog.setJsonResult(resultMsg.toString());
-        }catch(Exception e){
-            log.error("任务执行异常", e);
-            operLog.setStatus(1);
-            operLog.setErrorMsg(e.getMessage());
-        }finally {
-            operLog.setRequestTime(System.currentTimeMillis() - startTime);
-            sysOperLogService.insertOperlog(operLog);
-        }
+                return resultMsg.toString();
+            });
     }
 
     /**
