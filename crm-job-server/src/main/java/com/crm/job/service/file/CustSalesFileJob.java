@@ -257,6 +257,7 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         if (StringUtils.isNotEmpty(data[25])) { user.setCustCountyName(data[25]); }
         if (StringUtils.isNotEmpty(data[26])) { user.setDeveloperId(data[26]); }
         if (StringUtils.isNotEmpty(data[27])) { user.setDeveloperName(data[27]); }
+        if (StringUtils.isNotEmpty(data[28])) { user.setSpeed(data[28]); }
         if (StringUtils.isNotEmpty(data[29])) { user.setUserAddr(data[29]); }
         if (StringUtils.isNotEmpty(data[30])) { user.setCycleStartTime(data[30]); }
         if (StringUtils.isNotEmpty(data[31])) { user.setCycleEndTime(data[31]); }

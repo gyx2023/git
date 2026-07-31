@@ -2,6 +2,9 @@ package com.crm.job.base;
 
 import com.crm.common.utils.DateUtils;
 import com.crm.job.utils.SftpUtil;
+import com.crm.system.domain.dao.SysParamDo;
+import com.crm.system.mapper.param.SysParamMapper;
+import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,6 +61,12 @@ public abstract class AbstractFtpImportJob<T> {
 
     @Resource
     protected SftpUtil sftpUtil;
+
+    @Resource
+    private SysParamMapper sysParamMapper;
+
+    @Resource
+    private ISysParamService sysParamService;
 
     /** 当前处理的日期字符串（子类可在 afterImport 中读取） */
     protected String currentDateStr;
@@ -118,7 +127,7 @@ public abstract class AbstractFtpImportJob<T> {
             }
         } else {
             // 未传参，回溯 N 天
-            dateStr = DateUtils.getBeforeNDays(getDefaultDaysBefore());
+            dateStr = DateUtils.getBeforeNDays(DateUtils.YYYYMMDD, getDefaultDaysBefore());
             if (FILE_DATE_TYPE_MONTHLY.equals(getFileDateType())) {
                 // yyyyMMdd → yyyyMM
                 dateStr = dateStr.substring(0, 6);
@@ -165,9 +174,32 @@ public abstract class AbstractFtpImportJob<T> {
     /** 下载文件到本地 */
     protected String download(String configType, String dateStr, String fileName) {
         try {
-            String localPath = "/tmp/sftp_download/" + dateStr + "/" + fileName;
+            // 根据 configType 查询 sys_param 获取本地存放根路径和远程存放根路径
+            String localRootPath = getSysParamValue(configType, "sftp.dataLocalPath");
+            String remoteRootPath = getSysParamValue(configType, "sftp.dataRootPath");
+
+            // 如果配置中没有设置 localPath，使用默认路径
+            if (localRootPath == null || localRootPath.trim().isEmpty()) {
+                localRootPath = "/tmp/sftp_download";
+            }
+            // 如果配置中没有设置 remotePath，使用默认值
+            if (remoteRootPath == null || remoteRootPath.trim().isEmpty()) {
+                remoteRootPath = "";
+            }
+
+            // 构建完整本地路径：localRootPath/dateStr/fileName
+            String localPath = localRootPath.endsWith("/") || localRootPath.endsWith("\\")
+                    ? localRootPath + dateStr + "/" + fileName
+                    : localRootPath + "/" + dateStr + "/" + fileName;
             new File(localPath).getParentFile().mkdirs();
-            sftpUtil.downloadFile(configType, getRemotePath(configType, dateStr, fileName), localPath);
+
+            // 构建完整远程路径
+            String remotePath = getRemotePath(dateStr, fileName, remoteRootPath);
+
+            log.info("【{}】下载文件: configType={}, 远程路径={}, 本地路径={}",
+                    getJobName(), configType, remotePath, localPath);
+
+            sftpUtil.downloadFile(configType, remotePath, localPath);
             if (!new File(localPath).exists()) {
                 log.error("【{}】下载后文件不存在: {}", getJobName(), localPath);
                 return null;
@@ -180,11 +212,45 @@ public abstract class AbstractFtpImportJob<T> {
         }
     }
 
-    /** 构建远程文件路径（可从sys_param/sftpUtil获取根目录拼接），子类可覆盖 */
-    protected String getRemotePath(String configType, String dateStr, String fileName) {
-        // SftpUtil内部拼接根目录
-        return dateStr + "/" + fileName;
+    /**
+     * 查询 sys_param 表中指定 type 和 code 的配置值
+     *
+     * @param configType 配置类型（对应 sys_param.type_）
+     * @param code       配置编码（对应 sys_param.code_）
+     * @return 配置值，如果未找到返回 null
+     */
+
+    private String getSysParamValue(String configType, String code) {
+        try {
+            SysParamDo param = sysParamService.findValueByTypeCode(configType, code);
+            if (param != null && param.getValue() != null) {
+                return param.getValue().trim();
+            }
+            log.warn("【{}】sys_param 中未找到配置: type={}, code={}", getJobName(), configType, code);
+        } catch (Exception e) {
+            log.error("【{}】查询 sys_param 失败: type={}, code={}", getJobName(), configType, code, e);
+        }
+        return null;
     }
+
+    /**
+     * 构建远程文件路径
+     *
+     * @param dateStr        日期字符串
+     * @param fileName       文件名
+     * @param remoteRootPath 远程根路径（从 sys_param 获取）
+     * @return 完整的远程文件路径
+     */
+    protected String getRemotePath(String dateStr, String fileName, String remoteRootPath) {
+        // 远程根路径为空时，直接返回 dateStr/fileName
+        if (remoteRootPath == null || remoteRootPath.trim().isEmpty()) {
+            return dateStr + "/" + fileName;
+        }
+        // 拼接远程根路径 + dateStr/fileName
+        String normalizedRoot = remoteRootPath.endsWith("/") ? remoteRootPath : remoteRootPath + "/";
+        return normalizedRoot + dateStr + "/" + fileName;
+    }
+
 
     /**
      * 逐行解析（使用原始行字符串，子类可覆盖以使用 GroupFileParser.parseLine 等方式）
