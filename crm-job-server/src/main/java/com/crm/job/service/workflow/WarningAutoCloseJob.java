@@ -155,6 +155,7 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
             "new_wide_up",         // 宽带升级预警(新版)
             "new_hmd_up",          // 红名单到期升级预警(新版)
             "wide_up",             // 宽带升级预警
-            "hmd_up"               // 红名单到期升级预警
+            "hmd_up",               // 红名单到期升级预警
+            "wotv_expire_warning"   // 沃TV到期预警
     );
 }

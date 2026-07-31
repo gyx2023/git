@@ -172,6 +172,12 @@ public class WarningBusinessContextProvider implements BusinessContextProvider {
                     "提醒内容", "装机地址疑似聚合或非真实"
                 )));
                 break;
+            case "wotv_expire_warning":
+                // 沃TV到期预警
+                sections.add(new WfBusinessSection("wotv", "沃TV到期信息", 2, Collections.singletonMap(
+                    "提醒内容", "沃TV业务即将到期，请关注并做好提前维系"
+                )));
+                break;
             case "pcdn_warn":
                 // 违规PCDN业务稽核
                 sections.add(new WfBusinessSection("pcdn", "PCDN信息", 2, Collections.singletonMap(
