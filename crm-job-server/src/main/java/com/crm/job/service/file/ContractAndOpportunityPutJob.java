@@ -12,7 +12,9 @@ import com.crm.system.domain.vo.topp.ToppOpportunityExcelVo;
 import com.crm.system.mapper.ContractAndOpportunityPutConfigMapper;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.service.sys.ISysCodeService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -55,8 +57,19 @@ public class ContractAndOpportunityPutJob {
     @Resource
     private SftpUtil sftpUtil;
 
+    @Resource
+    private ISysOperLogService sysOperLogService;
+
     @XxlJob("contractAndOpportunityPutJob")
     public void execute(){
+        // 操作日志记录
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("合同商机数据上传任务");
+        operLog.setRequestMethod("JOB");
+        operLog.setOperatorType(2);
+        operLog.setOperName("system");
+        long startTime = System.currentTimeMillis();
+        StringBuilder resultMsg = new StringBuilder();
         try{
             Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
             ftpUsername = param.get("ftp_username");  //用户名
@@ -71,6 +84,7 @@ public class ContractAndOpportunityPutJob {
             } else {
                 currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             }
+            operLog.setOperParam("currentDate=" + currentDate);
 
             List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
 
@@ -134,9 +148,22 @@ public class ContractAndOpportunityPutJob {
                 log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
 
                 log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
+
+                resultMsg.append(contractAndOpportunityPutConfig.getAreaName())
+                    .append(": 合同收入=").append(incomeFile != null ? "成功" : "失败")
+                    .append(", 合同统计=").append(contractFile != null ? "成功" : "失败")
+                    .append(", 商机=").append(opportunityFile != null ? "成功" : "失败")
+                    .append("; ");
             }
+            operLog.setStatus(0);
+            operLog.setJsonResult(resultMsg.toString());
         }catch(Exception e){
             log.error("任务执行异常", e);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
+        }finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
         }
     }
 
