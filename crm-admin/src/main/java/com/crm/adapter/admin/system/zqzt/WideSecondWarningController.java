@@ -108,13 +108,10 @@ public class WideSecondWarningController extends BaseController {
         }
         String piId = task.getProcessInstanceId();
 
-        // 1. 保留展示变量（必须在完成任务前调用）
-        wfProcessService.preserveDisplayVarsToProcess(taskId, task);
-
-        // 2. 执行业务操作（事务保护）
+        // 执行业务操作（事务保护）
         wideSecondService.completeOrder(orderId, task, comment, followUp, otherReason);
 
-        // 3. 判断流程是否结束，同步工单状态
+        // 判断流程是否结束，同步工单状态
         String msg;
         if (wfProcessService.isProcessRunning(piId)) {
             Task nextTask = wfProcessService.findCurrentTask(piId, null);
@@ -153,7 +150,6 @@ public class WideSecondWarningController extends BaseController {
         }
 
         LoginUser loginUser = getLoginUser();
-        wfProcessService.preserveDisplayVarsToProcess(taskId, task);
         String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment,
                 loginUser != null ? loginUser.getUserId() : null);
 
