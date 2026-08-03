@@ -5,7 +5,6 @@ import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.IWideSecondWarningService;
 import com.crm.system.service.stats.IStatsService;
-import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.domain.vo.WfBusinessContext;
 import com.crm.workflow.domain.vo.WfBusinessSection;
 import com.crm.workflow.service.BusinessContextProvider;
@@ -38,7 +37,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class WideSecondWarningBusinessContextProvider implements BusinessContextProvider {
 
-    private final IToppOrderService orderService;
     private final IStatsService statsService;
     private final IWideSecondWarningService wideSecondService;
     private final TaskService taskService;
@@ -50,17 +48,14 @@ public class WideSecondWarningBusinessContextProvider implements BusinessContext
     ));
 
     @Override
-    public boolean supports(String procDefKey, String source) {
-        return "single_approval".equals(procDefKey);
+    public boolean supports(String procDefKey, String source, ToppOrderVo order) {
+        return "single_approval".equals(procDefKey)
+                && order != null
+                && SUPPORTED_TYPES.contains(order.getOrderType());
     }
 
     @Override
-    public WfBusinessContext provide(String procInsId, String source, String procDefKey) {
-        ToppOrderVo order = orderService.queryByPiId(procInsId);
-        if (order == null || !SUPPORTED_TYPES.contains(order.getOrderType())) {
-            return null;
-        }
-
+    public WfBusinessContext provide(String procInsId, String source, String procDefKey, ToppOrderVo order) {
         WfBusinessContext ctx = new WfBusinessContext();
         List<WfBusinessSection> sections = new ArrayList<>();
         Map<String, Object> extraData = new HashMap<>();
@@ -75,9 +70,9 @@ public class WideSecondWarningBusinessContextProvider implements BusinessContext
         extraData.put("warnInfo", buildWarnInfo(procVars));
 
         // 宽带信息
+        String targetDate = str(procVars, "wide_second-date");
         Map<String, Object> broadbandInfo = new LinkedHashMap<>();
         broadbandInfo.put("custName", order.getCustName());
-        String targetDate = str(procVars, "wide_second-date");
         if (targetDate != null) {
             try {
                 java.time.LocalDate expDate = java.time.LocalDate.parse(targetDate,
@@ -128,7 +123,7 @@ public class WideSecondWarningBusinessContextProvider implements BusinessContext
             extraData.put("totalCount", 0);
         }
 
-        // 用户明细列表（放入 extraData）
+        // 用户明细列表
         try {
             List<Map<String, Object>> records = wideSecondService.queryAllRecords(order.getId(), targetDate);
             extraData.put("records", records);
