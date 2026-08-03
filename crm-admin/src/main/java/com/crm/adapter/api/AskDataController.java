@@ -1,8 +1,8 @@
 package com.crm.adapter.api;
 
-import com.crm.askdata.config.AskDataEmbedProperties;
 import com.crm.askdata.client.HiAgentClient;
 import com.crm.askdata.model.*;
+import com.crm.askdata.service.AskDataEmbedRequestValidator;
 import com.crm.askdata.service.HiAgentConversationManager;
 import com.crm.askdata.service.RouterService;
 import com.crm.common.core.controller.BaseController;
@@ -38,7 +38,7 @@ public class AskDataController extends BaseController {
     private final HiAgentClient hiAgentClient;
     private final RouterService routerService;
     private final HiAgentConversationManager conversationManager;
-    private final AskDataEmbedProperties embedProperties;
+    private final AskDataEmbedRequestValidator embedRequestValidator;
 
     /**
      * 智能问数 SSE 流式接口
@@ -81,7 +81,7 @@ public class AskDataController extends BaseController {
                 requestHeaders.put("loginname", loginUser.getNickName());
             }
         } else {
-            validateEmbedRequest(request);
+            embedRequestValidator.validate(request);
             String loginoa = firstHeader(request, "loginoa", "loginOa", "oa");
             String loginname = firstHeader(request, "loginname", "loginName", "userName", "nickName");
             if (loginoa != null && !loginoa.trim().isEmpty()) {
@@ -120,30 +120,6 @@ public class AskDataController extends BaseController {
         } catch (Exception e) {
             log.debug("no zqzt login user, try embed mode: {}", e.getMessage());
             return null;
-        }
-    }
-
-    private void validateEmbedRequest(HttpServletRequest request) {
-        if (!embedProperties.isEnabled()) {
-            throw new RuntimeException("智能问数嵌入模式未开启");
-        }
-        String authorization = firstHeader(request, "Authorization", "authorization");
-        if (embedProperties.isRequireAuthHeader()
-            && (authorization == null || authorization.trim().isEmpty())) {
-            throw new RuntimeException("嵌入模式缺少 Authorization");
-        }
-        String loginoa = firstHeader(request, "loginoa", "loginOa", "oa");
-        if (embedProperties.isRequireOa()
-            && (loginoa == null || loginoa.trim().isEmpty())) {
-            throw new RuntimeException("嵌入模式缺少 loginoa");
-        }
-        if (embedProperties.getAllowedOrigins() != null && !embedProperties.getAllowedOrigins().isEmpty()) {
-            String origin = firstHeader(request, "Origin", "Referer");
-            boolean matched = origin != null && embedProperties.getAllowedOrigins().stream()
-                .anyMatch(origin::startsWith);
-            if (!matched) {
-                throw new RuntimeException("嵌入来源不在白名单");
-            }
         }
     }
 
