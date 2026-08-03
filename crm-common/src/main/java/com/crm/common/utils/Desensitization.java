@@ -122,6 +122,54 @@ public class Desensitization {
     }
 
     /**
+     * 通用脱敏：保留前pre位和后suf位，中间用'*'替换。
+     *
+     * @param str 待脱敏字符串
+     * @param pre 前面保留的字符数
+     * @param suf 后面保留的字符数
+     * @return 脱敏后的字符串，如果输入为 null 或空字符串则返回原输入
+     */
+    public static String maskMiddle(String str, int pre, int suf) {
+        if (str == null || str.trim().isEmpty()) {
+            return str;
+        }
+        if (pre <= 0 && suf <= 0) {
+            return str;
+        }
+        String s = str.trim();
+        int len = s.length();
+        if (len > (pre + suf)) {
+            return s.substring(0, pre) + generateAsterisks(len - pre - suf) + s.substring(len - suf);
+        } else if (len > pre && pre > 0) {
+            return s.substring(0, pre) + generateAsterisks(len - pre);
+        } else if (len > suf && suf > 0) {
+            return generateAsterisks(len - suf) + s.substring(len - suf);
+        } else {
+            return generateAsterisks(len);
+        }
+    }
+
+    /**
+     * 脱敏地址：仅保留前缀（地址前段），末尾敏感信息用'*'替换。
+     * 规则与旧框架 DataMaskingUtils.address 一致。
+     *
+     * @param address       完整地址
+     * @param sensitiveSize 末尾需要脱敏的字符数
+     * @return 脱敏后的地址，如果输入为 null 或空字符串则返回原输入
+     */
+    public static String desensitizeAddress(String address, int sensitiveSize) {
+        if (address == null || address.trim().isEmpty()) {
+            return address;
+        }
+        String s = address.trim();
+        int len = s.length();
+        if (len <= sensitiveSize) {
+            return generateAsterisks(len);
+        }
+        return s.substring(0, len - sensitiveSize) + generateAsterisks(sensitiveSize);
+    }
+
+    /**
      * 脱敏合同名称
      * 规则：保留前两位和后两位字符，中间的所有字符用 '*' 替换。
      *

@@ -74,14 +74,15 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
     Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
 
     /**
-     * 按区域范围分页查询有效用户，支持OA账号/姓名模糊搜索
+     * 按区域范围分页查询有效客户经理（cust_manager），支持OA账号/姓名模糊搜索。
+     * 对齐旧系统 SysPositionService.findCustManagerForMNP 逻辑。
      * @param areaIds 区域ID列表，为null或空时不限制区域
      */
     List<SysUsers> selectByAreaScope(@Param("areaIds") List<Long> areaIds, @Param("keyword") String keyword,
                                      @Param("offset") int offset, @Param("limit") int limit);
 
     /**
-     * 按区域范围统计有效用户数
+     * 按区域范围统计有效客户经理数
      */
     long countByAreaScope(@Param("areaIds") List<Long> areaIds, @Param("keyword") String keyword);
 
