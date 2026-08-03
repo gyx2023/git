@@ -97,4 +97,17 @@ public interface IToppOrderService {
      */
     void markOrderEnd(Long orderId);
 
+    /**
+     * 将工单置为已结束
+     * <p>
+     * 宽带二次预警（orderType=wide_second）完成时，在结束的同时记录结束原因(end_reason="0")
+     * 与跟踪情况(wide_result=followUp 或 otherReason)，避免 complete 单独再更新一次工单。
+     * </p>
+     *
+     * @param orderId     工单ID
+     * @param followUp    跟踪情况（可选，仅 wide_second 生效）
+     * @param otherReason 其他原因（followUp="其他" 时写入 wide_result）
+     */
+    void markOrderEnd(Long orderId, String followUp, String otherReason);
+
 }

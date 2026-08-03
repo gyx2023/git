@@ -1,7 +1,5 @@
 package com.crm.system.service;
 
-import org.flowable.task.api.Task;
-
 import java.util.List;
 import java.util.Map;
 
@@ -50,16 +48,4 @@ public interface IWideSecondWarningService {
      * 获取跟踪情况下拉选项
      */
     Map<String, String> getFollowUpOptions();
-
-
-    /**
-     * 完成（通过）—— 对应老框架 dealWideSecondTask taskFlag=1。
-     * 调用方负责补全流程编排：preserveDisplayVars → 本方法 → isProcessRunning/syncOrder。
-     */
-    Map<String, Object> completeOrder(Long orderId, Task task, String comment, String followUp, String otherReason);
-
-    /**
-     * 跟踪中 —— 对应老框架 dealWideSecondTask taskFlag=3。
-     */
-    Map<String, Object> trackOrder(Long orderId, Task task, String comment);
 }

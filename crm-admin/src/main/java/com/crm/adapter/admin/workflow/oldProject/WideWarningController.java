@@ -183,7 +183,9 @@ public class WideWarningController extends BaseController {
     public R<Map<String, Object>> complete(@RequestParam("taskId") String taskId,
                             @RequestParam("orderId") Long orderId,
                             @RequestParam(value = "auditUserId", required = false) Long auditUserId,
-                            @RequestParam(value = "comment", required = false) String comment) {
+                            @RequestParam(value = "comment", required = false) String comment,
+                            @RequestParam(value = "followUp", required = false) String followUp,
+                            @RequestParam(value = "otherReason", required = false) String otherReason) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) {
             return R.fail("任务不存在或已处理");
@@ -202,7 +204,6 @@ public class WideWarningController extends BaseController {
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
 
-        ToppOrderVo order = orderService.queryById(orderId);
         String msg;
         if (wfProcessService.isProcessRunning(piId)) {
             // 流程未结束（如进入稽核节点）：同步工单节点 + 白名单/处理人（一次 updateByBo）
@@ -215,7 +216,7 @@ public class WideWarningController extends BaseController {
             msg = "处理完成，已进入下一处理环节";
         } else {
             // 流程已结束：置为完成
-            orderService.markOrderEnd(orderId);
+            orderService.markOrderEnd(orderId, followUp, otherReason);
             msg = "该流程已完成";
         }
 

@@ -2,7 +2,6 @@ package com.crm.adapter.admin.system.zqzt;
 
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
-import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.WideSecondWarningDetailExportVo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
@@ -11,8 +10,6 @@ import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.service.IWfProcessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +31,6 @@ public class WideSecondWarningController extends BaseController {
     private final IWideSecondWarningService wideSecondService;
     private final IWfProcessService wfProcessService;
     private final IToppOrderService orderService;
-    private final TaskService taskService;
 
 
     @GetMapping("/records")
@@ -92,88 +88,6 @@ public class WideSecondWarningController extends BaseController {
     public R<Map<String, String>> followUpOptions() {
         return R.ok(wideSecondService.getFollowUpOptions());
     }
-
-    /**
-     * 完成（通过）—— 对应老框架 dealWideSecondTask taskFlag=1
-     */
-    @PostMapping("/complete")
-    public R<Map<String, Object>> complete(@RequestParam("taskId") String taskId,
-                                           @RequestParam("orderId") Long orderId,
-                                           @RequestParam(value = "comment", required = false) String comment,
-                                           @RequestParam(value = "followUp", required = false) String followUp,
-                                           @RequestParam(value = "otherReason", required = false) String otherReason) {
-        Task task = wfProcessService.findCurrentTask(null, taskId);
-        if (task == null) {
-            return R.fail("任务不存在或已处理");
-        }
-        String piId = task.getProcessInstanceId();
-
-        // 执行业务操作（事务保护）
-        wideSecondService.completeOrder(orderId, task, comment, followUp, otherReason);
-
-        // 判断流程是否结束，同步工单状态
-        String msg;
-        if (wfProcessService.isProcessRunning(piId)) {
-            Task nextTask = wfProcessService.findCurrentTask(piId, null);
-            Long nextAssignee = null;
-            if (nextTask != null && nextTask.getAssignee() != null && !nextTask.getAssignee().isEmpty()) {
-                nextAssignee = Long.parseLong(nextTask.getAssignee().replaceAll(",", ""));
-            }
-            orderService.syncOrderToCurrentTask(orderId, piId, nextAssignee);
-            msg = "处理完成，已进入下一处理环节";
-        } else {
-            orderService.markOrderEnd(orderId);
-            msg = "该流程已完成";
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("result", "SUCCESS");
-        result.put("msg", msg);
-        return R.ok(result);
-    }
-
-    /**
-     * 转派 —— 对应老框架 dealWideSecondTask taskFlag=2
-     */
-    @PostMapping("/transfer")
-    public R<Map<String, Object>> transfer(@RequestParam("taskId") String taskId,
-                                           @RequestParam("orderId") Long orderId,
-                                           @RequestParam("targetUserId") Long targetUserId,
-                                           @RequestParam(value = "comment", required = false) String comment) {
-        Task task = wfProcessService.findCurrentTask(null, taskId);
-        if (task == null) {
-            return R.fail("任务不存在或已处理");
-        }
-
-        if (comment != null) {
-            taskService.addComment(taskId, task.getProcessInstanceId(), comment);
-        }
-
-        LoginUser loginUser = getLoginUser();
-        String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment,
-                loginUser != null ? loginUser.getUserId() : null);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("result", "SUCCESS");
-        result.put("msg", "处理完成，下一步由[" + nextActor + "]进行处理");
-        return R.ok(result);
-    }
-
-    /**
-     * 跟踪中 —— 对应老框架 dealWideSecondTask taskFlag=3
-     */
-    @PostMapping("/track")
-    public R<Map<String, Object>> track(@RequestParam("taskId") String taskId,
-                                        @RequestParam("orderId") Long orderId,
-                                        @RequestParam(value = "comment", required = false) String comment) {
-        Task task = wfProcessService.findCurrentTask(null, taskId);
-        if (task == null) {
-            return R.fail("任务不存在或已处理");
-        }
-        Map<String, Object> result = wideSecondService.trackOrder(orderId, task, comment);
-        return R.ok(result);
-    }
-
 
     /** 从流程变量解析 targetDate（wide_second-date） */
     private String resolveTargetDate(Long orderId) {
