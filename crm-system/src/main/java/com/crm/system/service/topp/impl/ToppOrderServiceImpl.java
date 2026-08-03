@@ -211,7 +211,6 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         ToppOrderVo order = queryById(orderId);
         if (order == null) throw new ServiceException("工单不存在: " + orderId);
 
-        // 设置转派流程变量（展示变量已在 Controller 层由 preserveDisplayVarsToProcess 暂存到流程变量）
         Map<String, Object> vars = new HashMap<>();
         if (targetUserId != null) vars.put("manager", String.valueOf(targetUserId));
         vars.put("action", "transfer");
@@ -238,7 +237,8 @@ public class ToppOrderServiceImpl implements IToppOrderService {
      */
     @Override
     public void syncOrderToCurrentTask(Long orderId, String piId, Long whitelistUserId, Long... extraUserIds) {
-        Task next = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        List<Task> nextTasks = taskService.createTaskQuery().processInstanceId(piId).listPage(0, 1);
+        Task next = nextTasks.isEmpty() ? null : nextTasks.get(0);
         if (next == null) return;
 
         ToppOrderVo order = queryById(orderId);
@@ -269,7 +269,6 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         }
 
         updateByBo(bo);
-       // setNextTaskDisplayVars(next, order);
     }
 
     @Override
@@ -288,38 +287,4 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         }
     }
 
-    /** 为流转到的新任务设置展示用本地变量，供处理页展示 */
-    private void setNextTaskDisplayVars(Task next, ToppOrderVo order) {
-        if (order == null) return;
-        String k = next.getTaskDefinitionKey();
-        String piId = next.getProcessInstanceId();
-        Map<String, Object> tv = new HashMap<>();
-        tv.put(k + "_infoId", order.getId() != null ? String.valueOf(order.getId()) : null);
-        tv.put(k + "_infoType", "order");
-        if(StringUtils.isNotBlank( order.getCustName())){
-            tv.put(k + "_custName", order.getCustName());
-            tv.put(k + "_remindContent", "预警类型：" + order.getOrderType() + "，客户：" + order.getCustName() + "，请及时处理");
-        }else{
-            tv.put(k + "_remindContent", "预警类型：" + order.getOrderType() + "，请及时处理");
-        }
-        tv.put(k + "_orderName", order.getOrderName());
-
-        // dealUrl：优先从流程变量中查找（先精确匹配当前节点，再匹配任意 *_dealUrl），都没有则构造默认值
-        Map<String, Object> procVars = runtimeService.getVariables(piId);
-        String existingUrl = null;
-        Object v = procVars != null ? procVars.get(k + "_dealUrl") : null;
-        if (v != null) existingUrl = v.toString();
-        if (existingUrl == null && procVars != null) {
-            for (Map.Entry<String, Object> e : procVars.entrySet()) {
-                if (e.getKey().endsWith("_dealUrl") && e.getValue() != null) {
-                    existingUrl = e.getValue().toString();
-                    break;
-                }
-            }
-        }
-        tv.put(k + "_dealUrl", existingUrl != null ? existingUrl
-                : "/wideWarning/deal?orderId=" + order.getId());
-
-        taskService.setVariablesLocal(next.getId(), tv);
-    }
 }

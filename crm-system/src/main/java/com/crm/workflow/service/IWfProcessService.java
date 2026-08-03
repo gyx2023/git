@@ -121,12 +121,6 @@ public interface IWfProcessService {
     boolean isProcessRunning(String piId);
 
     /**
-     * 将任务的展示变量（task local）暂存到流程变量，防止随任务完成丢失。
-     * 后续 setNextTaskDisplayVars 可以从流程变量中找回 dealUrl。
-     */
-    void preserveDisplayVarsToProcess(String taskId, Task task);
-
-    /**
      * 加载流程实例的所有变量（运行中走 runtime，已结束走 history）。
      */
     Map<String, Object> loadProcVars(String procInsId);

@@ -206,8 +206,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             // 4.5 保存升级预警关联表（仅针对升级预警类型）
             saveToppOrderUpIfNeeded(orderBo, extra);
 
-            // 5. 设置任务本地变量
-            setTaskLocalVariables(task, orderBo, record, extra);
+            // 5. 设置任务展示变量（流程级别，后续节点复用）
+            setTaskDisplayVars(task, orderBo, record, extra, piId);
 
             // 6. 设置运行时流程变量
             setRuntimeVariables(piId, record, extra);
@@ -403,31 +403,34 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         }
     }
 
-    private void setTaskLocalVariables(Task task, ToppOrderBo orderBo, WarningRecord record, Map<String, Object> extra) {
+    private void setTaskDisplayVars(Task task, ToppOrderBo orderBo, WarningRecord record, Map<String, Object> extra, String piId) {
         // 优先使用策略自定义的 dealUrl，否则用默认
         IWarningQueryStrategy strategy = findStrategy(record.getOrderType());
         String dealUrl = strategy != null
                 ? strategy.buildDealUrl(orderBo.getId(), extra)
                 : "/warning/toDeal?orderType=" + record.getOrderType() + "&orderId=" + orderBo.getId();
 
-        Map<String, Object> taskVars = new HashMap<>();
-        taskVars.put(task.getTaskDefinitionKey() + "_dealUrl", dealUrl);
-        taskVars.put(task.getTaskDefinitionKey() + "_infoId", orderBo.getId());
-        taskVars.put(task.getTaskDefinitionKey() + "_infoType", "order");
-        taskVars.put(task.getTaskDefinitionKey() + "_orderName", record.getOrderName());
+        // 构建展示变量
+        Map<String, Object> vars = new HashMap<>();
+        String prefix = task.getTaskDefinitionKey();
+        vars.put(prefix + "_dealUrl", dealUrl);
+        vars.put(prefix + "_infoId", orderBo.getId());
+        vars.put(prefix + "_infoType", "order");
+        vars.put(prefix + "_orderName", record.getOrderName());
         if (StringUtils.isNotBlank(orderBo.getOrderNumber())) {
-            taskVars.put(task.getTaskDefinitionKey() + "flowNo", orderBo.getOrderNumber());
+            vars.put(prefix + "flowNo", orderBo.getOrderNumber());
         }
-        if(StringUtils.isNotBlank( record.getCustName())){
-            taskVars.put(task.getTaskDefinitionKey() + "_custName", record.getCustName());
-            taskVars.put(task.getTaskDefinitionKey() + "_remindContent",
+        if (StringUtils.isNotBlank(record.getCustName())) {
+            vars.put(prefix + "_custName", record.getCustName());
+            vars.put(prefix + "_remindContent",
                 "预警类型：" + record.getOrderType() + "，客户：" + record.getCustName() + "，请及时处理");
-        }else{
-            taskVars.put(task.getTaskDefinitionKey() + "_remindContent",
+        } else {
+            vars.put(prefix + "_remindContent",
                 "预警类型：" + record.getOrderType() + "，请及时处理");
         }
 
-        taskService.setVariablesLocal(task.getId(), taskVars);
+        // 流程级别：后续任务复用；已办查询通过 TASK_ID_ IS NULL 兜底也能找到
+        runtimeService.setVariables(piId, vars);
     }
 
     private void setRuntimeVariables(String piId, WarningRecord record, Map<String, Object> extra) {

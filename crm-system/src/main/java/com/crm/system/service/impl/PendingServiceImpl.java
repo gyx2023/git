@@ -187,11 +187,13 @@ public class PendingServiceImpl implements IPendingService {
 
     private boolean resolveDealUrl(Pending pending, TaskCtx ctx) {
         if (ctx.isFlowable()) {
-            HistoricVariableInstance flowableVar = flowableHistoryService
+            HistoricVariableInstance flowableVar;
+            List<HistoricVariableInstance> dealUrlList = flowableHistoryService
                     .createHistoricVariableInstanceQuery()
-                    .taskId(pending.getPendingCode())
+                    .processInstanceId(ctx.procInsId)
                     .variableName(ctx.taskDefKey + "_dealUrl")
-                    .singleResult();
+                    .listPage(0, 1);
+            flowableVar = dealUrlList.isEmpty() ? null : dealUrlList.get(0);
             if (flowableVar == null || flowableVar.getValue() == null) {
                 pending.setFailTimes(MAX_FAIL_TIMES);
                 pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");

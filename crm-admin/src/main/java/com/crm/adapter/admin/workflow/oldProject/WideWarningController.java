@@ -193,9 +193,6 @@ public class WideWarningController extends BaseController {
             taskService.addComment(taskId, piId, comment);
         }
 
-        // 保留当前任务展示变量到流程变量，避免 task local 随任务完成而丢失
-        wfProcessService.preserveDisplayVarsToProcess(taskId, task);
-
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "agree");
         if ("manager_handle".equals(task.getTaskDefinitionKey()) && auditUserId != null) {
@@ -243,9 +240,6 @@ public class WideWarningController extends BaseController {
         if (comment != null) {
             taskService.addComment(taskId, piId, comment);
         }
-
-        // 保留当前任务展示变量到流程变量，避免 task local 随任务完成而丢失
-        wfProcessService.preserveDisplayVarsToProcess(taskId, task);
 
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", "reject");
@@ -312,9 +306,7 @@ public class WideWarningController extends BaseController {
             return R.ok(result);
         }
 
-        // 经理节点：先暂存展示变量到流程变量，再完成任务走 BPMN 转派回路，
-        // transferOrder 内部调 syncOrderToCurrentTask 同步 order + 展示变量
-        wfProcessService.preserveDisplayVarsToProcess(taskId, task);
+        // 经理节点：完成任务走 BPMN 转派回路，transferOrder 内部调 syncOrderToCurrentTask 同步 order
         String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
 
         Map<String, Object> result = new HashMap<>();
