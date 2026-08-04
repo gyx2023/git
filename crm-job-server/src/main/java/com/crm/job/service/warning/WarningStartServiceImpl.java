@@ -7,13 +7,9 @@ import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.utils.StringUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
-import com.crm.system.domain.dao.FtpCustBaseInfoDo;
-import com.crm.system.domain.dao.MaintenanceDetailDo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.topp.ToppOrderUp;
-import com.crm.system.mapper.MaintenanceDetailMapper;
 import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
 import com.crm.system.service.ISequenceService;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.topp.IToppOrderService;
@@ -72,12 +68,6 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
     @Autowired(required = false)
     private SysUsersMapper sysUsersMapper;
-
-    @Autowired(required = false)
-    private MaintenanceDetailMapper maintenanceDetailMapper;
-
-    @Autowired(required = false)
-    private FtpCustBaseInfoMapper ftpCustBaseInfoMapper;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -356,42 +346,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             orderBo.setOrderCategory(orderCategory);
         }
 
-        // 可选：businessDep（对齐旧系统 setAreaAndOrg 三级兜底逻辑）
-        // 1) 策略直接在 extra 里提供
-        // 2) 查 maintenance_detail（有 infoId 时）
-        // 3) 查 ftp_cust_base_info 的 grp_busi_dept_type（有 grpCode 时），空或99 → "22"
-        // 4) 兜底 "22"
+        // 可选：businessDep（由策略在 extra 里提供，无则默认 "22"）
         String businessDep = (String) extra.get("businessDep");
-        if (StringUtils.isBlank(businessDep) && infoId != null && maintenanceDetailMapper != null) {
-            try {
-                MaintenanceDetailDo detail = maintenanceDetailMapper.selectOne(
-                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<MaintenanceDetailDo>()
-                                .eq(MaintenanceDetailDo::getDetailId, infoId)
-                                .last("LIMIT 1"));
-                if (detail != null) {
-                    businessDep = detail.getBusinessDep();
-                }
-            } catch (Exception e) {
-                log.debug("【预警启动】查 maintenance_detail 失败: infoId={}", infoId);
-            }
-        }
-        if (StringUtils.isBlank(businessDep) && ftpCustBaseInfoMapper != null) {
-            String grpCode = (String) extra.get("grpCode");
-            if (StringUtils.isNotBlank(grpCode)) {
-                try {
-                    FtpCustBaseInfoDo custInfo = ftpCustBaseInfoMapper.selectOne(
-                            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FtpCustBaseInfoDo>()
-                                    .eq(FtpCustBaseInfoDo::getGrpCode, grpCode)
-                                    .last("LIMIT 1"));
-                    if (custInfo != null) {
-                        String deptType = custInfo.getGrpBusiDeptType();
-                        businessDep = (StringUtils.isBlank(deptType) || "99".equals(deptType)) ? "22" : deptType;
-                    }
-                } catch (Exception e) {
-                    log.debug("【预警启动】查 ftp_cust_base_info 失败: grpCode={}", grpCode);
-                }
-            }
-        }
         if (StringUtils.isBlank(businessDep)) {
             businessDep = "22";
         }
