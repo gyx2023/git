@@ -49,6 +49,10 @@ public class WfProcNodeVo implements Serializable {
      */
     private String candidate;
     /**
+     * 处理动作（从流程变量 action 映射：agree→通过，transfer→转派）
+     */
+    private String operation;
+    /**
      * 任务意见
      */
     private List<WfCommentVo> commentList;

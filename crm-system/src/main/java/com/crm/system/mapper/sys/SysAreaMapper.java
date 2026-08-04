@@ -4,6 +4,7 @@ import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -24,4 +25,18 @@ public interface SysAreaMapper extends BaseMapperPlus<SysAreaMapper, SysArea, Sy
      */
     List<Map<String, Object>> selectAreaJtCodeList();
 
+    /**
+     * 根据BSS编码查询区域名称
+     *
+     * @param bssCode BSS编码
+     * @return 区域名称
+     */
+    @Select("SELECT name_ FROM sys_area WHERE bss_code = #{bssCode} LIMIT 1")
+    String selectAreaNameByBssCode(@Param("bssCode") String bssCode);
+
+    /**
+     * 根据父级ID查询子区域列表
+     */
+    @Select("SELECT * FROM sys_area WHERE parent_ = #{parentId}")
+    List<SysAreaVo> selectByParentId(@Param("parentId") Long parentId);
 }

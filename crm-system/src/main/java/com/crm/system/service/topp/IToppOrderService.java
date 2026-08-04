@@ -61,4 +61,53 @@ public interface IToppOrderService {
 
    void updateByOppoId(Long oppoId,String endOppTypeMemo);
 
+    /**
+     * 根据工单ID解析流程实例ID
+     */
+    String resolveProcInsId(Long orderId);
+
+    /**
+     * Flowable 工单转派（完成当前任务 + 流程回到经理处理节点）
+     *
+     * @param taskId        当前任务ID
+     * @param orderId       工单ID
+     * @param targetUserId  目标用户ID
+     * @param comment       转派意见（可选）
+     * @param currentUserId 当前操作人ID（可选，仅用于追加白名单）
+     * @return 下一步处理人名称
+     */
+    String transferOrder(String taskId, Long orderId, Long targetUserId, String comment, Long currentUserId);
+
+    /**
+     * 将工单同步到当前流程节点（更新 phase/phaseName/status + 展示变量）。
+     * <p>
+     * 查询流程当前任务，将工单的节点信息同步为当前任务状态。
+     * 若 whitelistUserId 非空，同时更新白名单和处理人。
+     * </p>
+     *
+     * @param orderId         工单ID
+     * @param piId            流程实例ID
+     * @param whitelistUserId 处理人ID（非空时同步白名单/actors/actorsInfo）
+     * @param extraUserIds    额外加入白名单的用户ID（如转派操作人等）
+     */
+    void syncOrderToCurrentTask(Long orderId, String piId, Long whitelistUserId, Long... extraUserIds);
+
+    /**
+     * 将工单置为已结束
+     */
+    void markOrderEnd(Long orderId);
+
+    /**
+     * 将工单置为已结束
+     * <p>
+     * 宽带二次预警（orderType=wide_second）完成时，在结束的同时记录结束原因(end_reason="0")
+     * 与跟踪情况(wide_result=followUp 或 otherReason)，避免 complete 单独再更新一次工单。
+     * </p>
+     *
+     * @param orderId     工单ID
+     * @param followUp    跟踪情况（可选，仅 wide_second 生效）
+     * @param otherReason 其他原因（followUp="其他" 时写入 wide_result）
+     */
+    void markOrderEnd(Long orderId, String followUp, String otherReason);
+
 }

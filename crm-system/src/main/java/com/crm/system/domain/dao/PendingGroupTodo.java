@@ -17,7 +17,7 @@ import java.util.Date;
 public class PendingGroupTodo implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
 
     @TableField("proc_inst_id")
