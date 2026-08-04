@@ -15,15 +15,11 @@ import java.util.Map;
 @Mapper
 public interface WotvExpireWarningMapper {
 
-    @Select({"SELECT w.id, w.grp_name, w.grp_code, w.oa_id_dev, w.serv_manager_id, w.warning_type "
+    @Select({"SELECT w.id_, w.grp_name, w.grp_code, w.oa_id_dev, w.oa_name_dev, "
+            + "w.serv_manager_id, w.warning_type, w.area_name, w.county_name, w.cust_grp_id "
             + "FROM ftp_tc_user_cust_warning w "
             + "WHERE w.warning_type = 'C00024' "
-            + "AND w.is_valid = '1' "
-            + "AND DATE_FORMAT(w.exp_time, '%Y-%m-%d') >= #{targetDate} "
-            + "ORDER BY w.id"})
-    List<Map<String, Object>> selectWotvExpireList(@Param("targetDate") String targetDate);
-
-    @Select({"SELECT user_id, dept_id, nick_name, phonenumber FROM sys_user "
-            + "WHERE user_name = #{oaId} AND del_flag = '0' LIMIT 1"})
-    Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
+            + "AND DATE_FORMAT(w.create_date, '%Y%m%d') = #{targetDate} "
+            + "ORDER BY w.id_"})
+    List<Map<String, Object>> selectWotvList(@Param("targetDate") String targetDate);
 }
