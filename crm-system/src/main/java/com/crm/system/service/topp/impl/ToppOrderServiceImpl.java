@@ -250,7 +250,8 @@ public class ToppOrderServiceImpl implements IToppOrderService {
 
         if (whitelistUserId != null) {
             bo.setActors(",," + whitelistUserId + ",,");
-            StringBuilder whiteList = new StringBuilder(order != null ? order.getWhiteList() : null);
+            String currentWhiteList = (order != null) ? order.getWhiteList() : null;
+            StringBuilder whiteList = new StringBuilder(currentWhiteList != null ? currentWhiteList : "");
             if (whiteList.length() == 0) whiteList.append(",");
             addToWhiteList(whiteList, whitelistUserId);
             if (extraUserIds != null) {
