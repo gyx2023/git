@@ -20,7 +20,7 @@ import java.util.Map;
  * @author crm
  */
 @Mapper
-public interface HmdUpWarningMapper {
+public interface HmdUpWarningMapper extends WarningUpCommonMapper {
 
     /**
      * 查询有红名单到期升级预警数据的区域（区县级）

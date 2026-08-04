@@ -19,7 +19,7 @@ import java.util.Map;
  * dwdRepPersonService.getPersonOrgList、dwdRepPersonService.getBossList
  */
 @Mapper
-public interface WideUpWarningMapper {
+public interface WideUpWarningMapper extends WarningUpCommonMapper {
 
     /**
      * 查询有宽带到期预警数据的区域（区县级）
