@@ -177,6 +177,7 @@ public class Constants {
 
     public static final String TASK_TYPE_DUTY_CHANGE = "duty_change";// 主责支撑经理职责转让
     public static final String TASK_TYPE_DUTY_CHANGE_NAME = "主责支撑经理职责转让";
+    public static final String ORDER_STATUS_END = "end";
 
     /*
      * 支撑工单类型的任务
@@ -850,13 +851,9 @@ public class Constants {
     // 通用预警处理流程
     public static final String SINGLE_APPROVAL_PROCESS_KEY = "single_approval";
     public static final String SINGLE_APPROVAL_PROCESS_NAME = "预警处理流程";
-
-    // order_status
-    public static final String ORDER_STATUS_DRAFT = "draft";// 待提交
-    public static final String ORDER_STATUS_RUNNING = "running";
-    public static final String ORDER_STATUS_TRACKING = "tracking";
-    public static final String ORDER_STATUS_END = "end";
-    public static final String ORDER_STATUS_ABANDON = "abandon";
+    // 通用双节点预警处理流程（客户经理处理 → 稽核人员处理），后续两节点预警统一复用
+    public static final String DOUBLE_APPROVAL_PROCESS_KEY = "double_approval";
+    public static final String DOUBLE_APPROVAL_PROCESS_NAME = "预警处理流程(双节点)";
 
     // 申请支撑
     public static final String APPLAY_SUPPORT_FLOW_CODE = "applay_support";
@@ -1756,7 +1753,7 @@ public class Constants {
     // 宽带升级预警(维系效果)
     public static final String ORDER_TYPE_WIDE_UP = "wide_up";
     public static final String ORDER_TYPE_NEW_WIDE_UP = "new_wide_up";
-    public static final String ORDER_TYPE_WIDE_UP_NAME = "宽带升级预警";
+    public static final String ORDER_TYPE_WIDE_UP_NAME = "宽带到期升级预警";
     public static final String ACT_PHASE_WIDE_UP_WARNING_MANAGER_DEAL = "wide_up_warn_manager_deal";
     public static final String ACT_PHASE_NEW_WIDE_UP_WARNING_MANAGER_DEAL = "leader";
     public static final String ACT_PHASE_WIDE_UP_WARNING_MANAGER_DEAL_NAME = "领导处理";

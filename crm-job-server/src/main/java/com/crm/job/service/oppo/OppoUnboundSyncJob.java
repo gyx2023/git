@@ -3,6 +3,7 @@ package com.crm.job.service.oppo;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.crm.common.core.domain.entity.SysDept;
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.enums.SwitchStatus;
 import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.utils.BeanCopyUtils;
@@ -315,7 +316,7 @@ public class OppoUnboundSyncJob {
         order.setOrderType(Constants.ACT_OPP_END_AUDIT);
         order.setClueId(oppotunity.getClueId());
         order.setContractId(oppotunity.getContractId());
-        order.setStatus(Constants.ORDER_STATUS_END);
+        order.setStatus(OrderStatusEnum.END.getCode());
         order.setCustManagerId(su.getId());
         order.setActors(",," + oppotunity.getCustManagerId().toString() + ",,");
         order.setWhiteList("," + su.getId() + ",");

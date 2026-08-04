@@ -28,15 +28,12 @@ public class WideSecondWarningJob {
     @XxlJob("wideSecondJob")
     public void start() {
         log.info("【宽带二次预警Job】开始执行");
-        String jobParam = XxlJobHelper.getJobParam();
-        // 默认取15天后日期（原系统逻辑），可用参数覆盖
-        String targetDate;
-        if (StringUtils.isNotBlank(jobParam)) {
-            targetDate = jobParam;
-        } else {
+        String targetDate = XxlJobHelper.getJobParam();
+        // 默认取15天后日期（与原系统 wideSecondJob 逻辑一致），参数可直接覆盖
+        if (StringUtils.isBlank(targetDate)) {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DATE, 15);
-            targetDate = new SimpleDateFormat("yyyy-MM-dd").format(c.getTime());
+            targetDate = new SimpleDateFormat("yyyyMMdd").format(c.getTime());
         }
         try {
             warningStartService.startByType("wide_second", targetDate);

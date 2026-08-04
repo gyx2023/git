@@ -18,7 +18,7 @@ import java.util.Map;
  * 预警类型标识：wotv_expire_warning
  * <p>
  * ===== 完整链路 =====
- * WotvExpireWarningJob → WarningStartService.startByType("wotv_expire_warning")
+ * WarningJob → WarningStartService.startByType("wotv_expire_warning")
  *   → WotvExpireWarningStrategy.query(targetDate)
  *     → Mapper SQL 查 ftp_tc_user_cust_warning + 按 oa_id_dev 查 sys_user
  *     → 转 List&lt;WarningRecord&gt;（已解析为真实 userId）

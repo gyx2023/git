@@ -28,7 +28,7 @@ public class ContractDueWarningJob {
         log.info("【合同到期预警Job】开始执行");
         String jobParam = XxlJobHelper.getJobParam();
         String targetDate = StringUtils.isNotBlank(jobParam) ? jobParam
-                : DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, new java.util.Date());
+                : DateUtils.parseDateToStr(DateUtils.YYYYMMDD, new java.util.Date());
         try {
             warningStartService.startByType("htdq_warn", targetDate);
             log.info("【合同到期预警Job】执行完成");

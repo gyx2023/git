@@ -1,8 +1,17 @@
 package com.crm.job.service.warning.strategy;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.DateUtils;
+import com.crm.common.utils.StringUtils;
 import com.crm.job.mapper.warning.WideSecondWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.domain.dao.MaintenanceDetailDo;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.tcomm.TcommCustomer;
+import com.crm.system.mapper.MaintenanceDetailMapper;
+import com.crm.system.mapper.SysUsersMapper;
+import com.crm.system.mapper.tcomm.TcommCustomerMapper;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -34,6 +43,15 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
     @Resource
     private WideSecondWarningMapper mapper;
 
+    @Resource
+    private SysUsersMapper sysUsersMapper;
+
+    @Resource
+    private TcommCustomerMapper tcommCustomerMapper;
+
+    @Resource
+    private MaintenanceDetailMapper maintenanceDetailMapper;
+
     @Override
     public String getOrderType() {
         return "wide_second";
@@ -60,13 +78,13 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
     private WarningRecord toWarningRecord(Map<String, Object> row) {
         String oaIdDev = getString(row.get("oa_id_dev"));
-        if (oaIdDev == null) {
+        if (oaIdDev == null || oaIdDev.isEmpty()) {
             log.warn("【{}】oa_id_dev 为空, 跳过", getOrderTypeName());
             return null;
         }
 
         // 按 oaId 查 sys_user 表，获取真实 userId 及相关信息
-        Map<String, Object> userRow = mapper.selectUserByOaId(oaIdDev);
+        Map<String, Object> userRow = sysUsersMapper.selectUserByOaId(oaIdDev);
         if (userRow == null || userRow.isEmpty()) {
             log.warn("【{}】未找到对应客户经理, oaId: {}", getOrderTypeName(), oaIdDev);
             return null;
@@ -80,22 +98,60 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
         WarningRecord record = new WarningRecord();
         record.setOrderType(getOrderType());
-        record.setOrderName(getOrderTypeName());
-        record.setCustName(getString(row.get("grp_name")));
+        // order_name: yyyyMMdd_custName_宽带二次预警
+        String custName = getString(row.get("grp_name"));
+        String dateStr = DateUtils.dateTimeNow(DateUtils.YYYYMMDD);
+        record.setOrderName(dateStr + "_" + custName + "_" + getOrderTypeName());
+        record.setCustName(custName);
         record.setCustManagerId(userId);
 
-        record.setExtraVariable("infoId", toLong(row.get("id")));
+        String grpCode = getString(row.get("grp_code"));
+        if (StringUtils.isNotBlank(grpCode)) {
+            TcommCustomer customer = tcommCustomerMapper.selectOne(
+                    new LambdaQueryWrapper<TcommCustomer>().eq(TcommCustomer::getCustNo, grpCode));
+            if (customer != null) {
+                record.setCustId(customer.getId());
+            }
+        }
+
+        SysUsers sysUser = new SysUsers();
+        sysUser.setId(userId);
+        record.setSysUser(sysUser);
+
+        record.setExtraVariable("infoId", toLong(row.get("id_")));
         record.setExtraVariable("orgId", toLong(userRow.get("dept_id")));
         record.setExtraVariable("nickName", getString(userRow.get("nick_name")));
         record.setExtraVariable("phone", getString(userRow.get("phonenumber")));
         record.setExtraVariable("_needOrderNumber", true);
         record.setExtraVariable("orderCategory", "C");
+
+        Long infoId = toLong(row.get("id_"));
+        if (infoId != null) {
+            MaintenanceDetailDo detail = maintenanceDetailMapper.selectOne(
+                    new LambdaQueryWrapper<MaintenanceDetailDo>()
+                            .eq(MaintenanceDetailDo::getDetailId, infoId)
+                            .eq(MaintenanceDetailDo::getOrderType, "Wide"));
+            if (detail != null && StringUtils.isNotBlank(detail.getBusinessDep())) {
+                record.setExtraVariable("businessDep", detail.getBusinessDep());
+            }
+        }
+
         return record;
     }
 
     @Override
     public String buildDealUrl(Long orderId, Map<String, Object> extra) {
         return "/userCustWarning/dealByWideSecond?orderId=" + orderId;
+    }
+
+    @Override
+    public boolean isNotificationEnabled() {
+        return true;
+    }
+
+    @Override
+    public String getNotificationMessage(int count) {
+        return "温馨提醒：您收到" + count + "个" + getOrderTypeName() + "工单，已生成待处理任务，请至创新头条-省分专区-运营平台。";
     }
 
     private String getString(Object v) {

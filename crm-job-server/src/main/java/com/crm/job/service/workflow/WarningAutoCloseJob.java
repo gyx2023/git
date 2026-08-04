@@ -2,11 +2,11 @@ package com.crm.job.service.workflow;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.enums.order.ProcessEngineEnum;
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.topp.ToppOrderMapper;
-import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,7 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
         Date deadline = DateUtils.addDays(new Date(), -AUTO_CLOSE_DAYS);
         List<ToppOrder> overdueOrders = toppOrderMapper.selectList(
                 new LambdaQueryWrapper<ToppOrder>()
-                        .eq(ToppOrder::getStatus, Constants.ORDER_STATUS_RUNNING)
+                        .eq(ToppOrder::getStatus, OrderStatusEnum.RUNNING.getCode())
                         .eq(ToppOrder::getProcessEngine, ProcessEngineEnum.FLOWABLE.name())
                         .in(ToppOrder::getOrderType, WARNING_ORDER_TYPES)
                         .lt(ToppOrder::getCreateTime, deadline)
@@ -97,23 +97,25 @@ public class WarningAutoCloseJob extends FlowServiceFactory {
             return;
         }
 
-        // 设置完成变量
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("action", "agree");
-
         Map<String, Object> localVariables = new HashMap<>();
         localVariables.put(task.getTaskDefinitionKey() + "_resultCode", "0");
         localVariables.put(task.getTaskDefinitionKey() + "_opinion", "自动完结");
         localVariables.put(task.getTaskDefinitionKey() + "_resultMemo",
                 "[自动完结]超时" + AUTO_CLOSE_DAYS + "天未处理，系统自动结束");
-
         taskService.setVariablesLocal(task.getId(), localVariables);
+
+        // double_approval（两节点）：对齐旧系统 autoEndOrder —— 用非 agree/transfer/reject 的 action 走网关默认线直达结束，
+        // 流程正常完结（TASK_COMPLETED/PROCESS_COMPLETED 事件正常触发，OA 待办可被清理），不推进到稽核节点；
+        // single_approval（单节点）维持 agree，完成任务即流程结束
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("action",
+                task.getProcessDefinitionId().startsWith("double_approval:") ? "auto_close" : "agree");
         taskService.complete(task.getId(), variables);
 
         // 更新工单状态为已结束
         ToppOrder updateOrder = new ToppOrder();
         updateOrder.setId(order.getId());
-        updateOrder.setStatus(Constants.ORDER_STATUS_END);
+        updateOrder.setStatus(OrderStatusEnum.END.getCode());
         updateOrder.setEndReason("0");
         toppOrderMapper.updateById(updateOrder);
 
