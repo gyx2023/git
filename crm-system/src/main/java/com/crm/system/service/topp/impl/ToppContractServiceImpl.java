@@ -12,10 +12,14 @@ import com.crm.system.domain.dao.topp.ToppContractDo;
 import com.crm.system.domain.vo.topp.ToppContractVo;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.service.topp.IToppContractService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -28,6 +32,7 @@ import java.util.Collection;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ToppContractServiceImpl implements IToppContractService {
 
     private final ToppContractMapper baseMapper;
@@ -173,8 +178,9 @@ public class ToppContractServiceImpl implements IToppContractService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -213,5 +219,85 @@ public class ToppContractServiceImpl implements IToppContractService {
         lqw.orderByDesc(ToppContractDo::getCreateTime);
 
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 校验合同金额（对照老系统 ContractService.toValidContract line 1853）
+     * 当合同总金额 > 阈值（默认10万）时，验证计收金额之和 = 总金额 且 分项收入之和 = 总金额
+     */
+    @Override
+    public Map<Boolean, String> toValidContract(ToppContractBo bo, String includeTypeMoneyTotal) {
+        Map<Boolean, String> result = new HashMap<>();
+        try {
+            // 老系统：从 sysParamService 读配置，默认 "10"（万元）
+            BigDecimal totalMoney = bo.getTotalMoney();
+            if (totalMoney == null || totalMoney.compareTo(new BigDecimal("10")) <= 0) {
+                result.put(true, "");
+                return result;
+            }
+            // totalMoney 单位是万元，转为元：totalMoney * 10000
+            BigDecimal totalMoneyYuan = totalMoney.multiply(new BigDecimal("10000"));
+            // 验证：计收金额之和 = ICT计收 + 标准化计收 = 总金额（元）
+            BigDecimal ictPlanIncome = bo.getIctPlanIncome() != null ? new BigDecimal(bo.getIctPlanIncome()) : BigDecimal.ZERO;
+            BigDecimal normPlanIncome = bo.getNormPlanIncome() != null ? bo.getNormPlanIncome() : BigDecimal.ZERO;
+            BigDecimal incomeSum = ictPlanIncome.add(normPlanIncome);
+            if (totalMoneyYuan.setScale(2, java.math.RoundingMode.HALF_UP).compareTo(incomeSum.setScale(2, java.math.RoundingMode.HALF_UP)) != 0) {
+                result.put(false, "合同计收金额之和不等于合同总金额");
+                return result;
+            }
+            // 验证：分项收入之和 = 总金额（元）
+            if (StringUtils.isNotBlank(includeTypeMoneyTotal)) {
+                BigDecimal typeMoneyTotal = new BigDecimal(includeTypeMoneyTotal);
+                if (totalMoneyYuan.setScale(2, java.math.RoundingMode.HALF_UP).compareTo(typeMoneyTotal.setScale(2, java.math.RoundingMode.HALF_UP)) != 0) {
+                    result.put(false, "合同分项收入之和不等于合同总金额");
+                    return result;
+                }
+            }
+        } catch (Exception e) {
+            result.put(false, "合同金额校验失败");
+            return result;
+        }
+        result.put(true, "");
+        return result;
+    }
+
+    /**
+     * 检查合同编号是否唯一（对照老系统 ContractAction.validbind line 878）
+     */
+    @Override
+    public Map<String, Object> validContractNo(String contractNo, Long oppoId) {
+        Map<String, Object> obj = new HashMap<>();
+        if (StringUtils.isBlank(contractNo)) {
+            obj.put("status", "3");
+            return obj;
+        }
+        // 查询有效合同：contractNo = ? AND is_valid = 1
+        LambdaQueryWrapper<ToppContractDo> lqw = Wrappers.lambdaQuery();
+        lqw.eq(ToppContractDo::getContractNo, contractNo);
+        lqw.eq(ToppContractDo::getIsValid, "1");
+        List<ToppContractDo> list = baseMapper.selectList(lqw);
+
+        if (list != null && !list.isEmpty()) {
+            boolean flag = true;
+            for (ToppContractDo contract : list) {
+                if (oppoId != null && oppoId.equals(contract.getProjectId())) {
+                    obj.put("status", "1");
+                    obj.put("msg", "该商机已关联该合同,不允许重复关联合同");
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag) {
+                StringBuilder builder = new StringBuilder();
+                for (ToppContractDo contract : list) {
+                    builder.append(contract.getProjectId()).append(" ");
+                }
+                obj.put("status", "2");
+                obj.put("msg", builder.toString() + "商机已关联该合同,不允许重复关联");
+            }
+        } else {
+            obj.put("status", "3"); // 合同编号可用
+        }
+        return obj;
     }
 }

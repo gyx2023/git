@@ -7,10 +7,12 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysAreaTreeVo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.mapper.sys.SysAreaMapper;
 import com.crm.system.service.ISysAreaService;
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class SysAreaServiceImpl implements ISysAreaService {
 
     private final SysAreaMapper baseMapper;
@@ -88,6 +91,14 @@ public class SysAreaServiceImpl implements ISysAreaService {
     public List<SysAreaVo> queryCountyListByCityId(String areaId) {
         LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
         lqw.eq(SysArea::getParent, areaId);
+        lqw.eq(SysArea::getType, "三级");
+        return baseMapper.selectVoList(lqw);
+    }
+
+    @Override
+    public List<SysAreaVo> queryCountyListByBssCode(String bssCode) {
+        LambdaQueryWrapper<SysArea> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysArea::getBssCodeParent, bssCode);
         lqw.eq(SysArea::getType, "三级");
         return baseMapper.selectVoList(lqw);
     }
@@ -155,8 +166,9 @@ public class SysAreaServiceImpl implements ISysAreaService {
     @Override
     @CacheEvict(cacheNames = {CacheNames.SYS_AREA, CacheNames.SYS_AREA_COUNTY}, allEntries = true)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -268,5 +280,34 @@ public class SysAreaServiceImpl implements ISysAreaService {
         lqw.eq(SysArea::getEmpAreaId, empAreaId);
 
         return baseMapper.selectList(lqw);
+    }
+
+    /**
+     * 查询区域树（递归包含所有子节点）
+     */
+    @Override
+    public List<SysAreaTreeVo> queryAreaTree(Long areaId) {
+        SysAreaVo root = queryById(areaId);
+        if (root == null) {
+            return new ArrayList<>();
+        }
+        SysAreaTreeVo rootNode = buildTreeNode(root);
+        List<SysAreaTreeVo> result = new ArrayList<>();
+        result.add(rootNode);
+        return result;
+    }
+
+    private SysAreaTreeVo buildTreeNode(SysAreaVo area) {
+        SysAreaTreeVo node = new SysAreaTreeVo();
+        node.setId(String.valueOf(area.getId()));
+        node.setLabel(area.getName());
+        List<SysAreaVo> children = baseMapper.selectVoList(new LambdaQueryWrapper<SysArea>()
+            .eq(SysArea::getParent, area.getId()));
+        if (children != null && !children.isEmpty()) {
+            node.setChildren(children.stream()
+                .map(this::buildTreeNode)
+                .collect(Collectors.toList()));
+        }
+        return node;
     }
 }

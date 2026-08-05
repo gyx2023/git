@@ -5,6 +5,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysAreaTreeVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -44,6 +45,11 @@ public interface ISysAreaService {
     List<SysAreaVo> queryCountyListByCityId(String areaId);
 
     /**
+     * 根据地级市BSS编码查询其下辖的区县列表（维系预警Tab3/4/5 客户维度用）
+     */
+    List<SysAreaVo> queryCountyListByBssCode(String bssCode);
+
+    /**
      * 新增【请填写功能名称】
      */
     Boolean insertByBo(SysAreaBo bo);
@@ -81,4 +87,9 @@ public interface ISysAreaService {
     List<SysArea> queryLikeList(String city);
 
     List<SysArea> findEmpAreaIdList(Integer empAreaId);
+
+    /**
+     * 查询区域树（递归包含所有子节点）
+     */
+    List<SysAreaTreeVo> queryAreaTree(Long areaId);
 }

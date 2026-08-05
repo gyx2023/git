@@ -12,6 +12,7 @@ import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.bo.SysAreaBo;
 import com.crm.system.domain.vo.SysAreaVo;
+import com.crm.system.domain.vo.SysAreaTreeVo;
 import com.crm.system.service.ISysAreaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 【请填写功能名称】
+ * 区域管理
  *
  * @author crm
  * @date 2025-11-24
@@ -56,25 +57,46 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 查询【请填写功能名称】列表
+     * 根据地级市BSS编码查询其下辖的区县列表（维系预警Tab3/4/5 客户维度用）
      */
+    @GetMapping("/county/listByBssCode")
+    public R<List<SysAreaVo>> countyListByBssCode(@RequestParam String bssCode) {
+        List<SysAreaVo> counties = iSysAreaService.queryCountyListByBssCode(bssCode);
+        return R.ok(counties);
+    }
+
+    /**
+     * 查询区域树（递归包含所有子节点）
+     */
+    @GetMapping("/tree")
+    public R<List<SysAreaTreeVo>> tree(@RequestParam(required = false) Long areaId) {
+        if (areaId == null) {
+            areaId = 330000L;
+        }
+        return R.ok(iSysAreaService.queryAreaTree(areaId));
+    }
+
+    /**
+     * 查询区域管理列表
+     */
+    @Log(title = "区域管理", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<SysAreaVo> list(SysAreaBo bo, PageQuery pageQuery) {
         return iSysAreaService.queryPageList(bo, pageQuery);
     }
 
     /**
-     * 导出【请填写功能名称】列表
+     * 导出区域管理列表
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
+    @Log(title = "区域管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(SysAreaBo bo, HttpServletResponse response) {
         List<SysAreaVo> list = iSysAreaService.queryList(bo);
-        ExcelUtil.exportExcel(list, "【请填写功能名称】", SysAreaVo.class, response);
+        ExcelUtil.exportExcel(list, "区域管理", SysAreaVo.class, response);
     }
 
     /**
-     * 获取【请填写功能名称】详细信息
+     * 获取区域管理详细信息
      *
      * @param id 主键
      */
@@ -85,9 +107,9 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 新增【请填写功能名称】
+     * 新增区域管理
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
+    @Log(title = "区域管理", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody SysAreaBo bo) {
@@ -95,9 +117,9 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 修改【请填写功能名称】
+     * 修改区域管理
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
+    @Log(title = "区域管理", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody SysAreaBo bo) {
@@ -105,11 +127,11 @@ public class SysAreaController extends BaseController {
     }
 
     /**
-     * 删除【请填写功能名称】
+     * 删除区域管理
      *
      * @param ids 主键串
      */
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
+    @Log(title = "区域管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {

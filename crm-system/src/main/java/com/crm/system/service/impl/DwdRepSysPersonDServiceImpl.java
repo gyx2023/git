@@ -159,6 +159,7 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -332,7 +333,9 @@ public class DwdRepSysPersonDServiceImpl implements IDwdRepSysPersonDService {
         // 直接通过countyId进行过滤，避免字符串匹配
         return dataList.stream()
             .filter(person -> {
-                if (person.getCountyId() == null) return true;
+                if (person.getCountyId() == null) {
+                    return true;
+                }
                 // 如果客户的countyId在县列表中，则为县级数据，应排除
                 return !countyIds.contains(person.getCountyId());
             })

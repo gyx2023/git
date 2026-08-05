@@ -32,6 +32,9 @@ public class OldOpportunityVO {
     @ExcelProperty("所属一级行业")
     private String unicomType;
 
+    @ExcelProperty("客户二级行业")
+    private String unicomType2;
+
     @ExcelProperty("商机来源")
     private String oppSource;
 
@@ -111,9 +114,6 @@ public class OldOpportunityVO {
     @ExcelProperty("主要产品/解决方案")
     private String mainProduct;
 
-    @ExcelProperty("项目来源分类")
-    private String oppDataReform;
-
     @ExcelProperty("商机签约概率")
     private String oppWinProb;
 
@@ -139,4 +139,10 @@ public class OldOpportunityVO {
 
     @ExcelProperty("电子表单编号")
     private String eformNos;
+
+    @ExcelProperty("重点领域")
+    private String oppDataReform;
+
+    @ExcelProperty("百强区县")
+    private String top100Counties;
 }

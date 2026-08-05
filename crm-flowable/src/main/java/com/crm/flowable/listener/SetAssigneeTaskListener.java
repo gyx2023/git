@@ -1,6 +1,7 @@
 package com.crm.flowable.listener;
 
 import com.crm.common.utils.spring.SpringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.delegate.TaskListener;
@@ -12,13 +13,14 @@ import java.util.Map;
 /**
  * @author hhz49
  */
+@Slf4j
 @Component(value = "setAssigneeTaskListener")
 public class SetAssigneeTaskListener implements TaskListener {
 
     private TaskService taskService = SpringUtils.getBean(TaskService.class);
     @Override
     public void notify(DelegateTask delegateTask) {
-        System.out.println("执行任务监听器...");
+        log.info("执行任务监听器...");
         String processInstanceId = delegateTask.getProcessInstanceId();
         String processDefinitionId = delegateTask.getProcessDefinitionId();
         String taskId = delegateTask.getId();
@@ -35,7 +37,7 @@ public class SetAssigneeTaskListener implements TaskListener {
 //            newAssignee = "jeecg";
 //        }
         Map<String, Object> map = taskService.getVariables(taskId);
-        System.out.println("task-variables:"+map);
+        log.info("task-variables:{}", map);
         taskService.setAssignee(taskId, map.get("userList").toString());
 
 //        map.put("SetAssigneeTaskListener", newAssignee);

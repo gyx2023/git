@@ -179,6 +179,7 @@
         <result property="oppType" column="opp_type"/>
         <result property="oppIncludeType" column="opp_include_type"/>
         <result property="unicomType" column="unicom_type"/>
+        <result property="unicomType2" column="unicom_type2"/>
         <result property="oppSource" column="opp_source"/>
         <result property="expectContractMoney" column="expect_contract_money"/>
         <result property="monthIncomeContribution" column="month_income_contribution"/>
@@ -388,7 +389,8 @@
                a.id_ as areaId,
                a.name_ as areaName,
                a.type_ as areaType,
-               a.parent_ as parentAreaId
+               a.parent_ as parentAreaId,
+               a.top100_counties as top100Counties
         FROM sys_user u
         LEFT JOIN sys_org o ON u.org_id = o.id_
         LEFT JOIN sys_area a ON o.area_id = a.id_
@@ -412,7 +414,8 @@
             a.id_ as areaId,
             a.name_ as areaName,
             a.type_ as areaType,
-            a.parent_ as parentAreaId
+            a.parent_ as parentAreaId,
+            a.top100_counties as top100Counties
         FROM sys_user u
         LEFT JOIN sys_org o ON u.org_id = o.id_
         LEFT JOIN sys_area a ON o.area_id = a.id_
@@ -436,7 +439,8 @@
         a.id_ as areaId,
         a.name_ as areaName,
         a.type_ as areaType,
-        a.parent_ as parentAreaId
+        a.parent_ as parentAreaId,
+        a.top100_counties as top100Counties
         FROM sys_user u
         LEFT JOIN sys_org o ON u.org_id = o.id_
         LEFT JOIN sys_area a ON o.area_id = a.id_

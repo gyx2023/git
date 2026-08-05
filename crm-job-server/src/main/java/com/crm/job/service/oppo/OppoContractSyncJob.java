@@ -74,9 +74,9 @@ public class OppoContractSyncJob {
             if(toppOpportunity.getId() != null){
                 //判断if_sign类型，为合同还是电子表单
                 try {
-                    if (signVo.getIfSign().equals("合同")) {
+                    if ("合同".equals(signVo.getIfSign())) {
                         syncContractData(signVo, toppOpportunity);
-                    } else if (signVo.getIfSign().equals("电子表单")) {
+                    } else if ("电子表单".equals(signVo.getIfSign())) {
                         syncContractEformData(signVo, toppOpportunity);
                     }
                 }catch (Exception e){
@@ -111,13 +111,15 @@ public class OppoContractSyncJob {
             toppContractBo.setContractCurrency("currency_rmb");
             // 设置合同总金额
             toppContractBo.setTotalMoney(signVo.getContractIncome());
-            // 设置合同签订时间
-            if (StringUtils.isNotBlank(signVo.getSignDate())) {
-                toppContractBo.setSignDate(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
-            }
+//            // 设置合同签订时间
+//            if (StringUtils.isNotBlank(signVo.getSignDate())) {
+//                toppContractBo.setSignDate(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
+//            }
             // 设置合同履行开始日期和结束日期
             if (StringUtils.isNotBlank(signVo.getEffectDate())) {
                 toppContractBo.setStartDate(DateUtils.parseDate(signVo.getEffectDate(),"yyyy-MM-dd HH:mm:ss"));
+                // 设置合同签订时间
+                toppContractBo.setSignDate(DateUtils.parseDate(signVo.getEffectDate(),"yyyy-MM-dd HH:mm:ss"));
             }
             if (StringUtils.isNotBlank(signVo.getEndDate())) {
                 toppContractBo.setEndDate(DateUtils.parseDate(signVo.getEndDate(),"yyyy-MM-dd HH:mm:ss"));
@@ -171,11 +173,12 @@ public class OppoContractSyncJob {
             //signVo表单位为万元，ToppContractEformBo为元
             eformBo.setTotalMoney(signVo.getContractIncome() != null ? signVo.getContractIncome().multiply(new java.math.BigDecimal(10000)) : null);
 
-            if (StringUtils.isNotBlank(signVo.getSignDate())) {
-                eformBo.setSignTime(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
-            }
+//            if (StringUtils.isNotBlank(signVo.getSignDate())) {
+//                eformBo.setSignTime(DateUtils.parseDate(signVo.getSignDate(),"yyyy-MM-dd HH:mm:ss"));
+//            }
 
             if (StringUtils.isNotBlank(signVo.getEffectDate())) {
+                eformBo.setSignTime(DateUtils.parseDate(signVo.getEffectDate(),"yyyy-MM-dd HH:mm:ss"));
                 eformBo.setStartDate(DateUtils.parseDate(signVo.getEffectDate(),"yyyy-MM-dd HH:mm:ss"));
             }
 

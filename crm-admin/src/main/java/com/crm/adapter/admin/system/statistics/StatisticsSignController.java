@@ -41,6 +41,7 @@ public class StatisticsSignController extends BaseController {
      * 获取用户列表
      */
     @GetMapping("/list")
+    @Log(title = "商机投标统计", businessType = BusinessType.QUERY)
     public TableDataInfo<SignStatisticsRespDTO> list(SignStatisticsReqDTO reqDTO, PageQuery pageQuery) {
         return statisticsSignService.selectPageList(reqDTO, pageQuery);
     }

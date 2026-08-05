@@ -1,6 +1,7 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
@@ -40,17 +41,27 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
     private final SysParamMapper sysParamMapper;
 
     private static final String REPORT_ID_PREFIX = "BR-";
+    private static final String DATA_SOURCE_JOB = "job";
     private static final String TASK_STATUS_PENDING = "0";
     private static final String TASK_STATUS_SUCCESS = "2";
     private static final String TASK_STATUS_FAILED = "3";
 
     @Override
     public int createPendingReports(String startTime, String endTime) {
+        SysParamDo param = sysParamMapper.selectOne(
+            new LambdaQueryWrapper<SysParamDo>()
+                .eq(SysParamDo::getType, "travel_report_area_type")
+                .eq(SysParamDo::getCode, "travel_code")
+                .select(SysParamDo::getValue)
+        );
+        String areaValue = Optional.ofNullable(param)
+            .map(SysParamDo::getValue)
+            .orElse("");
         List<VisitAppointmentDo> appointments = visitAppointmentQueryMapper
-                .selectUnvisitedAppointments(startTime, endTime);
+                .selectUnvisitedAppointments(areaValue, startTime, endTime);
 
         if (appointments.isEmpty()) {
-            log.info("未查询到T+2日未拜访的预约记录, startTime={}, endTime={}", startTime, endTime);
+            log.info("未查询到近1小时创建且未拜访的预约记录");
             return 0;
         }
 
@@ -76,17 +87,6 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
 
     @Override
     public int processPreTravelReports(String startTime, String endTime) {
-        List<VisitAppointmentDo> appointments = visitAppointmentQueryMapper
-                .selectUnvisitedAppointments(startTime, endTime);
-
-        if (appointments.isEmpty()) {
-            log.info("未查询到T+2日未拜访的预约记录, startTime={}, endTime={}", startTime, endTime);
-            return 0;
-        }
-
-        int seq = getNextSeqForToday();
-        int processed = 0;
-
         SysParamDo param = sysParamMapper.selectOne(
             new LambdaQueryWrapper<SysParamDo>()
                 .eq(SysParamDo::getType, "travel_report_area_type")
@@ -96,13 +96,33 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
         String areaValue = Optional.ofNullable(param)
             .map(SysParamDo::getValue)
             .orElse("");
+        List<VisitAppointmentDo> appointments = visitAppointmentQueryMapper
+                .selectUnvisitedAppointments(areaValue, startTime, endTime);
+
+        if (appointments.isEmpty()) {
+            log.info("未查询到近1小时创建且未拜访的预约记录");
+            return 0;
+        }
+
+        int seq = getNextSeqForToday();
+        int processed = 0;
 
 
         for (VisitAppointmentDo appt : appointments) {
-            if(!areaValue.contains(appt.getEparchyCode())){
-                log.info("该预约记录不在jt_code中, 不生成行前报告, eparchyCode={}", appt.getEparchyCode());
-                continue;
+
+            // 剔重：检查 APPOINTMENT_ID 是否已经生成过报告
+            String appointmentId = appt.getAppointmentId();
+            if (appointmentId != null) {
+                Long exists = baseMapper.selectCount(
+                    new LambdaQueryWrapper<ZqztPreTravelReport>()
+                        .eq(ZqztPreTravelReport::getAppointmentId, Long.valueOf(appointmentId))
+                );
+                if (exists > 0) {
+                    log.info("该预约已生成过行前报告, appointmentId={}, 跳过", appointmentId);
+                    continue;
+                }
             }
+
             String reportId = generateReportId(seq++);
             String customerId = appt.getCustomerId();
             String userId = appt.getUserId();
@@ -110,24 +130,36 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
             // 1. 获取用户DB ID (master, 用oaAccount查)
             String userDbId = getSysUserDbId(oaAccount);
 
-            log.info("开始处理行前报告, reportId={}, customerId={}, userId={}, oaAccount={}",
-                    reportId, customerId, userId, oaAccount);
-
             ZqztPreTravelReport report = new ZqztPreTravelReport();
             report.setReportId(reportId);
             report.setCustomerId(customerId);
             report.setCustomerName(appt.getCustomName());
-            //这里存本系统userId
-            report.setCreator(userDbId);
             report.setOaAccount(oaAccount);
+            report.setCreator(userDbId != null ? userDbId : oaAccount);
             report.setRetryCount(0);
+            report.setDataSource(DATA_SOURCE_JOB);
+            if (appointmentId != null) {
+                report.setAppointmentId(Long.valueOf(appointmentId));
+            }
             report.setCreateTime(new Date());
             report.setUpdateTime(new Date());
+
+            if (ObjectUtil.isEmpty(userDbId)) {
+                log.warn("未找到该用户, oaAccount={}, 跳过生成并记录取消状态", oaAccount);
+                report.setTaskStatus("99");
+                report.setTaskStatusDesc("未找到该用户");
+                baseMapper.insert(report);
+                processed++;
+                continue;
+            }
+
+            log.info("开始处理行前报告, reportId={}, customerId={}, userId={}, oaAccount={}, appointmentId={}",
+                    reportId, customerId, userId, oaAccount, appointmentId);
 
             try {
                 // 2. 查拜访信息 (slave_2)
                 VisitRecordDo visitRecord = visitAppointmentQueryMapper
-                        .selectLastVisitRecord(customerId, userId);
+                        .selectLastVisitRecord(customerId, appt.getCreateUser());
 
                 // 3. 查自然→实体客户映射 (slave_1)
                 List<CustNecRelationDo> necRelations = custNecRelationMapper
@@ -203,6 +235,163 @@ public class ZqztPreTravelReportServiceImpl implements IZqztPreTravelReportServi
         }
 
         log.info("行前报告全流程处理完成, 共{}条", processed);
+        return processed;
+    }
+
+    @Override
+    public int retryFailedReports() {
+        // 1. 读取最大重试次数配置，默认3次
+        int maxRetry = 3;
+        SysParamDo retryParam = sysParamMapper.selectOne(
+            new LambdaQueryWrapper<SysParamDo>()
+                .eq(SysParamDo::getType, "travel_report_area_type")
+                .eq(SysParamDo::getCode, "max_retry_count")
+                .select(SysParamDo::getValue)
+        );
+        if (retryParam != null && retryParam.getValue() != null) {
+            try {
+                maxRetry = Integer.parseInt(retryParam.getValue().trim());
+            } catch (NumberFormatException e) {
+                log.warn("最大重试次数配置解析失败, 使用默认值3, value={}", retryParam.getValue());
+            }
+        }
+
+        // 2. 查询待重试的记录：data_source=job, task_status=3, retry_count < maxRetry
+        List<ZqztPreTravelReport> failedReports = baseMapper.selectList(
+            new LambdaQueryWrapper<ZqztPreTravelReport>()
+                .eq(ZqztPreTravelReport::getDataSource, DATA_SOURCE_JOB)
+                .eq(ZqztPreTravelReport::getTaskStatus, TASK_STATUS_FAILED)
+                .lt(ZqztPreTravelReport::getRetryCount, maxRetry)
+        );
+
+        if (failedReports.isEmpty()) {
+            log.info("无待重试的行前报告记录, maxRetry={}", maxRetry);
+            return 0;
+        }
+
+        log.info("查询到{}条待重试的行前报告记录, maxRetry={}", failedReports.size(), maxRetry);
+        int processed = 0;
+
+        for (ZqztPreTravelReport report : failedReports) {
+            Long appointmentId = report.getAppointmentId();
+            log.info("开始重处理行前报告, reportId={}, customerId={}, appointmentId={}, retryCount={}",
+                    report.getReportId(), report.getCustomerId(), appointmentId, report.getRetryCount());
+
+            // 3. 校验预约是否已拜访
+            if (appointmentId != null) {
+                int visitCount = visitAppointmentQueryMapper
+                        .countVisitRecordByAppointmentId(String.valueOf(appointmentId));
+                if (visitCount > 0) {
+                    report.setTaskStatus("99");
+                    report.setTaskStatusDesc("已完成拜访，任务取消");
+                    report.setUpdateTime(new Date());
+                    baseMapper.updateById(report);
+                    log.info("预约已完成拜访，取消行前报告, reportId={}, appointmentId={}", report.getReportId(), appointmentId);
+                    processed++;
+                    continue;
+                }
+            }
+
+            // 4. 重处理：重新调用Hiagent接口
+            String customerId = report.getCustomerId();
+            String oaAccount = report.getOaAccount();
+            String userDbId = report.getCreator();
+
+            try {
+                // 查询预约信息获取 visitTime
+                VisitAppointmentDo appt = null;
+                if (appointmentId != null) {
+                    appt = visitAppointmentQueryMapper
+                            .selectAppointmentById(String.valueOf(appointmentId));
+                }
+                // 兜底：旧数据可能无appointmentId，用report已存字段构造
+                if (appt == null) {
+                    appt = new VisitAppointmentDo();
+                    appt.setCustomerId(report.getCustomerId());
+                    appt.setCustomName(report.getCustomerName());
+                }
+
+                // 查拜访信息
+                VisitRecordDo visitRecord = visitAppointmentQueryMapper
+                        .selectLastVisitRecord(customerId, oaAccount);
+
+                // 查自然→实体客户映射
+                List<CustNecRelationDo> necRelations = custNecRelationMapper
+                        .selectByNatureCustId(customerId);
+                List<String> provinceCustIds = necRelations.stream()
+                        .map(CustNecRelationDo::getProvinceCustId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                // 查预警信息
+                List<Map<String, Object>> warnings = new ArrayList<>();
+                if (!provinceCustIds.isEmpty()) {
+                    if (oaAccount != null) {
+                        warnings.addAll(toWarningMapList(
+                                warningQueryMapper.selectCutOverWarnings(provinceCustIds, oaAccount)));
+                    }
+                    if (userDbId != null) {
+                        warnings.addAll(toWarningMapList(
+                                warningQueryMapper.selectOweWarnings(provinceCustIds, userDbId)));
+                        warnings.addAll(toWarningMapList(
+                                warningQueryMapper.selectContractDueWarnings(provinceCustIds, userDbId)));
+                        warnings.addAll(toWarningMapList(
+                                warningQueryMapper.selectRedListWarnings(provinceCustIds, userDbId)));
+                        warnings.addAll(toWarningMapList(
+                                warningQueryMapper.selectReceiptWarnings(provinceCustIds, userDbId)));
+                        warnings.addAll(toWarningMapList(
+                                warningQueryMapper.selectGroupBuyWarnings(provinceCustIds, userDbId)));
+                    }
+                }
+
+                // 查客户信息
+                Map<String, Object> custInfo = visitAppointmentQueryMapper.selectCustomerInfo(customerId);
+
+                // 查商机信息
+                List<Map<String, Object>> opportunities = new ArrayList<>();
+                if (customerId != null && userDbId != null) {
+                    opportunities = warningQueryMapper.selectOpportunities(customerId, userDbId);
+                }
+
+                // 组装Hiagent请求数据
+                Date visitTime = (appt != null) ? appt.getVisitTime() : null;
+                Map<String, Object> reportMeta = buildReportMeta(report.getReportId(), visitTime);
+                Map<String, Object> customer = buildCustomer(appt, visitRecord, custInfo);
+                Map<String, Object> visitTarget = buildVisitTarget(visitRecord);
+                Map<String, Object> lastVisit = buildLastVisit(visitRecord);
+
+                // 调用Hiagent API
+                String apiRequest = JSON.toJSONString(buildApiRequestLog(reportMeta, customer, visitTarget, lastVisit, warnings, opportunities));
+                report.setApiRequest(apiRequest);
+
+                String apiResponse = apiService.callHiagentApi(reportMeta, customer, visitTarget, lastVisit, warnings, opportunities);
+                report.setApiResponse(apiResponse);
+
+                String mdContent = apiService.extractReportContent(apiResponse);
+                if (StringUtils.isEmpty(mdContent)) {
+                    report.setTaskStatus(TASK_STATUS_FAILED);
+                    report.setTaskStatusDesc("重试失败: 报告内容为空");
+                    report.setRetryCount(report.getRetryCount() + 1);
+                } else {
+                    report.setMdContent(mdContent);
+                    report.setTaskStatus(TASK_STATUS_SUCCESS);
+                    report.setRetryCount(report.getRetryCount() + 1);
+                    report.setTaskStatusDesc("重试成功");
+                }
+            } catch (Exception e) {
+                log.error("重处理行前报告异常, reportId={}, customerId={}", report.getReportId(), customerId, e);
+                report.setTaskStatus(TASK_STATUS_FAILED);
+                report.setTaskStatusDesc("重试失败: " + e.getMessage());
+                report.setRetryCount(report.getRetryCount() + 1);
+                report.setApiResponse(e.getMessage());
+            }
+
+            report.setUpdateTime(new Date());
+            baseMapper.updateById(report);
+            processed++;
+        }
+
+        log.info("行前报告重处理完成, 共处理{}条", processed);
         return processed;
     }
 

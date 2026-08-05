@@ -5,7 +5,7 @@ import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.service.servicehall.INengKaiCallbackService;
-import com.crm.system.utils.HaoKaoSignUtil;
+import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -44,6 +44,11 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
 
     @Override
     public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene) {
+        return callWorksheetsComplete(recordDo, scene, null);
+    }
+
+    @Override
+    public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene, String assignee) {
         Map<String, Object> data = new HashMap<>();
         String responseBody = "";
         try {
@@ -51,10 +56,7 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             String sequenceId = getCode(scene);
             String nlpt_wm_serial = "0" + "37" + today + sequenceId;
 
-            Map<String, Object> UNI_BSS_HEAD = new HashMap<>();
-            UNI_BSS_HEAD.put("APP_ID", APP_ID);
-            UNI_BSS_HEAD.put("key", APP_SECRET);
-            HaoKaoSignUtil.buildAppParams(UNI_BSS_HEAD);
+            Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(APP_ID, APP_SECRET);
 
             Map<String, Object> UNI_BSS_BODY = new HashMap<>();
             Map<String, Object> WORKSHEETS_COMPLETE_REQ = new HashMap<>();
@@ -66,6 +68,10 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             worksheetItem.put("dealResultCode", recordDo.getDealResultCode());
             if (!"0".equals(recordDo.getDealResultCode())) {
                 worksheetItem.put("failReason", recordDo.getFailReason());
+            }
+            // 转派场景：传入 assignee 目标工号
+            if (assignee != null && !assignee.isEmpty()) {
+                worksheetItem.put("assignee", assignee);
             }
 
             Map<String, Object> orderUpdate = new HashMap<>();
@@ -94,7 +100,7 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
             log.info("响应报文:{}", responseBody);
             return responseBody;
         } catch (Exception e) {
-            log.error("能开回调失败: noticeRecordId={}, scene={}", recordDo != null ? recordDo.getId() : null, scene, e);
+            log.error("能开回调失败: noticeRecordId={}, scene={}, assignee={}", recordDo != null ? recordDo.getId() : null, scene, assignee, e);
             throw new RuntimeException("能开回调失败");
         }
     }

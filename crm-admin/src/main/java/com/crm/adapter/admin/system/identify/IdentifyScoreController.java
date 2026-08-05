@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 【请填写功能名称】
+ * 智能评分
  *
  * @author crm
  * @date 2026-02-02
@@ -38,15 +38,16 @@ public class IdentifyScoreController extends BaseController {
     private final IIdentifyScoreService iIdentifyScoreService;
 
     /**
-     * 查询【请填写功能名称】列表
+     * 查询智能评分列表
      */
+    @Log(title = "智能评分", businessType = BusinessType.QUERY)
     @GetMapping("/list")
     public TableDataInfo<IdentifyScoreVo> list(IdentifyScoreBo bo, PageQuery pageQuery) {
         return iIdentifyScoreService.queryPageList(bo, pageQuery);
     }
 
     /**
-     * 导出【请填写功能名称】列表
+     * 导出智能评分列表
      */
     @SaCheckPermission("system:score:export")
     @Log(title = "导出", businessType = BusinessType.EXPORT)
@@ -57,7 +58,7 @@ public class IdentifyScoreController extends BaseController {
     }
 
     /**
-     * 获取【请填写功能名称】详细信息
+     * 获取智能评分详细信息
      *
      * @param id 主键
      */
@@ -68,7 +69,7 @@ public class IdentifyScoreController extends BaseController {
     }
 
     /**
-     * 新增【请填写功能名称】
+     * 新增智能评分
      */
     @SaCheckPermission("system:score:add")
     @Log(title = "新增评分", businessType = BusinessType.INSERT)
@@ -79,7 +80,7 @@ public class IdentifyScoreController extends BaseController {
     }
 
     /**
-     * 修改【请填写功能名称】
+     * 修改智能评分
      */
     @SaCheckPermission("system:score:edit")
     @Log(title = "修改", businessType = BusinessType.UPDATE)
@@ -90,7 +91,7 @@ public class IdentifyScoreController extends BaseController {
     }
 
     /**
-     * 删除【请填写功能名称】
+     * 删除智能评分
      *
      * @param ids 主键串
      */

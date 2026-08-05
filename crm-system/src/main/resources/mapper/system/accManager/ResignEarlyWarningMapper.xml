@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.accManager.ResignEarlyWarningMapper">
+
+    <!-- ==================== DM/达梦查询 (slave_2) ==================== -->
+
+    <!-- 查询已离职人员（按oa_user_name剔重，取etl_time最新记录） -->
+    <select id="selectResignedPersons" resultType="com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo">
+        SELECT * FROM IOB_DATA.REP_SYS_PERSON_NEW_D a
+        WHERE ONJOB_FLAG = '1'
+          AND OA_USER_NAME IS NOT NULL
+          AND EMP_ID = (
+              SELECT MAX(b.EMP_ID) FROM IOB_DATA.REP_SYS_PERSON_NEW_D b
+              WHERE b.OA_USER_NAME = a.OA_USER_NAME
+                AND b.ONJOB_FLAG = '1'
+                AND b.OA_USER_NAME IS NOT NULL
+          )
+    </select>
+
+    <!-- 查询合同的承办人/履行人 -->
+    <select id="selectContractManagerByOaUser" resultType="java.util.Map">
+        SELECT MAIN_PERFORMER, MAIN_PERFORMER_USER_NAME, ARRAIR_NO
+        FROM IOB_DATA.DWD_CONTRACTS_D
+        WHERE CONTRACT_STATUS_NAME IN ('履行中','已定稿','已审批')
+          AND MAIN_PERFORMER_USER_NAME = #{oaUserName}
+    </select>
+
+    <!-- 查询基层维系人 -->
+    <select id="selectContactPersonByOaUser" resultType="java.util.Map">
+        SELECT *
+        FROM IOB_GOV2.CUST_MAINT_INFO
+        WHERE BASIC_MAINT_OAUSER = #{oaUserName}
+          AND STATUS = '1'
+    </select>
+
+    <!-- 查询人员的在职状态 -->
+    <select id="selectUserStateByOaId" resultType="com.crm.system.domain.dao.zbzq.RepSysPersonNewDDo">
+        SELECT *
+        FROM IOB_DATA.REP_SYS_PERSON_NEW_D
+        WHERE OA_USER_NAME = #{oaId}
+    </select>
+
+    <!-- ==================== OB/MySQL查询 (slave_1) ==================== -->
+
+    <!-- 查询四级名单客户客户经理 A/B角 -->
+    <select id="selectCustLevel4ManagerByOaUser" resultType="java.util.Map">
+        SELECT developer_name,
+               oa_code,
+               CASE WHEN role = '1' THEN 'A' WHEN role = '2' THEN 'B' END         AS js,
+               CASE WHEN main = '1' THEN '主责' WHEN main = '0' THEN '非主责'         END AS zz,
+               CASE WHEN service_level = 0 THEN '总部'
+                    WHEN service_level = 1 THEN '省级'
+                    WHEN service_level = 2 THEN '地市级'
+                    WHEN service_level = 3 THEN '区县级' END                          AS LEVEL
+        FROM cust_t_roster_customer_province_developer
+        WHERE state = '1'
+          AND oa_code = #{oaUserName}
+    </select>
+
+    <!-- 查询自然客户客户经理 -->
+    <select id="selectNaturalCustManagerByOaUser" resultType="java.util.Map">
+        SELECT developer_name,
+               oa_code,
+               CASE WHEN main = '1' THEN '主责' WHEN main = '0' THEN '非主责'         END AS zz,
+               CASE WHEN service_level = 0 THEN '总部'
+                    WHEN service_level = 1 THEN '省级'
+                    WHEN service_level = 2 THEN '地市级'
+                    WHEN service_level = 3 THEN '区县级' END                          AS LEVEL
+        FROM cust_t_nature_customer_developer
+        WHERE state = '1'
+          AND developer_type = '1'
+          AND oa_code = #{oaUserName}
+    </select>
+
+    <!-- 查询实体客户客户经理 -->
+    <select id="selectEntityCustManagerByFullName" resultType="java.util.Map">
+        SELECT staff_name, depart_name
+        FROM hj_jkcust_tf_f_cust_group_manager
+        WHERE relation_type_code = '20'
+          AND status_cd = '1000'
+          AND staff_name = #{fullName}
+    </select>
+
+    <!-- ==================== 主库查询 (master) ==================== -->
+
+    <!-- 查询商机的客户经理 -->
+    <select id="selectOpportunityManagerByOaUser" resultType="java.util.Map">
+        SELECT b.name_ch,
+               b.name_,
+               b.oa_account,
+               a.opp_code
+        FROM topp_opportunity a
+                 LEFT JOIN sys_user b ON a.CREATOR = b.id_
+        WHERE a.IS_VALID = '1'
+          AND a.OPPO_STATE != 'oppo_status_end'
+          AND b.oa_account = #{oaUserName}
+    </select>
+
+</mapper>

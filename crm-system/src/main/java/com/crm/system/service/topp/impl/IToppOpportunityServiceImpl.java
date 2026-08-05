@@ -20,6 +20,7 @@ import com.crm.system.domain.vo.topp.ToppOpportunityVo;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.utils.Constants;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,7 @@ import java.util.*;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     @Resource
     private ToppOpportunityMapper baseMapper;
@@ -78,6 +80,20 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 查询签约时间在指定日期范围内的有效商机
+     * 用于商机签约到期提醒 Job
+     */
+    @Override
+    public List<ToppOpportunityDo> queryListBySignTimeRange(String currentDateStr, String targetDateStr) {
+        // 使用自定义SQL查询，条件与老系统一致：
+        // 1. signTime 等于起始日期或目标日期（第0天或第13天）
+        // 2. isValid = true (有效)
+        // 3. oppPhase <> 'new_create' (非新建阶段)
+        // 4. 不存在关联合同
+        // 5. 不存在关联电子表单
+        return baseMapper.selectListBySignTimeRange(currentDateStr, targetDateStr);
+    }
 
     private LambdaQueryWrapper<ToppOpportunityDo> buildQueryWrapper(ToppOpportunityBo bo) {
         LambdaQueryWrapper<ToppOpportunityDo> lqw = Wrappers.lambdaQuery();
@@ -254,6 +270,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -318,7 +335,7 @@ public class IToppOpportunityServiceImpl implements IToppOpportunityService {
         ToppOpportunityDo opportunity = baseMapper.selectById(oppId);
         String oppoState = baseMapper.callGetOppoState(oppId);
         opportunity.setOppoState(oppoState);
-        System.out.println("更新商机"+oppId+"状态为:"+oppoState);
+        log.info("更新商机{}状态为:{}", oppId, oppoState);
         baseMapper.updateById(opportunity);
         return oppoState;
     }

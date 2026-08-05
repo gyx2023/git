@@ -58,6 +58,21 @@ public class ToppBidSuboppoBo extends BaseEntity {
     private String projectName;
 
     /**
+     * 商机编号（业务层面唯一标识）
+     */
+    private String oppoCode;
+
+    /**
+     * 项目编码
+     */
+    private String projectCode;
+
+    /**
+     * 发布日期
+     */
+    private Date releaseDate;
+
+    /**
      *  是否有效
      */
     private boolean valid;

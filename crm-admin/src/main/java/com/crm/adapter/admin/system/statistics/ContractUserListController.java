@@ -38,6 +38,7 @@ public class ContractUserListController {
      * 获取用户列表
      */
     @GetMapping("/list")
+    @Log(title = "签约清单", businessType = BusinessType.QUERY)
     public TableDataInfo<ContractUserRespDTO> list(ContractUserReqDTO reqDTO, PageQuery pageQuery) {
         return contractUserService.selectPageList(reqDTO, pageQuery);
     }

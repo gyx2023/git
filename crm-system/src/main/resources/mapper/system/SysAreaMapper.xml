@@ -18,6 +18,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="zqType" column="zq_type"/>
         <result property="zbArea" column="zb_area"/>
         <result property="jtCode" column="jt_code"/>
+        <result property="top100Counties" column="top100_counties"/>
     </resultMap>
 
     <select id="selectAreaJtCodeList" resultType="java.util.Map">
@@ -33,5 +34,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             CASE WHEN id_ = '330000' THEN 1 ELSE 0 END,
             id_
     </select>
+
 
 </mapper>

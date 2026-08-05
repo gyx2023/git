@@ -24,6 +24,11 @@ public class WfCommentVo {
     private String message;
 
     /**
+     * 批复内容（全量，与 message 相同，保持前端兼容）
+     */
+    private String fullMessage;
+
+    /**
      * 批复时间
      */
     private Date time;

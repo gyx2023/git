@@ -24,6 +24,7 @@ import com.crm.system.domain.bo.SysOssBo;
 import com.crm.system.domain.vo.SysOssVo;
 import com.crm.system.mapper.sys.SysOssMapper;
 import com.crm.system.service.sys.ISysOssService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class SysOssServiceImpl implements ISysOssService, OssService {
 
     private final SysOssMapper baseMapper;
@@ -110,7 +112,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         }
         FileUtils.setAttachmentResponseHeader(response, sysOss.getOriginalName());
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
-        OssClient storage = OssFactory.instance();
+        OssClient storage = OssFactory.instance(sysOss.getService());
         try(InputStream inputStream = storage.getObjectContent(sysOss.getUrl())) {
             int available = inputStream.available();
             IoUtil.copy(inputStream, response.getOutputStream(), available);
@@ -134,7 +136,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         if (ObjectUtil.isNull(sysOss)) {
             throw new ServiceException("文件数据不存在!");
         }
-        OssClient storage = OssFactory.instance();
+        OssClient storage = OssFactory.instance(sysOss.getService());
         try {
             // 直接返回从S3获取的InputStream，不进行IO复制操作
             return storage.getObjectContent(sysOss.getUrl());

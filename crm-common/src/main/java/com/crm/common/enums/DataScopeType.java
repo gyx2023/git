@@ -50,7 +50,15 @@ public enum DataScopeType {
     /**
      * 客户经理OA账号数据权限（用于集团客户管理）
      */
-    CUST_MANAGER_OAUSER("6", " #{#custManagerOauser} = '#{#user.username}' ", " 1 = 0 ");
+    CUST_MANAGER_OAUSER("6", " #{#custManagerOauser} = '#{#user.username}' ", " 1 = 0 "),
+
+    /**
+     * 通用特殊名单数据权限
+     */
+    SPECIAL_LIST("7", " #{#createBy} = #{#user.userId} ", " 1 = 0 ");
+
+
+
 
     private final String code;
 

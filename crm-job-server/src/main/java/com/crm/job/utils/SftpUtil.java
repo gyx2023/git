@@ -464,9 +464,9 @@ public class SftpUtil implements InitializingBean {
         log.info("初始化SFTP配置管理，启动定时刷新任务");
 
         // 创建单线程调度池
-        scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        scheduler = new java.util.concurrent.ScheduledThreadPoolExecutor(1, r -> {
             Thread thread = new Thread(r, "sftp-config-refresh-thread");
-            thread.setDaemon(true); // 设置为守护线程，避免阻止JVM关闭
+            thread.setDaemon(true);
             return thread;
         });
 

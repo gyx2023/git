@@ -42,8 +42,9 @@ public class DwdRepSysPersonDController extends BaseController {
     private final ISysAreaService iSysAreaService;
 
     /**
-     * 查询【请填写功能名称】列表
+     * 查询客户经理信息列表
      */
+    @Log(title = "客户经理信息", businessType = BusinessType.QUERY)
     @SaCheckPermission("system:repSysPersonD:list")
     @GetMapping("/list")
     public TableDataInfo<DwdRepSysPersonDVo> list(DwdRepSysPersonDBo bo, PageQuery pageQuery) {
@@ -51,18 +52,18 @@ public class DwdRepSysPersonDController extends BaseController {
     }
 
     /**
-     * 导出【请填写功能名称】列表
+     * 导出客户经理信息列表
      */
     @SaCheckPermission("system:repSysPersonD:export")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
+    @Log(title = "客户经理信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(DwdRepSysPersonDBo bo, HttpServletResponse response) {
         List<DwdRepSysPersonDVo> list = iDwdRepSysPersonDService.queryList(bo);
-        ExcelUtil.exportExcel(list, "【请填写功能名称】", DwdRepSysPersonDVo.class, response);
+        ExcelUtil.exportExcel(list, "客户经理信息", DwdRepSysPersonDVo.class, response);
     }
 
     /**
-     * 获取【请填写功能名称】详细信息
+     * 获取客户经理信息详细信息
      *
      * @param id 主键
      */
@@ -74,10 +75,10 @@ public class DwdRepSysPersonDController extends BaseController {
     }
 
     /**
-     * 新增【请填写功能名称】
+     * 新增客户经理信息
      */
     @SaCheckPermission("system:repSysPersonD:add")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
+    @Log(title = "客户经理信息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody DwdRepSysPersonDBo bo) {
@@ -85,10 +86,10 @@ public class DwdRepSysPersonDController extends BaseController {
     }
 
     /**
-     * 修改【请填写功能名称】
+     * 修改客户经理信息
      */
     @SaCheckPermission("system:repSysPersonD:edit")
-    @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
+    @Log(title = "客户经理信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody DwdRepSysPersonDBo bo) {

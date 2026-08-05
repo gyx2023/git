@@ -11,11 +11,16 @@ import java.util.Map;
 @DS("slave_1")
 public interface VisitAppointmentQueryMapper {
 
-    List<VisitAppointmentDo> selectUnvisitedAppointments(@Param("startTime") String startTime,
-                                                         @Param("endTime") String endTime);
+    List<VisitAppointmentDo> selectUnvisitedAppointments(@Param("areaValue") String areaValue,
+                                                       @Param("startTime") String startTime,
+                                                       @Param("endTime") String endTime);
 
     VisitRecordDo selectLastVisitRecord(@Param("customerId") String customerId,
-                                        @Param("userId") String userId);
+                                        @Param("oaAccount") String oaAccount);
 
     Map<String, Object> selectCustomerInfo(@Param("customerId") String customerId);
+
+    int countVisitRecordByAppointmentId(@Param("appointmentId") String appointmentId);
+
+    VisitAppointmentDo selectAppointmentById(@Param("appointmentId") String appointmentId);
 }

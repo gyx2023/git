@@ -3,10 +3,12 @@ package com.crm.common.utils;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.URLDecoder;
 import java.util.Map;
 
+@Slf4j
 public class TokenUtil {
 
     // 16位密钥，新老系统必须一致
@@ -38,8 +40,8 @@ public class TokenUtil {
                 return SimpleTokenUtil.validateSimpleToken(token);
             } catch (Exception ex) {
                 // 两种方法都失败，记录日志
-                System.err.println("Token验证失败 - AES解密错误: " + e.getMessage());
-                System.err.println("Token验证失败 - Base64解码错误: " + ex.getMessage());
+                log.error("Token验证失败 - AES解密错误: {}", e.getMessage());
+                log.error("Token验证失败 - Base64解码错误: {}", ex.getMessage());
             }
         }
         return null;

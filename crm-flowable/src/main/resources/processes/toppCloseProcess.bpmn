@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/process">
+    <process id="topp_close_process" name="商机签约时间到期预警流程" isExecutable="true">
+        <documentation>商机签约到期前自动发起的预警工单处理流程</documentation>
+        <!-- 开始事件 -->
+        <startEvent id="startevent" name="开始"></startEvent>
+        <!-- 客户经理处理任务 -->
+        <userTask id="manager_handle" name="客户经理处理" flowable:assignee="${manager}">
+            <documentation>显示</documentation>
+        </userTask>
+        <!-- 结束事件 -->
+        <endEvent id="endevent" name="结束"></endEvent>
+        <!-- 流程连接线 -->
+        <sequenceFlow id="flow1" sourceRef="startevent" targetRef="manager_handle"></sequenceFlow>
+        <sequenceFlow id="flow3" sourceRef="manager_handle" targetRef="endevent"></sequenceFlow>
+    </process>
+    <!-- 流程图可视化定义 -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_topp_close_process">
+        <bpmndi:BPMNPlane bpmnElement="topp_close_process" id="BPMNPlane_topp_close_process">
+            <bpmndi:BPMNShape bpmnElement="startevent" id="BPMNShape_startevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="60.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="manager_handle" id="BPMNShape_manager_handle">
+                <omgdc:Bounds height="55.0" width="105.0" x="140.0" y="210.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="endevent" id="BPMNShape_endevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="300.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+                <omgdi:waypoint x="95.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="140.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+                <omgdi:waypoint x="245.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="300.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>

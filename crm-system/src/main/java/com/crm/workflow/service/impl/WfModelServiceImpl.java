@@ -195,7 +195,11 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
     @Override
     public String queryBpmnXmlById(String modelId) {
         byte[] bpmnBytes = repositoryService.getModelEditorSource(modelId);
-        return StrUtil.utf8Str(bpmnBytes);
+        if (bpmnBytes == null) {
+            return null;
+        }
+        String xml = StrUtil.utf8Str(bpmnBytes);
+        return ModelUtils.ensureBpmnHasDiagram(xml);
     }
 
     @Override

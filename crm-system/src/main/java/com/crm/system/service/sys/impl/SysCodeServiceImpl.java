@@ -13,6 +13,7 @@ import com.crm.system.domain.bo.SysCodeBo;
 import com.crm.system.domain.vo.SysCodeVo;
 import com.crm.system.mapper.sys.SysCodeMapper;
 import com.crm.system.service.sys.ISysCodeService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class SysCodeServiceImpl implements ISysCodeService {
 
     private final SysCodeMapper baseMapper;
@@ -116,6 +118,7 @@ public class SysCodeServiceImpl implements ISysCodeService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
+            log.debug("deleteWithValidByIds: isValid=true, 待补充业务校验逻辑");
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

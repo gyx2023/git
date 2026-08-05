@@ -203,6 +203,12 @@ public class ToppOrder extends BaseEntity {
      */
     private String thirdCheckResult;
 
+    /**
+     * 流程引擎来源：ACTIVITI/FLOWABLE
+     */
+    @TableField("process_engine")
+    private String processEngine;
+
     @TableField(exist = false)
     private String createBy;
 

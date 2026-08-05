@@ -73,12 +73,21 @@ public class PlusDataPermissionHandler {
             invalidCacheSet.add(mappedStatementId);
             return where;
         }
-        LoginUser currentUser = DataPermissionHelper.getVariable("user");
-        if (ObjectUtil.isNull(currentUser)) {
-            currentUser = LoginHelper.getLoginUser();
-            DataPermissionHelper.setVariable("user", currentUser);
+        LoginUser currentUser = null;
+        try {
+            currentUser = DataPermissionHelper.getVariable("user");
+        } catch (Exception e) {
+            // 非Web上下文
         }
-        // 如果没有登录信息，则不进行数据权限控制（定时任务等场景）
+        if (ObjectUtil.isNull(currentUser)) {
+            try {
+                currentUser = LoginHelper.getLoginUser();
+                DataPermissionHelper.setVariable("user", currentUser);
+            } catch (Exception e) {
+                // 非Web上下文，跳过数据权限
+                return where;
+            }
+        }
         if (ObjectUtil.isNull(currentUser)) {
             return where;
         }
@@ -116,13 +125,16 @@ public class PlusDataPermissionHandler {
         DataPermissionHelper.getContext().forEach(context::setVariable);
         Set<String> conditions = new HashSet<>();
 
-        // 先检查是否有客户经理OA账号数据权限
+        // 先检查是否有客户经理OA账号或通用特殊名单数据权限
         boolean hasCustManagerOaUserPermission = false;
+        boolean hasSpecialListPermission = false;
         for (RoleDTO role : user.getRoles()) {
             DataScopeType type = DataScopeType.findCode(role.getDataScope());
             if (type == DataScopeType.CUST_MANAGER_OAUSER) {
                 hasCustManagerOaUserPermission = true;
-                break;
+            }
+            if (type == DataScopeType.SPECIAL_LIST) {
+                hasSpecialListPermission = true;
             }
         }
 
@@ -133,12 +145,12 @@ public class PlusDataPermissionHandler {
             if (ObjectUtil.isNull(type)) {
                 throw new ServiceException("角色数据范围异常 => " + role.getDataScope());
             }
-            // 全部数据权限直接返回(但如果存在客户经理OA账号权限则不返回)
-            if (type == DataScopeType.ALL && !hasCustManagerOaUserPermission) {
+            // 全部数据权限直接返回(但如果存在客户经理或特殊名单权限则不返回)
+            if (type == DataScopeType.ALL && !hasCustManagerOaUserPermission && !hasSpecialListPermission) {
                 return "";
             }
-            // 如果是全部数据权限但存在客户经理权限,跳过该角色继续处理
-            if (type == DataScopeType.ALL && hasCustManagerOaUserPermission) {
+            // 如果是全部数据权限但存在客户经理或特殊名单权限,跳过该角色
+            if (type == DataScopeType.ALL && (hasCustManagerOaUserPermission || hasSpecialListPermission)) {
                 continue;
             }
             boolean isSuccess = false;
@@ -169,6 +181,11 @@ public class PlusDataPermissionHandler {
         }
 
         if (CollUtil.isNotEmpty(conditions)) {
+            // 全是 1=0 说明无数据范围命中，不追加过滤条件
+            boolean hasReal = conditions.stream().anyMatch(c -> !c.contains("1 = 0"));
+            if (!hasReal) {
+                return "";
+            }
             String sql = StreamUtils.join(conditions, Function.identity(), "");
             return sql.substring(joinStr.length());
         }
@@ -206,7 +223,7 @@ public class PlusDataPermissionHandler {
             dataPermissionCacheMap.put(clazz.getName(), dataPermission);
             return dataPermission.value();
         }
-        return null;
+        return new DataColumn[0];
     }
 
     /**
