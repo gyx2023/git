@@ -1,8 +1,8 @@
 package com.crm.job.service.file;
 
-import com.crm.common.utils.StringUtils;
 import com.crm.job.base.AbstractFtpImportJob;
 import com.crm.job.service.warning.IWarningStartService;
+import com.crm.job.utils.GroupFileParser;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.FtpBroadbandMarketCust;
 import com.crm.system.domain.dao.FtpBroadbandMarketUser;
@@ -10,15 +10,18 @@ import com.crm.system.mapper.FtpBroadbandMarketCustMapper;
 import com.crm.system.mapper.FtpBroadbandMarketUserMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
 import com.crm.system.service.sys.ISysParamService;
+import com.crm.system.utils.Constants;
 import com.xxl.job.core.handler.annotation.XxlJob;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 宽带专项营销文件导入 + 工作流启动
@@ -33,6 +36,7 @@ import java.util.*;
  * @author crm
  */
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCust> {
 
@@ -43,17 +47,21 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
     /** 用户文件本地路径（download 时赋值，afterImport 中使用） */
     private String userLocalPath;
 
+    /** 空串归一缓存：类 → 该类全部 String 字段（构建时一次性 setAccessible，线程安全） */
+    private static final Map<Class<?>, Field[]> BLANK_STRING_FIELD_CACHE = new ConcurrentHashMap<>();
+
     // ==================== 注入 ====================
-    @Autowired
-    private ISysParamService sysParamService;
-    @Autowired
-    private FtpBroadbandMarketCustMapper ftpBroadbandMarketCustMapper;
-    @Autowired
-    private FtpBroadbandMarketUserMapper ftpBroadbandMarketUserMapper;
-    @Autowired
-    private SysCodeMapper sysCodeMapper;
-    @Autowired
-    private IWarningStartService warningStartService;
+    private final ISysParamService sysParamService;
+
+    private final FtpBroadbandMarketCustMapper ftpBroadbandMarketCustMapper;
+
+    private final FtpBroadbandMarketUserMapper ftpBroadbandMarketUserMapper;
+
+    private final SysCodeMapper sysCodeMapper;
+
+    private final IWarningStartService warningStartService;
+
+    private final GroupFileParser groupFileParser;
 
     // ==================== AbstractFtpImportJob 实现 ====================
 
@@ -61,7 +69,7 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
     protected String getJobName() { return "custSalesFileJob"; }
 
     @Override
-    protected String getConfigType() { return "broadband_market"; }
+    protected String getConfigType() { return Constants.JF_COMMON_FTP; }
 
     @Override
     protected String getFileDateType() { return FILE_DATE_TYPE_MONTHLY; }
@@ -75,8 +83,22 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
     }
 
     @Override
-    protected FtpBroadbandMarketCust parseRow(String[] cols) {
-        return parseCustRow(cols);
+    protected FtpBroadbandMarketCust parseRow(String[] cols) { return null; }
+
+    /**
+     * 行解析：按字段声明顺序（与文件列一致）映射为客户实体。
+     */
+    @Override
+    protected FtpBroadbandMarketCust parseRowFromLine(String line) {
+        return groupFileParser.parseLine(line, FtpBroadbandMarketCust.class, getSeparator());
+    }
+
+    /**
+     * 客户实体入库前逐条处理：空串归一为 null（避免空串写入数值列，行为与用户文件一致）
+     */
+    @Override
+    protected void preProcess(FtpBroadbandMarketCust entity) {
+        normalizeBlankToNull(entity);
     }
 
     @Override
@@ -111,16 +133,22 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
             log.info("宽带专项营销下载文件开始");
             ftpUtil.login();
 
+            String dataRootPath = param.get("sftp.dataRootPath");
+            if (dataRootPath != null && !dataRootPath.endsWith("/") && !dataRootPath.endsWith("\\")) {
+                dataRootPath = dataRootPath + "/";
+            }
             // 下载客户文件
-            String custFileDirectory = param.get("sftp.dataRootPath") + dateStr;
+            String custFileDirectory = dataRootPath + dateStr;
             String custLocalPath = MapUtils.getString(param, "sftp.dataLocalPath") + File.separator + fileName;
+            log.info("开始下载客户文件: {}", custFileDirectory + "/" + fileName);
             ftpUtil.download(custFileDirectory, fileName, custLocalPath);
             log.info("客户文件下载成功: {}", custLocalPath);
 
             // 下载用户文件
             String userFileName = USER_FILE_NAME + dateStr + ".txt";
-            String userFileDirectory = param.get("sftp.dataRootPath") + dateStr;
+            String userFileDirectory = dataRootPath + dateStr;
             this.userLocalPath = MapUtils.getString(param, "sftp.dataLocalPath") + File.separator + userFileName;
+            log.info("开始下载用户文件: {}", userFileDirectory + "/" + userFileName);
             ftpUtil.download(userFileDirectory, userFileName, this.userLocalPath);
             log.info("用户文件下载成功: {}", this.userLocalPath);
 
@@ -169,27 +197,6 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         log.info("【{}】完成: 客户{}条, 用户{}条", getJobName(), custCount, userCount);
     }
 
-    // ==================== 客户文件解析 ====================
-
-    private FtpBroadbandMarketCust parseCustRow(String[] data) {
-        FtpBroadbandMarketCust cust = new FtpBroadbandMarketCust();
-        if (StringUtils.isNotEmpty(data[0])) { cust.setStatCycle(data[0]); }
-        if (StringUtils.isNotEmpty(data[1])) { cust.setCustMarketingId(data[1]); }
-        if (StringUtils.isNotEmpty(data[2])) { cust.setAreaName(data[2]); }
-        if (StringUtils.isNotEmpty(data[3])) { cust.setCountyName(data[3]); }
-        if (StringUtils.isNotEmpty(data[4])) { cust.setCustGrpId(data[4]); }
-        if (StringUtils.isNotEmpty(data[5])) { cust.setGrpCode(data[5]); }
-        if (StringUtils.isNotEmpty(data[6])) { cust.setGrpName(data[6]); }
-        if (StringUtils.isNotEmpty(data[7])) { cust.setServManagerId(data[7]); }
-        if (StringUtils.isNotEmpty(data[8])) { cust.setServManagerName(data[8]); }
-        if (StringUtils.isNotEmpty(data[9])) { cust.setGrpExpandType(data[9]); }
-        if (StringUtils.isNotEmpty(data[10])) { cust.setGrpBusiDeptType(data[10]); }
-        if (StringUtils.isNotEmpty(data[11])) { cust.setMarketingType(data[11]); }
-        if (StringUtils.isNotEmpty(data[12])) { cust.setMarketingName(data[12]); }
-        if (StringUtils.isNotEmpty(data[13])) { cust.setUserScale(data[13]); }
-        return cust;
-    }
-
     // ==================== 用户文件解析 ====================
 
     private int parseAndInsertUserFile(String filePath) {
@@ -207,14 +214,28 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
 
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\x1b", -1);
-                FtpBroadbandMarketUser user = parseUserRow(data);
-                batch.add(user);
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+                try {
+                    // 与客户文件一致：按字段声明顺序解析
+                    FtpBroadbandMarketUser user = groupFileParser.parseLine(
+                            line, FtpBroadbandMarketUser.class, getSeparator());
+                    if (user == null) {
+                        continue;
+                    }
+                    // 空串归一为 null，避免空串写入数值列
+                    normalizeBlankToNull(user);
+                    batch.add(user);
 
-                if (batch.size() >= 1000) {
-                    ftpBroadbandMarketUserMapper.insertBatch(batch);
-                    total += batch.size();
-                    batch.clear();
+                    if (batch.size() >= 1000) {
+                        ftpBroadbandMarketUserMapper.insertBatch(batch);
+                        total += batch.size();
+                        batch.clear();
+                    }
+                } catch (Exception e) {
+                    log.warn("用户文件解析行失败: {}",
+                            line.length() > 100 ? line.substring(0, 100) : line, e);
                 }
             }
             if (!batch.isEmpty()) {
@@ -227,59 +248,40 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         return total;
     }
 
-    private FtpBroadbandMarketUser parseUserRow(String[] data) {
-        FtpBroadbandMarketUser user = new FtpBroadbandMarketUser();
-        if (StringUtils.isNotEmpty(data[0])) { user.setStatCycle(data[0]); }
-        if (StringUtils.isNotEmpty(data[1])) { user.setMarketingType(data[1]); }
-        if (StringUtils.isNotEmpty(data[2])) { user.setMarketingName(data[2]); }
-        if (StringUtils.isNotEmpty(data[3])) { user.setUserMarketingId(data[3]); }
-        if (StringUtils.isNotEmpty(data[4])) { user.setAreaName(data[4]); }
-        if (StringUtils.isNotEmpty(data[5])) { user.setUserId(data[5]); }
-        if (StringUtils.isNotEmpty(data[6])) { user.setSvcNum(data[6]); }
-        if (StringUtils.isNotEmpty(data[7])) { user.setCountyName(data[7]); }
-        if (StringUtils.isNotEmpty(data[8])) { user.setOpenDate(data[8]); }
-        if (StringUtils.isNotEmpty(data[9])) { user.setCustKind(data[9]); }
-        if (StringUtils.isNotEmpty(data[10])) { user.setCustId(data[10]); }
-        if (StringUtils.isNotEmpty(data[11])) { user.setCustName(data[11]); }
-        if (StringUtils.isNotEmpty(data[12])) { user.setCertType(data[12]); }
-        if (StringUtils.isNotEmpty(data[13])) { user.setIsGrpKey(data[13]); }
-        if (StringUtils.isNotEmpty(data[14])) { user.setCustGrpId(data[14]); }
-        if (StringUtils.isNotEmpty(data[15])) { user.setGrpCode(data[15]); }
-        if (StringUtils.isNotEmpty(data[16])) { user.setGrpName(data[16]); }
-        if (StringUtils.isNotEmpty(data[17])) { user.setServManagerId(data[17]); }
-        if (StringUtils.isNotEmpty(data[18])) { user.setServManagerName(data[18]); }
-        if (StringUtils.isNotEmpty(data[19])) { user.setGrpExpandType(data[19]); }
-        if (StringUtils.isNotEmpty(data[20])) { user.setGrpBusiDeptType(data[20]); }
-        if (StringUtils.isNotEmpty(data[21])) { user.setProdId(data[21]); }
-        if (StringUtils.isNotEmpty(data[22])) { user.setProdName(data[22]); }
-        if (StringUtils.isNotEmpty(data[23])) { user.setUserStatus(data[23]); }
-        if (StringUtils.isNotEmpty(data[24])) { user.setHqSvcType(data[24]); }
-        if (StringUtils.isNotEmpty(data[25])) { user.setCustCountyName(data[25]); }
-        if (StringUtils.isNotEmpty(data[26])) { user.setDeveloperId(data[26]); }
-        if (StringUtils.isNotEmpty(data[27])) { user.setDeveloperName(data[27]); }
-        if (StringUtils.isNotEmpty(data[28])) { user.setSpeed(data[28]); }
-        if (StringUtils.isNotEmpty(data[29])) { user.setUserAddr(data[29]); }
-        if (StringUtils.isNotEmpty(data[30])) { user.setCycleStartTime(data[30]); }
-        if (StringUtils.isNotEmpty(data[31])) { user.setCycleEndTime(data[31]); }
-        if (StringUtils.isNotEmpty(data[32])) { user.setCycleLength(data[32]); }
-        if (StringUtils.isNotEmpty(data[33])) { user.setCycleFee(data[33]); }
-        if (StringUtils.isNotEmpty(data[34])) { user.setMktProductId1(data[34]); }
-        if (StringUtils.isNotEmpty(data[35])) { user.setMktProductName1(data[35]); }
-        if (StringUtils.isNotEmpty(data[36])) { user.setMktDiscntCode1(data[36]); }
-        if (StringUtils.isNotEmpty(data[37])) { user.setMktDiscntName1(data[37]); }
-        if (StringUtils.isNotEmpty(data[38])) { user.setMktDiscntFee1(data[38]); }
-        if (StringUtils.isNotEmpty(data[39])) { user.setMktProductId2(data[39]); }
-        if (StringUtils.isNotEmpty(data[40])) { user.setMktProductName2(data[40]); }
-        if (StringUtils.isNotEmpty(data[41])) { user.setMktDiscntCode2(data[41]); }
-        if (StringUtils.isNotEmpty(data[42])) { user.setMktDiscntName2(data[42]); }
-        if (StringUtils.isNotEmpty(data[43])) { user.setMktDiscntFee2(data[43]); }
-        return user;
+    /**
+     * 空串归一：将实体中值为空字符串（""）的 String 字段置为 null。
+     * 文件导入规范：文件列空值按 null 处理
+     */
+    private static void normalizeBlankToNull(Object entity) {
+        if (entity == null) {
+            return;
+        }
+        Class<?> clazz = entity.getClass();
+        Field[] fields = BLANK_STRING_FIELD_CACHE.computeIfAbsent(clazz, c -> {
+            Field[] fs = Arrays.stream(c.getDeclaredFields())
+                    .filter(f -> f.getType() == String.class)
+                    .toArray(Field[]::new);
+            for (Field f : fs) {
+                f.setAccessible(true);
+            }
+            return fs;
+        });
+        try {
+            for (Field f : fields) {
+                Object v = f.get(entity);
+                if (v instanceof String && ((String) v).isEmpty()) {
+                    f.set(entity, null);
+                }
+            }
+        } catch (IllegalAccessException e) {
+            log.warn("空串归一为 null 失败: {}", entity.getClass().getSimpleName(), e);
+        }
     }
 
     // ==================== XXL-Job 入口 ====================
 
     @XxlJob("custSalesFileJob")
-    public void custSalesFileJob() {
+    public void start() {
         execute();
     }
 }
