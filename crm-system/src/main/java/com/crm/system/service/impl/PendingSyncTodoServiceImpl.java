@@ -137,21 +137,21 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             operLog.setOperUrl(todoTaskSyncUrl);
             operLog.setOperParam(JSON.toJSONString(dataMap));
 
-            UniBssResponse resp = uniBssApiClient.post(todoTaskSyncUrl, head, body);
-            log.info("待办同步至集团运营平台接口返回: {}", resp);
-            pendingTodo.setRecMsg(resp.toString());
-
-            if (resp.isSuccess()) {
-                pendingTodo.setSendStatus("1");
-                pendingTodo.setFailTimes(0);
-                operLog.setStatus(0);
-                operLog.setJsonResult(resp.toString());
-            } else {
-                pendingTodo.setSendStatus("2");
-                pendingTodo.setFailTimes(3);
-                operLog.setStatus(1);
-                operLog.setErrorMsg(resp.toString());
-            }
+//            UniBssResponse resp = uniBssApiClient.post(todoTaskSyncUrl, head, body);
+//            log.info("待办同步至集团运营平台接口返回: {}", resp);
+//            pendingTodo.setRecMsg(resp.toString());
+//
+//            if (resp.isSuccess()) {
+//                pendingTodo.setSendStatus("1");
+//                pendingTodo.setFailTimes(0);
+//                operLog.setStatus(0);
+//                operLog.setJsonResult(resp.toString());
+//            } else {
+//                pendingTodo.setSendStatus("2");
+//                pendingTodo.setFailTimes(3);
+//                operLog.setStatus(1);
+//                operLog.setErrorMsg(resp.toString());
+//            }
 
         } catch (Exception e) {
             log.error("同步集团待办任务异常, id:{}", pendingTodo.getId(), e);
