@@ -59,8 +59,6 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
-    /** 并签/同环节实例视为"同一轮次"的创建时间窗口（毫秒） */
-    private static final long ROUND_WINDOW_MS = 2000L;
 
     @Override
     public void syncTodoTask(PendingGroupTodo pendingTodo) {
@@ -276,14 +274,14 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     /**
      * 待办信息
-     * 新增当前任务（OPERATION_STATE=0 在前）；若为本轮第一条消息，再追加上一环节本轮已结束实例的删除（OPERATION_STATE=1 在后）
+     * 新增当前任务（OPERATION_STATE=0 在前）+ "其后第一个被创建的任务"为当前任务的已结束实例删除（OPERATION_STATE=1 在后）
      */
     private List<JSONObject> getWaitSolveInfo(Map<String, Object> currentTask, String operatorType,
                                              List<Map<String, Object>> hisList, ToppOrder order) {
         List<JSONObject> waitSolveInfoList = new ArrayList<>();
-        // 流程完结：只收尾最后环节轮次的已结束实例（前面环节已由'a'消息收尾，不重复发送删除）
+        // 流程完结：收尾"其后没有新任务创建"的已结束实例（即仍挂在 OA 待办的最后环节实例）
         if ("u".equals(operatorType)) {
-            for (Map<String, Object> task : findCurrentRoundEnded(currentTask, hisList)) {
+            for (Map<String, Object> task : findUnclosedEnded(hisList)) {
                 waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
             }
             return waitSolveInfoList;
@@ -315,56 +313,42 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         waitTaskJson.put("FLOW_CODE", currentTask.get("taskDefKey"));
         //任务中文名称
         waitTaskJson.put("FLOW_NAME", currentTask.get("name"));
-        // 上一步处理人：上一环节最后完成的实例（无上一环节时为发起人自身）
+        // 上一步处理人（findPrevNodeTasks 已算好，首环节为发起人自身）
         Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> prevEnded = (List<Map<String, Object>>) prev.get("prevEnded");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
-        String beforeSolveUserCode;
-        if (!prevCompleted.isEmpty()) {
-            beforeSolveUserCode = getOaByTaskAssignee(prevCompleted.get(0));
-        } else if (!prevEnded.isEmpty()) {
-            beforeSolveUserCode = getOaByTaskAssignee(prevEnded.get(0));
-        } else {
-            beforeSolveUserCode = getOaByTaskAssignee(currentTask);
-        }
-        waitTaskJson.put("BEFORE_SOLVE_USER_CODE", beforeSolveUserCode);
-        waitSolveInfoList.add(waitTaskJson);
-        // 转移增量（删除上一环节本轮已结束实例）只由本轮第一条消息携带（OP=0 在前、OP=1 在后）；
-        // 已删除过的增量重复发送 OA 不接受，后续兄弟消息只发自身 create
-        if (isFirstInstanceOfRound(currentTask, hisList)) {
-            for (Map<String, Object> task : prevEnded) {
-                waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
-            }
+        waitTaskJson.put("BEFORE_SOLVE_USER_CODE", (String) prev.get("beforeSolveUserCode"));
+        waitSolveInfoList.add(waitTaskJson); // OP=0 先入
+        // 转移增量（OP=1 后入）：已结束实例的收尾只由"其后第一个被创建的任务"的消息携带一次，
+        // 已删除过的不再重复出现（覆盖并签并行/串行、串行节点、退回、积压）
+        for (Map<String, Object> task : prevEnded) {
+            waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
         }
         return waitSolveInfoList;
     }
 
     /**
      * 已办信息
-     * 流程完结 → 最后环节轮次中用户完成（非引擎删除）的实例
-     * 否则 → 上一环节本轮用户完成实例（引擎删除的实例不进已办，只删待办）
+     * 流程完结 → 最后环节（其后无新任务创建）用户完成（非引擎删除）的实例
+     * 否则 → "其后第一个被创建的任务"为当前任务的用户完成实例（引擎删除的实例不进已办，只删待办）
      */
     private List<JSONObject> getAlreadySolveInfo(String operatorType, Map<String, Object> currentTask,
                                                  List<Map<String, Object>> hisList, ToppOrder order) {
         List<JSONObject> alreadySolveInfoList = new ArrayList<>();
         List<Map<String, Object>> completedTasks = new ArrayList<>();
-        // 订单完结：最后环节轮次中用户完成的实例进已办
+        // 订单完结：最后环节中用户完成的实例进已办
         if ("u".equals(operatorType)) {
-            for (Map<String, Object> task : findCurrentRoundEnded(currentTask, hisList)) {
+            for (Map<String, Object> task : findUnclosedEnded(hisList)) {
                 if (!"deleted".equals(task.get("deleteReason"))) {
                     completedTasks.add(task);
                 }
             }
         } else {
-            // 转移增量只由本轮第一条消息携带，重复已办 OA 不接受
-            if (isFirstInstanceOfRound(currentTask, hisList)) {
-                Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
-                completedTasks.addAll(prevCompleted);
-            }
+            // 已结束实例的已办只由"其后第一个被创建的任务"的消息携带一次，重复已办 OA 不接受
+            Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
+            completedTasks.addAll(prevCompleted);
         }
         for (Map<String, Object> task : completedTasks) {
             alreadySolveInfoList.add(buildAlreadySolveItem(task, order.getId()));
@@ -373,19 +357,54 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 划分上一环节"本轮"的已结束任务实例（endTime 非空）：
-     * prevEnded —— 上一环节本轮所有已结束实例（引擎删除 deleteReason=deleted 的只删待办）
-     * prevCompleted —— 其中用户完成（非引擎删除）的实例（进已办）
-     * 上一环节锚点 = 在当前任务之前创建（startTime 早于当前任务）且非当前环节、创建时间最晚的那条所在环节；
-     * 只收 startTime 在该锚点 ± ROUND_WINDOW_MS 窗口内 且 早于当前任务创建时刻 的实例
-     * （窗口天然排除同名旧轮；"早于当前任务"的硬条件防御积压+快速轮次时未来的同名节点）
+     * 计算当前任务消息应携带的转移增量与上一步处理人：
+     * prevEnded —— 已结束且"当前任务是其后第一个被创建的任务"（first-after）的实例：
+     *   每个已结束实例的收尾（删待办/进已办）只由一条消息携带，已删除过的不再重复出现
+     *   （不依赖时间窗口/首条判定，天然覆盖并签并行、并签串行、串行节点、退回重来、任务积压）
+     * prevCompleted —— prevEnded 中用户完成（非引擎删除 deleteReason=deleted）的实例（进已办）
+     * beforeSolveUserCode —— 上一步处理人：当前任务之前创建、非同环节、创建最晚的任务所在环节中，
+     *   最后完成的用户完成实例的处理人（无上一环节时为发起人自身）
      */
     private Map<String, Object> findPrevNodeTasks(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
-        String currentTaskDefKey = (String) currentTask.get("taskDefKey");
+        String currentTaskId = String.valueOf(currentTask.get("id"));
         Date currentStartTime = (Date) currentTask.get("startTime");
-        // 上一环节锚点：在当前任务之前创建、非当前环节、创建时间最晚的一条
-        String prevNodeKey = null;
-        Date prevAnchorStart = null;
+        List<Map<String, Object>> prevEnded = new ArrayList<>();
+        List<Map<String, Object>> prevCompleted = new ArrayList<>();
+        for (Map<String, Object> task : hisList) {
+            Date endTime = (Date) task.get("endTime");
+            if (endTime == null || currentStartTime == null) {
+                continue; // 只看已结束实例
+            }
+            // 该任务结束后最早被创建的任务（startTime >= endTime 且最小）
+            Map<String, Object> firstAfter = null;
+            Date firstAfterStart = null;
+            for (Map<String, Object> after : hisList) {
+                Date startTime = (Date) after.get("startTime");
+                if (startTime == null) {
+                    continue;
+                }
+                if (!startTime.before(endTime)
+                        && (firstAfterStart == null || startTime.before(firstAfterStart))) {
+                    firstAfterStart = startTime;
+                    firstAfter = after;
+                }
+            }
+            if (firstAfter != null && String.valueOf(firstAfter.get("id")).equals(currentTaskId)) {
+                prevEnded.add(task);
+                if (!"deleted".equals(task.get("deleteReason"))) {
+                    prevCompleted.add(task);
+                }
+            }
+        }
+        // 按结束时间倒序，保证删除/已办条目输出顺序确定
+        Comparator<Map<String, Object>> byEndTimeDesc = (a, b) ->
+            ((Date) b.get("endTime")).compareTo((Date) a.get("endTime"));
+        prevEnded.sort(byEndTimeDesc);
+        prevCompleted.sort(byEndTimeDesc);
+        // 上一步处理人：当前任务之前创建、非同环节、创建最晚的任务所在环节中，最后完成的用户完成实例的处理人
+        String beforeSolveUserCode = "";
+        String anchorKey = null;
+        Date anchorLatestStart = null;
         for (Map<String, Object> task : hisList) {
             Date startTime = (Date) task.get("startTime");
             if (startTime == null || currentStartTime == null) {
@@ -394,105 +413,75 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             if (!startTime.before(currentStartTime)) {
                 continue; // 只看当前任务之前创建的（积压时 hisList 可能含后续节点，不能看之后）
             }
-            if (currentTaskDefKey.equals(task.get("taskDefKey"))) {
+            if (currentTask.get("taskDefKey").equals(task.get("taskDefKey"))) {
                 continue; // 排除同环节（兄弟实例/旧轮）
             }
-            if (prevAnchorStart == null || startTime.after(prevAnchorStart)) {
-                prevAnchorStart = startTime;
-                prevNodeKey = (String) task.get("taskDefKey");
+            if (anchorLatestStart == null || startTime.after(anchorLatestStart)) {
+                anchorLatestStart = startTime;
+                anchorKey = (String) task.get("taskDefKey");
             }
         }
-        List<Map<String, Object>> prevEnded = new ArrayList<>();
-        List<Map<String, Object>> prevCompleted = new ArrayList<>();
-        for (Map<String, Object> task : hisList) {
-            if (task.get("endTime") == null) {
-                continue;
+        if (anchorKey != null) {
+            Map<String, Object> lastCompleted = null;
+            Map<String, Object> lastEnded = null;
+            Date lastCompletedTime = null;
+            Date lastEndedTime = null;
+            for (Map<String, Object> task : hisList) {
+                Date endTime = (Date) task.get("endTime");
+                if (endTime == null || !anchorKey.equals(task.get("taskDefKey"))) {
+                    continue;
+                }
+                if (lastEndedTime == null || endTime.after(lastEndedTime)) {
+                    lastEndedTime = endTime;
+                    lastEnded = task;
+                }
+                if (!"deleted".equals(task.get("deleteReason"))
+                        && (lastCompletedTime == null || endTime.after(lastCompletedTime))) {
+                    lastCompletedTime = endTime;
+                    lastCompleted = task;
+                }
             }
-            Date startTime = (Date) task.get("startTime");
-            if (startTime == null || currentStartTime == null) {
-                continue;
-            }
-            if (prevNodeKey == null || !prevNodeKey.equals(task.get("taskDefKey"))) {
-                continue;
-            }
-            if (!startTime.before(currentStartTime)) {
-                continue; // 上一环节本轮实例必然早于当前任务创建（防御积压时未来的同名节点）
-            }
-            if (Math.abs(startTime.getTime() - prevAnchorStart.getTime()) > ROUND_WINDOW_MS) {
-                continue; // 排除同名旧轮
-            }
-            prevEnded.add(task);
-            if (!"deleted".equals(task.get("deleteReason"))) {
-                prevCompleted.add(task);
+            if (lastCompleted != null) {
+                beforeSolveUserCode = getOaByTaskAssignee(lastCompleted);
+            } else if (lastEnded != null) {
+                beforeSolveUserCode = getOaByTaskAssignee(lastEnded);
             }
         }
-        // 按结束时间倒序，保证删除/已办条目输出顺序确定
-        Comparator<Map<String, Object>> byEndTimeDesc = (a, b) ->
-            ((Date) b.get("endTime")).compareTo((Date) a.get("endTime"));
-        prevEnded.sort(byEndTimeDesc);
-        prevCompleted.sort(byEndTimeDesc);
-        Map<String, Object> result = new HashMap<>(2);
+        if (beforeSolveUserCode.isEmpty()) {
+            beforeSolveUserCode = getOaByTaskAssignee(currentTask); // 首环节：发起人自身
+        }
+        Map<String, Object> result = new HashMap<>(3);
         result.put("prevEnded", prevEnded);
         result.put("prevCompleted", prevCompleted);
+        result.put("beforeSolveUserCode", beforeSolveUserCode);
         return result;
     }
 
     /**
-     * 当前任务是否为其所在轮次的第一个实例（最早创建）。
-     * 是 → 本条消息携带转移增量（删除/已办上一环节及已结束兄弟）；
-     * 否 → 只发自身 create（转移增量已由第一条消息上报，重复发送删除 OA 不接受）
+     * 流程完结时需收尾的已结束实例：其后没有任何任务创建（first-after 不存在）——
+     * 即流程最后环节的实例，此前各环节的收尾已由各自"后继消息"携带，此处不重复
      */
-    private boolean isFirstInstanceOfRound(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
-        String currentTaskDefKey = (String) currentTask.get("taskDefKey");
-        String currentTaskId = String.valueOf(currentTask.get("id"));
-        Date currentStartTime = (Date) currentTask.get("startTime");
+    private List<Map<String, Object>> findUnclosedEnded(List<Map<String, Object>> hisList) {
+        List<Map<String, Object>> unclosed = new ArrayList<>();
         for (Map<String, Object> task : hisList) {
-            if (String.valueOf(task.get("id")).equals(currentTaskId)) {
+            Date endTime = (Date) task.get("endTime");
+            if (endTime == null) {
                 continue;
             }
-            if (!currentTaskDefKey.equals(task.get("taskDefKey"))) {
-                continue;
+            boolean hasAfter = false;
+            for (Map<String, Object> after : hisList) {
+                Date startTime = (Date) after.get("startTime");
+                if (startTime != null && !startTime.before(endTime)) {
+                    hasAfter = true;
+                    break;
+                }
             }
-            Date startTime = (Date) task.get("startTime");
-            if (startTime == null || currentStartTime == null) {
-                continue;
-            }
-            // 存在更早创建的同轮实例（同毫秒时按 id 小者优先）则本条不是第一条
-            if (Math.abs(startTime.getTime() - currentStartTime.getTime()) <= ROUND_WINDOW_MS
-                    && (startTime.before(currentStartTime)
-                        || (startTime.equals(currentStartTime)
-                            && String.valueOf(task.get("id")).compareTo(currentTaskId) < 0))) {
-                return false;
+            if (!hasAfter) {
+                unclosed.add(task);
             }
         }
-        return true;
-    }
-
-    /**
-     * 流程完结时收尾的实例：当前任务（最后环节）所在轮次的已结束实例
-     * （同轮 = 同一转移内创建，间隔不超过 ROUND_WINDOW_MS），按结束时间倒序
-     */
-    private List<Map<String, Object>> findCurrentRoundEnded(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
-        List<Map<String, Object>> ended = new ArrayList<>();
-        String currentTaskDefKey = (String) currentTask.get("taskDefKey");
-        Date currentStartTime = (Date) currentTask.get("startTime");
-        for (Map<String, Object> task : hisList) {
-            if (task.get("endTime") == null) {
-                continue;
-            }
-            if (!currentTaskDefKey.equals(task.get("taskDefKey"))) {
-                continue;
-            }
-            Date startTime = (Date) task.get("startTime");
-            if (startTime == null || currentStartTime == null) {
-                continue;
-            }
-            if (Math.abs(startTime.getTime() - currentStartTime.getTime()) <= ROUND_WINDOW_MS) {
-                ended.add(task);
-            }
-        }
-        ended.sort((a, b) -> ((Date) b.get("endTime")).compareTo((Date) a.get("endTime")));
-        return ended;
+        unclosed.sort((a, b) -> ((Date) b.get("endTime")).compareTo((Date) a.get("endTime")));
+        return unclosed;
     }
 
     /**
