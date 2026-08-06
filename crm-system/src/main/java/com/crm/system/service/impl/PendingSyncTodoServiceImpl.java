@@ -383,43 +383,34 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 划分已结束任务实例（endTime 非空）：
      * prevEnded/prevCompleted —— 上一环节"本轮"的已结束实例
-     *   （上一环节编码 = 非当前环节中结束时间最近的那条；本轮边界 = 非上一环节中结束时间最近的那条，
-     *     只收 endTime 不早于边界 的实例，排除同名旧轮）
-     * curEndedSibling/curCompletedSibling —— 当前环节同一轮已结束的兄弟实例（startTime 不早于当前任务）
+     *   （上一环节锚点 = 在当前任务之前创建（startTime 早于当前任务）且非当前环节、创建时间最晚的那条所在环节；
+     *     只收 startTime 在该锚点 ± ROUND_WINDOW_MS 窗口内的实例，排除同名旧轮）
+     * curEndedSibling/curCompletedSibling —— 当前环节同一轮已结束的兄弟实例（startTime 与当前任务间隔不超过 ROUND_WINDOW_MS）
      * 引擎删除（deleteReason=deleted）的实例只进 ended 集合，不进已办
+     * 以"当前任务创建时刻"为锚点而非流程最新状态：任务积压（hisList 可能含当前环节之后的很多节点）时，
+     * 后续节点的任务不会进入上一环节判定
      */
     private Map<String, Object> findPrevNodeTasks(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
         String currentTaskDefKey = (String) currentTask.get("taskDefKey");
         String currentTaskId = String.valueOf(currentTask.get("id"));
-        // 上一环节编码：非当前环节、已结束、结束时间最近的一条
+        Date currentStartTime = (Date) currentTask.get("startTime");
+        // 上一环节锚点：在当前任务之前创建、非当前环节、创建时间最晚的一条
         String prevNodeKey = null;
-        Date prevNodeEndTime = null;
+        Date prevAnchorStart = null;
         for (Map<String, Object> task : hisList) {
-            if (task.get("endTime") == null) {
+            Date startTime = (Date) task.get("startTime");
+            if (startTime == null || currentStartTime == null) {
                 continue;
             }
-            String taskDefKey = (String) task.get("taskDefKey");
-            if (!taskDefKey.equals(currentTaskDefKey)) {
-                Date endTime = (Date) task.get("endTime");
-                if (prevNodeEndTime == null || endTime.after(prevNodeEndTime)) {
-                    prevNodeEndTime = endTime;
-                    prevNodeKey = taskDefKey;
-                }
+            if (!startTime.before(currentStartTime)) {
+                continue; // 只看当前任务之前创建的（积压时 hisList 可能含后续节点，不能看之后）
             }
-        }
-        // 本轮边界：非上一环节、已结束、结束时间最近的一条（上一环节本轮实例的结束时间不早于它）
-        Date boundary = null;
-        if (prevNodeKey != null) {
-            for (Map<String, Object> task : hisList) {
-                if (task.get("endTime") == null) {
-                    continue;
-                }
-                if (!prevNodeKey.equals(task.get("taskDefKey"))) {
-                    Date endTime = (Date) task.get("endTime");
-                    if (boundary == null || endTime.after(boundary)) {
-                        boundary = endTime;
-                    }
-                }
+            if (currentTaskDefKey.equals(task.get("taskDefKey"))) {
+                continue; // 排除同环节（兄弟实例/旧轮）
+            }
+            if (prevAnchorStart == null || startTime.after(prevAnchorStart)) {
+                prevAnchorStart = startTime;
+                prevNodeKey = (String) task.get("taskDefKey");
             }
         }
         List<Map<String, Object>> prevEnded = new ArrayList<>();
@@ -430,19 +421,21 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             if (task.get("endTime") == null) {
                 continue;
             }
+            Date startTime = (Date) task.get("startTime");
+            if (startTime == null || currentStartTime == null) {
+                continue;
+            }
             String taskDefKey = (String) task.get("taskDefKey");
             boolean userCompleted = !"deleted".equals(task.get("deleteReason"));
             if (prevNodeKey != null && taskDefKey.equals(prevNodeKey)
-                    && (boundary == null || !((Date) task.get("endTime")).before(boundary))) {
+                    && Math.abs(startTime.getTime() - prevAnchorStart.getTime()) <= ROUND_WINDOW_MS) {
                 prevEnded.add(task);
                 if (userCompleted) {
                     prevCompleted.add(task);
                 }
             } else if (taskDefKey.equals(currentTaskDefKey)
                     && !String.valueOf(task.get("id")).equals(currentTaskId)
-                    && task.get("startTime") != null
-                    && currentTask.get("startTime") != null
-                    && !((Date) task.get("startTime")).before((Date) currentTask.get("startTime"))) {
+                    && Math.abs(startTime.getTime() - currentStartTime.getTime()) <= ROUND_WINDOW_MS) {
                 curEndedSibling.add(task);
                 if (userCompleted) {
                     curCompletedSibling.add(task);
