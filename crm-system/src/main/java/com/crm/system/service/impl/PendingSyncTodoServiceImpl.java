@@ -276,7 +276,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     /**
      * 待办信息
-     * 新增当前任务；上一环节所有已结束实例 + 当前环节已结束兄弟实例一律删除（幂等）
+     * 新增当前任务（OPERATION_STATE=0 在前）；若为本轮第一条消息，再追加上一环节本轮已结束实例的删除（OPERATION_STATE=1 在后）
      */
     private List<JSONObject> getWaitSolveInfo(Map<String, Object> currentTask, String operatorType,
                                              List<Map<String, Object>> hisList, ToppOrder order) {
@@ -321,8 +321,6 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         List<Map<String, Object>> prevEnded = (List<Map<String, Object>>) prev.get("prevEnded");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> curEndedSibling = (List<Map<String, Object>>) prev.get("curEndedSibling");
         String beforeSolveUserCode;
         if (!prevCompleted.isEmpty()) {
             beforeSolveUserCode = getOaByTaskAssignee(prevCompleted.get(0));
@@ -333,13 +331,10 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         }
         waitTaskJson.put("BEFORE_SOLVE_USER_CODE", beforeSolveUserCode);
         waitSolveInfoList.add(waitTaskJson);
-        // 转移增量（删除上一环节/已结束兄弟实例）只由本轮第一条消息携带；
+        // 转移增量（删除上一环节本轮已结束实例）只由本轮第一条消息携带（OP=0 在前、OP=1 在后）；
         // 已删除过的增量重复发送 OA 不接受，后续兄弟消息只发自身 create
         if (isFirstInstanceOfRound(currentTask, hisList)) {
             for (Map<String, Object> task : prevEnded) {
-                waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
-            }
-            for (Map<String, Object> task : curEndedSibling) {
                 waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
             }
         }
@@ -348,8 +343,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     /**
      * 已办信息
-     * 流程完结 → 全部用户完成（非引擎删除）的实例
-     * 否则 → 上一环节用户完成实例 + 当前环节已完成的兄弟实例；引擎删除的实例不进已办（只删待办）
+     * 流程完结 → 最后环节轮次中用户完成（非引擎删除）的实例
+     * 否则 → 上一环节本轮用户完成实例（引擎删除的实例不进已办，只删待办）
      */
     private List<JSONObject> getAlreadySolveInfo(String operatorType, Map<String, Object> currentTask,
                                                  List<Map<String, Object>> hisList, ToppOrder order) {
@@ -368,10 +363,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> curCompletedSibling = (List<Map<String, Object>>) prev.get("curCompletedSibling");
                 completedTasks.addAll(prevCompleted);
-                completedTasks.addAll(curCompletedSibling);
             }
         }
         for (Map<String, Object> task : completedTasks) {
@@ -381,18 +373,15 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 划分已结束任务实例（endTime 非空）：
-     * prevEnded/prevCompleted —— 上一环节"本轮"的已结束实例
-     *   （上一环节锚点 = 在当前任务之前创建（startTime 早于当前任务）且非当前环节、创建时间最晚的那条所在环节；
-     *     只收 startTime 在该锚点 ± ROUND_WINDOW_MS 窗口内的实例，排除同名旧轮）
-     * curEndedSibling/curCompletedSibling —— 当前环节同一轮已结束的兄弟实例（startTime 与当前任务间隔不超过 ROUND_WINDOW_MS）
-     * 引擎删除（deleteReason=deleted）的实例只进 ended 集合，不进已办
-     * 以"当前任务创建时刻"为锚点而非流程最新状态：任务积压（hisList 可能含当前环节之后的很多节点）时，
-     * 后续节点的任务不会进入上一环节判定
+     * 划分上一环节"本轮"的已结束任务实例（endTime 非空）：
+     * prevEnded —— 上一环节本轮所有已结束实例（引擎删除 deleteReason=deleted 的只删待办）
+     * prevCompleted —— 其中用户完成（非引擎删除）的实例（进已办）
+     * 上一环节锚点 = 在当前任务之前创建（startTime 早于当前任务）且非当前环节、创建时间最晚的那条所在环节；
+     * 只收 startTime 在该锚点 ± ROUND_WINDOW_MS 窗口内 且 早于当前任务创建时刻 的实例
+     * （窗口天然排除同名旧轮；"早于当前任务"的硬条件防御积压+快速轮次时未来的同名节点）
      */
     private Map<String, Object> findPrevNodeTasks(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
         String currentTaskDefKey = (String) currentTask.get("taskDefKey");
-        String currentTaskId = String.valueOf(currentTask.get("id"));
         Date currentStartTime = (Date) currentTask.get("startTime");
         // 上一环节锚点：在当前任务之前创建、非当前环节、创建时间最晚的一条
         String prevNodeKey = null;
@@ -415,8 +404,6 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         }
         List<Map<String, Object>> prevEnded = new ArrayList<>();
         List<Map<String, Object>> prevCompleted = new ArrayList<>();
-        List<Map<String, Object>> curEndedSibling = new ArrayList<>();
-        List<Map<String, Object>> curCompletedSibling = new ArrayList<>();
         for (Map<String, Object> task : hisList) {
             if (task.get("endTime") == null) {
                 continue;
@@ -425,21 +412,18 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             if (startTime == null || currentStartTime == null) {
                 continue;
             }
-            String taskDefKey = (String) task.get("taskDefKey");
-            boolean userCompleted = !"deleted".equals(task.get("deleteReason"));
-            if (prevNodeKey != null && taskDefKey.equals(prevNodeKey)
-                    && Math.abs(startTime.getTime() - prevAnchorStart.getTime()) <= ROUND_WINDOW_MS) {
-                prevEnded.add(task);
-                if (userCompleted) {
-                    prevCompleted.add(task);
-                }
-            } else if (taskDefKey.equals(currentTaskDefKey)
-                    && !String.valueOf(task.get("id")).equals(currentTaskId)
-                    && Math.abs(startTime.getTime() - currentStartTime.getTime()) <= ROUND_WINDOW_MS) {
-                curEndedSibling.add(task);
-                if (userCompleted) {
-                    curCompletedSibling.add(task);
-                }
+            if (prevNodeKey == null || !prevNodeKey.equals(task.get("taskDefKey"))) {
+                continue;
+            }
+            if (!startTime.before(currentStartTime)) {
+                continue; // 上一环节本轮实例必然早于当前任务创建（防御积压时未来的同名节点）
+            }
+            if (Math.abs(startTime.getTime() - prevAnchorStart.getTime()) > ROUND_WINDOW_MS) {
+                continue; // 排除同名旧轮
+            }
+            prevEnded.add(task);
+            if (!"deleted".equals(task.get("deleteReason"))) {
+                prevCompleted.add(task);
             }
         }
         // 按结束时间倒序，保证删除/已办条目输出顺序确定
@@ -447,13 +431,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             ((Date) b.get("endTime")).compareTo((Date) a.get("endTime"));
         prevEnded.sort(byEndTimeDesc);
         prevCompleted.sort(byEndTimeDesc);
-        curEndedSibling.sort(byEndTimeDesc);
-        curCompletedSibling.sort(byEndTimeDesc);
-        Map<String, Object> result = new HashMap<>(4);
+        Map<String, Object> result = new HashMap<>(2);
         result.put("prevEnded", prevEnded);
         result.put("prevCompleted", prevCompleted);
-        result.put("curEndedSibling", curEndedSibling);
-        result.put("curCompletedSibling", curCompletedSibling);
         return result;
     }
 
