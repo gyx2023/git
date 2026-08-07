@@ -191,7 +191,7 @@ public class WotvExpireWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     public String buildDealUrl(Long orderId, Map<String, Object> extra) {
-        return "/wideWarning/deal?orderId=" + orderId;
+        return "/userCustWarning/dealByWotv?orderId=" + orderId;
     }
 
     @Override

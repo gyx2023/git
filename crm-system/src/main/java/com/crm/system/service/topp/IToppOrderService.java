@@ -110,4 +110,15 @@ public interface IToppOrderService {
      */
     void markOrderEnd(Long orderId, String followUp, String otherReason);
 
+    /**
+     * 将工单置为已结束（支持维系日期字段）
+     *
+     * @param orderId            工单ID
+     * @param followUp           跟踪情况
+     * @param otherReason        其他原因
+     * @param plannedRenewalDate 计划续约日期（可选）
+     */
+    void markOrderEnd(Long orderId, String followUp, String otherReason,
+                      java.util.Date plannedRenewalDate);
+
 }

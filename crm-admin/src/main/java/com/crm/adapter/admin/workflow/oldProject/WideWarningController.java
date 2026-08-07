@@ -185,7 +185,8 @@ public class WideWarningController extends BaseController {
                             @RequestParam(value = "auditUserId", required = false) Long auditUserId,
                             @RequestParam(value = "comment", required = false) String comment,
                             @RequestParam(value = "followUp", required = false) String followUp,
-                            @RequestParam(value = "otherReason", required = false) String otherReason) {
+                            @RequestParam(value = "otherReason", required = false) String otherReason,
+                            @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) {
             return R.fail("任务不存在或已处理");
@@ -216,7 +217,8 @@ public class WideWarningController extends BaseController {
             msg = "处理完成，已进入下一处理环节";
         } else {
             // 流程已结束：置为完成
-            orderService.markOrderEnd(orderId, followUp, otherReason);
+            java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
+            orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
             msg = "该流程已完成";
         }
 
@@ -354,7 +356,8 @@ public class WideWarningController extends BaseController {
     @PostMapping("/track")
     public R<Map<String, Object>> track(@RequestParam("taskId") String taskId,
                                         @RequestParam("orderId") Long orderId,
-                                        @RequestParam(value = "comment", required = false) String comment) {
+                                        @RequestParam(value = "comment", required = false) String comment,
+                                        @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
         Task task = wfProcessService.findCurrentTask(null, taskId);
         if (comment != null) {
             taskService.addComment(taskId, task.getProcessInstanceId(), comment);
@@ -363,6 +366,10 @@ public class WideWarningController extends BaseController {
         ToppOrderBo bo = new ToppOrderBo();
         bo.setId(orderId);
         bo.setStatus(OrderStatusEnum.TRACKING.getCode());
+        java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
+        if (plannedDate != null) {
+            bo.setPlannedRenewalDate(plannedDate);
+        }
         orderService.updateByBo(bo);
 
         Map<String, Object> result = new HashMap<>();
@@ -371,9 +378,204 @@ public class WideWarningController extends BaseController {
         return R.ok(result);
     }
 
+    // ==================== 批量处理 ====================
+
+    /**
+     * 批量通过（完成）。对每个工单找到当前任务，统一执行完成操作。
+     */
+    @PostMapping("/batchComplete")
+    public R<Map<String, Object>> batchComplete(@RequestParam("orderIds") String orderIds,
+                                                 @RequestParam(value = "comment", required = false) String comment,
+                                                 @RequestParam(value = "followUp", required = false) String followUp,
+                                                 @RequestParam(value = "otherReason", required = false) String otherReason,
+                                                 @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
+        String[] ids = orderIds.split(",");
+        int success = 0, fail = 0;
+        StringBuilder errMsg = new StringBuilder();
+        java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
+        for (String idStr : ids) {
+            String trimmed = idStr.trim();
+            if (trimmed.isEmpty()) continue;
+            try {
+                Long orderId = Long.parseLong(trimmed);
+                ToppOrderVo order = orderService.queryById(orderId);
+                if (order == null) { fail++; continue; }
+                Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
+                if (task == null) { fail++; continue; }
+                if (comment != null) {
+                    taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
+                }
+                Map<String, Object> vars = new HashMap<>();
+                vars.put("action", "agree");
+                taskService.setVariableLocal(task.getId(), "action", "agree");
+                taskService.complete(task.getId(), vars);
+                if (wfProcessService.isProcessRunning(task.getProcessInstanceId())) {
+                    Task nextTask = wfProcessService.findCurrentTask(task.getProcessInstanceId(), null);
+                    Long nextAssignee = null;
+                    if (nextTask != null && nextTask.getAssignee() != null && !nextTask.getAssignee().isEmpty()) {
+                        nextAssignee = Long.parseLong(nextTask.getAssignee().replaceAll(",", ""));
+                    }
+                    orderService.syncOrderToCurrentTask(orderId, task.getProcessInstanceId(), nextAssignee);
+                    // 流程未结束也写入 wide_result
+                    setWideResult(orderId, followUp, otherReason, plannedDate);
+                } else {
+                    orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
+                }
+                success++;
+            } catch (Exception e) {
+                fail++;
+                errMsg.append(idStr).append(":").append(e.getMessage()).append("; ");
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", success);
+        result.put("fail", fail);
+        result.put("msg", "批量完成：" + success + " 成功" + (fail > 0 ? "，" + fail + " 失败" : ""));
+        if (fail > 0) result.put("detail", errMsg.toString());
+        return R.ok(result);
+    }
+
+    /**
+     * 批量转派。对每个工单找到当前任务，统一执行转派操作。
+     */
+    @PostMapping("/batchTransfer")
+    public R<Map<String, Object>> batchTransfer(@RequestParam("orderIds") String orderIds,
+                                                 @RequestParam(value = "targetUserId", required = false) Long targetUserId,
+                                                 @RequestParam(value = "comment", required = false) String comment,
+                                                 @RequestParam(value = "followUp", required = false) String followUp,
+                                                 @RequestParam(value = "otherReason", required = false) String otherReason) {
+        String[] ids = orderIds.split(",");
+        int success = 0, fail = 0;
+        StringBuilder errMsg = new StringBuilder();
+        LoginUser loginUser = getLoginUser();
+        SysUsers nextUser = targetUserId != null ? sysUsersMapper.selectById(targetUserId) : null;
+        String nextActorName = nextUser != null ? nextUser.getNameCh() : "";
+        for (String idStr : ids) {
+            String trimmed = idStr.trim();
+            if (trimmed.isEmpty()) continue;
+            try {
+                Long orderId = Long.parseLong(trimmed);
+                ToppOrderVo order = orderService.queryById(orderId);
+                if (order == null) { fail++; continue; }
+                Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
+                if (task == null) { fail++; continue; }
+                if (comment != null) {
+                    taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
+                }
+                if ("audit_handle".equals(task.getTaskDefinitionKey())) {
+                    orderService.syncOrderToCurrentTask(orderId, task.getProcessInstanceId(), targetUserId, loginUser.getUserId());
+                    taskService.setAssignee(task.getId(), String.valueOf(targetUserId));
+                    runtimeService.setVariable(task.getProcessInstanceId(), "audit", String.valueOf(targetUserId));
+                } else {
+                    orderService.transferOrder(task.getId(), orderId, targetUserId, comment, loginUser.getUserId());
+                }
+                // 写入 wide_result
+                ToppOrderBo wideBo = new ToppOrderBo();
+                wideBo.setId(orderId);
+                fillWideResult(wideBo, followUp, otherReason);
+                orderService.updateByBo(wideBo);
+                success++;
+            } catch (Exception e) {
+                fail++;
+                errMsg.append(idStr).append(":").append(e.getMessage()).append("; ");
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", success);
+        result.put("fail", fail);
+        result.put("msg", "批量转派：" + success + " 成功" + (fail > 0 ? "，" + fail + " 失败" : ""));
+        if (fail > 0) result.put("detail", errMsg.toString());
+        return R.ok(result);
+    }
+
+    /**
+     * 批量跟踪中。对每个工单置为跟踪状态。
+     */
+    @PostMapping("/batchTrack")
+    public R<Map<String, Object>> batchTrack(@RequestParam("orderIds") String orderIds,
+                                              @RequestParam(value = "comment", required = false) String comment,
+                                              @RequestParam(value = "followUp", required = false) String followUp,
+                                              @RequestParam(value = "otherReason", required = false) String otherReason,
+                                              @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
+        String[] ids = orderIds.split(",");
+        int success = 0, fail = 0;
+        StringBuilder errMsg = new StringBuilder();
+        java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
+        for (String idStr : ids) {
+            String trimmed = idStr.trim();
+            if (trimmed.isEmpty()) continue;
+            try {
+                Long orderId = Long.parseLong(trimmed);
+                ToppOrderVo order = orderService.queryById(orderId);
+                if (order == null) { fail++; continue; }
+                Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
+                if (task != null && comment != null) {
+                    taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
+                }
+                ToppOrderBo bo = new ToppOrderBo();
+                bo.setId(orderId);
+                bo.setStatus(OrderStatusEnum.TRACKING.getCode());
+                if (plannedDate != null) {
+                    bo.setPlannedRenewalDate(plannedDate);
+                }
+                fillWideResult(bo, followUp, otherReason);
+                orderService.updateByBo(bo);
+                success++;
+            } catch (Exception e) {
+                fail++;
+                errMsg.append(idStr).append(":").append(e.getMessage()).append("; ");
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", success);
+        result.put("fail", fail);
+        result.put("msg", "批量跟踪：" + success + " 成功" + (fail > 0 ? "，" + fail + " 失败" : ""));
+        if (fail > 0) result.put("detail", errMsg.toString());
+        return R.ok(result);
+    }
+
  /*   private String str(Map<String, Object> m, String k) {
         Object v = m != null ? m.get(k) : null;
         return v != null ? v.toString() : null;
     }*/
+
+    /**
+     * 填充 wide_result 到 Bo（跟踪中/转派/流程未结束时使用）
+     */
+    private void fillWideResult(ToppOrderBo bo, String followUp, String otherReason) {
+        if (followUp == null) return;
+        if ("其他".equals(followUp) && otherReason != null) {
+            bo.setWideResult(otherReason);
+        } else {
+            bo.setWideResult(followUp);
+        }
+    }
+
+    /**
+     * 单独更新订单的 wide_result 和 planned_renewal_date（流程未结束时使用）
+     */
+    private void setWideResult(Long orderId, String followUp, String otherReason, java.util.Date plannedDate) {
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        fillWideResult(bo, followUp, otherReason);
+        if (plannedDate != null) {
+            bo.setPlannedRenewalDate(plannedDate);
+        }
+        orderService.updateByBo(bo);
+    }
+
+    private java.util.Date parseDate(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return null;
+        try {
+            return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(dateStr);
+        } catch (java.text.ParseException e) {
+            try {
+                return new java.text.SimpleDateFormat("yyyy-MM-dd").parse(dateStr);
+            } catch (java.text.ParseException e2) {
+                log.warn("日期解析失败: {}", dateStr);
+                return null;
+            }
+        }
+    }
 
 }
