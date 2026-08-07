@@ -24,6 +24,7 @@ import com.crm.workflow.service.impl.OldWorkflowQueryService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -115,6 +116,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                     throw new RuntimeException("历史任务不存在");
                 }
                 // 刷新任务列表数据
+                // 按照任务时间倒序 第一条是最后创建的任务
                 hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts((String) currentTask.get("procInsId"));
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
                     .compareTo((java.util.Date) a.get("startTime")));
@@ -383,8 +385,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 if (startTime == null) {
                     continue;
                 }
-                if (!startTime.before(endTime)
-                        && (firstAfterStart == null || startTime.before(firstAfterStart))) {
+                if (startTime.getTime() >= endTime.getTime()
+                        && (firstAfterStart == null || startTime.getTime() < firstAfterStart.getTime())) {
                     firstAfterStart = startTime;
                     firstAfter = after;
                 }
@@ -410,13 +412,13 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             if (startTime == null || currentStartTime == null) {
                 continue;
             }
-            if (!startTime.before(currentStartTime)) {
+            if (startTime.getTime() >= currentStartTime.getTime()) {
                 continue; // 只看当前任务之前创建的（积压时 hisList 可能含后续节点，不能看之后）
             }
             if (currentTask.get("taskDefKey").equals(task.get("taskDefKey"))) {
                 continue; // 排除同环节（兄弟实例/旧轮）
             }
-            if (anchorLatestStart == null || startTime.after(anchorLatestStart)) {
+            if (anchorLatestStart == null || startTime.getTime() > anchorLatestStart.getTime()) {
                 anchorLatestStart = startTime;
                 anchorKey = (String) task.get("taskDefKey");
             }
@@ -431,12 +433,12 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 if (endTime == null || !anchorKey.equals(task.get("taskDefKey"))) {
                     continue;
                 }
-                if (lastEndedTime == null || endTime.after(lastEndedTime)) {
+                if (lastEndedTime == null || endTime.getTime() > lastEndedTime.getTime()) {
                     lastEndedTime = endTime;
                     lastEnded = task;
                 }
                 if (!"deleted".equals(task.get("deleteReason"))
-                        && (lastCompletedTime == null || endTime.after(lastCompletedTime))) {
+                        && (lastCompletedTime == null || endTime.getTime() > lastCompletedTime.getTime())) {
                     lastCompletedTime = endTime;
                     lastCompleted = task;
                 }
@@ -471,7 +473,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             boolean hasAfter = false;
             for (Map<String, Object> after : hisList) {
                 Date startTime = (Date) after.get("startTime");
-                if (startTime != null && !startTime.before(endTime)) {
+                if (startTime != null && startTime.getTime() >= endTime.getTime()) {
                     hasAfter = true;
                     break;
                 }
