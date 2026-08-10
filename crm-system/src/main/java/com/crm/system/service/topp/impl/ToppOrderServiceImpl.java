@@ -11,10 +11,8 @@ import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.utils.Constants;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
@@ -45,8 +43,6 @@ public class ToppOrderServiceImpl implements IToppOrderService {
 
     @Resource
     private TaskService taskService;
-    @Resource
-    private RuntimeService runtimeService;
     @Resource
     private UserService userService;
     @Resource
@@ -99,7 +95,6 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     }
 
     private LambdaQueryWrapper<ToppOrder> buildQueryWrapper(ToppOrderBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ToppOrder> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getOppoId() != null, ToppOrder::getOppoId, bo.getOppoId());
         lqw.eq(bo.getCustId() != null, ToppOrder::getCustId, bo.getCustId());
@@ -209,21 +204,25 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     @Override
     public String transferOrder(String taskId, Long orderId, Long targetUserId, String comment, Long currentUserId) {
         ToppOrderVo order = queryById(orderId);
-        if (order == null) throw new ServiceException("工单不存在: " + orderId);
+        if (order == null) {
+            throw new ServiceException("工单不存在: " + orderId);
+        }
 
         Map<String, Object> vars = new HashMap<>();
-        if (targetUserId != null) vars.put("manager", String.valueOf(targetUserId));
+        if (targetUserId != null) {
+            vars.put("manager", String.valueOf(targetUserId));
+        }
         vars.put("action", "transfer");
         taskService.setVariableLocal(taskId, "action", "transfer");
+        // Listener 的 TASK_ASSIGNED 事件会自动 syncOrderToCurrentTask
         taskService.complete(taskId, vars);
-
-        // 转派后同步工单到新任务节点（status/phase/whiteList/actors + 展示变量统一在此更新）
-        syncOrderToCurrentTask(orderId, order.getPiId(), targetUserId);
 
         String nextActorName = "";
         if (targetUserId != null) {
             nextActorName = userService.selectNickNameById(targetUserId);
-            if (nextActorName == null) nextActorName = "";
+            if (nextActorName == null) {
+                nextActorName = "";
+            }
         }
         return nextActorName;
     }
@@ -239,7 +238,9 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     public void syncOrderToCurrentTask(Long orderId, String piId, Long whitelistUserId, Long... extraUserIds) {
         List<Task> nextTasks = taskService.createTaskQuery().processInstanceId(piId).listPage(0, 1);
         Task next = nextTasks.isEmpty() ? null : nextTasks.get(0);
-        if (next == null) return;
+        if (next == null) {
+            return;
+        }
 
         ToppOrderVo order = queryById(orderId);
         ToppOrderBo bo = new ToppOrderBo();
@@ -252,11 +253,15 @@ public class ToppOrderServiceImpl implements IToppOrderService {
             bo.setActors(",," + whitelistUserId + ",,");
             String currentWhiteList = (order != null) ? order.getWhiteList() : null;
             StringBuilder whiteList = new StringBuilder(currentWhiteList != null ? currentWhiteList : "");
-            if (whiteList.length() == 0) whiteList.append(",");
+            if (whiteList.length() == 0) {
+                whiteList.append(",");
+            }
             addToWhiteList(whiteList, whitelistUserId);
             if (extraUserIds != null) {
                 for (Long uid : extraUserIds) {
-                    if (uid != null) addToWhiteList(whiteList, uid);
+                    if (uid != null) {
+                        addToWhiteList(whiteList, uid);
+                    }
                 }
             }
             bo.setWhiteList(whiteList.toString());
