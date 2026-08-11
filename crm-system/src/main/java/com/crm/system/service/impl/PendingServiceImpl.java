@@ -176,8 +176,9 @@ public class PendingServiceImpl implements IPendingService {
                 pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
                 return false;
             }
-            pending.setPendingURL(flowableVar.getValue().toString()
-                    + "&taskId=" + pending.getPendingCode());
+            String backlog = sysParamService.findValueByCode("Backlog");
+            String dealUrlStr = flowableVar.getValue().toString().replace("?", "&");
+            pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
         } else {
             Map<String, Object> dealUrl = oldWorkflowQueryService
                     .queryOldHistoricVariable(pending.getPendingCode(),

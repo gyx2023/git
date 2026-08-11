@@ -119,7 +119,7 @@ public class UniBssApiClient {
             }
         } catch (Exception e) {
             log.error("[UniBSS] POST {} 失败: {}", url, e.getMessage(), e);
-            return UniBssResponse.failure(-1, "HTTP请求异常: " + e.getMessage());
+            return UniBssResponse.failure("-1", "HTTP请求异常: " + e.getMessage());
         }
     }
 
@@ -253,17 +253,17 @@ public class UniBssApiClient {
      */
     private UniBssResponse parseResponse(String respBody) {
         if (respBody == null || respBody.isEmpty()) {
-            return UniBssResponse.failure(-1, "响应为空");
+            return UniBssResponse.failure("-1", "响应为空");
         }
         try {
             JSONObject json = JSON.parseObject(respBody);
 
             // 解析 HEAD
             JSONObject head = json.getJSONObject("UNI_BSS_HEAD");
-            int respCode = -1;
+            String respCode = "-1";
             String respDesc = "";
             if (head != null) {
-                respCode = head.getIntValue("RESP_CODE");
+                respCode = head.getString("RESP_CODE");
                 respDesc = head.getString("RESP_DESC");
             }
 
@@ -280,12 +280,12 @@ public class UniBssApiClient {
                 }
             }
 
-            boolean success = "00000".equals(String.valueOf(respCode))
+            boolean success = "00000".equals(respCode)
                     && ("000".equals(busiCode) || "".equals(busiCode));
             return new UniBssResponse(success, respCode, respDesc, busiCode, json);
         } catch (Exception e) {
             log.error("[UniBSS] 响应解析失败: {}", respBody, e);
-            return UniBssResponse.failure(-1, "响应解析异常: " + e.getMessage());
+            return UniBssResponse.failure("-1", "响应解析异常: " + e.getMessage());
         }
     }
 
@@ -296,12 +296,12 @@ public class UniBssApiClient {
      */
     public static class UniBssResponse {
         private final boolean success;
-        private final int respCode;
+        private final String respCode;
         private final String respDesc;
         private final String busiCode;
         private final JSONObject raw;
 
-        public UniBssResponse(boolean success, int respCode, String respDesc,
+        public UniBssResponse(boolean success, String respCode, String respDesc,
                               String busiCode, JSONObject raw) {
             this.success = success;
             this.respCode = respCode;
@@ -310,12 +310,12 @@ public class UniBssApiClient {
             this.raw = raw;
         }
 
-        public static UniBssResponse failure(int respCode, String respDesc) {
+        public static UniBssResponse failure(String respCode, String respDesc) {
             return new UniBssResponse(false, respCode, respDesc, "", null);
         }
 
         public boolean isSuccess() { return success; }
-        public int getRespCode() { return respCode; }
+        public String getRespCode() { return respCode; }
         public String getRespDesc() { return respDesc; }
         public String getBusiCode() { return busiCode; }
 
