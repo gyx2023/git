@@ -16,8 +16,8 @@ import com.crm.askdata.validator.UniversalParameterValidator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -34,7 +34,6 @@ import java.util.*;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DatabaseDrivenApiTool {
 
     private final ToolConfigService configService;
@@ -42,6 +41,18 @@ public class DatabaseDrivenApiTool {
     private final UniversalParameterMapper mapper;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public DatabaseDrivenApiTool(
+        ToolConfigService configService,
+        UniversalParameterValidator validator,
+        UniversalParameterMapper mapper,
+        @Qualifier("toolApiRestTemplate") RestTemplate restTemplate
+    ) {
+        this.configService = configService;
+        this.validator = validator;
+        this.mapper = mapper;
+        this.restTemplate = restTemplate;
+    }
 
     /**
      * 执行工具调用
