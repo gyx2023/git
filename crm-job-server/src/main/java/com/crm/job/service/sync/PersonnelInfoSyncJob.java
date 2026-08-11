@@ -2,25 +2,19 @@ package com.crm.job.service.sync;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.ValueFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.file.FieldAnnotaionUtil;
-import com.crm.job.utils.HttpClientUtil;
-import com.crm.job.utils.SftpWebUtil;
-import com.crm.common.utils.signutil.SignUtil;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.PersonnelInfo;
-import com.crm.system.domain.dao.SysLogYxDo;
 import com.crm.system.domain.dao.SysUserOperateLog;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.dao.sys.SysArea;
 import com.crm.system.domain.vo.SysUsersVo;
-import com.crm.system.mapper.SysLogYxMapper;
 import com.crm.system.mapper.SysUserOperateLogMapper;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.mapper.oldsyssyn.OldSysOrgMapper;
 import com.crm.system.service.*;
 import com.crm.system.service.sys.ISysParamService;
@@ -30,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import java.io.*;
@@ -66,7 +59,13 @@ public class PersonnelInfoSyncJob {
     private SysUserOperateLogMapper sysUserOperateLogMapper;
 
     @Resource
-    private SysLogYxMapper sysLogYxMapper;
+    private ISysOperLogService sysOperLogService;
+
+    @Resource
+    private SftpUtil sftpUtil;
+
+//    @Resource
+//    private YxApiClient yxApiClient;
 
     /**
      * 文件名前缀
@@ -96,23 +95,7 @@ public class PersonnelInfoSyncJob {
     private static final String VALID_TRUE = "1";  //有效
     private static final String VALID_FALSE = "0"; //无效
 
-    static String FTP_USERNAME;
-    static String FTP_PASSWORD;
-    static String FTP_HOST;
-    static String FTP_PORT;
-    static String FTP_DIRECTORY;
-    static String LOCAL_PATH;
 
-    @PostConstruct
-    public void initStaticParam() {
-        Map<String, String> param = sysParamService.findValueMapsByType(PERSONNEL_FILE_FTP_INFO);
-        FTP_USERNAME = param.get("ftp_username");  //用户名
-        FTP_PASSWORD = param.get("ftp_password");  //密码
-        FTP_HOST = param.get("ftp_host");  //ip地址
-        FTP_PORT = param.get("ftp_port");  //端口号
-        FTP_DIRECTORY = param.get("ftp_directory");  //文件存放目录
-        LOCAL_PATH = param.get("ftp_local");  //本地下载目录
-    }
 
 
     /**
@@ -139,56 +122,55 @@ public class PersonnelInfoSyncJob {
         log.info("数据参数：1.日期参数：{}", targetDate);
         XxlJobHelper.log("数据参数：1.日期参数：{}", targetDate);
 
-        File dir = new File(LOCAL_PATH);
+        // 实时加载FTP配置
+        Map<String, String> ftpParam = sysParamService.findValueMapsByType(PERSONNEL_FILE_FTP_INFO);
+        String ftpDirectory = ftpParam.get("ftp_directory");
+        String localPath = ftpParam.get("ftp_local");
+
+        File dir = new File(localPath);
         if (!dir.exists()) {
             boolean mkdirsResult = dir.mkdirs();
             if (!mkdirsResult) {
-                log.error("创建本地目录失败：{}", LOCAL_PATH);
-                XxlJobHelper.log("创建本地目录失败：{}", LOCAL_PATH);
-                XxlJobHelper.handleFail("创建本地目录失败：" + LOCAL_PATH);
+                log.error("创建本地目录失败：{}", localPath);
+                XxlJobHelper.log("创建本地目录失败：{}", localPath);
+                XxlJobHelper.handleFail("创建本地目录失败：" + localPath);
                 return;
             }
-            log.info("创建本地目录成功：{}", LOCAL_PATH);
-            XxlJobHelper.log("创建本地目录成功：{}", LOCAL_PATH);
+            log.info("创建本地目录成功：{}", localPath);
+            XxlJobHelper.log("创建本地目录成功：{}", localPath);
         }
-
-        SftpWebUtil ftpUtil = null;
 
         String saveFile = FTP_DOWNLOAD_NAME + targetDate + FTP_DOWNLOAD_END_FIX;
         String saveFileNew = FTP_DOWNLOAD_NAME + targetDate + "_new" + FTP_DOWNLOAD_END_FIX;
-        String ftpFile = FTP_DIRECTORY + File.separator + saveFile;
-        String localFile = LOCAL_PATH + File.separator + saveFile;
-        String localFileNew = LOCAL_PATH + File.separator + saveFileNew;
+        String remotePath = ftpDirectory + "/" + saveFile;
+        String localFile = localPath + File.separator + saveFile;
+        String localFileNew = localPath + File.separator + saveFileNew;
 
+        log.info("saveFile:{}", saveFile);
+        XxlJobHelper.log("saveFile:{}", saveFile);
+        log.info("localFile:{}", localFile);
+        XxlJobHelper.log("localFile:{}", localFile);
+
+        boolean fileExists = sftpUtil.exists(PERSONNEL_FILE_FTP_INFO, remotePath);
+        if (!fileExists) {
+            log.error("SFTP服务器上文件不存在：{}", remotePath);
+            XxlJobHelper.log("SFTP服务器上文件不存在：{}", remotePath);
+            XxlJobHelper.handleFail("SFTP服务器上文件不存在：" + remotePath);
+            return;
+        }
 
         try {
-            ftpUtil = new SftpWebUtil(FTP_USERNAME, FTP_PASSWORD, FTP_HOST, Integer.parseInt(FTP_PORT));
-            ftpUtil.login();
+            sftpUtil.downloadFile(PERSONNEL_FILE_FTP_INFO, remotePath, localFile);
+            log.info("ob库人员增量同步文件接口download完成：{}", localFile);
+            XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
+        } catch (Exception e) {
+            log.error("ob库人员增量同步文件接口download异常", e);
+            XxlJobHelper.log("ob库人员增量同步文件接口download异常：{}", e.getMessage());
+            XxlJobHelper.handleFail("ob库人员增量同步文件接口download异常：" + e.getMessage());
+            return;
+        }
 
-            log.info("saveFile:{}", saveFile);
-            XxlJobHelper.log("saveFile:{}", saveFile);
-            log.info("localFile:{}", localFile);
-            XxlJobHelper.log("localFile:{}", localFile);
-
-            boolean fileExists = ftpUtil.existFile(ftpFile);
-            if (!fileExists) {
-                log.error("SFTP服务器上文件不存在：{}", ftpFile);
-                XxlJobHelper.log("SFTP服务器上文件不存在：{}", ftpFile);
-                XxlJobHelper.handleFail("SFTP服务器上文件不存在：" + ftpFile);
-                return;
-            }
-
-            try {
-                ftpUtil.download(FTP_DIRECTORY, saveFile, localFile);
-                log.info("ob库人员增量同步文件接口download完成：{}", localFile);
-                XxlJobHelper.log("ob库人员增量同步文件接口download完成：{}", localFile);
-            } catch (Exception e) {
-                log.error("ob库人员增量同步文件接口download异常", e);
-                XxlJobHelper.log("ob库人员增量同步文件接口download异常：{}", e.getMessage());
-                XxlJobHelper.handleFail("ob库人员增量同步文件接口download异常：" + e.getMessage());
-                return;
-            }
-
+        try {
             File file = new File(localFile);
             if (!file.exists() || file.length() == 0) {
                 log.error("人员增量文件下载失败或文件为空：{}", localFile);
@@ -298,17 +280,6 @@ public class PersonnelInfoSyncJob {
             log.error("【管理中台人员信息同步文件】任务失败：", e);
             XxlJobHelper.log("【管理中台人员信息同步文件】任务失败：{}", e.getMessage());
             XxlJobHelper.handleFail("【管理中台人员信息同步文件】任务失败：" + e.getMessage());
-        } finally {
-            if (ftpUtil != null) {
-                try {
-                    ftpUtil.close();
-                    log.info("SFTP连接已关闭，文件：{}", localFile);
-                    XxlJobHelper.log("【管理中台人员信息同步文件】SFTP连接已关闭");
-                } catch (Exception e) {
-                    log.error("关闭SFTP连接失败，文件：{}", localFile, e);
-                    XxlJobHelper.log("【管理中台人员信息同步文件】关闭SFTP连接失败，错误信息：{}", e.getMessage());
-                }
-            }
         }
     }
 
@@ -543,229 +514,198 @@ public class PersonnelInfoSyncJob {
      * @param operType 操作类型  add   mod  del
      * @return
      */
-    public String doPostForYxUser(SysUsers user, String operType) {
-        OldSysOrgDo oldSysOrgDo = oldSysOrgMapper.selectById(user.getOrgId());
-        String jsonStr = setUserPostForYx(user, operType, oldSysOrgDo);
-        log.info("亚信楼宇同步接口生成数据:" + jsonStr);
-        String baseMsg = "";
-        if ("add".equals(operType)) {
-            baseMsg = "添加成功";
-        } else if ("mod".equals(operType)) {
-            baseMsg = "修改成功";
-        } else {
-            baseMsg = "设置成功";
-        }
-        String msg = baseMsg + "，同步亚信故障，详情见日志！";
-        if ("error".equals(jsonStr)) {
-            return msg;
-        }
+//    public String doPostForYxUser(SysUsers user, String operType) {
+//        OldSysOrgDo oldSysOrgDo = oldSysOrgMapper.selectById(user.getOrgId());
+//        String jsonStr = setUserPostForYx(user, operType, oldSysOrgDo);
+//        log.info("亚信楼宇同步接口生成数据:" + jsonStr);
+//        String baseMsg = "";
+//        if ("add".equals(operType)) {
+//            baseMsg = "添加成功";
+//        } else if ("mod".equals(operType)) {
+//            baseMsg = "修改成功";
+//        } else {
+//            baseMsg = "设置成功";
+//        }
+//        String msg = baseMsg + "，同步亚信故障，详情见日志！";
+//        if ("error".equals(jsonStr)) {
+//            return msg;
+//        }
+//
+//        return doPostForUserYx(user, jsonStr, operType, msg);
+//    }
 
-        return doPostForUserYx(user, jsonStr, operType, msg);
-    }
+//    public String setUserPostForYx(SysUsers user, String operType, OldSysOrgDo org) {
+//        JSONObject json = new JSONObject();
+//        String cityOrgId = "";
+//        String cityOrgName = "";
+//        String countyOrgId = "";
+//        String countyOrgName = "";
+//        String gridOrgId = "";
+//        String gridOrgName = "";
+//        String gridCode = "";
+//        String userRoleYx = user.getUserRoleYx();
+//
+//        String[] s = org.getCode().split("_");
+//        switch (s.length) {
+//            case 1:
+//                //浙江省
+//                cityOrgId = "Z";
+//                cityOrgName = "浙江";
+//                countyOrgId = "Z00";
+//                countyOrgName = "省中心_00";
+//                gridOrgId = "1415";
+//                gridOrgName = "省公司";
+//                gridCode = "1415";  //渠道网格编码就是网格编码
+//                break;
+//            case 2:
+//                //地市
+//                if (checkDataForYx(org, user, operType)) {
+//                    return "error";
+//                }
+//                cityOrgId = org.getOrgIdYx();
+//                cityOrgName = org.getOrgNameYx();
+//                break;
+//            case 3:
+//                //区县
+//                OldSysOrgDo dsOrg = oldSysOrgMapper.selectById(org.getParent());
+//                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg, user, operType)) {
+//                    return "error";
+//                }
+//                cityOrgId = dsOrg.getOrgIdYx();
+//                cityOrgName = dsOrg.getOrgNameYx();
+//                countyOrgId = org.getOrgIdYx();
+//                countyOrgName = org.getOrgNameYx();
+//                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
+//                    return "error";
+//                }
+//                break;
+//            case 4:
+//                //网格
+//                OldSysOrgDo qxOrg = oldSysOrgMapper.selectById(org.getParent());
+//                OldSysOrgDo dsOrg1 = oldSysOrgMapper.selectById(qxOrg.getParent());
+//
+//                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg1, user, operType) || checkDataForYx(qxOrg, user, operType)) {
+//                    return "error";
+//                }
+//                cityOrgId = dsOrg1.getOrgIdYx();
+//                cityOrgName = dsOrg1.getOrgNameYx();
+//                countyOrgId = qxOrg.getOrgIdYx();
+//                countyOrgName = qxOrg.getOrgNameYx();
+//                gridOrgId = org.getOrgIdYx();
+//                gridOrgName = org.getOrgNameYx();
+//                gridCode = org.getGridCode();
+//                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
+//                    return "error";
+//                }
+//                break;
+//        }
+//        json.put("cityOrgId", cityOrgId);
+//        json.put("cityOrgName", cityOrgName);
+//        json.put("countyOrgId", countyOrgId);
+//        json.put("countyOrgName", countyOrgName);
+//        json.put("gridOrgId", gridOrgId);
+//        json.put("gridOrgName", gridOrgName);
+//        json.put("gridCode", gridCode);
+//        json.put("userId", user.getId());
+//        json.put("userName", user.getNameCh());
+//        json.put("userPhone", user.getName());
+//        json.put("userRoles", user.getUserRoleYx());
+//        json.put("developerCodes", user.getDeveloperCodes());
+//        json.put("cardNumber", user.getCardNumber());
+//        String email = user.getEmail();
+//        String oaAccount = "";
+//        if (StringUtils.isNotEmpty(email)) {
+//            oaAccount = email.split("@")[0];
+//        }
+//        json.put("oaAccount", oaAccount);
+//        json.put("staffType", user.getStaffType());
+//        json.put("operType", operType);
+//
+//        return JSON.toJSONString(json, new SimpleValueFilter());
+//    }
 
-    public String setUserPostForYx(SysUsers user, String operType, OldSysOrgDo org) {
-        JSONObject json = new JSONObject();
-        String cityOrgId = "";
-        String cityOrgName = "";
-        String countyOrgId = "";
-        String countyOrgName = "";
-        String gridOrgId = "";
-        String gridOrgName = "";
-        String gridCode = "";
-        String userRoleYx = user.getUserRoleYx();
+//    public boolean checkDataForYx(OldSysOrgDo org, SysUsers user, String operType) {
+//        if (StringUtils.isEmpty(org.getOrgIdYx()) || StringUtils.isEmpty(org.getOrgNameYx())) {
+//            SysOperLog operLog = new SysOperLog();
+//            operLog.setTitle("亚信楼宇同步");
+//            operLog.setRequestMethod("POST");
+//            operLog.setOperParam("用户ID=" + user.getId() + ", 操作=" + operType);
+//            operLog.setStatus(1);
+//            operLog.setErrorMsg("人员组织结构数据错误");
+//            operLog.setOperatorType(2);
+//            sysOperLogService.insertOperlog(operLog);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    public boolean checkCountryIdForYx(String countyOrgId, String userRoleYx) {
+//        if ("3".equals(userRoleYx) || "4".equals(userRoleYx) || "5".equals(userRoleYx)) {
+//            //如果选择区县、网格、楼长、园区长四个角色，(园区长角色删除了)
+//            // 则针对第三级组织判断县分渠道组织ID是否为空
+//            return StringUtils.isEmpty(countyOrgId);
+//        }
+//        return false;
+//    }
+//
+//    static class SimpleValueFilter implements ValueFilter {
+//        @Override
+//        public Object process(Object o, String s, Object v) {
+//            if (v == null) {
+//                return "";
+//            }
+//            return v;
+//        }
+//    }
+//
+//    public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
+//        String yxReturnMsg = "";
+//        try {
+//            Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
+//            String baseUrl = param.get("doPostUrl");
+//            String appKey = param.get("appKey");
+//
+//            Map<String, String> sysParam = new java.util.HashMap<>(param);
+//            sysParam.remove("doPostUrl");
+//            sysParam.remove("appKey");
+//
+//            log.info("亚信同步信息:{}", jsonStr);
+//            XxlJobHelper.log("亚信同步信息：{}", jsonStr);
+//
+//            YxResponse resp = yxApiClient.post(baseUrl, jsonStr, sysParam, appKey);
+//            log.info("亚信同步返回:{}", resp);
+//            XxlJobHelper.log("亚信同步返回：{}", resp);
+//
+//            if (resp.isSuccess()) {
+//                yxReturnMsg = "修改成功";
+//                syncLog("用户ID=" + user.getId() + ", 操作=" + operType, 0, resp.toString(), null);
+//            } else {
+//                yxReturnMsg = "修改成功,同步楼宇信息失败!";
+//                String errorMsg = "亚信接口返回失败：respCode=" + resp.getRespCode()
+//                    + ", result.code=" + resp.getResultCode() + ", respDesc=" + resp.getRespDesc();
+//                log.error(errorMsg);
+//                syncLog("用户ID=" + user.getId() + ", 操作=" + operType, 1, null, errorMsg);
+//            }
+//        } catch (Exception e) {
+//            yxReturnMsg = returnMsg;
+//            String errorMsg = "接口调用失败：" + e.getMessage();
+//            log.error("亚信同步接口调用异常，用户ID：{}", user.getId(), e);
+//            XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，{}", user.getId(), e.getMessage());
+//            syncLog("用户ID=" + user.getId() + ", 操作=" + operType, 1, null, errorMsg);
+//        }
+//        return yxReturnMsg;
+//    }
 
-        String[] s = org.getCode().split("_");
-        switch (s.length) {
-            case 1:
-                //浙江省
-                cityOrgId = "Z";
-                cityOrgName = "浙江";
-                countyOrgId = "Z00";
-                countyOrgName = "省中心_00";
-                gridOrgId = "1415";
-                gridOrgName = "省公司";
-                gridCode = "1415";  //渠道网格编码就是网格编码
-                break;
-            case 2:
-                //地市
-                if (checkDataForYx(org, user, operType)) {
-                    return "error";
-                }
-                cityOrgId = org.getOrgIdYx();
-                cityOrgName = org.getOrgNameYx();
-                break;
-            case 3:
-                //区县
-                OldSysOrgDo dsOrg = oldSysOrgMapper.selectById(org.getParent());
-                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg, user, operType)) {
-                    return "error";
-                }
-                cityOrgId = dsOrg.getOrgIdYx();
-                cityOrgName = dsOrg.getOrgNameYx();
-                countyOrgId = org.getOrgIdYx();
-                countyOrgName = org.getOrgNameYx();
-                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
-                    return "error";
-                }
-                break;
-            case 4:
-                //网格
-                OldSysOrgDo qxOrg = oldSysOrgMapper.selectById(org.getParent());
-                OldSysOrgDo dsOrg1 = oldSysOrgMapper.selectById(qxOrg.getParent());
-
-                if (checkDataForYx(org, user, operType) || checkDataForYx(dsOrg1, user, operType) || checkDataForYx(qxOrg, user, operType)) {
-                    return "error";
-                }
-                cityOrgId = dsOrg1.getOrgIdYx();
-                cityOrgName = dsOrg1.getOrgNameYx();
-                countyOrgId = qxOrg.getOrgIdYx();
-                countyOrgName = qxOrg.getOrgNameYx();
-                gridOrgId = org.getOrgIdYx();
-                gridOrgName = org.getOrgNameYx();
-                gridCode = org.getGridCode();
-                if (checkCountryIdForYx(countyOrgId, userRoleYx)) {
-                    return "error";
-                }
-                break;
-        }
-        json.put("cityOrgId", cityOrgId);
-        json.put("cityOrgName", cityOrgName);
-        json.put("countyOrgId", countyOrgId);
-        json.put("countyOrgName", countyOrgName);
-        json.put("gridOrgId", gridOrgId);
-        json.put("gridOrgName", gridOrgName);
-        json.put("gridCode", gridCode);
-        json.put("userId", user.getId());
-        json.put("userName", user.getNameCh());
-        json.put("userPhone", user.getName());
-        json.put("userRoles", user.getUserRoleYx());
-        json.put("developerCodes", user.getDeveloperCodes());
-        json.put("cardNumber", user.getCardNumber());
-        String email = user.getEmail();
-        String oaAccount = "";
-        if (StringUtils.isNotEmpty(email)) {
-            oaAccount = email.split("@")[0];
-        }
-        json.put("oaAccount", oaAccount);
-        json.put("staffType", user.getStaffType());
-        json.put("operType", operType);
-
-        return JSON.toJSONString(json, new SimpleValueFilter());
-    }
-
-    public boolean checkDataForYx(OldSysOrgDo org, SysUsers user, String operType) {
-        if (StringUtils.isEmpty(org.getOrgIdYx()) || StringUtils.isEmpty(org.getOrgNameYx())) {
-            SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", "人员组织结构数据错误", operType);
-            sysLogYxMapper.insertOrUpdate(logYx);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean checkCountryIdForYx(String countyOrgId, String userRoleYx) {
-        if ("3".equals(userRoleYx) || "4".equals(userRoleYx) || "5".equals(userRoleYx)) {
-            //如果选择区县、网格、楼长、园区长四个角色，(园区长角色删除了)
-            // 则针对第三级组织判断县分渠道组织ID是否为空
-            return StringUtils.isEmpty(countyOrgId);
-        }
-        return false;
-    }
-
-    static class SimpleValueFilter implements ValueFilter {
-        @Override
-        public Object process(Object o, String s, Object v) {
-            if (v == null) {
-                return "";
-            }
-            return v;
-        }
-    }
-
-    public String doPostForUserYx(SysUsers user, String jsonStr, String operType, String returnMsg) {
-        String yxReturnMsg = "";
-        JSONObject retObj = null;
-        int i = 0;
-        do {
-            try {
-                String url = getYxSyncUrl(jsonStr);
-                log.info("亚信同步url信息:" + url);
-                log.info("亚信同步信息:" + jsonStr);
-                XxlJobHelper.log("亚信同步信息：{}", jsonStr);
-                String msg = HttpClientUtil.doPost(url, jsonStr, "utf-8");
-                log.info("亚信同步返回信息:" + msg);
-                XxlJobHelper.log("亚信同步返回信息：{}", msg);
-                retObj = JSONObject.parseObject(msg);
-                //调用亚信结果
-                if (!"00000".equals(retObj.getString("respCode")) || !"00000".equals(retObj.getJSONObject("result").getString("code"))) {
-                    yxReturnMsg = "修改成功,同步楼宇信息失败!";
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2",
-                        "亚信接口返回失败：respCode=" + retObj.getString("respCode") + ", result.code=" + retObj.getJSONObject("result").getString("code") +
-                            ", respDesc=" + retObj.getString("respDesc"), operType);
-                    sysLogYxMapper.insertOrUpdate(logYx);
-                    break;
-                }
-                if ("00000".equals(retObj.getString("respCode")) && "00000".equals(retObj.getJSONObject("result").getString("code"))) {
-                    yxReturnMsg = "修改成功";
-                    break;
-                }
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                i++;
-                if (i == 5) {
-                    yxReturnMsg = returnMsg;
-                    String errorMsg = "重试5次后仍然失败，最后返回：respCode=" + retObj.getString("respCode") +
-                        ", respDesc=" + retObj.getString("respDesc");
-                    log.error("亚信同步接口重试5次失败，用户ID：{}，错误详情：{}", user.getId(), errorMsg);
-                    SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
-                    sysLogYxMapper.insertOrUpdate(logYx);
-                }
-            } catch (Exception e) {
-                yxReturnMsg = returnMsg;
-                String exceptionType = e.getClass().getName();
-                String exceptionMsg = e.getMessage() != null ? e.getMessage() : "无详细消息";
-                String errorMsg = "接口调用失败：" + (retObj != null ? retObj.toJSONString() : "null") +
-                    ", 异常类型：" + exceptionType + ", 异常信息：" + exceptionMsg;
-                log.error("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
-                XxlJobHelper.log("亚信同步接口调用异常，用户ID：{}，完整异常堆栈：", user.getId(), e);
-                SysLogYxDo logYx = new SysLogYxDo("user", Math.toIntExact(user.getId()), new Date(), null, "2", errorMsg, operType);
-                sysLogYxMapper.insertOrUpdate(logYx);
-                break;
-            }
-        } while (i < 5);
-        return yxReturnMsg;
-    }
-
-    public String getYxSyncUrl(String jsonStr) throws Exception {
-        Map<String, String> param = sysParamService.findValueMapsByType("doPostForYx");
-        if (param == null || param.isEmpty()) {
-            XxlJobHelper.log("未配置亚信同步参数");
-            throw new Exception("未配置亚信同步参数");
-        }
-
-        String url = param.get("doPostUrl");
-        String appKey = param.get("appKey");
-        String method = param.get("method");
-        String format = param.get("format");
-        String appId = param.get("appId");
-        String timestamp = System.currentTimeMillis() + "";
-        String random = ((int) (Math.random() * 9999) + 1000) + "";
-        String busiSerial = timestamp + random;
-
-        param.put("timestamp", timestamp);
-        param.put("busiSerial", busiSerial);
-        param.remove("doPostUrl");
-        param.remove("appKey");
-
-        // 调用签名方法，传入jsonStr作为业务参数
-        String sign = SignUtil.sign(param, jsonStr, "HmacSHA256", appKey);
-        log.info("亚信同步签名参数:{}", param.toString());
-        XxlJobHelper.log("亚信同步参数：{}", param);
-
-        url += "?method=" + method + "&format=" + format + "&appId=" + appId + "&timestamp=" + timestamp + "&busiSerial=" + busiSerial + "&sign=" + sign;
-        return url;
-    }
+//    private void syncLog(String operParam, int status, String jsonResult, String errorMsg) {
+//        SysOperLog operLog = new SysOperLog();
+//        operLog.setTitle("亚信楼宇同步");
+//        operLog.setRequestMethod("POST");
+//        operLog.setOperParam(operParam);
+//        operLog.setStatus(status);
+//        operLog.setJsonResult(jsonResult);
+//        operLog.setErrorMsg(errorMsg);
+//        operLog.setOperatorType(2);
+//        sysOperLogService.insertOperlog(operLog);
+//    }
 
 }

@@ -61,6 +61,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE o.order_type = 'support_order'
     </select>
 
+    <select id="selectSupportOrdersCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM topp_order o
+        JOIN tcomm_task t ON t.id_ = o.task_id
+        WHERE o.order_type = 'support_order'
+    </select>
+
+    <select id="selectSupportOrdersMinId" resultType="java.lang.Long">
+        SELECT MIN(o.id_)
+        FROM topp_order o
+        JOIN tcomm_task t ON t.id_ = o.task_id
+        WHERE o.order_type = 'support_order'
+    </select>
+
+    <select id="selectSupportOrdersMaxId" resultType="java.lang.Long">
+        SELECT MAX(o.id_)
+        FROM topp_order o
+        JOIN tcomm_task t ON t.id_ = o.task_id
+        WHERE o.order_type = 'support_order'
+    </select>
+
+    <select id="selectSupportOrdersByRange" resultMap="ToppOrderResult">
+        SELECT o.*
+        FROM topp_order o
+        JOIN tcomm_task t ON t.id_ = o.task_id
+        WHERE o.order_type = 'support_order'
+          AND o.id_ >= #{startId} AND o.id_ &lt; #{endId}
+        ORDER BY o.id_ ASC
+    </select>
+
 
     <select id="queryWorkOrder" resultType="com.crm.common.core.domain.dto.WorkOrderDTO">
         SELECT
