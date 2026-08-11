@@ -94,34 +94,7 @@ public class PendingServiceImpl implements IPendingService {
             saveOrUpdate(pending);
             return;
         }
-        String url = addUrl + "/" + appId + "/" + token;
-        String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
-        log.info("新增待办请求URL:{},待办参数：{}", url, jsonStr);
-        String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
-        log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
-
-        if (StringUtils.isEmpty(result)) {
-            updateFailTimes(pending);
-        } else {
-            Map<String, String> resultMap = JsonUtils.parseObject(result,
-                new TypeReference<Map<String, String>>() {});
-            for (Map.Entry<String, String> entry : resultMap.entrySet()) {
-                String pendingCode = entry.getKey();
-                String msg = entry.getValue();
-                Pending p = findByPendingCodeAndType(pendingCode, PendingOpType.ADD.getCode());
-                p.setResponseMsg(msg);
-                log.info("待办新增返回值:{} 待办ID={}", msg, p.getId());
-                if (msg.startsWith(OA_SUCCESS_PREFIX)) {
-                    p.setSendStatus(SendStatus.SUCCESS.getCode());
-                    p.setSendTime(new Date());
-                } else {
-                    p.setSendStatus(SendStatus.SUCCESS.getCode());
-                    p.setFailTimes(MAX_FAIL_TIMES);
-                    p.setResponseMsg(msg);
-                }
-                saveOrUpdate(p);
-            }
-        }
+        updatePendingStatus(pending, addUrl, appId, token);
     }
 
     private boolean initPendingUrl(Pending pending) {
@@ -329,7 +302,7 @@ public class PendingServiceImpl implements IPendingService {
         log.info("开始推送OA待办更新");
         String url = updateUrl + "/" + appId + "/" + token;
         String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
-        log.info("待办更新地址：{}，待办更新请求数据:{}", url, jsonStr);
+        log.info("待办更新地址：{}，待办请求数据:{}", url, jsonStr);
         String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
         log.info("推送OA待办更新,响应数据:{}", result);
 
@@ -340,23 +313,20 @@ public class PendingServiceImpl implements IPendingService {
                 new TypeReference<Map<String, String>>() {});
             if (resultMap != null) {
                 for (Map.Entry<String, String> entry : resultMap.entrySet()) {
-                    String pendingCode = entry.getKey();
                     String msg = entry.getValue();
-                    Pending p = findByPendingCodeAndType(pendingCode, PendingOpType.UPDATE.getCode());
-                    if (p == null) {
-                        return;
+                    if(pending.getPendingCode().equals(entry.getKey())){
+                        pending.setResponseMsg(msg);
+                        log.info("待办更新返回值:{} 待办ID={}", msg, pending.getId());
+                        if (msg.startsWith(OA_SUCCESS_PREFIX)) {
+                            pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                            pending.setSendTime(new Date());
+                        } else {
+                            pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                            pending.setResponseMsg(msg);
+                            pending.setFailTimes(MAX_FAIL_TIMES);
+                        }
+                        saveOrUpdate(pending);
                     }
-                    p.setResponseMsg(msg);
-                    log.info("待办更新返回值:{} 待办ID={}", msg, p.getId());
-                    if (msg.startsWith(OA_SUCCESS_PREFIX)) {
-                        p.setSendStatus(SendStatus.SUCCESS.getCode());
-                        p.setSendTime(new Date());
-                    } else {
-                        p.setSendStatus(SendStatus.SUCCESS.getCode());
-                        p.setResponseMsg(msg);
-                        p.setFailTimes(MAX_FAIL_TIMES);
-                    }
-                    saveOrUpdate(p);
                 }
             }
         }

@@ -144,8 +144,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             operLog.setOperParam(JSON.toJSONString(dataMap));
 
             UniBssResponse resp = uniBssApiClient.post(todoTaskSyncUrl, head, body);
-            log.info("待办同步至集团运营平台接口返回: {}", resp);
-            pendingTodo.setRecMsg(resp.toString());
+            log.info("待办同步至集团运营平台接口返回: {}", resp.getRawJson());
+            pendingTodo.setRecMsg(resp.getRawJson().toString());
 
             if (resp.isSuccess()) {
                 pendingTodo.setSendStatus("1");
