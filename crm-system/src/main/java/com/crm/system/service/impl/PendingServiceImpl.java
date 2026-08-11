@@ -96,7 +96,7 @@ public class PendingServiceImpl implements IPendingService {
         }
         String url = addUrl + "/" + appId + "/" + token;
         String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
-        log.info("新增待办请求URL:{}", url);
+        log.info("新增待办请求URL:{},待办参数：{}", url, jsonStr);
         String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
         log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
 
