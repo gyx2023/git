@@ -66,6 +66,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
+    /** 并签/同环节实例视为"同一轮次"的创建时间窗口（毫秒） */
+    private static final long ROUND_WINDOW_MS = 2000L;
 
     @Override
     public void syncTodoTask(PendingGroupTodo pendingTodo) {
@@ -419,7 +421,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             if (startTime.getTime() >= currentStartTime.getTime()) {
                 continue; // 只看当前任务之前创建的（积压时 hisList 可能含后续节点，不能看之后）
             }
-            if (currentTask.get("taskDefKey").equals(task.get("taskDefKey"))) {
+            if (currentTask.get("taskDefKey").equals(task.get("taskDefKey")) && Math.abs(startTime.getTime() - currentStartTime.getTime()) <= ROUND_WINDOW_MS) {
                 continue; // 排除同环节（兄弟实例/旧轮）
             }
             if (anchorLatestStart == null || startTime.getTime() > anchorLatestStart.getTime()) {
