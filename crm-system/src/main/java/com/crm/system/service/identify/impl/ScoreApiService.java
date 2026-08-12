@@ -77,12 +77,13 @@ public class ScoreApiService {
      */
     private String syncReadFileFlowRequest(String inputContent, SysUser sysUser, Map<String, String> paramMap) {
         Long startTime = System.currentTimeMillis();
-        String reqBodyJson = buildRequestJson(inputContent, sysUser);
+        Map<String, Object> reqBodyMap = buildRequestJson(inputContent, sysUser);
+        String reqBodyJson =JSON.toJSONString(reqBodyMap);
 
         String respStr = hiagentApiClient.post(
             paramMap.get("identify_score_api_url"),
             paramMap.get("identify_score_api_key"),
-            reqBodyJson);
+            reqBodyMap);
 
         if (respStr == null) {
             recordOperLog(startTime, reqBodyJson, "调用异常", "Hiagent 接口返回为空", 1, sysUser, paramMap);
@@ -98,7 +99,7 @@ public class ScoreApiService {
     /**
      * 构建接口请求JSON
      */
-    private String buildRequestJson(String inputContent, SysUser sysUser) {
+    private Map<String, Object> buildRequestJson(String inputContent, SysUser sysUser) {
         Map<String, Object> reqBodyMap = new HashMap<>(2);
         reqBodyMap.put("UserID", sysUser.getUserId().toString());
 
@@ -106,7 +107,7 @@ public class ScoreApiService {
         inputDataMap.put("uploadFileContext", inputContent);
         reqBodyMap.put("InputData", JSON.toJSONString(inputDataMap));
 
-        return JSON.toJSONString(reqBodyMap);
+        return reqBodyMap;
     }
 
     /**
