@@ -359,7 +359,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             completedTasks.addAll(prevCompleted);
         }
         for (Map<String, Object> task : completedTasks) {
-            alreadySolveInfoList.add(buildAlreadySolveItem(task, order.getId()));
+            alreadySolveInfoList.add(buildAlreadySolveItem(task, order));
         }
         return alreadySolveInfoList;
     }
@@ -529,8 +529,9 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 已办新增条目（OPERATION_STATE=0），SOLVE_DATE 取任务真实结束时间
      */
-    private JSONObject buildAlreadySolveItem(Map<String, Object> task, Long orderId) {
+    private JSONObject buildAlreadySolveItem(Map<String, Object> task, ToppOrder order) {
         JSONObject taskJson = new JSONObject();
+        String orderId = order.getId().toString();
         //工单ID(唯一标识，服务大厅和异步下发时必填)
         taskJson.put("WORKSHEET_ID", task.get("id"));
         //当前环节编码
@@ -545,8 +546,19 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         taskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(task));
         //已办人处理时间
         taskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("endTime")));
-        //查看订单Url
-        taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+        //查看订单Url：Flowable 用新框架地址，Activiti 用老框架地址
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            // Flowable: /warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx
+            String dealUrl = getDealUrlStr(task);
+            if (dealUrl != null) {
+                taskJson.put("ALREADY_SOLVE_URL", BASE_URL + dealUrl + "&taskId=" + task.get("id"));
+            } else {
+                taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+            }
+        } else {
+            // Activiti: 固定订单查看页
+            taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+        }
         //操作标识,0：新增（已办信息对象集合不为空时，为必填）
         taskJson.put("OPERATION_STATE", "0");
         return taskJson;
@@ -566,28 +578,36 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 拼接完整URL
+     * 获取 dealUrl 原始值（不含 BASE_URL / taskId 后缀），Flowable 查历史变量，Activiti 查旧表
      */
-    private String getUrl(Map<String, Object> task, String orderId) {
+    private String getDealUrlStr(Map<String, Object> task) {
         String taskId = task.get("id").toString();
         String procInstId = task.get("procInsId").toString();
         String varName = task.get("taskDefKey") + "_dealUrl";
-        String dealUrlStr = null;
 
         if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
             HistoricVariableInstance flowableVar = flowableHistoryService
                     .createHistoricVariableInstanceQuery()
                 .processInstanceId(procInstId).variableName(varName).singleResult();
             if (flowableVar != null && flowableVar.getValue() != null) {
-                dealUrlStr = flowableVar.getValue().toString();
+                return flowableVar.getValue().toString();
             }
         } else {
             Map<String, Object> dealUrl = oldWorkflowQueryService
                     .queryOldHistoricVariable(taskId, varName);
             if (dealUrl != null) {
-                dealUrlStr = dealUrl.get("textValue").toString();
+                return dealUrl.get("textValue").toString();
             }
         }
+        return null;
+    }
+
+    /**
+     * 拼接完整URL（含 BASE_URL + dealUrl + taskId）
+     */
+    private String getUrl(Map<String, Object> task, String orderId) {
+        String taskId = task.get("id").toString();
+        String dealUrlStr = getDealUrlStr(task);
         if (dealUrlStr == null) {
             return BASE_URL + ORDER_INFO_URL + orderId;
         }
