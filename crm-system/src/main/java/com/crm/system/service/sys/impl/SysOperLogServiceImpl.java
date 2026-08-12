@@ -193,6 +193,7 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
             throw new RuntimeException(e);
         } finally {
             operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            truncateStr(operLog);
             insertOperlog(operLog);
         }
     }
@@ -218,6 +219,7 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
             return false;
         } finally {
             operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            truncateStr(operLog);
             insertOperlog(operLog);
         }
     }
@@ -243,8 +245,18 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
             return false;
         } finally {
             operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            truncateStr(operLog);
             insertOperlog(operLog);
         }
+    }
+
+    /**
+     * 字段不够长报错处理
+     * @param operLog 原对象
+     */
+    private void truncateStr(SysOperLog operLog) {
+        operLog.setOperParam(truncateString(operLog.getOperParam(), 2000));
+        operLog.setJsonResult(truncateString(operLog.getJsonResult(), 2000));
     }
 
     public String truncateString(String str, int maxLength) {
