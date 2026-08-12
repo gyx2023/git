@@ -52,11 +52,6 @@ public interface ISysParamService {
     void deleteParamByIds(Long[] ids);
 
     /**
-     * 获取所有不重复的配置类型
-     */
-    List<String> selectDistinctTypes();
-
-    /**
      * 重置配置缓存
      */
     void resetParamCache();

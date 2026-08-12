@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -73,7 +72,7 @@ public class SysParamServiceImpl implements ISysParamService {
         LambdaQueryWrapper<SysParamDo> lqw = new LambdaQueryWrapper<SysParamDo>()
             .like(StringUtils.isNotBlank(param.getCode()), SysParamDo::getCode, param.getCode())
             .like(StringUtils.isNotBlank(param.getName()), SysParamDo::getName, param.getName())
-            .eq(StringUtils.isNotBlank(param.getType()), SysParamDo::getType, param.getType())
+            .like(StringUtils.isNotBlank(param.getType()), SysParamDo::getType, param.getType())
             .eq(StringUtils.isNotBlank(param.getIsSystem()), SysParamDo::getIsSystem, param.getIsSystem());
         Page<SysParamDo> page = sysParamMapper.selectPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
@@ -84,7 +83,7 @@ public class SysParamServiceImpl implements ISysParamService {
         LambdaQueryWrapper<SysParamDo> lqw = new LambdaQueryWrapper<SysParamDo>()
             .like(StringUtils.isNotBlank(param.getCode()), SysParamDo::getCode, param.getCode())
             .like(StringUtils.isNotBlank(param.getName()), SysParamDo::getName, param.getName())
-            .eq(StringUtils.isNotBlank(param.getType()), SysParamDo::getType, param.getType())
+            .like(StringUtils.isNotBlank(param.getType()), SysParamDo::getType, param.getType())
             .eq(StringUtils.isNotBlank(param.getIsSystem()), SysParamDo::getIsSystem, param.getIsSystem());
         return sysParamMapper.selectList(lqw);
     }
@@ -153,19 +152,6 @@ public class SysParamServiceImpl implements ISysParamService {
             }
         }
         sysParamMapper.deleteBatchIds(Arrays.asList(ids));
-    }
-
-    /**
-     * 获取所有不重复的配置类型
-     */
-    @Override
-    public List<String> selectDistinctTypes() {
-        List<SysParamDo> list = sysParamMapper.selectList(null);
-        return list.stream()
-            .map(SysParamDo::getType)
-            .filter(StringUtils::isNotBlank)
-            .distinct()
-            .collect(Collectors.toList());
     }
 
     @Override

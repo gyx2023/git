@@ -63,15 +63,6 @@ public class SysParamController extends BaseController {
     }
 
     /**
-     * 获取所有配置类型（用于下拉选项）
-     */
-    @SaCheckPermission("system:param:list")
-    @GetMapping("/types")
-    public R<List<String>> types() {
-        return R.ok(paramService.selectDistinctTypes());
-    }
-
-    /**
      * 新增配置
      */
     @SaCheckPermission("system:param:add")
