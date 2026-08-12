@@ -191,6 +191,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
             // 3.1 设置为"显示"，旧系统待办SQL按 DESCRIPTION_='显示' 过滤 ACT_RU_TASK
             task.setDescription("显示");
+            task.setCategory(record.getOrderType());
             taskService.saveTask(task);
 
             // 4. 构建并插入工单
