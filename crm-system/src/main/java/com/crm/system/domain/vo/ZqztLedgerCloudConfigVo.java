@@ -14,6 +14,8 @@ public class ZqztLedgerCloudConfigVo implements Serializable {
 
     private Long id;
     private String deviceName;
+    private String cameraAccessMode;
+    private Integer cameraChannelCount;
     private String deviceType;
     private String accessProtocol;
     private String deviceId;
@@ -23,6 +25,7 @@ public class ZqztLedgerCloudConfigVo implements Serializable {
     private String sipServiceDomain;
     private String sipServerPort;
     private String sipServerIp;
+    private String channelName;
     private String channelCodeId;
     private Integer sortOrder;
 }

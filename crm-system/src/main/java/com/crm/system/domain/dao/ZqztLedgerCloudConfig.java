@@ -27,6 +27,12 @@ public class ZqztLedgerCloudConfig implements Serializable {
     /** 设备名称 */
     private String deviceName;
 
+    /** 摄像头接入方式(摄像头直接接入/硬盘录像机接入) */
+    private String cameraAccessMode;
+
+    /** 摄像头通道数 */
+    private Integer cameraChannelCount;
+
     /** 设备类型(IPC设备/NVR设备) */
     private String deviceType;
 
@@ -53,6 +59,9 @@ public class ZqztLedgerCloudConfig implements Serializable {
 
     /** SIP服务器IP */
     private String sipServerIp;
+
+    /** 通道名称(竖线|分隔多个) */
+    private String channelName;
 
     /** 通道编码ID */
     private String channelCodeId;

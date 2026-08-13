@@ -56,9 +56,6 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date cameraInstallDate;
-    private String cameraAccessMode;
-    private Integer cameraChannelCount;
-    private String cameraChannelName;
     private String cameraAccount;
     @JsonFormat(pattern = "yyyy-MM-dd")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -112,6 +109,6 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     /** 导出上下文：是否脱敏 */
     private Boolean isDesensitize;
 
-    /** 模块6：云智眼配置信息（多组） */
+    /** 云智眼配置信息（多组） */
     private List<ZqztLedgerCloudConfigBo> cloudVisionConfigs;
 }

@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +86,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         ZqztLedgerInfo entity = getValidEntity(id);
         checkRegionAllowed(entity);
         ZqztLedgerInfoVo vo = toVo(entity);
+        fillNames(Collections.singletonList(vo));
         vo.setCloudVisionConfigs(loadCloudConfigs(id));
         maskSensitive(vo);
         return vo;
@@ -391,12 +393,12 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
 
     /**
      * 敏感字段脱敏（详情页展示）
-     * <p>与原型详情页一致：云智眼账号（模块4）、实际地址（模块1）明文展示；
-     * 注册地址（模块1）保留后 4 位；摄像头施工账号（模块7）固定打码；
+     * <p>与原型详情页一致：云智眼账号、实际地址明文展示；
+     * 注册地址保留后 4 位；摄像头施工账号固定打码；
      * 云智眼密码/接入秘钥、云智眼设备密码固定打码。</p>
      */
     private void maskSensitive(ZqztLedgerInfoVo vo) {
-        // 模块7 摄像头施工账号：原型固定展示 ****
+        // 摄像头施工账号：原型固定展示 ****
         vo.setCameraAccount("****");
         if (StringUtils.isNotBlank(vo.getCloudPassword())) {
             vo.setCloudPassword("********");
@@ -411,7 +413,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
                 }
             }
         }
-        // 模块1 注册地址：原型 '****' + 后4位；实际地址明文展示（不打码）
+        // 注册地址：原型 '****' + 后4位；实际地址明文展示（不打码）
         vo.setRegAddress(maskAddress(vo.getRegAddress()));
     }
 

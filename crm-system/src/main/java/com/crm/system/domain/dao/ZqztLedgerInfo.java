@@ -122,18 +122,6 @@ public class ZqztLedgerInfo implements Serializable {
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date cameraInstallDate;
 
-    /** 摄像头接入方式(摄像头直接接入/硬盘录像机接入) */
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
-    private String cameraAccessMode;
-
-    /** 摄像头通道数 */
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
-    private Integer cameraChannelCount;
-
-    /** 通道名称(竖线|分隔多个) */
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
-    private String cameraChannelName;
-
     /** 摄像头配置施工账号 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String cameraAccount;

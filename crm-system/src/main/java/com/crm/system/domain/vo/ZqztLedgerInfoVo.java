@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * 台账数据主表 视图对象
- * 含区域名称回显与模块6子表列表；脱敏由 Service 在返回前处理（同一 Vo 复用，修改回显不脱敏）
+ * 含区域名称回显与子表列表；脱敏由 Service 在返回前处理（同一 Vo 复用，修改回显不脱敏）
  */
 @Data
 public class ZqztLedgerInfoVo implements Serializable {
@@ -44,9 +44,6 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String cameraPurchaseType;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date cameraInstallDate;
-    private String cameraAccessMode;
-    private Integer cameraChannelCount;
-    private String cameraChannelName;
     private String cameraAccount;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date cameraFinishDate;
@@ -85,6 +82,6 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String streetName;
     private String industryName;
 
-    /** 模块6：云智眼配置信息（多组） */
+    /** 云智眼配置信息（多组） */
     private List<ZqztLedgerCloudConfigVo> cloudVisionConfigs;
 }
