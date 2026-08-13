@@ -5,11 +5,6 @@ spring.servlet.multipart.location: /crm/server/temp
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 xxl.job:
@@ -72,15 +67,6 @@ spring:
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
           username: ENC(zaPyt914o9gtlQmNRgwDQxbaRvZu5yaJmewxlJIWuvg=)
           password: ENC(IquOwpW5ULRCQZQ8pn3ZkgwiYw4M4GPJ1kghAyKnjfg=)
- #       oracle:
- #         type: ${spring.datasource.type}
- #         driverClassName: oracle.jdbc.OracleDriver
- #         url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
- #         username: ps_uni_zyy
- #         password: yz_2026#
- #         hikari:
- #           connectionTestQuery: SELECT 1 FROM DUAL
- #           connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
       hikari:
         pool-name: HikariCP-Pool
         # 最大连接池数量
