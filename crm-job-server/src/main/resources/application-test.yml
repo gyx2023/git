@@ -2,11 +2,6 @@
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 xxl.job:
@@ -69,35 +64,7 @@ spring:
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
           username: ENC(Gp3AJ95oP7nzAwOakxQn4Oqyu6h0VNumQ3J9qp7GLF4=)
           password: ENC(Dubsc/I4YiOcYGLfeMeo0fG/Qf3W/wrrcqzVLUot/lM=)
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-#          username: ps_uni_zyy
-#          password: yz_2026#
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
-      #        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
+
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -126,7 +93,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: admin123
+    password: ENC(Q6xML92rOpOFCnuOLpm2EVE7fOXVVb/P04d6B9qr7jo=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl

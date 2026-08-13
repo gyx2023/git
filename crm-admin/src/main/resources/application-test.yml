@@ -2,11 +2,6 @@
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 #xxl.job:
@@ -106,7 +101,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: admin123
+    password: ENC(Q6xML92rOpOFCnuOLpm2EVE7fOXVVb/P04d6B9qr7jo=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl
