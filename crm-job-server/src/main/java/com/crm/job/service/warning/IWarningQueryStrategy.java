@@ -33,6 +33,17 @@ public interface IWarningQueryStrategy {
     // ==================== 可选扩展点 ====================
 
     /**
+     * 该预警使用的流程定义 key
+     * <p>
+     * 默认单节点通用流程 single_approval；两节点（客户经理 → 稽核）预警重写为 double_approval。
+     * 决定 {@code WarningStartService} 启动哪个 BPMN，以及是否需要解析稽核处理人。
+     * </p>
+     */
+    default String getProcessKey() {
+        return "single_approval";
+    }
+
+    /**
      * 构建前端跳转URL
      * <p>
      * 若不重写，使用默认 URL：/warning/toDeal?orderType=xxx&orderId=xxx
@@ -64,5 +75,26 @@ public interface IWarningQueryStrategy {
      */
     default void afterStart(WarningRecord record, ToppOrderBo orderBo) {
         // 子类按需重写
+    }
+
+    /**
+     * 是否需要全部处理完成后发送通知（微信/短信）
+     * <p>
+     * 对应旧系统 BaseJob.startTask() / SecondWarningJob.startTaskWideSecond() 中的
+     * sendDMessageService.initNoticeMessageByWx() 通知逻辑。
+     * </p>
+     */
+    default boolean isNotificationEnabled() {
+        return false;
+    }
+
+    /**
+     * 生成通知消息内容
+     *
+     * @param count 该客户经理待处理工单数
+     * @return 通知文本，如 "温馨提醒：您收到3个宽带二次预警工单，已生成待处理任务，请至创新头条-省分专区-运营平台。"
+     */
+    default String getNotificationMessage(int count) {
+        return "温馨提醒：您收到" + count + "个" + getOrderType() + "工单，已生成待处理任务，请至创新头条-省分专区-运营平台。";
     }
 }

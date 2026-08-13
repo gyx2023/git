@@ -2,6 +2,8 @@ package com.crm.system.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.crm.common.enums.PendingOpType;
+import com.crm.common.enums.SendStatus;
 import com.crm.system.domain.dao.Pending;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -20,11 +22,11 @@ public interface PendingMapper extends BaseMapper<Pending> {
     default List<Pending> selectPendingList(String limit) {
         LambdaQueryWrapper<Pending> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w ->
-            w.and(a -> a.eq(Pending::getOperatorType, "a")
+            w.and(a -> a.eq(Pending::getOperatorType, PendingOpType.ADD.getCode())
                         .eq(Pending::getPendingStatus, "0"))
-             .or(b -> b.eq(Pending::getOperatorType, "u")
+             .or(b -> b.eq(Pending::getOperatorType, PendingOpType.UPDATE.getCode())
                         .eq(Pending::getPendingStatus, "1")))
-            .in(Pending::getSendStatus, "0", "2")
+            .in(Pending::getSendStatus, SendStatus.PENDING.getCode(), SendStatus.FAIL.getCode())
             .lt(Pending::getFailTimes, 3)
             .orderByAsc(Pending::getId)
             .last("LIMIT " + limit);

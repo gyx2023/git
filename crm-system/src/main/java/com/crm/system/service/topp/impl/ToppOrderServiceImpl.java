@@ -2,15 +2,19 @@ package com.crm.system.service.topp.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.crm.common.core.service.UserService;
+import com.crm.common.enums.OrderStatusEnum;
+import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.crm.system.utils.Constants;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import org.flowable.engine.TaskService;
+import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
@@ -18,6 +22,8 @@ import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.topp.IToppOrderService;
 
+import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -34,6 +40,13 @@ import java.util.Collection;
 public class ToppOrderServiceImpl implements IToppOrderService {
 
     private final ToppOrderMapper baseMapper;
+
+    @Resource
+    private TaskService taskService;
+    @Resource
+    private UserService userService;
+    @Resource
+    private com.crm.system.mapper.SysUsersMapper sysUsersMapper;
 
     /**
      * 查询【请填写功能名称】
@@ -82,7 +95,6 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     }
 
     private LambdaQueryWrapper<ToppOrder> buildQueryWrapper(ToppOrderBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ToppOrder> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getOppoId() != null, ToppOrder::getOppoId, bo.getOppoId());
         lqw.eq(bo.getCustId() != null, ToppOrder::getCustId, bo.getCustId());
@@ -176,10 +188,127 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     @Override
     public void updateByOppoId(Long oppoId, String endReason) {
         baseMapper.update(null, new LambdaUpdateWrapper<ToppOrder>()
-            .set(ToppOrder::getStatus, Constants.ORDER_STATUS_END)
+            .set(ToppOrder::getStatus, OrderStatusEnum.END.getCode())
             .set(ToppOrder::getEndReason, endReason)
             .eq(ToppOrder::getOppoId, oppoId)
-            .ne(ToppOrder::getStatus, Constants.ORDER_STATUS_END)
+            .ne(ToppOrder::getStatus, OrderStatusEnum.END.getCode())
         );
     }
+
+    @Override
+    public String resolveProcInsId(Long orderId) {
+        ToppOrderVo order = queryById(orderId);
+        return order != null ? order.getPiId() : null;
+    }
+
+    @Override
+    public String transferOrder(String taskId, Long orderId, Long targetUserId, String comment, Long currentUserId) {
+        ToppOrderVo order = queryById(orderId);
+        if (order == null) {
+            throw new ServiceException("工单不存在: " + orderId);
+        }
+
+        Map<String, Object> vars = new HashMap<>();
+        if (targetUserId != null) {
+            vars.put("manager", String.valueOf(targetUserId));
+        }
+        vars.put("action", "transfer");
+        taskService.setVariableLocal(taskId, "action", "transfer");
+        // Listener 的 TASK_ASSIGNED 事件会自动 syncOrderToCurrentTask
+        taskService.complete(taskId, vars);
+
+        String nextActorName = "";
+        if (targetUserId != null) {
+            nextActorName = userService.selectNickNameById(targetUserId);
+            if (nextActorName == null) {
+                nextActorName = "";
+            }
+        }
+        return nextActorName;
+    }
+
+    /**
+     * 将工单同步到当前流程节点（更新 phase/phaseName/status + 展示变量）。
+     * <p>
+     * 查询流程当前任务，将工单的节点信息同步为当前任务状态。
+     * 若 whitelistUserId 非空，同时更新白名单和处理人。
+     * </p>
+     */
+    @Override
+    public void syncOrderToCurrentTask(Long orderId, String piId, Long whitelistUserId, Long... extraUserIds) {
+        List<Task> nextTasks = taskService.createTaskQuery().processInstanceId(piId).listPage(0, 1);
+        Task next = nextTasks.isEmpty() ? null : nextTasks.get(0);
+        if (next == null) {
+            return;
+        }
+
+        ToppOrderVo order = queryById(orderId);
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(OrderStatusEnum.RUNNING.getCode());
+        bo.setPhase(next.getTaskDefinitionKey());
+        bo.setPhaseName(next.getName());
+
+        if (whitelistUserId != null) {
+            bo.setActors(",," + whitelistUserId + ",,");
+            String currentWhiteList = (order != null) ? order.getWhiteList() : null;
+            StringBuilder whiteList = new StringBuilder(currentWhiteList != null ? currentWhiteList : "");
+            if (whiteList.length() == 0) {
+                whiteList.append(",");
+            }
+            addToWhiteList(whiteList, whitelistUserId);
+            if (extraUserIds != null) {
+                for (Long uid : extraUserIds) {
+                    if (uid != null) {
+                        addToWhiteList(whiteList, uid);
+                    }
+                }
+            }
+            bo.setWhiteList(whiteList.toString());
+            try {
+                com.crm.system.domain.dao.SysUsers u = sysUsersMapper.selectById(whitelistUserId);
+                if (u != null) {
+                    String phone = u.getRelationTel();
+                    bo.setActorsInfo(u.getNameCh() + ":" + (phone != null ? phone : ""));
+                }
+            } catch (Exception ignored) {}
+        }
+
+        updateByBo(bo);
+    }
+
+    @Override
+    public void markOrderEnd(Long orderId) {
+        markOrderEnd(orderId, null, null);
+    }
+
+    @Override
+    public void markOrderEnd(Long orderId, String followUp, String otherReason) {
+        ToppOrderBo bo = new ToppOrderBo();
+        bo.setId(orderId);
+        bo.setStatus(OrderStatusEnum.END.getCode());
+        bo.setBatchFlag(0);
+
+        // 宽带二次预警特有：完成时记录结束原因与跟踪情况（与工单结束合并为一次更新）
+        ToppOrderVo order = queryById(orderId);
+        if (order != null && "wide_second".equals(order.getOrderType())) {
+            bo.setEndReason("0");
+            if (followUp != null) {
+                if ("其他".equals(followUp) && otherReason != null) {
+                    bo.setWideResult(otherReason);
+                } else {
+                    bo.setWideResult(followUp);
+                }
+            }
+        }
+        updateByBo(bo);
+    }
+
+    private void addToWhiteList(StringBuilder whiteList, Long userId) {
+        String seg = "," + userId + ",";
+        if (whiteList.indexOf(seg) < 0) {
+            whiteList.append(userId).append(",");
+        }
+    }
+
 }

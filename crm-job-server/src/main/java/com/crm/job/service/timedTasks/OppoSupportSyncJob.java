@@ -1,27 +1,33 @@
 package com.crm.job.service.timedTasks;
 
-import com.crm.common.utils.SFTPUtil;
-import com.crm.job.base.BaseJob;
+import com.crm.job.utils.SftpUtil;
+import com.crm.job.utils.export.SummaryHolder;
+import com.crm.job.utils.export.TextFileExportContext;
+import com.crm.job.utils.export.TextFileExporter;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dto.OppoSupportInfoDTO;
 import com.crm.system.service.IOppoSupportInfoService;
-import com.jcraft.jsch.SftpException;
+import com.crm.system.service.sys.ISysOperLogService;
+import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 商机支撑信息同步给外围系统
  */
 @Slf4j
 @Component
-public class OppoSupportSyncJob extends BaseJob {
+public class OppoSupportSyncJob {
 
     private static final String FILE_NAME_PRE = "OPP_SUPPORT_INFO_";
     private static final String FILE_NAME_FIX = ".txt";
@@ -30,101 +36,81 @@ public class OppoSupportSyncJob extends BaseJob {
     @Resource
     private IOppoSupportInfoService oppoSupportInfoService;
 
+    @Resource
+    private SftpUtil sftpUtil;
+
+    @Resource
+    private ISysParamService sysParamService;
+
+    @Resource
+    private ISysOperLogService sysOperLogService;
+
     /**
      * 每日凌晨6:00执行 - 商机支撑信息同步给外围系统
      */
     @XxlJob(value = "oppoSupportInfoSyncJob")
     public void doSync() {
         long startTime = System.currentTimeMillis();
-        // 从Redis缓存加载FTP配置参数（sys_param表），避免每次改数据库配置需要重启
-        super.initStaticParam("opp_support_info_file");
+        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         XxlJobHelper.log("开始执行商机支撑信息同步给外围系统Job");
         log.info("开始执行商机支撑信息同步给外围系统Job");
 
-        String fileName = FILE_NAME_PRE + new SimpleDateFormat("yyyyMMdd").format(new Date()) + FILE_NAME_FIX;
-        // 使用系统临时目录存放生成的文件
-        String tempDir = System.getProperty("java.io.tmpdir");
-        File file = new File(tempDir, fileName);
+        // 查询远程目录（opp_support_info_file 的 ftp_directory）
+        Map<String, String> param = sysParamService.findValueMapsByType("opp_support_info_file");
+        String ftDirectory = param != null ? param.get("ftp_directory") : "";
 
-        BufferedWriter writer = null;
-        FileInputStream fis = null;
+        TextFileExportContext ctx = new TextFileExportContext();
+        ctx.setFileName(FILE_NAME_PRE + dateStr + FILE_NAME_FIX);
+        ctx.setFilePath(System.getProperty("java.io.tmpdir"));
+        ctx.setExportDate(dateStr);
 
-        try {
-            log.info("商机支撑信息同步给外围系统 开始生成文件 : fileName={}", fileName);
-            XxlJobHelper.log("开始生成文件:{}", fileName);
-
-            // 如果文件已存在，先删除
-            if (file.exists()) {
-                file.delete();
-            }
-
-            writer = new BufferedWriter(new FileWriter(file));
-
-            // 查询商机支撑信息
-            List<OppoSupportInfoDTO> list = oppoSupportInfoService.selectOppoSupportList();
-            if (list != null && !list.isEmpty()) {
-                for (OppoSupportInfoDTO info : list) {
-                    String lineData = info.getOppCode() + SPLIT_STR
-                            + info.getOaAccount() + SPLIT_STR
-                            + info.getName() + SPLIT_STR
-                            + info.getNameCh();
-                    writer.write(lineData + "\r\n");
-                }
-                log.info("商机支撑信息同步 共生成 {} 条数据", list.size());
-                XxlJobHelper.log("共生成 {} 条数据", list.size());
-            } else {
-                log.warn("商机支撑信息数据为空");
-                XxlJobHelper.log("商机支撑信息数据为空");
-            }
-
-            writer.flush();
-            writer.close();
-            writer = null;
-
-            log.info("商机支撑信息同步给外围系统 生成文件成功,开始推送文件");
-            XxlJobHelper.log("文件生成成功,开始SFTP推送");
-
-            SFTPUtil ftpUtil = new SFTPUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
-            ftpUtil.login();
-
-            try {
-                fis = new FileInputStream(file);
-                ftpUtil.upload("/", ftDirectory, fileName, fis);
-            } catch (SftpException e) {
-                log.error("SFTP上传文件异常", e);
-                XxlJobHelper.log("SFTP上传文件异常:{}", e.getMessage());
-                throw new RuntimeException("SFTP上传文件异常", e);
-            } finally {
-                ftpUtil.logout();
-                if (fis != null) {
-                    try {
-                        fis.close();
-                    } catch (IOException e) {
-                        log.warn("关闭文件流异常", e);
+        new TextFileExporter<TextFileExportContext>() {
+            @Override
+            protected void writeBody(TextFileExportContext ctx, BufferedWriter writer) throws IOException {
+                List<OppoSupportInfoDTO> list = oppoSupportInfoService.selectOppoSupportList();
+                if (list != null && !list.isEmpty()) {
+                    for (OppoSupportInfoDTO info : list) {
+                        writer.write(info.getOppCode() + SPLIT_STR
+                                + info.getOaAccount() + SPLIT_STR
+                                + info.getName() + SPLIT_STR
+                                + info.getNameCh() + "\r\n");
                     }
+                    ctx.setTotalRows(list.size());
+                    log.info("商机支撑信息同步 共生成 {} 条数据", list.size());
+                    XxlJobHelper.log("共生成 {} 条数据", list.size());
+                } else {
+                    log.warn("商机支撑信息数据为空");
+                    XxlJobHelper.log("商机支撑信息数据为空");
                 }
             }
 
-            log.info("商机支撑信息同步给外围系统文件{}推送成功", fileName);
-            XxlJobHelper.log("文件{}推送成功", fileName);
+            @Override
+            protected void finishWriteFileInternal(TextFileExportContext ctx, SummaryHolder summary) {
+                String remotePath = ftDirectory + "/" + ctx.getFileName();
+                sftpUtil.uploadFile("opp_support_info_file", ctx.getLocalFile().getAbsolutePath(), remotePath);
+                log.info("文件上传成功: {}", ctx.getFileName());
+                XxlJobHelper.log("文件上传成功:{}", ctx.getFileName());
+            }
 
-        } catch (Exception e) {
-            log.error("商机支撑信息同步给外围系统Job执行异常", e);
-            XxlJobHelper.log("商机支撑信息同步给外围系统Job执行异常:{}", e.getMessage());
-        } finally {
-            // 关闭writer
-            if (writer != null) {
+            @Override
+            protected void recordOperLog(TextFileExportContext ctx, long startTime, String errorMsg) {
                 try {
-                    writer.close();
-                } catch (IOException e) {
-                    log.warn("关闭文件写入流异常", e);
+                    SysOperLog operLog = new SysOperLog();
+                    operLog.setTitle("商机支撑信息同步给外围系统");
+                    operLog.setRequestMethod("JOB");
+                    operLog.setOperatorType(2);
+                    operLog.setOperName("system");
+                    operLog.setOperParam("fileName=" + ctx.getFileName() + ", date=" + ctx.getExportDate());
+                    operLog.setStatus(errorMsg == null ? 0 : 1);
+                    operLog.setJsonResult("导出行数=" + ctx.getTotalRows());
+                    operLog.setErrorMsg(errorMsg);
+                    operLog.setRequestTime(System.currentTimeMillis() - startTime);
+                    sysOperLogService.insertOperlog(operLog);
+                } catch (Exception e) {
+                    log.error("记录操作日志异常, 文件: {}", ctx.getFileName(), e);
                 }
             }
-            // 删除临时文件
-            if (file.exists()) {
-                file.delete();
-            }
-        }
+        }.execute(ctx);
 
         long costTime = System.currentTimeMillis() - startTime;
         log.info("商机支撑信息同步给外围系统Job执行完成,耗时:{}ms", costTime);

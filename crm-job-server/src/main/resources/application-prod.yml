@@ -82,15 +82,15 @@ spring:
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
           username: IOB_GOV2
           password: aP3`zK8#xJ0$
-        oracle:
-          type: ${spring.datasource.type}
-          driverClassName: oracle.jdbc.OracleDriver
-          url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-          username: ps_uni_zyy
-          password: yz_2026#
-          hikari:
-            connectionTestQuery: SELECT 1 FROM DUAL
-            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
+#        oracle:
+#          type: ${spring.datasource.type}
+#          driverClassName: oracle.jdbc.OracleDriver
+#          url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
+#          username: ps_uni_zyy
+#          password: yz_2026#
+#          hikari:
+#            connectionTestQuery: SELECT 1 FROM DUAL
+#            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -200,8 +200,8 @@ pre-travel-report:
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
 ability:
-  app_id: bR4nqpsTto
-  app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
+  appId: bR4nqpsTto
+  appSecret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
   url:
     worksheetsComplete: http://10.164.255.25:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1
     unmannedFactory: http://10.129.99.194:12001/prod-api/asiainfo_micro/unmannedfactory/kafkaMessageRecord/insert

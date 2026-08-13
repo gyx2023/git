@@ -32,6 +32,9 @@ public class EarlyWarningProcessingJob {
     @Resource
     private EarlyWarningProcessingConfigMapper configMapper;
 
+    @Resource
+    private ConOpenSendImpl conOpenSendImpl;
+
     @XxlJob(value = "earlyWarningProcessing")
     public void doWarning() {
         long startTime = System.currentTimeMillis();
@@ -104,7 +107,7 @@ public class EarlyWarningProcessingJob {
             map.put("TIME", DateUtils.dateTimeNow("yyyy年MM月dd日 HH时mm分ss秒"));
             map.put("SPECIAL", warningType);
             map.put("REGION", count + "条");
-            ConOpenSendImpl.sendMessageByTemplate("ALM_OPR07", map, phone);
+            conOpenSendImpl.sendMessageByTemplate("ALM_OPR07", map, phone);
         } catch (Exception e) {
             log.error("发送预警短信异常，phone={}, warningType={}, count={}", phone, warningType, count, e);
         }

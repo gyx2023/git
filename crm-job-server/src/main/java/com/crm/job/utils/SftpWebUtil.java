@@ -15,7 +15,9 @@ import java.util.Vector;
  * 数据库配置示例：
  * type=tc_wx_strategy
  * code: ftp_host / ftp_port / ftp_username / ftp_password / ftp_directory
+ * @deprecated 请使用 {@link SftpUtil} 替代，SftpUtil 自动管理连接生命周期，无需手动 login/logout
  */
+@Deprecated
 @Slf4j
 @Component
 public class SftpWebUtil implements AutoCloseable {

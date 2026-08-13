@@ -199,7 +199,7 @@
             PROC_INST_ID_ AS procInsId
         FROM ACT_HI_ACTINST
         WHERE PROC_INST_ID_ = #{procInsId}
-        ORDER BY START_TIME_ ASC
+        ORDER BY START_TIME_ DESC, ID_ DESC
     </select>
 
     <!-- 查询老系统历史任务实例 -->
@@ -212,6 +212,7 @@
             START_TIME_ AS startTime,
             END_TIME_ AS endTime,
             DURATION_ AS duration,
+            DELETE_REASON_ AS deleteReason,
             PROC_INST_ID_ AS procInsId
         FROM ACT_HI_TASKINST
         WHERE PROC_INST_ID_ = #{procInsId}
@@ -245,7 +246,8 @@
             ASSIGNEE_        AS assignee,
             START_TIME_      AS startTime,
             END_TIME_        AS endTime,
-            DURATION_        AS duration
+            DURATION_        AS duration,
+            DELETE_REASON_   AS deleteReason
         FROM ACT_HI_TASKINST
         WHERE ID_ = #{taskId}
     </select>

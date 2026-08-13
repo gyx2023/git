@@ -3,6 +3,7 @@ package com.crm.adapter.admin.workflow.oldProject;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.enums.order.ProcessEngineEnum;
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.helper.LoginHelper;
 import com.crm.system.domain.vo.topp.ToppOpportunityVo;
@@ -260,7 +261,7 @@ public class OppoCloseController {
         orderBo.setId(orderId);
         orderBo.setEndReason("0");
         orderBo.setBatchFlag(0);
-        orderBo.setStatus(Constants.ORDER_STATUS_END);
+        orderBo.setStatus(OrderStatusEnum.END.getCode());
         orderService.updateByBo(orderBo);
         return R.ok("关闭成功");
     }
@@ -291,7 +292,7 @@ public class OppoCloseController {
         orderBo.setId(orderId);
         orderBo.setEndReason("0");
         orderBo.setBatchFlag(0);
-        orderBo.setStatus(Constants.ORDER_STATUS_END);
+        orderBo.setStatus(OrderStatusEnum.END.getCode());
         orderService.updateByBo(orderBo);
         return R.ok("修改签约时间成功");
     }
@@ -439,7 +440,7 @@ public class OppoCloseController {
         orderBo.setId(orderId);
         orderBo.setEndReason("0");
         orderBo.setBatchFlag(0);
-        orderBo.setStatus(Constants.ORDER_STATUS_END);
+        orderBo.setStatus(OrderStatusEnum.END.getCode());
         orderService.updateByBo(orderBo);
 
         return R.ok("转化成功，提交审核");
@@ -478,7 +479,7 @@ public class OppoCloseController {
         auditOrderBo.setOppoId(oppoId);
         auditOrderBo.setContractId(contractId);
         auditOrderBo.setPiId(pi.getId());
-        auditOrderBo.setStatus(Constants.ORDER_STATUS_RUNNING);
+        auditOrderBo.setStatus(OrderStatusEnum.RUNNING.getCode());
         auditOrderBo.setProcessEngine(ProcessEngineEnum.FLOWABLE.name());
         orderService.insertByBo(auditOrderBo);
 

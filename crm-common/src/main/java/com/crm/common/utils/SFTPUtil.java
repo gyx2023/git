@@ -14,7 +14,10 @@ import java.util.Properties;
 
 /**
  * SFTP工具类
+ * @deprecated 请使用 {@link com.crm.job.utils.SftpUtil} 替代，SftpUtil 支持 sftp.xxx / ftp_xxx 双键名配置，
+ *             自动管理连接生命周期，无需手动 login/logout
  */
+@Deprecated
 @Slf4j
 public class SFTPUtil {
 
