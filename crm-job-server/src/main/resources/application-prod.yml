@@ -5,11 +5,6 @@ spring.servlet.multipart.location: /crm/server/temp
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 xxl.job:
@@ -82,15 +77,6 @@ spring:
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
           username: ENC(fXHadNfph1nJeiiVJvU8mlk9CGa9rG6bT0rulWthM6o=)
           password: ENC(w6O0YUagcJHTXuqRukpdE4lBEF6pSQUNwTLMWygAVmo=)
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-#          username: ps_uni_zyy
-#          password: yz_2026#
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -119,7 +105,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: Redis!@#123
+    password: ENC(YA/S3SByU4uG0feawrc34hxT4BopNDgteoLBpe4UUZs=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl

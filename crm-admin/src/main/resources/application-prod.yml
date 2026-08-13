@@ -5,11 +5,6 @@ spring.servlet.multipart.location: /crm/server/temp
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # 数据源配置
 spring:
@@ -87,7 +82,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: Redis!@#123
+    password: ENC(K5Cd93h18eAlbJdfeMs7DCaQN8hY5VjYGoi8Dbc/FJ8=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl

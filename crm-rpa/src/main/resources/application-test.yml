@@ -60,26 +60,6 @@ spring:
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
           username: ENC(8/8eOnD+CrNybhc9tliYLEwIycP4LWMudkMKg4kgMMetoGq9VVrxSGVIXlOldgad)
           password: ENC(qp7iOzeP9Q6HUNN56uOi8LhQ+saAvoF67K3cAs8dkuY=)
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -105,9 +85,9 @@ spring:
     # 端口号
     port: 5672
     # 用户名
-    username: admin
+    username: ENC(drWfyzqVOeeRwfC2YghaL2WP+AFPtjkSPoU4k0YoRcE=)
     # 密码
-    password: "admin123@123!AA"
+    password: ENC(/oRLfVFb1fX1rMEO/+B6LeSBhpb08lpLU4oKujMt9P0=)
     # 虚拟主机
     virtual-host: /
     # 连接超时时间
@@ -142,7 +122,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: admin123
+    password: ENC(Q6xML92rOpOFCnuOLpm2EVE7fOXVVb/P04d6B9qr7jo=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl
