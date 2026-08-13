@@ -20,6 +20,8 @@ public class WxCustUserListDTO {
     private String svcNum;
     private String isDistribute;
     private Long userId;
+    /** 客户经理过滤（预警客户列表点击到期量跳转时传入，对应老框架 md.user_id = userId） */
+    private String managerId;
     private String authAreaIds;
     private Integer startRow;
     private Integer pageSize;
