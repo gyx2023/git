@@ -1,6 +1,9 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.common.enums.PendingOpType;
@@ -69,6 +72,14 @@ public class PendingServiceImpl implements IPendingService {
     @Resource
     private org.flowable.engine.RuntimeService flowableRuntimeService;
 
+    private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
+        "pendingCode", "pendingTitle", "pendingDate", "pendingUserID", "pendingURL", "pendingStatus",
+        "pendingLevel", "pendingCityCode", "pendingSourceUserID", "pendingSource", "pendingNote");
+
+    private static final SimplePropertyPreFilter UPDATE_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
+        "pendingCode", "pendingStatus", "lastUpdateDate", "pendingURL", "pendingDate", "pendingTitle",
+        "pendingSourceUserID", "pendingSource", "pendingLevel", "pendingNote");
+
     @Override
     public List<Pending> getPendingList(String limit) {
         return pendingMapper.selectPendingList(limit);
@@ -94,7 +105,34 @@ public class PendingServiceImpl implements IPendingService {
             saveOrUpdate(pending);
             return;
         }
-        updatePendingStatus(pending, addUrl, appId, token);
+        String url = addUrl + "/" + appId + "/" + token;
+        String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), ADD_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
+        log.info("新增待办请求URL:{}", url);
+        String result = HttpUtil.post(url, jsonStr, 60000);
+        log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
+
+        if (StringUtils.isEmpty(result)) {
+            updateFailTimes(pending);
+        } else {
+            Map<String, String> resultMap = JsonUtils.parseObject(result,
+                new TypeReference<Map<String, String>>() {});
+            for (Map.Entry<String, String> entry : resultMap.entrySet()) {
+                String msg = entry.getValue();
+                if(pending.getPendingCode().equals(entry.getKey())){
+                    pending.setResponseMsg(msg);
+                    log.info("待办更新返回值:{} 待办ID={}", msg, pending.getId());
+                    if (msg.startsWith(OA_SUCCESS_PREFIX)) {
+                        pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                        pending.setSendTime(new Date());
+                    } else {
+                        pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                        pending.setResponseMsg(msg);
+                        pending.setFailTimes(MAX_FAIL_TIMES);
+                    }
+                    saveOrUpdate(pending);
+                }
+            }
+        }
     }
 
     private boolean initPendingUrl(Pending pending) {
@@ -302,8 +340,8 @@ public class PendingServiceImpl implements IPendingService {
     private void updatePendingStatus(Pending pending, String updateUrl, String appId, String token) {
         log.info("开始推送OA待办更新");
         String url = updateUrl + "/" + appId + "/" + token;
-        String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
-        log.info("待办更新地址：{}，待办请求数据:{}", url, jsonStr);
+        String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), UPDATE_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
+        log.info("待办更新地址：{}，待办更新请求数据:{}", url, jsonStr);
         String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
         log.info("推送OA待办更新,响应数据:{}", result);
 
@@ -410,7 +448,9 @@ public class PendingServiceImpl implements IPendingService {
             String dealUrlVar = task.getTaskDefinitionKey() + "_dealUrl";
             Object dealUrlVal = flowableRuntimeService.getVariable(task.getProcessInstanceId(), dealUrlVar);
             if (dealUrlVal != null) {
-                pending.setPendingURL(dealUrlVal + "&taskId=" + pendingCode);
+                // 与 job 路径 resolveDealUrl 保持一致：拼 Backlog（ssoCheck）前缀，? 替换为 & 再拼 taskId
+                String backlog = sysParamService.findValueByCode("Backlog");
+                pending.setPendingURL(backlog + dealUrlVal.toString().replace("?", "&") + "&taskId=" + pendingCode);
             }
         } catch (Exception e) {
             log.warn("创建待办时获取dealUrl失败，将交由job处理: pendingCode={}", pendingCode);
