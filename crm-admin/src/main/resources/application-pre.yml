@@ -31,16 +31,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase:loadbalance://10.129.161.149:3306,10.129.161.173:3306,10.129.161.208:3306/zj_sj?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: service_ob_cads@ZJZQ_REAL#hl_cluster16
-          password: n#F5Tp5VCQ5JJ5zSy4Dp7ZA_
+          username: ENC(fIPoxVcO/shBaTfAKzwAapX1wV4i4AH9empHNF90SV9eZSB1boP06pp9acYCcVbVVxjlPLfrroZ1+ztA1FBt0Q==)
+          password: ENC(qeG2882JJdVEbr8gYFwvTcpNxH4IAnnmFXRTTE9alFoR9ocZRTP8PRr2IC8vCIhr)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(Fd9yFjqNr4jPO0yWvrxBEbinY8ZjOK0upsQOLGl3+y/WgH32e3JoXhmVMI/nmqBa)
+          password: ENC(1AlIIMr3q0LjiS28Jg/ZoWCYdcDQ1IRhmG+qPJAzXTk=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -48,14 +48,14 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
+          username: ENC(m29wzfJvMFxFnfwbCy+YShsyUO+tcrG0AiRncc7PFiA=)
+          password: ENC(dvQxZHxZ4Tt6/GloH7UzVRovolCkehdF9U88VyPqKjY=)
         oracle:
           type: ${spring.datasource.type}
           driverClassName: oracle.jdbc.OracleDriver
           url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-          username: ps_uni_zyy
-          password: yz_2026#
+          username: ENC(wD6JAk4oissajNp/aS3mI9LEfrRGyOB40kOiMRB6pkc=)
+          password: ENC(Hlcn9UO+KJ3tM1y4qORlBPdL9dJ5zjPz5N9HAZwXFPY=)
           hikari:
             connectionTestQuery: SELECT 1 FROM DUAL
             connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"

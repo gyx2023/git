@@ -31,16 +31,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:mysql://10.129.161.149:3306/zj_sj?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
-          username: service_ob_cads@ZJZQ_REAL#hl_cluster16
-          password: n#F5Tp5VCQ5JJ5zSy4Dp7ZA_
+          username: ENC(6fKOuW+3hWws0B1SbHFVliFDi6ZVXsd3Bt8hsGqAkrB4TBbZpdO5PCeQoyQ/O6WftWG5mBhoG9zR50pIkZawvA==)
+          password: ENC(I7u9uRBICmRDbC66CUdD11wAUKnyGRewqKqh/JAWxp2Shvu9neJfm+HC6u0eBZhb)
         # 从库数据源
         slave:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(kBKD6npRPcY1CCrEJa3WiqxW0KWbMTzRAWF+cWz5PH7SsVGy2VCuO0kt7rC3SijO)
+          password: ENC(85g5T4VgxLyxc4d3YFL2wZwIUTzrAe+7CAp8yZUaUlw=)
       hikari:
         # 最大连接池数量
         maxPoolSize: 20

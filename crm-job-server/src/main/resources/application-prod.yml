@@ -53,8 +53,8 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase://10.129.161.149:3306,10.129.161.173:3306,10.129.161.208:3306/zj_sj?autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&useLocalSessionState=true&useUnicode=true&characterEncoding=utf8&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: service_ob_cads@ZJZQ_REAL#hl_cluster16
-          password: n#F5Tp5VCQ5JJ5zSy4Dp7ZA_
+          username: ENC(+XXOfGnnILtKuye5W1NfbS10ejPgYiCL/w5sZcjRTlv60POYBM8we+4qqHahbNO7GplCGv4gHhAJgzPEpSmzpw==)
+          password: ENC(VdJOIbDe7Tei2ZFNLaoWgW+IHxXn+89pZn+J6VEM9TyKGUN9D52YEYcabU2dRW7V)
         # 从库数据源
         slave:
           lazy: true
@@ -63,16 +63,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(0FZ5Z2tDsPR7M66j0ztIYA1L15iAYprCmojIBlIwF2Etz0dezVAlOtdFLA33ihTS)
+          password: ENC(Zd1QWP2Lm3XV/u3x87KTwFFWywm04ggPiN86r8U+/rk=)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(0FZ5Z2tDsPR7M66j0ztIYA1L15iAYprCmojIBlIwF2Etz0dezVAlOtdFLA33ihTS)
+          password: ENC(Zd1QWP2Lm3XV/u3x87KTwFFWywm04ggPiN86r8U+/rk=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -80,8 +80,8 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
+          username: ENC(fXHadNfph1nJeiiVJvU8mlk9CGa9rG6bT0rulWthM6o=)
+          password: ENC(w6O0YUagcJHTXuqRukpdE4lBEF6pSQUNwTLMWygAVmo=)
 #        oracle:
 #          type: ${spring.datasource.type}
 #          driverClassName: oracle.jdbc.OracleDriver
