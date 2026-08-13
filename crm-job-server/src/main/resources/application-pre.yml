@@ -53,16 +53,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase://10.129.161.149:3306,10.129.161.173:3306,10.129.161.208:3306/zj_sj?autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&useLocalSessionState=true&useUnicode=true&characterEncoding=utf8&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: service_ob_cads@ZJZQ_REAL#hl_cluster16
-          password: n#F5Tp5VCQ5JJ5zSy4Dp7ZA_
+          username: ENC(1OYbWhtqDm+n5OlPkdA2N+JFgHMo7DAEGoiV/oUwe+MMoCoiBZIVP+OAtVLxB1w1jQ8G0jT94lHvMILas17BZw==)
+          password: ENC(RJvcVkwVnoGrN75Iqc8pKWzor+VNnm2/gcCLip3ldGTs7YcuSf4KZoShOMmHz23c)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(uu+gJZ4P4L5zDWSdpYsH2iISF5avsbzX2qTu1sUF3PNs9tcOvfrmGhcbimwUaKjK)
+          password: ENC(47QPIRLrfcfKZPxLDBep7BNc3jFXci/4AWEKVaRGRuk=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -70,8 +70,8 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
+          username: ENC(zaPyt914o9gtlQmNRgwDQxbaRvZu5yaJmewxlJIWuvg=)
+          password: ENC(IquOwpW5ULRCQZQ8pn3ZkgwiYw4M4GPJ1kghAyKnjfg=)
  #       oracle:
  #         type: ${spring.datasource.type}
  #         driverClassName: oracle.jdbc.OracleDriver

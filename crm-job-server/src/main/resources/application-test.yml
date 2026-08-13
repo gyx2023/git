@@ -50,16 +50,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase://10.130.27.41:2883,10.130.27.45:2883,10.130.27.59:2883/zj_sj_test?autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&useLocalSessionState=true&useUnicode=true&characterEncoding=utf8&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
-          password: PPpomns12123##
+          username: ENC(FbVEwc0v0grzcSY42HDbBUvumd++ZW7rRwINjWlk5LTePDpsZ5pGLht+gKWo/D3LLBEqBC11gejbkJsgmPX+1w==)
+          password: ENC(JPFZdoLaGYig6bI70T92mx82Z2PsdkXV6E60mx08yAc=)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(w3f1tTR3157VjH0cSJ1wvWyw8DUB5emm+trBqbRjXdFu0+L4bXspXA+1xRcrZWJy)
+          password: ENC(5Do30aoRpuVASR9sEs9QUCSPG+9MygvSEkbVb17CH2Q=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -67,8 +67,8 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
+          username: ENC(Gp3AJ95oP7nzAwOakxQn4Oqyu6h0VNumQ3J9qp7GLF4=)
+          password: ENC(Dubsc/I4YiOcYGLfeMeo0fG/Qf3W/wrrcqzVLUot/lM=)
 #        oracle:
 #          type: ${spring.datasource.type}
 #          driverClassName: oracle.jdbc.OracleDriver
