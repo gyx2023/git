@@ -1,5 +1,6 @@
 package com.crm.system.mapper;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -32,6 +33,21 @@ public interface KdAddrWarningDetailMapper {
             + "WHERE main_order_flow_no = #{mainOrderFlowNo} "
             + "ORDER BY id_"})
     List<Map<String, Object>> selectByMainOrderFlowNo(@Param("mainOrderFlowNo") String mainOrderFlowNo);
+
+    /**
+     * 按主订单流水号分页查询预警明细列表
+     *
+     * @param page            分页对象（MyBatis-Plus 分页插件自动追加 COUNT 和 LIMIT）
+     * @param mainOrderFlowNo 主订单流水号（来自 ftp_tc_user_cust_warning.main_order_flow_no）
+     * @return 明细记录分页结果
+     */
+    @Select({"SELECT id_, svc_num, cust_name, prod_id, prod_name, open_date, user_status, "
+            + "warning_info, feedback_flag, feedback_remark "
+            + "FROM ftp_tc_user_common_warning "
+            + "WHERE main_order_flow_no = #{mainOrderFlowNo} "
+            + "ORDER BY id_"})
+    Page<Map<String, Object>> selectPageByMainOrderFlowNo(Page<Map<String, Object>> page,
+                                                          @Param("mainOrderFlowNo") String mainOrderFlowNo);
 
     /**
      * 按主订单流水号查询主记录获取 main_order_flow_no
