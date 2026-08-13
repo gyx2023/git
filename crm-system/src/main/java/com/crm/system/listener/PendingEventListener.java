@@ -111,34 +111,29 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
         String piId = task.getProcessInstanceId();
         String processKey = getProcessKey(task);
         ToppOrderVo order = orderService.queryByPiId(piId);
-        if (order == null) {
-            log.debug("taskAssigned: 订单不存在, piId={}", piId);
-            return;
-        }
 
-        // 1. 同步订单当前环节/处理人/白名单（对应老框架 updateOrderInfo）
-        syncOrderFromTask(task, order);
-
-        // 2. 更新关联商机状态（对应老框架 saveOppoStatus）
-        if (order.getOppoId() != null) {
-            try {
-                oppotunityService.updateOppoState(order.getOppoId());
-                log.info("更新商机状态: oppoId={}", order.getOppoId());
-            } catch (Exception e) {
-                log.warn("saveOppoStatus 失败, oppoId={}", order.getOppoId(), e);
+        // 订单可能尚未插入（流程启动时 TASK_ASSIGNED 先于 insertByBo 触发），
+        // 订单级操作（syncOrderFromTask / saveOppoStatus / synMaintenanceInfo）仅在订单存在时执行
+        if (order != null) {
+            syncOrderFromTask(task, order);
+            if (order.getOppoId() != null) {
+                try {
+                    oppotunityService.updateOppoState(order.getOppoId());
+                    log.info("更新商机状态: oppoId={}", order.getOppoId());
+                } catch (Exception e) {
+                    log.warn("saveOppoStatus 失败, oppoId={}", order.getOppoId(), e);
+                }
+            }
+            if (isWxOrder(processKey)) {
+                try {
+                    synMaintenanceInfo(task, order);
+                } catch (Exception e) {
+                    log.warn("synMaintenanceInfo 失败, taskId={}", task.getId(), e);
+                }
             }
         }
 
-        // 3. 维系订单走专用同步（对应老框架 synMaintenanceInfo）
-        if (isWxOrder(processKey)) {
-            try {
-                synMaintenanceInfo(task, order);
-            } catch (Exception e) {
-                log.warn("synMaintenanceInfo 失败, taskId={}", task.getId(), e);
-            }
-        }
-
-        // 4. OA 待办（异步）
+        // OA 待办（异步，独立于订单是否存在）
         executor.execute(() -> {
             try {
                 pendingService.savePending(task, getOaAppId());
