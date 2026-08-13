@@ -103,4 +103,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </insert>
 
+    <!-- 查询主库的领导列表（bossFlag: 1=区县, 2=市本级） -->
+    <select id="selectBossLeaders" resultType="java.util.Map">
+        <choose>
+            <when test="bossFlag == '1'">
+                SELECT b.OA_USER_NAME, b.FULL_NAME
+                FROM dwd_rep_gw_pst_d a
+                LEFT JOIN dwd_rep_sys_person_d b ON a.EMP_ID = b.EMP_ID
+                WHERE a.MDM_ORG_CODE = (SELECT EMP_COUNTY_ID FROM dim_county_id WHERE COUNTY_ID = #{code})
+                  AND a.POS_CODE = #{posCode}
+            </when>
+            <otherwise>
+                SELECT b.OA_USER_NAME, b.FULL_NAME
+                FROM dwd_rep_gw_pst_d a
+                LEFT JOIN dwd_rep_sys_person_d b ON a.EMP_ID = b.EMP_ID
+                WHERE a.MDM_ORG_CODE = #{code} AND a.POS_CODE = #{posCode}
+            </otherwise>
+        </choose>
+    </select>
+
 </mapper>

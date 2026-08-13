@@ -50,36 +50,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:mysql://10.130.27.41:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
-          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
-          password: PPpomns12123##
+          username: ENC(30djc+LNSS/eFCvCri7geIH4nc3dv6DP6F7lrZY393sIidyvPUhNPLptGUSOJZKfWAst2BWa0PAWR421d6XzZQ==)
+          password: ENC(RS5IJeNL8hFhK811Gr5sNTUwxKHhct3EuRKwxg1Hwvs=)
         # 从库数据源
         slave:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
+          username: ENC(8/8eOnD+CrNybhc9tliYLEwIycP4LWMudkMKg4kgMMetoGq9VVrxSGVIXlOldgad)
+          password: ENC(qp7iOzeP9Q6HUNN56uOi8LhQ+saAvoF67K3cAs8dkuY=)
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -105,9 +85,9 @@ spring:
     # 端口号
     port: 5672
     # 用户名
-    username: admin
+    username: ENC(drWfyzqVOeeRwfC2YghaL2WP+AFPtjkSPoU4k0YoRcE=)
     # 密码
-    password: "admin123@123!AA"
+    password: ENC(/oRLfVFb1fX1rMEO/+B6LeSBhpb08lpLU4oKujMt9P0=)
     # 虚拟主机
     virtual-host: /
     # 连接超时时间
@@ -142,7 +122,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: admin123
+    password: ENC(Q6xML92rOpOFCnuOLpm2EVE7fOXVVb/P04d6B9qr7jo=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl
@@ -170,9 +150,9 @@ redisson:
     # 发布和订阅连接池大小
     subscriptionConnectionPoolSize: 50
 ability:
-  app_id: bR4nqpsTto
+  appId: bR4nqpsTto
   #app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
-  app_secret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
+  appSecret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
   url:
     #worksheetsComplete: http://10.244.18.146:8000/api/chinaUnicom/govEnterprise/orderCenter/ordersget/v1
     worksheetsComplete: http://10.124.164.110:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1

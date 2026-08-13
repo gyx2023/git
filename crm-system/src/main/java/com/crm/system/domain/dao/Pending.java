@@ -17,7 +17,7 @@ import java.util.Date;
 public class Pending implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id_")
+    @TableId(value = "id_", type = IdType.AUTO)
     private Long id;
 
     @TableField("pending_code")

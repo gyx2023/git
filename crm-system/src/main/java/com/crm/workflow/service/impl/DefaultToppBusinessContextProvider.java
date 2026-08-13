@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * 默认商机/工单业务上下文提供者（topp_* 流程）
- * 匹配所有 topp_ 开头的流程定义，通过 piId 查询订单和商机信息
+ * 匹配所有 topp_ 开头的流程定义，通过 order 查询订单和商机信息
  * 自动将 code 字段转译为中文标签
  *
  * @author crm
@@ -35,17 +35,12 @@ public class DefaultToppBusinessContextProvider implements BusinessContextProvid
     private final ISysCodeService sysCodeService;
 
     @Override
-    public boolean supports(String procDefKey, String source) {
-        return procDefKey != null && procDefKey.startsWith("topp_");
+    public boolean supports(String procDefKey, String source, ToppOrderVo order) {
+        return procDefKey != null && procDefKey.startsWith("topp_") && order != null;
     }
 
     @Override
-    public WfBusinessContext provide(String procInsId, String source, String procDefKey) {
-        ToppOrderVo order = orderService.queryByPiId(procInsId);
-        if (order == null) {
-            return null;
-        }
-
+    public WfBusinessContext provide(String procInsId, String source, String procDefKey, ToppOrderVo order) {
         WfBusinessContext ctx = new WfBusinessContext();
         List<WfBusinessSection> sections = new ArrayList<>();
 

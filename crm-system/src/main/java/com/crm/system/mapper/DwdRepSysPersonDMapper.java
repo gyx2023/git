@@ -5,6 +5,7 @@ import com.crm.system.domain.dao.DwdRepSysPersonD;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
 import com.crm.common.core.mapper.BaseMapperPlus;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
@@ -45,4 +46,27 @@ public interface DwdRepSysPersonDMapper extends BaseMapperPlus<DwdRepSysPersonDM
      * 批量插入人员信息数据
      */
     int insertBatch(@Param("list") List<DwdRepSysPersonD> list);
+
+    /**
+     * 根据MDM组织编码查询组织名称
+     *
+     * @param mdmOrgCode MDM组织编码
+     * @return 组织名称
+     */
+    @Select("SELECT COUNTY_NAME FROM dwd_rep_sys_person_d WHERE COUNTY_ID = #{mdmOrgCode} LIMIT 1")
+    String selectMdmCodeName(@Param("mdmOrgCode") String mdmOrgCode);
+
+    /**
+     * 查询主库的领导列表（bossFlag: 1=区县, 2=市本级）
+     * 对应老框架 dao.createSQLQuery() 查主库
+     */
+    List<Map<String, Object>> selectBossLeaders(@Param("code") String code,
+                                                 @Param("posCode") int posCode,
+                                                 @Param("bossFlag") String bossFlag);
+
+    /**
+     * 查询 org code 匹配表（主库）
+     */
+    @Select("SELECT MDM_ORG_CODE_NEW AS mdmOrgCodeNew FROM jingfen_zero_leader_org_match WHERE MDM_ORG_CODE = #{mdmOrgCode} LIMIT 1")
+    Map<String, Object> selectMatchOrgCode(@Param("mdmOrgCode") String mdmOrgCode);
 }

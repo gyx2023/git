@@ -25,6 +25,18 @@ public interface ToppOrderMapper extends BaseMapperPlus<ToppOrderMapper, ToppOrd
      */
     List<ToppOrder> selectSupportOrders();
 
+    /** 支持订单总数（关联任务表） */
+    Long selectSupportOrdersCount();
+
+    /** 支持订单最小 ID */
+    Long selectSupportOrdersMinId();
+
+    /** 支持订单最大 ID */
+    Long selectSupportOrdersMaxId();
+
+    /** 按 ID 范围查询支持订单 */
+    List<ToppOrder> selectSupportOrdersByRange(@Param("startId") long startId, @Param("endId") long endId);
+
     List<WorkOrderDTO> queryWorkOrder(
         @Param("orderType") String orderType,
         @Param("yyMMdd") String yyMMdd,

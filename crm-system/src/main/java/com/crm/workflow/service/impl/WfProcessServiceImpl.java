@@ -47,7 +47,6 @@ import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.*;
 import org.flowable.engine.history.HistoricActivityInstance;
-import org.flowable.engine.history.HistoricActivityInstanceQuery;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.history.HistoricProcessInstanceQuery;
 import org.flowable.engine.repository.Deployment;
@@ -66,6 +65,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 /**
@@ -1012,8 +1012,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     /**
      * 流程详情信息
      *
-     * @param procInsId 流程实例ID
-     * @param taskId 任务ID
+     * @param procInsId 程序ID
+     * @param taskId 流程ID
      * @return
      */
     @Override
@@ -1038,7 +1038,18 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 .includeTaskLocalVariables()
                 .singleResult();
             if (taskIns == null) {
-                throw new ServiceException("没有可办理的任务！");
+                // processInstanceId 可能匹配多个历史任务（如转派后产生多条），取最新一条
+                List<HistoricTaskInstance> taskList = historyService.createHistoricTaskInstanceQuery()
+                    .processInstanceId(procInsId)
+                    .includeIdentityLinks()
+                    .includeProcessVariables()
+                    .includeTaskLocalVariables()
+                    .orderByHistoricTaskInstanceStartTime().desc()
+                    .listPage(0, 1);
+                taskIns = taskList.isEmpty() ? null : taskList.get(0);
+                if (taskIns == null) {
+                    throw new ServiceException("没有可办理的任务！");
+                }
             }
             detailVo.setTaskFormData(currTaskFormData(historicProcIns.getDeploymentId(), taskIns));
         }
@@ -1046,14 +1057,80 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
         String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));
         bpmnXmlStr = ModelUtils.ensureBpmnHasDiagram(bpmnXmlStr);
+        // 替换 BPMN 中 ${变量} 形式的节点名称和连线名称
+        Map<String, Object> procVars = loadProcVars(procInsId);
+        bpmnXmlStr = replaceExpression(bpmnXmlStr, procVars);
         BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXmlStr);
         detailVo.setBpmnXml(bpmnXmlStr);
-        detailVo.setHistoryProcNodeList(historyProcNodeList(historicProcIns));
+
+        // 一次性查询所有历史活动实例（historyProcNodeList 和 getFlowViewer 共用，避免重复查询）
+        List<HistoricActivityInstance> allActivityInstances = historyService.createHistoricActivityInstanceQuery()
+            .processInstanceId(procInsId).orderByHistoricActivityInstanceStartTime().desc().list();
+        List<WfProcNodeVo> nodeList = historyProcNodeList(historicProcIns, allActivityInstances);
+        // 替换节点名称中的 ${变量} 表达式
+        for (WfProcNodeVo node : nodeList) {
+            node.setActivityName(replaceExpression(node.getActivityName(), procVars));
+        }
+        detailVo.setHistoryProcNodeList(nodeList);
         detailVo.setProcessFormList(processFormList(bpmnModel, historicProcIns));
-        detailVo.setFlowViewer(getFlowViewer(bpmnModel, procInsId));
+        detailVo.setFlowViewer(getFlowViewer(bpmnModel, allActivityInstances));
         // 添加业务上下文（订单详情、商机详情等）
         enrichBusinessContext(detailVo, historicProcIns.getProcessDefinitionId(), "new", procInsId);
         return detailVo;
+    }
+
+    /** 加载流程变量（运行中走 runtime，已结束走 history） */
+    @Override
+    public Map<String, Object> loadProcVars(String procInsId) {
+        Map<String, Object> vars = new HashMap<>();
+        try {
+            if (isProcessRunning(procInsId)) {
+                vars = runtimeService.getVariables(procInsId);
+            } else {
+                List<HistoricVariableInstance> hisVars = historyService
+                        .createHistoricVariableInstanceQuery().processInstanceId(procInsId).list();
+                for (HistoricVariableInstance hv : hisVars) {
+                    vars.put(hv.getVariableName(), hv.getValue());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("加载流程变量失败: procInsId={}", procInsId, e);
+        }
+        return vars;
+    }
+
+    /** 替换字符串中 ${xxx} 表达式 */
+    private String replaceExpression(String text, Map<String, Object> vars) {
+        if (text == null || !text.contains("${")) return text;
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\$\\{([^}]+)}");
+        java.util.regex.Matcher m = p.matcher(text);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String varName = m.group(1);
+            Object val = vars.get(varName);
+            m.appendReplacement(sb, val != null
+                    ? java.util.regex.Matcher.quoteReplacement(val.toString())
+                    : java.util.regex.Matcher.quoteReplacement(m.group(0)));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    private Map<String, List<WfCommentVo>> buildOldCommentMap(List<Map<String, Object>> oldComments) {
+        Map<String, List<WfCommentVo>> commentMap = new HashMap<>();
+        if (oldComments != null) {
+            for (Map<String, Object> oldCmt : oldComments) {
+                String cmtTaskId = Convert.toStr(oldCmt.get("taskId"));
+                if (StringUtils.isBlank(cmtTaskId)) continue;
+                WfCommentVo comment = new WfCommentVo();
+                comment.setType(Convert.toStr(oldCmt.get("type")));
+                comment.setMessage(Convert.toStr(oldCmt.get("message")));
+                comment.setFullMessage(Convert.toStr(oldCmt.get("message")));
+                comment.setTime((Date) oldCmt.get("time"));
+                commentMap.computeIfAbsent(cmtTaskId, k -> new ArrayList<>()).add(comment);
+            }
+        }
+        return commentMap;
     }
 
     /**
@@ -1232,25 +1309,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         }
     }
 
-
-    /**
-     * 获取流程变量
-     *
-     * @param taskId 任务ID
-     * @return 流程变量
-     */
-    private Map<String, Object> getProcessVariables(String taskId) {
-        HistoricTaskInstance historicTaskInstance = historyService.createHistoricTaskInstanceQuery()
-            .includeProcessVariables()
-            .finished()
-            .taskId(taskId)
-            .singleResult();
-        if (Objects.nonNull(historicTaskInstance)) {
-            return historicTaskInstance.getProcessVariables();
-        }
-        return taskService.getVariables(taskId);
-    }
-
     /**
      * 获取当前任务流程表单信息
      */
@@ -1425,16 +1483,48 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     /**
      * 获取历史任务信息列表
      */
-    private List<WfProcNodeVo> historyProcNodeList(HistoricProcessInstance historicProcIns) {
+    private List<WfProcNodeVo> historyProcNodeList(HistoricProcessInstance historicProcIns,
+                                                     List<HistoricActivityInstance> allActivityInstances) {
         String procInsId = historicProcIns.getId();
-        List<HistoricActivityInstance> historicActivityInstanceList =  historyService.createHistoricActivityInstanceQuery()
-            .processInstanceId(procInsId)
-            .activityTypes(CollUtil.newHashSet(BpmnXMLConstants.ELEMENT_EVENT_START, BpmnXMLConstants.ELEMENT_EVENT_END, BpmnXMLConstants.ELEMENT_TASK_USER))
-            .orderByHistoricActivityInstanceStartTime().desc()
-            .orderByHistoricActivityInstanceEndTime().desc()
-            .list();
+        // 从预查询的列表中过滤出 startEvent/endEvent/userTask，按时间排序
+        Set<String> targetTypes = CollUtil.newHashSet(
+            BpmnXMLConstants.ELEMENT_EVENT_START, BpmnXMLConstants.ELEMENT_EVENT_END, BpmnXMLConstants.ELEMENT_TASK_USER);
+        List<HistoricActivityInstance> historicActivityInstanceList = allActivityInstances.stream()
+            .filter(item -> targetTypes.contains(item.getActivityType()))
+            .sorted((a, b) -> {
+                int cmp = b.getStartTime().compareTo(a.getStartTime());
+                if (cmp != 0) return cmp;
+                // startTime 相同（同一事务内毫秒级相等）：进行中的节点排前面，已结束的按 endTime 倒序
+                if (a.getEndTime() == null) return -1;
+                if (b.getEndTime() == null) return 1;
+                return b.getEndTime().compareTo(a.getEndTime());
+            })
+            .collect(Collectors.toList());
 
         List<Comment> commentList = taskService.getProcessInstanceComments(procInsId);
+
+        // 本地用户名称缓存，避免 N+1 DB 查询
+        Map<Long, String> userNameCache = new HashMap<>();
+        // 批量查询所有 action 变量并索引，避免每个任务节点单独查询
+        Map<String, String> actionByTaskId = new HashMap<>();
+        try {
+            List<HistoricVariableInstance> actionVars = historyService
+                .createHistoricVariableInstanceQuery()
+                .processInstanceId(procInsId).variableName("action").list();
+            for (HistoricVariableInstance hv : actionVars) {
+                if (hv.getTaskId() != null) {
+                    actionByTaskId.put(hv.getTaskId(), (String) hv.getValue());
+                }
+            }
+        } catch (Exception ignored) {}
+        // 批量查询所有 identity links 并索引，避免每个 userTask 单独调用 getHistoricIdentityLinksForTask
+        Map<String, List<HistoricIdentityLink>> identityLinksByTaskId = new HashMap<>();
+        try {
+            List<HistoricIdentityLink> allLinks = historyService.getHistoricIdentityLinksForProcessInstance(procInsId);
+            for (HistoricIdentityLink link : allLinks) {
+                identityLinksByTaskId.computeIfAbsent(link.getTaskId(), k -> new ArrayList<>()).add(link);
+            }
+        } catch (Exception ignored) {}
 
         List<WfProcNodeVo> elementVoList = new ArrayList<>();
         for (HistoricActivityInstance activityInstance : historicActivityInstanceList) {
@@ -1452,7 +1542,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (BpmnXMLConstants.ELEMENT_EVENT_START.equals(activityInstance.getActivityType())) {
                 if (ObjectUtil.isNotNull(historicProcIns)) {
                     Long userId = Long.parseLong(historicProcIns.getStartUserId());
-                    String nickName = userService.selectNickNameById(userId);
+                    String nickName = getNickNameCached(userNameCache, userId);
                     if (nickName != null) {
                         elementVo.setAssigneeId(userId);
                         elementVo.setAssigneeName(nickName);
@@ -1461,18 +1551,19 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             } else if (BpmnXMLConstants.ELEMENT_TASK_USER.equals(activityInstance.getActivityType())) {
                 if (StringUtils.isNotBlank(activityInstance.getAssignee())) {
                     Long userId = Long.parseLong(activityInstance.getAssignee());
-                    String nickName = userService.selectNickNameById(userId);
+                    String nickName = getNickNameCached(userNameCache, userId);
                     elementVo.setAssigneeId(userId);
                     elementVo.setAssigneeName(nickName);
                 }
-                // 展示审批人员
-                List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(activityInstance.getTaskId());
+                // 展示审批人员（从批量查询结果中获取）
+                List<HistoricIdentityLink> linksForTask = identityLinksByTaskId.getOrDefault(
+                    activityInstance.getTaskId(), Collections.emptyList());
                 StringBuilder stringBuilder = new StringBuilder();
                 for (HistoricIdentityLink identityLink : linksForTask) {
                     if ("candidate".equals(identityLink.getType())) {
                         if (StringUtils.isNotBlank(identityLink.getUserId())) {
                             Long userId = Long.parseLong(identityLink.getUserId());
-                            String nickName = userService.selectNickNameById(userId);
+                            String nickName = getNickNameCached(userNameCache, userId);
                             stringBuilder.append(nickName).append(",");
                         }
                         if (StringUtils.isNotBlank(identityLink.getGroupId())) {
@@ -1490,6 +1581,19 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 }
                 if (StringUtils.isNotBlank(stringBuilder)) {
                     elementVo.setCandidate(stringBuilder.substring(0, stringBuilder.length() - 1));
+                }
+                // 处理动作：从批量查询的 action 变量中获取（agree→通过，transfer→转派）
+                if (activityInstance.getEndTime() != null) {
+                    String action = actionByTaskId.get(activityInstance.getTaskId());
+                    if (action != null) {
+                        if ("transfer".equals(action)) {
+                            elementVo.setOperation("转派");
+                        } else if ("agree".equals(action)) {
+                            elementVo.setOperation("通过");
+                        } else {
+                            elementVo.setOperation(action);
+                        }
+                    }
                 }
                 // 获取意见评论内容（过滤掉引擎自动产生的系统事件，仅保留有审批文字的）
                 if (CollUtil.isNotEmpty(commentList)) {
@@ -1524,17 +1628,20 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         return elementVoList;
     }
 
+    /** 带缓存的用户昵称查询，避免 N+1 DB 调用 */
+    private String getNickNameCached(Map<Long, String> cache, Long userId) {
+        if (userId == null) return null;
+        return cache.computeIfAbsent(userId, userService::selectNickNameById);
+    }
+
     /**
      * 获取流程执行过程
      *
-     * @param procInsId
+     * @param bpmnModel
+     * @param allActivityInstanceList
      * @return
      */
-    private WfViewerVo getFlowViewer(BpmnModel bpmnModel, String procInsId) {
-        // 构建查询条件
-        HistoricActivityInstanceQuery query = historyService.createHistoricActivityInstanceQuery()
-            .processInstanceId(procInsId);
-        List<HistoricActivityInstance> allActivityInstanceList = query.list();
+    private WfViewerVo getFlowViewer(BpmnModel bpmnModel, List<HistoricActivityInstance> allActivityInstanceList) {
         if (CollUtil.isEmpty(allActivityInstanceList)) {
             return new WfViewerVo();
         }
@@ -1560,5 +1667,43 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         // DFS 查询未通过的元素集合
         Set<String> rejectedSet = FlowableUtils.dfsFindRejects(bpmnModel, unfinishedTaskSet, finishedSequenceFlowSet, finishedTaskSet);
         return new WfViewerVo(finishedTaskSet, finishedSequenceFlowSet, unfinishedTaskSet, rejectedSet);
+    }
+
+    @Override
+    public boolean isProcessRunning(String piId) {
+        return runtimeService.createProcessInstanceQuery().processInstanceId(piId).count() > 0;
+    }
+
+    @Override
+    public Task findCurrentTask(String piId, String taskId) {
+        Task currentTask = null;
+        if (taskId != null && !taskId.isEmpty() && !"0".equals(taskId)) {
+            currentTask = taskService.createTaskQuery().taskId(taskId).singleResult();
+            if (currentTask == null) {
+                throw new ServiceException("任务不存在或已处理");
+            }
+            return currentTask;
+        }
+        // taskId 无效时回退按 piId 查找（warnInfo 等场景允许为 null）
+        currentTask = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        return currentTask;
+    }
+
+    @Override
+    public Map<String, Object> buildCurrentTaskInfo(Task currentTask, Long curUserId) {
+        Map<String, Object> ct = new HashMap<>();
+        ct.put("taskId", currentTask.getId());
+        ct.put("taskName", currentTask.getName());
+        ct.put("taskDefKey", currentTask.getTaskDefinitionKey());
+        ct.put("assignee", currentTask.getAssignee());
+        ct.put("createTime", currentTask.getCreateTime());
+        ct.put("processInstanceId", currentTask.getProcessInstanceId());
+        boolean canAct = false;
+        String assignee = currentTask.getAssignee();
+        if (assignee != null && !assignee.isEmpty()) {
+            canAct = assignee.replaceAll(",", "").equals(String.valueOf(curUserId));
+        }
+        ct.put("canAct", canAct);
+        return ct;
     }
 }
