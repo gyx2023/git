@@ -50,16 +50,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase:loadbalance://192.168.124.160:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
-          password: PPpomns12123##
+          username: ENC(8LN6VjKr5AtWqSxpf4eKIkuUxIOe7WHInM1H4I2CJbmYbqwJGjjR3CztNGYa3od2LLPvHmfK2kR88JMlfQjhuA==)
+          password: ENC(tHy3o77YlFiujnLQpzMUY/5VhB4oeeNb8aRittWv3zg=)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://192.168.124.160:23306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(us/UVHf/E61HuvMU705rjyInJ6MNWe+Hot4AOATJ1IJPPiWTLgaJouLqNf0YqLvh)
+          password: ENC(JlH4oqcx/iOGTjroYaUVJRWTC9Ghb0WUCtfF887bA7c=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -67,44 +67,8 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://192.168.124.160:5236/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-        oracle:
-          type: ${spring.datasource.type}
-          driverClassName: oracle.jdbc.OracleDriver
-          url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-          username: ps_uni_zyy
-          password: yz_2026#
-          hikari:
-            connectionTestQuery: SELECT 1 FROM DUAL
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
+          username: ENC(yaZgESWSYHB8XPsroELZjdfo05/QJ20580w5NBqmMA8=)
+          password: ENC(aI6f2LtYgeFSN7xQz4CtcjMsr8SNalWJxfek8JOigNw=)
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -208,9 +172,9 @@ pre-travel-report:
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
 ability:
-  app_id: bR4nqpsTto
+  appId: bR4nqpsTto
   #app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
-  app_secret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
+  appSecret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
   url:
     #worksheetsComplete: http://10.244.18.146:8000/api/chinaUnicom/govEnterprise/orderCenter/ordersget/v1
     worksheetsComplete: http://10.124.164.110:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1

@@ -60,7 +60,7 @@ public class PendingJob {
         loadPendingConfig();
         XxlJobHelper.log("====== 待办统一调度开始执行（按ID逐条执行）======");
         log.info("====== 待办统一调度开始执行（按ID逐条执行）======");
-        String param = XxlJobHelper.getJobParam();
+        String param = "5";//XxlJobHelper.getJobParam();
         // 1. 获取按 ID 排序好的 a + u 列表 默认取30条数据
         List<Pending> pendingList = pendingService.getPendingList(StringUtils.isEmpty( param)? "30": param);
 
@@ -82,28 +82,28 @@ public class PendingJob {
         log.info("====== 主待办处理完成，开始同步集团运营平台 ======");
         XxlJobHelper.log("====== 主待办处理完成，开始同步集团运营平台 ======");
 
-            // 同步给集团运营平台待办
-            List<PendingGroupTodo> list = pendingService.getGroupTodoList();
-            XxlJobHelper.log("待同步集团待办{}条", list.size());
-            for (PendingGroupTodo task : list) {
-                try {
-                    pendingSyncTodoService.syncTodoTask(task);
-                } catch (Exception e) {
-                    log.error("同步集团待办任务失败, taskId:{}", task.getId(), e);
-                    XxlJobHelper.log("同步集团待办任务失败, taskId:{}", task.getId());
-                }
-                // 间隔1秒
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+        // 同步给集团运营平台待办
+        List<PendingGroupTodo> list = pendingService.getGroupTodoList();
+        XxlJobHelper.log("待同步集团待办{}条", list.size());
+        for (PendingGroupTodo task : list) {
+            try {
+                pendingSyncTodoService.syncTodoTask(task);
+            } catch (Exception e) {
+                log.error("同步集团待办任务失败, taskId:{}", task.getId(), e);
+                XxlJobHelper.log("同步集团待办任务失败, taskId:{}", task.getId());
             }
+            // 间隔1秒
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
 
-            long endTime = System.currentTimeMillis();
-            long costTime = endTime - startTime;
-            log.info("待办同步Job执行完成,耗时:{}ms", costTime);
-            XxlJobHelper.log("待办同步Job执行完成,耗时:{}ms", costTime);
+        long endTime = System.currentTimeMillis();
+        long costTime = endTime - startTime;
+        log.info("待办同步Job执行完成,耗时:{}ms", costTime);
+        XxlJobHelper.log("待办同步Job执行完成,耗时:{}ms", costTime);
     }
 }

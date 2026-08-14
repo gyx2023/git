@@ -6,7 +6,8 @@ import com.crm.system.domain.dao.servicehall.ZqztJtNoticeRecordDo;
 import com.crm.system.mapper.SequenceMapper;
 import com.crm.system.service.servicehall.INengKaiCallbackService;
 import com.crm.system.client.unibss.UniBssApiClient;
-import com.crm.system.utils.HttpClientUtil;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
+import com.crm.system.service.sys.ISysOperLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -33,10 +34,15 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
     @Resource
     private RedissonClient redissonClient;
 
-    @Value("${ability.app_id:}")
+    @Resource
+    private UniBssApiClient uniBssApiClient;
+    @Resource
+    private ISysOperLogService sysOperLogService;
+
+    @Value("${ability.appId:}")
     private String APP_ID;
 
-    @Value("${ability.app_secret:}")
+    @Value("${ability.appSecret:}")
     private String APP_SECRET;
 
     @Value("${ability.url.worksheetsComplete:}")
@@ -49,60 +55,53 @@ public class NengKaiCallbackServiceImpl implements INengKaiCallbackService {
 
     @Override
     public String callWorksheetsComplete(ZqztJtNoticeRecordDo recordDo, String scene, String assignee) {
-        Map<String, Object> data = new HashMap<>();
-        String responseBody = "";
-        try {
-            String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-            String sequenceId = getCode(scene);
-            String nlpt_wm_serial = "0" + "37" + today + sequenceId;
+        String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        String sequenceId = getCode(scene);
+        String nlpt_wm_serial = "0" + "37" + today + sequenceId;
+        Map<String, Object> UNI_BSS_HEAD = uniBssApiClient.buildHead();
 
-            Map<String, Object> UNI_BSS_HEAD = UniBssApiClient.buildHead(APP_ID, APP_SECRET);
+        Map<String, Object> UNI_BSS_BODY = new HashMap<>();
+        Map<String, Object> WORKSHEETS_COMPLETE_REQ = new HashMap<>();
+        List<Map<String, Object>> worksheetsList = new ArrayList<>();
 
-            Map<String, Object> UNI_BSS_BODY = new HashMap<>();
-            Map<String, Object> WORKSHEETS_COMPLETE_REQ = new HashMap<>();
-            List<Map<String, Object>> worksheetsList = new ArrayList<>();
-
-            Map<String, Object> worksheetItem = new HashMap<>();
-            worksheetItem.put("worksheetId", recordDo.getWorksheetId());
-            worksheetItem.put("dealUser", recordDo.getDealUserCode());
-            worksheetItem.put("dealResultCode", recordDo.getDealResultCode());
-            if (!"0".equals(recordDo.getDealResultCode())) {
-                worksheetItem.put("failReason", recordDo.getFailReason());
-            }
-            // 转派场景：传入 assignee 目标工号
-            if (assignee != null && !assignee.isEmpty()) {
-                worksheetItem.put("assignee", assignee);
-            }
-
-            Map<String, Object> orderUpdate = new HashMap<>();
-            Map<String, Object> order = new HashMap<>();
-            Map<String, Object> body = new HashMap<>();
-            String bodyStr = recordDo.getBody();
-            if (bodyStr != null && !bodyStr.isEmpty()) {
-                body = JSONUtil.toBean(bodyStr, Map.class);
-            }
-            order.put("body", body);
-            orderUpdate.put("order", order);
-            worksheetItem.put("orderUpdate", orderUpdate);
-
-            worksheetsList.add(worksheetItem);
-            WORKSHEETS_COMPLETE_REQ.put("worksheets", worksheetsList);
-            UNI_BSS_BODY.put("WORKSHEETS_COMPLETE_REQ", WORKSHEETS_COMPLETE_REQ);
-
-            data.put("UNI_BSS_HEAD", UNI_BSS_HEAD);
-            data.put("UNI_BSS_BODY", UNI_BSS_BODY);
-
-            String jsonString = JSONUtil.toJsonStr(data);
-            log.info("请求报文参数:{}", jsonString);
-            log.info("请求地址:{}", worksheetsCompleteURL);
-
-            responseBody = HttpClientUtil.doPost_nlpt(worksheetsCompleteURL, jsonString, "utf-8", nlpt_wm_serial);
-            log.info("响应报文:{}", responseBody);
-            return responseBody;
-        } catch (Exception e) {
-            log.error("能开回调失败: noticeRecordId={}, scene={}, assignee={}", recordDo != null ? recordDo.getId() : null, scene, assignee, e);
-            throw new RuntimeException("能开回调失败");
+        Map<String, Object> worksheetItem = new HashMap<>();
+        worksheetItem.put("worksheetId", recordDo.getWorksheetId());
+        worksheetItem.put("dealUser", recordDo.getDealUserCode());
+        worksheetItem.put("dealResultCode", recordDo.getDealResultCode());
+        if (!"0".equals(recordDo.getDealResultCode())) {
+            worksheetItem.put("failReason", recordDo.getFailReason());
         }
+        // 转派场景：传入 assignee 目标工号
+        if (assignee != null && !assignee.isEmpty()) {
+            worksheetItem.put("assignee", assignee);
+        }
+
+        Map<String, Object> orderUpdate = new HashMap<>();
+        Map<String, Object> order = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
+        String bodyStr = recordDo.getBody();
+        if (bodyStr != null && !bodyStr.isEmpty()) {
+            body = JSONUtil.toBean(bodyStr, Map.class);
+        }
+        order.put("body", body);
+        orderUpdate.put("order", order);
+        worksheetItem.put("orderUpdate", orderUpdate);
+
+        worksheetsList.add(worksheetItem);
+        WORKSHEETS_COMPLETE_REQ.put("worksheets", worksheetsList);
+        UNI_BSS_BODY.put("WORKSHEETS_COMPLETE_REQ", WORKSHEETS_COMPLETE_REQ);
+
+        Map<String, String> extraHeaders = new LinkedHashMap<>();
+        extraHeaders.put("nlpt-wm-app-id", "SC");
+        extraHeaders.put("nlpt-wm-tenant-id", "UC");
+        extraHeaders.put("nlpt-wm-serial", nlpt_wm_serial);
+        extraHeaders.put("nlpt-wm-touchpoint", "37");
+
+        return sysOperLogService.logApiCall("能开回调", worksheetsCompleteURL, JSONUtil.toJsonStr(UNI_BSS_BODY), () -> {
+            UniBssResponse resp = uniBssApiClient.post(worksheetsCompleteURL, UNI_BSS_HEAD, UNI_BSS_BODY, extraHeaders);
+            log.info("响应报文:{}", resp);
+            return resp.getValueByPath("$");
+        });
     }
 
     private String getCode(String seqName) {

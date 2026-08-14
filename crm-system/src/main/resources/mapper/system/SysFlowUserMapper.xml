@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.sys.SysFlowUserMapper">
+
+    <!-- 对齐老框架 getNextUserListByNodeAndUserArea（SysFlowUserService.java:333）：
+         sys_flow_user/sys_user/sys_org 均为老系统同步表，条件与老 HQL 逐条对应：
+         fu.is_valid=1 ↔ SysFlowUser.valid, u.is_valid='1' ↔ sysUser.valid,
+         o.area_id ↔ sysUser.org.area.id；不过滤 fu.area_id（老口径） -->
+    <select id="selectHandlersByProcessAndAreas" resultType="map">
+        SELECT DISTINCT u.id_ AS userId, u.name_ch AS userName
+        FROM sys_flow_user fu
+        INNER JOIN sys_user u ON fu.user_id = u.id_ AND u.is_valid = '1'
+        INNER JOIN sys_org o ON u.org_id = o.id_
+        WHERE fu.is_valid = 1
+          AND fu.process_key = #{processKey}
+          AND fu.task_def_key = #{taskDefKey}
+          AND o.area_id IN
+        <foreach collection="areaIds" item="areaId" open="(" separator="," close=")">
+            #{areaId}
+        </foreach>
+        ORDER BY u.id_
+    </select>
+</mapper>

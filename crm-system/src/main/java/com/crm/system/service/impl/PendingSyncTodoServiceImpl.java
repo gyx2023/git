@@ -4,8 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
-import com.crm.common.utils.JsonUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.domain.dao.PendingGroupTodo;
@@ -16,13 +17,17 @@ import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.sys.ISysCodeService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
+import org.flowable.engine.HistoryService;
+import org.flowable.task.api.history.HistoricTaskInstance;
+import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -46,16 +51,31 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     private OldWorkflowQueryService oldWorkflowQueryService;
 
     @Resource
+    private HistoryService flowableHistoryService;
+
+    @Resource
     private ISysParamService sysParamService;
 
     @Resource
     private ISysCodeService sysCodeService;
 
+    @Resource
+    private UniBssApiClient uniBssApiClient;
+    @Resource
+    private ISysOperLogService sysOperLogService;
+
     private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
+    /** 并签/同环节实例视为"同一轮次"的创建时间窗口（毫秒） */
+    private static final long ROUND_WINDOW_MS = 2000L;
 
     @Override
     public void syncTodoTask(PendingGroupTodo pendingTodo) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("待办同步集团");
+        operLog.setRequestMethod("POST");
+        operLog.setOperatorType(2);
+        long startTime = System.currentTimeMillis();
         try {
             ToppOrder order = toppOrderMapper.selectOne(
                 new LambdaQueryWrapper<ToppOrder>()
@@ -67,6 +87,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 pendingTodo.setFailTimes(3);
                 pendingTodo.setRecMsg("订单不存在");
                 pendingService.updateGroupTodoTask(pendingTodo);
+                operLog.setStatus(1);
+                operLog.setErrorMsg("订单不存在");
                 return;
             }
             // 指定时间以前的数据
@@ -76,17 +98,18 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 pendingTodo.setFailTimes(3);
                 pendingTodo.setRecMsg("订单不存在或者指定时间以前数据,不做处理");
                 pendingService.updateGroupTodoTask(pendingTodo);
+                operLog.setStatus(1);
+                operLog.setErrorMsg("订单不存在或者指定时间以前数据,不做处理");
                 return;
             }
             List<Map<String, Object>> hisList; //任务列表
             Map<String, Object> firstTask; //第一个任务;
             Map<String, Object> lastTask; //最后一个任务;
             Map<String, Object> currentTask; //当前任务;
-            int currentTaskInHisListIndex; //当前任务在histList索引位置,为了查询上一环节处理任务信息
 
             if ("u".equals(pendingTodo.getOperatorType())) {
-                // 刷新任务列表数据
-                hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts(pendingTodo.getProcInstId());
+                // 刷新任务列表数据（优先老表，表不存在时回退 Flowable）
+                hisList = queryHistoricTaskInsts(pendingTodo.getProcInstId());
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
                     .compareTo((java.util.Date) a.get("startTime")));
                 firstTask = hisList.get(hisList.size() - 1);
@@ -94,54 +117,46 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
                 currentTask = lastTask;
             } else {
-                currentTask = oldWorkflowQueryService
-                    .queryOldHistoricTaskByTaskId(pendingTodo.getTaskId());
+                currentTask = queryHistoricTaskByTaskId(pendingTodo.getTaskId());
                 log.info("查询历史任务结果: taskId={}, currentTask={}", pendingTodo.getTaskId(), currentTask != null ? currentTask.get("id") : "null");
                 if (currentTask == null){
                     throw new RuntimeException("历史任务不存在");
                 }
                 // 刷新任务列表数据
-                hisList = oldWorkflowQueryService.queryOldHistoricTaskInsts((String) currentTask.get("procInsId"));
+                hisList = queryHistoricTaskInsts((String) currentTask.get("procInsId"));
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
                     .compareTo((java.util.Date) a.get("startTime")));
                 firstTask = hisList.get(hisList.size() - 1);
                 lastTask = hisList.get(0);
             }
-            // 获取当前任务在任务列表中的索引位置
-            currentTaskInHisListIndex = getCurrentTaskInListIndex(hisList, currentTask);
             // 构建请求体
-            Map<String, Object> dataMap = new HashMap<>();
-            dataMap.put("UNI_BSS_HEAD", this.buildHead());
-            dataMap.put("UNI_BSS_BODY", this.getBody(order, pendingTodo, currentTask,
-                firstTask, lastTask, hisList, currentTaskInHisListIndex));
+            Map<String, Object> head = this.buildHead();
+            Map<String, Object> body = this.getBody(order, pendingTodo, currentTask, firstTask, hisList);
 
-            String jsonString = JSON.toJSONString(dataMap);
-            log.info("待办同步至集团运营平台请求消息:{}", jsonString);
-            pendingTodo.setSendMsg(jsonString);
-
-            // HTTP POST请求
             String todoTaskSyncUrl = sysParamService.findValueByCode("todoTaskSyncUrl");
-            String result = HttpClientUtil.doPostCustomBody(todoTaskSyncUrl, jsonString, "utf-8",10 * 1000);
-            log.info("待办同步至集团运营平台接口返回消息:{}",result);
-            pendingTodo.setRecMsg(result);
 
-            // 解析返回结果
-            if (!isJSON(result)) { //返回消息是非json格式,肯定报错了
+            Map<String, Object> dataMap = new HashMap<>();
+            dataMap.put("UNI_BSS_HEAD", head);
+            dataMap.put("UNI_BSS_BODY", body);
+            pendingTodo.setSendMsg(JSON.toJSONString(dataMap));
+
+            operLog.setOperUrl(todoTaskSyncUrl);
+            operLog.setOperParam(JSON.toJSONString(dataMap));
+
+            UniBssResponse resp = uniBssApiClient.post(todoTaskSyncUrl, head, body);
+            log.info("待办同步至集团运营平台接口返回: {}", resp.getRawJson());
+            pendingTodo.setRecMsg(resp.getRawJson().toString());
+
+            if (resp.isSuccess()) {
+                pendingTodo.setSendStatus("1");
+                pendingTodo.setFailTimes(0);
+                operLog.setStatus(0);
+                operLog.setJsonResult(resp.toString());
+            } else {
                 pendingTodo.setSendStatus("2");
                 pendingTodo.setFailTimes(3);
-            } else {
-                JSONObject json = JSONObject.parseObject(result);
-                String headCode = JsonUtils.getNodeValueByPath(json, "UNI_BSS_HEAD.RESP_CODE");
-                String busiCode = JsonUtils.getNodeValueByPath(json, "UNI_BSS_BODY.SYNC_WAIT_SOLVE_INFO_SER_RSP.CODE");
-                if ("00000".equals(headCode) && "000".equals(busiCode)) {
-                    //成功
-                    pendingTodo.setSendStatus("1");
-                    pendingTodo.setFailTimes(0);
-                } else {
-                    //失败
-                    pendingTodo.setSendStatus("2");
-                    pendingTodo.setFailTimes(3);
-                }
+                operLog.setStatus(1);
+                operLog.setErrorMsg(resp.toString());
             }
 
         } catch (Exception e) {
@@ -149,7 +164,11 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             pendingTodo.setSendStatus("2");
             pendingTodo.setFailTimes(3);
             pendingTodo.setRecMsg(e.getMessage());
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
         } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            sysOperLogService.insertOperlog(operLog);
             pendingService.updateGroupTodoTask(pendingTodo);
         }
     }
@@ -164,17 +183,17 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 构建请求体
      */
-    private Map<String, Object> getBody(ToppOrder order,PendingGroupTodo todoTask,Map<String, Object> currentTask,Map<String, Object> firstTask,Map<String, Object> lastTask,List<Map<String, Object>> hisList,int currentTaskInHisListIndex) {
-        Map<String, Object> baseMap = new HashMap<>();
+    private Map<String, Object> getBody(ToppOrder order,PendingGroupTodo todoTask,Map<String, Object> currentTask,Map<String, Object> firstTask,List<Map<String, Object>> hisList) {
+        Map<String, Object> baseMap = new HashMap<>(4);
         String operatorType = todoTask.getOperatorType();
         baseMap.put("TCP_CONT", this.getTcpCont());
         baseMap.putAll(this.getOrderInfo(order,operatorType));
         //PROCESS_START_INFO 我的发起信息对象集合(数组对象),只在发起的第一个环节获取信息
         baseMap.put("PROCESS_START_INFO", this.getProcessInfo(currentTask,firstTask,order));
-        //WAIT_SOLVE_INFO 待办信息对象(数组对象)
-        baseMap.put("WAIT_SOLVE_INFO", this.getWaitSolveInfo(currentTask,firstTask,lastTask,operatorType,hisList,order,currentTaskInHisListIndex));
-        //ALREADY_SOLVE_INFO 已办信息对象集合(数组对象)
-        baseMap.put("ALREADY_SOLVE_INFO", this.getAlreadySolveInfo(operatorType,lastTask,order,currentTask,firstTask,hisList));
+        //WAIT_SOLVE_INFO 待办信息对象(数组对象)：新增当前任务 + 上一环节/当前环节已结束实例删除
+        baseMap.put("WAIT_SOLVE_INFO", this.getWaitSolveInfo(currentTask,operatorType,hisList,order));
+        //ALREADY_SOLVE_INFO 已办信息对象集合(数组对象)：上一环节/当前环节用户完成实例（引擎删除的不进已办）
+        baseMap.put("ALREADY_SOLVE_INFO", this.getAlreadySolveInfo(operatorType,currentTask,hisList,order));
         Map<String, Object> body = new HashMap<>();
         body.put("SYNC_WAIT_SOLVE_INFO_SER_REQ", baseMap);
         return body;
@@ -198,12 +217,16 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 订单信息
      */
     private Map<String, Object> getOrderInfo(ToppOrder order,String operatorType) {
-        Map<String, Object> orderInfo = new HashMap<>();
-        orderInfo.put("PROCESS_CODE", "zjzqyypt-" + order.getOrderNumber()); //订单ID 有特定格式编码 流程名称
+        Map<String, Object> orderInfo = new HashMap<>(8);
+        //订单ID 有特定格式编码 流程名称
+        orderInfo.put("PROCESS_CODE", "zjzqyypt-" + order.getOrderNumber());
         SysCodeVo codeVo = sysCodeService.findCode("process_key", order.getOrderType());
-        orderInfo.put("PROCESS_TYPE", (codeVo != null) ? codeVo.getName() : order.getOrderType()); //所属应用系统待办类型（暂定中文名称）流程名称
-        orderInfo.put("SYSTEM_SOURCE", "浙江政企运营平台"); //待办所属应用系统中文名称
-        orderInfo.put("PROCESS_NAME", order.getOrderName()); //订单标题
+        //所属应用系统待办类型（暂定中文名称）流程名称
+        orderInfo.put("PROCESS_TYPE", (codeVo != null) ? codeVo.getName() : order.getOrderType());
+        //待办所属应用系统中文名称
+        orderInfo.put("SYSTEM_SOURCE", "浙江政企运营平台");
+        //订单标题
+        orderInfo.put("PROCESS_NAME", order.getOrderName());
         // 获取创建人的OA账号
         String startUserCode = "";
         if (order.getCreator() != null) {
@@ -212,19 +235,26 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 startUserCode = creator.getOaAccount() != null ? creator.getOaAccount() : "";
             }
         }
-        orderInfo.put("START_USER_CODE", startUserCode); //待办创建人(OA账号)
-        orderInfo.put("BUSINESS_SYSTEM_CODE", "10202"); //业务归属系统(异步下发时必填;非流程引擎有运营平台提供) 写死10202
+        //待办创建人(OA账号)
+        orderInfo.put("START_USER_CODE", startUserCode);
+        //业务归属系统(异步下发时必填;非流程引擎有运营平台提供) 写死10202
+        orderInfo.put("BUSINESS_SYSTEM_CODE", "10202");
         // 指定时间以前的数据用旧编码
         Date checkDate = DateUtils.parseDate("2023-09-07 22:40:00");
         if (checkDate != null && order.getCreateTime().before(checkDate)) {
-            orderInfo.put("BUSINESS_SYSTEM_CODE", "ZJZQYYPT"); //同步传ZJZQYYPT,指定时间以前的
+            //同步传ZJZQYYPT,指定时间以前的
+            orderInfo.put("BUSINESS_SYSTEM_CODE", "ZJZQYYPT");
         }
-        orderInfo.put("FIRST_BIZ_TYPE_CODE", "ywyy"); // 一级业务类型编码 ywyy-业务运营
-        orderInfo.put("ORDER_STATE", "B"); //订单状态 处理中
+        // 一级业务类型编码 ywyy-业务运营
+        orderInfo.put("FIRST_BIZ_TYPE_CODE", "ywyy");
+        //订单状态 处理中
+        orderInfo.put("ORDER_STATE", "B");
         if ("u".equals(operatorType)) {
-            orderInfo.put("ORDER_STATE", "D"); //订单结束
+            //订单结束
+            orderInfo.put("ORDER_STATE", "D");
         }
-        orderInfo.put("START_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, order.getCreateTime())); //待办创建时间格式：yyyyMMddHHmmss
+        //待办创建时间格式：yyyyMMddHHmmss
+        orderInfo.put("START_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, order.getCreateTime()));
         orderInfo.put("ORDER_UPDATE_TIME", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, new Date()));
         return orderInfo;
     }
@@ -234,12 +264,16 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      */
     private List<JSONObject> getProcessInfo(Map<String, Object> currentTask,Map<String, Object> firstTask,ToppOrder order) {
         List<JSONObject> processList = new ArrayList<>();
-        if (currentTask.get("id").equals(firstTask.get("id"))) { //第一个环节，只存在一条新增待办数据
+        //第一个环节，只存在一条新增待办数据
+        if (currentTask.get("id").equals(firstTask.get("id"))) {
             JSONObject taskJson = new JSONObject();
-            taskJson.put("OPERATION_STATE", "0"); //新增
-            taskJson.put("CURRENT_LINK", firstTask.get("name")); //当前环节
+            //新增
+            taskJson.put("OPERATION_STATE", "0");
+            //当前环节
+            taskJson.put("CURRENT_LINK", firstTask.get("name"));
             String url = getUrl(firstTask,  order.getId().toString());
-            taskJson.put("URL", url); //订单查看URL
+            //订单查看URL
+            taskJson.put("URL", url);
             taskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(firstTask));
             processList.add(taskJson);
         }
@@ -248,108 +282,286 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     /**
      * 待办信息
+     * 新增当前任务（OPERATION_STATE=0 在前）+ "其后第一个被创建的任务"为当前任务的已结束实例删除（OPERATION_STATE=1 在后）
      */
-    private List<JSONObject> getWaitSolveInfo(Map<String, Object> currentTask,Map<String, Object> firstTask,Map<String, Object> lastTask,String operatorType,List<Map<String, Object>> hisList,ToppOrder order,int currentTaskInHisListIndex) {
+    private List<JSONObject> getWaitSolveInfo(Map<String, Object> currentTask, String operatorType,
+                                             List<Map<String, Object>> hisList, ToppOrder order) {
         List<JSONObject> waitSolveInfoList = new ArrayList<>();
+        // 流程完结：收尾"其后没有新任务创建"的已结束实例（即仍挂在 OA 待办的最后环节实例）
+        if ("u".equals(operatorType)) {
+            for (Map<String, Object> task : findUnclosedEnded(hisList)) {
+                waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
+            }
+            return waitSolveInfoList;
+        }
         JSONObject waitTaskJson = new JSONObject();
-        waitTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) currentTask.get("startTime"))); //该时间为处理待办时间格式：yyyyMMddHHmmss（新增待办时为必填项，推送智慧门户时必传）
-        waitTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(currentTask)); //当前处理人
-        waitTaskJson.put("WAIT_SOLVE_URL", getUrl(currentTask,order.getId().toString())); //待办url
-        waitTaskJson.put("WAIT_SOLVE_LEVEL", "0"); //代办等级 0
-        waitTaskJson.put("OPERATION_STATE", "0"); //0：新增、1：删除,此处先默认0
-        waitTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36"); //省分编码（统一B-编码），当在运营平台配置了推送代办给智慧门户则必传
-        waitTaskJson.put("PENDING_LEVEL", "0"); //待办等级（1.普通，2.重要，3 加急备注 0）当在运营平台配置了推送代办给智慧门户则必传
-        waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, new Date())); //待办修改时间
+        //该时间为处理待办时间格式：yyyyMMddHHmmss（新增待办时为必填项，推送智慧门户时必传）
+        waitTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) currentTask.get("startTime")));
+        //当前处理人
+        waitTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(currentTask));
+        //待办url
+        waitTaskJson.put("WAIT_SOLVE_URL", getUrl(currentTask, order.getId().toString()));
+        //代办等级 0
+        waitTaskJson.put("WAIT_SOLVE_LEVEL", "0");
+        //0：新增、1：删除,此处先默认0
+        waitTaskJson.put("OPERATION_STATE", "0");
+        //省分编码（统一B-编码），当在运营平台配置了推送代办给智慧门户则必传
+        waitTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36");
+        //待办等级（1.普通，2.重要，3 加急备注 0）当在运营平台配置了推送代办给智慧门户则必传
+        waitTaskJson.put("PENDING_LEVEL", "0");
+        //待办修改时间
+        waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, new Date()));
         if (currentTask.get("startTime") != null) {
-            waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) currentTask.get("startTime"))); //待办修改时间
+            //待办修改时间
+            waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) currentTask.get("startTime")));
         }
-        waitTaskJson.put("WORKSHEET_ID", currentTask.get("id")); //任务ID
-        waitTaskJson.put("FLOW_CODE", currentTask.get("taskDefKey")); //任务编码
-        waitTaskJson.put("FLOW_NAME", currentTask.get("name")); //任务中文名称
-
-        if ("u".equals(operatorType)) { //如果是流程结束 ,则取最近的环节待办，状态为删除
-            waitTaskJson.put("OPERATION_STATE", "1"); //0：新增、1：删除
-            if (lastTask.get("endTime") != null) {
-                waitTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) lastTask.get("endTime"))); //待办修改时间
-            }
-            waitSolveInfoList.add(waitTaskJson);
-            return waitSolveInfoList;
-        }
-        // 第一个环节，只存在一条新增待办数据
-        if (currentTask.get("id").equals(firstTask.get("id"))) {
-            waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(currentTask));
-            waitSolveInfoList.add(waitTaskJson);
-            return waitSolveInfoList;
-        }
-        waitTaskJson.put("BEFORE_SOLVE_USER_CODE", getOaByTaskAssignee(hisList.get(currentTaskInHisListIndex + 1))); //上一步处理人(OA账号)当在运营平台配置了推送代办给智慧门户则必传
-        waitSolveInfoList.add(waitTaskJson);
-        if (hisList.size() > 1) {
-            JSONObject preTaskJson = new JSONObject();
-            Map<String, Object> preTask = hisList.get(currentTaskInHisListIndex + 1);
-            preTaskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) preTask.get("startTime"))); //该时间为处理待办时间格式：yyyyMMddHHmmss（新增待办时为必填项，推送智慧门户时必传）
-            preTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(preTask)); //当前处理人
-            preTaskJson.put("WAIT_SOLVE_URL", BASE_URL + ORDER_INFO_URL + order.getId()); //待办url（新增待办时为必填项）处理url
-            preTaskJson.put("WAIT_SOLVE_LEVEL", "0"); //代办等级 0
-            preTaskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36"); //省分编码（统一B-编码），当在运营平台配置了推送代办给智慧门户则必传
-            preTaskJson.put("PENDING_LEVEL", "0"); //待办等级（1.普通，2.重要，3 加急备注 0）当在运营平台配置了推送代办给智慧门户则必传
-            preTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) preTask.get("startTime"))); //待办修改时间
-            preTaskJson.put("WORKSHEET_ID", preTask.get("id")); //任务ID
-            preTaskJson.put("FLOW_CODE", preTask.get("taskDefKey")); //任务编码
-            preTaskJson.put("FLOW_NAME", preTask.get("name")); //任务中文名称
-            preTaskJson.put("OPERATION_STATE", "1"); //0：新增、1：删除
-            if (preTask.get("endTime") != null) {
-                preTaskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) preTask.get("endTime"))); //待办修改时间
-            }
-            waitSolveInfoList.add(preTaskJson);
+        //任务ID
+        waitTaskJson.put("WORKSHEET_ID", currentTask.get("id"));
+        //任务编码
+        waitTaskJson.put("FLOW_CODE", currentTask.get("taskDefKey"));
+        //任务中文名称
+        waitTaskJson.put("FLOW_NAME", currentTask.get("name"));
+        // 上一步处理人（findPrevNodeTasks 已算好，首环节为发起人自身）
+        Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> prevEnded = (List<Map<String, Object>>) prev.get("prevEnded");
+        waitTaskJson.put("BEFORE_SOLVE_USER_CODE", (String) prev.get("beforeSolveUserCode"));
+        waitSolveInfoList.add(waitTaskJson); // OP=0 先入
+        // 转移增量（OP=1 后入）：已结束实例的收尾只由"其后第一个被创建的任务"的消息携带一次，
+        // 已删除过的不再重复出现（覆盖并签并行/串行、串行节点、退回、积压）
+        for (Map<String, Object> task : prevEnded) {
+            waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
         }
         return waitSolveInfoList;
     }
 
     /**
      * 已办信息
-     * 流程完结 → 已办不用删，待办删了就行，已办传空数组
-     * 否则取上一个环节的信息
+     * 流程完结 → 最后环节（其后无新任务创建）用户完成（非引擎删除）的实例
+     * 否则 → "其后第一个被创建的任务"为当前任务的用户完成实例（引擎删除的实例不进已办，只删待办）
      */
-    private List<JSONObject> getAlreadySolveInfo(String operatorType,Map<String, Object> lastTask,ToppOrder order,
-                                                 Map<String, Object> currentTask,Map<String, Object> firstTask,List<Map<String, Object>> hisList) {
+    private List<JSONObject> getAlreadySolveInfo(String operatorType, Map<String, Object> currentTask,
+                                                 List<Map<String, Object>> hisList, ToppOrder order) {
         List<JSONObject> alreadySolveInfoList = new ArrayList<>();
-        if ("u".equals(operatorType)) { //如果是订单完结,则取最后一个环节，新增已办
-            JSONObject lastTaskJson = new JSONObject();
-            lastTaskJson.put("WORKSHEET_ID", lastTask.get("id")); //工单ID(唯一标识，服务大厅和异步下发时必填)
-            lastTaskJson.put("FLOW_CODE", lastTask.get("taskDefKey")); //当前环节编码
-            lastTaskJson.put("FLOW_NAME", lastTask.get("name")); //当前环节名称
-            lastTaskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(lastTask)); //当前处理人
-            lastTaskJson.put("CURRENT_LINK", lastTask.get("taskDefKey")); //当前环节
-            lastTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(lastTask));
-            if (lastTask.get("endTime") == null) {
-                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, order.getUpdateTime())); //已办人处理时间
-            } else {
-                lastTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) lastTask.get("endTime"))); //已办人处理时间
-            }
-            lastTaskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + order.getId()); //查看订单Url
-            lastTaskJson.put("OPERATION_STATE", "0"); //操作标识,0：新增（已办信息对象集合不为空时，为必填）
-            alreadySolveInfoList.add(lastTaskJson);
-        } else {
-            if (hisList.size() > 1 && !currentTask.get("id").equals(firstTask.get("id"))) {
-                JSONObject preTaskJson = new JSONObject();
-                Map<String, Object> preTask = hisList.get(1); //取前一个环节
-                preTaskJson.put("WORKSHEET_ID", preTask.get("id")); //工单ID(唯一标识，服务大厅和异步下发时必填)
-                preTaskJson.put("FLOW_CODE", preTask.get("taskDefKey")); //当前环节编码
-                preTaskJson.put("FLOW_NAME", preTask.get("name")); //当前环节名称
-                preTaskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(preTask)); //当前处理人
-                preTaskJson.put("CURRENT_LINK", preTask.get("taskDefKey")); //当前环节
-                preTaskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(preTask));
-                if (preTask.get("endTime") == null) {
-                    preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, order.getUpdateTime())); //已办人处理时间
-                } else {
-                    preTaskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) preTask.get("endTime"))); //已办人处理时间
+        List<Map<String, Object>> completedTasks = new ArrayList<>();
+        // 订单完结：最后环节中用户完成的实例进已办
+        if ("u".equals(operatorType)) {
+            for (Map<String, Object> task : findUnclosedEnded(hisList)) {
+                if (!"deleted".equals(task.get("deleteReason"))) {
+                    completedTasks.add(task);
                 }
-                preTaskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + order.getId()); //查看订单Url
-                preTaskJson.put("OPERATION_STATE", "0"); //操作标识,0：新增（已办信息对象集合不为空时，为必填）
-                alreadySolveInfoList.add(preTaskJson);
             }
+        } else {
+            // 已结束实例的已办只由"其后第一个被创建的任务"的消息携带一次，重复已办 OA 不接受
+            Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
+            completedTasks.addAll(prevCompleted);
+        }
+        for (Map<String, Object> task : completedTasks) {
+            alreadySolveInfoList.add(buildAlreadySolveItem(task, order));
         }
         return alreadySolveInfoList;
+    }
+
+    /**
+     * 计算当前任务消息应携带的转移增量与上一步处理人：
+     * prevEnded —— 已结束且"当前任务是其后第一个被创建的任务"（first-after）的实例：
+     *   每个已结束实例的收尾（删待办/进已办）只由一条消息携带，已删除过的不再重复出现
+     *   （不依赖时间窗口/首条判定，天然覆盖并签并行、并签串行、串行节点、退回重来、任务积压）
+     * prevCompleted —— prevEnded 中用户完成（非引擎删除 deleteReason=deleted）的实例（进已办）
+     * beforeSolveUserCode —— 上一步处理人：当前任务之前创建、非同环节、创建最晚的任务所在环节中，
+     *   最后完成的用户完成实例的处理人（无上一环节时为发起人自身）
+     */
+    private Map<String, Object> findPrevNodeTasks(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
+        String currentTaskId = String.valueOf(currentTask.get("id"));
+        Date currentStartTime = (Date) currentTask.get("startTime");
+        List<Map<String, Object>> prevEnded = new ArrayList<>();
+        List<Map<String, Object>> prevCompleted = new ArrayList<>();
+        for (Map<String, Object> task : hisList) {
+            Date endTime = (Date) task.get("endTime");
+            if (endTime == null || currentStartTime == null) {
+                continue; // 只看已结束实例
+            }
+            // 该任务结束后最早被创建的任务（startTime >= endTime 且最小）
+            Map<String, Object> firstAfter = null;
+            Date firstAfterStart = null;
+            for (Map<String, Object> after : hisList) {
+                Date startTime = (Date) after.get("startTime");
+                if (startTime == null) {
+                    continue;
+                }
+                if (startTime.getTime() >= endTime.getTime()
+                        && (firstAfterStart == null || startTime.getTime() < firstAfterStart.getTime())) {
+                    firstAfterStart = startTime;
+                    firstAfter = after;
+                }
+            }
+            if (firstAfter != null && String.valueOf(firstAfter.get("id")).equals(currentTaskId)) {
+                prevEnded.add(task);
+                if (!"deleted".equals(task.get("deleteReason"))) {
+                    prevCompleted.add(task);
+                }
+            }
+        }
+        // 按结束时间倒序，保证删除/已办条目输出顺序确定
+        Comparator<Map<String, Object>> byEndTimeDesc = (a, b) ->
+            ((Date) b.get("endTime")).compareTo((Date) a.get("endTime"));
+        prevEnded.sort(byEndTimeDesc);
+        prevCompleted.sort(byEndTimeDesc);
+        // 上一步处理人：当前任务之前创建、非同环节、创建最晚的任务所在环节中，最后完成的用户完成实例的处理人
+        String beforeSolveUserCode = "";
+        String anchorKey = null;
+        Date anchorLatestStart = null;
+        for (Map<String, Object> task : hisList) {
+            Date startTime = (Date) task.get("startTime");
+            if (startTime == null || currentStartTime == null) {
+                continue;
+            }
+            if (startTime.getTime() >= currentStartTime.getTime()) {
+                continue; // 只看当前任务之前创建的（积压时 hisList 可能含后续节点，不能看之后）
+            }
+            if (currentTask.get("taskDefKey").equals(task.get("taskDefKey")) && Math.abs(startTime.getTime() - currentStartTime.getTime()) <= ROUND_WINDOW_MS) {
+                continue; // 排除同环节（兄弟实例/旧轮）
+            }
+            if (anchorLatestStart == null || startTime.getTime() > anchorLatestStart.getTime()) {
+                anchorLatestStart = startTime;
+                anchorKey = (String) task.get("taskDefKey");
+            }
+        }
+        if (anchorKey != null) {
+            Map<String, Object> lastCompleted = null;
+            Map<String, Object> lastEnded = null;
+            Date lastCompletedTime = null;
+            Date lastEndedTime = null;
+            for (Map<String, Object> task : hisList) {
+                Date endTime = (Date) task.get("endTime");
+                if (endTime == null || !anchorKey.equals(task.get("taskDefKey"))) {
+                    continue;
+                }
+                if (lastEndedTime == null || endTime.getTime() > lastEndedTime.getTime()) {
+                    lastEndedTime = endTime;
+                    lastEnded = task;
+                }
+                if (!"deleted".equals(task.get("deleteReason"))
+                        && (lastCompletedTime == null || endTime.getTime() > lastCompletedTime.getTime())) {
+                    lastCompletedTime = endTime;
+                    lastCompleted = task;
+                }
+            }
+            if (lastCompleted != null) {
+                beforeSolveUserCode = getOaByTaskAssignee(lastCompleted);
+            } else if (lastEnded != null) {
+                beforeSolveUserCode = getOaByTaskAssignee(lastEnded);
+            }
+        }
+        if (beforeSolveUserCode.isEmpty()) {
+            beforeSolveUserCode = getOaByTaskAssignee(currentTask); // 首环节：发起人自身
+        }
+        Map<String, Object> result = new HashMap<>(3);
+        result.put("prevEnded", prevEnded);
+        result.put("prevCompleted", prevCompleted);
+        result.put("beforeSolveUserCode", beforeSolveUserCode);
+        return result;
+    }
+
+    /**
+     * 流程完结时需收尾的已结束实例：其后没有任何任务创建（first-after 不存在）——
+     * 即流程最后环节的实例，此前各环节的收尾已由各自"后继消息"携带，此处不重复
+     */
+    private List<Map<String, Object>> findUnclosedEnded(List<Map<String, Object>> hisList) {
+        List<Map<String, Object>> unclosed = new ArrayList<>();
+        for (Map<String, Object> task : hisList) {
+            Date endTime = (Date) task.get("endTime");
+            if (endTime == null) {
+                continue;
+            }
+            boolean hasAfter = false;
+            for (Map<String, Object> after : hisList) {
+                Date startTime = (Date) after.get("startTime");
+                if (startTime != null && startTime.getTime() >= endTime.getTime()) {
+                    hasAfter = true;
+                    break;
+                }
+            }
+            if (!hasAfter) {
+                unclosed.add(task);
+            }
+        }
+        unclosed.sort((a, b) -> ((Date) b.get("endTime")).compareTo((Date) a.get("endTime")));
+        return unclosed;
+    }
+
+    /**
+     * 待办删除条目（OPERATION_STATE=1）
+     */
+    private JSONObject buildWaitDeleteItem(Map<String, Object> task, Long orderId) {
+        JSONObject taskJson = new JSONObject();
+        //该时间为处理待办时间格式：yyyyMMddHHmmss（新增待办时为必填项，推送智慧门户时必传）
+        taskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("startTime")));
+        //当前处理人
+        taskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(task));
+        //待办url
+        taskJson.put("WAIT_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+        //代办等级 0
+        taskJson.put("WAIT_SOLVE_LEVEL", "0");
+        //省分编码（统一B-编码），当在运营平台配置了推送代办给智慧门户则必传
+        taskJson.put("WAIT_SOLVE_PROVINCE_CODE", "36");
+        //待办等级（1.普通，2.重要，3 加急备注 0）当在运营平台配置了推送代办给智慧门户则必传
+        taskJson.put("PENDING_LEVEL", "0");
+        //待办修改时间
+        taskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("startTime")));
+        if (task.get("endTime") != null) {
+            //待办修改时间
+            taskJson.put("LAST_UPDATE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("endTime")));
+        }
+        //任务ID
+        taskJson.put("WORKSHEET_ID", task.get("id"));
+        //任务编码
+        taskJson.put("FLOW_CODE", task.get("taskDefKey"));
+        //任务中文名称
+        taskJson.put("FLOW_NAME", task.get("name"));
+        //0：新增、1：删除
+        taskJson.put("OPERATION_STATE", "1");
+        return taskJson;
+    }
+
+    /**
+     * 已办新增条目（OPERATION_STATE=0），SOLVE_DATE 取任务真实结束时间
+     */
+    private JSONObject buildAlreadySolveItem(Map<String, Object> task, ToppOrder order) {
+        JSONObject taskJson = new JSONObject();
+        String orderId = order.getId().toString();
+        //工单ID(唯一标识，服务大厅和异步下发时必填)
+        taskJson.put("WORKSHEET_ID", task.get("id"));
+        //当前环节编码
+        taskJson.put("FLOW_CODE", task.get("taskDefKey"));
+        //当前环节名称
+        taskJson.put("FLOW_NAME", task.get("name"));
+        //当前处理人
+        taskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(task));
+        //当前环节
+        taskJson.put("CURRENT_LINK", task.get("taskDefKey"));
+        //已办处理人
+        taskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(task));
+        //已办人处理时间
+        taskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("endTime")));
+        //查看订单Url：Flowable 用新框架地址，Activiti 用老框架地址
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            // Flowable: /warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx
+            String dealUrl = getDealUrlStr(task);
+            if (dealUrl != null) {
+                taskJson.put("ALREADY_SOLVE_URL", BASE_URL + dealUrl + "&taskId=" + task.get("id"));
+            } else {
+                taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+            }
+        } else {
+            // Activiti: 固定订单查看页
+            taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+        }
+        //操作标识,0：新增（已办信息对象集合不为空时，为必填）
+        taskJson.put("OPERATION_STATE", "0");
+        return taskJson;
     }
 
     /**
@@ -366,46 +578,91 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 设置当前任务在列表中的索引位置
+     * 获取 dealUrl 原始值（不含 BASE_URL / taskId 后缀），Flowable 查历史变量，Activiti 查旧表
      */
-    private int getCurrentTaskInListIndex(List<Map<String, Object>> hisList,Map<String, Object> currentTask) {
-        int currentTaskInHisListIndex = -1;
-        for (int i = 0; i < hisList.size(); i++) {
-            if (((String) hisList.get(i).get("id")).equals((String) currentTask.get("id"))) {
-                currentTaskInHisListIndex = i;
-                break;
+    private String getDealUrlStr(Map<String, Object> task) {
+        String taskId = task.get("id").toString();
+        String procInstId = task.get("procInsId").toString();
+        String varName = task.get("taskDefKey") + "_dealUrl";
+
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            HistoricVariableInstance flowableVar = flowableHistoryService
+                    .createHistoricVariableInstanceQuery()
+                .processInstanceId(procInstId).variableName(varName).singleResult();
+            if (flowableVar != null && flowableVar.getValue() != null) {
+                return flowableVar.getValue().toString();
+            }
+        } else {
+            Map<String, Object> dealUrl = oldWorkflowQueryService
+                    .queryOldHistoricVariable(taskId, varName);
+            if (dealUrl != null) {
+                return dealUrl.get("textValue").toString();
             }
         }
-        return currentTaskInHisListIndex;
+        return null;
     }
 
     /**
-     * 拼接完整URL
+     * 拼接完整URL（含 BASE_URL + dealUrl + taskId）
      */
-    private String getUrl(Map<String, Object> task,String orderId) {
-        Map<String, Object> dealUrl = oldWorkflowQueryService
-            .queryOldHistoricVariable(task.get("id").toString(), task.get("taskDefKey") + "_dealUrl");
-        if (dealUrl == null) {
+    private String getUrl(Map<String, Object> task, String orderId) {
+        String taskId = task.get("id").toString();
+        String dealUrlStr = getDealUrlStr(task);
+        if (dealUrlStr == null) {
             return BASE_URL + ORDER_INFO_URL + orderId;
         }
-        String dealUrlStr = dealUrl.get("textValue").toString();
-        return BASE_URL + dealUrlStr + "&taskId=" + task.get("id").toString();
+        return BASE_URL + dealUrlStr + "&taskId=" + taskId;
     }
 
-    /**
-     * 判断字符串是否为JSON格式
-     */
-    private boolean isJSON(String json) {
-        json=json.trim();
-        if ("{}".equals(json) || (json.length() > 2 && json.charAt(0) == '{' && json.charAt(json.length()-1) == '}')) {
-            try {
-                JSONObject obj = JSON.parseObject(json);
-            } catch (Exception e) {
-                log.error("json格式错误:串为:{}" , json, e);
-                return false;
-            }
-            return true;
+    // ---- 历史任务查询（Activiti 优先，表不存在时回退 Flowable） ----
+
+    private Map<String, Object> queryHistoricTaskByTaskId(String taskId) {
+        Map<String, Object> task = null;
+        try {
+            task = oldWorkflowQueryService.queryOldHistoricTaskByTaskId(taskId);
+        } catch (Exception e) {
+            log.info("老 Activiti 表查询失败，回退 Flowable, taskId={}", taskId);
         }
-        return false;
+        if (task != null) return task;
+        // Activiti 查不到，回退 Flowable
+        HistoricTaskInstance ht = flowableHistoryService.createHistoricTaskInstanceQuery()
+                .taskId(taskId).singleResult();
+        return ht != null ? toTaskMap(ht) : null;
+    }
+
+    private List<Map<String, Object>> queryHistoricTaskInsts(String procInstId) {
+        List<Map<String, Object>> result = null;
+        try {
+            result = oldWorkflowQueryService.queryOldHistoricTaskInsts(procInstId);
+        } catch (Exception e) {
+            log.info("老 Activiti 表查询失败，回退 Flowable, procInstId={}", procInstId);
+        }
+        if (result != null && !result.isEmpty()) return result;
+        // Activiti 查不到或为空，回退 Flowable
+        List<HistoricTaskInstance> list = flowableHistoryService
+                .createHistoricTaskInstanceQuery()
+                .processInstanceId(procInstId)
+                .orderByHistoricTaskInstanceStartTime().asc()
+                .list();
+        result = new ArrayList<>();
+        if (list != null) {
+            for (HistoricTaskInstance ht : list) {
+                result.add(toTaskMap(ht));
+            }
+        }
+        return result;
+    }
+
+    private Map<String, Object> toTaskMap(HistoricTaskInstance ht) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", ht.getId());
+        map.put("taskDefKey", ht.getTaskDefinitionKey());
+        map.put("procInsId", ht.getProcessInstanceId());
+        map.put("assignee", ht.getAssignee());
+        map.put("startTime", ht.getStartTime());
+        map.put("name", ht.getName());
+        map.put("endTime", ht.getEndTime());
+        map.put("_fromFlowable", Boolean.TRUE);
+        return map;
     }
 }

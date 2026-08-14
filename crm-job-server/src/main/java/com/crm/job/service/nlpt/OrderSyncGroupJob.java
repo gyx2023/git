@@ -5,12 +5,13 @@ import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import com.crm.system.domain.dao.Sequence;
 import com.crm.system.domain.dao.sys.SysCode;
-import com.crm.system.domain.dao.sys.SysLog;
+import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.domain.dao.sys.SysUserOld;
 import com.crm.system.domain.dao.topp.ToppGeneralRequirements;
 import com.crm.system.domain.dao.topp.ToppOrder;
@@ -23,23 +24,14 @@ import com.crm.system.mapper.sys.SysUserOldMapper;
 import com.crm.system.mapper.topp.ToppGeneralRequirementsMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.mapper.topp.ToppOrderVariablesMapper;
-import com.crm.system.service.sys.ISysLogService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.topp.IToppOrderSyncGroupService;
-import com.crm.system.utils.SSLClient;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
@@ -62,9 +54,9 @@ public class OrderSyncGroupJob {
     private static final String SEQ_NAME = "SYNC_GROOUP";
 
     /**
-     * 省份地市和集团地市区域编码映射关系（从sys_area表加载）
+     * 省份地市和集团地市区域编码映射关系（每次执行时刷新）
      */
-    private final Map<String, String> areaMap = new HashMap<>();
+    private Map<String, String> areaMap;
 
     @Resource
     private IToppOrderSyncGroupService orderSyncGroupService;
@@ -73,7 +65,7 @@ public class OrderSyncGroupJob {
     private ToppOrderMapper toppOrderMapper;
 
     @Resource
-    private ISysLogService sysLogService;
+    private ISysOperLogService sysOperLogService;
 
     @Resource
     private ISysParamService sysParamService;
@@ -99,33 +91,37 @@ public class OrderSyncGroupJob {
     @Resource
     private SysAreaMapper sysAreaMapper;
 
-    /**
-     * 需要发送集团服务大厅的订单类型配置缓存
-     * 与 OrderSyncGroupEventListener.needSendOrderTypeMap 加载逻辑一致
-     */
-    private final Map<String, JSONObject> needSendOrderTypeMap = new HashMap<>();
+    @Resource
+    private UniBssApiClient uniBssApiClient;
 
-    @PostConstruct
-    public void init() {
+    /**
+     * 需要发送集团服务大厅的订单类型配置缓存（每次执行时刷新）
+     */
+    private Map<String, JSONObject> needSendOrderTypeMap;
+
+    /**
+     * 每次执行前刷新缓存数据
+     */
+    private void refreshMaps() {
+        // 刷新订单类型配置
+        needSendOrderTypeMap = new HashMap<>();
         List<SysCode> codeList = sysCodeMapper.selectList(
             new LambdaQueryWrapper<SysCode>()
                 .in(SysCode::getSettingStr3, Arrays.asList("business_middle_order", "middle_service", "business_examine_order"))
         );
         for (SysCode code : codeList) {
             if (StringUtils.isNotEmpty(code.getSettingStr2())) {
-                JSONObject config = JSON.parseObject(code.getSettingStr2());
-                needSendOrderTypeMap.put(code.getCode(), config);
-                log.info("【订单同步集团任务】加载订单同步配置，orderType: {}", code.getCode());
+                needSendOrderTypeMap.put(code.getCode(), JSON.parseObject(code.getSettingStr2()));
             }
         }
-        log.info("【订单同步集团任务】订单同步配置加载完成，共{}个订单类型", needSendOrderTypeMap.size());
-
-        // 从sys_area表加载浙江省区域编码与集团地市编码的映射关系
+        // 刷新区域编码映射
+        areaMap = new HashMap<>();
         List<Map<String, Object>> areaJtCodeList = sysAreaMapper.selectAreaJtCodeList();
         for (Map<String, Object> row : areaJtCodeList) {
             areaMap.put((String) row.get("area_code"), (String) row.get("jt_code"));
         }
-        log.info("【订单同步集团任务】区域编码映射加载完成，共{}个区域", areaMap.size());
+        log.info("【订单同步集团任务】缓存刷新完成，订单类型配置{}个，区域映射{}个",
+            needSendOrderTypeMap.size(), areaMap.size());
     }
 
     /**
@@ -136,6 +132,9 @@ public class OrderSyncGroupJob {
         long startTime = System.currentTimeMillis();
         log.info("【订单同步集团任务】开始执行，时间：{}", DateUtil.now());
         XxlJobHelper.log("【订单同步集团任务】开始执行");
+
+        // 每次执行前刷新缓存
+        refreshMaps();
 
         try {
             List<ToppOrderSyncGroup> dataList = orderSyncGroupService.getPendingList();
@@ -192,10 +191,7 @@ public class OrderSyncGroupJob {
      * 构建请求头
      */
     private JSONObject buildHead() {
-        Map<String, String> params = sysParamService.findValueMapsByType("oppSyncGroupParam");
-        return new JSONObject(UniBssApiClient.buildHead(
-                params.getOrDefault("appId", ""),
-                params.getOrDefault("appKey", "")));
+        return new JSONObject(uniBssApiClient.buildHead());
     }
 
     /**
@@ -383,51 +379,38 @@ public class OrderSyncGroupJob {
      * 发送接口请求
      */
     private void sendInterface(String url, JSONObject body) {
-        SysLog sysLog = new SysLog();
-        JSONObject sendJson = new JSONObject();
-        sendJson.put("UNI_BSS_HEAD", buildHead());
-        sendJson.put("UNI_BSS_BODY", body);
+        JSONObject head = buildHead();
+        JSONObject logJson = new JSONObject();
+        logJson.put("UNI_BSS_HEAD", head);
+        logJson.put("UNI_BSS_BODY", body);
+        String requestBody = logJson.toJSONString();
+        log.info("【订单同步集团任务】请求数据:{}", requestBody);
 
-        String jsonStr = sendJson.toString();
-        sysLog.setType("省分订单数据同步服务大厅接口");
-        sysLog.setContent(jsonStr);
-        sysLog.setCreateTime(LocalDateTime.now());
-        log.info("【订单同步集团任务】请求数据:{}", jsonStr);
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle("省分订单数据同步服务大厅接口");
+        operLog.setRequestMethod("POST");
+        operLog.setOperUrl(url);
+        operLog.setOperParam(requestBody);
+        operLog.setOperatorType(2);
 
-        HttpClient httpClient = null;
-        HttpPost httpPost = null;
+        String serialNo = "037" + getCode();
+        Map<String, String> extraHeaders = new LinkedHashMap<>();
+        extraHeaders.put("nlpt-wm-tenant-id", "UC");
+        extraHeaders.put("nlpt-wm-app-id", "SC");
+        extraHeaders.put("nlpt-wm-touchpoint", "037");
+        extraHeaders.put("nlpt-wm-serial", serialNo);
+
         try {
-            httpClient = new SSLClient();
-            httpPost = new HttpPost(url);
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(5000).build();
-            httpPost.setConfig(requestConfig);
-            httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-            httpPost.addHeader("Accept", "application/json");
-            httpPost.addHeader("Accept-Encoding", "utf-8");
-            httpPost.addHeader("nlpt-wm-tenant-id", "UC");
-            httpPost.addHeader("nlpt-wm-app-id", "SC");
-            httpPost.addHeader("nlpt-wm-touchpoint", "037");
-            String serialNo = "037" + getCode();
-            httpPost.addHeader("nlpt-wm-serial", serialNo);
-            httpPost.setEntity(new StringEntity(jsonStr, "utf-8"));
-            log.info("【订单同步集团任务】流水号:{}", serialNo);
-            HttpResponse response = httpClient.execute(httpPost);
-            if (response != null) {
-                HttpEntity resEntity = response.getEntity();
-                if (resEntity != null) {
-                    JSONObject retJson = JSON.parseObject(EntityUtils.toString(resEntity, "utf-8"));
-                    log.info("【订单同步集团任务】返回消息:{}", retJson);
-                    sysLog.setRemark("请求接口返回消息" + retJson);
-                }
-            }
+            UniBssResponse resp = uniBssApiClient.post(url, head, body, extraHeaders);
+            log.info("【订单同步集团任务】返回消息:{}", resp);
+            operLog.setStatus(0);
+            operLog.setJsonResult(resp.toString());
         } catch (Exception ex) {
             log.error("【订单同步集团任务】请求接口出错:{}", ex.getMessage(), ex);
-            sysLog.setRemark("请求接口出错" + ex.getMessage());
+            operLog.setStatus(1);
+            operLog.setErrorMsg("请求接口出错" + ex.getMessage());
         } finally {
-            sysLogService.saveLog(sysLog);
-            if (httpClient instanceof java.io.Closeable) {
-                try { ((java.io.Closeable) httpClient).close(); } catch (Exception ignored) {}
-            }
+            sysOperLogService.insertOperlog(operLog);
         }
     }
 

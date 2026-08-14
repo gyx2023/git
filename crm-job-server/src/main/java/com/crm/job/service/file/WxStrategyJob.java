@@ -4,7 +4,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.core.domain.dto.WorkOrderDTO;
-import com.crm.job.utils.SftpWebUtil;
+import com.crm.job.utils.SftpUtil;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.WxStrategyService;
 import com.crm.system.service.cust.CustTCustomerProvinceService;
@@ -105,13 +106,8 @@ public class WxStrategyJob {
         COUNTRY_CODE_MAP.put("3311", "V0332500");
     }
 
-    // SFTP 配置
-    private static String ftpUsername;
-    private static String ftpPassword;
-    private static String ftpHost;
-    private static String ftpPort;
-    private static String ftDirectory;
-    private static String localPath;
+    // SFTP 配置类型
+    private static final String CONFIG_TYPE = "tc_wx_strategy";
 
     // ====================== 注入服务 ======================
     @Resource
@@ -120,21 +116,10 @@ public class WxStrategyJob {
     private WxStrategyService wxStrategyService;
     @Resource
     private CustTCustomerProvinceService customerProvinceService;
-
-    /**
-     * 初始化静态参数
-     */
-
-    public void initStaticParam() {
-        Map<String, String> param = sysParamService.findValueMapsByType("tc_wx_strategy");
-        ftpUsername = param.get("ftp_username");
-        ftpPassword = param.get("ftp_password");
-        ftpHost = param.get("ftp_host");
-        ftpPort = param.get("ftp_port");
-        localPath = param.get("ftp_local_new");
-        ftDirectory = param.get("ftp_directory");
-        log.info("SFTP 配置初始化完成：host=" + ftpHost + ", dir=" + ftDirectory);
-    }
+    @Resource
+    private SftpUtil sftpUtil;
+    @Resource
+    private ISysOperLogService sysOperLogService;
 
     // ====================== XXL-JOB 任务 ======================
 
@@ -143,10 +128,13 @@ public class WxStrategyJob {
      */
     @XxlJob(value = "sendWorkOrderJob")
     public void sendWorkOrder() {
-        initStaticParam();
         String yyyyMMdd = getJobDate();
         log.info("====== 任务工单文件下发开始，日期：" + yyyyMMdd + " ======");
-        sendsendWorkOrder(yyyyMMdd);
+        sysOperLogService.tryExportCall("策略中心-任务工单信息文件下发",
+            FTP_SEND_WORK_ORDER_FILE_NAME + yyyyMMdd, "date=" + yyyyMMdd, () -> {
+                sendsendWorkOrder(yyyyMMdd);
+                return "任务工单文件下发成功";
+            });
         log.info("====== 任务工单文件下发结束 ======");
     }
 
@@ -155,10 +143,13 @@ public class WxStrategyJob {
      */
     @XxlJob(value = "sendStrategyInfoJob")
     public void sendStrategy() {
-        initStaticParam();
         String yyyyMMdd = getJobDate();
         log.info("====== 策略主信息文件下发开始，日期：" + yyyyMMdd + " ======");
-        sendStrategyInfo(yyyyMMdd);
+        sysOperLogService.tryExportCall("策略中心-策略主信息文件下发",
+            FTP_SEND_STRATEGY_INFO_FILE_NAME + yyyyMMdd, "date=" + yyyyMMdd, () -> {
+                sendStrategyInfo(yyyyMMdd);
+                return "策略主信息文件下发成功";
+            });
         log.info("====== 策略主信息文件下发结束 ======");
     }
 
@@ -167,10 +158,13 @@ public class WxStrategyJob {
      */
     @XxlJob(value = "sendStrategyMonitorJob")
     public void sendMonitor() {
-        initStaticParam();
         String yyyyMMdd = getJobDate();
         log.info("====== 策略监控文件下发开始，日期：" + yyyyMMdd + " ======");
-        sendStrategyMonitor(yyyyMMdd);
+        sysOperLogService.tryExportCall("策略中心-策略监控信息文件下发",
+            FTP_SEND_STRATEGY_MONITOR_FILE_NAME + yyyyMMdd, "date=" + yyyyMMdd, () -> {
+                sendStrategyMonitor(yyyyMMdd);
+                return "策略监控信息文件下发成功";
+            });
         log.info("====== 策略监控文件下发结束 ======");
     }
 
@@ -180,22 +174,20 @@ public class WxStrategyJob {
      * 下发任务工单文件
      */
     public void sendsendWorkOrder(String yyyyMMdd) {
+        Map<String, String> param = sysParamService.findValueMapsByType(CONFIG_TYPE);
+        String ftDirectory = param.get("ftp_directory");
+        String localPath = param.get("ftp_local_new");
+
         String fileName = FTP_SEND_WORK_ORDER_FILE_NAME + yyyyMMdd;
         String localFile = localPath + File.separator + fileName;
 
-        try (SftpWebUtil ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort))) {
-            // 生成文件
-            if (createWorkOrderFile(localFile, yyyyMMdd) != 0) {
-                log.error("任务工单文件生成失败，终止上传");
-                return;
-            }
-            // 上传
-            try (InputStream input = new FileInputStream(localFile)) {
-                ftpUtil.login();
-                ftpUtil.upload("/", ftDirectory, fileName, input);
-                log.info("任务工单文件上传成功：" + fileName);
-                ftpUtil.close();
-            }
+        if (createWorkOrderFile(localFile, yyyyMMdd) != 0) {
+            log.error("任务工单文件生成失败，终止上传");
+            return;
+        }
+        try {
+            sftpUtil.uploadFile(CONFIG_TYPE, localFile, ftDirectory + "/" + fileName);
+            log.info("任务工单文件上传成功：" + fileName);
         } catch (Exception e) {
             log.error("任务工单文件下发异常", e);
         }
@@ -205,20 +197,20 @@ public class WxStrategyJob {
      * 下发策略主信息文件
      */
     public void sendStrategyInfo(String yyyyMMdd) {
+        Map<String, String> param = sysParamService.findValueMapsByType(CONFIG_TYPE);
+        String ftDirectory = param.get("ftp_directory");
+        String localPath = param.get("ftp_local_new");
+
         String fileName = FTP_SEND_STRATEGY_INFO_FILE_NAME + yyyyMMdd;
         String localFile = localPath + File.separator + fileName;
 
-        try (SftpWebUtil ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort))) {
-            if (createStrategyInfoFile(localFile, yyyyMMdd) != 0) {
-                log.error("策略主文件生成失败，终止上传");
-                return;
-            }
-            try (InputStream input = new FileInputStream(localFile)) {
-                ftpUtil.login();
-                ftpUtil.upload("/", ftDirectory, fileName, input);
-                log.info("策略主文件上传成功：" + fileName);
-                ftpUtil.close();
-            }
+        if (createStrategyInfoFile(localFile, yyyyMMdd) != 0) {
+            log.error("策略主文件生成失败，终止上传");
+            return;
+        }
+        try {
+            sftpUtil.uploadFile(CONFIG_TYPE, localFile, ftDirectory + "/" + fileName);
+            log.info("策略主文件上传成功：" + fileName);
         } catch (Exception e) {
             log.error("策略主文件下发异常", e);
         }
@@ -228,20 +220,20 @@ public class WxStrategyJob {
      * 下发策略监控文件
      */
     public void sendStrategyMonitor(String yyyyMMdd) {
+        Map<String, String> param = sysParamService.findValueMapsByType(CONFIG_TYPE);
+        String ftDirectory = param.get("ftp_directory");
+        String localPath = param.get("ftp_local_new");
+
         String fileName = FTP_SEND_STRATEGY_MONITOR_FILE_NAME + yyyyMMdd;
         String localFile = localPath + File.separator + fileName;
 
-        try (SftpWebUtil ftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort))) {
-            if (createStrategyMonitorFile(localFile, yyyyMMdd) != 0) {
-                log.error("策略监控文件生成失败，终止上传");
-                return;
-            }
-            try (InputStream input = new FileInputStream(localFile)) {
-                ftpUtil.login();
-                ftpUtil.upload("/", ftDirectory, fileName, input);
-                log.info("策略监控文件上传成功：" + fileName);
-                ftpUtil.close();
-            }
+        if (createStrategyMonitorFile(localFile, yyyyMMdd) != 0) {
+            log.error("策略监控文件生成失败，终止上传");
+            return;
+        }
+        try {
+            sftpUtil.uploadFile(CONFIG_TYPE, localFile, ftDirectory + "/" + fileName);
+            log.info("策略监控文件上传成功：" + fileName);
         } catch (Exception e) {
             log.error("策略监控文件下发异常", e);
         }

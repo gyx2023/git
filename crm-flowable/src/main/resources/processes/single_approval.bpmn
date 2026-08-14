@@ -5,7 +5,7 @@
         <!-- 开始事件 -->
         <startEvent id="startevent" name="开始"></startEvent>
         <!-- 客户经理处理任务 -->
-        <userTask id="manager_handle" name="客户经理处理" flowable:assignee="${manager}">
+        <userTask id="manager_handle" name="${manager_handle_name}" flowable:assignee="${manager}">
             <documentation>预警处理</documentation>
         </userTask>
         <!-- 排他网关 -->
@@ -15,10 +15,10 @@
         <!-- 流程连接线 -->
         <sequenceFlow id="flow1" sourceRef="startevent" targetRef="manager_handle"></sequenceFlow>
         <sequenceFlow id="flow2" sourceRef="manager_handle" targetRef="approvalGateway"></sequenceFlow>
-        <sequenceFlow id="flowApproved" sourceRef="approvalGateway" targetRef="endevent">
+        <sequenceFlow id="flowApproved" name="完成" sourceRef="approvalGateway" targetRef="endevent">
             <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'agree'}]]></conditionExpression>
         </sequenceFlow>
-        <sequenceFlow id="flowTransfer" sourceRef="approvalGateway" targetRef="manager_handle">
+        <sequenceFlow id="flowTransfer" name="转派" sourceRef="approvalGateway" targetRef="manager_handle">
             <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'transfer'}]]></conditionExpression>
         </sequenceFlow>
         <sequenceFlow id="flowRejected" sourceRef="approvalGateway" targetRef="endevent"></sequenceFlow>

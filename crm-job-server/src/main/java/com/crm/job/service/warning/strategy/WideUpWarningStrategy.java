@@ -2,31 +2,39 @@ package com.crm.job.service.warning.strategy;
 
 import com.crm.job.mapper.warning.WideUpWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
+import com.crm.job.service.warning.WarningLeaderService;
 import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.domain.dto.LeaderInfoDto;
+import com.crm.system.domain.dto.OrgDepartmentDto;
+import com.crm.system.domain.vo.SysAreaVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 宽带升级预警查询策略
  * <p>
- * 对应旧系统 WarningUpJob.wideWarningUpJob
- * 查询 sys_area 各地市区域 → 找到各区域领导（总经理/副总经理）
- * 预警类型标识：new_wide_up
- * <p>
- * 每个区域+每个领导生成一条 WarningRecord，由 Service 为每一条启动流程。
+ * 对应旧系统 WarningUpJob.wideWarningUpJob → startTaskWarnUp
+ * 查询有预警数据的区县 + 市本级组织部门 → 查找各级领导 → 为每位领导生成一条 WarningRecord
+ * </p>
  *
  * @author crm
  */
 @Component
+@RequiredArgsConstructor
 public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
+
+    private static final String BOSS_FLAG_AREA = "1";
+    private static final String BOSS_FLAG_ORG = "2";
+    private static final String LEADER_TASK_KEY = "leader";
 
     @Resource
     private WideUpWarningMapper mapper;
+
+    private final WarningLeaderService leaderService;
 
     @Override
     public String getOrderType() {
@@ -40,88 +48,52 @@ public class WideUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     protected List<WarningRecord> doQuery(String yyyyMM) {
-        // 第一步：查询有 bss_code 的区域
-        List<Map<String, Object>> areas = mapper.selectAllAreas();
-
-        // 第二步：查找各区域的领导（总经理/副总经理），同时获取用户详细信息
-        List<Map<String, Object>> leaderRows = mapper.selectLeaders();
-        List<LeaderInfo> leaders = new ArrayList<>();
-        for (Map<String, Object> row : leaderRows) {
-            Long userId = toLong(row.get("user_id"));
-            if (userId != null) {
-                LeaderInfo li = new LeaderInfo();
-                li.userId = userId;
-                li.deptId = toLong(row.get("dept_id"));
-                li.nickName = getString(row.get("nick_name"));
-                li.phone = getString(row.get("phonenumber"));
-                leaders.add(li);
-            }
-        }
-
         List<WarningRecord> records = new ArrayList<>();
-        for (Map<String, Object> area : areas) {
-            Long areaId = toLong(area.get("id_"));
-            String areaName = getString(area.get("name_"));
-            String bssCode = getString(area.get("bss_code"));
+        String yyyyMMFormatted = yyyyMM.substring(0, 4) + "-" + yyyyMM.substring(4);
 
-            if (leaders.isEmpty()) {
-                log.warn("【{}】未找到领导, 区域: {}", getOrderTypeName(), areaName);
+        // 一、区县维度
+        List<SysAreaVo> areas = mapper.selectWarningAreas(yyyyMMFormatted);
+        log.info("【{}】查询到预警区县: {}个", getOrderTypeName(), areas.size());
+
+        for (SysAreaVo area : areas) {
+            Long areaId = area.getId();
+            String areaName = area.getName();
+            String bssCode = area.getBssCode();
+
+            List<LeaderInfoDto> areaLeaders = leaderService.findAreaLeaders(
+                    mapper, bssCode, areaName, areaId, getOrderType(), LEADER_TASK_KEY);
+            if (areaLeaders.isEmpty()) {
+                log.warn("【{}】区县未找到领导: {}", getOrderTypeName(), areaName);
                 continue;
             }
-
-            for (LeaderInfo leader : leaders) {
-                WarningRecord record = new WarningRecord();
-                record.setOrderType(getOrderType());
-                record.setOrderName(getOrderTypeName());
-                record.setCustName(areaName);
-                record.setCustManagerId(leader.userId);
-
-                Map<String, Object> extra = new HashMap<>();
-                extra.put("wide_second_new_orderFlag", "1");
-                extra.put("wide_second_new_codeInfo", bssCode);
-                extra.put("wide_second_new_period", yyyyMM);
-                extra.put("areaId", areaId);
-                extra.put("areaName", areaName);
-                extra.put("bssCode", bssCode);
-                extra.put("orgId", leader.deptId);
-                extra.put("nickName", leader.nickName);
-                extra.put("phone", leader.phone);
-                extra.put("_needOrderNumber", true);
-                extra.put("orderCategory", "C");
-                record.setExtraVariables(extra);
-
-                records.add(record);
+            for (LeaderInfoDto leader : areaLeaders) {
+                records.add(leaderService.buildRecord(areaId, areaName, bssCode, null,
+                        leader, yyyyMMFormatted, getOrderType(), getOrderTypeName(), BOSS_FLAG_AREA));
             }
         }
+
+        // 二、市本级组织部门维度
+        List<OrgDepartmentDto> orgs = mapper.selectOrgDepartments(yyyyMMFormatted);
+        log.info("【{}】查询到预警市本级部门: {}个", getOrderTypeName(), orgs.size());
+
+        for (OrgDepartmentDto org : orgs) {
+            String countyId = org.getCountyId();
+            String countyName = org.getCountyName();
+            String areaName = org.getAreaName();
+
+            List<LeaderInfoDto> orgLeaders = leaderService.findOrgLeaders(
+                    mapper, countyId, countyName, areaName, getOrderType(), LEADER_TASK_KEY);
+            if (orgLeaders.isEmpty()) {
+                log.warn("【{}】市本级部门未找到领导: countyId={}, name={}", getOrderTypeName(), countyId, countyName);
+                continue;
+            }
+            for (LeaderInfoDto leader : orgLeaders) {
+                records.add(leaderService.buildRecord(Long.parseLong(countyId), countyName, null, countyId,
+                        leader, yyyyMMFormatted, getOrderType(), getOrderTypeName(), BOSS_FLAG_ORG));
+            }
+        }
+
         return records;
     }
 
-    @Override
-    public String buildDealUrl(Long orderId, Map<String, Object> extra) {
-        String period = extra != null ? (String) extra.get("wide_second_new_period") : "";
-        return "/userCustWarning/dealByWideUp?orderId=" + orderId
-                + (period != null ? "&period=" + period : "");
-    }
-
-    private String getString(Object v) {
-        return v == null ? null : v.toString();
-    }
-
-    private Long toLong(Object v) {
-        if (v == null) return null;
-        try {
-            if (v instanceof Number) return ((Number) v).longValue();
-            return Long.parseLong(v.toString());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    /** 领导信息 */
-    private static class LeaderInfo {
-        Long userId;
-        Long deptId;
-        String nickName;
-        String phone;
-    }
 }

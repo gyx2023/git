@@ -4,7 +4,7 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
-import com.crm.job.utils.SftpWebUtil;
+import com.crm.job.utils.SftpUtil;
 import com.crm.system.domain.dao.ContractAndOpportunityPutConfig;
 import com.crm.system.domain.vo.ContractIncomeExcelVo;
 import com.crm.system.domain.vo.ToppContractExcelVo;
@@ -13,6 +13,7 @@ import com.crm.system.mapper.ContractAndOpportunityPutConfigMapper;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import com.crm.system.mapper.topp.ToppOpportunityMapper;
 import com.crm.system.service.sys.ISysCodeService;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -52,61 +53,62 @@ public class ContractAndOpportunityPutJob {
     @Resource
     private ToppOpportunityMapper toppOpportunityMapper;
 
+    @Resource
+    private SftpUtil sftpUtil;
+
+    @Resource
+    private ISysOperLogService sysOperLogService;
+
     @XxlJob("contractAndOpportunityPutJob")
     public void execute(){
-        try{
-            Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
-            ftpUsername = param.get("ftp_username");  //用户名
-            ftpPassword = param.get("ftp_password");  //密码
-            ftpHost = param.get("ftp_host");  //ip地址
-            ftpPort = param.get("ftp_port");  //端口号
+        Map<String, String> param = sysParamService.findValueMapsByType("contract_and_opportunity_put_job");
+        String jobParam = XxlJobHelper.getJobParam();
+        String currentDate = (jobParam != null && !jobParam.trim().isEmpty())
+            ? jobParam
+            : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        sysOperLogService.tryExportCall("合同商机数据上传任务",
+            "contract_and_opportunity_put_job", "currentDate=" + currentDate, () -> {
+                ftpUsername = param.get("ftp_username");  //用户名
+                ftpPassword = param.get("ftp_password");  //密码
+                ftpHost = param.get("ftp_host");  //ip地址
+                ftpPort = param.get("ftp_port");  //端口号
 
-            String currentDate = null;
-            String jobParam = XxlJobHelper.getJobParam();
-            if (jobParam != null && !jobParam.trim().isEmpty()) {
-                currentDate = jobParam;
-            } else {
-                currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            }
+                List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
 
-            List<ContractAndOpportunityPutConfig> contractAndOpportunityPutConfigs = contractAndOpportunityPutConfigMapper.selectList();
+                // 一次性加载所有字典，避免每个地市重复加载
+                Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
+                Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
+                Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
+                Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
+                Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
+                Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
+                Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
+                Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
+                Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
+                Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
+                Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
+                Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
 
-            // 一次性加载所有字典，避免每个地市重复加载
-            Map<String, String> oppTypeMap = sysCodeService.getCodeMapByType("opp_type");
-            Map<String, String> unicomTypeMap = sysCodeService.getCodeMapByType("unicom_type");
-            Map<String, String> unicomType2Map = sysCodeService.getCodeMapByType("unicom_type_2");
-            Map<String, String> unicomType2Settingstr1Map = sysCodeService.getCodeSettingStr1MapByType("unicom_type_2");
-            Map<String, String> clueSourceMap = sysCodeService.getCodeMapByType("clue_source");
-            Map<String, String> contractAddTypeMap = sysCodeService.getCodeMapByType("contractAdd_type");
-            Map<String, String> contractTypeMap = sysCodeService.getCodeMapByType("contract_type");
-            Map<String, String> incomeTypeMap = sysCodeService.getCodeMapByType("income_type");
-            Map<String, String> selectType1Map = sysCodeService.getCodeMapByType("select_type_1");
-            Map<String, String> oppoStateMap = sysCodeService.getCodeMapByType("oppo_state");
-            Map<String, String> bidResultMap = sysCodeService.getCodeMapByType("bid_result");
-            Map<String, String> bgTypeResultMap = sysCodeService.getCodeMapByType("bg_type_new");
+                StringBuilder resultMsg = new StringBuilder();
+                for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
+                    long l1 = System.currentTimeMillis();
+                    ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
+                    String areaEng = contractAndOpportunityPutConfig.getAreaEng();
+                    Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-            for (ContractAndOpportunityPutConfig contractAndOpportunityPutConfig : contractAndOpportunityPutConfigs){
-                long l1 = System.currentTimeMillis();
-                ftpDirectory = contractAndOpportunityPutConfig.getFtpDirectory();
-                String areaEng = contractAndOpportunityPutConfig.getAreaEng();
-                Integer areaId = contractAndOpportunityPutConfig.getAreaId();
+                    String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
+                    String contract = areaEng + "Contract" + currentDate + ".xls";//合同
+                    String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
 
-                String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
-                String contract = areaEng + "Contract" + currentDate + ".xls";//合同
-                String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
-
-                // 建立SFTP连接（每个地市一个连接）
-                SftpWebUtil sftpUtil = new SftpWebUtil(ftpUsername, ftpPassword, ftpHost, Integer.parseInt(ftpPort));
-                try {
-                    sftpUtil.login();
+                    // 使用SftpUtil直连上传（每个文件独立连接，自动管理生命周期）
+                    final String configType = "contract_and_opportunity_put_job";
 
                     // 创建并上传合同收入文件
                     File incomeFile = createContractIncomeFile(areaId, areaEng);
                     long l2 = System.currentTimeMillis();
                     log.info("{} 合同收入文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l2 - l1));
                     if (incomeFile != null) {
-                        //saveToLocal(incomeFile, contractIncome);  // 本地测试用
-                        uploadSingleFileToSftp(sftpUtil, incomeFile, contractIncome, currentDate);
+                        uploadSingleFileToSftp(configType, incomeFile, contractIncome, currentDate, ftpDirectory);
                         deleteTempFile(incomeFile);
                     }
 
@@ -116,8 +118,7 @@ public class ContractAndOpportunityPutJob {
                     long l3 = System.currentTimeMillis();
                     log.info("{} 合同统计数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l3 - l2));
                     if (contractFile != null) {
-                        //saveToLocal(contractFile, contract);  // 本地测试用
-                        uploadSingleFileToSftp(sftpUtil, contractFile, contract, currentDate);
+                        uploadSingleFileToSftp(configType, contractFile, contract, currentDate, ftpDirectory);
                         deleteTempFile(contractFile);
                     }
 
@@ -128,27 +129,22 @@ public class ContractAndOpportunityPutJob {
                     long l4 = System.currentTimeMillis();
                     log.info("{} 商机数据文件生成耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l3));
                     if (opportunityFile != null) {
-                        //saveToLocal(opportunityFile, opportunity);  // 本地测试用
-                        uploadSingleFileToSftp(sftpUtil, opportunityFile, opportunity, currentDate);
+                        uploadSingleFileToSftp(configType, opportunityFile, opportunity, currentDate, ftpDirectory);
                         deleteTempFile(opportunityFile);
                     }
 
                     log.info("{} 总耗时：{} ms", contractAndOpportunityPutConfig.getAreaName(), (l4 - l1));
-                } catch (Exception e) {
-                    log.error("{} SFTP连接或上传失败", contractAndOpportunityPutConfig.getAreaName(), e);
-                } finally {
-                    try {
-                        sftpUtil.logout();
-                    } catch (Exception ex) {
-                        log.warn("断开SFTP连接失败", ex);
-                    }
-                }
 
-                log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
-            }
-        }catch(Exception e){
-            log.error("任务执行异常", e);
-        }
+                    log.info("{} 任务结束", contractAndOpportunityPutConfig.getAreaName());
+
+                    resultMsg.append(contractAndOpportunityPutConfig.getAreaName())
+                        .append(": 合同收入=").append(incomeFile != null ? "成功" : "失败")
+                        .append(", 合同统计=").append(contractFile != null ? "成功" : "失败")
+                        .append(", 商机=").append(opportunityFile != null ? "成功" : "失败")
+                        .append("; ");
+                }
+                return resultMsg.toString();
+            });
     }
 
     /**
@@ -577,20 +573,18 @@ public class ContractAndOpportunityPutJob {
     }
 
     /**
-     * 上传单个文件到SFTP服务器（使用已有的SFTP连接）
+     * 上传单个文件到SFTP服务器（使用SftpUtil）
      *
-     * @param sftpUtil 已登录的SFTP工具实例
+     * @param configType 配置类型
      * @param file 要上传的文件
      * @param fileName 目标文件名
      * @param dateSubDir 日期子目录（yyyyMMdd格式）
+     * @param ftpDir 远程基础目录（per-area）
      */
-    private void uploadSingleFileToSftp(SftpWebUtil sftpUtil, File file, String fileName, String dateSubDir) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            sftpUtil.upload(ftpDirectory, dateSubDir, fileName, fis);
-            log.info("文件上传成功: {}", fileName);
-        } catch (Exception e) {
-            log.error("文件上传失败: {}", fileName, e);
-        }
+    private void uploadSingleFileToSftp(String configType, File file, String fileName, String dateSubDir, String ftpDir) {
+        String remotePath = "/" + ftpDir + "/" + dateSubDir + "/" + fileName;
+        sftpUtil.uploadFile(configType, file.getAbsolutePath(), remotePath);
+        log.info("文件上传成功: {}", fileName);
     }
 
     /**

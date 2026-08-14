@@ -2,11 +2,6 @@
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 xxl.job:
@@ -50,16 +45,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase://10.130.27.41:2883,10.130.27.45:2883,10.130.27.59:2883/zj_sj_test?autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&useLocalSessionState=true&useUnicode=true&characterEncoding=utf8&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
-          password: PPpomns12123##
+          username: ENC(FbVEwc0v0grzcSY42HDbBUvumd++ZW7rRwINjWlk5LTePDpsZ5pGLht+gKWo/D3LLBEqBC11gejbkJsgmPX+1w==)
+          password: ENC(JPFZdoLaGYig6bI70T92mx82Z2PsdkXV6E60mx08yAc=)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(w3f1tTR3157VjH0cSJ1wvWyw8DUB5emm+trBqbRjXdFu0+L4bXspXA+1xRcrZWJy)
+          password: ENC(5Do30aoRpuVASR9sEs9QUCSPG+9MygvSEkbVb17CH2Q=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -67,37 +62,9 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
-        oracle:
-          type: ${spring.datasource.type}
-          driverClassName: oracle.jdbc.OracleDriver
-          url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-          username: ps_uni_zyy
-          password: yz_2026#
-          hikari:
-            connectionTestQuery: SELECT 1 FROM DUAL
-            connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
-      #        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#          hikari:
-#            connectionTestQuery: SELECT 1 FROM DUAL
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
+          username: ENC(Gp3AJ95oP7nzAwOakxQn4Oqyu6h0VNumQ3J9qp7GLF4=)
+          password: ENC(Dubsc/I4YiOcYGLfeMeo0fG/Qf3W/wrrcqzVLUot/lM=)
+
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -126,7 +93,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: admin123
+    password: ENC(Q6xML92rOpOFCnuOLpm2EVE7fOXVVb/P04d6B9qr7jo=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl
@@ -202,9 +169,9 @@ pre-travel-report:
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
 ability:
-  app_id: bR4nqpsTto
+  appId: bR4nqpsTto
   #app_secret: xiKiY0MSrl9wEF3jBsN5uF6aQS6NBO0V
-  app_secret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
+  appSecret: wsX4m1bfCJPX1rwgQs45Nq5U0XV7o6GS
   url:
     #worksheetsComplete: http://10.244.18.146:8000/api/chinaUnicom/govEnterprise/orderCenter/ordersget/v1
     worksheetsComplete: http://10.124.164.110:8000/api/chinaUnicom/govEnterprise/orderCenter/worksheetsComplete/v1
