@@ -17,7 +17,6 @@ import com.crm.system.service.IZqztLedgerAreaService;
 import com.crm.system.service.IZqztLedgerInfoService;
 import com.crm.system.service.IZqztOrderInfoObService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -84,8 +83,8 @@ public class ZqztLedgerInfoController extends BaseController {
     public R<Void> add(@Validated(AddGroup.class) @RequestBody ZqztLedgerInfoBo bo) {
         try {
             return toAjax(ledgerInfoService.insertByBo(bo));
-        } catch (DuplicateKeyException e) {
-            return R.fail("新增失败，该工单号已存在台账记录");
+        } catch (Exception e) {
+            return R.fail("新增失败，请稍后再试");
         }
     }
 
@@ -117,6 +116,15 @@ public class ZqztLedgerInfoController extends BaseController {
     @GetMapping("/orderInfo/{orderNo}")
     public R<ZqztLedgerInfoVo> getOrderInfo(@PathVariable String orderNo) {
         return R.ok(orderInfoObService.getOrderInfo(orderNo));
+    }
+
+    /**
+     * 工单号查重（新增前校验，重复则不允许提交）
+     */
+    @SaCheckPermission("system:ledger:add")
+    @GetMapping("/checkOrderNo/{orderNo}")
+    public R<Boolean> checkOrderNo(@PathVariable String orderNo) {
+        return R.ok(ledgerInfoService.existsByOrderNo(orderNo));
     }
 
     /**

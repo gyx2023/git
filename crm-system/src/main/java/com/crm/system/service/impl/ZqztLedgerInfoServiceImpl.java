@@ -16,6 +16,8 @@ import com.crm.system.domain.bo.ZqztLedgerInfoBo;
 import com.crm.system.domain.dao.ZqztLedgerArea;
 import com.crm.system.domain.dao.ZqztLedgerCloudConfig;
 import com.crm.system.domain.dao.ZqztLedgerInfo;
+import com.crm.system.domain.dto.ZqztCloudConfigItemDTO;
+import com.crm.system.domain.dto.ZqztCloudConfigRespDTO;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.ZqztLedgerCloudConfigVo;
 import com.crm.system.domain.vo.ZqztLedgerInfoExportVo;
@@ -102,8 +104,15 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     }
 
     @Override
+    public Boolean existsByOrderNo(String orderNo) {
+        return ledgerInfoMapper.selectCount(Wrappers.<ZqztLedgerInfo>lambdaQuery()
+            .eq(ZqztLedgerInfo::getOrderNo, orderNo)) > 0;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(ZqztLedgerInfoBo bo) {
+        checkRegionAllowedForSave(bo.getCityId(), bo.getDistrictId());
         ZqztLedgerInfo entity = BeanUtil.toBean(bo, ZqztLedgerInfo.class);
         String username = currentUsername();
         Date now = new Date();
@@ -127,6 +136,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         }
         ZqztLedgerInfo exist = getValidEntity(bo.getId());
         checkRegionAllowed(exist);
+        checkRegionAllowedForSave(bo.getCityId(), bo.getDistrictId());
         // 工单号不允许修改：以库中为准
         bo.setOrderNo(null);
         ZqztLedgerInfo entity = BeanUtil.toBean(bo, ZqztLedgerInfo.class);
@@ -195,6 +205,46 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
             exportList.add(ev);
         }
         return exportList;
+    }
+
+    @Override
+    public ZqztCloudConfigRespDTO queryCameraConfig(String cameraAccount) {
+        ZqztLedgerInfo info = ledgerInfoMapper.selectOne(Wrappers.<ZqztLedgerInfo>lambdaQuery()
+            .eq(ZqztLedgerInfo::getCameraAccount, cameraAccount)
+            .eq(ZqztLedgerInfo::getIsValid, VALID)
+            .orderByAsc(ZqztLedgerInfo::getCreateTime)
+            .last("limit 1"));
+        if (info == null) {
+            return null;
+        }
+        List<ZqztLedgerCloudConfig> configs = cloudConfigMapper.selectList(Wrappers.<ZqztLedgerCloudConfig>lambdaQuery()
+            .eq(ZqztLedgerCloudConfig::getLedgerId, info.getId())
+            .eq(ZqztLedgerCloudConfig::getIsValid, VALID)
+            .orderByAsc(ZqztLedgerCloudConfig::getSortOrder));
+        ZqztCloudConfigRespDTO dto = new ZqztCloudConfigRespDTO();
+        dto.setCameraAccount(info.getCameraAccount());
+        dto.setOrderNo(info.getOrderNo());
+        List<ZqztCloudConfigItemDTO> items = new ArrayList<>();
+        if (configs != null) {
+            for (ZqztLedgerCloudConfig c : configs) {
+                ZqztCloudConfigItemDTO item = new ZqztCloudConfigItemDTO();
+                item.setDeviceName(c.getDeviceName());
+                item.setDeviceType(c.getDeviceType());
+                item.setAccessProtocol(c.getAccessProtocol());
+                item.setChannelNum(c.getCameraChannelCount() == null ? "1" : String.valueOf(c.getCameraChannelCount()));
+                item.setDeviceId(c.getDeviceId());
+                item.setDevicePassword(c.getDevicePassword());
+                item.setGbId(c.getGbId());
+                item.setSipServerId(c.getSipServerId());
+                item.setSipServiceDomain(c.getSipServiceDomain());
+                item.setSipServerPort(c.getSipServerPort());
+                item.setSipServerIp(c.getSipServerIp());
+                item.setChannelCodeId(c.getChannelCodeId());
+                items.add(item);
+            }
+        }
+        dto.setCloudConfigList(items);
+        return dto;
     }
 
     // ==================== 私有辅助 ====================
@@ -296,6 +346,20 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         }
         if ("三级".equals(rs.level) && !Objects.equals(rs.orgCode, entity.getDistrictId())) {
             throw new ServiceException("无权查看该台账");
+        }
+    }
+
+    /** 新增/修改时校验提交地域在登录用户范围内（防止越界提交） */
+    private void checkRegionAllowedForSave(String cityId, String districtId) {
+        RegionScope rs = resolveRegionScope();
+        if (rs == null || StringUtils.isBlank(rs.orgCode)) {
+            return;
+        }
+        if ("二级".equals(rs.level) && !Objects.equals(rs.orgCode, cityId)) {
+            throw new ServiceException("只能在本区域内新增/修改台账");
+        }
+        if ("三级".equals(rs.level) && !Objects.equals(rs.orgCode, districtId)) {
+            throw new ServiceException("只能在本区县内新增/修改台账");
         }
     }
 
