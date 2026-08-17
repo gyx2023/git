@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 待办Service业务层处理
@@ -458,8 +459,8 @@ public class PendingServiceImpl implements IPendingService {
         saveOrUpdate(pending);
         log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
 
-        // 同步插入 pending_group_todo（对应老框架 addGroupTodoTask）
-      //  addGroupTodoTaskForTask(task);
+        // 同步插入 pending_group_todo（对应老框架 addGroupTodoTask，每个任务一条，并签时各处理人各有待办）
+        addGroupTodoTaskForTask(task);
     }
 
     /**
@@ -544,6 +545,45 @@ public class PendingServiceImpl implements IPendingService {
         todo.setCreateTime(new Date());
         pendingGroupTodoMapper.insert(todo);
         log.info("集团待办同步记录已创建: procInstId={}", procInstId);
+    }
+
+    @Override
+    public void deleteGroupTodoTask(Task task) {
+        String procInstId = task.getProcessInstanceId();
+        String taskId = task.getId();
+        Long count = pendingGroupTodoMapper.selectCount(
+                new LambdaQueryWrapper<PendingGroupTodo>()
+                        .eq(PendingGroupTodo::getProcInstId, procInstId)
+                        .eq(PendingGroupTodo::getTaskId, taskId)
+                        .eq(PendingGroupTodo::getOperatorType, PendingOpType.UPDATE.getCode()));
+        if (count > 0) {
+            log.debug("集团待办单任务删除记录已存在，跳过: procInstId={}, taskId={}", procInstId, taskId);
+            return;
+        }
+        PendingGroupTodo todo = new PendingGroupTodo();
+        todo.setProcInstId(procInstId);
+        todo.setTaskId(taskId);
+        // 复用 'u' 类型，靠 task_id 非空与流程完结的 'u'（无 taskId）区分
+        todo.setOperatorType(PendingOpType.UPDATE.getCode());
+        todo.setPendingTitle(task.getName());
+        todo.setPendingUserId(getOaAccountByAssignee(task.getAssignee()));
+        todo.setSendStatus(SendStatus.PENDING.getCode());
+        todo.setFailTimes(0);
+        todo.setCreateTime(new Date());
+        pendingGroupTodoMapper.insert(todo);
+        log.info("集团待办单任务删除记录已创建: procInstId={}, taskId={}", procInstId, taskId);
+    }
+
+    @Override
+    public Set<String> listPushedDeleteTaskIds(String procInstId) {
+        List<PendingGroupTodo> list = pendingGroupTodoMapper.selectList(
+                new LambdaQueryWrapper<PendingGroupTodo>()
+                        .eq(PendingGroupTodo::getProcInstId, procInstId)
+                        .eq(PendingGroupTodo::getOperatorType, PendingOpType.UPDATE.getCode())
+                        .isNotNull(PendingGroupTodo::getTaskId)
+                        .ne(PendingGroupTodo::getTaskId, "")
+                        .eq(PendingGroupTodo::getSendStatus, SendStatus.SUCCESS.getCode()));
+        return list.stream().map(PendingGroupTodo::getTaskId).collect(Collectors.toSet());
     }
 
     /**

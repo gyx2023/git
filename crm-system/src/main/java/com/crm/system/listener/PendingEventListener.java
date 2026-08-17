@@ -144,7 +144,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     }
 
     /**
-     * TASK_COMPLETED：OA 待办状态更新
+     * TASK_COMPLETED：OA 待办状态更新 + 集团待办单任务删除
      */
     @Override
     protected void taskCompleted(FlowableEngineEntityEvent event) {
@@ -157,6 +157,14 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
                 pendingService.updatePending(task, getOaAppId());
             } catch (Exception e) {
                 log.error("updatePending 失败, taskId={}", task.getId(), e);
+            }
+        });
+        // 并签场景：处理人完成后自己的集团待办立即删除，不等同环节其他处理人
+        executor.execute(() -> {
+            try {
+                pendingService.deleteGroupTodoTask(task);
+            } catch (Exception e) {
+                log.error("deleteGroupTodoTask 失败, taskId={}", task.getId(), e);
             }
         });
     }

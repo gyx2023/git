@@ -76,4 +76,21 @@ public interface IPendingService {
      * @param procInstId 流程实例ID
      */
     void addGroupTodoTask(String procInstId);
+
+    /**
+     * 新增集团待办单任务删除记录（Flowable 任务完成时触发）
+     * 复用 'u' 类型但携带 taskId，与流程完结的 'u'（无 taskId）区分。
+     * 并签场景下各处理人完成后自己的待办立即删除，不等同环节其他处理人
+     *
+     * @param task Flowable 任务实例
+     */
+    void deleteGroupTodoTask(Task task);
+
+    /**
+     * 查询已成功推送的单任务删除记录（'u' 且 task_id 非空）taskId 集合
+     * 供后继消息去重，避免重复删除/重复已办
+     *
+     * @param procInstId 流程实例ID
+     */
+    java.util.Set<String> listPushedDeleteTaskIds(String procInstId);
 }

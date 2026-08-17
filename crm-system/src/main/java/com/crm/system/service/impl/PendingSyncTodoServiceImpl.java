@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
+import com.crm.common.utils.StringUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
 import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import com.crm.system.domain.dao.sys.SysOperLog;
@@ -107,8 +108,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             Map<String, Object> lastTask; //最后一个任务;
             Map<String, Object> currentTask; //当前任务;
 
-            if ("u".equals(pendingTodo.getOperatorType())) {
-                // 刷新任务列表数据（优先老表，表不存在时回退 Flowable）
+            if ("u".equals(pendingTodo.getOperatorType()) && StringUtils.isBlank(pendingTodo.getTaskId())) {
+                // 流程完结（'u' 且无 taskId）：刷新任务列表数据（优先老表，表不存在时回退 Flowable）
                 hisList = queryHistoricTaskInsts(pendingTodo.getProcInstId());
                 hisList.sort((a, b) -> ((java.util.Date) b.get("startTime"))
                     .compareTo((java.util.Date) a.get("startTime")));
@@ -129,9 +130,11 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
                 firstTask = hisList.get(hisList.size() - 1);
                 lastTask = hisList.get(0);
             }
+            // 已成功推送的单任务删除记录（后继消息去重，避免重复删除/重复已办）
+            Set<String> pushedDeleteTaskIds = pendingService.listPushedDeleteTaskIds(pendingTodo.getProcInstId());
             // 构建请求体
             Map<String, Object> head = this.buildHead();
-            Map<String, Object> body = this.getBody(order, pendingTodo, currentTask, firstTask, hisList);
+            Map<String, Object> body = this.getBody(order, pendingTodo, currentTask, firstTask, hisList, pushedDeleteTaskIds);
 
             String todoTaskSyncUrl = sysParamService.findValueByCode("todoTaskSyncUrl");
 
@@ -183,17 +186,22 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 构建请求体
      */
-    private Map<String, Object> getBody(ToppOrder order,PendingGroupTodo todoTask,Map<String, Object> currentTask,Map<String, Object> firstTask,List<Map<String, Object>> hisList) {
+    private Map<String, Object> getBody(ToppOrder order,PendingGroupTodo todoTask,Map<String, Object> currentTask,Map<String, Object> firstTask,List<Map<String, Object>> hisList,
+                                         Set<String> pushedDeleteTaskIds) {
         Map<String, Object> baseMap = new HashMap<>(4);
         String operatorType = todoTask.getOperatorType();
+        // 'u' + 无 taskId = 流程完结；'u' + 有 taskId = 单任务删除（并签处理人完成时触发）
+        boolean processEnded = "u".equals(operatorType) && StringUtils.isBlank(todoTask.getTaskId());
+        boolean singleTaskDelete = "u".equals(operatorType) && StringUtils.isNotBlank(todoTask.getTaskId());
         baseMap.put("TCP_CONT", this.getTcpCont());
-        baseMap.putAll(this.getOrderInfo(order,operatorType));
-        //PROCESS_START_INFO 我的发起信息对象集合(数组对象),只在发起的第一个环节获取信息
-        baseMap.put("PROCESS_START_INFO", this.getProcessInfo(currentTask,firstTask,order));
+        baseMap.putAll(this.getOrderInfo(order, processEnded));
+        //PROCESS_START_INFO 我的发起信息对象集合(数组对象),只在发起的第一个环节获取信息（单任务删除消息不再携带）
+        baseMap.put("PROCESS_START_INFO", singleTaskDelete
+                ? new ArrayList<JSONObject>() : this.getProcessInfo(currentTask,firstTask,order));
         //WAIT_SOLVE_INFO 待办信息对象(数组对象)：新增当前任务 + 上一环节/当前环节已结束实例删除
-        baseMap.put("WAIT_SOLVE_INFO", this.getWaitSolveInfo(currentTask,operatorType,hisList,order));
+        baseMap.put("WAIT_SOLVE_INFO", this.getWaitSolveInfo(currentTask,operatorType,singleTaskDelete,hisList,order,pushedDeleteTaskIds));
         //ALREADY_SOLVE_INFO 已办信息对象集合(数组对象)：上一环节/当前环节用户完成实例（引擎删除的不进已办）
-        baseMap.put("ALREADY_SOLVE_INFO", this.getAlreadySolveInfo(operatorType,currentTask,hisList,order));
+        baseMap.put("ALREADY_SOLVE_INFO", this.getAlreadySolveInfo(operatorType,singleTaskDelete,currentTask,hisList,order,pushedDeleteTaskIds));
         Map<String, Object> body = new HashMap<>();
         body.put("SYNC_WAIT_SOLVE_INFO_SER_REQ", baseMap);
         return body;
@@ -216,7 +224,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 订单信息
      */
-    private Map<String, Object> getOrderInfo(ToppOrder order,String operatorType) {
+    private Map<String, Object> getOrderInfo(ToppOrder order, boolean processEnded) {
         Map<String, Object> orderInfo = new HashMap<>(8);
         //订单ID 有特定格式编码 流程名称
         orderInfo.put("PROCESS_CODE", "zjzqyypt-" + order.getOrderNumber());
@@ -249,7 +257,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         orderInfo.put("FIRST_BIZ_TYPE_CODE", "ywyy");
         //订单状态 处理中
         orderInfo.put("ORDER_STATE", "B");
-        if ("u".equals(operatorType)) {
+        if (processEnded) {
             //订单结束
             orderInfo.put("ORDER_STATE", "D");
         }
@@ -285,11 +293,18 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 新增当前任务（OPERATION_STATE=0 在前）+ "其后第一个被创建的任务"为当前任务的已结束实例删除（OPERATION_STATE=1 在后）
      */
     private List<JSONObject> getWaitSolveInfo(Map<String, Object> currentTask, String operatorType,
-                                             List<Map<String, Object>> hisList, ToppOrder order) {
+                                             boolean singleTaskDelete,
+                                             List<Map<String, Object>> hisList, ToppOrder order,
+                                             Set<String> pushedDeleteTaskIds) {
         List<JSONObject> waitSolveInfoList = new ArrayList<>();
-        // 流程完结：收尾"其后没有新任务创建"的已结束实例（即仍挂在 OA 待办的最后环节实例）
+        // 单任务删除（'u' + taskId，并签处理人完成时立即触发）：只删该任务自己的待办
+        if (singleTaskDelete) {
+            waitSolveInfoList.add(buildWaitDeleteItem(currentTask, order.getId()));
+            return waitSolveInfoList;
+        }
+        // 流程完结（'u' 无 taskId）：收尾"其后没有新任务创建"的已结束实例（即仍挂在 OA 待办的最后环节实例）
         if ("u".equals(operatorType)) {
-            for (Map<String, Object> task : findUnclosedEnded(hisList)) {
+            for (Map<String, Object> task : findUnclosedEnded(hisList, pushedDeleteTaskIds)) {
                 waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
             }
             return waitSolveInfoList;
@@ -322,7 +337,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         //任务中文名称
         waitTaskJson.put("FLOW_NAME", currentTask.get("name"));
         // 上一步处理人（findPrevNodeTasks 已算好，首环节为发起人自身）
-        Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
+        Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList, pushedDeleteTaskIds);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> prevEnded = (List<Map<String, Object>>) prev.get("prevEnded");
         waitTaskJson.put("BEFORE_SOLVE_USER_CODE", (String) prev.get("beforeSolveUserCode"));
@@ -340,20 +355,27 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 流程完结 → 最后环节（其后无新任务创建）用户完成（非引擎删除）的实例
      * 否则 → "其后第一个被创建的任务"为当前任务的用户完成实例（引擎删除的实例不进已办，只删待办）
      */
-    private List<JSONObject> getAlreadySolveInfo(String operatorType, Map<String, Object> currentTask,
-                                                 List<Map<String, Object>> hisList, ToppOrder order) {
+    private List<JSONObject> getAlreadySolveInfo(String operatorType, boolean singleTaskDelete,
+                                                 Map<String, Object> currentTask,
+                                                 List<Map<String, Object>> hisList, ToppOrder order,
+                                                 Set<String> pushedDeleteTaskIds) {
         List<JSONObject> alreadySolveInfoList = new ArrayList<>();
         List<Map<String, Object>> completedTasks = new ArrayList<>();
-        // 订单完结：最后环节中用户完成的实例进已办
-        if ("u".equals(operatorType)) {
-            for (Map<String, Object> task : findUnclosedEnded(hisList)) {
+        // 单任务删除消息：该任务（用户完成）进已办
+        if (singleTaskDelete) {
+            if (!"deleted".equals(currentTask.get("deleteReason"))) {
+                completedTasks.add(currentTask);
+            }
+        } else if ("u".equals(operatorType)) {
+            // 订单完结：最后环节中用户完成的实例进已办
+            for (Map<String, Object> task : findUnclosedEnded(hisList, pushedDeleteTaskIds)) {
                 if (!"deleted".equals(task.get("deleteReason"))) {
                     completedTasks.add(task);
                 }
             }
         } else {
             // 已结束实例的已办只由"其后第一个被创建的任务"的消息携带一次，重复已办 OA 不接受
-            Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList);
+            Map<String, Object> prev = findPrevNodeTasks(currentTask, hisList, pushedDeleteTaskIds);
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> prevCompleted = (List<Map<String, Object>>) prev.get("prevCompleted");
             completedTasks.addAll(prevCompleted);
@@ -373,7 +395,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * beforeSolveUserCode —— 上一步处理人：当前任务之前创建、非同环节、创建最晚的任务所在环节中，
      *   最后完成的用户完成实例的处理人（无上一环节时为发起人自身）
      */
-    private Map<String, Object> findPrevNodeTasks(Map<String, Object> currentTask, List<Map<String, Object>> hisList) {
+    private Map<String, Object> findPrevNodeTasks(Map<String, Object> currentTask, List<Map<String, Object>> hisList,
+                                                  Set<String> pushedDeleteTaskIds) {
         String currentTaskId = String.valueOf(currentTask.get("id"));
         Date currentStartTime = (Date) currentTask.get("startTime");
         List<Map<String, Object>> prevEnded = new ArrayList<>();
@@ -382,6 +405,10 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             Date endTime = (Date) task.get("endTime");
             if (endTime == null || currentStartTime == null) {
                 continue; // 只看已结束实例
+            }
+            // 已通过单任务删除消息推送过收尾的实例，不再由后继消息重复携带
+            if (pushedDeleteTaskIds.contains(String.valueOf(task.get("id")))) {
+                continue;
             }
             // 该任务结束后最早被创建的任务（startTime >= endTime 且最小）
             Map<String, Object> firstAfter = null;
@@ -469,11 +496,15 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 流程完结时需收尾的已结束实例：其后没有任何任务创建（first-after 不存在）——
      * 即流程最后环节的实例，此前各环节的收尾已由各自"后继消息"携带，此处不重复
      */
-    private List<Map<String, Object>> findUnclosedEnded(List<Map<String, Object>> hisList) {
+    private List<Map<String, Object>> findUnclosedEnded(List<Map<String, Object>> hisList, Set<String> pushedDeleteTaskIds) {
         List<Map<String, Object>> unclosed = new ArrayList<>();
         for (Map<String, Object> task : hisList) {
             Date endTime = (Date) task.get("endTime");
             if (endTime == null) {
+                continue;
+            }
+            // 已通过单任务删除消息推送过收尾的实例，不再由完结消息重复携带
+            if (pushedDeleteTaskIds.contains(String.valueOf(task.get("id")))) {
                 continue;
             }
             boolean hasAfter = false;
