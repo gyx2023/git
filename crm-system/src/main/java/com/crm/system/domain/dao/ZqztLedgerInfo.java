@@ -30,6 +30,10 @@ public class ZqztLedgerInfo implements Serializable {
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date signDate;
 
+    /** 服务大厅工单创建时间 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private Date orderCreateTime;
+
     /** 地市ID(zqzt_ledger_area组织code) */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String cityId;

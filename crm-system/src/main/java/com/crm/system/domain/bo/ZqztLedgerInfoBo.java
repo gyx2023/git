@@ -29,6 +29,11 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date signDate;
 
+    /** 服务大厅工单创建时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date orderCreateTime;
+
     private String cityId;
     private String districtId;
     private String streetId;

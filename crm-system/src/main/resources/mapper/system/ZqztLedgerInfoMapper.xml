@@ -3,7 +3,7 @@
 <mapper namespace="com.crm.system.mapper.ZqztLedgerInfoMapper">
 
     <select id="selectPageList" resultType="com.crm.system.domain.vo.ZqztLedgerInfoVo">
-        select id, order_no, sign_date, city_id, district_id, street_id, industry_id,
+        select id, order_no, sign_date, order_create_time, city_id, district_id, street_id, industry_id,
                company_name, credit_code, reg_address, actual_address, sign_routes,
                special_scene, company_principal, principal_phone, safety_officer1,
                safety_officer1_phone, safety_officer2, safety_officer2_phone,

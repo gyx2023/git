@@ -3,6 +3,7 @@ package com.crm.system.domain.vo;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 总部OB工单源表查询结果（slave_1, zq_user_36）
@@ -29,6 +30,9 @@ public class ZqztOrderInfoObVo implements Serializable {
     /** 联通客户经理联系方式 */
     private String developPhone;
 
+    /** 工单创建时间（sl08md.createTime / 04049f.createTime） */
+    private Date orderCreateTime;
+
     /** t1(sl08md) 签约路数 textField_vLXLQGlK */
     private String signRoutes1;
     /** t1(sl08md) 宽带账号 textField_90QNngmC */
@@ -37,6 +41,8 @@ public class ZqztOrderInfoObVo implements Serializable {
     private String cloudAccount1;
     /** t1(sl08md) 摄像头施工账号 textField_0MTXxPrM */
     private String cameraAccount1;
+    /** t1(sl08md) 视频资源包ID textField_lasPZdW7 */
+    private String cloudVisionPackageId1;
 
     /** t2(04049f) 签约路数 textField_vLXLQGlK */
     private String signRoutes2;
@@ -46,4 +52,6 @@ public class ZqztOrderInfoObVo implements Serializable {
     private String cloudAccount2;
     /** t2(04049f) 摄像头施工账号 textField_sZFFJVLc */
     private String cameraAccount2;
+    /** t2(04049f) 视频资源包ID textField_kjpWKhE9 */
+    private String cloudVisionPackageId2;
 }

@@ -20,6 +20,9 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String orderNo;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date signDate;
+    /** 服务大厅工单创建时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date orderCreateTime;
     private String cityId;
     private String districtId;
     private String streetId;

@@ -114,7 +114,7 @@ public class ZqztLedgerInfoController extends BaseController {
      */
     @SaCheckPermission("system:ledger:add")
     @GetMapping("/orderInfo/{orderNo}")
-    public R<ZqztLedgerInfoVo> getOrderInfo(@PathVariable String orderNo) {
+    public R<ZqztLedgerInfoVo> getOrderInfo(@PathVariable("orderNo") String orderNo) {
         return R.ok(orderInfoObService.getOrderInfo(orderNo));
     }
 
@@ -123,7 +123,7 @@ public class ZqztLedgerInfoController extends BaseController {
      */
     @SaCheckPermission("system:ledger:add")
     @GetMapping("/checkOrderNo/{orderNo}")
-    public R<Boolean> checkOrderNo(@PathVariable String orderNo) {
+    public R<Boolean> checkOrderNo(@PathVariable("orderNo") String orderNo) {
         return R.ok(ledgerInfoService.existsByOrderNo(orderNo));
     }
 

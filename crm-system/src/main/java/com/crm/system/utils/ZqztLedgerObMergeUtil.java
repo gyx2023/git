@@ -3,6 +3,8 @@ package com.crm.system.utils;
 import com.crm.system.domain.vo.ZqztLedgerInfoVo;
 import com.crm.system.domain.vo.ZqztOrderInfoObVo;
 
+import java.util.Date;
+
 /**
  * 台账工单 OB 源表两行数据合并工具
  * 合并规则：字段任一非空优先 t1；签约路数/通道数求和；宽带/云智眼账号/摄像头账号拼接
@@ -26,6 +28,9 @@ public final class ZqztLedgerObMergeUtil {
         vo.setUnicomManagerPhone(firstNonBlank(r1.getDevelopPhone(), r2.getDevelopPhone()));
         Integer routes = sumInt(r1.getSignRoutes1(), r2.getSignRoutes2());
         vo.setSignRoutes(routes);
+        Date orderCreateTime = r1.getOrderCreateTime() != null ? r1.getOrderCreateTime() : r2.getOrderCreateTime();
+        vo.setOrderCreateTime(orderCreateTime);
+        vo.setCloudVisionPackageId(firstNonBlank(r1.getCloudVisionPackageId1(), r2.getCloudVisionPackageId2()));
         vo.setBroadbandAccount(concat(r1.getBroadbandAccount1(), r2.getBroadbandAccount2()));
         vo.setCloudAccount(concat(r1.getCloudAccount1(), r2.getCloudAccount2()));
         vo.setCameraAccount(concat(r1.getCameraAccount1(), r2.getCameraAccount2()));

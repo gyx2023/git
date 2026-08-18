@@ -22,6 +22,10 @@ public class ZqztLedgerInfoExportVo implements Serializable {
     @DateTimeFormat("yyyy-MM-dd")
     private Date signDate;
 
+    @ExcelProperty("服务大厅创建时间")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
+    private Date orderCreateTime;
+
     @ExcelProperty("地市")
     private String cityName;
 
