@@ -231,3 +231,6 @@ pre-travel-report:
   api-key: d8b9jlenlnbcfr9revsg
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
+
+--- # 政企运营平台统一跳转配置
+zqzt.jump.front-url: http://10.129.99.175:9002/zqzt-frontend

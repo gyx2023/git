@@ -16,6 +16,12 @@ crm:
   mq:
     enabled: false
 
+zqzt:
+  # 政企运营平台统一跳转配置
+  jump:
+    # 新框架前端地址（/unifyJump/loginCheck 免登后重定向目标）
+    front-url: http://localhost:80
+
 captcha:
   # 页面 <参数设置> 可开启关闭 验证码校验
   # 验证码类型 math 数组计算 char 字符验证
@@ -52,7 +58,7 @@ server:
 # 日志配置
 logging:
   level:
-    com.crm: @logging.level@
+    com.crm: info
     org.springframework: warn
     com.crm.framework.interceptor.PlusDataPermissionInterceptor: info
   config: classpath:logback-spring.xml
@@ -74,7 +80,7 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: @profiles.active@
+    active: dev
   # 文件上传
   servlet:
     multipart:

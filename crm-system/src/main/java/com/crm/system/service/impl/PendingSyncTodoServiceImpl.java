@@ -65,7 +65,10 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     @Resource
     private ISysOperLogService sysOperLogService;
 
-    private static final String BASE_URL = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
+    /** 老框架（Activiti 流程）统一跳转入口 */
+    private static final String BASE_URL_OLD = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
+    /** 新框架（Flowable 流程）统一跳转入口 */
+    private static final String BASE_URL_NEW = "/zj_gec_sp_new/unifyJump/loginCheck?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
     /** 并签/同环节实例视为"同一轮次"的创建时间窗口（毫秒） */
     private static final long ROUND_WINDOW_MS = 2000L;
@@ -279,7 +282,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
             taskJson.put("OPERATION_STATE", "0");
             //当前环节
             taskJson.put("CURRENT_LINK", firstTask.get("name"));
-            String url = getUrl(firstTask,  order.getId().toString());
+            String url = getUrl(firstTask, order);
             //订单查看URL
             taskJson.put("URL", url);
             taskJson.put("CURRENT_USER_CODE", getOaByTaskAssignee(firstTask));
@@ -299,13 +302,13 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         List<JSONObject> waitSolveInfoList = new ArrayList<>();
         // 单任务删除（'u' + taskId，并签处理人完成时立即触发）：只删该任务自己的待办
         if (singleTaskDelete) {
-            waitSolveInfoList.add(buildWaitDeleteItem(currentTask, order.getId()));
+            waitSolveInfoList.add(buildWaitDeleteItem(currentTask, order));
             return waitSolveInfoList;
         }
         // 流程完结（'u' 无 taskId）：收尾"其后没有新任务创建"的已结束实例（即仍挂在 OA 待办的最后环节实例）
         if ("u".equals(operatorType)) {
             for (Map<String, Object> task : findUnclosedEnded(hisList, pushedDeleteTaskIds)) {
-                waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
+                waitSolveInfoList.add(buildWaitDeleteItem(task, order));
             }
             return waitSolveInfoList;
         }
@@ -315,7 +318,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         //当前处理人
         waitTaskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(currentTask));
         //待办url
-        waitTaskJson.put("WAIT_SOLVE_URL", getUrl(currentTask, order.getId().toString()));
+        waitTaskJson.put("WAIT_SOLVE_URL", getUrl(currentTask, order));
         //代办等级 0
         waitTaskJson.put("WAIT_SOLVE_LEVEL", "0");
         //0：新增、1：删除,此处先默认0
@@ -345,7 +348,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         // 转移增量（OP=1 后入）：已结束实例的收尾只由"其后第一个被创建的任务"的消息携带一次，
         // 已删除过的不再重复出现（覆盖并签并行/串行、串行节点、退回、积压）
         for (Map<String, Object> task : prevEnded) {
-            waitSolveInfoList.add(buildWaitDeleteItem(task, order.getId()));
+            waitSolveInfoList.add(buildWaitDeleteItem(task, order));
         }
         return waitSolveInfoList;
     }
@@ -526,14 +529,14 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 待办删除条目（OPERATION_STATE=1）
      */
-    private JSONObject buildWaitDeleteItem(Map<String, Object> task, Long orderId) {
+    private JSONObject buildWaitDeleteItem(Map<String, Object> task, ToppOrder order) {
         JSONObject taskJson = new JSONObject();
         //该时间为处理待办时间格式：yyyyMMddHHmmss（新增待办时为必填项，推送智慧门户时必传）
         taskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("startTime")));
         //当前处理人
         taskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(task));
-        //待办url
-        taskJson.put("WAIT_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
+        //待办url（Flowable 走新框架 loginCheck，Activiti 走老框架 loginCheck）
+        taskJson.put("WAIT_SOLVE_URL", buildTaskViewUrl(task, order));
         //代办等级 0
         taskJson.put("WAIT_SOLVE_LEVEL", "0");
         //省分编码（统一B-编码），当在运营平台配置了推送代办给智慧门户则必传
@@ -562,7 +565,6 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      */
     private JSONObject buildAlreadySolveItem(Map<String, Object> task, ToppOrder order) {
         JSONObject taskJson = new JSONObject();
-        String orderId = order.getId().toString();
         //工单ID(唯一标识，服务大厅和异步下发时必填)
         taskJson.put("WORKSHEET_ID", task.get("id"));
         //当前环节编码
@@ -577,19 +579,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         taskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(task));
         //已办人处理时间
         taskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("endTime")));
-        //查看订单Url：Flowable 用新框架地址，Activiti 用老框架地址
-        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
-            // Flowable: /warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx
-            String dealUrl = getDealUrlStr(task);
-            if (dealUrl != null) {
-                taskJson.put("ALREADY_SOLVE_URL", BASE_URL + dealUrl + "&taskId=" + task.get("id"));
-            } else {
-                taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
-            }
-        } else {
-            // Activiti: 固定订单查看页
-            taskJson.put("ALREADY_SOLVE_URL", BASE_URL + ORDER_INFO_URL + orderId);
-        }
+        //查看订单Url：Flowable 用新框架 loginCheck，Activiti 用老框架 loginCheck
+        taskJson.put("ALREADY_SOLVE_URL", buildTaskViewUrl(task, order));
         //操作标识,0：新增（已办信息对象集合不为空时，为必填）
         taskJson.put("OPERATION_STATE", "0");
         return taskJson;
@@ -634,15 +625,35 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 拼接完整URL（含 BASE_URL + dealUrl + taskId）
+     * 拼接完整URL（Flowable 走新框架 loginCheck，Activiti 走老框架 loginCheck + dealUrl + taskId）
      */
-    private String getUrl(Map<String, Object> task, String orderId) {
-        String taskId = task.get("id").toString();
-        String dealUrlStr = getDealUrlStr(task);
-        if (dealUrlStr == null) {
-            return BASE_URL + ORDER_INFO_URL + orderId;
+    private String getUrl(Map<String, Object> task, ToppOrder order) {
+        return buildTaskViewUrl(task, order);
+    }
+
+    /**
+     * 按任务来源选择统一跳转入口：Flowable 流程走新框架，Activiti 流程走老框架
+     */
+    private String baseUrlForTask(Map<String, Object> task) {
+        return Boolean.TRUE.equals(task.get("_fromFlowable")) ? BASE_URL_NEW : BASE_URL_OLD;
+    }
+
+    /**
+     * 构建任务查看URL：
+     * Flowable 优先取 dealUrl 变量，缺省用默认处理页 /warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx
+     * Activiti 用老框架固定订单查看页 /order/toOrderInfo?orderId=xxx
+     */
+    private String buildTaskViewUrl(Map<String, Object> task, ToppOrder order) {
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            String dealUrl = getDealUrlStr(task);
+            if (dealUrl != null) {
+                return BASE_URL_NEW + dealUrl + "&taskId=" + task.get("id");
+            }
+            // 默认处理页：/warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx（同 IWarningQueryStrategy 默认 dealUrl）
+            return BASE_URL_NEW + "/warning/toDeal?orderType=" + order.getOrderType()
+                    + "&orderId=" + order.getId() + "&taskId=" + task.get("id");
         }
-        return BASE_URL + dealUrlStr + "&taskId=" + taskId;
+        return BASE_URL_OLD + ORDER_INFO_URL + order.getId();
     }
 
     // ---- 历史任务查询（Activiti 优先，表不存在时回退 Flowable） ----
