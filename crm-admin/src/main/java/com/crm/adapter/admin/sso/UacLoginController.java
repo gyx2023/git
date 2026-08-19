@@ -1,0 +1,45 @@
+package com.crm.adapter.admin.sso;
+
+import cn.dev33.satoken.annotation.SaIgnore;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+/**
+ * 门户 UAC 登录成功回跳处理入口（迁移自旧系统 SsoCheckAction.checkLoginSuccess）
+ * <p>
+ * 用户中心校验通过后，将 SUCCESS 回跳地址指向本接口。完成：
+ * 校验 SAML → 换取用户信息 → 按邮箱匹配新系统用户 → Sa-Token 建会话 → 写登录日志 → 302 ssoTodo。
+ *
+ * @author crm
+ */
+@SaIgnore
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/sso")
+public class UacLoginController {
+
+    private final UacSsoService uacSsoService;
+
+    /**
+     * UAC 登录成功回跳
+     * <p>soap 在真实 UAC 流程中必填；mock 模式下可为空（由 mockMail 建会话）。
+     *
+     * @param soap   用户中心回传的 SAML 报文（mock 模式下可为空）
+     * @param url    门户申请的原始业务地址（逻辑来自旧系统 check_login.jsp 的 success 透传）
+     * @param returnUrl 用户中心回传的 return 参数（复用原样，暂未使用）
+     */
+    @GetMapping("/uacLogin")
+    public void uacLogin(@RequestParam(value = "soap", required = false) String soap,
+                         @RequestParam(value = "url", required = false) String url,
+                         @RequestParam(value = "return", required = false) String returnUrl,
+                         HttpServletResponse response) throws IOException {
+        String target = uacSsoService.uacLogin(soap, url);
+        response.sendRedirect(target);
+    }
+}

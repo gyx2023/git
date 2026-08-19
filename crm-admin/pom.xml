@@ -118,6 +118,15 @@
             <artifactId>kafka-clients</artifactId>
             <version>3.6.1</version> <!-- 最新稳定版，可根据需求调整 -->
         </dependency>
+
+        <!-- 中国联通 UAC SSO SDK（门户/单接应用登录状态检查与自动登录使用） -->
+        <dependency>
+            <groupId>com.chinaunicom</groupId>
+            <artifactId>uac-sso-sdk</artifactId>
+            <version>20200722</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/uac-sso-sdk-20200722-jar-with-dependencies.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>
@@ -129,6 +138,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <fork>true</fork> <!-- 如果没有该配置，devtools不会生效 -->
+                    <includeSystemScope>true</includeSystemScope> <!-- 将 UAC SSO SDK(system scope) 打入可执行jar -->
                 </configuration>
                 <executions>
                     <execution>
