@@ -80,7 +80,7 @@ public class UnifyJumpApi {
 
         // 5. 重定向到新框架页面（携带 token + loginType=sso，前端 permission.js 处理）
         String separator = menuUrl.contains("?") ? "&" : "?";
-        String redirectUrl = frontBase(request) + menuUrl + separator
+        String redirectUrl = "../zj_gec_sp_new_frontend" + menuUrl + separator
                 + "token=" + URLEncoder.encode(token, "UTF-8") + "&loginType=sso";
         log.info("unifyJump loginCheck 登录成功，重定向到: {}", redirectUrl);
         response.sendRedirect(redirectUrl);
