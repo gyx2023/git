@@ -201,4 +201,4 @@ pre-travel-report:
   user-id: "321"
 
 --- # 政企运营平台统一跳转配置（按环境实际地址修改）
-zqzt.jump.front-url: http://10.130.22.93:32002
+zqzt.jump.front-url: http://10.130.22.18:32002
