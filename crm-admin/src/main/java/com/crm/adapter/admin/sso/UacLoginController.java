@@ -2,6 +2,7 @@ package com.crm.adapter.admin.sso;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/sso")
+@Slf4j
 public class UacLoginController {
 
     private final UacSsoService uacSsoService;
@@ -39,7 +41,9 @@ public class UacLoginController {
                          @RequestParam(value = "url", required = false) String url,
                          @RequestParam(value = "return", required = false) String returnUrl,
                          HttpServletResponse response) throws IOException {
+        log.info("UAC 登录成功回跳：soap={}, url={}, returnUrl={}", soap, url, returnUrl);
         String target = uacSsoService.uacLogin(soap, url);
+        log.info("UAC 登录成功回跳：target={}", target);
         response.sendRedirect(target);
     }
 }
