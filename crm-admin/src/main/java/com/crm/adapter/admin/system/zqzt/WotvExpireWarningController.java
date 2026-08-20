@@ -1,7 +1,8 @@
 package com.crm.adapter.admin.system.zqzt;
 
 import com.crm.common.core.controller.BaseController;
-import com.crm.common.core.domain.R;
+import com.crm.common.core.domain.PageQuery;
+import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.system.domain.vo.WotvExpireWarningDetailExportVo;
 import com.crm.system.service.IWotvExpireWarningDetailService;
@@ -35,12 +36,11 @@ public class WotvExpireWarningController extends BaseController {
     private final IWotvExpireWarningDetailService detailService;
 
     /**
-     * 查询工单关联的预警明细记录列表
+     * 分页查询工单关联的预警明细记录列表
      */
     @GetMapping("/records")
-    public R<List<Map<String, Object>>> records(@RequestParam("orderId") Long orderId) {
-        List<Map<String, Object>> list = detailService.queryRecords(orderId);
-        return R.ok(list);
+    public TableDataInfo<Map<String, Object>> records(@RequestParam("orderId") Long orderId, PageQuery pageQuery) {
+        return detailService.queryPageRecords(orderId, pageQuery);
     }
 
     /**

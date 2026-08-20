@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * 提供同步/异步关闭 Flowable 流程的统一逻辑，供
  * {@link }（闭环数据到达关闭）使用。
- * 逻辑对齐 {@link WarningAutoCloseJob#}。
+ * 逻辑对齐 {@link #}。
  * </p>
  *
  * @author crm
