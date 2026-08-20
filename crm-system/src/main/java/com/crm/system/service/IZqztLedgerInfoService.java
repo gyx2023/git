@@ -43,4 +43,13 @@ public interface IZqztLedgerInfoService {
 
     /** 按摄像头账号查询台账及云智眼设备配置（供外部系统同步，未找到返回 null） */
     ZqztCloudConfigRespDTO queryCameraConfig(String cameraAccount);
+
+    /** 发送云智眼账户改密短信验证码（验证码发到当前登录用户手机） */
+    void sendCloudAccountSmsCode(Long ledgerId);
+
+    /** 修改云智眼账户密码（短信验证码校验通过后，仅更新 cloud_password） */
+    Boolean updateCloudAccountPassword(Long ledgerId, String newPassword, String smsCode);
+
+    /** 当前登录用户脱敏手机号（供改密弹窗直接展示） */
+    String getCurrentUserMaskedPhone();
 }

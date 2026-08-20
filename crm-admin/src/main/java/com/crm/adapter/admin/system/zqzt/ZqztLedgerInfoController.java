@@ -10,6 +10,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.core.validate.AddGroup;
 import com.crm.common.core.validate.EditGroup;
+import com.crm.system.domain.bo.ZqztCloudPasswordBo;
 import com.crm.system.domain.bo.ZqztLedgerInfoBo;
 import com.crm.system.domain.vo.ZqztLedgerAreaVo;
 import com.crm.system.domain.vo.ZqztLedgerInfoVo;
@@ -134,5 +135,35 @@ public class ZqztLedgerInfoController extends BaseController {
     @GetMapping("/areaChildren")
     public R<List<ZqztLedgerAreaVo>> areaChildren(@RequestParam(value = "parentCode", required = false) String parentCode) {
         return R.ok(ledgerAreaService.queryChildren(parentCode));
+    }
+
+    /**
+     * 发送云智眼账户改密短信验证码（发到当前登录用户手机）
+     */
+    @SaCheckPermission("system:ledger:edit")
+    @PostMapping("/cloudAccount/sendSmsCode")
+    public R<Void> sendCloudAccountSmsCode(@Validated @RequestBody ZqztCloudPasswordBo bo) {
+        ledgerInfoService.sendCloudAccountSmsCode(bo.getLedgerId());
+        return R.ok();
+    }
+
+    /**
+     * 当前登录用户脱敏手机号（改密弹窗展示）
+     */
+    @SaCheckPermission("system:ledger:edit")
+    @GetMapping("/cloudAccount/currentPhone")
+    public R<String> currentPhone() {
+        return R.ok("查询成功", ledgerInfoService.getCurrentUserMaskedPhone());
+    }
+
+    /**
+     * 修改云智眼账户密码（短信验证码校验通过后）
+     */
+    @SaCheckPermission("system:ledger:edit")
+    @Log(title = "台账信息管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PostMapping("/cloudAccount/updatePassword")
+    public R<Void> updateCloudAccountPassword(@Validated @RequestBody ZqztCloudPasswordBo bo) {
+        return toAjax(ledgerInfoService.updateCloudAccountPassword(bo.getLedgerId(), bo.getNewPassword(), bo.getSmsCode()));
     }
 }

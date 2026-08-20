@@ -1,4 +1,4 @@
-package com.crm.job.service.send;
+package com.crm.system.service.send.impl;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -113,8 +113,8 @@ public class ConOpenSendImpl {
             String appKey = params.get("zj_app_key");
             String postUrl = params.get("zj_sms_url");
 
-            // 3. 构建签名头（与旧系统 HaoKaoSignUtil 签名算法一致）
-            Map<String, Object> head = uniBssApiClient.buildHead();
+            // 3. 构建签名头（与旧系统 HaoKaoSignUtil 签名算法一致，使用 sys_param 的 zj_app_id/zj_app_key）
+            Map<String, Object> head = UniBssApiClient.buildHead(appId, appKey);
 
             // 4. 组装报文体
             Map<String, Object> body = new HashMap<>(4);

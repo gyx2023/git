@@ -1,9 +1,11 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.crm.common.constant.CacheConstants;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.common.core.domain.entity.SysUser;
@@ -12,6 +14,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.helper.LoginHelper;
+import com.crm.common.utils.redis.RedisUtils;
 import com.crm.system.domain.bo.ZqztLedgerInfoBo;
 import com.crm.system.domain.dao.ZqztLedgerArea;
 import com.crm.system.domain.dao.ZqztLedgerCloudConfig;
@@ -22,11 +25,13 @@ import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.ZqztLedgerCloudConfigVo;
 import com.crm.system.domain.vo.ZqztLedgerInfoExportVo;
 import com.crm.system.domain.vo.ZqztLedgerInfoVo;
+import com.crm.system.domain.vo.send.ConOpenSend;
 import com.crm.system.mapper.ZqztLedgerAreaMapper;
 import com.crm.system.mapper.ZqztLedgerCloudConfigMapper;
 import com.crm.system.mapper.ZqztLedgerInfoMapper;
 import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.IZqztLedgerInfoService;
+import com.crm.system.service.send.impl.ConOpenSendImpl;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.sys.ISysUserService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,6 +63,17 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     private static final String VALID = "1";
     private static final String INVALID = "0";
 
+    /** 云智眼改密短信模板编码（能开 VERIFY_04，登录验证码模板） */
+    private static final String SMS_VERIFY_TEMPLATE = "VERIFY_04";
+    /** 能开短信发送成功码 */
+    private static final String SMS_SUCCESS_CODE = "00000";
+    /** 短信验证码有效期 */
+    private static final Duration SMS_CODE_TTL = Duration.ofMinutes(3);
+    /** 短信验证码重发间隔（秒） */
+    private static final long SMS_RESEND_SECONDS = 60;
+    /** 能开短信模板里的平台名称 */
+    private static final String SMS_SYSTEM_NAME = "浙江政企运营平台";
+
     /** 行业字典 */
     private static final Map<String, String> INDUSTRY_MAP = new HashMap<String, String>() {{
         put("1", "尾矿库"); put("2", "露天矿山"); put("3", "地下矿山");
@@ -72,6 +89,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     private final ISysUserService sysUserService;
     private final ISysDeptService sysDeptService;
     private final ISysAreaService sysAreaService;
+    private final ConOpenSendImpl conOpenSendImpl;
 
     @Override
     public TableDataInfo<ZqztLedgerInfoVo> queryPageList(ZqztLedgerInfoBo bo, PageQuery pageQuery) {
@@ -247,7 +265,88 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         return dto;
     }
 
+    @Override
+    public void sendCloudAccountSmsCode(Long ledgerId) {
+        ZqztLedgerInfo entity = getValidEntity(ledgerId);
+        checkRegionAllowed(entity);
+        String phone = currentUserPhone();
+        // 60 秒内不重发
+        String rateKey = CacheConstants.RATE_LIMIT_KEY + "sms:" + phone;
+        if (RedisUtils.hasKey(rateKey)) {
+            throw new ServiceException("验证码已发送，请60秒后再试");
+        }
+        String code = String.valueOf(RandomUtil.randomInt(100000, 1000000));
+        RedisUtils.setCacheObject(CacheConstants.CAPTCHA_CODE_KEY + phone, code, SMS_CODE_TTL);
+        RedisUtils.setCacheObject(rateKey, "1", Duration.ofSeconds(SMS_RESEND_SECONDS));
+        Map<String, Object> paramMap = new HashMap<>(2);
+        paramMap.put("SYSTEM", SMS_SYSTEM_NAME);
+        paramMap.put("CAPTCHA", code);
+        ConOpenSend send = conOpenSendImpl.sendMessageByTemplate(SMS_VERIFY_TEMPLATE, paramMap, phone);
+        if (send == null) {
+            throw new ServiceException("短信发送失败：网络连接超时");
+        }
+        if (!SMS_SUCCESS_CODE.equals(send.getRespCode())) {
+            throw new ServiceException("短信发送失败：" + send.getRespDesc());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateCloudAccountPassword(Long ledgerId, String newPassword, String smsCode) {
+        ZqztLedgerInfo entity = getValidEntity(ledgerId);
+        checkRegionAllowed(entity);
+        if (StringUtils.isBlank(newPassword)) {
+            throw new ServiceException("新密码不能为空");
+        }
+        if (StringUtils.isBlank(smsCode)) {
+            throw new ServiceException("短信验证码不能为空");
+        }
+        String phone = currentUserPhone();
+        // 校验验证码（成功后删除，防重放）
+        String key = CacheConstants.CAPTCHA_CODE_KEY + phone;
+        String cachedCode = RedisUtils.getCacheObject(key);
+        if (StringUtils.isBlank(cachedCode)) {
+            throw new ServiceException("验证码已过期或未发送，请重新获取");
+        }
+        if (!cachedCode.equals(smsCode)) {
+            throw new ServiceException("验证码错误");
+        }
+        RedisUtils.deleteObject(key);
+        RedisUtils.deleteObject(CacheConstants.RATE_LIMIT_KEY + "sms:" + phone);
+        // 仅更新云智眼密码
+        ZqztLedgerInfo update = new ZqztLedgerInfo();
+        update.setId(ledgerId);
+        update.setCloudPassword(newPassword);
+        update.setUpdateTime(new Date());
+        update.setUpdatedBy(currentUsername());
+        return ledgerInfoMapper.updateById(update) > 0;
+    }
+
+    @Override
+    public String getCurrentUserMaskedPhone() {
+        return maskPhone(currentUserPhone());
+    }
+
     // ==================== 私有辅助 ====================
+
+    /** 当前登录用户手机号（未绑定则抛业务异常） */
+    private String currentUserPhone() {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        SysUser user = loginUser == null ? null : sysUserService.selectUserById(loginUser.getUserId());
+        String phone = user == null ? null : user.getPhonenumber();
+        if (StringUtils.isBlank(phone)) {
+            throw new ServiceException("当前账号未绑定手机号，无法发送/校验短信验证码");
+        }
+        return phone;
+    }
+
+    /** 手机号脱敏：保留前3后4，中间打码 */
+    private String maskPhone(String phone) {
+        if (StringUtils.isBlank(phone) || phone.length() < 7) {
+            return phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
 
     private ZqztLedgerInfo getValidEntity(Long id) {
         if (id == null) {
