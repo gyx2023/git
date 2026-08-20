@@ -39,12 +39,13 @@ public class KdAddrWarningController extends BaseController {
     // ==================== 业务数据 ====================
 
     /**
-     * 查询工单关联的预警明细记录列表
+     * 分页查询工单关联的预警明细记录列表
      */
     @GetMapping("/records")
-    public R<List<Map<String, Object>>> records(@RequestParam("orderId") Long orderId) {
-        List<Map<String, Object>> list = detailService.queryRecords(orderId);
-        return R.ok(list);
+    public R<Map<String, Object>> records(@RequestParam("orderId") Long orderId,
+                                          @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
+                                          @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
+        return R.ok(detailService.pageRecords(orderId, pageNum, pageSize));
     }
 
     /**

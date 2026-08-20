@@ -1,21 +1,18 @@
 package com.crm.job.service.send;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.crm.common.utils.DateUtils;
-import com.crm.common.utils.HaoKaoSignUtil;
-import com.crm.job.utils.HttpClientUtil;
+import com.crm.system.client.unibss.UniBssApiClient;
+import com.crm.system.client.unibss.UniBssApiClient.UniBssResponse;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.domain.vo.send.ConOpenSend;
+import com.crm.system.service.sys.ISysOperLogService;
 import com.crm.system.service.sys.ISysParamService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,31 +23,22 @@ import static com.crm.system.utils.Constants.SEND_MSG_INTERFACE;
  * 能开合同实时查询接口
  */
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class ConOpenSendImpl {
 
-    @Resource
-    private ISysParamService sysParamService;
+    private final ISysParamService sysParamService;
+    private final UniBssApiClient uniBssApiClient;
+    private final ISysOperLogService sysOperLogService;
 
-    private static String APP_ID;
-    private static String APP_KEY;
-    private static String POST_URL;
     // 报文字段常量
-    private static final String UNI_BSS_HEAD = "UNI_BSS_HEAD";
-    private static final String UNI_BSS_BODY = "UNI_BSS_BODY";
-    private static final String RESERVED = "RESERVED";
     private static final String TEMPLATE_SMS_SEND_SUB_REQ = "TEMPLATE_SMS_SEND_SUB_REQ";
 
     /**
-     * 初始化短信发送参数
+     * 实时加载短信发送参数
      */
-    @PostConstruct
-    public void initRefresh() {
-        Map<String, String> param = sysParamService.findValueMapsByType(SEND_MSG_INTERFACE);
-        APP_ID = param.get("zj_app_id");
-        APP_KEY = param.get("zj_app_key");
-        POST_URL = param.get("zj_sms_url");
-        log.info("初始化短信发送参数成功");
+    private Map<String, String> loadParams() {
+        return sysParamService.findValueMapsByType(SEND_MSG_INTERFACE);
     }
 
     /**
@@ -61,7 +49,7 @@ public class ConOpenSendImpl {
      * @param smsData
      * @return
      */
-    public static ConOpenResult sendConOpenMessage(String smsData, String serviceNum) {
+    public ConOpenResult sendConOpenMessage(String smsData, String serviceNum) {
         Map paramMap = new HashMap();
         paramMap.put("ITEM", "{" + smsData + "}");
         paramMap.put("DATETIME", "{" + DateUtils.getTime() + "}");
@@ -87,18 +75,16 @@ public class ConOpenSendImpl {
      * @param serviceNum  业务号码
      * @return
      */
-    public static ConOpenSend sendMessageByTemplate(String busiCode, Map paramMap, String serviceNum) {
+    public ConOpenSend sendMessageByTemplate(String busiCode, Map paramMap, String serviceNum) {
         Map<String, Object> busiParamMap = new HashMap();
         busiParamMap.put("service_num", serviceNum);
         busiParamMap.put("busi_code", busiCode);
         busiParamMap.put("template_content", mapToFormatCode(paramMap));
-        ConOpenSend conOpenSend = doSendMessage(busiParamMap);
-        log.info("发送短信请求地址:" + POST_URL + ",业务参数:" + JSONObject.toJSONString(busiParamMap));
-        return conOpenSend;
+        return doSendMessage(busiParamMap);
     }
 
     //将参数转化为对应格式的字符串
-    private static String mapToFormatCode(Map<String, Object> paramMap) {
+    private String mapToFormatCode(Map<String, Object> paramMap) {
         String msg = "";
         for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
             msg = msg + "{" + entry.getKey() + " " + String.valueOf(entry.getValue()) + "} ";
@@ -113,7 +99,7 @@ public class ConOpenSendImpl {
      * @param reqMap 业务请求参数
      * @return 接口响应实体，参数非法/调用异常/返回空均返回 null
      */
-    private static ConOpenSend doSendMessage(Map<String, Object> reqMap) {
+    private ConOpenSend doSendMessage(Map<String, Object> reqMap) {
         // 1. 入参校验
         if (ObjectUtil.isEmpty(reqMap)) {
             log.error("短信发送失败：业务请求参数为空");
@@ -121,64 +107,61 @@ public class ConOpenSendImpl {
         }
 
         try {
-            // 2. 组装报文头
-            Map<String, Object> headMap = new HashMap<>(8);
-            headMap.put("APP_ID", APP_ID);
-            headMap.put("key", APP_KEY);
-            // 构建签名及公共参数
-            HaoKaoSignUtil.buildAppParams(headMap);
-            headMap.put(RESERVED, new ArrayList<>());
+            // 2. 实时加载短信参数
+            Map<String, String> params = loadParams();
+            String appId = params.get("zj_app_id");
+            String appKey = params.get("zj_app_key");
+            String postUrl = params.get("zj_sms_url");
 
-            // 3. 组装报文体
-            Map<String, Object> bodyMap = new HashMap<>(4);
-            bodyMap.put(TEMPLATE_SMS_SEND_SUB_REQ, reqMap);
+            // 3. 构建签名头（与旧系统 HaoKaoSignUtil 签名算法一致）
+            Map<String, Object> head = uniBssApiClient.buildHead();
 
-            // 4. 组装完整请求报文
-            Map<String, Object> rootMap = new HashMap<>(4);
-            rootMap.put(UNI_BSS_HEAD, headMap);
-            rootMap.put(UNI_BSS_BODY, bodyMap);
+            // 4. 组装报文体
+            Map<String, Object> body = new HashMap<>(4);
+            body.put(TEMPLATE_SMS_SEND_SUB_REQ, reqMap);
 
-            // 仅序列化一次，复用结果
-            String requestJson = JSON.toJSONString(rootMap);
-            log.info("短信发送请求报文：{}", requestJson);
+            log.info("短信发送请求地址:{}", postUrl);
 
-            // 5. 发起HTTP POST请求
-            String respJson = HttpClientUtil.doPost(POST_URL, requestJson, "UTF-8");
-            log.info("短信发送响应报文：{}", respJson);
+            // 5. 使用 logApiCall 包装 HTTP 调用 + 操作日志
+            String rawJson = sysOperLogService.logApiCall("能开短信发送", postUrl,
+                JSONObject.toJSONString(reqMap), () -> {
+                UniBssResponse resp = uniBssApiClient.post(postUrl, head, body);
+                log.info("短信发送响应: {}", resp);
+                JSONObject raw = resp.getRawJson();
+                if (raw == null) {
+                    throw new RuntimeException("响应报文为空");
+                }
+                return raw.toJSONString();
+            });
 
-            // 响应空值判断，避免解析异常
-            if (!StringUtils.hasText(respJson)) {
-                log.warn("短信接口返回空报文，请求地址：{}", POST_URL);
-                return null;
-            }
-            JSONObject rootJson = JSON.parseObject(respJson);
-            // 2. 获取 UNI_BSS_BODY
-            JSONObject bodyJson = rootJson.getJSONObject("UNI_BSS_BODY");
-            if (bodyJson == null) {
-                log.error("响应报文不存在 UNI_BSS_BODY 节点");
-                return null;
-            }
-            // 3. 获取目标节点 TEMPLATE_SMS_SEND_SUB_RSP
-            JSONObject subRspJson = bodyJson.getJSONObject("TEMPLATE_SMS_SEND_SUB_RSP");
-            if (subRspJson == null) {
-                log.error("响应报文不存在 TEMPLATE_SMS_SEND_SUB_RSP 节点");
-                return null;
-            }
+            // 6. 解析响应
+            return parseConOpenSend(rawJson);
 
-            // ========== 取值示例 ==========
-            String respCode = subRspJson.getString("respCode");
-            String respDesc = subRspJson.getString("respDesc");
-            log.info("业务返回码:{}, 业务描述:{}", respCode, respDesc);
-
-            // 内层 result 对象
-            ConOpenSend conOpenSend = new ConOpenSend();
-            conOpenSend.setRespCode(respCode);
-            conOpenSend.setRespDesc(respDesc);
-            // 解析响应实体ccccc
-            return conOpenSend;
         } catch (Exception e) {
-            log.error("短信发送接口调用异常，请求地址：{}", POST_URL, e);
+            log.error("短信发送接口调用异常", e);
             return null;
         }
+    }
+
+    private ConOpenSend parseConOpenSend(String rawJson) {
+        JSONObject rootJson = JSONObject.parseObject(rawJson);
+        JSONObject bodyJson = rootJson.getJSONObject("UNI_BSS_BODY");
+        if (bodyJson == null) {
+            log.error("响应报文不存在 UNI_BSS_BODY 节点");
+            return null;
+        }
+        JSONObject subRspJson = bodyJson.getJSONObject("TEMPLATE_SMS_SEND_SUB_RSP");
+        if (subRspJson == null) {
+            log.error("响应报文不存在 TEMPLATE_SMS_SEND_SUB_RSP 节点");
+            return null;
+        }
+        String respCode = subRspJson.getString("respCode");
+        String respDesc = subRspJson.getString("respDesc");
+        log.info("业务返回码:{}, 业务描述:{}", respCode, respDesc);
+
+        ConOpenSend conOpenSend = new ConOpenSend();
+        conOpenSend.setRespCode(respCode);
+        conOpenSend.setRespDesc(respDesc);
+        return conOpenSend;
     }
 }

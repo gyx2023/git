@@ -7,5 +7,5 @@ public interface OppoUnBoundSyncService {
     String dealOppoBoJsonStr(ToppOpportunityVo oppo, String sendSource);
 
 
-    String syncOppoStatus(ToppOpportunityVo oppo, String status);
+//    String syncOppoStatus(ToppOpportunityVo oppo, String status);
 }

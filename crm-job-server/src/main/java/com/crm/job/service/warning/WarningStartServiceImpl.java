@@ -24,11 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 预警流程统一启动 Service 实现
@@ -47,9 +45,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
     private static final String PROCESS_KEY = "single_approval";
     private static final String ORDER_STATUS_RUNNING = com.crm.common.enums.OrderStatusEnum.RUNNING.getCode();
 
-    private static final ExecutorService executorService = new ThreadPoolExecutor(
-            10, 10, 0, TimeUnit.MILLISECONDS,
-            new LinkedBlockingDeque<>());
+    @Resource(name = "threadPoolTaskExecutor")
+    private Executor executorService;
 
     @Autowired
     private IToppOrderService orderService;
@@ -194,6 +191,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
 
             // 3.1 设置为"显示"，旧系统待办SQL按 DESCRIPTION_='显示' 过滤 ACT_RU_TASK
             task.setDescription("显示");
+            task.setCategory(record.getOrderType());
             taskService.saveTask(task);
 
             // 4. 构建并插入工单

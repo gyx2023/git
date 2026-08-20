@@ -8,10 +8,8 @@ import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.vo.SysAreaVo;
-import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.sys.SysFlowUserMapper;
 import com.crm.system.service.ISysAreaService;
-import com.crm.system.service.stats.IStatsService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.service.IWfProcessService;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +39,6 @@ public class WideWarningController extends BaseController {
 
     @Resource private final TaskService taskService;
     @Resource private final IToppOrderService orderService;
-    @Resource private final IStatsService statsService;
     @Resource private final RuntimeService runtimeService;
     @Resource private final com.crm.system.mapper.SysUsersMapper sysUsersMapper;
     @Resource private final com.crm.system.mapper.oldsyssyn.OldSysOrgMapper oldSysOrgMapper;
@@ -49,56 +46,7 @@ public class WideWarningController extends BaseController {
     @Resource private final IWfProcessService wfProcessService;
     @Resource private final SysFlowUserMapper sysFlowUserMapper;
 
-    // ==================== 预警记录 ====================
 
-    /*@GetMapping("/warnInfo")
-    public R<Map<String, Object>> warnInfo(@RequestParam("orderId") Long orderId) {
-        ToppOrderVo order = orderService.queryById(orderId);
-        if (order == null) {
-            return R.fail("工单不存在");
-        }
-        Map<String, Object> result = new HashMap<>();
-        result.put("order", order);
-
-        String piId = order.getPiId();
-        if (piId == null) {
-            return R.ok(result);
-        }
-
-        Map<String, Object> procVars = wfProcessService.loadProcVars(piId);
-        Task currentTask = wfProcessService.findCurrentTask(piId, null);
-        if (currentTask != null) {
-            result.put("currentTask", wfProcessService.buildCurrentTaskInfo(currentTask, getLoginUser().getUserId()));
-        }
-        result.put("processVariables", procVars);
-
-        // 预警信息
-        String period = str(procVars, "wide_second_new_period");
-        String orderFlag = str(procVars, "wide_second_new_orderFlag");
-        String codeInfo = str(procVars, "wide_second_new_codeInfo");
-        Map<String, Object> warnInfo = new HashMap<>();
-        warnInfo.put("period", period); warnInfo.put("orderFlag", orderFlag); warnInfo.put("codeInfo", codeInfo);
-        result.put("warnInfo", warnInfo);
-
-        // 客户列表 + 话术统计 + 区域名称
-        if (codeInfo != null && period != null && orderFlag != null) {
-            try {
-                String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
-                IPage<Map<String, Object>> page = statsService.queryWideCustInfoStats(sql, 1, 100);
-                result.put("custList", page.getRecords());
-                result.put("custTotal", page.getTotal());
-            } catch (Exception e) { log.warn("查询客户列表失败", e); }
-            try {
-                result.put("speechcraftMap", statsService.getWideUpSpeechcraftStats(codeInfo, period, orderFlag));
-            } catch (Exception e) { log.warn("查询话术统计失败", e); }
-            try {
-                result.put("codeName", statsService.getCodeName(codeInfo, orderFlag));
-            } catch (Exception e) { log.warn("查询区域名称失败", e); }
-        }
-
-        return R.ok(result);
-    }
-*/
     /**
      * 根据当前用户归属地市范围搜索可转派人员（按老框架 searchUsersByScope 逻辑）
      * @param keyword OA账号或姓名模糊搜索（可选）
@@ -205,15 +153,9 @@ public class WideWarningController extends BaseController {
         taskService.setVariableLocal(taskId, "action", "agree");
         taskService.complete(taskId, vars);
 
+        // Listener 的 TASK_ASSIGNED 事件会自动调用 syncOrderToCurrentTask 更新订单信息
         String msg;
         if (wfProcessService.isProcessRunning(piId)) {
-            // 流程未结束（如进入稽核节点）：同步工单节点 + 白名单/处理人（一次 updateByBo）
-            Task nextComplete = wfProcessService.findCurrentTask(piId, null);
-            Long nextAssignee = null;
-            if (nextComplete != null && nextComplete.getAssignee() != null && !nextComplete.getAssignee().isEmpty()) {
-                nextAssignee = Long.parseLong(nextComplete.getAssignee().replaceAll(",", ""));
-            }
-            orderService.syncOrderToCurrentTask(orderId, piId, nextAssignee);
             msg = "处理完成，已进入下一处理环节";
         } else {
             // 流程已结束：置为完成
@@ -231,7 +173,8 @@ public class WideWarningController extends BaseController {
     /**
      * 退回（稽核人员将工单退回客户经理，对应旧 kd_addr.bpmn deal_flag2==4）
      * <p>
-     * 完成当前稽核任务并置 action=reject，流程回到客户经理处理节点；工单节点同步回客户经理，保持进行中。
+     * 完成当前稽核任务并置 action=reject，流程回到客户经理处理节点。
+     * Listener 的 TASK_ASSIGNED 事件会自动同步工单信息。
      * </p>
      */
     @PostMapping("/reject")
@@ -249,16 +192,8 @@ public class WideWarningController extends BaseController {
         taskService.setVariableLocal(taskId, "action", "reject");
         taskService.complete(taskId, vars);
 
-        ToppOrderVo order = orderService.queryById(orderId);
         String msg;
         if (wfProcessService.isProcessRunning(piId)) {
-            // 退回后回到客户经理节点：同步工单节点 + 白名单/处理人（一次 updateByBo）
-            Task nextReject = taskService.createTaskQuery().processInstanceId(piId).singleResult();
-            Long rejectAssignee = null;
-            if (nextReject != null && nextReject.getAssignee() != null && !nextReject.getAssignee().isEmpty()) {
-                rejectAssignee = Long.parseLong(nextReject.getAssignee().replaceAll(",", ""));
-            }
-            orderService.syncOrderToCurrentTask(orderId, piId, rejectAssignee);
             msg = "已退回客户经理";
         } else {
             orderService.markOrderEnd(orderId);
@@ -298,8 +233,7 @@ public class WideWarningController extends BaseController {
             if (targetUserId == null) {
                 return R.fail("请选择转派人员");
             }
-            // 稽核节点只改派不完成任务，order 同步走 syncOrderToCurrentTask（extraUserIds 把操作人也加入白名单）
-            orderService.syncOrderToCurrentTask(orderId, piId, targetUserId, loginUser.getUserId());
+            // setAssignee 会触发 TASK_ASSIGNED 事件，Listener 自动 syncOrderToCurrentTask
             taskService.setAssignee(taskId, String.valueOf(targetUserId));
             runtimeService.setVariable(piId, "audit", String.valueOf(targetUserId));
 
@@ -309,7 +243,7 @@ public class WideWarningController extends BaseController {
             return R.ok(result);
         }
 
-        // 经理节点：完成任务走 BPMN 转派回路，transferOrder 内部调 syncOrderToCurrentTask 同步 order
+        // 经理节点：完成任务走 BPMN 转派回路，complete 触发 TASK_ASSIGNED，Listener 自动同步订单
         String nextActor = orderService.transferOrder(taskId, orderId, targetUserId, comment, loginUser.getUserId());
 
         Map<String, Object> result = new HashMap<>();

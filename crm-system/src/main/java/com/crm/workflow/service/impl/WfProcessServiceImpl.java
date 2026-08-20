@@ -47,7 +47,6 @@ import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.*;
 import org.flowable.engine.history.HistoricActivityInstance;
-import org.flowable.engine.history.HistoricActivityInstanceQuery;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.history.HistoricProcessInstanceQuery;
 import org.flowable.engine.repository.Deployment;
@@ -1066,7 +1065,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
         // 一次性查询所有历史活动实例（historyProcNodeList 和 getFlowViewer 共用，避免重复查询）
         List<HistoricActivityInstance> allActivityInstances = historyService.createHistoricActivityInstanceQuery()
-            .processInstanceId(procInsId).list();
+            .processInstanceId(procInsId).orderByHistoricActivityInstanceStartTime().desc().list();
         List<WfProcNodeVo> nodeList = historyProcNodeList(historicProcIns, allActivityInstances);
         // 替换节点名称中的 ${变量} 表达式
         for (WfProcNodeVo node : nodeList) {
@@ -1495,8 +1494,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .sorted((a, b) -> {
                 int cmp = b.getStartTime().compareTo(a.getStartTime());
                 if (cmp != 0) return cmp;
-                if (a.getEndTime() == null) return 1;
-                if (b.getEndTime() == null) return -1;
+                // startTime 相同（同一事务内毫秒级相等）：进行中的节点排前面，已结束的按 endTime 倒序
+                if (a.getEndTime() == null) return -1;
+                if (b.getEndTime() == null) return 1;
                 return b.getEndTime().compareTo(a.getEndTime());
             })
             .collect(Collectors.toList());
