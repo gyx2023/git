@@ -7,9 +7,15 @@ import java.util.Date;
 
 /**
  * 台账工单 OB 源表两行数据合并工具
- * 合并规则：字段任一非空优先 t1；签约路数/通道数求和；宽带/云智眼账号/摄像头账号拼接
+ * 合并规则：同一工单只落一张表（sl08md 或 04049f），字段均按表1优先择一取值；
+ * 宽带账号在此基础上按"利旧口径优先于新装口径"择一，并据此带出是否利旧
  */
 public final class ZqztLedgerObMergeUtil {
+
+    /** 宽带是否利旧：利旧 */
+    private static final String REUSE_OLD = "OLD";
+    /** 宽带是否利旧：新装 */
+    private static final String REUSE_NEW = "NEW";
 
     private ZqztLedgerObMergeUtil() {
     }
@@ -26,19 +32,42 @@ public final class ZqztLedgerObMergeUtil {
         vo.setPrincipalPhone(firstNonBlank(r1.getContactPhone(), r2.getContactPhone()));
         vo.setUnicomManager(firstNonBlank(r1.getDevelopName(), r2.getDevelopName()));
         vo.setUnicomManagerPhone(firstNonBlank(r1.getDevelopPhone(), r2.getDevelopPhone()));
-        Integer routes = sumInt(r1.getSignRoutes1(), r2.getSignRoutes2());
-        vo.setSignRoutes(routes);
+        vo.setSignRoutes(firstNonBlankInt(r1.getSignRoutes1(), r2.getSignRoutes2()));
         Date orderCreateTime = r1.getOrderCreateTime() != null ? r1.getOrderCreateTime() : r2.getOrderCreateTime();
         vo.setOrderCreateTime(orderCreateTime);
         vo.setCloudVisionPackageId(firstNonBlank(r1.getCloudVisionPackageId1(), r2.getCloudVisionPackageId2()));
-        vo.setBroadbandAccount(concat(r1.getBroadbandAccount1(), r2.getBroadbandAccount2()));
-        vo.setCloudAccount(concat(r1.getCloudAccount1(), r2.getCloudAccount2()));
-        vo.setCameraAccount(concat(r1.getCameraAccount1(), r2.getCameraAccount2()));
+        mergeBroadband(vo, r1, r2);
+        vo.setCloudAccount(firstNonBlank(r1.getCloudAccount1(), r2.getCloudAccount2()));
+        vo.setCameraAccount(firstNonBlank(r1.getCameraAccount1(), r2.getCameraAccount2()));
         return vo;
+    }
+
+    /**
+     * 宽带账号与是否利旧取值：
+     * 1. 利旧口径(textField_ahdM4O0A)有值 → 默认利旧，账号取该值
+     * 2. 否则新装口径(sl08md.textField_90QNngmC / 04049f.textField_GYjOc1Vy)有值 → 默认新装，账号取该值
+     * 3. 两者均无值 → 是否利旧与账号均留空，由用户手工填写
+     */
+    private static void mergeBroadband(ZqztLedgerInfoVo vo, ZqztOrderInfoObVo r1, ZqztOrderInfoObVo r2) {
+        String reuseAccount = firstNonBlank(r1.getBroadbandAccountOld1(), r2.getBroadbandAccountOld2());
+        if (isNotBlank(reuseAccount)) {
+            vo.setBroadbandIsReuse(REUSE_OLD);
+            vo.setBroadbandAccount(reuseAccount.trim());
+            return;
+        }
+        String newAccount = firstNonBlank(r1.getBroadbandAccountNew1(), r2.getBroadbandAccountNew2());
+        if (isNotBlank(newAccount)) {
+            vo.setBroadbandIsReuse(REUSE_NEW);
+            vo.setBroadbandAccount(newAccount.trim());
+        }
     }
 
     private static ZqztOrderInfoObVo safe(ZqztOrderInfoObVo row) {
         return row == null ? new ZqztOrderInfoObVo() : row;
+    }
+
+    private static boolean isNotBlank(String s) {
+        return s != null && !s.trim().isEmpty();
     }
 
     private static String firstNonBlank(String a, String b) {
@@ -48,33 +77,16 @@ public final class ZqztLedgerObMergeUtil {
         return b;
     }
 
-    private static String concat(String a, String b) {
-        StringBuilder sb = new StringBuilder();
-        if (a != null && !a.trim().isEmpty()) {
-            sb.append(a.trim());
+    private static Integer firstNonBlankInt(String a, String b) {
+        String v = firstNonBlank(a, b);
+        if (v == null || v.trim().isEmpty()) {
+            return null;
         }
-        if (b != null && !b.trim().isEmpty()) {
-            sb.append(b.trim());
+        try {
+            return Integer.parseInt(v.trim());
+        } catch (NumberFormatException ignored) {
+            // 非法数字视为无值
+            return null;
         }
-        return sb.toString();
-    }
-
-    private static Integer sumInt(String a, String b) {
-        int sum = 0;
-        if (a != null && !a.trim().isEmpty()) {
-            try {
-                sum += Integer.parseInt(a.trim());
-            } catch (NumberFormatException ignored) {
-                // 忽略非法数字
-            }
-        }
-        if (b != null && !b.trim().isEmpty()) {
-            try {
-                sum += Integer.parseInt(b.trim());
-            } catch (NumberFormatException ignored) {
-                // 忽略非法数字
-            }
-        }
-        return sum;
     }
 }

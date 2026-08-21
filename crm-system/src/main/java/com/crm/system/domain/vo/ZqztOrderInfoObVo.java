@@ -35,8 +35,10 @@ public class ZqztOrderInfoObVo implements Serializable {
 
     /** t1(sl08md) 签约路数 textField_vLXLQGlK */
     private String signRoutes1;
-    /** t1(sl08md) 宽带账号 textField_90QNngmC */
-    private String broadbandAccount1;
+    /** t1(sl08md) 利旧宽带账号 textField_ahdM4O0A */
+    private String broadbandAccountOld1;
+    /** t1(sl08md) 新装宽带账号 textField_90QNngmC */
+    private String broadbandAccountNew1;
     /** t1(sl08md) 云智眼账号 textField_GKvzHJez */
     private String cloudAccount1;
     /** t1(sl08md) 摄像头施工账号 textField_0MTXxPrM */
@@ -46,8 +48,10 @@ public class ZqztOrderInfoObVo implements Serializable {
 
     /** t2(04049f) 签约路数 textField_vLXLQGlK */
     private String signRoutes2;
-    /** t2(04049f) 宽带账号 textField_GYjOc1Vy */
-    private String broadbandAccount2;
+    /** t2(04049f) 利旧宽带账号 textField_ahdM4O0A */
+    private String broadbandAccountOld2;
+    /** t2(04049f) 新装宽带账号 textField_GYjOc1Vy */
+    private String broadbandAccountNew2;
     /** t2(04049f) 云智眼账号 textField_GC5b4aBM */
     private String cloudAccount2;
     /** t2(04049f) 摄像头施工账号 textField_sZFFJVLc */
