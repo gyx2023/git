@@ -58,4 +58,12 @@ public class ZqztOrderInfoObVo implements Serializable {
     private String cameraAccount2;
     /** t2(04049f) 视频资源包ID textField_kjpWKhE9 */
     private String cloudVisionPackageId2;
+    /** t1(sl08md) 安全负责人1 textField_DXBr43jw */
+    private String safetyOfficerName1;
+    /** t1(sl08md) 安全负责人1联系方式 textField_8jIxQJdp */
+    private String safetyOfficerPhone1;
+    /** t2(04049f) 安全负责人1 textField_BHw221Qs */
+    private String safetyOfficerName2;
+    /** t2(04049f) 安全负责人1联系方式 textField_IrBYU7dG */
+    private String safetyOfficerPhone2;
 }

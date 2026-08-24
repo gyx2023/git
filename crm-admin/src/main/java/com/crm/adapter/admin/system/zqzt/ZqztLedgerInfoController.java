@@ -16,6 +16,7 @@ import com.crm.system.domain.vo.ZqztLedgerAreaVo;
 import com.crm.system.domain.vo.ZqztLedgerInfoVo;
 import com.crm.system.service.IZqztLedgerAreaService;
 import com.crm.system.service.IZqztLedgerInfoService;
+import com.crm.system.service.IZqztLedgerUserInfoService;
 import com.crm.system.service.IZqztOrderInfoObService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -46,6 +47,7 @@ public class ZqztLedgerInfoController extends BaseController {
     private final IZqztLedgerInfoService ledgerInfoService;
     private final IZqztLedgerAreaService ledgerAreaService;
     private final IZqztOrderInfoObService orderInfoObService;
+    private final IZqztLedgerUserInfoService ledgerUserInfoService;
 
     /**
      * 分页查询台账
@@ -126,6 +128,15 @@ public class ZqztLedgerInfoController extends BaseController {
     @GetMapping("/checkOrderNo/{orderNo}")
     public R<Boolean> checkOrderNo(@PathVariable("orderNo") String orderNo) {
         return R.ok(ledgerInfoService.existsByOrderNo(orderNo));
+    }
+
+    /**
+     * 按账号查询入网时间（总部用户信息查询接口，用于回填竣工时间）
+     */
+    @SaCheckPermission("system:ledger:list")
+    @GetMapping("/userInDate/{serialNumber}")
+    public R<String> userInDate(@PathVariable("serialNumber") String serialNumber) {
+        return R.ok(ledgerUserInfoService.queryUserInDate(serialNumber));
     }
 
     /**

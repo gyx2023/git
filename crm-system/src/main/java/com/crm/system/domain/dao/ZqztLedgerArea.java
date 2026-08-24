@@ -45,6 +45,9 @@ public class ZqztLedgerArea implements Serializable {
     /** 对应sys_area类型 */
     private String zqType;
 
+    /** 展示顺序（默认org_code顺序） */
+    private Integer sortOrder;
+
     /** 创建时间 */
     private Date createTime;
 

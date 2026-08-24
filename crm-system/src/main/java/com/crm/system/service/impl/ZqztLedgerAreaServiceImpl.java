@@ -41,6 +41,7 @@ public class ZqztLedgerAreaServiceImpl implements IZqztLedgerAreaService {
         List<ZqztLedgerAreaVo> list = areaMapper.selectVoList(Wrappers.<ZqztLedgerArea>lambdaQuery()
             .eq(ZqztLedgerArea::getParentCode, pc)
             .eq(ZqztLedgerArea::getIsValid, "1")
+            .orderByAsc(ZqztLedgerArea::getSortOrder)
             .orderByAsc(ZqztLedgerArea::getOrgCode));
         // 按登录用户地域层级过滤：省级/管理员全量；地市只看自己地市；区县只看自己区县（及其所属地市）
         RegionScope scope = resolveRegionScope();

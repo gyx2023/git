@@ -18,7 +18,9 @@
             textField_90QNngmC               AS broadbandAccountNew1,
             textField_GKvzHJez               AS cloudAccount1,
             textField_0MTXxPrM               AS cameraAccount1,
-            textField_lasPZdW7               AS cloudVisionPackageId1
+            textField_lasPZdW7               AS cloudVisionPackageId1,
+            textField_DXBr43jw               AS safetyOfficerName1,
+            textField_8jIxQJdp               AS safetyOfficerPhone1
         FROM ZQ_USER_36.fwdt_orderformat_uc_sc_sl08md
         WHERE orderId = #{orderNo}
     </select>
@@ -39,7 +41,9 @@
             textField_GYjOc1Vy               AS broadbandAccountNew2,
             textField_GC5b4aBM               AS cloudAccount2,
             textField_sZFFJVLc               AS cameraAccount2,
-            textField_kjpWKhE9               AS cloudVisionPackageId2
+            textField_kjpWKhE9               AS cloudVisionPackageId2,
+            textField_BHw221Qs               AS safetyOfficerName2,
+            textField_IrBYU7dG               AS safetyOfficerPhone2
         FROM ZQ_USER_36.fwdt_orderformat_uc_sc_04049f
         WHERE orderId = #{orderNo}
     </select>

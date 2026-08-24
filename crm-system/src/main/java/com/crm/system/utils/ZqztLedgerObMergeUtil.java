@@ -30,6 +30,8 @@ public final class ZqztLedgerObMergeUtil {
         vo.setActualAddress(firstNonBlank(r1.getActualAddress(), r2.getActualAddress()));
         vo.setCompanyPrincipal(firstNonBlank(r1.getContactName(), r2.getContactName()));
         vo.setPrincipalPhone(firstNonBlank(r1.getContactPhone(), r2.getContactPhone()));
+        vo.setSafetyOfficer1(firstNonBlank(r1.getSafetyOfficerName1(), r2.getSafetyOfficerName2()));
+        vo.setSafetyOfficer1Phone(firstNonBlank(r1.getSafetyOfficerPhone1(), r2.getSafetyOfficerPhone2()));
         vo.setUnicomManager(firstNonBlank(r1.getDevelopName(), r2.getDevelopName()));
         vo.setUnicomManagerPhone(firstNonBlank(r1.getDevelopPhone(), r2.getDevelopPhone()));
         vo.setSignRoutes(firstNonBlankInt(r1.getSignRoutes1(), r2.getSignRoutes2()));
