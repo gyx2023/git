@@ -67,8 +67,8 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
 
     /** 老框架（Activiti 流程）统一跳转入口 */
     private static final String BASE_URL_OLD = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
-    /** 新框架（Flowable 流程）统一跳转入口 */
-    private static final String BASE_URL_NEW = "/zj_gec_sp_new/unifyJump/loginCheck?menuUrl=";
+    /** 新框架（Flowable 流程）统一跳转入口：总部待办直达前端 /sso/checkLogin（免登后由前端跳转处理页） */
+    private static final String BASE_URL_NEW = "/zj_gec_sp_new_frontend/sso/checkLogin?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
     /** 并签/同环节实例视为"同一轮次"的创建时间窗口（毫秒） */
     private static final long ROUND_WINDOW_MS = 2000L;

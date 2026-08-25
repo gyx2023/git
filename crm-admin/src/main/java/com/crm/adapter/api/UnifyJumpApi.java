@@ -47,12 +47,43 @@ public class UnifyJumpApi {
 
     /**
      * 门户链接检查（对应老框架 loginCheck）
+     * <p>
+     * mode=redirect（默认）：总部门户直跳，免登后 302 到新框架页面（携带 token + loginType=sso）
+     * mode=json：总部待办直达前端 /sso/checkLogin 入口，返回 token 由前端自行跳转
+     * </p>
      */
     @SaIgnore
     @GetMapping("/loginCheck")
     public void loginCheck(@RequestParam("authSessionId") String authSessionId,
+                           @RequestParam(value = "mode", required = false, defaultValue = "redirect") String mode,
                            HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // 1. 解析 menuUrl：menuUrl 自带 & 拼接的内部参数（如 taskId），从原始 query 串截取
+        // 1. 总部查询登录信息，取手机号
+        String phone = queryLoginPhone(authSessionId);
+        if (StringUtils.isBlank(phone)) {
+            writeError(response, "获取登录用户信息失败");
+            return;
+        }
+
+        // 2. 按手机号查新框架用户（sys_user.phonenumber，主键 user_id 即老系统用户ID）
+        SysUser sysUser = sysUserService.selectUserByPhonenumber(phone);
+        if (sysUser == null) {
+            writeError(response, "无用户信息");
+            return;
+        }
+
+        // 3. 免登（同步权限 + Sa-Token 登录）
+        String token = oldSysSynService.loginByOldUserId(sysUser.getUserId());
+
+        // 4. JSON 模式：前端 /sso/checkLogin 入口页调用（待办直达前端方案），token 由前端保存并自行跳转
+        if ("json".equals(mode)) {
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":200,\"token\":\"" + token + "\"}");
+            log.info("unifyJump loginCheck 免登成功(json模式)");
+            return;
+        }
+
+        // 5. 重定向模式：解析 menuUrl（menuUrl 自带 & 拼接的内部参数如 taskId，从原始 query 串截取），302 到新框架页面
         String queryString = request.getQueryString();
         String menuUrl = extractMenuUrl(queryString);
         if (StringUtils.isBlank(menuUrl)) {
@@ -60,25 +91,6 @@ public class UnifyJumpApi {
             return;
         }
         log.info("集团政企运营平台菜单链接请求: {}", queryString);
-
-        // 2. 总部查询登录信息，取手机号
-        String phone = queryLoginPhone(authSessionId);
-        if (StringUtils.isBlank(phone)) {
-            writeError(response, "获取登录用户信息失败");
-            return;
-        }
-
-        // 3. 按手机号查新框架用户（sys_user.phonenumber，主键 user_id 即老系统用户ID）
-        SysUser sysUser = sysUserService.selectUserByPhonenumber(phone);
-        if (sysUser == null) {
-            writeError(response, "无用户信息");
-            return;
-        }
-
-        // 4. 免登（同步权限 + Sa-Token 登录）
-        String token = oldSysSynService.loginByOldUserId(sysUser.getUserId());
-
-        // 5. 重定向到新框架页面（携带 token + loginType=sso，前端 permission.js 处理）
         String separator = menuUrl.contains("?") ? "&" : "?";
         String redirectUrl = "../zj_gec_sp_new_frontend" + menuUrl + separator
                 + "token=" + URLEncoder.encode(token, "UTF-8") + "&loginType=sso";
