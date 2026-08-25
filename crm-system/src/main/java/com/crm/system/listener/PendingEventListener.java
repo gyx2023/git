@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import org.flowable.engine.RepositoryService;
+import org.flowable.engine.TaskService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.task.api.Task;
@@ -60,6 +61,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     @Resource @Lazy private IPendingService pendingService;
     @Resource @Lazy private ISysParamService sysParamService;
     @Resource @Lazy private RepositoryService repositoryService;
+    @Resource @Lazy private TaskService taskService;
     @Resource @Lazy private IToppOrderService orderService;
     @Resource @Lazy private IToppOpportunityService oppotunityService;
     @Resource @Lazy private ISendDMessageService sendDMessageService;
@@ -115,6 +117,11 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
         // 订单可能尚未插入（流程启动时 TASK_ASSIGNED 先于 insertByBo 触发），
         // 订单级操作（syncOrderFromTask / saveOppoStatus / synMaintenanceInfo）仅在订单存在时执行
         if (order != null) {
+            // 补充任务分类/显示标记（老系统待办 SQL 按 CATEGORY_ 过滤业务类型、DESCRIPTION_='显示' 过滤）；
+            // 转派/流程流转重建的任务由引擎创建，CATEGORY_ 为空，此处统一补上（幂等）
+            task.setCategory(order.getOrderType());
+            task.setDescription("显示");
+            taskService.saveTask(task);
             syncOrderFromTask(task, order);
             if (order.getOppoId() != null) {
                 try {
