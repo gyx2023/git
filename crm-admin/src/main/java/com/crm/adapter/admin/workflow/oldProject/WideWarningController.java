@@ -1,5 +1,6 @@
 package com.crm.adapter.admin.workflow.oldProject;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.model.LoginUser;
@@ -11,6 +12,7 @@ import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.sys.SysFlowUserMapper;
 import com.crm.system.service.ISysAreaService;
+import com.crm.system.service.stats.IStatsService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.service.IWfProcessService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class WideWarningController extends BaseController {
     @Resource private final ISysAreaService sysAreaService;
     @Resource private final IWfProcessService wfProcessService;
     @Resource private final SysFlowUserMapper sysFlowUserMapper;
+    @Resource private final IStatsService statsService;
 
 
     /**
@@ -97,10 +100,13 @@ public class WideWarningController extends BaseController {
         return R.ok(result);
     }
 
-/*    @GetMapping("/custList")
+    /**
+     * 分页查询预警客户列表（预警处理页翻页调用；首屏由 /workflow/process/detail 预加载第一页，默认20条）
+     */
+    @GetMapping("/custList")
     public R<Map<String, Object>> custList(@RequestParam("orderId") Long orderId,
                                             @RequestParam(defaultValue = "1") int pageNum,
-                                            @RequestParam(defaultValue = "10") int pageSize) {
+                                            @RequestParam(defaultValue = "20") int pageSize) {
         ToppOrderVo order = orderService.queryById(orderId);
         if (order == null) {
             return R.fail("工单不存在");
@@ -118,7 +124,7 @@ public class WideWarningController extends BaseController {
         result.put("custList", page.getRecords());
         result.put("custTotal", page.getTotal());
         return R.ok(result);
-    }*/
+    }
 
     /**
      * 通过（通用：single_approval / double_approval 均适用）。
@@ -469,10 +475,10 @@ public class WideWarningController extends BaseController {
         return R.ok(result);
     }
 
- /*   private String str(Map<String, Object> m, String k) {
+    private String str(Map<String, Object> m, String k) {
         Object v = m != null ? m.get(k) : null;
         return v != null ? v.toString() : null;
-    }*/
+    }
 
     /**
      * 填充 wide_result 到 Bo（跟踪中/转派/流程未结束时使用）
