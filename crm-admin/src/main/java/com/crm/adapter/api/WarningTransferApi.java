@@ -155,4 +155,51 @@ public class WarningTransferApi {
         String base64Token = authHeader.substring(7);
         return TokenUtil.validateToken(base64Token) != null;
     }
+
+    private final com.crm.system.service.warning.assign.WarningAssignService warningAssignService;
+
+    /**
+     * 未派发工单批量转派（指派客户经理并启动新框架流程）。
+     * <p>
+     * 老框架 assignWxOrder 中针对新框架预警类型（目前 wotv_expire_warning）改为调用本接口，
+     * 由新框架启动 Flowable 流程、创建 topp_order、维护明细 status，通用按 orderType 分发策略。
+     * </p>
+     */
+    @SaIgnore
+    @PostMapping("/assignUnallocated")
+    public R<Map<String, Object>> assignUnallocated(@RequestParam("orderType") String orderType,
+                                                     @RequestParam("detailIds") String detailIds,
+                                                     @RequestParam("targetUserId") Long targetUserId,
+                                                     @RequestParam(value = "comment", required = false) String comment,
+                                                     HttpServletRequest request) {
+        if (!validateSsoToken(request)) {
+            return R.fail(401, "缺少认证Token或Token无效");
+        }
+        if (orderType == null || orderType.trim().isEmpty()
+                || detailIds == null || detailIds.trim().isEmpty()
+                || targetUserId == null) {
+            return R.fail("orderType、detailIds、targetUserId 不能为空");
+        }
+
+        java.util.List<Long> idList = new java.util.ArrayList<>();
+        for (String idStr : detailIds.split(",")) {
+            String trimmed = idStr.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    idList.add(Long.parseLong(trimmed));
+                } catch (NumberFormatException e) {
+                    log.warn("【未派发指派】非法detailId: {}", idStr);
+                }
+            }
+        }
+        if (idList.isEmpty()) {
+            return R.fail("detailIds 为空");
+        }
+
+        Map<String, Object> result = warningAssignService.assign(orderType, idList, targetUserId, comment);
+        if ("FAIL".equals(result.get("result"))) {
+            return R.fail(String.valueOf(result.get("msg")));
+        }
+        return R.ok(result);
+    }
 }

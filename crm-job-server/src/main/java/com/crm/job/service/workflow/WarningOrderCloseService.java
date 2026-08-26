@@ -40,10 +40,13 @@ public class WarningOrderCloseService extends FlowServiceFactory {
     @Autowired
     private ToppOrderMapper toppOrderMapper;
 
-    /** 直接返回"3"（超时）的预警类型 —— 这些类型不判断 normalCloseNum/orderNum 是否相等 */
+    /** 直接返回"3"（超时）的预警类型 —— 这些类型不判断 normalCloseNum/orderNum 是否相等（对齐老框架 getEndReason） */
     private static final Set<String> FORCE_TIMEOUT_WARNING_TYPES = new HashSet<>(Arrays.asList(
-            "C00023",  // 宽带装机地址预警
-            "C00024"   // 沃TV到期预警
+            "C00005",  // 客户级割接预警
+            "C00014",  // 双线0出账预警
+            "C00015",  // 违规PCDN业务稽核
+            "C00019",  // 双线起租预警
+            "C00020"   // SI结算稽核预警
     ));
 
     /**
@@ -130,22 +133,27 @@ public class WarningOrderCloseService extends FlowServiceFactory {
      * <p>
      * 逻辑：
      * <ol>
-     *   <li>对 C00005/C00014/C00015/C00019/C00020/C00023/C00024 直接返回 "3"（超时）</li>
-     *   <li>若 normalCloseNum ≠ orderNum 返回 "3"（部分闭环=超时）</li>
-     *   <li>其余返回 "1"（正常闭环）</li>
+     *   <li>cycleFlag 为 2（离网）/3（超时）时原样返回 "2"/"3"</li>
+     *   <li>cycleFlag=1 时，对强制超时类型（C00005/C00014/C00015/C00019/C00020）返回 "3"</li>
+     *   <li>cycleFlag=1 且 normalCloseNum ≠ orderNum 返回 "3"（部分闭环=超时）</li>
+     *   <li>其余 cycleFlag=1 返回 "1"（正常闭环）</li>
      * </ol>
      * </p>
      *
-     * @param order 需包含 cycleWarningType / cycleNormalCloseNum / cycleOrderNum
-     * @return endReason 值："1"（正常闭环）或 "3"（超时）
+     * @param order 需包含 cycleFlag / cycleWarningType / cycleNormalCloseNum / cycleOrderNum
+     * @return endReason 值："1"（正常闭环）、"2"（离网）或 "3"（超时）
      */
     private String computeEndReason(ToppOrder order) {
+        Integer cycleFlag = order.getCycleFlag();
+        // 离网=2 / 超时=3 原样返回
+        if (cycleFlag != null && (cycleFlag == 2 || cycleFlag == 3)) {
+            return String.valueOf(cycleFlag);
+        }
+        // cycleFlag=1 已闭环
         String warningType = order.getCycleWarningType();
-        // 直接超时类型
         if (StringUtils.isNotEmpty(warningType) && FORCE_TIMEOUT_WARNING_TYPES.contains(warningType)) {
             return "3";
         }
-        // 部分闭环 → 超时
         if (order.getCycleNormalCloseNum() != null && order.getCycleOrderNum() != null
                 && !order.getCycleNormalCloseNum().equals(order.getCycleOrderNum())) {
             return "3";
