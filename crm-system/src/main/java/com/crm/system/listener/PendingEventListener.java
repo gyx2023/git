@@ -10,6 +10,7 @@ import com.crm.system.mapper.MaintenanceDetailNewMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.send.ISendDMessageService;
+import com.crm.system.service.wx.WxProcessKeySupport;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
@@ -24,11 +25,9 @@ import org.flowable.task.api.Task;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,9 +54,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     private static final ExecutorService executor = new ThreadPoolExecutor(
             5, 10, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
 
-    /** 维系类订单类型集合（对应老框架 getIsWxOrder: maintenance_order + wx_warning_second） */
-    private final Set<String> wxProcessKeys = new HashSet<>();
-
+    @Resource @Lazy private WxProcessKeySupport wxProcessKeySupport;
     @Resource @Lazy private IPendingService pendingService;
     @Resource @Lazy private ISysParamService sysParamService;
     @Resource @Lazy private RepositoryService repositoryService;
@@ -79,23 +76,6 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
 
     public PendingEventListener() {
         super(LISTENED_EVENTS);
-    }
-
-    @PostConstruct
-    public void init() {
-        try {
-            List<SysCode> codes = sysCodeMapper.selectList(
-                    new LambdaQueryWrapper<SysCode>()
-                            .eq(SysCode::getType, "process_key")
-                            .in(SysCode::getSettingStr3,
-                                    Arrays.asList("maintenance_order", "wx_warning_second")));
-            for (SysCode code : codes) {
-                wxProcessKeys.add(code.getCode());
-            }
-            log.info("维系订单类型加载完成，共{}个: {}", wxProcessKeys.size(), wxProcessKeys);
-        } catch (Exception e) {
-            log.warn("加载维系订单类型失败", e);
-        }
     }
 
     // ==================== 事件处理 ====================
@@ -131,7 +111,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
                     log.warn("saveOppoStatus 失败, oppoId={}", order.getOppoId(), e);
                 }
             }
-            if (isWxOrder(processKey)) {
+            if (wxProcessKeySupport.isWxOrder(processKey)) {
                 try {
                     synMaintenanceInfo(task, order);
                 } catch (Exception e) {
@@ -185,13 +165,8 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
         if (procInstId == null) {
             return;
         }
-        executor.execute(() -> {
-            try {
-                pendingService.addGroupTodoTask(procInstId);
-            } catch (Exception e) {
-                log.error("addGroupTodoTask 失败, procInstId={}", procInstId, e);
-            }
-        });
+        // 流程完结不再插入全局 'u'（task_id 为空）记录：每个节点/每人已有各自的 a/u 待办消息
+        // （savePending / updatePending），收尾由最后环节的 u 记录承担，全局 u 为冗余数据
         executor.execute(() -> {
             try {
                 sendEvaluationMsg(event);
@@ -276,10 +251,6 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     }
 
     // ==================== 辅助 ====================
-
-    private boolean isWxOrder(String processKey) {
-        return processKey != null && wxProcessKeys.contains(processKey);
-    }
 
     private String getProcessKey(Task task) {
         try {

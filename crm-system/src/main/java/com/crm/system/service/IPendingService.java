@@ -70,14 +70,6 @@ public interface IPendingService {
     void updatePending(Task task, String oaAppId);
 
     /**
-     * 新增集团运营平台待办同步记录（Flowable 流程完结时触发）
-     * 对应旧系统 PendingService.addGroupTodoTask(ProcessInstance)
-     *
-     * @param procInstId 流程实例ID
-     */
-    void addGroupTodoTask(String procInstId);
-
-    /**
      * 新增集团待办单任务删除记录（Flowable 任务完成时触发）
      * 复用 'u' 类型但携带 taskId，与流程完结的 'u'（无 taskId）区分。
      * 并签场景下各处理人完成后自己的待办立即删除，不等同环节其他处理人

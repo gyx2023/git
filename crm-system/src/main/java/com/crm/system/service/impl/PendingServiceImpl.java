@@ -18,6 +18,7 @@ import com.crm.system.mapper.PendingGroupTodoMapper;
 import com.crm.system.mapper.PendingMapper;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.IPendingService;
+import com.crm.system.service.wx.WxProcessKeySupport;
 import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
@@ -72,6 +73,23 @@ public class PendingServiceImpl implements IPendingService {
 
     @Resource
     private org.flowable.engine.RuntimeService flowableRuntimeService;
+
+    @Resource
+    private WxProcessKeySupport wxProcessKeySupport;
+
+    /**
+     * 是否为维系预警流程（对应老框架 getIsWxOrder）——此类流程不写入集团待办表。
+     * processDefinitionId 格式为 key:version:id，直接取 key 段
+     */
+    private boolean isWxProcessKey(Task task) {
+        String procDefId = task.getProcessDefinitionId();
+        if (procDefId == null) {
+            return false;
+        }
+        int idx = procDefId.indexOf(':');
+        String processKey = idx > 0 ? procDefId.substring(0, idx) : procDefId;
+        return wxProcessKeySupport.isWxOrder(processKey);
+    }
 
     private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
         "pendingCode", "pendingTitle", "pendingDate", "pendingUserID", "pendingURL", "pendingStatus",
@@ -467,6 +485,11 @@ public class PendingServiceImpl implements IPendingService {
      * 任务创建时同步插入 pending_group_todo（对应老框架 addGroupTodoTask TaskEntity 分支）
      */
     private void addGroupTodoTaskForTask(Task task) {
+        // 维系预警流程不写入集团待办表（对应老框架 getIsWxOrder 逻辑）
+        if (isWxProcessKey(task)) {
+            log.debug("维系预警流程，跳过集团待办新增: procInstId={}, taskId={}", task.getProcessInstanceId(), task.getId());
+            return;
+        }
         String procInstId = task.getProcessInstanceId();
         String taskId = task.getId();
         Long count = pendingGroupTodoMapper.selectCount(
@@ -527,28 +550,12 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     @Override
-    public void addGroupTodoTask(String procInstId) {
-        // 防重：流程完结时只加一条 'u' 类型
-        Long count = pendingGroupTodoMapper.selectCount(
-                new LambdaQueryWrapper<PendingGroupTodo>()
-                        .eq(PendingGroupTodo::getProcInstId, procInstId)
-                        .eq(PendingGroupTodo::getOperatorType, PendingOpType.UPDATE.getCode()));
-        if (count > 0) {
-            log.debug("集团待办流程完结记录已存在，跳过: procInstId={}", procInstId);
+    public void deleteGroupTodoTask(Task task) {
+        // 维系预警流程不写入集团待办表（对应老框架 getIsWxOrder 逻辑）
+        if (isWxProcessKey(task)) {
+            log.debug("维系预警流程，跳过集团待办删除: procInstId={}, taskId={}", task.getProcessInstanceId(), task.getId());
             return;
         }
-        PendingGroupTodo todo = new PendingGroupTodo();
-        todo.setProcInstId(procInstId);
-        todo.setOperatorType(PendingOpType.UPDATE.getCode());
-        todo.setSendStatus(SendStatus.PENDING.getCode());
-        todo.setFailTimes(0);
-        todo.setCreateTime(new Date());
-        pendingGroupTodoMapper.insert(todo);
-        log.info("集团待办同步记录已创建: procInstId={}", procInstId);
-    }
-
-    @Override
-    public void deleteGroupTodoTask(Task task) {
         String procInstId = task.getProcessInstanceId();
         String taskId = task.getId();
         Long count = pendingGroupTodoMapper.selectCount(
