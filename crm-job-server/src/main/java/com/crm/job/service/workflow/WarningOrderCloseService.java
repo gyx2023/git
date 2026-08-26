@@ -40,9 +40,13 @@ public class WarningOrderCloseService extends FlowServiceFactory {
     @Autowired
     private ToppOrderMapper toppOrderMapper;
 
-    /** 直接返回"3"（超时）的预警类型 —— 这些类型不判断 normalCloseNum/orderNum 是否相等 */
+    /** 直接返回"3"（超时）的预警类型 —— 这些类型不判断 normalCloseNum/orderNum 是否相等（对齐老框架 getEndReason） */
     private static final Set<String> FORCE_TIMEOUT_WARNING_TYPES = new HashSet<>(Arrays.asList(
-            "C00024"   // 沃TV到期预警
+            "C00005",  // 客户级割接预警
+            "C00014",  // 双线0出账预警
+            "C00015",  // 违规PCDN业务稽核
+            "C00019",  // 双线起租预警
+            "C00020"   // SI结算稽核预警
     ));
 
     /**
@@ -130,7 +134,7 @@ public class WarningOrderCloseService extends FlowServiceFactory {
      * 逻辑：
      * <ol>
      *   <li>cycleFlag 为 2（离网）/3（超时）时原样返回 "2"/"3"</li>
-     *   <li>cycleFlag=1 时，对强制超时类型（C00005/C00014/C00015/C00019/C00020/C00023/C00024）返回 "3"</li>
+     *   <li>cycleFlag=1 时，对强制超时类型（C00005/C00014/C00015/C00019/C00020）返回 "3"</li>
      *   <li>cycleFlag=1 且 normalCloseNum ≠ orderNum 返回 "3"（部分闭环=超时）</li>
      *   <li>其余 cycleFlag=1 返回 "1"（正常闭环）</li>
      * </ol>
