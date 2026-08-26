@@ -112,7 +112,7 @@ public class WarningCycleCloseJob {
 
     /**
      * 与旧系统 TcCustCycleWarningJob.download() 一致：
-     * 默认取前2天的 yyyyMMdd，若 xxl-job 传入 jobparam 则覆盖为指定日期。
+     * xxl-job 固定传 yyyyMMdd；未传 jobparam 时默认取前2天。
      */
     private String resolveDate() {
         String jobparam = XxlJobHelper.getJobParam();
