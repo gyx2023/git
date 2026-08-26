@@ -1,4 +1,4 @@
-package com.crm.job.service.warning;
+package com.crm.system.service.warning;
 
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.system.domain.dao.SysUsers;
@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 预警记录 DTO
+ * 预警记录 DTO（从 crm-job-server 下沉，供定时建单与未派发指派共用）
  * <p>
- * 各策略查询业务表后统一转为此对象，由 WarningStartService 统一处理流程启动。
+ * 各策略查询业务表后统一转为此对象，由 WarningOrderCreateService 统一处理流程启动。
  * 对应旧系统 BaseJob 中 FtpEntity 接口的数据契约角色（getGrpCode / getCustName / getServManagerId 等）。
  *
  * @author crm
