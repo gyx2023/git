@@ -121,4 +121,17 @@ public interface IToppOrderService {
     void markOrderEnd(Long orderId, String followUp, String otherReason,
                       java.util.Date plannedRenewalDate);
 
+    /**
+     * 更新工单的维系结果与计划续约日期（允许置空）。
+     * <p>
+     * 用于沃TV到期预警/宽带预警重复处理场景：当用户切换维系情况或清空日期时，
+     * 需要把数据库中的旧值覆盖为 null，故不使用 updateById 的 null 忽略策略。
+     * </p>
+     *
+     * @param orderId            工单ID
+     * @param wideResult         维系结果（wide_result，可为 null）
+     * @param plannedRenewalDate 计划续约日期/下次联系时间（可为 null）
+     */
+    void updateWideFollowUp(Long orderId, String wideResult, java.util.Date plannedRenewalDate);
+
 }

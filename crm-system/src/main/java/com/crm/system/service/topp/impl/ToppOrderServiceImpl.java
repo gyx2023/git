@@ -314,6 +314,14 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         updateByBo(bo);
     }
 
+    @Override
+    public void updateWideFollowUp(Long orderId, String wideResult, java.util.Date plannedRenewalDate) {
+        baseMapper.update(null, new LambdaUpdateWrapper<ToppOrder>()
+            .set(ToppOrder::getWideResult, wideResult)
+            .set(ToppOrder::getPlannedRenewalDate, plannedRenewalDate)
+            .eq(ToppOrder::getId, orderId));
+    }
+
     private void addToWhiteList(StringBuilder whiteList, Long userId) {
         String seg = "," + userId + ",";
         if (whiteList.indexOf(seg) < 0) {

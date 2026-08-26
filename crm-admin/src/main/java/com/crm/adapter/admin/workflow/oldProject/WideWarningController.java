@@ -168,6 +168,12 @@ public class WideWarningController extends BaseController {
             // 流程已结束：置为完成
             java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
             orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
+            // 维系情况/时间按本次提交覆盖（含清空旧值）
+            ToppOrderVo endedOrder = orderService.queryById(orderId);
+            if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
+                    || "wide_second".equals(endedOrder.getOrderType()))) {
+                orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
+            }
             msg = "该流程已完成";
         }
 
@@ -224,7 +230,9 @@ public class WideWarningController extends BaseController {
     public R<Map<String, Object>> transfer(@RequestParam("taskId") String taskId,
                             @RequestParam("orderId") Long orderId,
                             @RequestParam(value = "targetUserId", required = false) Long targetUserId,
-                            @RequestParam(value = "comment", required = false) String comment) {
+                            @RequestParam(value = "comment", required = false) String comment,
+                            @RequestParam(value = "followUp", required = false) String followUp,
+                            @RequestParam(value = "otherReason", required = false) String otherReason) {
         Task task = wfProcessService.findCurrentTask(null, taskId);
         String piId = task.getProcessInstanceId();
         if (comment != null) {
@@ -247,6 +255,7 @@ public class WideWarningController extends BaseController {
             Map<String, Object> result = new HashMap<>();
             result.put("result", "SUCCESS");
             result.put("msg", "处理完成，下一步由[" + nextActorName + "]进行处理");
+            setTransferWideResult(orderId, followUp, otherReason);
             return R.ok(result);
         }
 
@@ -256,7 +265,15 @@ public class WideWarningController extends BaseController {
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
         result.put("msg", "处理完成，下一步由[" + nextActor + "]进行处理");
+        setTransferWideResult(orderId, followUp, otherReason);
         return R.ok(result);
+    }
+
+    /**
+     * 转派时沉淀维系情况到 wide_result，并清空计划续约日期（与批量转派一致）
+     */
+    private void setTransferWideResult(Long orderId, String followUp, String otherReason) {
+        orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), null);
     }
 
     /**
@@ -298,6 +315,8 @@ public class WideWarningController extends BaseController {
     public R<Map<String, Object>> track(@RequestParam("taskId") String taskId,
                                         @RequestParam("orderId") Long orderId,
                                         @RequestParam(value = "comment", required = false) String comment,
+                                        @RequestParam(value = "followUp", required = false) String followUp,
+                                        @RequestParam(value = "otherReason", required = false) String otherReason,
                                         @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
         Task task = wfProcessService.findCurrentTask(null, taskId);
         if (comment != null) {
@@ -307,11 +326,10 @@ public class WideWarningController extends BaseController {
         ToppOrderBo bo = new ToppOrderBo();
         bo.setId(orderId);
         bo.setStatus(OrderStatusEnum.TRACKING.getCode());
-        java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
-        if (plannedDate != null) {
-            bo.setPlannedRenewalDate(plannedDate);
-        }
         orderService.updateByBo(bo);
+
+        java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
+        orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
 
         Map<String, Object> result = new HashMap<>();
         result.put("result", "SUCCESS");
@@ -361,6 +379,11 @@ public class WideWarningController extends BaseController {
                     setWideResult(orderId, followUp, otherReason, plannedDate);
                 } else {
                     orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
+                    // 维系情况/时间按本次提交覆盖（含清空旧值）
+                    if ("wotv_expire_warning".equals(order.getOrderType())
+                            || "wide_second".equals(order.getOrderType())) {
+                        orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
+                    }
                 }
                 success++;
             } catch (Exception e) {
@@ -410,11 +433,8 @@ public class WideWarningController extends BaseController {
                 } else {
                     orderService.transferOrder(task.getId(), orderId, targetUserId, comment, loginUser.getUserId());
                 }
-                // 写入 wide_result
-                ToppOrderBo wideBo = new ToppOrderBo();
-                wideBo.setId(orderId);
-                fillWideResult(wideBo, followUp, otherReason);
-                orderService.updateByBo(wideBo);
+                // 写入 wide_result，并清空计划续约日期
+                orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), null);
                 success++;
             } catch (Exception e) {
                 fail++;
@@ -456,11 +476,8 @@ public class WideWarningController extends BaseController {
                 ToppOrderBo bo = new ToppOrderBo();
                 bo.setId(orderId);
                 bo.setStatus(OrderStatusEnum.TRACKING.getCode());
-                if (plannedDate != null) {
-                    bo.setPlannedRenewalDate(plannedDate);
-                }
-                fillWideResult(bo, followUp, otherReason);
                 orderService.updateByBo(bo);
+                orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
                 success++;
             } catch (Exception e) {
                 fail++;
@@ -481,28 +498,22 @@ public class WideWarningController extends BaseController {
     }
 
     /**
-     * 填充 wide_result 到 Bo（跟踪中/转派/流程未结束时使用）
+     * 单独更新订单的 wide_result 和 planned_renewal_date（流程未结束时使用，允许置空）
      */
-    private void fillWideResult(ToppOrderBo bo, String followUp, String otherReason) {
-        if (followUp == null) return;
-        if ("其他".equals(followUp) && otherReason != null) {
-            bo.setWideResult(otherReason);
-        } else {
-            bo.setWideResult(followUp);
-        }
+    private void setWideResult(Long orderId, String followUp, String otherReason, java.util.Date plannedDate) {
+        orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
     }
 
     /**
-     * 单独更新订单的 wide_result 和 planned_renewal_date（流程未结束时使用）
+     * 根据维系情况计算 wide_result 内容。
+     * followUp 为"其他"时取 otherReason，否则取 followUp 本身；followUp 为空时返回 null。
      */
-    private void setWideResult(Long orderId, String followUp, String otherReason, java.util.Date plannedDate) {
-        ToppOrderBo bo = new ToppOrderBo();
-        bo.setId(orderId);
-        fillWideResult(bo, followUp, otherReason);
-        if (plannedDate != null) {
-            bo.setPlannedRenewalDate(plannedDate);
+    private String resolveWideResult(String followUp, String otherReason) {
+        if (followUp == null) return null;
+        if ("其他".equals(followUp) && otherReason != null) {
+            return otherReason;
         }
-        orderService.updateByBo(bo);
+        return followUp;
     }
 
     private java.util.Date parseDate(String dateStr) {
