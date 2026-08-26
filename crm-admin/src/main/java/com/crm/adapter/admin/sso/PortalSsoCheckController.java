@@ -45,6 +45,11 @@ public class PortalSsoCheckController {
     public void portalCheck(@RequestParam(value = "url", required = false) String url,
                             HttpServletRequest request,
                             HttpServletResponse response) throws IOException {
+        if(url == null){
+            log.error("参数 url 不能为空");
+            response.sendRedirect("/login");
+            return;
+        }
         log.info("门户登录状态检查：url={}", url);
         // 新框架已登录判定（Sa-Token），取代旧 Session.getAttribute(IDENTITY_USER)
         if (StpUtil.isLogin()) {
