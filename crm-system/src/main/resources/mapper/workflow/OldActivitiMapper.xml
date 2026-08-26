@@ -252,8 +252,23 @@
         WHERE ID_ = #{taskId}
     </select>
 
-    <!-- 按 taskId + 变量名查询老系统单个流程变量 -->
+    <!-- 按 taskId + 变量名查询老系统单个流程变量
+         （运行时 + 历史 合并查询，对应老框架 historyService.createHistoricVariableInstanceQuery().taskId() 语义：
+           未完成任务的任务级变量只存在于 ACT_RU_VARIABLE，历史表 ACT_HI_VARINST 在变量变更/任务完成后才写入） -->
     <select id="selectOldHistoricVariable" resultType="java.util.Map">
+        SELECT
+            ID_          AS id,
+            PROC_INST_ID_ AS procInsId,
+            TASK_ID_     AS taskId,
+            NAME_        AS name,
+            VAR_TYPE_    AS varType,
+            TEXT_        AS textValue,
+            DOUBLE_      AS doubleValue,
+            LONG_        AS longValue
+        FROM ACT_RU_VARIABLE
+        WHERE TASK_ID_ = #{taskId}
+          AND NAME_ = #{variableName}
+        UNION ALL
         SELECT
             ID_          AS id,
             PROC_INST_ID_ AS procInsId,
@@ -266,6 +281,7 @@
         FROM ACT_HI_VARINST
         WHERE TASK_ID_ = #{taskId}
           AND NAME_ = #{variableName}
+        LIMIT 1
     </select>
 
 </mapper>

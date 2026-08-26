@@ -535,8 +535,15 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         taskJson.put("BEFORE_SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("startTime")));
         //当前处理人
         taskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(task));
-        //待办url（Flowable 走新框架 loginCheck，Activiti 走老框架 loginCheck）
-        taskJson.put("WAIT_SOLVE_URL", buildTaskViewUrl(task, order));
+        //待办url：OP=1 删除项，Flowable 优先取 dealUrl（缺省订单查看页），Activiti 固定用订单查看页
+        String waitSolveUrl = BASE_URL_OLD + ORDER_INFO_URL + order.getId();
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            String dealUrl = getDealUrlStr(task);
+            waitSolveUrl = dealUrl != null
+                    ? BASE_URL_NEW + dealUrl + "&taskId=" + task.get("id")
+                    : BASE_URL_NEW + ORDER_INFO_URL + order.getId();
+        }
+        taskJson.put("WAIT_SOLVE_URL", waitSolveUrl);
         //代办等级 0
         taskJson.put("WAIT_SOLVE_LEVEL", "0");
         //省分编码（统一B-编码），当在运营平台配置了推送代办给智慧门户则必传
@@ -641,17 +648,21 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     /**
      * 构建任务查看URL：
      * Flowable 优先取 dealUrl 变量，缺省用默认处理页 /warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx
-     * Activiti 用老框架固定订单查看页 /order/toOrderInfo?orderId=xxx
+     * Activiti 优先取 dealUrl 变量，缺省用老框架订单查看页 /order/toOrderInfo?orderId=xxx
      */
     private String buildTaskViewUrl(Map<String, Object> task, ToppOrder order) {
+        String dealUrl = getDealUrlStr(task);
         if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
-            String dealUrl = getDealUrlStr(task);
             if (dealUrl != null) {
                 return BASE_URL_NEW + dealUrl + "&taskId=" + task.get("id");
             }
             // 默认处理页：/warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx（同 IWarningQueryStrategy 默认 dealUrl）
             return BASE_URL_NEW + "/warning/toDeal?orderType=" + order.getOrderType()
                     + "&orderId=" + order.getId() + "&taskId=" + task.get("id");
+        }
+        // Activiti 老框架任务：优先取 {taskDefKey}_dealUrl 变量（与老框架 SyncTodoTaskGroupService 一致），缺省用订单查看页
+        if (dealUrl != null) {
+            return BASE_URL_OLD + dealUrl + "&taskId=" + task.get("id");
         }
         return BASE_URL_OLD + ORDER_INFO_URL + order.getId();
     }
