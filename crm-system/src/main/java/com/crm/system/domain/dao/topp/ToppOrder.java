@@ -173,6 +173,12 @@ public class ToppOrder extends BaseEntity {
     private Long cycleOrderNum;
 
     /**
+     * 闭环记录的闭环标识（非表字段，cyclingFlag：0未闭环 1已闭环/续约 2离网 3超时）
+     */
+    @TableField(exist = false)
+    private Integer cycleFlag;
+
+    /**
      * 在网标识
      */
     private String curInnetFlag;

@@ -69,16 +69,19 @@ public class WarningCycleCloseJob {
         List<String> warningCodes = new ArrayList<>(typeMapping.keySet());
         List<String> orderTypes = new ArrayList<>(typeMapping.values());
 
-        log.info("【闭环自动完结】配置: {}", typeMapping);
-        XxlJobHelper.log("闭环自动完结配置: " + typeMapping);
+        // 与旧系统一致：默认前2天，jobparam 可覆盖为指定 yyyyMMdd
+        String date = resolveDate();
 
-        // 3. 查询需要关单的工单（cycleFlag=1 且 running）
+        log.info("【闭环自动完结】配置: {}, 处理日期: {}", typeMapping, date);
+        XxlJobHelper.log("闭环自动完结配置: " + typeMapping + ", 处理日期: " + date);
+
+        // 3. 查询需要关单的工单（cycleFlag in (1,2,3) 且 running）
         List<ToppOrder> closeOrders = userCycleCloseMapper
-                .selectCycleCloseOrders(orderTypes, warningCodes);
+                .selectCycleCloseOrders(orderTypes, warningCodes, date);
 
         // 4. 查询仅需同步预警等级的工单（cycleFlag=0 或已结束）
         List<ToppOrder> levelUpdateOrders = userCycleCloseMapper
-                .selectCycleWarningLevelUpdateOrders(orderTypes, warningCodes);
+                .selectCycleWarningLevelUpdateOrders(orderTypes, warningCodes, date);
 
         log.info("【闭环自动完结】关单={} 条, 同步预警等级={} 条", closeOrders.size(), levelUpdateOrders.size());
         XxlJobHelper.log("关单=" + closeOrders.size() + " 条, 同步预警等级=" + levelUpdateOrders.size() + " 条");
@@ -108,11 +111,24 @@ public class WarningCycleCloseJob {
     }
 
     /**
+     * 与旧系统 TcCustCycleWarningJob.download() 一致：
+     * 默认取前2天的 yyyyMMdd，若 xxl-job 传入 jobparam 则覆盖为指定日期。
+     */
+    private String resolveDate() {
+        String jobparam = XxlJobHelper.getJobParam();
+        if (jobparam != null && !jobparam.trim().isEmpty()) {
+            return jobparam.trim();
+        }
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        calendar.add(java.util.Calendar.DATE, -2);
+        return new java.text.SimpleDateFormat("yyyyMMdd").format(calendar.getTime());
+    }
+
+    /**
      * 解析配置字符串为 warningType → orderType 映射
      * <p>格式：C00023=kd_addr_warn,C00024=wotv_expire_warning</p>
      */
-    static Map<String, String> parseTypeMapping(String configValue) {
-        Map<String, String> mapping = new LinkedHashMap<>();
+    static Map<String, String> parseTypeMapping(String configValue) {        Map<String, String> mapping = new LinkedHashMap<>();
         for (String pair : configValue.split(",")) {
             String trimmed = pair.trim();
             if (trimmed.isEmpty()) {
