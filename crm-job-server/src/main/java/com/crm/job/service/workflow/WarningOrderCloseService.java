@@ -42,7 +42,6 @@ public class WarningOrderCloseService extends FlowServiceFactory {
 
     /** 直接返回"3"（超时）的预警类型 —— 这些类型不判断 normalCloseNum/orderNum 是否相等 */
     private static final Set<String> FORCE_TIMEOUT_WARNING_TYPES = new HashSet<>(Arrays.asList(
-            "C00023",  // 宽带装机地址预警
             "C00024"   // 沃TV到期预警
     ));
 
