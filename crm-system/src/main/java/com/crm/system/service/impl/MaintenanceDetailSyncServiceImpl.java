@@ -53,6 +53,7 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
     private final InterCountyCodeMapper interCountyCodeMapper;
     private final SysUsersMapper sysUsersMapper;
     private final OldSysOrgMapper sysOrgMapper;
+    private final com.crm.system.service.ISysUserCustNoService sysUserCustNoService;
 
     /** transAreaByName 硬编码地市名 → sys_area.id_（复刻 MaintenanceDetailService.transAreaByName） */
     private static final Map<String, Long> CITY_AREA_ID = new HashMap<>();
@@ -144,6 +145,70 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
         dn.setGrpType(grpType);
         dn.setCreateTime(new Date());
         dn.setOrderCategory("C");
+        dn.setAreaId(d.getAreaIdNew());
+        dn.setCountyId(d.getCountyIdNew());
+        maintenanceDetailNewMapper.insert(dn);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assignSuccess(Long detailId, ToppOrderBo orderBo, Map<String, Object> extra) {
+        if (orderBo == null || extra == null) {
+            return;
+        }
+        MaintenanceDetailDo d = maintenanceDetailMapper.selectById(detailId);
+        if (d == null || !Integer.valueOf(0).equals(d.getStatus())) {
+            log.warn("【维系明细】手动指派时未找到status=0明细, detailId={}", detailId);
+            return;
+        }
+        String grpCode = d.getGrpCode();
+        // 指派场景：处理人为目标 userId（orderBo.custManagerId），不再引用预警原 oa_id_dev
+        SysUsers manager = sysUsersMapper.selectById(orderBo.getCustManagerId());
+        String managerId;
+        String managerName;
+        Long userId = orderBo.getCustManagerId();
+        if (manager != null) {
+            managerId = manager.getCustomerNo();
+            if (StringUtils.isBlank(managerId)) {
+                // 对齐旧系统：sys_user.customer_no 为空时，从 sys_user_cust_no 取第一条客户编号
+                java.util.List<com.crm.system.domain.dao.SysUserCustNo> custNos =
+                        sysUserCustNoService.findListByUserId(manager.getId().intValue());
+                if (custNos != null && !custNos.isEmpty()) {
+                    managerId = custNos.get(0).getCustomerNo();
+                }
+            }
+            managerName = manager.getNameCh();
+            userId = manager.getId();
+        } else {
+            managerId = str(extra.get("oaIdDev"));
+            managerName = str(extra.get("oaNameDev"));
+        }
+
+        d.setOrderId(orderBo.getId());
+        d.setManagerId(managerId);
+        d.setManagerName(managerName);
+        d.setUserId(userId);
+        d.setStatus(1);
+        if (StringUtils.isBlank(d.getGrpName())) {
+            d.setGrpName(orderBo.getCustName());
+        }
+        setAreaAndOrg(d, manager);
+        maintenanceDetailMapper.updateById(d);
+
+        // 新口径维护明细（status=1）
+        MaintenanceDetailNewDo dn = new MaintenanceDetailNewDo();
+        dn.setOrderType(orderBo.getOrderType());
+        dn.setDetailId(d.getDetailId());
+        dn.setGrpCode(grpCode);
+        dn.setManagerId(managerId);
+        dn.setManagerName(managerName);
+        dn.setUserId(userId);
+        dn.setOrderId(orderBo.getId());
+        dn.setStatus(1);
+        dn.setIsImpPrt(d.getIsImpPrt());
+        dn.setGrpType(d.getGrpType());
+        dn.setCreateTime(new Date());
+        dn.setOrderCategory(d.getOrderCategory());
         dn.setAreaId(d.getAreaIdNew());
         dn.setCountyId(d.getCountyIdNew());
         maintenanceDetailNewMapper.insert(dn);

@@ -24,6 +24,17 @@ public interface IMaintenanceDetailSyncService {
     void writeSuccess(ToppOrderBo orderBo, Map<String, Object> extra);
 
     /**
+     * 手动指派（未派发转派）成功后：把已有 maintenance_detail(status=0) 更新为 status=1，
+     * 同时插入 maintenance_detail_new(status=1)。不同于 writeSuccess（全量新建），
+     * 此方法针对手动指派场景复用原明细主键，避免产生重复明细。
+     *
+     * @param detailId  maintenance_detail.id_（status=0 的未派发明细）
+     * @param orderBo   已建好的工单
+     * @param extra     WarningAssignContext.extraVariables
+     */
+    void assignSuccess(Long detailId, ToppOrderBo orderBo, Map<String, Object> extra);
+
+    /**
      * 无有效客户经理时写入 maintenance_detail(status=0)，不建单、不写 maintenance_detail_new。
      * 对应旧系统 TcUserCustWarningNewJob.java:325-339（manager 查询失败分支）。
      *
