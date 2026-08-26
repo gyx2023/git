@@ -372,7 +372,72 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         lqw.like(StringUtils.isNotBlank(bo.getCompanyName()), ZqztLedgerInfo::getCompanyName, bo.getCompanyName());
         lqw.like(StringUtils.isNotBlank(bo.getUnicomManager()), ZqztLedgerInfo::getUnicomManager, bo.getUnicomManager());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), ZqztLedgerInfo::getStatus, bo.getStatus());
+        // 零星工程（1是/0否）
+        lqw.eq(StringUtils.isNotBlank(bo.getBroadbandIsSporadic()), ZqztLedgerInfo::getBroadbandIsSporadic, bo.getBroadbandIsSporadic());
+        // 企业信息录入状态（1是/0否）
+        lqw.eq(StringUtils.isNotBlank(bo.getInfoEntryStatus()), ZqztLedgerInfo::getInfoEntryStatus, bo.getInfoEntryStatus());
+        // 机构ID（云智眼监管信息机构ID，模糊匹配 + 含空值）
+        applyOrgIdFilter(lqw, bo);
+        // 宽带实际完成时间（范围 + 未完成含空值）
+        applyBroadbandActualDateFilter(lqw, bo);
+        // 设备ID（子表，模糊匹配 + 含空值）
+        applyDeviceIdFilter(lqw, bo);
         return lqw;
+    }
+
+    /** 机构ID筛选：模糊匹配 + 「含空值」 */
+    private void applyOrgIdFilter(LambdaQueryWrapper<ZqztLedgerInfo> lqw, ZqztLedgerInfoBo bo) {
+        boolean hasValue = StringUtils.isNotBlank(bo.getCloudOrgId());
+        boolean includeEmpty = Boolean.TRUE.equals(bo.getCloudOrgIdEmpty());
+        if (hasValue && includeEmpty) {
+            lqw.and(w -> w.like(ZqztLedgerInfo::getCloudOrgId, bo.getCloudOrgId())
+                .or().isNull(ZqztLedgerInfo::getCloudOrgId)
+                .or().eq(ZqztLedgerInfo::getCloudOrgId, ""));
+        } else if (hasValue) {
+            lqw.like(ZqztLedgerInfo::getCloudOrgId, bo.getCloudOrgId());
+        } else if (includeEmpty) {
+            lqw.and(w -> w.isNull(ZqztLedgerInfo::getCloudOrgId)
+                .or().eq(ZqztLedgerInfo::getCloudOrgId, ""));
+        }
+    }
+
+    /** 宽带实际完成时间筛选：范围 + 「未完成」（含空值） */
+    private void applyBroadbandActualDateFilter(LambdaQueryWrapper<ZqztLedgerInfo> lqw, ZqztLedgerInfoBo bo) {
+        boolean hasStart = StringUtils.isNotBlank(bo.getBroadbandActualDateStart());
+        boolean hasEnd = StringUtils.isNotBlank(bo.getBroadbandActualDateEnd());
+        boolean includeEmpty = Boolean.TRUE.equals(bo.getBroadbandActualDateEmpty());
+        if (hasStart || hasEnd) {
+            if (includeEmpty) {
+                lqw.and(w -> {
+                    w.ge(hasStart, ZqztLedgerInfo::getBroadbandSporadicActualDate, bo.getBroadbandActualDateStart());
+                    w.le(hasEnd, ZqztLedgerInfo::getBroadbandSporadicActualDate, bo.getBroadbandActualDateEnd());
+                    w.or();
+                    w.isNull(ZqztLedgerInfo::getBroadbandSporadicActualDate);
+                });
+            } else {
+                lqw.ge(hasStart, ZqztLedgerInfo::getBroadbandSporadicActualDate, bo.getBroadbandActualDateStart());
+                lqw.le(hasEnd, ZqztLedgerInfo::getBroadbandSporadicActualDate, bo.getBroadbandActualDateEnd());
+            }
+        } else if (includeEmpty) {
+            lqw.isNull(ZqztLedgerInfo::getBroadbandSporadicActualDate);
+        }
+    }
+
+    /** 设备ID筛选（子表 zqzt_ledger_cloud_config，模糊匹配）+ 「含空值」 */
+    private void applyDeviceIdFilter(LambdaQueryWrapper<ZqztLedgerInfo> lqw, ZqztLedgerInfoBo bo) {
+        boolean hasValue = StringUtils.isNotBlank(bo.getDeviceId());
+        boolean includeEmpty = Boolean.TRUE.equals(bo.getDeviceIdEmpty());
+        String likeSql = "EXISTS (SELECT 1 FROM zqzt_ledger_cloud_config c WHERE c.ledger_id = zqzt_ledger_info.id "
+            + "AND c.device_id LIKE {0} AND c.is_valid = '1')";
+        String emptySql = "EXISTS (SELECT 1 FROM zqzt_ledger_cloud_config c WHERE c.ledger_id = zqzt_ledger_info.id "
+            + "AND (c.device_id IS NULL OR c.device_id = '') AND c.is_valid = '1')";
+        if (hasValue && includeEmpty) {
+            lqw.and(w -> w.apply(likeSql, "%" + bo.getDeviceId() + "%").or().apply(emptySql));
+        } else if (hasValue) {
+            lqw.apply(likeSql, "%" + bo.getDeviceId() + "%");
+        } else if (includeEmpty) {
+            lqw.apply(emptySql);
+        }
     }
 
     /** 登录用户区域范围：返回 台账区域 org_code 与层级；省级/管理员/无法解析返回 null */

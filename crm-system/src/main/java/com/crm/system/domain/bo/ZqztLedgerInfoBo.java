@@ -102,6 +102,18 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String signDateStart;
     private String signDateEnd;
 
+    /** 宽带实际完成时间范围(起止 yyyy-MM-dd) */
+    private String broadbandActualDateStart;
+    private String broadbandActualDateEnd;
+    /** 宽带实际完成时间为空（"未完成"复选框） */
+    private Boolean broadbandActualDateEmpty;
+    /** 设备ID（子表模糊匹配） */
+    private String deviceId;
+    /** 设备ID含空值 */
+    private Boolean deviceIdEmpty;
+    /** 机构ID含空值 */
+    private Boolean cloudOrgIdEmpty;
+
     /** 导出上下文：登录人区域代码(sys_area.id)，由 applyExport 注入 */
     private String areaCode;
 
