@@ -17,9 +17,11 @@ import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.service.IWfProcessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
+import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +45,7 @@ public class WideWarningController extends BaseController {
     @Resource private final TaskService taskService;
     @Resource private final IToppOrderService orderService;
     @Resource private final RuntimeService runtimeService;
+    @Resource private final HistoryService historyService;
     @Resource private final com.crm.system.mapper.SysUsersMapper sysUsersMapper;
     @Resource private final com.crm.system.mapper.oldsyssyn.OldSysOrgMapper oldSysOrgMapper;
     @Resource private final ISysAreaService sysAreaService;
@@ -111,7 +114,17 @@ public class WideWarningController extends BaseController {
         if (order == null) {
             return R.fail("工单不存在");
         }
-        Map<String, Object> procVars = runtimeService.getVariables(order.getPiId());
+        // 流程可能已结束（已办/历史任务查询预警客户列表），运行时 execution 已删除，
+        // runtimeService.getVariables 会抛 FlowableObjectNotFoundException，改用历史变量查询
+        // （历史查询对进行中流程同样返回运行时变量，行为兼容）
+        List<HistoricVariableInstance> histVars = historyService
+                .createHistoricVariableInstanceQuery()
+                .processInstanceId(order.getPiId())
+                .list();
+        Map<String, Object> procVars = new HashMap<>();
+        for (HistoricVariableInstance v : histVars) {
+            procVars.put(v.getVariableName(), v.getValue());
+        }
         String codeInfo = str(procVars, "wide_second_new_codeInfo");
         String period = str(procVars, "wide_second_new_period");
         String orderFlag = str(procVars, "wide_second_new_orderFlag");
