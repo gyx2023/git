@@ -199,6 +199,3 @@ pre-travel-report:
   api-key: d8b9jlenlnbcfr9revsg
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
-
---- # 政企运营平台统一跳转配置（按环境实际地址修改）
-zqzt.jump.front-url: /zj_gec_sp_new_frontend
