@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 业务上下文视图对象
@@ -27,4 +28,7 @@ public class WfBusinessContext implements Serializable {
 
     /** 可执行的操作（如关闭商机、修改签约时间） */
     private List<WfBusinessAction> actions;
+
+    /** 扩展数据（任意结构，前端按需解析） */
+    private Map<String, Object> extraData;
 }

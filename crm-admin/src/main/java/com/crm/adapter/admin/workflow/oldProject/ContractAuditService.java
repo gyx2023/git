@@ -1,5 +1,6 @@
 package com.crm.adapter.admin.workflow.oldProject;
 
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.helper.LoginHelper;
@@ -17,7 +18,6 @@ import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.system.service.topp.IToppMemberService;
 import com.crm.system.service.hx.HxSyncService;
-import com.crm.system.utils.Constants;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -148,7 +148,7 @@ public class ContractAuditService {
         for (ToppOrderVo order : auditOrders) {
             ToppOrderBo endBo = new ToppOrderBo();
             endBo.setId(order.getId());
-            endBo.setStatus(Constants.ORDER_STATUS_END);
+            endBo.setStatus(OrderStatusEnum.END.getCode());
             endBo.setEndReason("0");
             orderService.updateByBo(endBo);
         }
@@ -272,7 +272,7 @@ public class ContractAuditService {
         for (ToppOrderVo order : auditOrders) {
             ToppOrderBo endBo = new ToppOrderBo();
             endBo.setId(order.getId());
-            endBo.setStatus(Constants.ORDER_STATUS_END);
+            endBo.setStatus(OrderStatusEnum.END.getCode());
             endBo.setEndReason("0");
             orderService.updateByBo(endBo);
         }

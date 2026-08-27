@@ -74,4 +74,47 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         )
     </select>
 
+    <select id="selectFilteredCustomersCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM tcomm_customer f
+        WHERE f.id_ IN (
+            SELECT cust_id
+            FROM topp_opportunity
+            WHERE DATE_FORMAT(CREATE_TIME, '%Y%m%d') >= DATE_FORMAT(#{createTime}, '%Y%m%d')
+        )
+    </select>
+
+    <select id="selectFilteredCustomersMinId" resultType="java.lang.Long">
+        SELECT MIN(f.id_)
+        FROM tcomm_customer f
+        WHERE f.id_ IN (
+            SELECT cust_id
+            FROM topp_opportunity
+            WHERE DATE_FORMAT(CREATE_TIME, '%Y%m%d') >= DATE_FORMAT(#{createTime}, '%Y%m%d')
+        )
+    </select>
+
+    <select id="selectFilteredCustomersMaxId" resultType="java.lang.Long">
+        SELECT MAX(f.id_)
+        FROM tcomm_customer f
+        WHERE f.id_ IN (
+            SELECT cust_id
+            FROM topp_opportunity
+            WHERE DATE_FORMAT(CREATE_TIME, '%Y%m%d') >= DATE_FORMAT(#{createTime}, '%Y%m%d')
+        )
+    </select>
+
+    <select id="selectFilteredCustomersByRange" resultMap="TcommCustomerResult">
+
+        SELECT *
+        FROM tcomm_customer f
+        WHERE f.id_ IN (
+            SELECT cust_id
+            FROM topp_opportunity
+            WHERE DATE_FORMAT(CREATE_TIME, '%Y%m%d') >= DATE_FORMAT(#{createTime}, '%Y%m%d')
+        )
+          AND f.id_ >= #{startId} AND f.id_ &lt; #{endId}
+        ORDER BY f.id_ ASC
+    </select>
+
 </mapper>

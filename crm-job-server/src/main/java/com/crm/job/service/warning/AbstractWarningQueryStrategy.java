@@ -25,7 +25,7 @@ public abstract class AbstractWarningQueryStrategy implements IWarningQueryStrat
     @Override
     public List<WarningRecord> query(String targetDate) {
         if (StringUtils.isBlank(targetDate)) {
-            targetDate = DateUtils.dateTimeNow(DateUtils.YYYY_MM_DD);
+            targetDate = DateUtils.dateTimeNow(DateUtils.YYYYMMDD);
         }
         log.info("【{}】开始查询, 日期={}", getOrderTypeName(), targetDate);
         List<WarningRecord> records = doQuery(targetDate);

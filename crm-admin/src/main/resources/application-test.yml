@@ -2,11 +2,6 @@
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 #xxl.job:
@@ -50,16 +45,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase:loadbalance://10.130.27.41:2883,10.130.27.45:2883,10.130.27.59:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
-          password: PPpomns12123##
+          username: ENC(AWwdWJ/hZQPCcK0Mh+cQMBG/tyiDgFPiNLCf1yPdzI2cvlW3KNiJ+ieZykHBXi3fPrFJZPjJwIu3dv+hiXO0sA==)
+          password: ENC(QwzCM0I/Xj1aPYxAnN27T876HQ5HNeuRaD8sweXw434=)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(9yPCaSzOpmsN9R4RZNnyh97fmpkYRRIjGjK8cakjsze7q+hMywBHG54gbil6zofF)
+          password: ENC(x1AL0Z7aJ5gqgdDE+CupzdpnuBNhuDKJfj3YMQN4oQg=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -67,14 +62,14 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
+          username: ENC(HLJ9LtsipjEdCO/6tbD4KKcceDsOoTojm9gTuXXQY2A=)
+          password: ENC(/knRHVC6B/Bd5rfzcygpyHWwpY3kepr05pnb4qbJfTw=)
         oracle:
           type: ${spring.datasource.type}
           driverClassName: oracle.jdbc.OracleDriver
           url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-          username: ps_uni_zyy
-          password: yz_2026#
+          username: ENC(1w/guZaVLSxbOVAILygCiOffo9AJ4jyaC9KypwVWOAc=)
+          password: ENC(GKs3G0dH+sqqxRTfvTqDQdSDrhH6zXUSxMrWBMvbwq4=)
           hikari:
             connectionTestQuery: SELECT 1 FROM DUAL
             connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
@@ -106,7 +101,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: admin123
+    password: ENC(Q6xML92rOpOFCnuOLpm2EVE7fOXVVb/P04d6B9qr7jo=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl

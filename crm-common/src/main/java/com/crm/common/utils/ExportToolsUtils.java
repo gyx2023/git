@@ -2,7 +2,6 @@ package com.crm.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +38,34 @@ public class ExportToolsUtils {
     private static final int MAX_FIELD_LENGTH = 2000;
 
     /**
+     * 快速预检：字符串是否包含任何需要清理的特殊字符
+     * <p>
+     * 仅做一次 O(n) 字符扫描，不分配新内存。绝大多数业务字段（ID、日期、编号等）
+     * 不含特殊字符，通过此预检直接返回原文，避免 5 次 replaceAll 的开销。
+     * </p>
+     * 检查范围覆盖 {@link #cleanSpecialCharactersForLargeText(String)} 中所有 pattern：
+     * <ul>
+     *   <li>{@code |} — 导出分隔符</li>
+     *   <li>0x00-0x1F — 控制字符（含 \r \n \t 等）</li>
+     *   <li>0x7F — DEL</li>
+     *   <li>0x2028 / 0x2029 — Unicode 行/段分隔符</li>
+     *   <li>0x200B-0x200D — 零宽字符</li>
+     *   <li>0xFEFF — BOM</li>
+     * </ul>
+     */
+    private static boolean needsCleaning(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '|' || c < 0x20 || c == 0x7F
+                    || c == 0x2028 || c == 0x2029
+                    || (c >= 0x200B && c <= 0x200D) || c == 0xFEFF) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 强力清理特殊字符，强制转为单行文本（整合所有优化，针对客户输入大文本）
      * 彻底解决换行、制表、控制字符、分隔符冲突导致的导出错乱问题
      *
@@ -51,24 +78,29 @@ public class ExportToolsUtils {
             return "";
         }
 
+        // 第二步：快速预检——绝大多数业务字段不含特殊字符，直接返回原文（零分配）
+        if (!needsCleaning(value)) {
+            return value.trim();
+        }
+
         String cleanedValue = value;
 
-        // 第二步：替换所有导出分隔符「|」为中文全角竖线「｜」，避免字段错位
+        // 第三步：替换所有导出分隔符「|」为中文全角竖线「｜」，避免字段错位
         cleanedValue = EXPORT_SEPARATOR_PATTERN.matcher(cleanedValue).replaceAll("｜");
 
-        // 第三步：将所有可能导致换行/制表的字符统一替换为单个空格（核心：强制单行化，覆盖所有场景）
+        // 第四步：将所有可能导致换行/制表的字符统一替换为单个空格（核心：强制单行化，覆盖所有场景）
         cleanedValue = ALL_LINE_BREAK_PATTERN.matcher(cleanedValue).replaceAll(" ");
 
-        // 第四步：移除所有不可见的危险控制字符（避免隐形错乱，如空字符、删节符等）
+        // 第五步：移除所有不可见的危险控制字符（避免隐形错乱，如空字符、删节符等）
         cleanedValue = DANGEROUS_CONTROL_PATTERN.matcher(cleanedValue).replaceAll("");
 
-        // 第五步：移除零宽字符等不可见Unicode字符
+        // 第六步：移除零宽字符等不可见Unicode字符
         cleanedValue = INVISIBLE_UNICODE_PATTERN.matcher(cleanedValue).replaceAll("");
-        
-        // 第六步：规范化空格（多个连续空格合并为一个，首尾去除多余空格）
+
+        // 第七步：规范化空格（多个连续空格合并为一个，首尾去除多余空格）
         cleanedValue = MULTI_SPACES_PATTERN.matcher(cleanedValue).replaceAll(" ").trim();
 
-        // 第七步：字段长度超限处理（避免超大文本导致文件过大或读取异常，添加截断标识）
+        // 第八步：字段长度超限处理（避免超大文本导致文件过大或读取异常，添加截断标识）
         if (cleanedValue.length() > MAX_FIELD_LENGTH) {
             String truncateTip = "...[文本过长，已截断]";
             // 预留截断标识长度，避免总长度超出限制
@@ -104,17 +136,13 @@ public class ExportToolsUtils {
 
         // 第二步：针对日期时间类型，进行标准化格式化
         if (value instanceof Date) {
-            // 兼容java.util.Date（含java.sql.Date）
+            // 兼容java.util.Date（含java.sql.Date、java.sql.Timestamp）
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             fieldStr = sdf.format(value);
         } else if (value instanceof LocalDateTime) {
             // 兼容Java 8+ LocalDateTime
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             fieldStr = ((LocalDateTime) value).format(formatter);
-        } else if (value instanceof Timestamp) {
-            // 兼容java.sql.Timestamp
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            fieldStr = sdf.format(value);
         } else {
             // 第三步：非日期类型，先转为字符串（兼容数字、布尔、枚举等所有类型）
             fieldStr = value.toString();

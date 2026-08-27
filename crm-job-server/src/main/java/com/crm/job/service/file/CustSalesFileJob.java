@@ -1,6 +1,7 @@
 package com.crm.job.service.file;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.FtpBroadbandMarketCust;
@@ -17,7 +18,6 @@ import com.crm.system.mapper.sys.SysDeptMapper;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.common.core.domain.entity.SysDept;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.Constants;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -605,7 +605,7 @@ public class CustSalesFileJob {
             ToppOrder order = new ToppOrder();
             order.setOrderType(PROCESS_KEY);
             order.setCreateTime(new Date());
-            order.setStatus(Constants.ORDER_STATUS_RUNNING);
+            order.setStatus(OrderStatusEnum.RUNNING.getCode());
             order.setOrderName(cust.getGrpName() + "宽带专项营销");
             order.setCustManagerId(user.getId());
             order.setCustName(cust.getGrpName());

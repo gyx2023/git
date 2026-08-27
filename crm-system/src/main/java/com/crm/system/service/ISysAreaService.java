@@ -92,4 +92,31 @@ public interface ISysAreaService {
      * 查询区域树（递归包含所有子节点）
      */
     List<SysAreaTreeVo> queryAreaTree(Long areaId);
+
+    /**
+     * 根据区域ID解析为地市级范围（含其下辖区县）。
+     * <ul>
+     * <li>三级(区县)：向上找到所属地市 → 返回 [地市 + 下辖区县]</li>
+     * <li>二级(地市)：返回 [地市 + 下辖区县]</li>
+     * <li>一级(省级)：返回 [省级]</li>
+     * </ul>
+     * 未找到上级时回退为返回当前区域ID。
+     *
+     * @param areaId 当前区域ID
+     * @return 区域ID列表
+     */
+    List<Long> resolveCityLevelScope(Long areaId);
+
+    /**
+     * 根据区域ID解析人员搜索范围（含子区域）。
+     * <ul>
+     * <li>三级(区县)：返回 [本区县]</li>
+     * <li>二级(地市)：返回 [地市 + 下辖区县]</li>
+     * <li>一级(省级)：返回 null（全省，不限制）</li>
+     * </ul>
+     *
+     * @param areaId 当前区域ID
+     * @return 区域ID列表，null 表示不限制范围
+     */
+    List<Long> resolveAreaScope(Long areaId);
 }

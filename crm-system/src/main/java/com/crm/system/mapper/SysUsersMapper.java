@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户(客户的员工)Mapper接口
@@ -55,5 +56,34 @@ public interface SysUsersMapper extends BaseMapperPlus<SysUsersMapper, SysUsers,
         "AND b.up_channel_hq_code = #{channelHqCode} " +
         "LIMIT 1")  // 只查1条数据
     SysUsers selectUserByChannelHqCode(@Param("channelHqCode") String channelHqCode);
+
+    /**
+     * 根据 OA 账号查询用户（大小写不敏感，对齐旧系统 SysUserService.findByOaId）
+     */
+    @Select("SELECT * FROM sys_user WHERE LOWER(oa_account) = LOWER(#{oaAccount}) AND is_valid = '1' LIMIT 1")
+    SysUsers findByOaAccount(@Param("oaAccount") String oaAccount);
+
+    /**
+     * 按 OA 账号查询用户信息（返回 Map，供预警策略使用）
+     * 大小写不敏感，对齐旧系统 SysUserService.findByOaId
+     * @param oaId OA 账号
+     * @return user_id, dept_id, nick_name, phonenumber
+     */
+    @Select("SELECT id_ as user_id, org_id as dept_id, name_ch as nick_name, relation_tel as phonenumber "
+            + "FROM sys_user WHERE LOWER(oa_account) = LOWER(#{oaId}) AND is_valid = '1' LIMIT 1")
+    Map<String, Object> selectUserByOaId(@Param("oaId") String oaId);
+
+    /**
+     * 按区域范围分页查询有效客户经理（cust_manager），支持OA账号/姓名模糊搜索。
+     * 对齐旧系统 SysPositionService.findCustManagerForMNP 逻辑。
+     * @param areaIds 区域ID列表，为null或空时不限制区域
+     */
+    List<SysUsers> selectByAreaScope(@Param("areaIds") List<Long> areaIds, @Param("keyword") String keyword,
+                                     @Param("offset") int offset, @Param("limit") int limit);
+
+    /**
+     * 按区域范围统计有效客户经理数
+     */
+    long countByAreaScope(@Param("areaIds") List<Long> areaIds, @Param("keyword") String keyword);
 
 }

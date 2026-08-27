@@ -1,5 +1,7 @@
 package com.crm.job.service.warning;
 
+import com.crm.common.core.domain.entity.SysUser;
+import com.crm.system.domain.dao.SysUsers;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -36,6 +38,10 @@ public class WarningRecord {
 
     /** 预警等级 */
     private String warningLevel;
+
+    private SysUsers sysUser;
+    /** 地市区县 */
+    private Long areaId;
 
     /** 扩展字段（如需传递额外的业务数据给流程变量或消息通知） */
     private Map<String, Object> extraVariables;
