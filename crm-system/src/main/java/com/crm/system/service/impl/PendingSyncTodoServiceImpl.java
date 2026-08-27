@@ -586,8 +586,13 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         taskJson.put("ALREADY_SOLVE_USER_CODE", getOaByTaskAssignee(task));
         //已办人处理时间
         taskJson.put("SOLVE_DATE", DateUtils.parseDateToStr(DateUtils.YYYYMMDDHHMMSS, (Date) task.get("endTime")));
-        //查看订单Url：Flowable 用新框架 loginCheck，Activiti 用老框架 loginCheck
-        taskJson.put("ALREADY_SOLVE_URL", buildTaskViewUrl(task, order));
+        //查看订单Url：Flowable 用新框架 loginCheck（dealUrl 优先）；
+        //Activiti 按老框架 SyncTodoTaskGroupService 逻辑固定订单查看页（不查 dealUrl）
+        if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
+            taskJson.put("ALREADY_SOLVE_URL", buildTaskViewUrl(task, order));
+        } else {
+            taskJson.put("ALREADY_SOLVE_URL", BASE_URL_OLD + ORDER_INFO_URL + order.getId());
+        }
         //操作标识,0：新增（已办信息对象集合不为空时，为必填）
         taskJson.put("OPERATION_STATE", "0");
         return taskJson;
