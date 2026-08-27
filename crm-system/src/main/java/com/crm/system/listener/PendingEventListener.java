@@ -108,7 +108,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
      */
     @Override
     protected void taskAssigned(FlowableEngineEntityEvent event) {
-        log.info("taskAssigned: taskId={}, assignee={}", event.getProcessInstanceId(), event.getEntity());
+        log.info("taskAssigned: procInstId={}, assignee={}", event.getProcessInstanceId(), event.getEntity());
         Task task = (Task) event.getEntity();
         if (task == null || task.getAssignee() == null) {
             log.debug("taskAssigned: task 或 assignee 为空，跳过");
@@ -154,7 +154,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
      */
     @Override
     protected void taskCompleted(FlowableEngineEntityEvent event) {
-        log.info("taskAssigned: taskId={}, assignee={}", event.getProcessInstanceId(), event.getEntity());
+        log.info("taskCompleted: procInstId={}, assignee={}", event.getProcessInstanceId(), event.getEntity());
         Task task = (Task) event.getEntity();
         if (task == null) {
             return;
@@ -173,7 +173,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
      */
     @Override
     protected void processCompleted(FlowableEngineEntityEvent event) {
-        log.info("taskAssigned: taskId={}, assignee={}", event.getProcessInstanceId(), event.getEntity());
+        log.info("processCompleted: procInstId={}, assignee={}", event.getProcessInstanceId(), event.getEntity());
         String procInstId = event.getProcessInstanceId();
         if (procInstId == null) {
             return;
