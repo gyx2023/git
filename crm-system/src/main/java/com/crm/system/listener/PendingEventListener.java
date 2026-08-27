@@ -91,7 +91,6 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
             return;
         }
         String piId = task.getProcessInstanceId();
-        String processKey = getProcessKey(task);
         ToppOrderVo order = orderService.queryByPiId(piId);
 
         // 订单可能尚未插入（流程启动时 TASK_ASSIGNED 先于 insertByBo 触发），
@@ -111,7 +110,8 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
                     log.warn("saveOppoStatus 失败, oppoId={}", order.getOppoId(), e);
                 }
             }
-            if (wxProcessKeySupport.isWxOrder(processKey)) {
+            // 维系订单判断：CATEGORY_ 已在上方设置为订单类型，processKey 多为通用流程无法区分业务类型
+            if (wxProcessKeySupport.isWxOrder(task.getCategory())) {
                 try {
                     synMaintenanceInfo(task, order);
                 } catch (Exception e) {
@@ -251,18 +251,6 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     }
 
     // ==================== 辅助 ====================
-
-    private String getProcessKey(Task task) {
-        try {
-            if (task.getProcessDefinitionId() != null) {
-                ProcessDefinition pd = repositoryService.getProcessDefinition(task.getProcessDefinitionId());
-                if (pd != null) return pd.getKey();
-            }
-        } catch (Exception e) {
-            log.warn("获取流程定义Key失败: {}", task.getProcessDefinitionId());
-        }
-        return null;
-    }
 
     private String getOaAppId() {
         if (cachedOaAppId != null) {

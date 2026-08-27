@@ -79,16 +79,11 @@ public class PendingServiceImpl implements IPendingService {
 
     /**
      * 是否为维系预警流程（对应老框架 getIsWxOrder）——此类流程不写入集团待办表。
-     * processDefinitionId 格式为 key:version:id，直接取 key 段
+     * 新框架任务 CATEGORY_ 存的是订单类型（流程创建时 setCategory(orderType) 写入），
+     * 与维系订单类型集合比对；processKey 多为通用 single_approval，无法区分业务类型
      */
     private boolean isWxProcessKey(Task task) {
-        String procDefId = task.getProcessDefinitionId();
-        if (procDefId == null) {
-            return false;
-        }
-        int idx = procDefId.indexOf(':');
-        String processKey = idx > 0 ? procDefId.substring(0, idx) : procDefId;
-        return wxProcessKeySupport.isWxOrder(processKey);
+        return wxProcessKeySupport.isWxOrder(task.getCategory());
     }
 
     private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
