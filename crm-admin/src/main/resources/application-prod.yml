@@ -164,6 +164,8 @@ security:
     - /askdata/widget/suggestions
     # 数据处理工作流内网取数入口，使用短期随机 dataRef
     - /api/askdata/tools/resultdata
+    - /sso/portalCheck
+    - /sso/uacLogin
 # Swagger配置
 swagger:
   info:

@@ -1191,10 +1191,26 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         List<WfProcNodeVo> nodeList = new ArrayList<>();
         if (oldActInsts != null) {
             for (Map<String, Object> act : oldActInsts) {
+                String activityType = Convert.toStr(act.get("activityType"));
+                // 网关节点不展示在流转记录中（Exclusive Gateway 等）
+                if ("exclusiveGateway".equals(activityType)
+                        || "inclusiveGateway".equals(activityType)
+                        || "parallelGateway".equals(activityType)
+                        || "eventBasedGateway".equals(activityType)
+                        || "complexGateway".equals(activityType)) {
+                    continue;
+                }
                 WfProcNodeVo node = new WfProcNodeVo();
                 node.setActivityId(Convert.toStr(act.get("activityId")));
-                node.setActivityName(Convert.toStr(act.get("activityName")));
-                node.setActivityType(Convert.toStr(act.get("activityType")));
+                String activityName = Convert.toStr(act.get("activityName"));
+                // 老流程 startEvent/endEvent 节点名对齐新框架展示（Start→开始、End→结束）
+                if ("startEvent".equals(activityType)) {
+                    activityName = "开始";
+                } else if ("endEvent".equals(activityType)) {
+                    activityName = "结束";
+                }
+                node.setActivityName(activityName);
+                node.setActivityType(activityType);
                 node.setCreateTime((Date) act.get("startTime"));
                 node.setEndTime((Date) act.get("endTime"));
                 String assignee = Convert.toStr(act.get("assignee"));
