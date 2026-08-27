@@ -16,6 +16,7 @@ import com.crm.system.service.topp.IToppOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
+import org.flowable.common.engine.impl.cfg.TransactionState;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
 import org.flowable.engine.repository.ProcessDefinition;
@@ -77,6 +78,10 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
 
     public PendingEventListener() {
         super(LISTENED_EVENTS);
+        // 等到 Flowable 事务提交后再回调，确保监听内查询的 flowable 运行表/历史表
+        // （如 FLOWABLE_ACT_RU_TASK、历史任务/变量）在本事务内已全部落库，避免并发竞态
+        // 读到尚未写入的表数据（监听执行比入表快的根因）。
+        this.setOnTransaction(TransactionState.COMMITTED.name());
     }
 
     @PostConstruct
