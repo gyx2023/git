@@ -284,14 +284,21 @@ public class ToppOrderServiceImpl implements IToppOrderService {
 
     @Override
     public void markOrderEnd(Long orderId, String followUp, String otherReason) {
+        markOrderEnd(orderId, followUp, otherReason, null);
+    }
+
+    @Override
+    public void markOrderEnd(Long orderId, String followUp, String otherReason,
+                             java.util.Date plannedRenewalDate) {
         ToppOrderBo bo = new ToppOrderBo();
         bo.setId(orderId);
         bo.setStatus(OrderStatusEnum.END.getCode());
         bo.setBatchFlag(0);
 
-        // 宽带二次预警特有：完成时记录结束原因与跟踪情况（与工单结束合并为一次更新）
+        // 宽带二次预警 / 沃TV到期预警：完成时记录结束原因与跟踪情况
         ToppOrderVo order = queryById(orderId);
-        if (order != null && "wide_second".equals(order.getOrderType())) {
+        if (order != null && ("wide_second".equals(order.getOrderType())
+                || "wotv_expire_warning".equals(order.getOrderType()))) {
             bo.setEndReason("0");
             if (followUp != null) {
                 if ("其他".equals(followUp) && otherReason != null) {
@@ -300,8 +307,19 @@ public class ToppOrderServiceImpl implements IToppOrderService {
                     bo.setWideResult(followUp);
                 }
             }
+            if (plannedRenewalDate != null) {
+                bo.setPlannedRenewalDate(plannedRenewalDate);
+            }
         }
         updateByBo(bo);
+    }
+
+    @Override
+    public void updateWideFollowUp(Long orderId, String wideResult, java.util.Date plannedRenewalDate) {
+        baseMapper.update(null, new LambdaUpdateWrapper<ToppOrder>()
+            .set(ToppOrder::getWideResult, wideResult)
+            .set(ToppOrder::getPlannedRenewalDate, plannedRenewalDate)
+            .eq(ToppOrder::getId, orderId));
     }
 
     private void addToWhiteList(StringBuilder whiteList, Long userId) {

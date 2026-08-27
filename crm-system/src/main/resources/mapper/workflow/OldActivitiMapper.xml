@@ -184,13 +184,13 @@
         WHERE hp.PROC_INST_ID_ = #{procInsId}
     </select>
 
-    <!-- 查询老系统历史活动节点 -->
+    <!-- 查询老系统历史活动节点（ACT_HI_ACTINST 列名为 ACT_ID_/ACT_NAME_/ACT_TYPE_，与 ACTIVITY_* 命名不同） -->
     <select id="selectOldHistoricActivityInsts" resultType="java.util.Map">
         SELECT
             ID_ AS id,
-            ACTIVITY_ID_ AS activityId,
-            ACTIVITY_NAME_ AS activityName,
-            ACTIVITY_TYPE_ AS activityType,
+            ACT_ID_ AS activityId,
+            ACT_NAME_ AS activityName,
+            ACT_TYPE_ AS activityType,
             TASK_ID_ AS taskId,
             ASSIGNEE_ AS assignee,
             START_TIME_ AS startTime,

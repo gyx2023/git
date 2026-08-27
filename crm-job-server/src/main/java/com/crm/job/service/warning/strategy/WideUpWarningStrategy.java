@@ -3,7 +3,7 @@ package com.crm.job.service.warning.strategy;
 import com.crm.job.mapper.warning.WideUpWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.job.service.warning.WarningLeaderService;
-import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.service.warning.WarningRecord;
 import com.crm.system.domain.dto.LeaderInfoDto;
 import com.crm.system.domain.dto.OrgDepartmentDto;
 import com.crm.system.domain.vo.SysAreaVo;

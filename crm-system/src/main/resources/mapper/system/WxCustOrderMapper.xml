@@ -9,6 +9,7 @@
             o.create_time AS createTime, o.update_time AS updateTime, o.pi_id AS piId,
             o.business_dep AS businessDep, o.acc_nbr AS accNbr, o.creator_ AS creator,
             o.area_id AS areaId, area.name_ AS areaName, area.type_ AS areaType,
+            o.info_id AS infoId,
             c.name_ch AS creatorName, c.name_ AS creatorPhone
         FROM topp_order o
         LEFT JOIN sys_area area ON o.area_id = area.id_
@@ -24,6 +25,60 @@
         LEFT JOIN sys_user su ON su.id_ = TRIM(BOTH ',' FROM his.ASSIGNEE_)
         WHERE his.PROC_INST_ID_ = #{piId}
         ORDER BY his.START_TIME_ ASC
+    </select>
+
+    <!-- 宽带到期预警详情（对应老框架 wideWarningInfo.jsp：WideSysAutoWarning 按 order.infoId 查询） -->
+    <select id="selectWideSysAutoWarning" resultType="java.util.Map">
+        SELECT id AS infoId, svc_num AS svcNum, cust_name AS custName,
+            contact_man AS contactMan, contact_phone AS contactPhone,
+            developer_name AS developerName, scheme_name AS schemeName,
+            lvl_name AS lvlName, service_name AS serviceName, conn_type AS connType,
+            amount_per_year AS amountPerYear, eff_time AS effTime, exp_time AS expTime,
+            rate_ AS rate, user_addr AS userAddr, exte_flag AS exteFlag,
+            NEW_SCHEME_NAME AS newSchemeName, NEW_CREATE_TIME AS newCreateTime,
+            NEW_EFF_TIME AS newEffTime, NEW_EXP_TIME AS newExpTime,
+            NEW_SCHEME_PERIOD AS newSchemePeriod, NEW_SCHEME_FEE AS newSchemeFee
+        FROM wide_sys_auto_warning
+        WHERE id = #{infoId}
+    </select>
+
+    <!-- 宽带到期预警摘要（对应老框架 infoByWIDE.jsp：ftp_tc_user_cust_warning 按 order.infoId 查询） -->
+    <select id="selectFtpTcUserCustWarning" resultType="java.util.Map">
+        SELECT id_ AS infoId, grp_name AS grpName, grp_code AS grpCode,
+            user_scale AS userScale, warning_type AS warningType,
+            main_order_flow_no AS mainOrderFlowNo
+        FROM ftp_tc_user_cust_warning
+        WHERE id_ = #{infoId}
+    </select>
+
+    <!-- 宽带到期预警用户清单（对应老框架 infoByWIDE.jsp：wide_sys_auto_warning 按 main_order_flow_no 查询，分页） -->
+    <select id="selectWideUserList" resultType="java.util.Map">
+        SELECT w.id AS userId, w.svc_num AS svcNum, w.cust_name AS custName,
+            w.contact_man AS contactMan, w.contact_phone AS contactPhone,
+            w.developer_name AS developerName, w.scheme_name AS schemeName,
+            w.lvl_name AS lvlName, w.service_name AS serviceName, w.conn_type AS connType,
+            w.amount_per_year AS amountPerYear,
+            DATE_FORMAT(w.eff_time, '%Y-%m-%d %H:%i:%s') AS effTime,
+            DATE_FORMAT(w.exp_time, '%Y-%m-%d %H:%i:%s') AS expTime,
+            w.rate_ AS rate, w.user_addr AS userAddr, w.exte_flag AS exteFlag,
+            w.relation_type_name AS relationTypeName,
+            w.NEW_SCHEME_ID AS newSchemeId, w.NEW_SCHEME_NAME AS newSchemeName,
+            DATE_FORMAT(w.NEW_CREATE_TIME, '%Y-%m-%d %H:%i:%s') AS newCreateTime,
+            DATE_FORMAT(w.NEW_EFF_TIME, '%Y-%m-%d %H:%i:%s') AS newEffTime,
+            DATE_FORMAT(w.NEW_EXP_TIME, '%Y-%m-%d %H:%i:%s') AS newExpTime,
+            w.NEW_SCHEME_PERIOD AS newSchemePeriod, w.NEW_SCHEME_FEE AS newSchemeFee,
+            fw.user_status AS userStatus
+        FROM wide_sys_auto_warning w
+        LEFT JOIN ftp_tc_user_cycle_warning fw ON w.ORDER_FLOW_NO = fw.ORDER_FLOW_NO
+        WHERE w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id ASC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countWideUserList" resultType="long">
+        SELECT COUNT(1)
+        FROM wide_sys_auto_warning
+        WHERE main_order_flow_no = #{mainOrderFlowNo}
     </select>
 
 </mapper>

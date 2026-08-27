@@ -123,10 +123,10 @@ public class WideSecondWarningBusinessContextProvider implements BusinessContext
             extraData.put("totalCount", 0);
         }
 
-        // 用户明细列表
+        // 用户明细列表：详情首屏只返回第一页（默认页大小，与 /wideSecondWarning/records 分页接口一致）
         try {
-            List<Map<String, Object>> records = wideSecondService.queryAllRecords(order.getId(), targetDate);
-            extraData.put("records", records);
+            Map<String, Object> page = wideSecondService.pageRecords(order.getId(), 1, 20, targetDate);
+            extraData.put("records", page.get("records"));
         } catch (Exception e) {
             log.warn("【wide_second】查询用户明细失败", e);
             extraData.put("records", new ArrayList<>());

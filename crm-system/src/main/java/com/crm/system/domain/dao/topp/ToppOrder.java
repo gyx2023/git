@@ -8,6 +8,8 @@ import com.crm.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.Date;
+
 /**
  * 【请填写功能名称】对象 topp_order
  *
@@ -147,6 +149,36 @@ public class ToppOrder extends BaseEntity {
      */
     private String warningLevel;
     /**
+     * 闭环记录的预警等级（非表字段，用于 UserCycleCloseMapper 查询带回）
+     */
+    @TableField(exist = false)
+    private String cycleWarningLevel;
+
+    /**
+     * 闭环记录的预警类型（非表字段，用于 UserCycleCloseMapper 查询带回，计算 endReason）
+     */
+    @TableField(exist = false)
+    private String cycleWarningType;
+
+    /**
+     * 闭环记录的正常闭环数（非表字段，用于 UserCycleCloseMapper 查询带回，计算 endReason）
+     */
+    @TableField(exist = false)
+    private Long cycleNormalCloseNum;
+
+    /**
+     * 闭环记录的订单总数（非表字段，用于 UserCycleCloseMapper 查询带回，计算 endReason）
+     */
+    @TableField(exist = false)
+    private Long cycleOrderNum;
+
+    /**
+     * 闭环记录的闭环标识（非表字段，cyclingFlag：0未闭环 1已闭环/续约 2离网 3超时）
+     */
+    @TableField(exist = false)
+    private Integer cycleFlag;
+
+    /**
      * 在网标识
      */
     private String curInnetFlag;
@@ -208,6 +240,11 @@ public class ToppOrder extends BaseEntity {
      */
     @TableField("process_engine")
     private String processEngine;
+
+    /**
+     * 计划续约日期/下次联系时间（沃TV到期预警等维系场景）
+     */
+    private Date plannedRenewalDate;
 
     @TableField(exist = false)
     private String createBy;
