@@ -180,5 +180,3 @@ pre-travel-report:
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
 
---- # 政企运营平台统一跳转配置（按环境实际地址修改）
-zqzt.jump.front-url: http://130.36.8.30:33118
