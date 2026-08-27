@@ -85,7 +85,7 @@ public class UacSsoService {
      */
     public String buildCheckLoginUrl(String queryString) throws UnsupportedEncodingException {
         String ssoUrl = sysParamService.findValueByCode("SsoUrl");
-        String redirectBase = sysParamService.findValueByCode("SsoRedirectUrl");
+        String redirectBase = sysParamService.findValueByCode("SsoRedirectUrlNew");
         if (StringUtils.isBlank(ssoUrl) || StringUtils.isBlank(redirectBase)) {
             throw new ServiceException("未配置SsoUrl或SsoRedirectUrl参数，无法完成门户登录检查");
         }
