@@ -147,13 +147,14 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
             }
         });
         // 并签场景：处理人完成后自己的集团待办立即删除，不等同环节其他处理人
-        executor.execute(() -> {
-            try {
-                pendingService.deleteGroupTodoTask(task);
-            } catch (Exception e) {
-                log.error("deleteGroupTodoTask 失败, taskId={}", task.getId(), e);
-            }
-        });
+        // 【临时下线】新框架暂不插入 pending_group_todo，恢复时取消注释
+        // executor.execute(() -> {
+        //     try {
+        //         pendingService.deleteGroupTodoTask(task);
+        //     } catch (Exception e) {
+        //         log.error("deleteGroupTodoTask 失败, taskId={}", task.getId(), e);
+        //     }
+        // });
     }
 
     /**

@@ -505,7 +505,8 @@ public class PendingServiceImpl implements IPendingService {
         log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
 
         // 同步插入 pending_group_todo（对应老框架 addGroupTodoTask，每个任务一条，并签时各处理人各有待办）
-        addGroupTodoTaskForTask(task);
+        // 【临时下线】新框架暂不插入 pending_group_todo，恢复时取消注释
+        // addGroupTodoTaskForTask(task);
     }
 
     /**
