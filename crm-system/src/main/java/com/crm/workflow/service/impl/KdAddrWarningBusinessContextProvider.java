@@ -71,10 +71,13 @@ public class KdAddrWarningBusinessContextProvider extends AbstractWarningBusines
     @Override
     protected void enrichExtraData(WfBusinessContext ctx, Map<String, Object> extraData,
                                    Map<String, Object> procVars, ToppOrderVo order) {
-        // 查询预警明细记录列表
+        // 查询预警明细记录列表：详情首屏只返回第一页（默认页大小，与分页接口一致），
+        // 翻页走 /kdAddrWarning/records 分页接口；total/unfeedbackCount 为全量统计
         try {
-            List<Map<String, Object>> records = detailService.queryRecords(order.getId());
-            extraData.put("records", records);
+            Map<String, Object> page = detailService.pageRecords(order.getId(), 1, 20);
+            extraData.put("records", page.get("records"));
+            extraData.put("total", page.get("total"));
+            extraData.put("unfeedbackCount", page.get("unfeedbackCount"));
         } catch (Exception e) {
             log.warn("查询kd_addr_warn预警明细失败: orderId={}", order.getId(), e);
             extraData.put("records", new ArrayList<>());

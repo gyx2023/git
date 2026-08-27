@@ -79,13 +79,15 @@ public interface OldActivitiMapper {
     /**
      * 获取老系统BPMN定义XML
      */
-    @Select("SELECT gb.BYTES_ FROM ACT_GE_BYTEARRAY gb " +
-            "WHERE gb.ID_ = (SELECT pd.DEPLOYMENT_ID_ FROM ACT_HI_PROCINST hp " +
-            "                JOIN ACT_RE_PROCDEF pd ON hp.PROC_DEF_ID_ = pd.ID_ " +
-            "                WHERE hp.PROC_INST_ID_ = #{procInsId}) " +
-            "   OR gb.DEPLOYMENT_ID_ = (SELECT pd.DEPLOYMENT_ID_ FROM ACT_HI_PROCINST hp " +
-            "                            JOIN ACT_RE_PROCDEF pd ON hp.PROC_DEF_ID_ = pd.ID_ " +
-            "                            WHERE hp.PROC_INST_ID_ = #{procInsId})")
+    @Select("SELECT gb.NAME_, gb.BYTES_ FROM ACT_GE_BYTEARRAY gb " +
+            "LEFT JOIN ACT_RE_PROCDEF pd ON pd.RESOURCE_NAME_ = gb.NAME_ AND gb.DEPLOYMENT_ID_ = pd.DEPLOYMENT_ID_ " +
+            "LEFT JOIN ACT_HI_PROCINST hp ON hp.PROC_DEF_ID_ = pd.ID_ " +
+            "WHERE hp.PROC_INST_ID_ = #{procInsId} " +
+            "UNION " +
+            "SELECT gb.NAME_, gb.BYTES_ FROM ACT_GE_BYTEARRAY gb " +
+            "LEFT JOIN ACT_RE_PROCDEF pd ON pd.RESOURCE_NAME_ = gb.NAME_ AND gb.ID_ = pd.DEPLOYMENT_ID_ " +
+            "LEFT JOIN ACT_HI_PROCINST hp ON hp.PROC_DEF_ID_ = pd.ID_ " +
+            "WHERE hp.PROC_INST_ID_ = #{procInsId}")
     List<Map<String, Object>> selectOldBpmnResources(@Param("procInsId") String procInsId);
 
     /**

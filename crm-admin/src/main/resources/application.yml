@@ -150,6 +150,9 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /unifyJump/loginCheck
+    - /sso/portalCheck
+    - /sso/uacLogin
+    - /zqzt_backend/health/**
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

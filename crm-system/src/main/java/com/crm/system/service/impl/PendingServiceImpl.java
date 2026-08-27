@@ -46,6 +46,8 @@ public class PendingServiceImpl implements IPendingService {
 
     // 失败次数上限
     private static final int MAX_FAIL_TIMES = 3;
+    // 待办跳转基址参数名：新框架使用 New_Backlog（指向新系统 portalCheck 入口，UAC 门户链路）
+    private static final String NEW_BACKLOG_PARAM = "New_Backlog";
     // OA 返回成功前缀
     private static final String OA_SUCCESS_PREFIX = "100-";
     // 默认地市编码
@@ -246,6 +248,21 @@ public class PendingServiceImpl implements IPendingService {
                 flowableTask.getId());
     }
 
+    /**
+     * 读取待办跳转基址参数 New_Backlog；未配置（空）时视为拼地址失败并记录失败，返回 null。
+     * 新框架强制使用 {@link #NEW_BACKLOG_PARAM}，不再读取旧 Backlog。
+     */
+    private String resolveBacklogPrefix(Pending pending) {
+        String backlog = sysParamService.findValueByCode(NEW_BACKLOG_PARAM);
+        if (StringUtils.isEmpty(backlog)) {
+            log.error("订单{}未配置系统参数New_Backlog，无法拼接待办跳转地址", pending.getId());
+            pending.setFailTimes(MAX_FAIL_TIMES);
+            pending.setResponseMsg("订单" + pending.getId() + "未配置New_Backlog");
+            return null;
+        }
+        return backlog;
+    }
+
     private boolean resolveDealUrl(Pending pending, TaskCtx ctx) {
         if (ctx.isFlowable()) {
             HistoricVariableInstance flowableVar;
@@ -260,7 +277,11 @@ public class PendingServiceImpl implements IPendingService {
                 pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
                 return false;
             }
-            String backlog = sysParamService.findValueByCode("Backlog");
+            // 强制使用 New_Backlog（新框架待办跳转基址），未配置则视为 dealUrl 失败
+            String backlog = resolveBacklogPrefix(pending);
+            if (backlog == null) {
+                return false;
+            }
             String dealUrlStr = flowableVar.getValue().toString().replace("?", "&");
             pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
         } else {
@@ -494,9 +515,13 @@ public class PendingServiceImpl implements IPendingService {
             String dealUrlVar = task.getTaskDefinitionKey() + "_dealUrl";
             Object dealUrlVal = flowableRuntimeService.getVariable(task.getProcessInstanceId(), dealUrlVar);
             if (dealUrlVal != null) {
-                // 与 job 路径 resolveDealUrl 保持一致：拼 Backlog（ssoCheck）前缀，? 替换为 & 再拼 taskId
-                String backlog = sysParamService.findValueByCode("Backlog");
-                pending.setPendingURL(backlog + dealUrlVal.toString().replace("?", "&") + "&taskId=" + pendingCode);
+                // 与 job 路径 resolveDealUrl 保持一致：拼 New_Backlog 前缀，? 替换为 & 再拼 taskId
+                String backlog = sysParamService.findValueByCode(NEW_BACKLOG_PARAM);
+                if (StringUtils.isEmpty(backlog)) {
+                    log.warn("创建待办时未配置New_Backlog，跳过pendingURL，交由job处理: pendingCode={}", pendingCode);
+                } else {
+                    pending.setPendingURL(backlog + dealUrlVal.toString().replace("?", "&") + "&taskId=" + pendingCode);
+                }
             }
         } catch (Exception e) {
             log.warn("创建待办时获取dealUrl失败，将交由job处理: pendingCode={}", pendingCode);

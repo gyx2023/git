@@ -1,5 +1,7 @@
 package com.crm.job.service.warning;
 
+import com.crm.system.service.warning.WarningRecord;
+
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.utils.DateUtils;
 import com.crm.job.mapper.warning.WarningUpCommonMapper;
