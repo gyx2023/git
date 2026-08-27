@@ -465,7 +465,7 @@ public class PendingServiceImpl implements IPendingService {
         pending.setOperatorType(PendingOpType.ADD.getCode());
         pending.setLastUpdateDate(now);
         // 创建时即计算 dealUrl，避免后续 job 处理时逐条查询历史变量（消除 N+1）
-        try {
+       /* try {
             String dealUrlVar = task.getTaskDefinitionKey() + "_dealUrl";
             Object dealUrlVal = flowableRuntimeService.getVariable(task.getProcessInstanceId(), dealUrlVar);
             if (dealUrlVal != null) {
@@ -481,7 +481,7 @@ public class PendingServiceImpl implements IPendingService {
             }
         } catch (Exception e) {
             log.warn("创建待办时获取dealUrl失败，将交由job处理: pendingCode={}", pendingCode);
-        }
+        }*/
         saveOrUpdate(pending);
         log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
 
