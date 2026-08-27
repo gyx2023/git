@@ -1,6 +1,7 @@
 package com.crm.adapter.admin.system.zqzt;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import com.crm.common.annotation.Log;
 import com.crm.common.annotation.RepeatSubmit;
 import com.crm.common.core.controller.BaseController;
@@ -59,7 +60,7 @@ public class ZqztLedgerInfoController extends BaseController {
     }
 
     /**
-     * 台账详情（敏感字段脱敏）
+     * 台账详情
      */
     @SaCheckPermission("system:ledger:list")
     @GetMapping("/{id}")
@@ -68,7 +69,7 @@ public class ZqztLedgerInfoController extends BaseController {
     }
 
     /**
-     * 修改回显（不脱敏）
+     * 修改回显
      */
     @SaCheckPermission("system:ledger:edit")
     @GetMapping("/edit/{id}")
@@ -149,9 +150,9 @@ public class ZqztLedgerInfoController extends BaseController {
     }
 
     /**
-     * 发送云智眼账户改密短信验证码（发到当前登录用户手机）
+     * 发送云智眼账户短信验证码（发到当前登录用户手机，改密与查看密码共用）
      */
-    @SaCheckPermission("system:ledger:edit")
+    @SaCheckPermission(value = {"system:ledger:list", "system:ledger:edit"}, mode = SaMode.OR)
     @PostMapping("/cloudAccount/sendSmsCode")
     public R<Void> sendCloudAccountSmsCode(@Validated @RequestBody ZqztCloudPasswordBo bo) {
         ledgerInfoService.sendCloudAccountSmsCode(bo.getLedgerId());
@@ -159,12 +160,22 @@ public class ZqztLedgerInfoController extends BaseController {
     }
 
     /**
-     * 当前登录用户脱敏手机号（改密弹窗展示）
+     * 当前登录用户脱敏手机号（改密/查看密码弹窗展示）
      */
-    @SaCheckPermission("system:ledger:edit")
+    @SaCheckPermission(value = {"system:ledger:list", "system:ledger:edit"}, mode = SaMode.OR)
     @GetMapping("/cloudAccount/currentPhone")
     public R<String> currentPhone() {
         return R.ok("查询成功", ledgerInfoService.getCurrentUserMaskedPhone());
+    }
+
+    /**
+     * 查看云智眼账户密码原值（短信验证码校验通过后）
+     */
+    @SaCheckPermission("system:ledger:list")
+    @Log(title = "台账信息管理", businessType = BusinessType.QUERY)
+    @PostMapping("/cloudAccount/viewPassword")
+    public R<String> viewCloudAccountPassword(@Validated @RequestBody ZqztCloudPasswordBo bo) {
+        return R.ok("查询成功", ledgerInfoService.viewCloudAccountPassword(bo.getLedgerId(), bo.getSmsCode()));
     }
 
     /**

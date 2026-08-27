@@ -73,6 +73,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     private static final long SMS_RESEND_SECONDS = 60;
     /** 能开短信模板里的平台名称 */
     private static final String SMS_SYSTEM_NAME = "浙江政企运营平台";
+    /** 云智眼密码打码占位（详情页/修改回显统一返回该值，原值需短信校验后单独查看） */
+    private static final String PASSWORD_MASK = "********";
 
     /** 行业字典 */
     private static final Map<String, String> INDUSTRY_MAP = new HashMap<String, String>() {{
@@ -118,6 +120,10 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         checkRegionAllowed(entity);
         ZqztLedgerInfoVo vo = toVo(entity);
         vo.setCloudVisionConfigs(loadCloudConfigs(id));
+        // 云智眼密码不随回显下发原值：改密走短信校验接口，查看原值走短信校验接口
+        if (StringUtils.isNotBlank(vo.getCloudPassword())) {
+            vo.setCloudPassword(PASSWORD_MASK);
+        }
         return vo;
     }
 
@@ -160,6 +166,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         ZqztLedgerInfo entity = BeanUtil.toBean(bo, ZqztLedgerInfo.class);
         entity.setId(bo.getId());
         entity.setOrderNo(exist.getOrderNo());
+        // 云智眼密码不通过修改表单更新（只能走短信校验的改密接口），以库中原值为准
+        entity.setCloudPassword(exist.getCloudPassword());
         entity.setCreateTime(exist.getCreateTime());
         entity.setCreatedBy(exist.getCreatedBy());
         entity.setUpdateTime(new Date());
@@ -298,11 +306,39 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         if (StringUtils.isBlank(newPassword)) {
             throw new ServiceException("新密码不能为空");
         }
+        verifySmsCode(smsCode);
+        String username = currentUsername();
+        return ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
+            .eq(ZqztLedgerInfo::getId, ledgerId)
+            .set(ZqztLedgerInfo::getCloudPassword, newPassword)
+            .set(ZqztLedgerInfo::getUpdateTime, new Date())
+            .set(StringUtils.isNotBlank(username), ZqztLedgerInfo::getUpdatedBy, username)) > 0;
+    }
+
+    @Override
+    public String viewCloudAccountPassword(Long ledgerId, String smsCode) {
+        ZqztLedgerInfo entity = getValidEntity(ledgerId);
+        checkRegionAllowed(entity);
+        verifySmsCode(smsCode);
+        return entity.getCloudPassword();
+    }
+
+    @Override
+    public String getCurrentUserMaskedPhone() {
+        return maskPhone(currentUserPhone());
+    }
+
+    // ==================== 私有辅助 ====================
+
+    /**
+     * 校验当前登录用户手机收到的短信验证码
+     * <p>校验通过后删除验证码与重发限流标记（防重放，且不阻塞下一次获取）。</p>
+     */
+    private void verifySmsCode(String smsCode) {
         if (StringUtils.isBlank(smsCode)) {
             throw new ServiceException("短信验证码不能为空");
         }
         String phone = currentUserPhone();
-        // 校验验证码（成功后删除，防重放）
         String key = CacheConstants.CAPTCHA_CODE_KEY + phone;
         String cachedCode = RedisUtils.getCacheObject(key);
         if (StringUtils.isBlank(cachedCode)) {
@@ -313,21 +349,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         }
         RedisUtils.deleteObject(key);
         RedisUtils.deleteObject(CacheConstants.RATE_LIMIT_KEY + "sms:" + phone);
-        // 仅更新云智眼密码
-        ZqztLedgerInfo update = new ZqztLedgerInfo();
-        update.setId(ledgerId);
-        update.setCloudPassword(newPassword);
-        update.setUpdateTime(new Date());
-        update.setUpdatedBy(currentUsername());
-        return ledgerInfoMapper.updateById(update) > 0;
     }
-
-    @Override
-    public String getCurrentUserMaskedPhone() {
-        return maskPhone(currentUserPhone());
-    }
-
-    // ==================== 私有辅助 ====================
 
     /** 当前登录用户手机号（未绑定则抛业务异常） */
     private String currentUserPhone() {
@@ -621,38 +643,13 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
 
     /**
      * 敏感字段脱敏（详情页展示）
-     * <p>与原型详情页一致：云智眼账号、实际地址明文展示；
-     * 注册地址保留后 4 位；摄像头施工账号固定打码；
-     * 云智眼密码/接入秘钥、云智眼设备密码固定打码。</p>
+     * <p>仅云智眼账户密码固定打码，原值需短信验证码校验后单独查看；
+     * 其余字段（摄像头施工账号、接入秘钥、设备密码、注册地址等）均明文展示。</p>
      */
     private void maskSensitive(ZqztLedgerInfoVo vo) {
-        // 摄像头施工账号：原型固定展示 ****
-        vo.setCameraAccount("****");
         if (StringUtils.isNotBlank(vo.getCloudPassword())) {
-            vo.setCloudPassword("********");
+            vo.setCloudPassword(PASSWORD_MASK);
         }
-        if (StringUtils.isNotBlank(vo.getCloudAccessKey())) {
-            vo.setCloudAccessKey("********");
-        }
-        if (vo.getCloudVisionConfigs() != null) {
-            for (ZqztLedgerCloudConfigVo cfg : vo.getCloudVisionConfigs()) {
-                if (StringUtils.isNotBlank(cfg.getDevicePassword())) {
-                    cfg.setDevicePassword("********");
-                }
-            }
-        }
-        // 注册地址：原型 '****' + 后4位；实际地址明文展示（不打码）
-        vo.setRegAddress(maskAddress(vo.getRegAddress()));
-    }
-
-    private String maskAddress(String value) {
-        if (StringUtils.isBlank(value)) {
-            return value;
-        }
-        if (value.length() > 4) {
-            return "****" + value.substring(value.length() - 4);
-        }
-        return "****";
     }
 
     private String currentUsername() {

@@ -22,7 +22,7 @@ public interface IZqztLedgerInfoService {
     /** 详情（敏感字段脱敏） */
     ZqztLedgerInfoVo queryById(Long id);
 
-    /** 修改回显（不脱敏） */
+    /** 修改回显 */
     ZqztLedgerInfoVo queryForEdit(Long id);
 
     /** 工单号是否已存在（不过滤 is_valid，与数据库唯一键 uk_order_no 保持一致） */
@@ -49,6 +49,9 @@ public interface IZqztLedgerInfoService {
 
     /** 修改云智眼账户密码（短信验证码校验通过后，仅更新 cloud_password） */
     Boolean updateCloudAccountPassword(Long ledgerId, String newPassword, String smsCode);
+
+    /** 查看云智眼账户密码原值（短信验证码校验通过后返回明文） */
+    String viewCloudAccountPassword(Long ledgerId, String smsCode);
 
     /** 当前登录用户脱敏手机号（供改密弹窗直接展示） */
     String getCurrentUserMaskedPhone();
