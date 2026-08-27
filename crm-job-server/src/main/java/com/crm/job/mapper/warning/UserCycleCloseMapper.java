@@ -21,7 +21,7 @@ import java.util.List;
 public interface UserCycleCloseMapper {
 
     /**
-     * 查询需要自动关单的工单（cycle_flag in (1,2,3) 且 status=running 且有 Flowable 流程）。
+     * 查询需要自动关单的工单（cycle_flag in (1,2,3) 且 status &lt;&gt; 'end' 且有 Flowable 流程）。
      * <p>
      * 对应旧系统 TcCustCycleWarningJob 分支2：cycleFlag!=0 时闭环/离网/超时数据到达，完结 Flowable 流程。
      * 含 cycleWarningType / cycleNormalCloseNum / cycleOrderNum / cycleFlag 用于计算 endReason。
@@ -42,7 +42,7 @@ public interface UserCycleCloseMapper {
             "  <foreach collection='warningCodes' item='wc' open='(' separator=',' close=')'>#{wc}</foreach>",
             "  AND f.CYCLE_FLAG IN (1, 2, 3)",
             "  AND DATE_FORMAT(f.CREATE_DATE, '%Y%m%d') = #{date}",
-            "  AND o.status_ = 'running'",
+            "  AND o.status_ &lt;&gt; 'end'",
             "  AND o.process_engine = 'FLOWABLE'",
             "  AND o.order_type IN",
             "  <foreach collection='orderTypes' item='ot' open='(' separator=',' close=')'>#{ot}</foreach>",
@@ -66,7 +66,7 @@ public interface UserCycleCloseMapper {
             "JOIN topp_order o ON o.info_id = c.id_",
             "WHERE f.WARNING_TYPE IN",
             "  <foreach collection='warningCodes' item='wc' open='(' separator=',' close=')'>#{wc}</foreach>",
-            "  AND (f.CYCLE_FLAG = 0 OR o.status_ &lt;&gt; 'running')",
+            "  AND (f.CYCLE_FLAG = 0 OR o.status_ = 'end')",
             "  AND DATE_FORMAT(f.CREATE_DATE, '%Y%m%d') = #{date}",
             "  AND o.process_engine = 'FLOWABLE'",
             "  AND o.order_type IN",
