@@ -126,6 +126,11 @@
     <!--        </encoder>-->
     <!--    </appender>-->
 
+    <!-- 忽略 Kafka 客户端（KafkaLogSender 发送接口日志用）在 broker 不可达时刷屏的 WARN 日志，
+         如 "Connection to node -1 (...) could not be established. Broker may not be available."
+         若希望完全静音，把 level 改为 OFF；保留 ERROR 以便认证等严重错误仍可见 -->
+    <logger name="org.apache.kafka.clients" level="error"/>
+
     <root level="info">
         <appender-ref ref="console" />
         <appender-ref ref="file_console" />

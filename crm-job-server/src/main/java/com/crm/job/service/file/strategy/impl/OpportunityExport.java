@@ -10,6 +10,7 @@ import com.crm.common.core.domain.entity.SysDictData;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.file.strategy.AbstractExportStrategy;
+import com.crm.job.utils.MdcExecutorService;
 import com.crm.system.domain.bo.SysCodeBo;
 import com.crm.system.domain.dao.FileAsyncTaskDo;
 import com.crm.system.domain.vo.DwdRepSysPersonDVo;
@@ -94,10 +95,11 @@ public class OpportunityExport extends AbstractExportStrategy {
     private volatile boolean cacheInitialized = false;
     private final Object cacheInitLock = new Object();
 
-    // 创建固定线程池用于并行处理
-    private final ExecutorService executorService = new java.util.concurrent.ThreadPoolExecutor(
-        8, 8, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
-        new java.util.concurrent.LinkedBlockingQueue<>());
+    // 创建固定线程池用于并行处理（包装为 MdcExecutorService，异步线程透传 traceId）
+    private final ExecutorService executorService = MdcExecutorService.wrap(
+        new java.util.concurrent.ThreadPoolExecutor(
+            8, 8, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+            new java.util.concurrent.LinkedBlockingQueue<>()));
 
 
     @PostConstruct

@@ -1,5 +1,6 @@
 package com.crm.job.service.send;
 
+import com.crm.job.utils.MdcExecutorService;
 import com.crm.system.domain.dao.DingMessage;
 import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.send.ConOpenResult;
@@ -42,11 +43,11 @@ public class ConOpenSendShortMsgJob implements InitializingBean, DisposableBean 
     private ExecutorService executorService;
 
     /**
-     * 初始化线程池
+     * 初始化线程池（包装为 MdcExecutorService，异步线程透传 traceId）
      */
     @Override
     public void afterPropertiesSet() {
-        executorService = new ThreadPoolExecutor(
+        ExecutorService rawExecutor = new ThreadPoolExecutor(
             THREAD_NUM,
             THREAD_NUM,
             KEEP_ALIVE_TIME,
@@ -62,6 +63,7 @@ public class ConOpenSendShortMsgJob implements InitializingBean, DisposableBean 
             },
             new ThreadPoolExecutor.CallerRunsPolicy()
         );
+        executorService = MdcExecutorService.wrap(rawExecutor);
     }
 
     /**
