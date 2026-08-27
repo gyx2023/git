@@ -35,11 +35,13 @@ public class WxCustOrderController {
      * <p>
      * 返回：detail（wide_sys_auto_warning 单条详情字段）、
      * summary（ftp_tc_user_cust_warning 摘要：grpName/grpCode/userScale/warningType）、
-     * userList（wide_sys_auto_warning 按 main_order_flow_no 的用户清单）
+     * userList（wide_sys_auto_warning 按 main_order_flow_no 的用户清单，分页）、userTotal
      * </p>
      */
     @GetMapping("/wideInfo")
-    public R<Map<String, Object>> wideInfo(@RequestParam Integer orderId) {
+    public R<Map<String, Object>> wideInfo(@RequestParam Integer orderId,
+                                           @RequestParam(defaultValue = "1") int pageNum,
+                                           @RequestParam(defaultValue = "20") int pageSize) {
         Map<String, Object> order = mapper.selectOrderInfo(orderId);
         if (order == null) {
             return R.fail("订单不存在");
@@ -54,9 +56,13 @@ public class WxCustOrderController {
         Map<String, Object> summary = mapper.selectFtpTcUserCustWarning(id);
         result.put("summary", summary);
         if (summary != null && summary.get("mainOrderFlowNo") != null) {
-            result.put("userList", mapper.selectWideUserList(String.valueOf(summary.get("mainOrderFlowNo"))));
+            String flowNo = String.valueOf(summary.get("mainOrderFlowNo"));
+            int offset = Math.max(0, (pageNum - 1) * pageSize);
+            result.put("userList", mapper.selectWideUserList(flowNo, offset, pageSize));
+            result.put("userTotal", mapper.countWideUserList(flowNo));
         } else {
             result.put("userList", Collections.emptyList());
+            result.put("userTotal", 0L);
         }
         return R.ok(result);
     }
@@ -71,7 +77,8 @@ public class WxCustOrderController {
         if (order != null && order.get("infoId") != null) {
             Map<String, Object> summary = mapper.selectFtpTcUserCustWarning(Long.valueOf(order.get("infoId").toString()));
             if (summary != null && summary.get("mainOrderFlowNo") != null) {
-                List<Map<String, Object>> records = mapper.selectWideUserList(String.valueOf(summary.get("mainOrderFlowNo")));
+                // 导出全量（单次上限 10 万条）
+                List<Map<String, Object>> records = mapper.selectWideUserList(String.valueOf(summary.get("mainOrderFlowNo")), 0, 100000);
                 for (Map<String, Object> r : records) {
                     WideWarningUserListExportVo vo = new WideWarningUserListExportVo();
                     vo.setSvcNum(str(r, "svcNum"));
