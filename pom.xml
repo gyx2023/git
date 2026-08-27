@@ -49,6 +49,10 @@
         <!-- SMS 配置 -->
         <aliyun.sms.version>2.0.23</aliyun.sms.version>
         <tencent.sms.version>3.1.687</tencent.sms.version>
+        <approvaltests.version>9.2.0</approvaltests.version>
+
+        <!-- Resilience4j 配置 -->
+        <resilience4j.version>1.7.0</resilience4j.version>
     </properties>
 
     <profiles>
@@ -349,6 +353,13 @@
                 <version>${zqzt_backend.version}</version>
             </dependency>
 
+            <!-- 智能问数模块 -->
+            <dependency>
+                <groupId>com.crm</groupId>
+                <artifactId>crm-askdata</artifactId>
+                <version>${zqzt_backend.version}</version>
+            </dependency>
+
             <!-- 已移除的模块 -->
 
         </dependencies>
@@ -365,6 +376,7 @@
         <module>crm-system</module>
         <module>crm-job-server</module>
         <module>crm-rpa</module>
+        <module>crm-askdata</module>
     </modules>
     <packaging>pom</packaging>
 

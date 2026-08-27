@@ -88,6 +88,9 @@ spring:
       max-file-size: 10MB
       # 设置总上传的文件大小
       max-request-size: 20MB
+  # 导入 askdata 模块配置
+  config:
+    import: classpath:application-askdata.yml
   # 服务模块
   devtools:
     restart:
@@ -124,6 +127,8 @@ sa-token:
   is-read-header: true
   # 是否尝试从cookie里读取token
   is-read-cookie: false
+  # 是否尝试从url参数里读取token（EventSource/SSE 场景使用）
+  is-read-url: true
   # token前缀
   token-prefix: "Bearer"
   # jwt秘钥
@@ -153,6 +158,14 @@ security:
     - /sso/portalCheck
     - /sso/uacLogin
     - /zqzt_backend/health/**
+    # 智能问数 iframe 嵌入 SSE 入口，内部仍强制校验宿主 Authorization
+    - /askdata/chat/stream
+    # 推荐问题由 iframe 读取，内部仍强制校验宿主 Authorization
+    - /askdata/widget/suggestions
+    # 数据处理工作流内网取数入口，使用短期随机 dataRef
+    - /api/askdata/tools/resultdata
+    - /api/askdata/tools/schemas
+    - /api/askdata/tools/schemasnew
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

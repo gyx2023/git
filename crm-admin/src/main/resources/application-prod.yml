@@ -158,6 +158,12 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /zqzt_backend/health/**
+    # 智能问数嵌入入口，Controller 内部仍会校验宿主 Authorization
+    - /askdata/chat/stream
+    # 推荐问题由 iframe 读取，Controller 内部仍会校验宿主 Authorization
+    - /askdata/widget/suggestions
+    # 数据处理工作流内网取数入口，使用短期随机 dataRef
+    - /api/askdata/tools/resultdata
     - /sso/portalCheck
     - /sso/uacLogin
 # Swagger配置
@@ -234,3 +240,7 @@ pre-travel-report:
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
 
+--- # ChinaUnicon 测试智能体临时 TLS 配置
+china-unicon-agent:
+  # 测试平台证书暂未纳入 JVM 信任库时使用；正式、准生产环境不得开启。
+  insecure-tls: true

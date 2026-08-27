@@ -26,7 +26,7 @@ public class XxlJobConfig {
     @Bean
     public XxlJobSpringExecutor xxlJobExecutor() {
         log.info(">>>>>>>>>>> xxl-job config init.");
-        XxlJobSpringExecutor xxlJobSpringExecutor = new XxlJobSpringExecutor();
+        XxlJobSpringExecutor xxlJobSpringExecutor = new TraceXxlJobSpringExecutor();
         xxlJobSpringExecutor.setAdminAddresses(xxlJobProperties.getAdminAddresses());
         xxlJobSpringExecutor.setAccessToken(xxlJobProperties.getAccessToken());
         XxlJobProperties.Executor executor = xxlJobProperties.getExecutor();

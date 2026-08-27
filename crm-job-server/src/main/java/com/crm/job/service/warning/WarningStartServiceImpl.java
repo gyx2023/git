@@ -43,7 +43,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
     private static final String PROCESS_KEY = "single_approval";
     private static final String ORDER_STATUS_RUNNING = com.crm.common.enums.OrderStatusEnum.RUNNING.getCode();
 
-    @Resource(name = "threadPoolTaskExecutor")
+    @Resource(name = "mdcTaskExecutor")
     private Executor executorService;
 
     @Autowired
