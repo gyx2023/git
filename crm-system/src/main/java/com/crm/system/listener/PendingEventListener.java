@@ -10,6 +10,7 @@ import com.crm.system.mapper.MaintenanceDetailNewMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.send.ISendDMessageService;
+import com.crm.system.service.wx.WxProcessKeySupport;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
@@ -18,17 +19,16 @@ import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import org.flowable.common.engine.impl.cfg.TransactionState;
 import org.flowable.engine.RepositoryService;
+import org.flowable.engine.TaskService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.task.api.Task;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,12 +55,11 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     private static final ExecutorService executor = new ThreadPoolExecutor(
             5, 10, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
 
-    /** 维系类订单类型集合（对应老框架 getIsWxOrder: maintenance_order + wx_warning_second） */
-    private final Set<String> wxProcessKeys = new HashSet<>();
-
+    @Resource @Lazy private WxProcessKeySupport wxProcessKeySupport;
     @Resource @Lazy private IPendingService pendingService;
     @Resource @Lazy private ISysParamService sysParamService;
     @Resource @Lazy private RepositoryService repositoryService;
+    @Resource @Lazy private TaskService taskService;
     @Resource @Lazy private IToppOrderService orderService;
     @Resource @Lazy private IToppOpportunityService oppotunityService;
     @Resource @Lazy private ISendDMessageService sendDMessageService;
@@ -84,23 +83,6 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
         this.setOnTransaction(TransactionState.COMMITTED.name());
     }
 
-    @PostConstruct
-    public void init() {
-        try {
-            List<SysCode> codes = sysCodeMapper.selectList(
-                    new LambdaQueryWrapper<SysCode>()
-                            .eq(SysCode::getType, "process_key")
-                            .in(SysCode::getSettingStr3,
-                                    Arrays.asList("maintenance_order", "wx_warning_second")));
-            for (SysCode code : codes) {
-                wxProcessKeys.add(code.getCode());
-            }
-            log.info("维系订单类型加载完成，共{}个: {}", wxProcessKeys.size(), wxProcessKeys);
-        } catch (Exception e) {
-            log.warn("加载维系订单类型失败", e);
-        }
-    }
-
     // ==================== 事件处理 ====================
 
     /**
@@ -115,12 +97,16 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
             return;
         }
         String piId = task.getProcessInstanceId();
-        String processKey = getProcessKey(task);
         ToppOrderVo order = orderService.queryByPiId(piId);
 
         // 订单可能尚未插入（流程启动时 TASK_ASSIGNED 先于 insertByBo 触发），
         // 订单级操作（syncOrderFromTask / saveOppoStatus / synMaintenanceInfo）仅在订单存在时执行
         if (order != null) {
+            // 补充任务分类/显示标记（老系统待办 SQL 按 CATEGORY_ 过滤业务类型、DESCRIPTION_='显示' 过滤）；
+            // 转派/流程流转重建的任务由引擎创建，CATEGORY_ 为空，此处统一补上（幂等）
+            task.setCategory(order.getOrderType());
+            task.setDescription("显示");
+            taskService.saveTask(task);
             syncOrderFromTask(task, order);
             if (order.getOppoId() != null) {
                 try {
@@ -130,7 +116,8 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
                     log.warn("saveOppoStatus 失败, oppoId={}", order.getOppoId(), e);
                 }
             }
-            if (isWxOrder(processKey)) {
+            // 维系订单判断：CATEGORY_ 已在上方设置为订单类型，processKey 多为通用流程无法区分业务类型
+            if (wxProcessKeySupport.isWxOrder(task.getCategory())) {
                 try {
                     synMaintenanceInfo(task, order);
                 } catch (Exception e) {
@@ -150,7 +137,7 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     }
 
     /**
-     * TASK_COMPLETED：OA 待办状态更新
+     * TASK_COMPLETED：OA 待办状态更新 + 集团待办单任务删除
      */
     @Override
     protected void taskCompleted(FlowableEngineEntityEvent event) {
@@ -166,6 +153,15 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
                 log.error("updatePending 失败, taskId={}", task.getId(), e);
             }
         });
+        // 并签场景：处理人完成后自己的集团待办立即删除，不等同环节其他处理人
+        // 【临时下线】新框架暂不插入 pending_group_todo，恢复时取消注释
+        // executor.execute(() -> {
+        //     try {
+        //         pendingService.deleteGroupTodoTask(task);
+        //     } catch (Exception e) {
+        //         log.error("deleteGroupTodoTask 失败, taskId={}", task.getId(), e);
+        //     }
+        // });
     }
 
     /**
@@ -178,13 +174,8 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
         if (procInstId == null) {
             return;
         }
-        executor.execute(() -> {
-            try {
-                pendingService.addGroupTodoTask(procInstId);
-            } catch (Exception e) {
-                log.error("addGroupTodoTask 失败, procInstId={}", procInstId, e);
-            }
-        });
+        // 流程完结不再插入全局 'u'（task_id 为空）记录：每个节点/每人已有各自的 a/u 待办消息
+        // （savePending / updatePending），收尾由最后环节的 u 记录承担，全局 u 为冗余数据
         executor.execute(() -> {
             try {
                 sendEvaluationMsg(event);
@@ -270,22 +261,6 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     }
 
     // ==================== 辅助 ====================
-
-    private boolean isWxOrder(String processKey) {
-        return processKey != null && wxProcessKeys.contains(processKey);
-    }
-
-    private String getProcessKey(Task task) {
-        try {
-            if (task.getProcessDefinitionId() != null) {
-                ProcessDefinition pd = repositoryService.getProcessDefinition(task.getProcessDefinitionId());
-                if (pd != null) return pd.getKey();
-            }
-        } catch (Exception e) {
-            log.warn("获取流程定义Key失败: {}", task.getProcessDefinitionId());
-        }
-        return null;
-    }
 
     private String getOaAppId() {
         if (cachedOaAppId != null) {
