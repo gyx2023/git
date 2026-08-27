@@ -187,6 +187,7 @@ public class UacSsoService {
      * 真实 UAC 与 mock 模式共用此段（mock 时 email 来自 mockMail）。
      */
     private String completeLogin(String email, String url) throws UnsupportedEncodingException {
+        String SsoRedirectUrlNewFront = sysParamService.findValueByCode("SsoRedirectUrlNewFront");
         SysUser user = userMapper.selectUserByEmail(email);
         if (user == null) {
             throw new ServiceException("政企运营平台中查不到该用户！请联系管理员!");
@@ -206,7 +207,7 @@ public class UacSsoService {
 
         log.info("门户SSO登录成功，用户: {}", user.getUserName());
         // 以带 token 的方式回跳到前端 ssoTodo 中转页（与 /sso/autoLogin 风格一致）
-        String ssoTodo = SSO_TODO_PATH + "?token=" + StpUtil.getTokenValue() + "&loginType=sso";
+        String ssoTodo = SsoRedirectUrlNewFront + SSO_TODO_PATH + "?token=" + StpUtil.getTokenValue() + "&loginType=sso";
         // 还原旧系统 &ltlt->/ 约定后透传门户申请的业务地址（无则省略，前端回落默认首页）
         if (StringUtils.isNotBlank(url)) {
             String bizUrl = url.replace("&ltlt", "/");
