@@ -97,7 +97,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     public TableDataInfo<ZqztLedgerInfoVo> queryPageList(ZqztLedgerInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ZqztLedgerInfo> lqw = buildQueryWrapper(bo);
         applyRegionScope(lqw);
-        lqw.orderByAsc(ZqztLedgerInfo::getCreateTime);
+        lqw.orderByDesc(ZqztLedgerInfo::getCreateTime);
         Page<ZqztLedgerInfoVo> page = ledgerInfoMapper.selectPageList(pageQuery.build(), lqw);
         fillNames(page.getRecords());
         return TableDataInfo.build(page);
@@ -214,9 +214,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     public List<ZqztLedgerInfoExportVo> exportPageList(ZqztLedgerInfoBo bo, Page<ZqztLedgerInfoExportVo> page,
                                                        String areaCode, String custManagerOauser) {
         LambdaQueryWrapper<ZqztLedgerInfo> lqw = buildQueryWrapper(bo);
-        // job-server 无登录态，数据权限显式传入
         applyExportScope(lqw, areaCode, custManagerOauser);
-        lqw.orderByAsc(ZqztLedgerInfo::getCreateTime);
+        lqw.orderByDesc(ZqztLedgerInfo::getCreateTime);
         Page<ZqztLedgerInfoVo> voPage = ledgerInfoMapper.selectPageList(
             new Page<>(page.getCurrent(), page.getSize(), false), lqw);
         List<ZqztLedgerInfoVo> records = voPage.getRecords();
