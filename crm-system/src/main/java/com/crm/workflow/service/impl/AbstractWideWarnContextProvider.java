@@ -20,6 +20,9 @@ import java.util.*;
 @Slf4j
 public abstract class AbstractWideWarnContextProvider extends AbstractWarningBusinessContextProvider {
 
+    /** 预警客户列表默认页大小（与前端分页 /wideWarning/custList 默认值一致） */
+    protected static final int CUST_LIST_DEFAULT_PAGE_SIZE = 20;
+
     @Autowired
     protected IStatsService statsService;
 
@@ -41,8 +44,9 @@ public abstract class AbstractWideWarnContextProvider extends AbstractWarningBus
         }
         try {
             String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
+            // 详情首屏只返回第一页（默认页大小，与 /wideWarning/custList 分页接口一致），翻页走分页接口
             com.baomidou.mybatisplus.core.metadata.IPage<Map<String, Object>> custPage =
-                    statsService.queryWideCustInfoStats(sql, 1, 100);
+                    statsService.queryWideCustInfoStats(sql, 1, CUST_LIST_DEFAULT_PAGE_SIZE);
             extraData.put("custList", custPage.getRecords());
             extraData.put("custTotal", custPage.getTotal());
         } catch (Exception e) { log.warn("查询客户列表失败", e); }

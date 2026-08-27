@@ -5,6 +5,7 @@ import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.service.IDingMessageService;
 import com.crm.system.service.ISysUsersService;
+import com.crm.system.service.send.impl.ConOpenSendImpl;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;

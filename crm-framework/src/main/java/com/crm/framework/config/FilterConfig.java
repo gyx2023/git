@@ -1,6 +1,7 @@
 package com.crm.framework.config;
 
 import com.crm.common.filter.RepeatableFilter;
+import com.crm.common.filter.TraceIdFilter;
 import com.crm.common.filter.XssFilter;
 import com.crm.common.utils.StringUtils;
 import com.crm.framework.config.properties.XssProperties;
@@ -38,6 +39,17 @@ public class FilterConfig {
         Map<String, String> initParameters = new HashMap<String, String>();
         initParameters.put("excludes", xssProperties.getExcludes());
         registration.setInitParameters(initParameters);
+        return registration;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Bean
+    public FilterRegistrationBean traceIdFilterRegistration() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new TraceIdFilter());
+        registration.addUrlPatterns("/*");
+        registration.setName("traceIdFilter");
+        registration.setOrder(FilterRegistrationBean.HIGHEST_PRECEDENCE + 1);
         return registration;
     }
 

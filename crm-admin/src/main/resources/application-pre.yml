@@ -179,3 +179,8 @@ pre-travel-report:
   api-key: d8b9jlenlnbcfr9revsg
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
+
+--- # ChinaUnicon 测试智能体临时 TLS 配置
+china-unicon-agent:
+  # 测试平台证书暂未纳入 JVM 信任库时使用；正式、准生产环境不得开启。
+  insecure-tls: true

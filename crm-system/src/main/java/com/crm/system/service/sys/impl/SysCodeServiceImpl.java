@@ -205,4 +205,26 @@ public class SysCodeServiceImpl implements ISysCodeService {
         }
         return codeMap;
     }
+
+    /**
+     * 根据类型和 settingStr3 过滤查询编码列表
+     */
+    @Override
+    public LinkedHashMap<String, String> getCodeMapByTypeAndSettingStr3(String type, String settingStr3) {
+        LambdaQueryWrapper<SysCode> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysCode::getType, type);
+        lqw.eq(SysCode::getSettingStr3, settingStr3);
+        lqw.orderByAsc(SysCode::getOrder);
+        List<SysCode> list = baseMapper.selectList(lqw);
+
+        LinkedHashMap<String, String> codeMap = new LinkedHashMap<>();
+        if (ObjectUtil.isNotEmpty(list)) {
+            for (SysCode sysCode : list) {
+                if (StringUtils.isNotBlank(sysCode.getCode())) {
+                    codeMap.put(sysCode.getCode(), sysCode.getName());
+                }
+            }
+        }
+        return codeMap;
+    }
 }

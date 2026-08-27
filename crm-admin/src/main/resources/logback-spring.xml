@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <springProfile name="dev">
-        <!-- 开发环境：带颜色的日志格式 -->
+        <!-- 开发环境：带颜色的日志格式（含 traceId/sessionId） -->
         <property name="console.log.pattern"
-                  value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}) - %msg%n"/>
+                  value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}) - [%X{traceId},%X{sessionId}] %msg%n"/>
     </springProfile>
 
     <springProfile name="prod|test|pre">
-        <!-- 生产环境：普通日志格式 -->
+        <!-- 生产环境：普通日志格式（含 traceId/sessionId） -->
         <property name="console.log.pattern"
-                  value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+                  value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{traceId},%X{sessionId}] %msg%n"/>
     </springProfile>
 
     <property name="log.path" value="./logs"/>
-    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{traceId},%X{sessionId}] %msg%n"/>
 
     <!-- 控制台输出 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
@@ -125,6 +125,11 @@
     <!--            <charset>utf-8</charset>-->
     <!--        </encoder>-->
     <!--    </appender>-->
+
+    <!-- 忽略 Kafka 客户端（KafkaLogSender 发送接口日志用）在 broker 不可达时刷屏的 WARN 日志，
+         如 "Connection to node -1 (...) could not be established. Broker may not be available."
+         若希望完全静音，把 level 改为 OFF；保留 ERROR 以便认证等严重错误仍可见 -->
+    <logger name="org.apache.kafka.clients" level="error"/>
 
     <root level="info">
         <appender-ref ref="console" />

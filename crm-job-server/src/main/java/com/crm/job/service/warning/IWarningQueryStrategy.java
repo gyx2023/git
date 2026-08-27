@@ -1,5 +1,7 @@
 package com.crm.job.service.warning;
 
+import com.crm.system.service.warning.WarningRecord;
+
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 
 import java.util.List;

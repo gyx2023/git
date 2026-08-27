@@ -86,110 +86,11 @@ public class OldSysSynServiceImpl implements OldSysSynService {
                 throw new ServiceException("SSO Token与用户ID不匹配");
             }
 
-            //5.获取用户角色，权限
-            oldSysPermissionService.synMenuPermission(Long.parseLong(userId));
+            // 5. 按老系统用户ID执行登录（同步权限+构建登录信息+Sa-Token登录），返回token
+            String token = loginByOldUserId(Long.parseLong(userId));
 
-            //6.同步用户数据权限（从老系统的sys_user_position同步到新系统的zqzt_sys_user_role）
-            oldSysDataScopeService.syncUserDataScope(Long.parseLong(userId));
-
-            //更新组织ID
-            try {
-                OldSysUserDo oldUser = oldSysUserMapper.selectById(Integer.parseInt(userId));
-                if (oldUser != null && oldUser.getOrgId() != null) {
-                    SysUser sysUser = new SysUser();
-                    sysUser.setUserId(Long.parseLong(userId));
-                    sysUser.setDeptId(Long.valueOf(oldUser.getOrgId()));
-                    sysUserMapper.updateById(sysUser);
-                    log.info("用户ID: {} 的组织ID已更新为: {}", userId, oldUser.getOrgId());
-                }
-            } catch (Exception e) {
-                log.error("更新用户组织ID失败", e);
-            }
-
-            // 3. 根据用户ID查询新系统用户
-            SysUser user = userService.selectUserById(Long.parseLong(userId));
-            if (user == null) {
-                throw new ServiceException("用户不存在");
-            }
-
-            // 4. 检查用户状态
-            if ("1".equals(user.getStatus())) {
-                throw new ServiceException("用户已停用");
-            }
-
-
-            // 6. 构建登录用户信息
-            LoginUser loginUser = new LoginUser();
-            loginUser.setUserId(user.getUserId());
-            loginUser.setDeptId(user.getDeptId());
-            loginUser.setUsername(user.getUserName());
-            loginUser.setNickName(user.getNickName());
-            loginUser.setUserType(user.getUserType());
-            loginUser.setMenuPermission(permissionService.getMenuPermission(user));
-            loginUser.setRolePermission(permissionService.getRolePermission(user));
-            loginUser.setDeptName(ObjectUtil.isNull(user.getDept()) ? "" : user.getDept().getDeptName());
-           // 根据deptId查询顶级组织并设置areaCode
-            if(user.getDeptId() !=null && user.getDeptId()==1L){
-                loginUser.setAreaCode("330000");
-            }else {
-                SysDept topDept = iSysDeptService.findTopDept(user.getDeptId());
-                if (topDept != null) {
-                    loginUser.setAreaCode(topDept.getAreaCode());
-                    log.info("用户: {} 的顶级部门: {}, 区域代码: {}", user.getUserName(), topDept.getDeptName(), topDept.getAreaCode());
-                } else {
-                    log.warn("未找到用户: {} 的顶级部门信息", user.getUserName());
-                }
-            }
-            List<RoleDTO> roles = BeanUtil.copyToList(user.getRoles(), RoleDTO.class);
-            loginUser.setRoles(roles);
-
-
-            // 7. 检查用户是否已经登录
-            String existingToken = null;
-            try {
-                // 通过用户ID直接从Redis中获取对应的token（高性能查询）
-               existingToken = StpUtil.getTokenValueByLoginId(loginUser.getUserType()+":"+loginUser.getUserId());
-                // 如果找到了token，验证其是否仍然有效
-                if (existingToken != null) {
-                    try {
-                        // 检查token是否已过期或被踢下线
-                        if (StpUtil.stpLogic.getTokenActivityTimeoutByToken(existingToken) >= 0) {
-                            // 进一步验证token对应的用户是否匹配
-                            LoginUser onlineUser = LoginHelper.getLoginUser(existingToken);
-                            if (onlineUser != null && onlineUser.getUserId().equals(user.getUserId())) {
-                                log.info("用户: {} 已登录，复用现有token，无需重新登录", user.getUserName());
-                            } else {
-                                // token存在但用户不匹配，视为无效
-                                existingToken = null;
-                            }
-                        } else {
-                            // token已过期，清理映射关系
-                            existingToken = null;
-                        }
-                    } catch (Exception e) {
-                        // token无效或已过期
-                        existingToken = null;
-                        log.debug("验证token有效性失败: {}", e.getMessage());
-                    }
-                }
-            } catch (Exception e) {
-                // 获取token失败，视为用户未登录
-                existingToken = null;
-                log.debug("获取用户token失败: {}", e.getMessage());
-            }
-
-            // 如果用户未登录，则执行登录
-            if (existingToken == null) {
-                // 执行正常登录流程
-                LoginHelper.login(loginUser);
-                log.info("用户: {} 执行新登录", user.getUserName());
-            }
-
-            // 8. 如果有redirect参数，执行页面跳转
+            // 6. 如果有redirect参数，执行页面跳转
             if (redirect != null && !redirect.trim().isEmpty()) {
-                // 获取token（复用的或新生成的）
-                String token = existingToken != null ? existingToken : StpUtil.getTokenValue();
-
                 // 构建带token的重定向URL
                 String redirectUrl = buildRedirectUrlWithToken(redirect, token);
                 log.info("SSO登录成功，重定向到: {}", redirectUrl);
@@ -199,6 +100,119 @@ public class OldSysSynServiceImpl implements OldSysSynService {
             log.error("SSO自动登录失败", e);
 
         }
+    }
+
+    /**
+     * 按老系统用户ID执行登录（集团平台统一跳转 loginCheck 复用）
+     * <p>
+     * 同步菜单/数据权限 → 更新组织ID → 构建 LoginUser → Sa-Token 登录（复用已有token），返回登录token
+     * </p>
+     *
+     * @param userId 老系统用户ID（sys_user.id，与新系统 sys_user.user_id 一致）
+     * @return Sa-Token 登录token
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String loginByOldUserId(Long userId) {
+        // 1. 获取用户角色，权限
+        oldSysPermissionService.synMenuPermission(userId);
+
+        // 2. 同步用户数据权限（从老系统的sys_user_position同步到新系统的zqzt_sys_user_role）
+        oldSysDataScopeService.syncUserDataScope(userId);
+
+        // 3. 更新组织ID
+        try {
+            OldSysUserDo oldUser = oldSysUserMapper.selectById(userId.intValue());
+            if (oldUser != null && oldUser.getOrgId() != null) {
+                SysUser sysUser = new SysUser();
+                sysUser.setUserId(userId);
+                sysUser.setDeptId(Long.valueOf(oldUser.getOrgId()));
+                sysUserMapper.updateById(sysUser);
+                log.info("用户ID: {} 的组织ID已更新为: {}", userId, oldUser.getOrgId());
+            }
+        } catch (Exception e) {
+            log.error("更新用户组织ID失败", e);
+        }
+
+        // 4. 根据用户ID查询新系统用户
+        SysUser user = userService.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+
+        // 5. 检查用户状态
+        if ("1".equals(user.getStatus())) {
+            throw new ServiceException("用户已停用");
+        }
+
+        // 6. 构建登录用户信息
+        LoginUser loginUser = new LoginUser();
+        loginUser.setUserId(user.getUserId());
+        loginUser.setDeptId(user.getDeptId());
+        loginUser.setUsername(user.getUserName());
+        loginUser.setNickName(user.getNickName());
+        loginUser.setUserType(user.getUserType());
+        loginUser.setMenuPermission(permissionService.getMenuPermission(user));
+        loginUser.setRolePermission(permissionService.getRolePermission(user));
+        loginUser.setDeptName(ObjectUtil.isNull(user.getDept()) ? "" : user.getDept().getDeptName());
+        // 根据deptId查询顶级组织并设置areaCode
+        if (user.getDeptId() != null && user.getDeptId() == 1L) {
+            loginUser.setAreaCode("330000");
+        } else {
+            SysDept topDept = iSysDeptService.findTopDept(user.getDeptId());
+            if (topDept != null) {
+                loginUser.setAreaCode(topDept.getAreaCode());
+                log.info("用户: {} 的顶级部门: {}, 区域代码: {}", user.getUserName(), topDept.getDeptName(), topDept.getAreaCode());
+            } else {
+                log.warn("未找到用户: {} 的顶级部门信息", user.getUserName());
+            }
+        }
+        List<RoleDTO> roles = BeanUtil.copyToList(user.getRoles(), RoleDTO.class);
+        loginUser.setRoles(roles);
+
+        // 7. 检查用户是否已经登录
+        String existingToken = null;
+        try {
+            // 通过用户ID直接从Redis中获取对应的token（高性能查询）
+            existingToken = StpUtil.getTokenValueByLoginId(loginUser.getUserType() + ":" + loginUser.getUserId());
+            // 如果找到了token，验证其是否仍然有效
+            if (existingToken != null) {
+                try {
+                    // 检查token是否已过期或被踢下线
+                    if (StpUtil.stpLogic.getTokenActivityTimeoutByToken(existingToken) >= 0) {
+                        // 进一步验证token对应的用户是否匹配
+                        LoginUser onlineUser = LoginHelper.getLoginUser(existingToken);
+                        if (onlineUser != null && onlineUser.getUserId().equals(user.getUserId())) {
+                            log.info("用户: {} 已登录，复用现有token，无需重新登录", user.getUserName());
+                        } else {
+                            // token存在但用户不匹配，视为无效
+                            existingToken = null;
+                        }
+                    } else {
+                        // token已过期，清理映射关系
+                        existingToken = null;
+                    }
+                } catch (Exception e) {
+                    // token无效或已过期
+                    existingToken = null;
+                    log.debug("验证token有效性失败: {}", e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            // 获取token失败，视为用户未登录
+            existingToken = null;
+            log.debug("获取用户token失败: {}", e.getMessage());
+        }
+
+        // 如果用户未登录，则执行登录
+        if (existingToken == null) {
+            // 执行正常登录流程
+            LoginHelper.login(loginUser);
+            log.info("用户: {} 执行新登录", user.getUserName());
+        }
+
+        // 返回token（复用的或新生成的）
+        return existingToken != null ? existingToken : StpUtil.getTokenValue();
     }
 
     /**

@@ -3,7 +3,7 @@ package com.crm.job.service.timedTasks;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.common.utils.DateUtils;
-import com.crm.job.service.send.ConOpenSendImpl;
+import com.crm.system.service.send.impl.ConOpenSendImpl;
 import com.crm.system.domain.dao.EarlyWarningProcessingConfigDo;
 import com.crm.system.mapper.EarlyWarningProcessingConfigMapper;
 import com.xxl.job.core.context.XxlJobHelper;
