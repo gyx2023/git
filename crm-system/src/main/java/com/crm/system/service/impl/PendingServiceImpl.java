@@ -14,10 +14,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.PendingGroupTodoMapper;
 import com.crm.system.mapper.PendingMapper;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.IPendingService;
+import com.crm.system.service.topp.IToppOrderService;
 import com.crm.system.service.wx.WxProcessKeySupport;
 import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;
@@ -77,13 +79,43 @@ public class PendingServiceImpl implements IPendingService {
     @Resource
     private WxProcessKeySupport wxProcessKeySupport;
 
+    @Resource
+    private IToppOrderService orderService;
+
     /**
      * 是否为维系预警流程（对应老框架 getIsWxOrder）——此类流程不写入集团待办表。
      * 新框架任务 CATEGORY_ 存的是订单类型（流程创建时 setCategory(orderType) 写入），
-     * 与维系订单类型集合比对；processKey 多为通用 single_approval，无法区分业务类型
+     * 与维系订单类型集合比对；processKey 多为通用 single_approval，无法区分业务类型。
+     * 首任务竞态兜底：流程启动时 TASK_ASSIGNED 先于建单触发，CATEGORY_ 尚未写入、
+     * topp_order 也尚未插入，此时流程实例 businessKey 即订单类型（预警流程启动时传入），
+     * 回退按 businessKey 判断；再兜底查 topp_order
      */
     private boolean isWxProcessKey(Task task) {
-        return wxProcessKeySupport.isWxOrder(task.getCategory());
+        String category = task.getCategory();
+        if (StringUtils.isBlank(category)) {
+            category = getBusinessKey(task.getProcessInstanceId());
+            if (StringUtils.isBlank(category)) {
+                ToppOrderVo order = orderService.queryByPiId(task.getProcessInstanceId());
+                if (order != null) {
+                    category = order.getOrderType();
+                }
+            }
+        }
+        return wxProcessKeySupport.isWxOrder(category);
+    }
+
+    /** 查询流程实例业务键（预警流程启动时 businessKey = 订单类型） */
+    private String getBusinessKey(String piId) {
+        try {
+            org.flowable.engine.runtime.ProcessInstance pi = flowableRuntimeService
+                    .createProcessInstanceQuery()
+                    .processInstanceId(piId)
+                    .singleResult();
+            return pi != null ? pi.getBusinessKey() : null;
+        } catch (Exception e) {
+            log.warn("查询流程实例 businessKey 失败, piId={}", piId, e);
+            return null;
+        }
     }
 
     private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
