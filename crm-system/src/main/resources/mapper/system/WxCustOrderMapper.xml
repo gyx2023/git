@@ -51,7 +51,7 @@
         WHERE id_ = #{infoId}
     </select>
 
-    <!-- 宽带到期预警用户清单（对应老框架 infoByWIDE.jsp：wide_sys_auto_warning 按 main_order_flow_no 查询） -->
+    <!-- 宽带到期预警用户清单（对应老框架 infoByWIDE.jsp：wide_sys_auto_warning 按 main_order_flow_no 查询，分页） -->
     <select id="selectWideUserList" resultType="java.util.Map">
         SELECT w.id AS userId, w.svc_num AS svcNum, w.cust_name AS custName,
             w.contact_man AS contactMan, w.contact_phone AS contactPhone,
@@ -72,6 +72,13 @@
         LEFT JOIN ftp_tc_user_cycle_warning fw ON w.ORDER_FLOW_NO = fw.ORDER_FLOW_NO
         WHERE w.main_order_flow_no = #{mainOrderFlowNo}
         ORDER BY w.id ASC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countWideUserList" resultType="long">
+        SELECT COUNT(1)
+        FROM wide_sys_auto_warning
+        WHERE main_order_flow_no = #{mainOrderFlowNo}
     </select>
 
 </mapper>

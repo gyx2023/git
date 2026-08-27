@@ -14,6 +14,9 @@ import com.crm.system.service.IMaintenanceDetailSyncService;
 import com.crm.system.service.ISequenceService;
 import com.crm.system.service.sys.ISysDeptService;
 import com.crm.system.service.topp.IToppOrderService;
+import com.crm.system.service.warning.IOrderDealUrlBuilder;
+import com.crm.system.service.warning.WarningOrderCreateService;
+import com.crm.system.service.warning.WarningRecord;
 import com.crm.system.service.warning.assign.IWarningAssignStrategy;
 import com.crm.system.service.warning.assign.WarningAssignContext;
 import com.crm.system.service.warning.assign.WarningAssignService;
@@ -61,6 +64,9 @@ public class WarningAssignServiceImpl extends FlowServiceFactory implements Warn
 
     @Resource
     private SysUsersMapper sysUsersMapper;
+
+    @Resource
+    private WarningOrderCreateService warningOrderCreateService;
 
     @Autowired(required = false)
     private com.crm.system.service.send.ISendDMessageService sendDMessageService;
@@ -157,30 +163,34 @@ public class WarningAssignServiceImpl extends FlowServiceFactory implements Warn
             return false;
         }
 
-        // 4. 启动 Flowable 流程
-        ProcessInstance processInstance = startProcessInstance(strategy, context);
-        if (processInstance == null) return false;
-        String piId = processInstance.getId();
+        // 4. 组装 WarningRecord，复用公共建单组件（启动流程 + 取首任务 + 建单 + 展示/运行时变量）
+        WarningRecord record = new WarningRecord();
+        record.setOrderType(context.getOrderType());
+        record.setOrderName(context.getOrderName());
+        record.setOppoId(context.getOppoId());
+        record.setCustId(context.getCustId());
+        record.setCustManagerId(context.getCustManagerId());
+        record.setCustName(context.getCustName());
+        record.setWarningLevel(context.getWarningLevel());
+        record.setSysUser(context.getSysUser());
+        record.setAreaId(context.getAreaId());
+        record.setExtraVariables(extra);
+        // 统一建单关联字段（公共组件 buildOrderBo 从 extra.infoId 取）
+        extra.put("infoId", detail.getDetailId());
 
-        Task task = getFirstTask(piId);
-        if (task == null) return false;
-
-        if (StringUtils.isNotBlank(comment)) {
-            taskService.addComment(task.getId(), piId, comment);
+        IOrderDealUrlBuilder dealUrlBuilder = (orderId, e) -> strategy.buildDealUrl(orderId, e);
+        ToppOrderBo orderBo = warningOrderCreateService.createAndStartOrder(
+                record, strategy.getProcessKey(), context.getCustManagerId(), dealUrlBuilder, comment);
+        if (orderBo == null) {
+            log.warn("【未派发指派】流程启动或建单失败, orderType={}, detailId={}", strategy.getOrderType(), detailId);
+            return false;
         }
 
-        // 5. 建单
-        ToppOrderBo orderBo = buildOrderBo(context, task, extra);
-        orderService.insertByBo(orderBo);
-
-        // 6. 设置任务展示变量与运行时变量
-        setTaskDisplayVars(strategy, task, orderBo, context, piId);
-
-        // 7. 把已有 status=0 明细更新为 status=1，并写 maintenance_detail_new
+        // 5. 把已有 status=0 明细更新为 status=1，并写 maintenance_detail_new
         maintenanceDetailSyncService.assignSuccess(detailId, orderBo, extra);
 
         log.info("【未派发指派】工单已创建: type={}, orderId={}, piId={}, detailId={}",
-                context.getOrderType(), orderBo.getId(), piId, detailId);
+                context.getOrderType(), orderBo.getId(), orderBo.getPiId(), detailId);
         return true;
     }
 
@@ -201,162 +211,4 @@ public class WarningAssignServiceImpl extends FlowServiceFactory implements Warn
         return !orderService.queryList(queryBo).isEmpty();
     }
 
-    private ProcessInstance startProcessInstance(IWarningAssignStrategy strategy, WarningAssignContext context) {
-        String processKey = strategy.getProcessKey();
-        ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(processKey)
-                .latestVersion()
-                .singleResult();
-        if (pd == null) {
-            log.warn("【未派发指派】未找到流程定义: {}", processKey);
-            return null;
-        }
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("manager", String.valueOf(context.getCustManagerId()));
-        variables.put("manager_handle_name", "客户经理处理");
-        org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(
-                String.valueOf(context.getCustManagerId()));
-        try {
-            ProcessInstance pi = runtimeService.startProcessInstanceById(pd.getId(), context.getOrderType(), variables);
-            log.info("【未派发指派】流程已启动: type={}, processKey={}, piId={}",
-                    context.getOrderType(), processKey, pi.getId());
-            return pi;
-        } finally {
-            org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(null);
-        }
-    }
-
-    private Task getFirstTask(String piId) {
-        Task task = taskService.createTaskQuery().processInstanceId(piId).singleResult();
-        if (task == null) {
-            log.warn("【未派发指派】流程 {} 没有待办任务", piId);
-            return task;
-        }
-        task.setDescription("显示");
-        taskService.saveTask(task);
-        return task;
-    }
-
-    private ToppOrderBo buildOrderBo(WarningAssignContext ctx, Task task, Map<String, Object> extra) {
-        ToppOrderBo bo = new ToppOrderBo();
-        bo.setOppoId(ctx.getOppoId());
-        bo.setCustId(ctx.getCustId());
-        bo.setCustManagerId(ctx.getCustManagerId());
-        if (task != null) {
-            bo.setPiId(task.getProcessInstanceId());
-            bo.setPhase(task.getTaskDefinitionKey());
-            bo.setPhaseName(task.getName());
-        }
-        bo.setOrderType(ctx.getOrderType());
-        bo.setOrderName(ctx.getOrderName());
-        bo.setCustName(ctx.getCustName());
-        bo.setWarningLevel(ctx.getWarningLevel());
-        bo.setProcessEngine(ProcessEngineEnum.FLOWABLE.name());
-        bo.setStatus(OrderStatusEnum.RUNNING.getCode());
-        bo.setActors(",," + ctx.getCustManagerId() + ",,");
-        if (extra != null) {
-            bo.setInfoId((Long) extra.get("_detailId"));
-        }
-        bo.setCreateTime(new Date());
-        bo.setUpdateTime(new Date());
-        if (ctx.getSysUser() != null) {
-            bo.setCreator(ctx.getSysUser().getId());
-            bo.setOrgId(ctx.getSysUser().getOrgId());
-        } else {
-            bo.setCreator(1L);
-        }
-        bo.setAreaId(ctx.getAreaId());
-        if (extra == null) return bo;
-
-        // 订单号
-        if (sequenceService != null && Boolean.TRUE.equals(extra.get("_needOrderNumber"))) {
-            bo.setOrderNumber(sequenceService.getCode(OppClueCodeUtil.getOrderCode()));
-        }
-        // 归属部门
-        String businessDep = extra.get("businessDep") != null ? extra.get("businessDep").toString() : null;
-        if (StringUtils.isBlank(businessDep)) {
-            businessDep = "22";
-        }
-        bo.setBusinessDep(businessDep);
-        String orderCategory = extra.get("orderCategory") != null ? extra.get("orderCategory").toString() : null;
-        if (StringUtils.isNotBlank(orderCategory)) {
-            bo.setOrderCategory(orderCategory);
-        }
-
-        resolveOrgInfo(bo, extra, ctx.getCustManagerId());
-        return bo;
-    }
-
-    private void resolveOrgInfo(ToppOrderBo bo, Map<String, Object> extra, Long custManagerId) {
-        Long orgId = null;
-        Object orgIdObj = extra.get("orgId");
-        if (orgIdObj instanceof Number) {
-            orgId = ((Number) orgIdObj).longValue();
-        } else if (custManagerId != null && sysUsersMapper != null) {
-            SysUsers u = sysUsersMapper.selectById(custManagerId);
-            if (u != null) orgId = u.getOrgId();
-        }
-        if (orgId == null) return;
-        bo.setOrgId(orgId);
-        if (deptService != null) {
-            SysDept dept = deptService.selectDeptById(orgId);
-            if (dept != null && StringUtils.isNotEmpty(dept.getAreaCode())) {
-                bo.setAreaId(Long.valueOf(dept.getAreaCode()));
-            }
-        }
-        String nickName = extra.get("nickName") != null ? extra.get("nickName").toString() : null;
-        String phone = extra.get("phone") != null ? extra.get("phone").toString() : null;
-        if ((StringUtils.isBlank(nickName) || StringUtils.isBlank(phone)) && custManagerId != null && sysUsersMapper != null) {
-            SysUsers u = sysUsersMapper.selectById(custManagerId);
-            if (u != null) {
-                if (StringUtils.isBlank(nickName)) nickName = u.getNameCh();
-                if (StringUtils.isBlank(phone)) phone = u.getRelationTel();
-            }
-        }
-        if (StringUtils.isNotBlank(nickName)) {
-            bo.setActorsInfo(nickName + ":" + (StringUtils.isNotBlank(phone) ? phone : ""));
-        }
-    }
-
-    private void setTaskDisplayVars(IWarningAssignStrategy strategy, Task task, ToppOrderBo orderBo,
-                                    WarningAssignContext context, String piId) {
-        String dealUrl = strategy.buildDealUrl(orderBo.getId(), context.getExtraVariables());
-        Map<String, Object> vars = new HashMap<>();
-        String prefix = task.getTaskDefinitionKey();
-        vars.put(prefix + "_dealUrl", dealUrl);
-        vars.put(prefix + "_infoId", orderBo.getId());
-        vars.put(prefix + "_infoType", "order");
-        vars.put(prefix + "_orderName", context.getOrderName());
-        if (StringUtils.isNotBlank(orderBo.getOrderNumber())) {
-            vars.put(prefix + "flowNo", orderBo.getOrderNumber());
-        }
-        if (StringUtils.isNotBlank(context.getCustName())) {
-            vars.put(prefix + "_custName", context.getCustName());
-            vars.put(prefix + "_remindContent",
-                    "预警类型：" + context.getOrderType() + "，客户：" + context.getCustName() + "，请及时处理");
-        } else {
-            vars.put(prefix + "_remindContent", "预警类型：" + context.getOrderType() + "，请及时处理");
-        }
-        runtimeService.setVariables(piId, vars);
-
-        // 运行时业务变量
-        Map<String, Object> extra = context.getExtraVariables();
-        if (extra != null && !extra.isEmpty()) {
-            Map<String, Object> procVars = new HashMap<>();
-            for (Map.Entry<String, Object> e : extra.entrySet()) {
-                if (notFiltered(e.getKey())) {
-                    procVars.put(e.getKey(), e.getValue());
-                }
-            }
-            if (!procVars.isEmpty()) {
-                runtimeService.setVariables(piId, procVars);
-            }
-        }
-    }
-
-    private boolean notFiltered(String key) {
-        return !("areaId".equals(key) || "areaName".equals(key) || "bssCode".equals(key)
-                || "_detailId".equals(key) || "orgId".equals(key) || "nickName".equals(key)
-                || "phone".equals(key) || "orderCategory".equals(key) || "_needOrderNumber".equals(key));
-    }
 }

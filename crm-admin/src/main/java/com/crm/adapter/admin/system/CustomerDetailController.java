@@ -2,7 +2,6 @@ package com.crm.adapter.admin.system;
 
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;
-import com.crm.common.utils.Desensitization;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;
 import com.crm.system.domain.dao.tcomm.TcommCustomer;
@@ -73,45 +72,45 @@ public class CustomerDetailController extends BaseController {
             // 集团基本信息
             safePut(info, "areaName", bi.getAreaName());
             safePut(info, "countyName", bi.getCountyName());
-            safePutMasked(info, "custName", bi.getGrpName(), "cname");
+            safePut(info, "custName", bi.getGrpName());
             safePut(info, "grpCode", bi.getGrpCode());
             safePut(info, "hqCode", bi.getHqCustGrpId());
             safePut(info, "incomeCode", bi.getCustSvcNum());
             safePut(info, "isImpPrt", bi.getIsImpPrt());
             safePut(info, "certificateType", bi.getCertTypeName());
-            safePutMasked(info, "certificateNo", bi.getCertNum(), "card");
+            safePut(info, "certificateNo", bi.getCertNum());
             safePut(info, "custStatus", bi.getGrpStatusName());
             safePut(info, "custLevel", bi.getGrpType());         // 老框架用 grp_type 不是 grp_type_name
             safePut(info, "expandAttr", bi.getGrpExpandTypeName());
             safePut(info, "deptName", bi.getGrpBusiDeptTypeName());
             safePut(info, "listExpandDept", bi.getExpandDeptName());
             // 客户联系人信息
-            safePutMasked(info, "contactPerson", bi.getOperatorName(), "uname");  // 经办人 = operator_name
-            safePutMasked(info, "contactPhone", bi.getOperatorPhone(), "phone");
-            safePutMasked(info, "contactName", bi.getContactMan(), "uname");       // 联系人 = contact_man
+            safePut(info, "contactPerson", bi.getOperatorName());  // 经办人 = operator_name
+            safePut(info, "contactPhone", bi.getOperatorPhone());
+            safePut(info, "contactName", bi.getContactMan());       // 联系人 = contact_man
             // 名单制信息
             safePut(info, "listAttr", bi.getProvListTypeName());
             safePut(info, "listCustCode", bi.getListCode());
-            safePutMasked(info, "listCustName", bi.getListName(), "cname");
+            safePut(info, "listCustName", bi.getListName());
             safePut(info, "listManagerNo", bi.getListManagerId());
-            safePutMasked(info, "listManagerName", bi.getListManagerName(), "uname");
+            safePut(info, "listManagerName", bi.getListManagerName());
             // 服务经理信息
             safePut(info, "managerNo", bi.getServManagerId());
-            safePutMasked(info, "managerName", bi.getServManagerName(), "uname");
-            safePutMasked(info, "managerPhone", bi.getServManagerPhone(), "phone");
-            safePutMasked(info, "accountManager", bi.getAccManagerName(), "uname");
-            safePutMasked(info, "networkManager", bi.getNetManagerName(), "uname");
-            safePutMasked(info, "productManager", bi.getProdManagerName(), "uname");
+            safePut(info, "managerName", bi.getServManagerName());
+            safePut(info, "managerPhone", bi.getServManagerPhone());
+            safePut(info, "accountManager", bi.getAccManagerName());
+            safePut(info, "networkManager", bi.getNetManagerName());
+            safePut(info, "productManager", bi.getProdManagerName());
             // 地址信息
             safePut(info, "custAddr", bi.getGrpAddr());
         }
 
         // 补充：TcommCustomer 的数据作为兜底
         if (cust != null) {
-            if (info.get("custName") == null) safePutMasked(info, "custName", cust.getCustName(), "cname");
+            if (info.get("custName") == null) safePut(info, "custName", cust.getCustName());
             if (info.get("grpCode") == null) safePut(info, "grpCode", cust.getCustNo());
             if (info.get("certificateType") == null) safePut(info, "certificateType", cust.getCertificateType());
-            if (info.get("certificateNo") == null) safePutMasked(info, "certificateNo", cust.getCertificateNo(), "card");
+            if (info.get("certificateNo") == null) safePut(info, "certificateNo", cust.getCertificateNo());
             if (info.get("custAddr") == null) safePut(info, "custAddr", cust.getCustAddr());
             if (info.get("custStatus") == null) safePut(info, "custStatus", cust.getCustState());
         }
@@ -125,16 +124,4 @@ public class CustomerDetailController extends BaseController {
         }
     }
 
-    private void safePutMasked(Map<String, Object> map, String key, String val, String maskType) {
-        if (val == null || val.isEmpty()) return;
-        String masked;
-        switch (maskType) {
-            case "cname": masked = Desensitization.desensitizeCompanyName(val); break;
-            case "uname": masked = Desensitization.desensitizeName(val); break;
-            case "phone": masked = Desensitization.desensitizePhone(val); break;
-            case "card":  masked = Desensitization.desensitizeCertificate(val); break;
-            default:      masked = val;
-        }
-        map.put(key, masked);
-    }
 }

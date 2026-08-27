@@ -5,7 +5,7 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.mapper.warning.KdAddrWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
-import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.service.warning.WarningRecord;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;

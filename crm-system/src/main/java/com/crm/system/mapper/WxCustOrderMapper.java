@@ -12,5 +12,7 @@ public interface WxCustOrderMapper {
     List<Map<String, Object>> selectProcessHistory(@Param("piId") String piId);
     Map<String, Object> selectWideSysAutoWarning(@Param("infoId") Long infoId);
     Map<String, Object> selectFtpTcUserCustWarning(@Param("infoId") Long infoId);
-    List<Map<String, Object>> selectWideUserList(@Param("mainOrderFlowNo") String mainOrderFlowNo);
+    List<Map<String, Object>> selectWideUserList(@Param("mainOrderFlowNo") String mainOrderFlowNo,
+                                                 @Param("offset") int offset, @Param("size") int size);
+    long countWideUserList(@Param("mainOrderFlowNo") String mainOrderFlowNo);
 }
