@@ -522,6 +522,8 @@ public class PendingServiceImpl implements IPendingService {
                 } else {
                     pending.setPendingURL(backlog + dealUrlVal.toString().replace("?", "&") + "&taskId=" + pendingCode);
                 }
+            }else{
+                log.warn("创建待办时未获取dealUrl，将交由job处理: pendingCode={}", pendingCode);
             }
         } catch (Exception e) {
             log.warn("创建待办时获取dealUrl失败，将交由job处理: pendingCode={}", pendingCode);
