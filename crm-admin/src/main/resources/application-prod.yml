@@ -158,6 +158,8 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /zqzt_backend/health/**
+    - /sso/portalCheck
+    - /sso/uacLogin
 # Swagger配置
 swagger:
   info:
