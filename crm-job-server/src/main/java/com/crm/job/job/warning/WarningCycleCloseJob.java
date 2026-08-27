@@ -75,7 +75,7 @@ public class WarningCycleCloseJob {
         log.info("【闭环自动完结】配置: {}, 处理日期: {}", typeMapping, date);
         XxlJobHelper.log("闭环自动完结配置: " + typeMapping + ", 处理日期: " + date);
 
-        // 3. 查询需要关单的工单（cycleFlag in (1,2,3) 且 running）
+        // 3. 查询需要关单的工单（cycleFlag in (1,2,3) 且状态非 end）
         List<ToppOrder> closeOrders = userCycleCloseMapper
                 .selectCycleCloseOrders(orderTypes, warningCodes, date);
 
