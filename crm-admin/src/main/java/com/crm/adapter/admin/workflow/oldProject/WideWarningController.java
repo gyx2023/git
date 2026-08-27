@@ -171,6 +171,10 @@ public class WideWarningController extends BaseController {
         }
         // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
         taskService.setVariableLocal(taskId, "action", "agree");
+        // 客户经理处理结果说明：写任务本地变量 {taskDefKey}_resultMemo（供导出读取）
+        if (comment != null) {
+            taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
+        }
         taskService.complete(taskId, vars);
 
         // Listener 的 TASK_ASSIGNED 事件会自动调用 syncOrderToCurrentTask 更新订单信息
@@ -250,6 +254,7 @@ public class WideWarningController extends BaseController {
         String piId = task.getProcessInstanceId();
         if (comment != null) {
             taskService.addComment(taskId, piId, comment);
+            taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
         }
 
         LoginUser loginUser = getLoginUser();
@@ -334,6 +339,7 @@ public class WideWarningController extends BaseController {
         Task task = wfProcessService.findCurrentTask(null, taskId);
         if (comment != null) {
             taskService.addComment(taskId, task.getProcessInstanceId(), comment);
+            taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
         }
 
         ToppOrderBo bo = new ToppOrderBo();
@@ -376,6 +382,7 @@ public class WideWarningController extends BaseController {
                 if (task == null) { fail++; continue; }
                 if (comment != null) {
                     taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
+                    taskService.setVariableLocal(task.getId(), task.getTaskDefinitionKey() + "_resultMemo", comment);
                 }
                 Map<String, Object> vars = new HashMap<>();
                 vars.put("action", "agree");
@@ -438,6 +445,7 @@ public class WideWarningController extends BaseController {
                 if (task == null) { fail++; continue; }
                 if (comment != null) {
                     taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
+                    taskService.setVariableLocal(task.getId(), task.getTaskDefinitionKey() + "_resultMemo", comment);
                 }
                 if ("audit_handle".equals(task.getTaskDefinitionKey())) {
                     orderService.syncOrderToCurrentTask(orderId, task.getProcessInstanceId(), targetUserId, loginUser.getUserId());
@@ -485,6 +493,7 @@ public class WideWarningController extends BaseController {
                 Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
                 if (task != null && comment != null) {
                     taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
+                    taskService.setVariableLocal(task.getId(), task.getTaskDefinitionKey() + "_resultMemo", comment);
                 }
                 ToppOrderBo bo = new ToppOrderBo();
                 bo.setId(orderId);
