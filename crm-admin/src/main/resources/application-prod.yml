@@ -5,11 +5,6 @@ spring.servlet.multipart.location: /crm/server/temp
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # 数据源配置
 spring:
@@ -31,16 +26,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase:loadbalance://10.129.161.149:3306,10.129.161.173:3306,10.129.161.208:3306/zj_sj?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: service_ob_cads@ZJZQ_REAL#hl_cluster16
-          password: n#F5Tp5VCQ5JJ5zSy4Dp7ZA_
+          username: ENC(R9ZmRfuO5ZSghBrWE9fdEb9COl1D6zyD+csnckyQPzA5lh8mI98b32nP+3MCXMH2PhUDoJ+0O1UoTtdrQ2IHpg==)
+          password: ENC(+YIRVJ6VZEuJihkFznbhbr3eQ6xlRkr5f7x2ZemazfRRLTZDuHwXNFcjitlP9ech)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://10.173.59.21:3306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(RtcKQxdjKiPbZr+2tzozWxVu/9qYAvdGD1boi/wr5SWrD5WD/kUxCcmPO/mwLxhY)
+          password: ENC(sE9ABt/0R8w2gp+XXcsAEwv0nUBXw9lwSgc79d5oWKM=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -48,14 +43,14 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://10.129.69.127:1521/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: aP3`zK8#xJ0$
+          username: ENC(M2vgFuOSf9qRpfXYDbVXa3UGid5UX+cCBVLHZ0gKXEQ=)
+          password: ENC(TkvypC5nYDNLn+eNPWI9nJUVw/DFl2Of4qL+CRh7pzY=)
         oracle:
           type: ${spring.datasource.type}
           driverClassName: oracle.jdbc.OracleDriver
           url: jdbc:oracle:thin:@132.151.15.102:5236:crmdb
-          username: ps_uni_zyy
-          password: yz_2026#
+          username: ENC(n/jiMAMsbMqvmOfvGjhbMHhvpTZ4hMbusQbnDqf5tfk=)
+          password: ENC(sludqH/r4z8xfP5oU/nVbXi+e0uemgGuzr8FsJxS1UY=)
           hikari:
             connectionTestQuery: SELECT 1 FROM DUAL
             connection-init-sql: "ALTER SESSION SET CURRENT_SCHEMA=zjucrm2o"
@@ -87,7 +82,7 @@ spring:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    password: Redis!@#123
+    password: ENC(K5Cd93h18eAlbJdfeMs7DCaQN8hY5VjYGoi8Dbc/FJ8=)
     # 连接超时时间
     timeout: 10s
     # 是否开启ssl
@@ -163,6 +158,14 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /zqzt_backend/health/**
+    # 智能问数嵌入入口，Controller 内部仍会校验宿主 Authorization
+    - /askdata/chat/stream
+    # 推荐问题由 iframe 读取，Controller 内部仍会校验宿主 Authorization
+    - /askdata/widget/suggestions
+    # 数据处理工作流内网取数入口，使用短期随机 dataRef
+    - /api/askdata/tools/resultdata
+    - /sso/portalCheck
+    - /sso/uacLogin
 # Swagger配置
 swagger:
   info:
@@ -236,3 +239,8 @@ pre-travel-report:
   api-key: d8b9jlenlnbcfr9revsg
   app-key: d8b9jj6nlnbcfr9revqg
   user-id: "321"
+
+--- # ChinaUnicon 测试智能体临时 TLS 配置
+china-unicon-agent:
+  # 测试平台证书暂未纳入 JVM 信任库时使用；正式、准生产环境不得开启。
+  insecure-tls: true

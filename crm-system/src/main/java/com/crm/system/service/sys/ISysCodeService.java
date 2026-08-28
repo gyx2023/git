@@ -65,4 +65,12 @@ public interface ISysCodeService {
      * @return HashMap，key为code，value为settingStr1
      */
     HashMap<String, String> getCodeSettingStr1MapByType(String type);
+
+    /**
+     * 根据类型和 settingStr3 过滤查询编码列表并转换为 LinkedHashMap
+     * @param type 编码类型
+     * @param settingStr3 过滤条件
+     * @return LinkedHashMap，key为code，value为name
+     */
+    LinkedHashMap<String, String> getCodeMapByTypeAndSettingStr3(String type, String settingStr3);
 }

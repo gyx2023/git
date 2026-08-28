@@ -184,13 +184,13 @@
         WHERE hp.PROC_INST_ID_ = #{procInsId}
     </select>
 
-    <!-- 查询老系统历史活动节点 -->
+    <!-- 查询老系统历史活动节点（ACT_HI_ACTINST 列名为 ACT_ID_/ACT_NAME_/ACT_TYPE_，与 ACTIVITY_* 命名不同） -->
     <select id="selectOldHistoricActivityInsts" resultType="java.util.Map">
         SELECT
             ID_ AS id,
-            ACTIVITY_ID_ AS activityId,
-            ACTIVITY_NAME_ AS activityName,
-            ACTIVITY_TYPE_ AS activityType,
+            ACT_ID_ AS activityId,
+            ACT_NAME_ AS activityName,
+            ACT_TYPE_ AS activityType,
             TASK_ID_ AS taskId,
             ASSIGNEE_ AS assignee,
             START_TIME_ AS startTime,
@@ -199,7 +199,7 @@
             PROC_INST_ID_ AS procInsId
         FROM ACT_HI_ACTINST
         WHERE PROC_INST_ID_ = #{procInsId}
-        ORDER BY START_TIME_ ASC
+        ORDER BY START_TIME_ DESC, ID_ DESC
     </select>
 
     <!-- 查询老系统历史任务实例 -->
@@ -212,6 +212,7 @@
             START_TIME_ AS startTime,
             END_TIME_ AS endTime,
             DURATION_ AS duration,
+            DELETE_REASON_ AS deleteReason,
             PROC_INST_ID_ AS procInsId
         FROM ACT_HI_TASKINST
         WHERE PROC_INST_ID_ = #{procInsId}
@@ -245,25 +246,42 @@
             ASSIGNEE_        AS assignee,
             START_TIME_      AS startTime,
             END_TIME_        AS endTime,
-            DURATION_        AS duration
+            DURATION_        AS duration,
+            DELETE_REASON_   AS deleteReason
         FROM ACT_HI_TASKINST
         WHERE ID_ = #{taskId}
     </select>
 
-    <!-- 按 taskId + 变量名查询老系统单个流程变量 -->
+    <!-- 按 taskId + 变量名查询老系统单个流程变量
+         （运行时 + 历史 合并查询，对应老框架 historyService.createHistoricVariableInstanceQuery().taskId() 语义：
+           未完成任务的任务级变量只存在于 ACT_RU_VARIABLE，历史表 ACT_HI_VARINST 在变量变更/任务完成后才写入。
+           注意：ACT_RU_VARIABLE 为老 Activiti 结构（列名 TYPE_），ACT_HI_VARINST 为新结构（VAR_TYPE_），
+           调用方只需要 TEXT_ 值，故不查询类型列以兼容两表结构差异） -->
     <select id="selectOldHistoricVariable" resultType="java.util.Map">
         SELECT
             ID_          AS id,
             PROC_INST_ID_ AS procInsId,
             TASK_ID_     AS taskId,
             NAME_        AS name,
-            VAR_TYPE_    AS varType,
+            TEXT_        AS textValue,
+            DOUBLE_      AS doubleValue,
+            LONG_        AS longValue
+        FROM ACT_RU_VARIABLE
+        WHERE TASK_ID_ = #{taskId}
+          AND NAME_ = #{variableName}
+        UNION ALL
+        SELECT
+            ID_          AS id,
+            PROC_INST_ID_ AS procInsId,
+            TASK_ID_     AS taskId,
+            NAME_        AS name,
             TEXT_        AS textValue,
             DOUBLE_      AS doubleValue,
             LONG_        AS longValue
         FROM ACT_HI_VARINST
         WHERE TASK_ID_ = #{taskId}
           AND NAME_ = #{variableName}
+        LIMIT 1
     </select>
 
 </mapper>

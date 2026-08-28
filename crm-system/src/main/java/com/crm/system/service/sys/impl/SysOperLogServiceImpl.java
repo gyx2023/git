@@ -14,6 +14,7 @@ import com.crm.system.domain.dao.sys.SysOperLog;
 import com.crm.system.mapper.sys.SysOperLogMapper;
 import com.crm.system.service.sys.ISysOperLogService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * 操作日志 服务层处理
@@ -29,6 +31,7 @@ import java.util.Map;
  * @author Lion Li
  */
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class SysOperLogServiceImpl implements ISysOperLogService {
 
@@ -137,7 +140,8 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
      */
     @Override
     public void cleanOperLog() {
-        baseMapper.delete(new LambdaQueryWrapper<>());
+        // 禁止清空
+//        baseMapper.delete(new LambdaQueryWrapper<>());
     }
 
 
@@ -167,6 +171,92 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
         }
 
         baseMapper.insert(sysOperLog);
+    }
+
+    @Override
+    public String logApiCall(String title, String url, String operParam, Callable<String> apiCall) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle(title);
+        operLog.setRequestMethod("POST");
+        operLog.setOperatorType(2);
+        operLog.setOperUrl(url);
+        operLog.setOperParam(operParam);
+        long startTime = System.currentTimeMillis();
+        try {
+            String result = apiCall.call();
+            operLog.setStatus(0);
+            operLog.setJsonResult(result);
+            return result;
+        } catch (Exception e) {
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
+            throw new RuntimeException(e);
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            truncateStr(operLog);
+            insertOperlog(operLog);
+        }
+    }
+
+    @Override
+    public boolean tryApiCall(String title, String url, String operParam, Callable<String> apiCall) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle(title);
+        operLog.setRequestMethod("POST");
+        operLog.setOperatorType(2);
+        operLog.setOperUrl(url);
+        operLog.setOperParam(operParam);
+        long startTime = System.currentTimeMillis();
+        try {
+            String result = apiCall.call();
+            operLog.setStatus(0);
+            operLog.setJsonResult(result);
+            return true;
+        } catch (Exception e) {
+            log.error("API调用异常: title={}, url={}", title, url, e);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
+            return false;
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            truncateStr(operLog);
+            insertOperlog(operLog);
+        }
+    }
+
+    @Override
+    public boolean tryExportCall(String title, String url, String operParam, Callable<String> apiCall) {
+        SysOperLog operLog = new SysOperLog();
+        operLog.setTitle(title);
+        operLog.setRequestMethod("JOB");
+        operLog.setOperatorType(0);
+        operLog.setOperUrl(url);
+        operLog.setOperParam(operParam);
+        long startTime = System.currentTimeMillis();
+        try {
+            String result = apiCall.call();
+            operLog.setStatus(0);
+            operLog.setJsonResult(result);
+            return true;
+        } catch (Exception e) {
+            log.error("导出文件异常: title={}, url={}", title, url, e);
+            operLog.setStatus(1);
+            operLog.setErrorMsg(e.getMessage());
+            return false;
+        } finally {
+            operLog.setRequestTime(System.currentTimeMillis() - startTime);
+            truncateStr(operLog);
+            insertOperlog(operLog);
+        }
+    }
+
+    /**
+     * 字段不够长报错处理
+     * @param operLog 原对象
+     */
+    private void truncateStr(SysOperLog operLog) {
+        operLog.setOperParam(truncateString(operLog.getOperParam(), 2000));
+        operLog.setJsonResult(truncateString(operLog.getJsonResult(), 2000));
     }
 
     public String truncateString(String str, int maxLength) {

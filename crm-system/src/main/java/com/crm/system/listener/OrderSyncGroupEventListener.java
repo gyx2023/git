@@ -10,6 +10,7 @@ import com.crm.system.service.topp.IToppOrderSyncGroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
+import org.flowable.common.engine.impl.cfg.TransactionState;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
 import org.flowable.engine.repository.ProcessDefinition;
@@ -60,6 +61,9 @@ public class OrderSyncGroupEventListener extends AbstractFlowableEngineEventList
 
     public OrderSyncGroupEventListener() {
         super(LISTENED_EVENTS);
+        // 等到 Flowable 事务提交后再回调，确保监听内查询的 flowable 历史/运行表在本事务内已全部落库，
+        // 避免监听执行比入表快导致读到尚未写入的数据（如流程完结时异步历史数据）。迁移保留。
+        this.setOnTransaction(TransactionState.COMMITTED.name());
     }
 
     @PostConstruct

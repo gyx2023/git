@@ -56,14 +56,12 @@ public class WarningJob {
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toList());
 
-        // 日期：XXL-Job 参数优先，否则默认上个月
-        String targetDate;
+        // 日期（对齐 TcUserCustWarningJobNew：默认 T-2，支持 jobParam 覆盖）
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DATE, -2);
+        String targetDate = new java.text.SimpleDateFormat("yyyyMMdd").format(calendar.getTime());
         if (StringUtils.isNotBlank(overrideDate)) {
             targetDate = overrideDate.trim();
-        } else {
-            Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.MONTH, -1);
-            targetDate = new java.text.SimpleDateFormat("yyyyMM").format(calendar.getTime());
         }
 
         log.info("【通用预警任务】启用类型: {}, 日期={}", orderTypes, targetDate);

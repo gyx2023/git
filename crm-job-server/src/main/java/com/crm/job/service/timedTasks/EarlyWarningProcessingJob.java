@@ -3,7 +3,7 @@ package com.crm.job.service.timedTasks;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.crm.common.utils.DateUtils;
-import com.crm.job.service.send.ConOpenSendImpl;
+import com.crm.system.service.send.impl.ConOpenSendImpl;
 import com.crm.system.domain.dao.EarlyWarningProcessingConfigDo;
 import com.crm.system.mapper.EarlyWarningProcessingConfigMapper;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -31,6 +31,9 @@ public class EarlyWarningProcessingJob {
 
     @Resource
     private EarlyWarningProcessingConfigMapper configMapper;
+
+    @Resource
+    private ConOpenSendImpl conOpenSendImpl;
 
     @XxlJob(value = "earlyWarningProcessing")
     public void doWarning() {
@@ -104,7 +107,7 @@ public class EarlyWarningProcessingJob {
             map.put("TIME", DateUtils.dateTimeNow("yyyy年MM月dd日 HH时mm分ss秒"));
             map.put("SPECIAL", warningType);
             map.put("REGION", count + "条");
-            ConOpenSendImpl.sendMessageByTemplate("ALM_OPR07", map, phone);
+            conOpenSendImpl.sendMessageByTemplate("ALM_OPR07", map, phone);
         } catch (Exception e) {
             log.error("发送预警短信异常，phone={}, warningType={}, count={}", phone, warningType, count, e);
         }

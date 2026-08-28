@@ -22,6 +22,16 @@ public interface IKdAddrWarningDetailService {
     List<Map<String, Object>> queryRecords(Long orderId);
 
     /**
+     * 分页查询工单关联的预警明细记录列表
+     *
+     * @param orderId  工单ID（topp_order.id）
+     * @param pageNum  当前页码（从 1 开始）
+     * @param pageSize 每页条数
+     * @return Map，包含 records（当前页明细）、total（总记录数）、unfeedbackCount（未反馈总数，跨页统计）
+     */
+    Map<String, Object> pageRecords(Long orderId, int pageNum, int pageSize);
+
+    /**
      * 保存单条记录的反馈
      *
      * @param recordId       明细记录ID（ftp_tc_user_common_warning.id_）

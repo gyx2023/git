@@ -52,6 +52,8 @@ public class WxCustUserListServiceImpl implements IWxCustUserListService {
         dto.setGrpType(getStr(params, "grpType"));
         dto.setSvcNum(getStr(params, "svcNum"));
         dto.setIsDistribute(getStr(params, "isDistribute"));
+        // 客户经理过滤（预警客户列表点击到期量跳转，params 的 userId 为被筛选的客户经理）
+        dto.setManagerId(getStr(params, "userId"));
         dto.setStartRow(getInt(params, "startRow"));
         dto.setPageSize(getInt(params, "pageSize"));
         if (dto.getPageSize() == null) dto.setPageSize(10);

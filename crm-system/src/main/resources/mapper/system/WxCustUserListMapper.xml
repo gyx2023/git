@@ -318,6 +318,10 @@
         <if test="isDistribute != null and isDistribute != ''">
             AND md.status = #{isDistribute}
         </if>
+        <!-- 客户经理过滤：预警客户列表点击到期量跳转（同老框架 md.user_id = userId） -->
+        <if test="managerId != null and managerId != ''">
+            AND md.user_id = #{managerId}
+        </if>
     </sql>
 
     <!-- Wide/Cloud C类专属过滤（老项目 grpCode 只过滤 C 类） -->
@@ -337,6 +341,15 @@
                 AND o.create_time &lt;= #{createTimeEnd}
             </if>
         </if>
+        <!-- tabType=6：客户经理维系效果报表，按到期时间范围过滤（同老框架 getWxWideSql 6==tabType 分支） -->
+        <if test="tabType != null and tabType == 6 and orderType == 'Wide'">
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND DATE_FORMAT(b.exp_time, '%Y-%m-%d') &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND DATE_FORMAT(b.exp_time, '%Y-%m-%d') &lt;= #{createTimeEnd}
+            </if>
+        </if>
     </sql>
 
     <!-- Wide/Cloud U类时间过滤(老项目U类加时分秒) -->
@@ -347,6 +360,15 @@
             </if>
             <if test="createTimeEnd != null and createTimeEnd != ''">
                 AND o.create_time &lt;= CONCAT(#{createTimeEnd}, ' 23:59:59')
+            </if>
+        </if>
+        <!-- tabType=6：客户经理维系效果报表，按到期时间范围过滤（同老框架 getWxWideSql 6==tabType 分支） -->
+        <if test="tabType != null and tabType == 6 and orderType == 'Wide'">
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND DATE_FORMAT(b.exp_time, '%Y-%m-%d') &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND DATE_FORMAT(b.exp_time, '%Y-%m-%d') &lt;= #{createTimeEnd}
             </if>
         </if>
     </sql>

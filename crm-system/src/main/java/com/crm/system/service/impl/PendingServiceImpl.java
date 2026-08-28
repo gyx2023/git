@@ -1,6 +1,9 @@
 package com.crm.system.service.impl;
 
 import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.crm.common.enums.PendingOpType;
@@ -11,10 +14,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.crm.system.domain.dao.Pending;
 import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.PendingGroupTodoMapper;
 import com.crm.system.mapper.PendingMapper;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.service.IPendingService;
+import com.crm.system.service.topp.IToppOrderService;
+import com.crm.system.service.wx.WxProcessKeySupport;
 import com.crm.system.service.sys.ISysParamService;
 import lombok.extern.slf4j.Slf4j;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
@@ -28,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 待办Service业务层处理
@@ -39,6 +46,8 @@ public class PendingServiceImpl implements IPendingService {
 
     // 失败次数上限
     private static final int MAX_FAIL_TIMES = 3;
+    // 待办跳转基址参数名：新框架使用 New_Backlog（指向新系统 portalCheck 入口，UAC 门户链路）
+    private static final String NEW_BACKLOG_PARAM = "New_Backlog";
     // OA 返回成功前缀
     private static final String OA_SUCCESS_PREFIX = "100-";
     // 默认地市编码
@@ -69,6 +78,56 @@ public class PendingServiceImpl implements IPendingService {
     @Resource
     private org.flowable.engine.RuntimeService flowableRuntimeService;
 
+    @Resource
+    private WxProcessKeySupport wxProcessKeySupport;
+
+    @Resource
+    private IToppOrderService orderService;
+
+    /**
+     * 是否为维系预警流程（对应老框架 getIsWxOrder）——此类流程不写入集团待办表。
+     * 新框架任务 CATEGORY_ 存的是订单类型（流程创建时 setCategory(orderType) 写入），
+     * 与维系订单类型集合比对；processKey 多为通用 single_approval，无法区分业务类型。
+     * 首任务竞态兜底：流程启动时 TASK_ASSIGNED 先于建单触发，CATEGORY_ 尚未写入、
+     * topp_order 也尚未插入，此时流程实例 businessKey 即订单类型（预警流程启动时传入），
+     * 回退按 businessKey 判断；再兜底查 topp_order
+     */
+    private boolean isWxProcessKey(Task task) {
+        String category = task.getCategory();
+        if (StringUtils.isBlank(category)) {
+            category = getBusinessKey(task.getProcessInstanceId());
+            if (StringUtils.isBlank(category)) {
+                ToppOrderVo order = orderService.queryByPiId(task.getProcessInstanceId());
+                if (order != null) {
+                    category = order.getOrderType();
+                }
+            }
+        }
+        return wxProcessKeySupport.isWxOrder(category);
+    }
+
+    /** 查询流程实例业务键（预警流程启动时 businessKey = 订单类型） */
+    private String getBusinessKey(String piId) {
+        try {
+            org.flowable.engine.runtime.ProcessInstance pi = flowableRuntimeService
+                    .createProcessInstanceQuery()
+                    .processInstanceId(piId)
+                    .singleResult();
+            return pi != null ? pi.getBusinessKey() : null;
+        } catch (Exception e) {
+            log.warn("查询流程实例 businessKey 失败, piId={}", piId, e);
+            return null;
+        }
+    }
+
+    private static final SimplePropertyPreFilter ADD_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
+        "pendingCode", "pendingTitle", "pendingDate", "pendingUserID", "pendingURL", "pendingStatus",
+        "pendingLevel", "pendingCityCode", "pendingSourceUserID", "pendingSource", "pendingNote");
+
+    private static final SimplePropertyPreFilter UPDATE_PENDING_FILTER = new SimplePropertyPreFilter(Pending.class,
+        "pendingCode", "pendingStatus", "lastUpdateDate", "pendingURL", "pendingDate", "pendingTitle",
+        "pendingSourceUserID", "pendingSource", "pendingLevel", "pendingNote");
+
     @Override
     public List<Pending> getPendingList(String limit) {
         return pendingMapper.selectPendingList(limit);
@@ -95,9 +154,9 @@ public class PendingServiceImpl implements IPendingService {
             return;
         }
         String url = addUrl + "/" + appId + "/" + token;
-        String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
+        String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), ADD_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
         log.info("新增待办请求URL:{}", url);
-        String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
+        String result = HttpUtil.post(url, jsonStr, 60000);
         log.info("新增待办请求URL:{}, 返回结果:{}", url, result);
 
         if (StringUtils.isEmpty(result)) {
@@ -106,20 +165,20 @@ public class PendingServiceImpl implements IPendingService {
             Map<String, String> resultMap = JsonUtils.parseObject(result,
                 new TypeReference<Map<String, String>>() {});
             for (Map.Entry<String, String> entry : resultMap.entrySet()) {
-                String pendingCode = entry.getKey();
                 String msg = entry.getValue();
-                Pending p = findByPendingCodeAndType(pendingCode, PendingOpType.ADD.getCode());
-                p.setResponseMsg(msg);
-                log.info("待办新增返回值:{} 待办ID={}", msg, p.getId());
-                if (msg.startsWith(OA_SUCCESS_PREFIX)) {
-                    p.setSendStatus(SendStatus.SUCCESS.getCode());
-                    p.setSendTime(new Date());
-                } else {
-                    p.setSendStatus(SendStatus.SUCCESS.getCode());
-                    p.setFailTimes(MAX_FAIL_TIMES);
-                    p.setResponseMsg(msg);
+                if(pending.getPendingCode().equals(entry.getKey())){
+                    pending.setResponseMsg(msg);
+                    log.info("待办更新返回值:{} 待办ID={}", msg, pending.getId());
+                    if (msg.startsWith(OA_SUCCESS_PREFIX)) {
+                        pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                        pending.setSendTime(new Date());
+                    } else {
+                        pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                        pending.setResponseMsg(msg);
+                        pending.setFailTimes(MAX_FAIL_TIMES);
+                    }
+                    saveOrUpdate(pending);
                 }
-                saveOrUpdate(p);
             }
         }
     }
@@ -132,9 +191,13 @@ public class PendingServiceImpl implements IPendingService {
         }
         try {
             TaskCtx ctx = resolveTaskContext(pending);
-            if (ctx == null) return false;
+            if (ctx == null) {
+                return false;
+            }
 
-            if (!resolveDealUrl(pending, ctx)) return false;
+            if (!resolveDealUrl(pending, ctx)) {
+                return false;
+            }
 
             int userId = resolvePreviousUser(ctx);
             setPendingSourceInfo(pending, userId);
@@ -160,7 +223,7 @@ public class PendingServiceImpl implements IPendingService {
                         (String) task.get("taskDefKey"),
                         (String) task.get("procInsId"),
                         (String) task.get("assignee"),
-                        Long.parseLong((String) task.get("id")));
+                        (String) task.get("id"));
             }
         } catch (Exception e) {
             log.info("老 Activiti 表查询失败(表可能不存在), pendingCode={}, 回退到 Flowable", pending.getPendingCode());
@@ -182,7 +245,22 @@ public class PendingServiceImpl implements IPendingService {
                 flowableTask.getTaskDefinitionKey(),
                 flowableTask.getProcessInstanceId(),
                 flowableTask.getAssignee(),
-                Long.parseLong(flowableTask.getId()));
+                flowableTask.getId());
+    }
+
+    /**
+     * 读取待办跳转基址参数 New_Backlog；未配置（空）时视为拼地址失败并记录失败，返回 null。
+     * 新框架强制使用 {@link #NEW_BACKLOG_PARAM}，不再读取旧 Backlog。
+     */
+    private String resolveBacklogPrefix(Pending pending) {
+        String backlog = sysParamService.findValueByCode(NEW_BACKLOG_PARAM);
+        if (StringUtils.isEmpty(backlog)) {
+            log.error("订单{}未配置系统参数New_Backlog，无法拼接待办跳转地址", pending.getId());
+            pending.setFailTimes(MAX_FAIL_TIMES);
+            pending.setResponseMsg("订单" + pending.getId() + "未配置New_Backlog");
+            return null;
+        }
+        return backlog;
     }
 
     private boolean resolveDealUrl(Pending pending, TaskCtx ctx) {
@@ -199,8 +277,13 @@ public class PendingServiceImpl implements IPendingService {
                 pending.setResponseMsg("订单" + pending.getId() + "dealUrl为空");
                 return false;
             }
-            pending.setPendingURL(flowableVar.getValue().toString()
-                    + "&taskId=" + pending.getPendingCode());
+            // 强制使用 New_Backlog（新框架待办跳转基址），未配置则视为 dealUrl 失败
+            String backlog = resolveBacklogPrefix(pending);
+            if (backlog == null) {
+                return false;
+            }
+            String dealUrlStr = flowableVar.getValue().toString().replace("?", "&");
+            pending.setPendingURL(backlog + dealUrlStr + "&taskId=" + pending.getPendingCode());
         } else {
             Map<String, Object> dealUrl = oldWorkflowQueryService
                     .queryOldHistoricVariable(pending.getPendingCode(),
@@ -226,7 +309,8 @@ public class PendingServiceImpl implements IPendingService {
                     .list();
             HistoricTaskInstance prevTask = null;
             for (HistoricTaskInstance his : hisList) {
-                if (Long.parseLong(his.getId()) < ctx.numericTaskId) {
+                // Flowable ID 是 UUID，不能数值比较；已按 endTime 倒序，跳过当前任务，下一个即上一环节
+                if (!his.getId().equals(ctx.taskId)) {
                     prevTask = his;
                     break;
                 }
@@ -247,7 +331,7 @@ public class PendingServiceImpl implements IPendingService {
         });
         Map<String, Object> prevTask = null;
         for (Map<String, Object> his : hisList) {
-            if (Long.parseLong((String) his.get("id")) < ctx.numericTaskId) {
+            if (Long.parseLong((String) his.get("id")) < Long.parseLong(ctx.taskId)) {
                 prevTask = his;
             }
         }
@@ -284,7 +368,7 @@ public class PendingServiceImpl implements IPendingService {
         private final String taskDefKey;
         private final String procInsId;
         private final String assignee;
-        private final long numericTaskId;
+        private final String taskId;
     }
 
     @Override
@@ -323,7 +407,7 @@ public class PendingServiceImpl implements IPendingService {
     private void updatePendingStatus(Pending pending, String updateUrl, String appId, String token) {
         log.info("开始推送OA待办更新");
         String url = updateUrl + "/" + appId + "/" + token;
-        String jsonStr = JsonUtils.toJsonString(Collections.singletonList(pending));
+        String jsonStr = JSONArray.toJSONString(Collections.singletonList(pending), UPDATE_PENDING_FILTER, SerializerFeature.WriteMapNullValue);
         log.info("待办更新地址：{}，待办更新请求数据:{}", url, jsonStr);
         String result = HttpUtil.post(url, jsonStr, OA_HTTP_TIMEOUT);
         log.info("推送OA待办更新,响应数据:{}", result);
@@ -333,24 +417,23 @@ public class PendingServiceImpl implements IPendingService {
         } else {
             Map<String, String> resultMap = JsonUtils.parseObject(result,
                 new TypeReference<Map<String, String>>() {});
-            for (Map.Entry<String, String> entry : resultMap.entrySet()) {
-                String pendingCode = entry.getKey();
-                String msg = entry.getValue();
-                Pending p = findByPendingCodeAndType(pendingCode, PendingOpType.UPDATE.getCode());
-                if (p == null) {
-                    return;
+            if (resultMap != null) {
+                for (Map.Entry<String, String> entry : resultMap.entrySet()) {
+                    String msg = entry.getValue();
+                    if(pending.getPendingCode().equals(entry.getKey())){
+                        pending.setResponseMsg(msg);
+                        log.info("待办更新返回值:{} 待办ID={}", msg, pending.getId());
+                        if (msg.startsWith(OA_SUCCESS_PREFIX)) {
+                            pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                            pending.setSendTime(new Date());
+                        } else {
+                            pending.setSendStatus(SendStatus.SUCCESS.getCode());
+                            pending.setResponseMsg(msg);
+                            pending.setFailTimes(MAX_FAIL_TIMES);
+                        }
+                        saveOrUpdate(pending);
+                    }
                 }
-                p.setResponseMsg(msg);
-                log.info("待办更新返回值:{} 待办ID={}", msg, p.getId());
-                if (msg.startsWith(OA_SUCCESS_PREFIX)) {
-                    p.setSendStatus(SendStatus.SUCCESS.getCode());
-                    p.setSendTime(new Date());
-                } else {
-                    p.setSendStatus(SendStatus.SUCCESS.getCode());
-                    p.setResponseMsg(msg);
-                    p.setFailTimes(MAX_FAIL_TIMES);
-                }
-                saveOrUpdate(p);
             }
         }
     }
@@ -428,26 +511,40 @@ public class PendingServiceImpl implements IPendingService {
         pending.setOperatorType(PendingOpType.ADD.getCode());
         pending.setLastUpdateDate(now);
         // 创建时即计算 dealUrl，避免后续 job 处理时逐条查询历史变量（消除 N+1）
-        try {
+       /* try {
             String dealUrlVar = task.getTaskDefinitionKey() + "_dealUrl";
             Object dealUrlVal = flowableRuntimeService.getVariable(task.getProcessInstanceId(), dealUrlVar);
             if (dealUrlVal != null) {
-                pending.setPendingURL(dealUrlVal.toString() + "&taskId=" + pendingCode);
+                // 与 job 路径 resolveDealUrl 保持一致：拼 New_Backlog 前缀，? 替换为 & 再拼 taskId
+                String backlog = sysParamService.findValueByCode(NEW_BACKLOG_PARAM);
+                if (StringUtils.isEmpty(backlog)) {
+                    log.warn("创建待办时未配置New_Backlog，跳过pendingURL，交由job处理: pendingCode={}", pendingCode);
+                } else {
+                    pending.setPendingURL(backlog + dealUrlVal.toString().replace("?", "&") + "&taskId=" + pendingCode);
+                }
+            }else{
+                log.warn("创建待办时未获取dealUrl，将交由job处理: pendingCode={}", pendingCode);
             }
         } catch (Exception e) {
             log.warn("创建待办时获取dealUrl失败，将交由job处理: pendingCode={}", pendingCode);
-        }
+        }*/
         saveOrUpdate(pending);
         log.info("待办新增记录已创建: pendingCode={}, title={}, assignee={}", pendingCode, task.getName(), task.getAssignee());
 
-        // 同步插入 pending_group_todo（对应老框架 addGroupTodoTask）
-        addGroupTodoTaskForTask(task);
+        // 同步插入 pending_group_todo（对应老框架 addGroupTodoTask，每个任务一条，并签时各处理人各有待办）
+        // 【临时下线】新框架暂不插入 pending_group_todo，恢复时取消注释
+        // addGroupTodoTaskForTask(task);
     }
 
     /**
      * 任务创建时同步插入 pending_group_todo（对应老框架 addGroupTodoTask TaskEntity 分支）
      */
     private void addGroupTodoTaskForTask(Task task) {
+        // 维系预警流程不写入集团待办表（对应老框架 getIsWxOrder 逻辑）
+        if (isWxProcessKey(task)) {
+            log.debug("维系预警流程，跳过集团待办新增: procInstId={}, taskId={}", task.getProcessInstanceId(), task.getId());
+            return;
+        }
         String procInstId = task.getProcessInstanceId();
         String taskId = task.getId();
         Long count = pendingGroupTodoMapper.selectCount(
@@ -508,24 +605,47 @@ public class PendingServiceImpl implements IPendingService {
     }
 
     @Override
-    public void addGroupTodoTask(String procInstId) {
-        // 防重：流程完结时只加一条 'u' 类型
+    public void deleteGroupTodoTask(Task task) {
+        // 维系预警流程不写入集团待办表（对应老框架 getIsWxOrder 逻辑）
+        if (isWxProcessKey(task)) {
+            log.debug("维系预警流程，跳过集团待办删除: procInstId={}, taskId={}", task.getProcessInstanceId(), task.getId());
+            return;
+        }
+        String procInstId = task.getProcessInstanceId();
+        String taskId = task.getId();
         Long count = pendingGroupTodoMapper.selectCount(
                 new LambdaQueryWrapper<PendingGroupTodo>()
                         .eq(PendingGroupTodo::getProcInstId, procInstId)
+                        .eq(PendingGroupTodo::getTaskId, taskId)
                         .eq(PendingGroupTodo::getOperatorType, PendingOpType.UPDATE.getCode()));
         if (count > 0) {
-            log.debug("集团待办流程完结记录已存在，跳过: procInstId={}", procInstId);
+            log.debug("集团待办单任务删除记录已存在，跳过: procInstId={}, taskId={}", procInstId, taskId);
             return;
         }
         PendingGroupTodo todo = new PendingGroupTodo();
         todo.setProcInstId(procInstId);
+        todo.setTaskId(taskId);
+        // 复用 'u' 类型，靠 task_id 非空与流程完结的 'u'（无 taskId）区分
         todo.setOperatorType(PendingOpType.UPDATE.getCode());
+        todo.setPendingTitle(task.getName());
+        todo.setPendingUserId(getOaAccountByAssignee(task.getAssignee()));
         todo.setSendStatus(SendStatus.PENDING.getCode());
         todo.setFailTimes(0);
         todo.setCreateTime(new Date());
         pendingGroupTodoMapper.insert(todo);
-        log.info("集团待办同步记录已创建: procInstId={}", procInstId);
+        log.info("集团待办单任务删除记录已创建: procInstId={}, taskId={}", procInstId, taskId);
+    }
+
+    @Override
+    public Set<String> listPushedDeleteTaskIds(String procInstId) {
+        List<PendingGroupTodo> list = pendingGroupTodoMapper.selectList(
+                new LambdaQueryWrapper<PendingGroupTodo>()
+                        .eq(PendingGroupTodo::getProcInstId, procInstId)
+                        .eq(PendingGroupTodo::getOperatorType, PendingOpType.UPDATE.getCode())
+                        .isNotNull(PendingGroupTodo::getTaskId)
+                        .ne(PendingGroupTodo::getTaskId, "")
+                        .eq(PendingGroupTodo::getSendStatus, SendStatus.SUCCESS.getCode()));
+        return list.stream().map(PendingGroupTodo::getTaskId).collect(Collectors.toSet());
     }
 
     /**

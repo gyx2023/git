@@ -5,6 +5,7 @@ import com.crm.system.domain.vo.SysUsersVo;
 import com.crm.system.domain.vo.send.ConOpenResult;
 import com.crm.system.service.IDingMessageService;
 import com.crm.system.service.ISysUsersService;
+import com.crm.system.service.send.impl.ConOpenSendImpl;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,9 @@ public class ConOpenSendShortMsgJob implements InitializingBean, DisposableBean 
 
     @Resource
     private ISysUsersService iSysUsersService;
+
+    @Resource
+    private ConOpenSendImpl conOpenSendImpl;
 
     private static final int THREAD_NUM = 10;
     private static final long KEEP_ALIVE_TIME = 60L;
@@ -153,7 +157,7 @@ public class ConOpenSendShortMsgJob implements InitializingBean, DisposableBean 
                     continue;
                 }
                 XxlJobHelper.log("【短信发送任务】短信发送用户ID：{}，短信内容：{}", id, content);
-                ConOpenResult conOpenResult = ConOpenSendImpl.sendConOpenMessage(content, user.getRelationTel());
+                ConOpenResult conOpenResult = conOpenSendImpl.sendConOpenMessage(content, user.getRelationTel());
                 if ("00000".equals(conOpenResult.getCode())) {
                     message.setShortSend("1");
                     log.info("【短信发送任务】发送成功：{}", conOpenResult.getMsg());

@@ -2,11 +2,6 @@
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: false
-  url: http://localhost:9090/admin
-  instance:
-    service-host-type: IP
-  username: crm
-  password: 123456
 
 --- # xxl-job 配置
 #xxl.job:
@@ -50,16 +45,16 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:oceanbase:loadbalance://192.168.124.160:2883/zj_sj_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&autoReconnect=true&serverTimezone=Asia/Shanghai&useLocalSessionState=true&socketTimeout=3000000&connectTimeout=60000&rewriteBatchedStatements=true&useServerPrepStmts=false&allowMultiQueries=true
-          username: honghuizhe@ZJZQ_TEST#armdb4_2_hltst
-          password: PPpomns12123##
+          username: ENC(w66Pn1OADUpWE3YVxtnPr++6l7EvEo8557l9KDvzeXb+TZ3HsiBZNIT1/avaS09E3/YM1/sxJojFrvqCQQC4ig==)
+          password: ENC(1oPIrC5s+JLrR/MNK/+/NyAH1WZ3+zva6RZRBTRaOVA=)
         # 从库数据源
         slave_1:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://192.168.124.160:23306/zq_user_36?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true&trackSessionState=true
-          username: ZQ_USER_36@zqzx_mysql#zqmdb
-          password: g#40Gu$IG3HuJ
+          username: ENC(YhrFo9ATjQLmOoW4zmcixCO+9tU9fS1xkcQDKjvevX5B4HSggyLdQZj8Dz/hqq6l)
+          password: ENC(hAUzBf3hiBydK2MOeaRqq5E6XoTUtJNrgUDZaTMGPGM=)
         slave_2:
           lazy: true
           type: ${spring.datasource.type}
@@ -67,8 +62,8 @@ spring:
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:dm://192.168.124.160:5236/IOB_GOV2?columnNameUpperCase=false
-          username: IOB_GOV2
-          password: re.12aq,123l;06a!
+          username: ENC(DJEtzMYzdLocZ30iHQY/jQ9GDNnqeRbpP7m92zkEwUg=)
+          password: ENC(7wl7GJO9yQ4Xe1jReDK/0Ylh363xNWROZ8F8k6jdar4dV7dWvAru3An+DKR4VIz7)
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -190,3 +185,7 @@ kafka:
 crm:
   api:
     secret-key: aF3kL9pQ2wR8sX4mV7nC
+--- # ChinaUnicon 测试智能体临时 TLS 配置
+china-unicon-agent:
+  # 测试平台证书暂未纳入 JVM 信任库时使用；正式、准生产环境不得开启。
+  insecure-tls: true

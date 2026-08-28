@@ -290,5 +290,9 @@ public class ToppOrderBo extends BaseEntity {
      */
     private String processEngine;
 
+    /**
+     * 计划续约日期/下次联系时间（沃TV到期预警等维系场景）
+     */
+    private Date plannedRenewalDate;
 
 }

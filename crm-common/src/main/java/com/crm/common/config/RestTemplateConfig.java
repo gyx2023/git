@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP 客户端统一配置
@@ -88,6 +89,7 @@ public class RestTemplateConfig {
         PoolingHttpClientConnectionManager pool = new PoolingHttpClientConnectionManager();
         pool.setMaxTotal(200);
         pool.setDefaultMaxPerRoute(50);
+        pool.setValidateAfterInactivity(1000);
 
         CloseableHttpClient httpClient = HttpClientBuilder.create()
                 .setConnectionManager(pool)
@@ -97,6 +99,8 @@ public class RestTemplateConfig {
                         .setConnectionRequestTimeout(3000)
                         .build())
                 .setRedirectStrategy(new LaxRedirectStrategy()) // ← 允许 POST 重定向
+                .evictExpiredConnections()
+                .evictIdleConnections(30, TimeUnit.SECONDS)
                 .build();
 
         return new HttpComponentsClientHttpRequestFactory(httpClient);
@@ -122,6 +126,7 @@ public class RestTemplateConfig {
                     new PoolingHttpClientConnectionManager(registry);
             pool.setMaxTotal(200);
             pool.setDefaultMaxPerRoute(50);
+            pool.setValidateAfterInactivity(1000);
 
             CloseableHttpClient httpClient = HttpClientBuilder.create()
                     .setConnectionManager(pool)
@@ -131,6 +136,8 @@ public class RestTemplateConfig {
                             .setConnectionRequestTimeout(3000)
                             .build())
                     .setRedirectStrategy(new LaxRedirectStrategy()) // ← 允许 POST 重定向
+                    .evictExpiredConnections()
+                    .evictIdleConnections(30, TimeUnit.SECONDS)
                     .build();
 
             return new HttpComponentsClientHttpRequestFactory(httpClient);

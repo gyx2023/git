@@ -5,11 +5,13 @@ import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.mapper.warning.KdAddrWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
-import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.service.warning.WarningRecord;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.FtpCustBaseInfoDo;
 import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.mapper.SysUsersMapper;
+import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
 import com.crm.system.mapper.tcomm.TcommCustomerMapper;
 import com.crm.system.service.IMaintenanceDetailSyncService;
 import org.springframework.stereotype.Component;
@@ -48,6 +50,9 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
     private TcommCustomerMapper tcommCustomerMapper;
+
+    @Resource
+    private FtpCustBaseInfoMapper ftpCustBaseInfoMapper;
 
     @Resource
     private IMaintenanceDetailSyncService maintenanceDetailSyncService;
@@ -147,6 +152,24 @@ public class KdAddrWarningStrategy extends AbstractWarningQueryStrategy {
         record.setExtraVariable("custGrpId", getString(row.get("cust_grp_id")));
         record.setExtraVariable("oaIdDev", oaIdDev);
         record.setExtraVariable("oaNameDev", getString(row.get("oa_name_dev")));
+
+        // businessDep：对齐旧系统 setAreaAndOrgNew，用 custGrpId 查 ftp_cust_base_info.grp_busi_dept_type
+        String custGrpId = getString(row.get("cust_grp_id"));
+        if (StringUtils.isNotBlank(custGrpId) && ftpCustBaseInfoMapper != null) {
+            try {
+                FtpCustBaseInfoDo custInfo = ftpCustBaseInfoMapper.selectOne(
+                        new LambdaQueryWrapper<FtpCustBaseInfoDo>()
+                                .eq(FtpCustBaseInfoDo::getCustGrpId, Integer.parseInt(custGrpId))
+                                .last("LIMIT 1"));
+                if (custInfo != null) {
+                    String deptType = custInfo.getGrpBusiDeptType();
+                    record.setExtraVariable("businessDep",
+                            (StringUtils.isBlank(deptType) || "99".equals(deptType)) ? "22" : deptType);
+                }
+            } catch (Exception e) {
+                log.debug("【{}】查 ftp_cust_base_info businessDep 失败: custGrpId={}", getOrderTypeName(), custGrpId);
+            }
+        }
 
         return record;
     }
