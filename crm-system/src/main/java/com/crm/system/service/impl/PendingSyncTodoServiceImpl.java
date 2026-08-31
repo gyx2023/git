@@ -65,10 +65,14 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     @Resource
     private ISysOperLogService sysOperLogService;
 
-    /** 老框架（Activiti 流程）统一跳转入口 */
-    private static final String BASE_URL_OLD = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
-    /** 新框架（Flowable 流程）统一跳转入口：总部待办直达前端 /sso/checkLogin（免登后由前端跳转处理页） */
-    private static final String BASE_URL_NEW = "/zj_gec_sp_new_frontend/sso/checkLogin?menuUrl=";
+    /** 老框架统一跳转入口前缀的 sys_param 参数编码（缺省 {@link #DEFAULT_BASE_URL_OLD}） */
+    private static final String SSO_JUMP_URL_OLD_PARAM = "ssoJumpBaseUrlOld";
+    /** 新框架统一跳转入口前缀的 sys_param 参数编码（缺省 {@link #DEFAULT_BASE_URL_NEW}） */
+    private static final String SSO_JUMP_URL_NEW_PARAM = "ssoJumpBaseUrlNew";
+    /** 老框架（Activiti 流程）统一跳转入口缺省前缀 */
+    private static final String DEFAULT_BASE_URL_OLD = "/zj_gec_sp/unifyJump/loginCheck?menuUrl=";
+    /** 新框架（Flowable 流程）统一跳转入口缺省前缀：总部待办直达前端 /sso/checkLogin（免登后由前端跳转处理页） */
+    private static final String DEFAULT_BASE_URL_NEW = "/zj_gec_sp_new_frontend/sso/checkLogin?menuUrl=";
     private static final String ORDER_INFO_URL = "/order/toOrderInfo?orderId=";
     /** 并签/同环节实例视为"同一轮次"的创建时间窗口（毫秒） */
     private static final long ROUND_WINDOW_MS = 2000L;
@@ -536,12 +540,12 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         //当前处理人
         taskJson.put("WAIT_SOLVE_USER_CODE", getOaByTaskAssignee(task));
         //待办url：OP=1 删除项，Flowable 优先取 dealUrl（缺省订单查看页），Activiti 固定用订单查看页
-        String waitSolveUrl = BASE_URL_OLD + ORDER_INFO_URL + order.getId();
+        String waitSolveUrl = baseUrlOld() + ORDER_INFO_URL + order.getId();
         if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
             String dealUrl = getDealUrlStr(task);
             waitSolveUrl = dealUrl != null
-                    ? BASE_URL_NEW + dealUrl + "&taskId=" + task.get("id")
-                    : BASE_URL_NEW + ORDER_INFO_URL + order.getId();
+                    ? baseUrlNew() + dealUrl + "&taskId=" + task.get("id")
+                    : baseUrlNew() + ORDER_INFO_URL + order.getId();
         }
         taskJson.put("WAIT_SOLVE_URL", waitSolveUrl);
         //代办等级 0
@@ -591,7 +595,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
             taskJson.put("ALREADY_SOLVE_URL", buildTaskViewUrl(task, order));
         } else {
-            taskJson.put("ALREADY_SOLVE_URL", BASE_URL_OLD + ORDER_INFO_URL + order.getId());
+            taskJson.put("ALREADY_SOLVE_URL", baseUrlOld() + ORDER_INFO_URL + order.getId());
         }
         //操作标识,0：新增（已办信息对象集合不为空时，为必填）
         taskJson.put("OPERATION_STATE", "0");
@@ -612,7 +616,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
     }
 
     /**
-     * 获取 dealUrl 原始值（不含 BASE_URL / taskId 后缀），Flowable 查历史变量，Activiti 查旧表
+     * 获取 dealUrl 原始值（不含统一跳转前缀 / taskId 后缀），Flowable 查历史变量，Activiti 查旧表
      */
     private String getDealUrlStr(Map<String, Object> task) {
         String taskId = task.get("id").toString();
@@ -647,7 +651,7 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
      * 按任务来源选择统一跳转入口：Flowable 流程走新框架，Activiti 流程走老框架
      */
     private String baseUrlForTask(Map<String, Object> task) {
-        return Boolean.TRUE.equals(task.get("_fromFlowable")) ? BASE_URL_NEW : BASE_URL_OLD;
+        return Boolean.TRUE.equals(task.get("_fromFlowable")) ? baseUrlNew() : baseUrlOld();
     }
 
     /**
@@ -659,17 +663,33 @@ public class PendingSyncTodoServiceImpl implements IPendingSyncTodoService {
         String dealUrl = getDealUrlStr(task);
         if (Boolean.TRUE.equals(task.get("_fromFlowable"))) {
             if (dealUrl != null) {
-                return BASE_URL_NEW + dealUrl + "&taskId=" + task.get("id");
+                return baseUrlNew() + dealUrl + "&taskId=" + task.get("id");
             }
             // 默认处理页：/warning/toDeal?orderType=xxx&orderId=xxx&taskId=xxx（同 IWarningQueryStrategy 默认 dealUrl）
-            return BASE_URL_NEW + "/warning/toDeal?orderType=" + order.getOrderType()
+            return baseUrlNew() + "/warning/toDeal?orderType=" + order.getOrderType()
                     + "&orderId=" + order.getId() + "&taskId=" + task.get("id");
         }
         // Activiti 老框架任务：优先取 {taskDefKey}_dealUrl 变量（与老框架 SyncTodoTaskGroupService 一致），缺省用订单查看页
         if (dealUrl != null) {
-            return BASE_URL_OLD + dealUrl + "&taskId=" + task.get("id");
+            return baseUrlOld() + dealUrl + "&taskId=" + task.get("id");
         }
-        return BASE_URL_OLD + ORDER_INFO_URL + order.getId();
+        return baseUrlOld() + ORDER_INFO_URL + order.getId();
+    }
+
+    /**
+     * 老框架（Activiti 流程）统一跳转入口前缀：优先取 sys_param 参数 {@link #SSO_JUMP_URL_OLD_PARAM}，未配置时用缺省值
+     */
+    private String baseUrlOld() {
+        String url = sysParamService.findValueByCode(SSO_JUMP_URL_OLD_PARAM);
+        return StringUtils.isNotBlank(url) ? url : DEFAULT_BASE_URL_OLD;
+    }
+
+    /**
+     * 新框架（Flowable 流程）统一跳转入口前缀：优先取 sys_param 参数 {@link #SSO_JUMP_URL_NEW_PARAM}，未配置时用缺省值
+     */
+    private String baseUrlNew() {
+        String url = sysParamService.findValueByCode(SSO_JUMP_URL_NEW_PARAM);
+        return StringUtils.isNotBlank(url) ? url : DEFAULT_BASE_URL_NEW;
     }
 
     // ---- 历史任务查询（Activiti 优先，表不存在时回退 Flowable） ----
