@@ -300,6 +300,14 @@ public class WarningOrderCreateService {
             }
         }
 
+        // double_wide_second 特有：double_wide_second-date
+        if ("double_wide_second".equals(record.getOrderType())) {
+            String period = (String) extra.get("_targetDate");
+            if (period != null) {
+                procVars.put("double_wide_second-date", period);
+            }
+        }
+
         if (!procVars.isEmpty()) {
             runtimeService.setVariables(piId, procVars);
         }
