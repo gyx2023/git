@@ -96,9 +96,9 @@ public class ContractAndOpportunityPutJob {
                     String areaEng = contractAndOpportunityPutConfig.getAreaEng();
                     Integer areaId = contractAndOpportunityPutConfig.getAreaId();
 
-                    String contractIncome = areaEng + "ContractIncome" + currentDate + ".xls";//合同收入
-                    String contract = areaEng + "Contract" + currentDate + ".xls";//合同
-                    String opportunity = areaEng + "Opportunity" + currentDate + ".xls";//商机
+                    String contractIncome = areaEng + "ContractIncome" + currentDate + ".csv";//合同收入
+                    String contract = areaEng + "Contract" + currentDate + ".csv";//合同
+                    String opportunity = areaEng + "Opportunity" + currentDate + ".csv";//商机
 
                     // 使用SftpUtil直连上传（每个文件独立连接，自动管理生命周期）
                     final String configType = "contract_and_opportunity_put_job";
@@ -158,7 +158,7 @@ public class ContractAndOpportunityPutJob {
 
         File tempFile = null;
         try {
-            tempFile = File.createTempFile("contract_income_", ".xls");
+            tempFile = File.createTempFile("contract_income_", ".csv");
 
             // ✅ try-with-resources 自动关闭 ExcelWriter，无需手动 finish
             try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ContractIncomeExcelVo.class)
@@ -231,7 +231,7 @@ public class ContractAndOpportunityPutJob {
             log.info("时间参数 - nowYear: {}, lastYear: {}, nowYearMonth: {}, lastYearMonth: {}",
                 nowYear, lastYear, nowYearMonth, lastYearMonth);
 
-            tempFile = File.createTempFile("contract_statistics_", ".xls");
+            tempFile = File.createTempFile("contract_statistics_", ".csv");
 
             // ✅ try-with-resources 自动关闭
             try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ToppContractExcelVo.class)
@@ -379,7 +379,7 @@ public class ContractAndOpportunityPutJob {
 
         File tempFile = null;
         try {
-            tempFile = File.createTempFile("opportunity_", ".xls");
+            tempFile = File.createTempFile("opportunity_", ".csv");
 
             // ✅ try-with-resources 自动关闭
             try (ExcelWriter excelWriter = EasyExcel.write(tempFile, ToppOpportunityExcelVo.class)
