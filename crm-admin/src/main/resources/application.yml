@@ -155,6 +155,7 @@ security:
     # SSO自动登录接口
     - /sso/autoLogin
     - /unifyJump/loginCheck
+    - /unifyJump/checkLogin
     - /sso/portalCheck
     - /sso/uacLogin
     - /zqzt_backend/health/**
