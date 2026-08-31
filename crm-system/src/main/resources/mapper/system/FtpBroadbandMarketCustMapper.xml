@@ -30,4 +30,27 @@
         WHERE STAT_CYCLE = #{statCycle}
     </delete>
 
+    <!-- 按主键查询客户头部信息 -->
+    <select id="selectCustById" resultType="com.crm.system.domain.dao.FtpBroadbandMarketCust">
+        SELECT
+            ID_            AS id,
+            STAT_CYCLE     AS statCycle,
+            CUST_MARKETING_ID AS custMarketingId,
+            AREA_NAME      AS areaName,
+            COUNTY_NAME    AS countyName,
+            CUST_GRP_ID    AS custGrpId,
+            GRP_CODE       AS grpCode,
+            GRP_NAME       AS grpName,
+            SERV_MANAGER_ID   AS servManagerId,
+            SERV_MANAGER_NAME AS servManagerName,
+            GRP_EXPAND_TYPE   AS grpExpandType,
+            GRP_BUSI_DEPT_TYPE AS grpBusiDeptType,
+            MARKETING_TYPE AS marketingType,
+            MARKETING_NAME AS marketingName,
+            USER_SCALE     AS userScale,
+            ORDER_ID       AS orderId
+        FROM ftp_broadband_market_cust
+        WHERE ID_ = #{id}
+    </select>
+
 </mapper>

@@ -3,7 +3,7 @@ package com.crm.job.service.warning.strategy;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.StringUtils;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
-import com.crm.job.service.warning.WarningRecord;
+import com.crm.system.service.warning.WarningRecord;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.FtpBroadbandMarketCust;
 import com.crm.system.domain.dao.SysUsers;
@@ -23,7 +23,7 @@ import java.util.Map;
  * 按发展人编码（serv_manager_id）解析客户经理，转换为 WarningRecord 后由
  * WarningStartService 统一启动 single_approval 流程并创建工单。
  * <p>
- * 预警类型标识：cust_sales
+ * 预警类型标识：custSales
  *
  * @author crm
  */
@@ -38,7 +38,7 @@ public class CustSalesWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     public String getOrderType() {
-        return "cust_sales";
+        return "custSales";
     }
 
     @Override

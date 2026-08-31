@@ -3,7 +3,6 @@ package com.crm.job.service.file;
 import com.crm.job.base.AbstractFtpImportJob;
 import com.crm.job.service.warning.IWarningStartService;
 import com.crm.job.utils.GroupFileParser;
-import com.crm.job.utils.SftpWebUtil;
 import com.crm.system.domain.dao.FtpBroadbandMarketCust;
 import com.crm.system.domain.dao.FtpBroadbandMarketUser;
 import com.crm.system.mapper.FtpBroadbandMarketCustMapper;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -113,43 +113,36 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
     @Override
     protected int getBatchSize() { return 1000; }
 
-    // ==================== 覆盖 download()：使用 SftpWebUtil 下载两个文件 ====================
+    // ==================== 覆盖 download()：使用 SftpUtil 下载两个文件 ====================
 
     /**
-     * 使用 SftpWebUtil 下载客户文件 + 用户文件
+     * 使用 SftpUtil 下载客户文件 + 用户文件
      * 返回客户文件路径（基类用其解析入库）
      */
     @Override
     protected String download(String configType, String dateStr, String fileName) {
         Map<String, String> param = sysParamService.findValueMapsByType(configType);
-        SftpWebUtil ftpUtil = new SftpWebUtil(
-            param.get("sftp.username"),
-            param.get("sftp.password"),
-            param.get("sftp.host"),
-            MapUtils.getIntValue(param, "sftp.port")
-        );
+        String dataRootPath = param.get("sftp.dataRootPath");
+        if (dataRootPath != null && !dataRootPath.endsWith("/") && !dataRootPath.endsWith("\\")) {
+            dataRootPath = dataRootPath + "/";
+        }
+        String dataLocalPath = MapUtils.getString(param, "sftp.dataLocalPath");
 
         try {
             log.info("宽带专项营销下载文件开始");
-            ftpUtil.login();
-
-            String dataRootPath = param.get("sftp.dataRootPath");
-            if (dataRootPath != null && !dataRootPath.endsWith("/") && !dataRootPath.endsWith("\\")) {
-                dataRootPath = dataRootPath + "/";
-            }
             // 下载客户文件
-            String custFileDirectory = dataRootPath + dateStr;
-            String custLocalPath = MapUtils.getString(param, "sftp.dataLocalPath") + File.separator + fileName;
-            log.info("开始下载客户文件: {}", custFileDirectory + "/" + fileName);
-            ftpUtil.download(custFileDirectory, fileName, custLocalPath);
+            String custRemotePath = dataRootPath + dateStr + "/" + fileName;
+            String custLocalPath = dataLocalPath + File.separator + fileName;
+            log.info("开始下载客户文件: {}", custRemotePath);
+            sftpUtil.downloadFile(configType, custRemotePath, custLocalPath);
             log.info("客户文件下载成功: {}", custLocalPath);
 
             // 下载用户文件
             String userFileName = USER_FILE_NAME + dateStr + ".txt";
-            String userFileDirectory = dataRootPath + dateStr;
-            this.userLocalPath = MapUtils.getString(param, "sftp.dataLocalPath") + File.separator + userFileName;
-            log.info("开始下载用户文件: {}", userFileDirectory + "/" + userFileName);
-            ftpUtil.download(userFileDirectory, userFileName, this.userLocalPath);
+            String userRemotePath = dataRootPath + dateStr + "/" + userFileName;
+            this.userLocalPath = dataLocalPath + File.separator + userFileName;
+            log.info("开始下载用户文件: {}", userRemotePath);
+            sftpUtil.downloadFile(configType, userRemotePath, this.userLocalPath);
             log.info("用户文件下载成功: {}", this.userLocalPath);
 
             if (!new File(custLocalPath).exists()) {
@@ -160,8 +153,6 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         } catch (Exception e) {
             log.error("宽带专项营销文件下载失败", e);
             return null;
-        } finally {
-            ftpUtil.logout();
         }
     }
 
@@ -192,7 +183,7 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         // 3. 委托 WarningStartService 启动流程
         //  CustSalesWarningStrategy 会从 ftp_broadband_market_cust 表查询未生成订单的记录
         //  逐条启动 single_approval 流程（流程定义 key=single_approval），创建工单并设置任务变量
-        warningStartService.startByType("cust_sales", currentDateStr);
+        warningStartService.startByType("custSales", currentDateStr);
 
         log.info("【{}】完成: 客户{}条, 用户{}条", getJobName(), custCount, userCount);
     }
@@ -209,7 +200,7 @@ public class CustSalesFileJob extends AbstractFtpImportJob<FtpBroadbandMarketCus
         int total = 0;
         List<FtpBroadbandMarketUser> batch = new ArrayList<>(1000);
 
-        try (InputStreamReader isr = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+        try (InputStreamReader isr = new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8);
              BufferedReader br = new BufferedReader(isr)) {
 
             String line;
