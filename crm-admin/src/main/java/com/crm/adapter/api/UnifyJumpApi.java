@@ -92,7 +92,7 @@ public class UnifyJumpApi {
         }
         log.info("集团政企运营平台菜单链接请求: {}", queryString);
         String separator = menuUrl.contains("?") ? "&" : "?";
-        String redirectUrl = "../zj_gec_sp_new_frontend" + menuUrl + separator
+        String redirectUrl = "https://10.130.20.44:17105/zj_gec_sp_new_frontend" + menuUrl + separator
                 + "token=" + URLEncoder.encode(token, "UTF-8") + "&loginType=sso";
         log.info("unifyJump loginCheck 登录成功，重定向到: {}", redirectUrl);
         response.sendRedirect(redirectUrl);
