@@ -16,12 +16,6 @@ crm:
   mq:
     enabled: false
 
-zqzt:
-  # 政企运营平台统一跳转配置
-  jump:
-    # 新框架前端地址（/unifyJump/loginCheck 免登后重定向目标）
-    front-url: /zj_gec_sp_new_frontend
-
 captcha:
   # 页面 <参数设置> 可开启关闭 验证码校验
   # 验证码类型 math 数组计算 char 字符验证

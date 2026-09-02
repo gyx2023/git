@@ -479,7 +479,15 @@ public class PendingServiceImpl implements IPendingService {
                         .last("LIMIT " + DEFAULT_GROUP_LIMIT)
         );
     }
-
+    @Override
+    public List<PendingGroupTodo> getGroupTodoToDealList() {
+        return pendingGroupTodoMapper.selectList(
+            new LambdaQueryWrapper<PendingGroupTodo>()
+                .eq(PendingGroupTodo::getSendStatus, SendStatus.DEAL.getCode())
+                .orderByAsc(PendingGroupTodo::getId)
+                .last("LIMIT " + DEFAULT_GROUP_LIMIT)
+        );
+    }
     @Override
     public void updateGroupTodoTask(PendingGroupTodo pendingTodo) {
         pendingTodo.setSendTime(new Date());
