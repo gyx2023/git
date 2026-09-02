@@ -1,7 +1,6 @@
 package com.crm.adapter.api;
 
 import cn.dev33.satoken.annotation.SaIgnore;
-import com.crm.common.config.ZqztJumpProperties;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
@@ -40,7 +39,6 @@ public class UnifyJumpApi {
     private final OldSysSynService oldSysSynService;
     private final UniBssApiClient uniBssApiClient;
     private final ISysUserService sysUserService;
-    private final ZqztJumpProperties zqztJumpProperties;
 
     @Resource
     private ISysParamService sysParamService;
@@ -150,20 +148,6 @@ public class UnifyJumpApi {
             log.error("总部查询登录信息异常", e);
             return null;
         }
-    }
-
-    /**
-     * 新框架前端地址：走 application 配置 zqzt.jump.front-url，未配置时用当前域名 + /zqzt-frontend 兜底
-     */
-    private String frontBase(HttpServletRequest request) {
-        if (StringUtils.isNotBlank(zqztJumpProperties.getFrontUrl())) {
-            return zqztJumpProperties.getFrontUrl();
-        }
-        String port = "";
-        if (request.getServerPort() != 80 && request.getServerPort() != 443) {
-            port = ":" + request.getServerPort();
-        }
-        return request.getScheme() + "://" + request.getServerName() + port + "/zqzt-frontend";
     }
 
     private void writeError(HttpServletResponse response, String msg) throws IOException {
