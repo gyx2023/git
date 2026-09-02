@@ -45,6 +45,9 @@ public class UnifyJumpApi {
     @Resource
     private ISysParamService sysParamService;
 
+    /** 新框架统一跳转入口前缀的 sys_param 参数编码（缺省 {@link #SSO_JUMP_URL_NEW_FRONTEND_PARAM}） */
+    private static final String SSO_JUMP_URL_NEW_FRONTEND_PARAM = "ssoJumpBaseUrlNewFrontend";
+
     /**
      * 门户链接检查（对应老框架 loginCheck）
      * <p>
@@ -92,7 +95,8 @@ public class UnifyJumpApi {
         }
         log.info("集团政企运营平台菜单链接请求: {}", queryString);
         String separator = menuUrl.contains("?") ? "&" : "?";
-        String redirectUrl = "https://10.130.20.44:17105/zj_gec_sp_new_frontend" + menuUrl + separator
+        String jumpUrl = sysParamService.findValueByCode(SSO_JUMP_URL_NEW_FRONTEND_PARAM);
+        String redirectUrl = jumpUrl + menuUrl + separator
                 + "token=" + URLEncoder.encode(token, "UTF-8") + "&loginType=sso";
         log.info("unifyJump loginCheck 登录成功，重定向到: {}", redirectUrl);
         response.sendRedirect(redirectUrl);
