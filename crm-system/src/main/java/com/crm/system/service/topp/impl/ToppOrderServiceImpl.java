@@ -298,7 +298,8 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         // 宽带二次预警 / 沃TV到期预警：完成时记录结束原因与跟踪情况
         ToppOrderVo order = queryById(orderId);
         if (order != null && ("wide_second".equals(order.getOrderType())
-                || "wotv_expire_warning".equals(order.getOrderType()))) {
+                || "wotv_expire_warning".equals(order.getOrderType())
+                || "special_activity_warn".equals(order.getOrderType()))) {
             bo.setEndReason("0");
             if (followUp != null) {
                 if ("其他".equals(followUp) && otherReason != null) {
