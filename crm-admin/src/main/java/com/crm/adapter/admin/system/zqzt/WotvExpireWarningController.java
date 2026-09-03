@@ -52,17 +52,23 @@ public class WotvExpireWarningController extends BaseController {
         List<WotvExpireWarningDetailExportVo> list = new ArrayList<>();
         for (Map<String, Object> r : records) {
             WotvExpireWarningDetailExportVo vo = new WotvExpireWarningDetailExportVo();
+            vo.setAreaName(str(r, "areaName"));
+            vo.setCountyName(str(r, "countyName"));
             vo.setSvcNum(str(r, "svcNum"));
             vo.setCustName(str(r, "custName"));
             vo.setContactMan(str(r, "contactMan"));
             vo.setContactPhone(str(r, "contactPhone"));
             vo.setDeveloperName(str(r, "developerName"));
-            vo.setSchemeName(str(r, "schemeName"));
+            vo.setUserStatus(str(r, "userStatus"));
             vo.setServiceName(str(r, "serviceName"));
             vo.setProdType(str(r, "prodType"));
+            vo.setProdName(str(r, "prodName"));
+            vo.setSchemeName(str(r, "schemeName"));
             vo.setEffTime(str(r, "effTime"));
             vo.setExpTime(str(r, "expTime"));
+            vo.setIsXy(str(r, "isXy"));
             vo.setNewSchemeId(str(r, "newSchemeId"));
+            vo.setDiscntName(str(r, "discntName"));
             vo.setRenewalTime(str(r, "renewalTime"));
             vo.setNewEffTime(str(r, "newEffTime"));
             vo.setNewExpTime(str(r, "newExpTime"));
