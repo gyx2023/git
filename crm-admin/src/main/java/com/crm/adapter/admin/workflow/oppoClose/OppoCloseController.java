@@ -1,4 +1,4 @@
-package com.crm.adapter.admin.workflow.oldProject;
+package com.crm.adapter.admin.workflow.oppoClose;
 
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.entity.SysUser;

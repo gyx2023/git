@@ -1,4 +1,4 @@
-package com.crm.adapter.admin.workflow.oldProject;
+package com.crm.adapter.admin.workflow.contract;
 
 import com.crm.common.core.domain.R;
 import com.crm.common.utils.helper.LoginHelper;
@@ -10,7 +10,7 @@ import com.crm.system.service.topp.IToppContractService;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.system.service.topp.ToppContractMilestoneService;
-import com.crm.adapter.admin.workflow.oldProject.ContractAuditService.AuditSubmitParam;
+import com.crm.adapter.admin.workflow.contract.ContractAuditService.AuditSubmitParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.TaskService;
