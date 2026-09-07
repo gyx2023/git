@@ -170,8 +170,8 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     /**
      * 获取前N天的日期
      */
-    public static String getBeforeNDays(int n) {
-        return DateUtils.dateTime(DateUtils.addDays(new Date(), -n));
+    public static String getBeforeNDays(final String format, int n) {
+        return DateUtils.parseDateToStr(format, DateUtils.addDays(new Date(), -n));
     }
 
     /**
