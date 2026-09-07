@@ -64,12 +64,12 @@ public class SpecialActivityWarningBusinessContextProvider extends AbstractWarni
             extraData.put("records", new ArrayList<>());
         }
 
-        // 维系情况选项（按 orderType 过滤 special_activity_follow_up）
+        // 维系情况选项：与沃TV共用 wide_follow_up（下拉值复用沃TV同一套）
         try {
             extraData.put("followUpOptions", sysCodeService.getCodeMapByTypeAndSettingStr3(
-                    "special_activity_follow_up", "special_activity_warn"));
+                    "wide_follow_up", "wotv_expire_warning"));
         } catch (Exception e) {
-            log.warn("查询special_activity_warn维系情况选项失败", e);
+            log.warn("查询特殊活动维系情况选项失败", e);
             extraData.put("followUpOptions", new LinkedHashMap<>());
         }
     }

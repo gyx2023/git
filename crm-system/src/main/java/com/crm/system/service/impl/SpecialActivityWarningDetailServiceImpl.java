@@ -21,10 +21,9 @@ import java.util.Map;
 /**
  * 特殊活动到期预警明细 Service 实现。
  * <p>
- * 数据源自用户级通用预警表 ftp_tc_user_common_warning(warning_type=000032)。
- * 通过工单 info_id → ftp_tc_user_common_warning.id_ 查询单条预警记录，解析
- * warning_info（|| 分隔：专属活动ID|专属活动名称|生效时间|失效时间）与
- * ep_special_* 续约信息，供处理页明细表格展示。
+ * 与沃TV同构：工单 info_id 为 ftp_tc_user_cust_warning(000032 客户级)行 → 反查 main_order_flow_no
+ * → 展开 ftp_tc_user_common_warning(000032) 同主订单流水的多条用户明细。解析每条 warning_info
+ * （|| 分隔：专属活动ID|专属活动名称|生效时间|失效时间）与 ep_special_* 续约信息。
  * </p>
  *
  * @author crm
@@ -39,46 +38,53 @@ public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivity
 
     @Override
     public List<Map<String, Object>> queryRecords(Long orderId) {
-        Map<String, Object> row = queryRow(orderId);
-        if (row == null) {
+        String mainOrderFlowNo = resolveMainOrderFlowNo(orderId);
+        if (mainOrderFlowNo == null) {
             return new ArrayList<>();
         }
+        List<Map<String, Object>> rows = detailMapper.selectByMainOrderFlowNo(mainOrderFlowNo);
         List<Map<String, Object>> result = new ArrayList<>();
-        result.add(convertRecord(row));
+        for (Map<String, Object> row : rows) {
+            result.add(convertRecord(row));
+        }
         return result;
     }
 
     @Override
     public TableDataInfo<Map<String, Object>> queryPageRecords(Long orderId, PageQuery pageQuery) {
-        Map<String, Object> row = queryRow(orderId);
+        String mainOrderFlowNo = resolveMainOrderFlowNo(orderId);
         TableDataInfo<Map<String, Object>> tableDataInfo = new TableDataInfo<>(new ArrayList<>(), 0);
         tableDataInfo.setCode(HttpStatus.HTTP_OK);
         tableDataInfo.setMsg("查询成功");
-        if (row == null) {
+        if (mainOrderFlowNo == null) {
             return tableDataInfo;
         }
+        Page<Map<String, Object>> page = pageQuery.build();
+        IPage<Map<String, Object>> pageResult = detailMapper.selectByMainOrderFlowNoPage(page, mainOrderFlowNo);
         List<Map<String, Object>> result = new ArrayList<>();
-        result.add(convertRecord(row));
+        for (Map<String, Object> row : pageResult.getRecords()) {
+            result.add(convertRecord(row));
+        }
         tableDataInfo.setRows(result);
-        tableDataInfo.setTotal(1);
+        tableDataInfo.setTotal(pageResult.getTotal());
         return tableDataInfo;
     }
 
     /**
-     * 通过工单 info_id 查询特殊活动预警单条记录
+     * 工单 orderId → info_id(客户级000032行) → main_order_flow_no
      */
-    private Map<String, Object> queryRow(Long orderId) {
+    private String resolveMainOrderFlowNo(Long orderId) {
         ToppOrderVo order = orderService.queryById(orderId);
         if (order == null || order.getInfoId() == null) {
             log.warn("【special_activity_warn】工单不存在或无关联记录, orderId={}", orderId);
             return null;
         }
-        Map<String, Object> row = detailMapper.selectOneById(order.getInfoId());
-        if (row == null || row.isEmpty()) {
-            log.warn("【special_activity_warn】未找到预警记录, infoId={}, orderId={}", order.getInfoId(), orderId);
+        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        if (mainOrderFlowNo == null || mainOrderFlowNo.isEmpty()) {
+            log.warn("【special_activity_warn】未找到主订单流水号, infoId={}, orderId={}", order.getInfoId(), orderId);
             return null;
         }
-        return row;
+        return mainOrderFlowNo;
     }
 
     private Map<String, Object> convertRecord(Map<String, Object> row) {
