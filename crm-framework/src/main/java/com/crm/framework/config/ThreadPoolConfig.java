@@ -50,6 +50,29 @@ public class ThreadPoolConfig {
     }
 
     /**
+     * 应用默认异步执行器（applicationTaskExecutor）
+     * <p>
+     * Flowable 引擎初始化(springProcessEngineConfiguration)按
+     * {@code @Qualifier("applicationTaskExecutor")} 注入 AsyncListenableTaskExecutor；
+     * 若 Spring Boot 的 TaskExecutionAutoConfiguration 未提供该 bean(例如
+     * 存在其它同名前缀的 Executor 定义导致自动配置条件不满足)则启动报
+     * NoSuchBeanDefinitionException，此处显式兜底声明，保证各应用模块可正常启动。
+     * ThreadPoolTaskExecutor 实现了 AsyncListenableTaskExecutor，满足 Flowable 依赖。
+     */
+    @Bean(name = "applicationTaskExecutor")
+    public ThreadPoolTaskExecutor applicationTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(core);
+        executor.setMaxPoolSize(core * 2);
+        executor.setQueueCapacity(threadPoolProperties.getQueueCapacity());
+        executor.setKeepAliveSeconds(threadPoolProperties.getKeepAliveSeconds());
+        executor.setThreadNamePrefix("app-task-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * 带 MDC 传递的异步线程池（TraceID/SessionID 自动透传到子线程）
      */
     @Bean(name = "mdcTaskExecutor")
