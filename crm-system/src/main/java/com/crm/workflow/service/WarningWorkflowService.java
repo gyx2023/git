@@ -124,6 +124,89 @@ public class WarningWorkflowService {
     }
 
     /**
+     * 仅追加处理评注（不写任何任务本地变量 / {taskDefKey}_resultMemo）。
+     * <p>
+     * 供老系统批量等场景只记录意见、语言上不触达导出的调用方使用；
+     * comment 为空时无操作。
+     * </p>
+     */
+    public void addComment(String taskId, String processInstanceId, String comment) {
+        if (comment == null) {
+            return;
+        }
+        taskService.addComment(taskId, processInstanceId, comment);
+    }
+
+    /**
+     * 以指定 action 完成指定流程的当前待办任务（对齐老系统批量完成语义，不额外落 resultMemo）。
+     * <p>
+     * 查询流程当前待办（与闭环经 listPage 取一行，多并行任务不会抛异常）：存在则写任务本地变量
+     * action 并发 action 完成（不写 {@code {taskDefKey}_resultMemo}），返回 {@code true}；
+     * 流程无待办任务返回 {@code false}（调用方据此决定幂等/失败）。
+     * </p>
+     *
+     * @param piId    流程实例 ID
+     * @param action  action 变量值（如 agree / close / auto_close）
+     * @param comment 处理意见，可为 null
+     * @return 是否存在并完成了待办任务
+     */
+    public boolean completeFirstTaskByAction(String piId, String action, String comment) {
+        List<Task> tasks = taskService.createTaskQuery().processInstanceId(piId).listPage(0, 1);
+        if (tasks.isEmpty()) {
+            return false;
+        }
+        Task task = tasks.get(0);
+        String tId = task.getId();
+        if (comment != null) {
+            taskService.addComment(tId, task.getProcessInstanceId(), comment);
+        }
+        // 任务本地变量 action + 流程变量 action（老系统批量语义，不写 resultCode/resultMemo local）
+        taskService.setVariableLocal(tId, "action", action);
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("action", action);
+        taskService.complete(tId, vars);
+        return true;
+    }
+
+    /**
+     * 自动完结（系统闭环）指定预警流程：向当前待办任务写一组 result 本地变量并完成任务。
+     * <p>
+     * 对齐旧框架 {@code WarningCycleCloseJob}：写 {@code {taskDefKey}_resultCode/_opinion/_resultMemo}
+     * 三个任务本地变量；double_approval（两节点）用 {@code auto_close} 沿默认线直达结束，
+     * single_approval（单节点）用 {@code agree} 正常完结。进程定义判断在领域层内完成，
+     * 调用方只需提供业务字段，不接触 flowable。
+     * </p>
+     *
+     * @param piId       流程实例 ID
+     * @param resultCode 闭环结果码（业务对齐旧系统传 "0"）
+     * @param opinion    处理意见（对照旧系统传 "自动完结"）
+     * @param resultMemo 处理说明（本次处理意见）
+     * @return 是否存在并完成：流程有当前待办返回 true，无待办返回 false
+     */
+    public boolean autoCloseTask(String piId, String resultCode, String opinion, String resultMemo) {
+        Task task = taskService.createTaskQuery().processInstanceId(piId).singleResult();
+        if (task == null) {
+            return false;
+        }
+        String taskId = task.getId();
+        String tfk = task.getTaskDefinitionKey();
+        // 一组 result 本地变量（导出/闭环取读）
+        Map<String, Object> localVariables = new HashMap<>();
+        localVariables.put(tfk + "_resultCode", resultCode);
+        localVariables.put(tfk + "_opinion", opinion);
+        localVariables.put(tfk + "_resultMemo", resultMemo);
+        taskService.setVariablesLocal(taskId, localVariables);
+
+        // double_approval（两节点）用 auto_close 沿网关默认线直达结束；否则 agree 正常完结
+        Map<String, Object> variables = new HashMap<>();
+        boolean doubleApproval = task.getProcessDefinitionId() != null
+                && task.getProcessDefinitionId().startsWith("double_approval:");
+        variables.put("action", doubleApproval ? "auto_close" : "agree");
+        taskService.complete(taskId, variables);
+        return true;
+    }
+
+    /**
      * 仅追加处理意见与 {@code {taskDefKey}_resultMemo}，不完成任务（W2/W4）。
      * <p>
      * 供「跟踪中 / 转派前置」等只写评注、任务保留在待办的场景使用；comment 为空时无操作。

@@ -2,23 +2,21 @@ package com.crm.job.job.warning;
 
 import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.StringUtils;
-import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.job.mapper.warning.UserCycleCloseMapper;
 import com.crm.system.domain.dao.SysParamDo;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.topp.ToppOrderMapper;
 import com.crm.system.service.sys.ISysParamService;
+import com.crm.workflow.service.WarningWorkflowService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class WarningCycleCloseJob extends FlowServiceFactory {
+public class WarningCycleCloseJob {
 
     private static final String PARAM_TYPE = "cycle_close";
     private static final String PARAM_CODE = "cycle_close";
@@ -58,6 +56,7 @@ public class WarningCycleCloseJob extends FlowServiceFactory {
 
     private final ISysParamService sysParamService;
     private final UserCycleCloseMapper userCycleCloseMapper;
+    private final WarningWorkflowService warningWorkflowService;
 
     @Autowired
     private ToppOrderMapper toppOrderMapper;
@@ -191,29 +190,13 @@ public class WarningCycleCloseJob extends FlowServiceFactory {
             return;
         }
 
-        // 查询当前待办任务
-        Task task = taskService.createTaskQuery()
-                .processInstanceId(piId)
-                .singleResult();
-
-        if (task == null) {
+        // 引擎完成交给预警门面：查当前待办 → 写 {taskDefKey}_resultCode/_opinion/_resultMemo local
+        // → double_approval(两节点)用 auto_close 走网关默认线直达结束 / single_approval 用 agree 完结
+        boolean closed = warningWorkflowService.autoCloseTask(piId, "0", "自动完结", resultMemo);
+        if (!closed) {
             log.warn("【闭环自动完结】无待办任务, orderId={}", order.getId());
             return;
         }
-
-        // 设置本地任务变量
-        Map<String, Object> localVariables = new HashMap<>();
-        localVariables.put(task.getTaskDefinitionKey() + "_resultCode", "0");
-        localVariables.put(task.getTaskDefinitionKey() + "_opinion", "自动完结");
-        localVariables.put(task.getTaskDefinitionKey() + "_resultMemo", resultMemo);
-        taskService.setVariablesLocal(task.getId(), localVariables);
-
-        // double_approval（两节点）：用 auto_close 走网关默认线直达结束，不推进到稽核节点；
-        // single_approval（单节点）：用 agree 正常完结
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("action",
-                task.getProcessDefinitionId().startsWith("double_approval:") ? "auto_close" : "agree");
-        taskService.complete(task.getId(), variables);
 
         // 计算 endReason（对齐旧系统 getEndReason）
         String endReason = computeEndReason(order);
