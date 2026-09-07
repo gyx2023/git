@@ -26,4 +26,12 @@ public interface FtpBroadbandMarketCustMapper extends BaseMapperPlus<FtpBroadban
         "SET order_id = #{orderId} " +
         "WHERE id_ = #{id}")
     void updateCustOrderId(@Param("orderId") Integer orderId, @Param("id") Long id);
+
+    /**
+     * 按主键查询客户记录（topp_order.info_id 即为该表主键）
+     *
+     * @param id 客户主键ID
+     * @return 客户记录，不存在时为 null
+     */
+    FtpBroadbandMarketCust selectCustById(@Param("id") Integer id);
 }

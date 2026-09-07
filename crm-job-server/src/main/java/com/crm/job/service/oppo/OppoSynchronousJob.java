@@ -100,7 +100,7 @@ public class OppoSynchronousJob {
     private String validateAndProcessParam(String jobParam) {
         // 空参数：默认使用前一天
         if (StringUtils.isEmpty(jobParam)) {
-            String defaultDate = DateUtils.getBeforeNDays(1);
+            String defaultDate = DateUtils.getBeforeNDays(DateUtils.YYYY_MM_DD,1);
             log.info("【商机标讯同步任务】任务参数为空，默认同步日期：{}", defaultDate);
             return defaultDate;
         }
