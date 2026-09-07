@@ -99,6 +99,6 @@ public class HmdUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     public String buildDealUrl(Long orderId, Map<String, Object> extra) {
-        return "/hmdWarning/deal?orderId=" + orderId;
+        return "/hmdWarningUp/deal?orderId=" + orderId;
     }
 }

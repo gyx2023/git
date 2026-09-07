@@ -131,8 +131,15 @@ public class WideWarningController extends BaseController {
         if (codeInfo == null || period == null || orderFlag == null) {
             return R.fail("缺少预警参数");
         }
-        String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
-        IPage<Map<String, Object>> page = statsService.queryWideCustInfoStats(sql, pageNum, pageSize);
+        // 红名单升级预警（new_hmd_up）走红名单客户明细（order_type='hmd_warn'），其余（宽带升级等）走宽带明细
+        IPage<Map<String, Object>> page;
+        if ("new_hmd_up".equals(order.getOrderType())) {
+            String sql = statsService.buildHmdWarnCustSql(codeInfo, period, orderFlag);
+            page = statsService.queryHmdWarnCust(sql, pageNum, pageSize);
+        } else {
+            String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
+            page = statsService.queryWideCustInfoStats(sql, pageNum, pageSize);
+        }
         Map<String, Object> result = new HashMap<>();
         result.put("custList", page.getRecords());
         result.put("custTotal", page.getTotal());
