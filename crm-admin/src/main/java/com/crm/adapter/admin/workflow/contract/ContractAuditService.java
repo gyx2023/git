@@ -18,15 +18,11 @@ import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.system.service.topp.IToppMemberService;
 import com.crm.system.service.hx.HxSyncService;
+import com.crm.workflow.domain.dto.WfCurrentTaskDto;
+import com.crm.workflow.service.ToppWorkflowService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.IdentityService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.history.HistoricTaskInstance;
-import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,10 +43,7 @@ public class ContractAuditService {
     private final IToppContractService contractService;
     private final IToppOpportunityService opportunityService;
     private final IToppOrderService orderService;
-    private final TaskService taskService;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
-    private final IdentityService identityService;
+    private final ToppWorkflowService toppWorkflowService;
     private final HxSyncService hxSyncService;
     private final ISendDMessageService sendDMessageService;
     private final IToppMemberService memberService;
@@ -72,8 +65,8 @@ public class ContractAuditService {
      */
     @Transactional(rollbackFor = Exception.class)
     public String dealContractTask(AuditSubmitParam param) {
-        // 查询任务
-        Task task = taskService.createTaskQuery().taskId(param.getTaskId()).singleResult();
+        // 查询任务（引擎查询收口在商机门面）
+        WfCurrentTaskDto task = toppWorkflowService.getCurrentTask(null, param.getTaskId());
         if (task == null) {
             return "任务不存在或已完成";
         }
@@ -130,14 +123,11 @@ public class ContractAuditService {
         updateBo.setAuditUser(LoginHelper.getUserId());
         contractService.updateByBo(updateBo);
 
-        // 2. 完成 Flowable 任务
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
-        if (StringUtils.isNotBlank(param.getComment())) {
-            taskService.addComment(param.getTaskId(), param.getProcInsId(), param.getComment());
-        }
+        // 2. 完成 Flowable 任务（引擎收口在商机门面：identity 前置 + 评注 + complete，finally 清理身份）
         Map<String, Object> variables = new HashMap<>();
         variables.put("contract_flag2", 0); // 通过
-        taskService.complete(param.getTaskId(), variables);
+        toppWorkflowService.completeTaskWithUser(param.getTaskId(), param.getProcInsId(),
+                LoginHelper.getUserId(), param.getComment(), variables);
 
         // 3. 结束关联的审核工单
         // 查询 contract_audit 类型的工单
@@ -205,7 +195,7 @@ public class ContractAuditService {
      * - 查询上一个处理人（客户经理）
      * - Flowable: contract_flag2=1 → complete → 流程回到 contract_add
      */
-    private String handleAuditReject(ToppContractVo contract, Task task, AuditSubmitParam param) {
+    private String handleAuditReject(ToppContractVo contract, WfCurrentTaskDto task, AuditSubmitParam param) {
         // 1. 更新合同审核状态为"退回"
         ToppContractBo updateBo = new ToppContractBo();
         updateBo.setId(contract.getId());
@@ -213,16 +203,13 @@ public class ContractAuditService {
         contractService.updateByBo(updateBo);
 
         // 2. 查询上一个处理人（客户经理）— 从流程历史找 contract_add 任务的 assignee
-        String prevAssignee = queryPreviousAssignee(task.getProcessInstanceId(), "contract_add");
+        String prevAssignee = toppWorkflowService.queryPreviousAssignee(task.getProcessInstanceId(), "contract_add");
 
-        // 3. 添加审批意见 + 完成任务
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
-        if (StringUtils.isNotBlank(param.getComment())) {
-            taskService.addComment(param.getTaskId(), param.getProcInsId(), param.getComment());
-        }
+        // 3. 添加审批意见 + 完成任务（引擎收口在商机门面：identity 前置 + 评注 + complete，finally 清理身份）
         Map<String, Object> variables = new HashMap<>();
         variables.put("contract_flag2", 1); // 退回
-        taskService.complete(param.getTaskId(), variables);
+        toppWorkflowService.completeTaskWithUser(param.getTaskId(), param.getProcInsId(),
+                LoginHelper.getUserId(), param.getComment(), variables);
 
         String assigneeName = StringUtils.isNotBlank(prevAssignee) ? prevAssignee : "客户经理";
         return "审核不通过,已退回给" + assigneeName + "修改";
@@ -233,18 +220,15 @@ public class ContractAuditService {
      * - 查询上一个处理人（项目管理员）
      * - Flowable: contract_flag1=0 → complete → 路由回 xmgly_audit
      */
-    private String handleResubmit(Task task, AuditSubmitParam param) {
+    private String handleResubmit(WfCurrentTaskDto task, AuditSubmitParam param) {
         // 1. 查询上一个处理人（项目管理员）
-        String prevAssignee = queryPreviousAssignee(task.getProcessInstanceId(), "xmgly_audit");
+        String prevAssignee = toppWorkflowService.queryPreviousAssignee(task.getProcessInstanceId(), "xmgly_audit");
 
-        // 2. 添加审批意见 + 完成任务
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
-        if (StringUtils.isNotBlank(param.getComment())) {
-            taskService.addComment(param.getTaskId(), param.getProcInsId(), param.getComment());
-        }
+        // 2. 添加审批意见 + 完成任务（引擎收口在商机门面：identity 前置 + 评注 + complete，finally 清理身份）
         Map<String, Object> variables = new HashMap<>();
         variables.put("contract_flag1", 0); // 送审
-        taskService.complete(param.getTaskId(), variables);
+        toppWorkflowService.completeTaskWithUser(param.getTaskId(), param.getProcInsId(),
+                LoginHelper.getUserId(), param.getComment(), variables);
 
         String assigneeName = StringUtils.isNotBlank(prevAssignee) ? prevAssignee : "项目管理员";
         return "已提交至" + assigneeName + "审核";
@@ -257,7 +241,7 @@ public class ContractAuditService {
      * - Flowable: contract_flag1=1 → complete → 路由到 endEvent
      * - 划小取消同步: syscRemoveHx
      */
-    private String handleInvalid(ToppContractVo contract, Long oppoId, Task task, AuditSubmitParam param) {
+    private String handleInvalid(ToppContractVo contract, Long oppoId, WfCurrentTaskDto task, AuditSubmitParam param) {
         // 1. 更新合同为无效
         ToppContractBo updateBo = new ToppContractBo();
         updateBo.setId(contract.getId());
@@ -277,35 +261,15 @@ public class ContractAuditService {
             orderService.updateByBo(endBo);
         }
 
-        // 3. 添加审批意见 + 完成任务
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
-        if (StringUtils.isNotBlank(param.getComment())) {
-            taskService.addComment(param.getTaskId(), param.getProcInsId(), param.getComment());
-        }
+        // 3. 添加审批意见 + 完成任务（引擎收口在商机门面：identity 前置 + 评注 + complete，finally 清理身份）
         Map<String, Object> variables = new HashMap<>();
         variables.put("contract_flag1", 1); // 无效
-        taskService.complete(param.getTaskId(), variables);
+        toppWorkflowService.completeTaskWithUser(param.getTaskId(), param.getProcInsId(),
+                LoginHelper.getUserId(), param.getComment(), variables);
 
         // 4. 划小取消同步
         hxSyncService.syscRemoveHx(oppoId, contract.getId());
 
         return "已设为无效";
-    }
-
-    /**
-     * 从流程历史中查询指定 taskDefinitionKey 的上一个 assignee
-     */
-    private String queryPreviousAssignee(String processInstanceId, String taskDefinitionKey) {
-        List<HistoricTaskInstance> historicTasks = historyService.createHistoricTaskInstanceQuery()
-            .processInstanceId(processInstanceId)
-            .taskDefinitionKey(taskDefinitionKey)
-            .orderByHistoricTaskInstanceEndTime()
-            .desc()
-            .list();
-
-        if (!historicTasks.isEmpty() && historicTasks.get(0).getAssignee() != null) {
-            return historicTasks.get(0).getAssignee();
-        }
-        return null;
     }
 }

@@ -11,11 +11,10 @@ import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.system.service.topp.ToppContractMilestoneService;
 import com.crm.adapter.admin.workflow.contract.ContractAuditService.AuditSubmitParam;
+import com.crm.workflow.domain.dto.WfCurrentTaskDto;
+import com.crm.workflow.service.ToppWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.TaskService;
-import org.flowable.engine.task.Comment;
-import org.flowable.task.api.Task;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -35,8 +34,8 @@ public class ContractAuditController {
     private final IToppContractService contractService;
     private final IToppOpportunityService opportunityService;
     private final IToppOrderService orderService;
-    private final TaskService taskService;
     private final ContractAuditService contractAuditService;
+    private final ToppWorkflowService toppWorkflowService;
     private final ToppContractMilestoneService milestoneService;
 
     /**
@@ -75,28 +74,16 @@ public class ContractAuditController {
         ToppContractMilestoneVo milestone = milestoneService.getByContractId(contractId);
         result.put("milestone", milestone);
 
-        // 5. 查询当前任务信息
-        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        // 5. 查询当前任务信息（引擎查询收口在商机门面）
+        WfCurrentTaskDto task = toppWorkflowService.getCurrentTask(null, taskId);
         if (task != null) {
             result.put("taskCode", task.getTaskDefinitionKey());
-            result.put("taskName", task.getName());
+            result.put("taskName", task.getTaskName());
             result.put("processInstanceId", task.getProcessInstanceId());
         }
 
-        // 6. 查询审批意见
-        List<Comment> comments = taskService.getProcessInstanceComments(procInsId);
-        List<Map<String, Object>> commentList = new java.util.ArrayList<>();
-        if (comments != null) {
-            for (Comment c : comments) {
-                Map<String, Object> cm = new HashMap<>();
-                cm.put("taskId", c.getTaskId());
-                cm.put("message", c.getFullMessage());
-                cm.put("time", c.getTime());
-                cm.put("userId", c.getUserId());
-                cm.put("type", c.getType());
-                commentList.add(cm);
-            }
-        }
+        // 6. 查询审批意见（引擎读取收口在商机门面）
+        List<Map<String, Object>> commentList = toppWorkflowService.listProcessComments(procInsId);
         result.put("comments", commentList);
 
         result.put("taskId", taskId);
