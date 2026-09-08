@@ -36,7 +36,7 @@ public class WideSecondWarningJob {
         } else {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DATE, 15);
-            targetDate = new SimpleDateFormat("yyyy-MM-dd").format(c.getTime());
+            targetDate = new SimpleDateFormat("yyyyMMdd").format(c.getTime());
         }
         try {
             warningStartService.startByType("wide_second", targetDate);
