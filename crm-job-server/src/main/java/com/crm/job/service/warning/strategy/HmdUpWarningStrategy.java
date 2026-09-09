@@ -44,7 +44,7 @@ public class HmdUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     protected String getOrderTypeName() {
-        return "红名单升级预警";
+        return "红名单到期升级预警";
     }
 
     @Override
