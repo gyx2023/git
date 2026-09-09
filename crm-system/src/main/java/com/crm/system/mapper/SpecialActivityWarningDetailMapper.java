@@ -23,12 +23,23 @@ import java.util.Map;
 public interface SpecialActivityWarningDetailMapper {
 
     /**
-     * 按主键回查 ftp_tc_user_cust_warning 的 main_order_flow_no
+     * 新数据源：按主键回查客户级预警表 ftp_tc_user_cust_warning 的 main_order_flow_no。
      *
      * @param id 客户级预警行主键（工单 info_id）
      * @return main_order_flow_no，无则 null
      */
-    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning WHERE id_ = #{id} LIMIT 1"})
+    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning "
+            + "WHERE id_ = #{id} AND warning_type = '000032' LIMIT 1"})
+    String selectMainOrderFlowNoFromCust(@Param("id") Long id);
+
+    /**
+     * 历史数据兜底：按主键回查用户级预警表 ftp_tc_user_common_warning 的 main_order_flow_no。
+     *
+     * @param id 用户级预警行主键（历史工单 info_id）
+     * @return main_order_flow_no，无则 null
+     */
+    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_common_warning "
+            + "WHERE id_ = #{id} AND warning_type = '000032' LIMIT 1"})
     String selectMainOrderFlowNoById(@Param("id") Long id);
 
     /**
@@ -43,7 +54,7 @@ public interface SpecialActivityWarningDetailMapper {
             + "w.grp_code, w.grp_name, w.main_order_flow_no, "
             + "c.cycle_flag, c.warning_info AS cycle_warning_info "
             + "FROM ftp_tc_user_common_warning w "
-            + "LEFT JOIN ftp_tc_user_cycle_warning c ON w.order_flow_no = c.order_flow_no "
+            + "LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no AND c.id_ = (SELECT MAX(c2.id_) FROM ftp_tc_user_cycle_warning c2 WHERE c2.order_flow_no = w.order_flow_no) "
             + "WHERE w.warning_type = '000032' "
             + "AND w.main_order_flow_no = #{mainOrderFlowNo} "
             + "ORDER BY w.id_"})
@@ -61,7 +72,7 @@ public interface SpecialActivityWarningDetailMapper {
             + "w.grp_code, w.grp_name, w.main_order_flow_no, "
             + "c.cycle_flag, c.warning_info AS cycle_warning_info "
             + "FROM ftp_tc_user_common_warning w "
-            + "LEFT JOIN ftp_tc_user_cycle_warning c ON w.order_flow_no = c.order_flow_no "
+            + "LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no AND c.id_ = (SELECT MAX(c2.id_) FROM ftp_tc_user_cycle_warning c2 WHERE c2.order_flow_no = w.order_flow_no) "
             + "WHERE w.warning_type = '000032' "
             + "AND w.main_order_flow_no = #{mainOrderFlowNo} "
             + "ORDER BY w.id_"})

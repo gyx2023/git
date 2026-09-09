@@ -71,7 +71,11 @@ public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivity
     }
 
     /**
-     * 工单 orderId → info_id(客户级000032行) → main_order_flow_no
+     * 工单 orderId → info_id → main_order_flow_no。
+     * <p>
+     * 新数据 info_id 指向客户级表 ftp_tc_user_cust_warning（000032），
+     * 历史数据指向用户级表 ftp_tc_user_common_warning（000032），先新后旧兜底。
+     * </p>
      */
     private String resolveMainOrderFlowNo(Long orderId) {
         ToppOrderVo order = orderService.queryById(orderId);
@@ -79,7 +83,10 @@ public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivity
             log.warn("【special_activity_warn】工单不存在或无关联记录, orderId={}", orderId);
             return null;
         }
-        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoFromCust(order.getInfoId());
+        if (mainOrderFlowNo == null || mainOrderFlowNo.isEmpty()) {
+            mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        }
         if (mainOrderFlowNo == null || mainOrderFlowNo.isEmpty()) {
             log.warn("【special_activity_warn】未找到主订单流水号, infoId={}, orderId={}", order.getInfoId(), orderId);
             return null;

@@ -52,7 +52,11 @@ public class SpecialActivityWarningAssignStrategy implements IWarningAssignStrat
         if (detailId == null || targetUserId == null) {
             return null;
         }
-        Map<String, Object> row = assignMapper.selectSpecialActivityById(detailId);
+        Map<String, Object> row = assignMapper.selectByCustId(detailId);
+        if (row == null || row.isEmpty()) {
+            // 历史数据兜底：detail_id 仍指向用户级表 ftp_tc_user_common_warning
+            row = assignMapper.selectSpecialActivityById(detailId);
+        }
         if (row == null || row.isEmpty()) {
             log.warn("【特殊活动指派】未找到原始预警行, detailId={}", detailId);
             return null;
@@ -92,8 +96,13 @@ public class SpecialActivityWarningAssignStrategy implements IWarningAssignStrat
         ctx.setExtraVariable("phone", targetUser.getRelationTel());
         ctx.setExtraVariable("_needOrderNumber", true);
         ctx.setExtraVariable("orderCategory", "C");
+        String countyName = str(row.get("county_name"));
+        if (StringUtils.isBlank(countyName)) {
+            // 用户级表无 county_name，只有 county_id 编码
+            countyName = str(row.get("county_id"));
+        }
         ctx.setExtraVariable("areaName", str(row.get("area_name")));
-        ctx.setExtraVariable("countyName", str(row.get("county_id")));
+        ctx.setExtraVariable("countyName", countyName);
         ctx.setExtraVariable("grpCode", grpCode);
         ctx.setExtraVariable("custGrpId", custGrpId);
         // 被指派的处理人 OA 信息（供 assignSuccess 反查旧 sys_user 写 manager_id/name）

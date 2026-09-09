@@ -138,9 +138,13 @@ public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy
         record.setExtraVariable("phone", getString(userRow.get("phonenumber")));
         record.setExtraVariable("_needOrderNumber", true);
         record.setExtraVariable("orderCategory", "C");
-        // 地市/区县信息
+        // 地市/区县信息（客户级表有 county_name，历史用户级表仅有 county_id 编码）
+        String countyName = getString(row.get("county_name"));
+        if (StringUtils.isBlank(countyName)) {
+            countyName = getString(row.get("county_id"));
+        }
         record.setExtraVariable("areaName", getString(row.get("area_name")));
-        record.setExtraVariable("countyName", getString(row.get("county_id")));
+        record.setExtraVariable("countyName", countyName);
         // 维系明细写入所需字段（afterStart → writeSuccess）
         record.setExtraVariable("grpCode", grpCode);
         record.setExtraVariable("custGrpId", getString(row.get("cust_grp_id")));
