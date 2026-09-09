@@ -58,7 +58,7 @@ public class CustSalesBusinessContextProvider implements BusinessContextProvider
 
     @Override
     public boolean supports(String procDefKey, String source, ToppOrderVo order) {
-        return "single_approval".equals(procDefKey)
+        return ("double_approval".equals(procDefKey))
                 && order != null
                 && SUPPORTED_TYPES.contains(order.getOrderType());
     }
@@ -78,9 +78,16 @@ public class CustSalesBusinessContextProvider implements BusinessContextProvider
 
         // 当前任务
         Task currentTask = findCurrentTask(procInsId);
+        Integer firstPageMktResult = null;
         if (currentTask != null) {
             extraData.put("currentTask", buildCurrentTaskInfo(currentTask));
+            // 业务受理(audit_handle)节点只展示"营销成功"用户（对齐老框架 busiAcceptDeal 视图）
+            if ("audit_handle".equals(currentTask.getTaskDefinitionKey())) {
+                firstPageMktResult = 1;
+            }
         }
+        // 流程定义标识
+        extraData.put("processDefinitionKey", procDefKey);
 
         // 营销客户信息
         CustSalesVo custInfo = null;
@@ -92,9 +99,13 @@ public class CustSalesBusinessContextProvider implements BusinessContextProvider
         extraData.put("custInfo", custInfo);
         sections.add(new WfBusinessSection("custSales", "营销客户信息", 2, buildCustSection(custInfo)));
 
+        // 营销结果说明：客户经理节点(manager_handle)的 resultMemo，对应老框架 khjlqr_resultMemo。
+        // 老框架仅在业务受理节点处理页与只读查看页展示（客户经理处理页不展示），前端据此条件渲染。
+        extraData.put("resultRemark", loadManagerResultMemo(procInsId));
+
         // 用户明细首屏 + 总数
         try {
-            Map<String, Object> page = custSalesService.pageUsers(order.getId(), 1, FIRST_PAGE_SIZE, null);
+            Map<String, Object> page = custSalesService.pageUsers(order.getId(), 1, FIRST_PAGE_SIZE, firstPageMktResult);
             extraData.put("records", page.get("records"));
             extraData.put("totalCount", page.get("total"));
         } catch (Exception e) {
@@ -194,5 +205,33 @@ public class CustSalesBusinessContextProvider implements BusinessContextProvider
         } catch (Exception ignored) {
         }
         return ct;
+    }
+
+    /** 读取客户经理节点(manager_handle)的营销结果说明 memo（对应老框架 khjlqr_resultMemo），无则返回 null */
+    private String loadManagerResultMemo(String procInsId) {
+        try {
+            List<HistoricVariableInstance> list = historyService.createHistoricVariableInstanceQuery()
+                    .processInstanceId(procInsId)
+                    .variableName("manager_handle_resultMemo")
+                    .list();
+            if (list == null || list.isEmpty()) {
+                return null;
+            }
+            // 取时间最新的一条（客户经理被退回后可能多次填写）
+            HistoricVariableInstance latest = null;
+            for (HistoricVariableInstance hv : list) {
+                if (latest == null || (hv.getTime() != null && latest.getTime() != null
+                        && hv.getTime().after(latest.getTime()))) {
+                    latest = hv;
+                }
+            }
+            if (latest == null || latest.getValue() == null) {
+                return null;
+            }
+            return String.valueOf(latest.getValue());
+        } catch (Exception e) {
+            log.warn("【custSales】读取客户经理营销结果说明失败, procInsId={}", procInsId, e);
+            return null;
+        }
     }
 }

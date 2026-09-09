@@ -122,6 +122,44 @@
         </if>
     </select>
 
+    <!-- 按用户主键集合查可选的营销成功产品：推荐产品1/2，DISTINCT + UNION ALL（对齐老框架 getProductList） -->
+    <select id="selectProductOptionsByUserIds" resultType="java.util.LinkedHashMap">
+        SELECT DISTINCT MKT_PRODUCT_ID_1 AS code, MKT_PRODUCT_NAME_1 AS name
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_PRODUCT_NAME_1 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT MKT_PRODUCT_ID_2, MKT_PRODUCT_NAME_2
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_PRODUCT_NAME_2 IS NOT NULL
+    </select>
+
+    <!-- 按用户主键集合查可选营销产品（回退用）：资费/折扣产品1/2 -->
+    <select id="selectDiscntOptionsByUserIds" resultType="java.util.LinkedHashMap">
+        SELECT DISTINCT MKT_DISCNT_CODE_1 AS code, MKT_DISCNT_NAME_1 AS name
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_DISCNT_NAME_1 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT MKT_DISCNT_CODE_2, MKT_DISCNT_NAME_2
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_DISCNT_NAME_2 IS NOT NULL
+    </select>
+
     <!-- 批量更新营销结果：产品与其它产品名允许置空 -->
     <update id="updateResultByIds">
         UPDATE ftp_broadband_market_user

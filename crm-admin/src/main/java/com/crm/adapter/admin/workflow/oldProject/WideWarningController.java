@@ -11,6 +11,7 @@ import com.crm.system.domain.dao.oldsyssyn.OldSysOrgDo;
 import com.crm.system.domain.vo.SysAreaVo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.sys.SysFlowUserMapper;
+import com.crm.system.service.ICustSalesService;
 import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.stats.IStatsService;
 import com.crm.system.service.topp.IToppOrderService;
@@ -52,6 +53,7 @@ public class WideWarningController extends BaseController {
     @Resource private final IWfProcessService wfProcessService;
     @Resource private final SysFlowUserMapper sysFlowUserMapper;
     @Resource private final IStatsService statsService;
+    @Resource private final ICustSalesService custSalesService;
 
 
     /**
@@ -160,18 +162,40 @@ public class WideWarningController extends BaseController {
             return R.fail("任务不存在或已处理");
         }
         String piId = task.getProcessInstanceId();
+
+        // 决策：默认同意。双节点 custSales 客户经理节点按"是否有营销成功用户"决定走向：
+        // 有成功用户 → 进入业务受理节点（audit 变量 = 所选业务受理人员）；无成功用户 → 网关默认线直接结束。
+        // 对齐老框架 custSales.bpmn：khjlqr 完成时 isPass=1 → ywsl / isPass=0 → end。
+        Map<String, Object> vars = new HashMap<>();
+        String action = "agree";
+        ToppOrderVo order = orderService.queryById(orderId);
+        String procDefKey = resolveProcDefKey(task);
+        boolean custSalesManagerNode = order != null
+                && "custSales".equals(order.getOrderType())
+                && "manager_handle".equals(task.getTaskDefinitionKey())
+                && procDefKey != null && procDefKey.startsWith("double_approval");
+        if (custSalesManagerNode) {
+            int successUsers = custSalesService.countByResult(orderId, "1");
+            if (successUsers > 0) {
+                if (auditUserId == null) {
+                    return R.fail("本次营销成功 " + successUsers + " 个用户，请选择业务受理人员");
+                }
+                vars.put("audit", String.valueOf(auditUserId));
+            } else {
+                action = "no_success";
+            }
+        }
+        vars.put("action", action);
+        if (!custSalesManagerNode && "manager_handle".equals(task.getTaskDefinitionKey()) && auditUserId != null) {
+            vars.put("audit", String.valueOf(auditUserId));
+        }
+
         if (comment != null) {
             taskService.addComment(taskId, piId, comment);
         }
-
-        Map<String, Object> vars = new HashMap<>();
-        vars.put("action", "agree");
-        if ("manager_handle".equals(task.getTaskDefinitionKey()) && auditUserId != null) {
-            vars.put("audit", String.valueOf(auditUserId));
-        }
         // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
-        taskService.setVariableLocal(taskId, "action", "agree");
-        // 客户经理处理结果说明：写任务本地变量 {taskDefKey}_resultMemo（供导出读取）
+        taskService.setVariableLocal(taskId, "action", action);
+        // 处理结果说明：写任务本地变量
         if (comment != null) {
             taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
         }
@@ -198,6 +222,16 @@ public class WideWarningController extends BaseController {
         result.put("result", "SUCCESS");
         result.put("msg", msg);
         return R.ok(result);
+    }
+
+    /** 解析任务所属流程定义 key（PROC_DEF_ID_ 形如 key:version:xxx，取冒号前部分） */
+    private String resolveProcDefKey(Task task) {
+        String procDefId = task.getProcessDefinitionId();
+        if (procDefId == null) {
+            return null;
+        }
+        int idx = procDefId.indexOf(':');
+        return idx > 0 ? procDefId.substring(0, idx) : procDefId;
     }
 
     /**

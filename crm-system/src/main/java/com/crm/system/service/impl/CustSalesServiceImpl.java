@@ -6,6 +6,7 @@ import com.crm.system.domain.dao.FtpBroadbandMarketCust;
 import com.crm.system.domain.vo.CustSalesVo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.FtpBroadbandMarketCustMapper;
+import com.crm.system.mapper.FtpBroadbandMarketResultMapper;
 import com.crm.system.mapper.FtpBroadbandMarketUserMapper;
 import com.crm.system.service.ICustSalesService;
 import com.crm.system.service.sys.ISysCodeService;
@@ -42,6 +43,7 @@ public class CustSalesServiceImpl implements ICustSalesService {
 
     private final FtpBroadbandMarketCustMapper custMapper;
     private final FtpBroadbandMarketUserMapper userMapper;
+    private final FtpBroadbandMarketResultMapper resultMapper;
     private final IToppOrderService orderService;
     private final ISysCodeService sysCodeService;
 
@@ -142,6 +144,17 @@ public class CustSalesServiceImpl implements ICustSalesService {
     }
 
     @Override
+    public List<Map<String, Object>> getAcceptResultsByOrderId(Long orderId) {
+        FtpBroadbandMarketCust cust = resolveCust(orderId);
+        if (cust == null) {
+            return new ArrayList<>();
+        }
+        List<Map<String, Object>> list = resultMapper.selectAcceptResultByCust(
+                cust.getStatCycle(), cust.getCustGrpId(), cust.getServManagerId(), cust.getMarketingType());
+        return list == null ? new ArrayList<>() : list;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int saveResultForUsers(CustSalesResultBo bo) {
         if (bo == null || bo.getUserIds() == null || bo.getUserIds().isEmpty()) {
@@ -192,6 +205,27 @@ public class CustSalesServiceImpl implements ICustSalesService {
             map.put(PRODUCT_CODE_OTHER, otherName);
         }
         return map;
+    }
+
+    @Override
+    public List<Map<String, Object>> getProductListByUserIds(List<Integer> userIds) {
+        List<Map<String, Object>> options = new ArrayList<>();
+        if (userIds == null || userIds.isEmpty()) {
+            return options;
+        }
+        // 与老框架 getProductList(userIds) 一致：先取所选用户的推荐产品(MKT_PRODUCT_ID_1/2)，为空则回退资费产品(MKT_DISCNT_CODE_1/2)
+        List<Map<String, Object>> productList = userMapper.selectProductOptionsByUserIds(userIds);
+        List<Map<String, Object>> source = (productList != null && !productList.isEmpty())
+                ? productList : userMapper.selectDiscntOptionsByUserIds(userIds);
+        if (source != null) {
+            options.addAll(source);
+        }
+        // "其它"恒置于最后（code=1，与老框架补 {1,其它} 一致）
+        Map<String, Object> other = new HashMap<>();
+        other.put("code", PRODUCT_CODE_OTHER);
+        other.put("name", "其它");
+        options.add(other);
+        return options;
     }
 
     private String trimToNull(String value) {

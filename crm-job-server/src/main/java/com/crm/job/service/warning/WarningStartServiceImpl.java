@@ -240,7 +240,8 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
             return;
         }
         Map<String, Object> vars = new HashMap<>();
-        vars.put("audit_handle_name", "稽核人员处理");
+        // 第二节点显示名由策略决定：稽核类预警默认"稽核人员处理"；custSales 为"业务受理"
+        vars.put("audit_handle_name", strategy.getSecondNodeName());
         vars.put("audit_handle_dealUrl", strategy.buildDealUrl(orderBo.getId(), extra));
         vars.put("audit_handle_infoId", String.valueOf(orderBo.getId()));
         vars.put("audit_handle_infoType", "order");

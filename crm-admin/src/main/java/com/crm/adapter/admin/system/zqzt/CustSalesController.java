@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -89,5 +90,25 @@ public class CustSalesController extends BaseController {
         result.put("code", "success");
         result.put("successUsers", custSalesService.countByResult(orderId, "1"));
         return R.ok(result);
+    }
+
+    /**
+     * 查询"营销成功产品"可选列表（对齐老框架 getProductList(userIds)）
+     *
+     * @param userIds ftp_broadband_market_user.ID_ 集合
+     */
+    @GetMapping("/productOptions")
+    public R<List<Map<String, Object>>> productOptions(@RequestParam("userIds") List<Integer> userIds) {
+        return R.ok(custSalesService.getProductListByUserIds(userIds));
+    }
+
+    /**
+     * 查询"业务受理结果"明细（受理结果文件回传，流程结束后在详情中展示）
+     *
+     * @param orderId 工单ID
+     */
+    @GetMapping("/acceptResults")
+    public R<List<Map<String, Object>>> acceptResults(@RequestParam("orderId") Long orderId) {
+        return R.ok(custSalesService.getAcceptResultsByOrderId(orderId));
     }
 }

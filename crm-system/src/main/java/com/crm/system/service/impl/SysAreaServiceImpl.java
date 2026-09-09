@@ -332,14 +332,13 @@ public class SysAreaServiceImpl implements ISysAreaService {
             return new ArrayList<>();
         }
         if ("一级".equals(area.getType())) {
+            // 省一级：不限区域
             return null;
         }
-        List<Long> areaIds = new ArrayList<>();
-        areaIds.add(area.getId());
-        if ("二级".equals(area.getType())) {
-            appendChildAreaIds(areaIds, area.getId());
-        }
-        return areaIds;
+        // 二级/三级均放宽到"整个地市（含下辖区县）"：
+        // 对齐老框架 byCustManagerSql(type='all_city')——操作人归属三级(区县)时同样能选到同地市其他区县客户经理。
+        // 该方法仅被 /wideWarning/transferList 使用，不影响其他数据范围。
+        return resolveCityLevelScope(areaId);
     }
 
     private void appendChildAreaIds(List<Long> areaIds, Long parentId) {
