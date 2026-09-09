@@ -8,7 +8,6 @@ import com.crm.common.enums.order.ProcessEngineEnum;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.utils.StringUtils;
-import com.crm.flowable.factory.FlowServiceFactory;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.topp.ToppOrderUp;
 import com.crm.system.mapper.SysUsersMapper;
@@ -37,7 +36,7 @@ import java.util.concurrent.*;
  */
 @Slf4j
 @Service
-public class WarningStartServiceImpl extends FlowServiceFactory implements IWarningStartService {
+public class WarningStartServiceImpl implements IWarningStartService {
 
     /** single_approval 流程定义标识 */
     private static final String PROCESS_KEY = "single_approval";
@@ -247,7 +246,7 @@ public class WarningStartServiceImpl extends FlowServiceFactory implements IWarn
         if (StringUtils.isNotBlank(record.getCustName())) {
             vars.put("audit_handle_custName", record.getCustName());
         }
-        runtimeService.setVariables(piId, vars);
+        warningOrderCreateService.setProcessVariables(piId, vars);
     }
 
     /**

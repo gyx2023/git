@@ -321,4 +321,21 @@ public class WarningOrderCreateService {
         }
         return false;
     }
+
+    /**
+     * 给已运行的流程实例追加（做展示类）流程变量
+     * <p>
+     * 供建单方在启动后对两节点流程预置稽核节点展示变量（audit_handle_* 等）使用，
+     * 将 flowable 引擎调用限定在领域层，调用方无需接触 RuntimeService。
+     * </p>
+     *
+     * @param piId 流程实例 ID
+     * @param vars 待写入的流程变量；为空时直接返回
+     */
+    public void setProcessVariables(String piId, Map<String, Object> vars) {
+        if (piId == null || vars == null || vars.isEmpty()) {
+            return;
+        }
+        runtimeService.setVariables(piId, vars);
+    }
 }

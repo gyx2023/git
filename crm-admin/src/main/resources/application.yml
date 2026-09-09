@@ -270,7 +270,7 @@ xss:
 # 全局线程池相关配置
 thread-pool:
   # 是否开启线程池
-  enabled: false
+  enabled: true
   # 队列最大长度
   queueCapacity: 128
   # 线程池维护线程所允许的空闲时间
