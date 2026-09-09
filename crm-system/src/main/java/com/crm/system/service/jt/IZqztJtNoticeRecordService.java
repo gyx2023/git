@@ -38,6 +38,9 @@ public interface IZqztJtNoticeRecordService {
      */
     Boolean insertByBo(ZqztJtNoticeRecordBo bo);
 
+    /** 只更新本次通知的请求超时状态。 */
+    boolean updateRequestTimeoutStatus(Long id, Integer status);
+
     Boolean saveNoticeRecord(ZqztJtNoticeRecordDo zqztJtNoticeRecordDo);
 
     /**
