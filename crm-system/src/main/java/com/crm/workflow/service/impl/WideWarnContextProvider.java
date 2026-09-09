@@ -46,10 +46,12 @@ public class WideWarnContextProvider extends AbstractWideWarnContextProvider {
                                    Map<String, Object> procVars, ToppOrderVo order) {
         super.enrichExtraData(ctx, extraData, procVars, order);
         // C00002 首次预警：补充跟踪情况选项（对齐 WotvExpireWarningBusinessContextProvider）
+        // sys_code 约定：Wide 维系情况独立 type='Wide'（setting_str3='Wide'），不复用老框架
+        // 共用的 type='wide_follow_up'（那 13 条中文码属老宽带系，仍在被老框架 ACTIVITI 单使用）
         if (order != null && "Wide".equals(order.getOrderType())) {
             try {
                 extraData.put("followUpOptions",
-                        sysCodeService.getCodeMapByTypeAndSettingStr3("wide_follow_up", "Wide"));
+                        sysCodeService.getCodeMapByTypeAndSettingStr3("Wide", "Wide"));
             } catch (Exception e) {
                 log.warn("查询宽带到期预警跟踪情况选项失败", e);
                 extraData.put("followUpOptions", new LinkedHashMap<>());
