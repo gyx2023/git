@@ -1,0 +1,11 @@
+#
+# TLS 安全属性覆盖（追加模式，配合 JVM 参数 -Djava.security.properties=<本文件>）
+#
+# 背景：总部 UAC SSO（uac-sso-sdk）硬编码使用 TLSv1(TLS 1.0) 与服务端交互；
+# OpenJDK 8（8u201 之后）默认 jdk.tls.disabledAlgorithms 禁用 TLSv1/TLSv1.1，
+# 导致 SSO 调用报 TLS 握手问题。
+# 本文件在默认 java.security 基础上覆盖 jdk.tls.disabledAlgorithms，
+# 仅恢复 TLSv1 / TLSv1.1 / 3DES 等老密码套件，其余安全限制保持默认。
+#
+jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, MD5withRSA, DH keySize < 1024, \
+    EC keySize < 224, anon, NULL, ECDH
