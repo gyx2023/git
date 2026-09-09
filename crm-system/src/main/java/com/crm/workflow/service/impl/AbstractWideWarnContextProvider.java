@@ -9,9 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
 /**
- * 宽带/红名单升级预警公共基类
+ * 宽带预警/宽带升级预警公共基类
  * <p>
- * 共享 wide_second_new 模块的流程变量和客户列表/话术统计查询逻辑。
+ * 共享 wide_second_new 模块的流程变量和宽带客户列表/话术统计查询逻辑（order_type='Wide'）。
  * 子类只需声明订单类型集合和区块信息。
  * </p>
  *
