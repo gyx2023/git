@@ -73,4 +73,15 @@ public interface ISysCodeService {
      * @return LinkedHashMap，key为code，value为name
      */
     LinkedHashMap<String, String> getCodeMapByTypeAndSettingStr3(String type, String settingStr3);
+
+    /**
+     * 根据类型查询编码列表，并按 settingStr3 分组聚合。
+     * <p>
+     * 用于"维系情况"下拉：settingStr3 作为业务分组（如 1=完成 2=跟踪中 3=转派），
+     * 返回 {settingStr3: {code: name}} 结构，供前端按 action 一次取对应组。
+     * </p>
+     * @param type 编码类型
+     * @return LinkedHashMap，key=settingStr3，value={code:name}
+     */
+    LinkedHashMap<String, LinkedHashMap<String, String>> getCodeMapGroupBySettingStr3(String type);
 }

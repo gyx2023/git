@@ -175,7 +175,8 @@ public class WideWarningController extends BaseController {
             // 维系情况/时间按本次提交覆盖（含清空旧值）
             ToppOrderVo endedOrder = orderService.queryById(orderId);
             if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
-                    || "wide_second".equals(endedOrder.getOrderType()))) {
+                    || "wide_second".equals(endedOrder.getOrderType())
+                    || "special_activity_warn".equals(endedOrder.getOrderType()))) {
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
             }
             msg = "该流程已完成";
@@ -380,7 +381,8 @@ public class WideWarningController extends BaseController {
                     orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
                     // 维系情况/时间按本次提交覆盖（含清空旧值）
                     if ("wotv_expire_warning".equals(order.getOrderType())
-                            || "wide_second".equals(order.getOrderType())) {
+                            || "wide_second".equals(order.getOrderType())
+                            || "special_activity_warn".equals(order.getOrderType())) {
                         orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
                     }
                 }
