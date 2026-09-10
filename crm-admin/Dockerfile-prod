@@ -18,7 +18,7 @@ EXPOSE ${SERVER_PORT}
 
 ADD ./crm-admin/target/crm-admin.jar ./app.jar
 # TLS安全属性覆盖（恢复TLSv1/TLSv1.1，解决总部UAC SSO硬编码TLSv1在OpenJDK下握手失败）
-ADD ../ssl/tls-override.security /crm/server/ssl/tls-override.security
+ADD ./ssl/tls-override.security /crm/server/ssl/tls-override.security
 
 ENTRYPOINT ["java", \
             "-Djava.security.egd=file:/dev/./urandom", \
