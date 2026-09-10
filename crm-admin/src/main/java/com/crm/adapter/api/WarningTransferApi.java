@@ -64,7 +64,7 @@ public class WarningTransferApi {
             try {
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
-                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(null, order.getPiId());
+                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(order.getPiId(),null);
                 if (task == null) { fail++; continue; }
                 if (comment != null) {
                     warningWorkflowService.addComment(task.getTaskId(), task.getProcessInstanceId(), comment);
