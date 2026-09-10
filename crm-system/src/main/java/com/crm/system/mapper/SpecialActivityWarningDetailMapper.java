@@ -29,7 +29,7 @@ public interface SpecialActivityWarningDetailMapper {
      * @return main_order_flow_no，无则 null
      */
     @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning "
-            + "WHERE id_ = #{id} AND warning_type = '000032' LIMIT 1"})
+            + "WHERE id_ = #{id}"})
     String selectMainOrderFlowNoFromCust(@Param("id") Long id);
 
     /**
@@ -39,7 +39,7 @@ public interface SpecialActivityWarningDetailMapper {
      * @return main_order_flow_no，无则 null
      */
     @Select({"SELECT main_order_flow_no FROM ftp_tc_user_common_warning "
-            + "WHERE id_ = #{id} AND warning_type = '000032' LIMIT 1"})
+            + "WHERE id_ = #{id}"})
     String selectMainOrderFlowNoById(@Param("id") Long id);
 
     /**

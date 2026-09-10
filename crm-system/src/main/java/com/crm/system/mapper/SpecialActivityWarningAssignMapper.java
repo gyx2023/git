@@ -27,9 +27,7 @@ public interface SpecialActivityWarningAssignMapper {
     @Select({"SELECT w.id_, w.grp_name, w.grp_code, w.oa_id_dev, w.oa_name_dev, "
             + "w.serv_manager_id, w.warning_type, w.area_name, w.county_name, w.cust_grp_id "
             + "FROM ftp_tc_user_cust_warning w "
-            + "WHERE w.id_ = #{id} "
-            + "AND w.warning_type = '000032' "
-            + "LIMIT 1"})
+            + "WHERE w.id_ = #{id}"})
     Map<String, Object> selectByCustId(@Param("id") Long id);
 
     /**
@@ -41,8 +39,6 @@ public interface SpecialActivityWarningAssignMapper {
     @Select({"SELECT w.id_, w.grp_name, w.grp_code, w.oa_id_dev, w.oa_name_dev, "
             + "w.serv_manager_id, w.warning_type, w.area_name, w.county_id, w.cust_grp_id "
             + "FROM ftp_tc_user_common_warning w "
-            + "WHERE w.id_ = #{id} "
-            + "AND w.warning_type = '000032' "
-            + "LIMIT 1"})
+            + "WHERE w.id_ = #{id}"})
     Map<String, Object> selectSpecialActivityById(@Param("id") Long id);
 }
