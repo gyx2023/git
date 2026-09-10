@@ -2,6 +2,7 @@ package com.crm.workflow.service;
 
 import cn.hutool.core.io.IoUtil;
 import com.crm.common.exception.ServiceException;
+import com.crm.common.utils.StringUtils;
 import com.crm.flowable.utils.ModelUtils;
 import com.crm.workflow.domain.dto.WfCurrentTaskDto;
 import lombok.RequiredArgsConstructor;
@@ -106,7 +107,7 @@ public class ToppWorkflowService {
      * 评注 + complete（不设置身份，供已是登录上下文内直接完成的链路复用）。
      */
     private void completeWithVariables(String taskId, String procInsId, String comment, Map<String, Object> variables) {
-        if (comment != null) {
+        if (StringUtils.isNotBlank(comment)) {
             taskService.addComment(taskId, procInsId, comment);
         }
         taskService.complete(taskId, variables);
