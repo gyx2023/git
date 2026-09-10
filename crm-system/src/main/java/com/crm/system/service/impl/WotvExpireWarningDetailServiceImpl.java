@@ -101,6 +101,8 @@ public class WotvExpireWarningDetailServiceImpl implements IWotvExpireWarningDet
         record.put("id", toLong(row.get("id_")));
         record.put("svcNum", getString(row.get("svc_num")));
         record.put("custName", getString(row.get("cust_name")));
+        record.put("areaName", getString(row.get("area_name")));
+        record.put("countyName", getString(row.get("county_name")));
         record.put("developerName", getString(row.get("developer_name")));
         record.put("developerId", getString(row.get("developer_id")));
         record.put("prodName", getString(row.get("prod_name")));
@@ -122,7 +124,8 @@ public class WotvExpireWarningDetailServiceImpl implements IWotvExpireWarningDet
             record.put("expTime",         parts.length > 6 ? parts[6] : null);
         }
 
-        // 解析 cycle_warning_info（|| 分隔）：续费活动ID|续约时间|续约活动生效时间|续约活动失效时间
+        // 解析 cycle_warning_info（|| 分隔）：
+        // 续费活动ID|续约时间|续约活动生效时间|续约活动失效时间|续费活动名称(Discnt_name)|是否续约(is_xy)
         String cycleInfo = getString(row.get("cycle_warning_info"));
         if (cycleInfo != null && !cycleInfo.isEmpty()) {
             String[] parts = cycleInfo.split("\\|\\|");
@@ -130,8 +133,29 @@ public class WotvExpireWarningDetailServiceImpl implements IWotvExpireWarningDet
             record.put("renewalTime",      parts.length > 1 ? parts[1] : null);
             record.put("newEffTime",       parts.length > 2 ? parts[2] : null);
             record.put("newExpTime",       parts.length > 3 ? parts[3] : null);
+            record.put("discntName",       parts.length > 4 ? parts[4] : null);
+            // is_xy：1=是，0=否（展示转换）
+            String rawIsXy = parts.length > 5 ? parts[5] : null;
+            record.put("isXy", toYesNo(rawIsXy));
         }
         return record;
+    }
+
+    /**
+     * is_xy 值展示转换：1=是，0=否；其余原样返回（避免误报空值）。
+     */
+    private String toYesNo(String v) {
+        if (v == null) {
+            return null;
+        }
+        String t = v.trim();
+        if ("1".equals(t)) {
+            return "是";
+        }
+        if ("0".equals(t)) {
+            return "否";
+        }
+        return v;
     }
 
     private String getString(Object v) {

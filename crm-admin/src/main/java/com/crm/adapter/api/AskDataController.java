@@ -1,5 +1,6 @@
 package com.crm.adapter.api;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.askdata.client.HiAgentClient;
 import com.crm.askdata.model.*;
 import com.crm.askdata.service.AskDataEmbedRequestValidator;
@@ -51,6 +52,7 @@ public class AskDataController extends BaseController {
      * @return SseEmitter
      */
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @SaIgnore
     public SseEmitter chatStream(
         @RequestParam String query,
         @RequestParam(required = false) String pageCode,

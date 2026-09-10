@@ -47,7 +47,7 @@ public final class ZqztLedgerObMergeUtil {
     /**
      * 宽带账号与是否利旧取值：
      * 1. 利旧口径(textField_ahdM4O0A)有值 → 默认利旧，账号取该值
-     * 2. 否则新装口径(sl08md.textField_90QNngmC / 04049f.textField_GYjOc1Vy)有值 → 默认新装，账号取该值
+     * 2. 否则新装口径(sl08md.textField_90QNngmC 或 textField_YkrgCq0G / 04049f.textField_GYjOc1Vy 或 textField_IIPTA5sx)有值 → 默认新装，账号取该值
      * 3. 两者均无值 → 是否利旧与账号均留空，由用户手工填写
      */
     private static void mergeBroadband(ZqztLedgerInfoVo vo, ZqztOrderInfoObVo r1, ZqztOrderInfoObVo r2) {

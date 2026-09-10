@@ -6,6 +6,7 @@ import com.crm.common.core.service.UserService;
 import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.StringUtils;
+import com.crm.common.utils.DateUtils;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.core.domain.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -20,13 +21,15 @@ import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.domain.dao.topp.ToppOrder;
 import com.crm.system.mapper.topp.ToppOrderMapper;
+import com.crm.system.service.send.ISendDMessageService;
 import com.crm.system.service.topp.IToppOrderService;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -47,6 +50,8 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     private UserService userService;
     @Resource
     private com.crm.system.mapper.SysUsersMapper sysUsersMapper;
+    @Resource
+    private ISendDMessageService sendDMessageService;
 
     /**
      * 查询【请填写功能名称】
@@ -224,6 +229,23 @@ public class ToppOrderServiceImpl implements IToppOrderService {
                 nextActorName = "";
             }
         }
+
+        // 转派后给新处理人发钉钉通知（对齐旧系统 NewActivitiService.completeTaskByUserId 的 initNoticeMessage）。
+        // 仅对二次预警类型(wide_second / double_wide_second)发送，避免影响其它预警类型或普通订单转派
+        try {
+            if (isSecondWarningType(order.getOrderType()) && targetUserId != null && sendDMessageService != null) {
+                String notice = DateUtils.dateTimeNow(DateUtils.YYYY_MM_DD_HH_MM_SS)
+                        + " 订单[" + order.getOrderName() + "]" + order.getOrderNumber()
+                        + ":处理完成，下一步由[" + nextActorName + "]进行处理";
+                // initNoticeMessage 内部会对 userIds 调用 clear()/addAll()，必须传入可变 List
+                List<Integer> noticeUsers = new ArrayList<>();
+                noticeUsers.add(targetUserId.intValue());
+                sendDMessageService.initNoticeMessage(noticeUsers, notice);
+            }
+        } catch (Exception e) {
+            log.error("转派后发送钉钉通知失败, orderId={}", orderId, e);
+        }
+
         return nextActorName;
     }
 
@@ -295,10 +317,13 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         bo.setStatus(OrderStatusEnum.END.getCode());
         bo.setBatchFlag(0);
 
-        // 宽带二次预警 / 沃TV到期预警：完成时记录结束原因与跟踪情况
+        // 宽带二次预警 / 双线二次预警 / 沃TV到期预警：完成时记录结束原因与跟踪情况
+        // 2026-08-28 双线到期二次预警迁移补充：double_wide_second 同样记录 end_reason/wide_result
         ToppOrderVo order = queryById(orderId);
         if (order != null && ("wide_second".equals(order.getOrderType())
-                || "wotv_expire_warning".equals(order.getOrderType()))) {
+                || "double_wide_second".equals(order.getOrderType())
+                || "wotv_expire_warning".equals(order.getOrderType())
+                || "special_activity_warn".equals(order.getOrderType()))) {
             bo.setEndReason("0");
             if (followUp != null) {
                 if ("其他".equals(followUp) && otherReason != null) {
@@ -327,6 +352,13 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         if (whiteList.indexOf(seg) < 0) {
             whiteList.append(userId).append(",");
         }
+    }
+
+    /**
+     * 是否宽带/双线二次预警类型：转派时给新处理人发钉钉通知（transferOrder）仅针对此类。
+     */
+    private boolean isSecondWarningType(String orderType) {
+        return "wide_second".equals(orderType) || "double_wide_second".equals(orderType);
     }
 
 }

@@ -11,7 +11,8 @@ import lombok.Getter;
 public enum SendStatus {
     PENDING("0", "待发送"),
     SUCCESS("1", "成功"),
-    FAIL("2", "失败");
+    FAIL("2", "失败"),
+    DEAL("4", "手工待处理");
 
     private final String code;
     private final String info;

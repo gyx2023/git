@@ -1,5 +1,6 @@
 package com.crm.adapter.api;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.askdata.service.ResultDataReferenceService;
 import com.crm.askdata.service.HiAgentSchemaService;
 import com.crm.common.core.controller.BaseController;
@@ -38,6 +39,7 @@ public class ToolSchemaController extends BaseController {
      * @return 工具 Schema 列表
      */
     @GetMapping("/schemas")
+    @SaIgnore
     public R<List<Map<String, Object>>> getAllSchemas(
         @RequestParam(required = false) String pageCode,
         @RequestHeader(value = "pageCode", required = false) String pageCodeHeader
@@ -55,6 +57,7 @@ public class ToolSchemaController extends BaseController {
     }
 
     @PostMapping("/schemasnew")
+    @SaIgnore
     public R<List<Map<String, Object>>> getAllSchemasNew(
         @RequestBody(required = false) Map<String, Object> request,
         @RequestParam(required = false) String pageCode,
@@ -140,6 +143,7 @@ public class ToolSchemaController extends BaseController {
      * 此路径用于内网工作流调用，dataRef 是短期随机引用。
      */
     @PostMapping(value = "resultdata")
+    @SaIgnore
     public R<Object> getResultData(
         @RequestBody(required = false) Map<String, Object> request
     ) {
