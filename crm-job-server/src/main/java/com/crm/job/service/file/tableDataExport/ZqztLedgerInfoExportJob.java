@@ -141,7 +141,7 @@ public class ZqztLedgerInfoExportJob extends AbstractTableDataExporter<ZqztLedge
                 record.getCloudAccount(), record.getCloudPassword(), record.getCloudOrgId(), record.getCloudAccessKey(),
                 record.getCloudVisionPackageId(), record.getInfoEntryStatus(), record.getFullProcessDate(), record.getStatus(),
                 record.getRemark(), record.getCreateTime(), record.getUpdateTime(), record.getCreatedBy(), record.getUpdatedBy(),
-                record.getFlameGuardianSyn(), record.getIsValid()
+                record.getIsValid()
         };
     }
 }

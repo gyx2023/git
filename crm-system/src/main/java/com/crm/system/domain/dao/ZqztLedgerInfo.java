@@ -214,9 +214,6 @@ public class ZqztLedgerInfo implements Serializable {
     /** 更新人员工号 */
     private String updatedBy;
 
-    /** 同步火焰卫士状态(0-默认，1-待同步，2-同步中，3-同步成功，4-同步失败) */
-    private String flameGuardianSyn;
-
     /** 是否有效(0失效/1有效) */
     private String isValid;
 }

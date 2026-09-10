@@ -13,7 +13,7 @@
         broadband_construct_status, broadband_sporadic_order_no, broadband_account,
         broadband_finish_date, cloud_account, cloud_password, cloud_org_id, cloud_access_key,
         cloud_vision_package_id, info_entry_status, full_process_date, status, remark,
-        create_time, update_time, created_by, updated_by, flame_guardian_syn, is_valid
+        create_time, update_time, created_by, updated_by, is_valid
     </sql>
 
     <select id="selectAllForExportCount" resultType="java.lang.Long">
