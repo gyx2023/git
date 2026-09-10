@@ -64,10 +64,10 @@ public class SpecialActivityWarningBusinessContextProvider extends AbstractWarni
             extraData.put("records", new ArrayList<>());
         }
 
-        // 维系情况选项：特殊活动独立下拉（与沃TV wide_follow_up 分开）
+        // 维系情况选项：特殊活动独立下拉，按 setting_str3(1=完成 2=跟踪中 3=转派)分组返回
         try {
-            extraData.put("followUpOptions", sysCodeService.getCodeMapByTypeAndSettingStr3(
-                    "special_activity_follow_up", "special_activity_warn"));
+            extraData.put("followUpOptions", sysCodeService.getCodeMapGroupBySettingStr3(
+                    "special_activity_warn"));
         } catch (Exception e) {
             log.warn("查询特殊活动维系情况选项失败", e);
             extraData.put("followUpOptions", new LinkedHashMap<>());
