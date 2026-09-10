@@ -2,6 +2,43 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqztLedgerInfoMapper">
 
+    <sql id="LedgerInfoExportColumns">
+        id, order_no, sign_date, order_create_time, city_id, district_id, street_id, industry_id,
+        company_name, credit_code, reg_address, actual_address, sign_routes, special_scene,
+        company_principal, principal_phone, safety_officer1, safety_officer1_phone,
+        safety_officer2, safety_officer2_phone, construct_contact, construct_contact_phone,
+        unicom_manager, unicom_manager_phone, camera_is_new_install, camera_purchase_type,
+        camera_install_date, camera_account, camera_finish_date, broadband_is_reuse,
+        broadband_is_sporadic, broadband_sporadic_plan_date, broadband_sporadic_actual_date,
+        broadband_construct_status, broadband_sporadic_order_no, broadband_account,
+        broadband_finish_date, cloud_account, cloud_password, cloud_org_id, cloud_access_key,
+        cloud_vision_package_id, info_entry_status, full_process_date, status, remark,
+        create_time, update_time, created_by, updated_by, flame_guardian_syn, is_valid
+    </sql>
+
+    <select id="selectAllForExportCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM zqzt_ledger_info
+    </select>
+
+    <select id="selectAllForExportMinId" resultType="java.lang.Long">
+        SELECT MIN(id)
+        FROM zqzt_ledger_info
+    </select>
+
+    <select id="selectAllForExportMaxId" resultType="java.lang.Long">
+        SELECT MAX(id)
+        FROM zqzt_ledger_info
+    </select>
+
+    <select id="selectAllForExportByRange" resultType="com.crm.system.domain.dao.ZqztLedgerInfo">
+        SELECT <include refid="LedgerInfoExportColumns"/>
+        FROM zqzt_ledger_info
+        WHERE id &gt;= #{startId}
+          AND id &lt; #{endId}
+        ORDER BY id ASC
+    </select>
+
     <select id="selectPageList" resultType="com.crm.system.domain.vo.ZqztLedgerInfoVo">
         select id, order_no, sign_date, order_create_time, city_id, district_id, street_id, industry_id,
                company_name, credit_code, reg_address, actual_address, sign_routes,
