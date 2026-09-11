@@ -44,7 +44,7 @@ public class HmdUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     protected String getOrderTypeName() {
-        return "红名单升级预警";
+        return "红名单到期升级预警";
     }
 
     @Override
@@ -99,6 +99,6 @@ public class HmdUpWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Override
     public String buildDealUrl(Long orderId, Map<String, Object> extra) {
-        return "/hmdWarning/deal?orderId=" + orderId;
+        return "/hmdWarningUp/deal?orderId=" + orderId;
     }
 }

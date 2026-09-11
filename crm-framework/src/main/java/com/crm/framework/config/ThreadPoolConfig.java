@@ -37,7 +37,16 @@ public class ThreadPoolConfig {
     @Autowired
     private ThreadPoolProperties threadPoolProperties;
 
-    @Bean(name = "threadPoolTaskExecutor")
+    /**
+     * 业务主线程池。
+     * <p>
+     * {@code applicationTaskExecutor} 是 Spring Boot / Flowable 约定的默认异步执行器名：
+     * Flowable 引擎初始化（springProcessEngineConfiguration）最后会按
+     * {@code @Qualifier("applicationTaskExecutor")} 解析 AsyncListenableTaskExecutor。
+     * 因本类已自定义 Executor（@ConditionalOnMissingBean(Executor.class) 生效），Boot 不会自动注册该名，
+     * 故在此给 threadPoolTaskExecutor 追加该别名，复用同一实例，无需另建独立线程池。
+     */
+    @Bean(name = {"threadPoolTaskExecutor", "applicationTaskExecutor"})
     @ConditionalOnProperty(prefix = "thread-pool", name = "enabled", havingValue = "true")
     public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

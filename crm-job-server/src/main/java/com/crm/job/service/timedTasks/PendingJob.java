@@ -6,7 +6,6 @@ import com.crm.system.domain.dao.PendingGroupTodo;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.IPendingSyncTodoService;
 import com.crm.system.service.sys.ISysParamService;
-import com.oceanbase.jdbc.internal.util.StringCacheUtil;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -91,6 +90,37 @@ public class PendingJob {
             } catch (Exception e) {
                 log.error("同步集团待办任务失败, taskId:{}", task.getId(), e);
                 XxlJobHelper.log("同步集团待办任务失败, taskId:{}", task.getId());
+            }
+            // 间隔1秒
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        long endTime = System.currentTimeMillis();
+        long costTime = endTime - startTime;
+        log.info("待办同步Job执行完成,耗时:{}ms", costTime);
+        XxlJobHelper.log("待办同步Job执行完成,耗时:{}ms", costTime);
+    }
+
+    @XxlJob(value = "pendingGroupTodoDealJob")
+    public void startSg() {
+        long startTime = System.currentTimeMillis();
+        XxlJobHelper.log("====== 总部政企待办统一调度开始执行（按ID逐条执行）======");
+        log.info("====== 总部政企待办统一调度开始执行（按ID逐条执行）======");
+
+        // 同步给集团运营平台待办
+        List<PendingGroupTodo> list = pendingService.getGroupTodoToDealList();
+        XxlJobHelper.log("手工处理待同步集团待办{}条", list.size());
+        for (PendingGroupTodo task : list) {
+            try {
+                pendingSyncTodoService.syncTodoTask(task);
+            } catch (Exception e) {
+                log.error("手工处理同步集团待办任务失败, taskId:{}", task.getId(), e);
+                XxlJobHelper.log("手工处理同步集团待办任务失败, taskId:{}", task.getId());
             }
             // 间隔1秒
             try {

@@ -10,6 +10,9 @@ import com.crm.system.mapper.MaintenanceDetailNewMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
 import com.crm.system.service.IPendingService;
 import com.crm.system.service.send.ISendDMessageService;
+import com.crm.common.core.service.UserService;
+import com.crm.common.utils.DateUtils;
+import com.crm.system.utils.Constants;
 import com.crm.system.service.wx.WxProcessKeySupport;
 import com.crm.system.service.sys.ISysParamService;
 import com.crm.system.service.topp.IToppOpportunityService;
@@ -18,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import org.flowable.common.engine.impl.cfg.TransactionState;
+import org.flowable.engine.HistoryService;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
@@ -27,8 +31,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +70,8 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
     @Resource @Lazy private SysCodeMapper sysCodeMapper;
     @Resource @Lazy private MaintenanceDetailMapper maintenanceDetailMapper;
     @Resource @Lazy private MaintenanceDetailNewMapper maintenanceDetailNewMapper;
+    @Resource @Lazy private HistoryService historyService;
+    @Resource @Lazy private UserService userService;
 
     private volatile String cachedOaAppId;
 
@@ -126,6 +132,9 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
             }
         }
 
+        // 任务流转短信：任务落到新处理人（非流程首任务）时补发，对齐老框架 NewActivitiService.completeTaskByUserId
+        sendTransferNotice(task, order);
+
         // OA 待办（异步，独立于订单是否存在）
         executor.execute(() -> {
             try {
@@ -153,15 +162,14 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
                 log.error("updatePending 失败, taskId={}", task.getId(), e);
             }
         });
-        // 并签场景：处理人完成后自己的集团待办立即删除，不等同环节其他处理人
-        // 【临时下线】新框架暂不插入 pending_group_todo，恢复时取消注释
-        // executor.execute(() -> {
-        //     try {
-        //         pendingService.deleteGroupTodoTask(task);
-        //     } catch (Exception e) {
-        //         log.error("deleteGroupTodoTask 失败, taskId={}", task.getId(), e);
-        //     }
-        // });
+        // 处理人完成后自己的集团待办立即删除，不等同环节其他处理人
+        executor.execute(() -> {
+            try {
+                pendingService.deleteGroupTodoTask(task);
+            } catch (Exception e) {
+                log.error("deleteGroupTodoTask 失败, taskId={}", task.getId(), e);
+            }
+        });
     }
 
     /**
@@ -196,6 +204,66 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
             log.info("同步订单当前环节: orderId={}, phase={}, actor={}", order.getId(), task.getName(), userId);
         } catch (NumberFormatException e) {
             log.debug("assignee 非数字格式, piId={}, assignee={}", task.getProcessInstanceId(), assignee);
+        }
+    }
+
+    /**
+     * 任务流转短信：任务落到新处理人（非流程首任务）时补发，对齐老框架 NewActivitiService.completeTaskByUserId
+     * <p>
+     * 覆盖：通过(agree)到下一节点、稽核退回(reject)、经理节点转派(transfer 回环)、稽核改派(reassignAuditor)、
+     * 批量完成/转派及老框架 adapter 入口——所有入口最终都会触发一次 TASK_ASSIGNED。
+     */
+    private void sendTransferNotice(Task task, ToppOrderVo order) {
+        try {
+            // 范围收敛：仅预警/维系/宽带专项营销通用流程 single_approval / double_approval
+            // （需要扩到其它流程时移除该 gate 即可，届时注意与 ContractAuditService 等自有通知去重）
+            String processDefinitionId = task.getProcessDefinitionId();
+            String processKey = processDefinitionId != null && processDefinitionId.contains(":")
+                    ? processDefinitionId.split(":")[0] : null;
+            if (!Constants.SINGLE_APPROVAL_PROCESS_KEY.equals(processKey)
+                    && !Constants.DOUBLE_APPROVAL_PROCESS_KEY.equals(processKey)) {
+                return;
+            }
+            // 排除流程首任务：历史已完成任务数=0 说明是建单后的第一个任务
+            // （建单已由 WarningStartServiceImpl/WarningAssignServiceImpl 发过"温馨提醒"）
+            long finished = historyService.createHistoricTaskInstanceQuery()
+                    .processInstanceId(task.getProcessInstanceId()).finished().count();
+            if (finished == 0) {
+                log.info("任务流转短信: 流程首任务跳过, piId={}, taskDefKey={}",
+                        task.getProcessInstanceId(), task.getTaskDefinitionKey());
+                return;
+            }
+            // 订单缺失（首任务建单时订单可能尚未插入）或处理人为空则不发
+            if (order == null || task.getAssignee() == null) {
+                return;
+            }
+            long userId;
+            try {
+                userId = Long.parseLong(task.getAssignee().replaceAll(",", "").trim());
+            } catch (NumberFormatException e) {
+                log.warn("任务流转短信: assignee 非数字, taskId={}, assignee={}", task.getId(), task.getAssignee());
+                return;
+            }
+            // 新处理人姓名：复用 UserService.selectNickNameById，查不到时兜底
+            String nextActorName = userService.selectNickNameById(userId);
+            if (nextActorName == null || nextActorName.isEmpty()) {
+                nextActorName = "处理人";
+            }
+            // 文案对齐老框架（yypt_web NewActivitiService.completeTaskByUserId: 时间 订单[名称]单号:处理完成，下一步由[X]进行处理）
+            StringBuilder msg = new StringBuilder(DateUtils.dateTimeNow(DateUtils.YYYY_MM_DD_HH_MM_SS));
+            msg.append(" 订单[").append(order.getOrderName() == null ? "" : order.getOrderName()).append("]");
+            if (order.getOrderNumber() != null) {
+                msg.append(order.getOrderNumber());
+            }
+            msg.append(":处理完成，下一步由[").append(nextActorName).append("]进行处理");
+            // initNoticeMessage 内部会 clear()+addAll()，必须传可变 List；参数为 sys_user id(Integer)
+            List<Integer> noticeUsers = new ArrayList<>();
+            noticeUsers.add((int) userId);
+            sendDMessageService.initNoticeMessage(noticeUsers, msg.toString());
+            log.info("任务流转短信已发送: piId={}, taskId={}, taskDefKey={}, assignee={}",
+                    task.getProcessInstanceId(), task.getId(), task.getTaskDefinitionKey(), userId);
+        } catch (Exception e) {
+            log.warn("任务流转短信发送失败, taskId={}, piId={}", task.getId(), task.getProcessInstanceId(), e); // 绝不外抛
         }
     }
 
@@ -255,7 +323,9 @@ public class PendingEventListener extends AbstractFlowableEngineEventListener {
         }
 
         String msg = "您发起的" + orderVo.getOrderName() + "订单（" + orderVo.getOrderNumber() + "）已完结，请在我的评价内对该订单进行评价。";
-        List<Integer> users = Collections.singletonList(orderVo.getCreator().intValue());
+        // initNoticeMessage 内部会 clear()+addAll()，必须传可变 List（不可变 List 会抛 UnsupportedOperationException）
+        List<Integer> users = new ArrayList<>();
+        users.add(orderVo.getCreator().intValue());
         sendDMessageService.initNoticeMessage(users, msg);
         log.info("评价短信已发送: orderId={}, creator={}", orderVo.getId(), orderVo.getCreator());
     }
