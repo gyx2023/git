@@ -41,7 +41,7 @@ public class CustMaintInfoServiceImpl implements ICustMaintInfoService {
         int batchSize = 1000; // 每批大小
         int totalCount = 0;
 
-        String startDate = StringUtils.isNotEmpty( params)?DateUtils.getBeforeNDays(Integer.parseInt( params)):"";
+        String startDate = StringUtils.isNotEmpty( params)?DateUtils.getBeforeNDays(DateUtils.YYYY_MM_DD,Integer.parseInt( params)):"";
 
         while (hasMore) {
             List<CustMaintInfo> batch;

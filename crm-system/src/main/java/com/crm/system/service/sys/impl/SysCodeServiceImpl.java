@@ -227,4 +227,28 @@ public class SysCodeServiceImpl implements ISysCodeService {
         }
         return codeMap;
     }
+
+    /**
+     * 根据类型查询编码列表，并按 settingStr3 分组聚合。
+     */
+    @Override
+    public LinkedHashMap<String, LinkedHashMap<String, String>> getCodeMapGroupBySettingStr3(String type) {
+        LambdaQueryWrapper<SysCode> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SysCode::getType, type);
+        lqw.orderByAsc(SysCode::getSettingStr3, SysCode::getOrder);
+        List<SysCode> list = baseMapper.selectList(lqw);
+
+        LinkedHashMap<String, LinkedHashMap<String, String>> grouped = new LinkedHashMap<>();
+        if (ObjectUtil.isNotEmpty(list)) {
+            for (SysCode sysCode : list) {
+                String group = sysCode.getSettingStr3();
+                if (StringUtils.isBlank(group) || StringUtils.isBlank(sysCode.getCode())) {
+                    continue;
+                }
+                grouped.computeIfAbsent(group, k -> new LinkedHashMap<>())
+                        .put(sysCode.getCode(), sysCode.getName());
+            }
+        }
+        return grouped;
+    }
 }

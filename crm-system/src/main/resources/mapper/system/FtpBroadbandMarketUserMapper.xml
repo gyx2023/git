@@ -61,4 +61,115 @@
         WHERE STAT_CYCLE = #{statCycle}
     </delete>
 
+    <!-- 公共查询条件：账期 + 集团客户 + 客户经理 + 营销类型 -->
+    <sql id="userBaseWhere">
+        WHERE STAT_CYCLE = #{statCycle}
+          AND CUST_GRP_ID = #{custGrpId}
+          AND SERV_MANAGER_ID = #{servManagerId}
+          AND MARKETING_TYPE = #{marketingType}
+    </sql>
+
+    <!-- 分页查询用户明细：未填写营销结果的排在前面 -->
+    <select id="selectUserPage" resultType="java.util.LinkedHashMap">
+        SELECT
+            ID_                AS id,
+            SVC_NUM            AS svc_num,
+            USER_ADDR          AS user_addr,
+            MARKETING_NAME     AS marketing_name,
+            PROD_NAME          AS prod_name,
+            MKT_PRODUCT_NAME_1 AS mkt_product_name_1,
+            MKT_DISCNT_NAME_1  AS mkt_discnt_name_1,
+            MKT_PRODUCT_NAME_2 AS mkt_product_name_2,
+            USER_STATUS        AS user_status,
+            HQ_SVC_TYPE        AS hq_svc_type,
+            DEVELOPER_NAME     AS developer_name,
+            SPEED              AS speed,
+            CYCLE_START_TIME   AS cycle_start_time,
+            CYCLE_END_TIME     AS cycle_end_time,
+            CYCLE_LENGTH       AS cycle_length,
+            CYCLE_FEE          AS cycle_fee,
+            MKT_RESULT         AS mkt_result,
+            ORDER_PRODUCT      AS order_product,
+            OTHER_PRODUCT_NAME AS other_product_name
+        FROM ftp_broadband_market_user
+        <include refid="userBaseWhere"/>
+        <if test="mktResult != null">
+            AND MKT_RESULT = #{mktResult}
+        </if>
+        ORDER BY MKT_RESULT ASC, ID_ ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countUsers" resultType="int">
+        SELECT COUNT(1) FROM ftp_broadband_market_user
+        <include refid="userBaseWhere"/>
+        <if test="mktResult != null">
+            AND MKT_RESULT = #{mktResult}
+        </if>
+    </select>
+
+    <select id="countNoResultUsers" resultType="int">
+        SELECT COUNT(1) FROM ftp_broadband_market_user
+        <include refid="userBaseWhere"/>
+        AND MKT_RESULT IS NULL
+    </select>
+
+    <select id="countByResult" resultType="int">
+        SELECT COUNT(1) FROM ftp_broadband_market_user
+        <include refid="userBaseWhere"/>
+        <if test="result != null and result != ''">
+            AND MKT_RESULT = #{result}
+        </if>
+    </select>
+
+    <!-- 按用户主键集合查可选的营销成功产品：推荐产品1/2，DISTINCT + UNION ALL（对齐老框架 getProductList） -->
+    <select id="selectProductOptionsByUserIds" resultType="java.util.LinkedHashMap">
+        SELECT DISTINCT MKT_PRODUCT_ID_1 AS code, MKT_PRODUCT_NAME_1 AS name
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_PRODUCT_NAME_1 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT MKT_PRODUCT_ID_2, MKT_PRODUCT_NAME_2
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_PRODUCT_NAME_2 IS NOT NULL
+    </select>
+
+    <!-- 按用户主键集合查可选营销产品（回退用）：资费/折扣产品1/2 -->
+    <select id="selectDiscntOptionsByUserIds" resultType="java.util.LinkedHashMap">
+        SELECT DISTINCT MKT_DISCNT_CODE_1 AS code, MKT_DISCNT_NAME_1 AS name
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_DISCNT_NAME_1 IS NOT NULL
+        UNION ALL
+        SELECT DISTINCT MKT_DISCNT_CODE_2, MKT_DISCNT_NAME_2
+        FROM ftp_broadband_market_user
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+          AND MKT_DISCNT_NAME_2 IS NOT NULL
+    </select>
+
+    <!-- 批量更新营销结果：产品与其它产品名允许置空 -->
+    <update id="updateResultByIds">
+        UPDATE ftp_broadband_market_user
+        SET MKT_RESULT = #{result},
+            ORDER_PRODUCT = #{orderProduct},
+            OTHER_PRODUCT_NAME = #{otherProductName}
+        WHERE ID_ IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+    </update>
+
 </mapper>

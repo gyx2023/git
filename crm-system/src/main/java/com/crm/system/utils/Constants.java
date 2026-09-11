@@ -1763,7 +1763,7 @@ public class Constants {
     // 红名单升级预警
     public static final String ORDER_TYPE_HMD_UP = "hmd_up";
     public static final String ORDER_TYPE_NEW_HMD_UP = "new_hmd_up";
-    public static final String ORDER_TYPE_HMD_UP_NAME = "红名单升级预警";
+    public static final String ORDER_TYPE_HMD_UP_NAME = "红名单到期升级预警";
     public static final String ACT_PHASE_HMD_UP_WARNING_MANAGER_DEAL = "hmd_up_warn_manager_deal";
     public static final String ACT_PHASE_NEW_HMD_UP_WARNING_MANAGER_DEAL = "hmd_leader";
     public static final String ACT_PHASE_HMD_UP_WARNING_MANAGER_DEAL_NAME = "领导处理";

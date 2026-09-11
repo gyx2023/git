@@ -1606,6 +1606,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                             elementVo.setOperation("转派");
                         } else if ("agree".equals(action)) {
                             elementVo.setOperation("通过");
+                        } else if ("close".equals(action)) {
+                            // 老框架批量完成桥接（WarningTransferApi.batchComplete）置 action=close
+                            elementVo.setOperation("完成");
+                        } else if ("reject".equals(action)) {
+                            elementVo.setOperation("退回");
                         } else {
                             elementVo.setOperation(action);
                         }

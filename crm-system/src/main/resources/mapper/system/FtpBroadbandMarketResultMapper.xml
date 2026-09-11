@@ -28,4 +28,23 @@
         WHERE STAT_CYCLE = #{statCycle}
     </delete>
 
+    <!-- 按"订单"维度查询业务受理结果明细（对齐老框架 findCustSaleForResultPage） -->
+    <select id="selectAcceptResultByCust" resultType="java.util.LinkedHashMap">
+        SELECT r.SVC_NUM             AS svc_num,
+               r.MARKETING_NAME      AS marketing_name,
+               r.IS_SUCC             AS is_succ,
+               r.ORDER_PRODUCT_NAME  AS order_product_name,
+               r.ORDER_DISCNT_NAME   AS order_discnt_name,
+               DATE_FORMAT(r.CREATE_DATE, '%Y-%m-%d') AS create_date,
+               DATE_FORMAT(r.START_DATE, '%Y-%m-%d')  AS start_date,
+               DATE_FORMAT(r.END_DATE, '%Y-%m-%d')    AS end_date
+        FROM ftp_broadband_market_result r
+        INNER JOIN ftp_broadband_market_user u ON u.USER_MARKETING_ID = r.USER_MARKETING_ID
+        WHERE u.STAT_CYCLE = #{statCycle}
+          AND u.CUST_GRP_ID = #{custGrpId}
+          AND u.SERV_MANAGER_ID = #{servManagerId}
+          AND u.MARKETING_TYPE = #{marketingType}
+        ORDER BY r.CREATE_DATE DESC, r.SVC_NUM ASC
+    </select>
+
 </mapper>

@@ -4,6 +4,7 @@ MAINTAINER Lion Li
 
 RUN mkdir -p /crm/server/logs \
     /crm/server/temp \
+    /crm/server/ssl \
     /crm/skywalking/agent
 
 WORKDIR /crm/server
@@ -16,6 +17,8 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo 'Asia/Shangh
 EXPOSE ${SERVER_PORT}
 
 ADD ./crm-admin/target/crm-admin.jar ./app.jar
+# TLS安全属性覆盖（恢复TLSv1/TLSv1.1，解决总部UAC SSO硬编码TLSv1在OpenJDK下握手失败）
+ADD ./ssl/tls-override.security /crm/server/ssl/tls-override.security
 
 ENTRYPOINT ["java", \
             "-Djava.security.egd=file:/dev/./urandom", \
@@ -23,5 +26,6 @@ ENTRYPOINT ["java", \
             # 应用名称 如果想区分集群节点监控 改成不同的名称即可
 #            "-Dskywalking.agent.service_name=crm-server", \
 #            "-javaagent:/crm/skywalking/agent/skywalking-agent.jar", \
+            "-Djava.security.properties=/crm/server/ssl/tls-override.security", \
             "-Duser.timezone=Asia/Shanghai -Xms1g -Xmx2g -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:+PrintGCDateStamps  -XX:+PrintGCDetails -XX:NewRatio=1 -XX:SurvivorRatio=30 -XX:+UseParallelGC -XX:+UseParallelOldGC", \
             "-jar", "app.jar"]

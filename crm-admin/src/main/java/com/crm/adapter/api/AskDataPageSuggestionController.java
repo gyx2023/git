@@ -1,5 +1,6 @@
 package com.crm.adapter.api;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.askdata.entity.PageSuggestion;
 import com.crm.askdata.service.AskDataEmbedRequestValidator;
 import com.crm.askdata.service.PageSuggestionService;
@@ -37,6 +38,7 @@ public class AskDataPageSuggestionController extends BaseController {
 
     /** Widget 读取当前页面的推荐问题。 */
     @GetMapping("/widget/suggestions")
+    @SaIgnore
     public R<List<PageSuggestion>> getWidgetSuggestions(
         @RequestParam(required = false) String pageCode,
         HttpServletRequest request) {
