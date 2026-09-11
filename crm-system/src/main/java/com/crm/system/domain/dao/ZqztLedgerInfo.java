@@ -214,6 +214,13 @@ public class ZqztLedgerInfo implements Serializable {
     /** 更新人员工号 */
     private String updatedBy;
 
+    /**
+     * 同步火焰卫士状态(0默认/1待同步/2同步中/3同步成功/4同步失败)
+     * <p>由系统维护，不通过表单录入。此处不能加 {@code FieldStrategy.IGNORED}：
+     * 该策略会把 null 也写进 UPDATE，而修改表单不携带本字段，会把状态刷成 null。</p>
+     */
+    private String flameGuardianSyn;
+
     /** 是否有效(0失效/1有效) */
     private String isValid;
 }
