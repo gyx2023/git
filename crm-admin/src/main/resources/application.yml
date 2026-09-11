@@ -16,12 +16,6 @@ crm:
   mq:
     enabled: false
 
-zqzt:
-  # 政企运营平台统一跳转配置
-  jump:
-    # 新框架前端地址（/unifyJump/loginCheck 免登后重定向目标）
-    front-url: /zj_gec_sp_new_frontend
-
 captcha:
   # 页面 <参数设置> 可开启关闭 验证码校验
   # 验证码类型 math 数组计算 char 字符验证
@@ -152,20 +146,6 @@ security:
     # actuator 监控配置
     - /actuator
     - /actuator/**
-    # SSO自动登录接口
-    - /sso/autoLogin
-    - /unifyJump/loginCheck
-    - /sso/portalCheck
-    - /sso/uacLogin
-    - /zqzt_backend/health/**
-    # 智能问数 iframe 嵌入 SSE 入口，内部仍强制校验宿主 Authorization
-    - /askdata/chat/stream
-    # 推荐问题由 iframe 读取，内部仍强制校验宿主 Authorization
-    - /askdata/widget/suggestions
-    # 数据处理工作流内网取数入口，使用短期随机 dataRef
-    - /api/askdata/tools/resultdata
-    - /api/askdata/tools/schemas
-    - /api/askdata/tools/schemasnew
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -275,7 +255,7 @@ xss:
 # 全局线程池相关配置
 thread-pool:
   # 是否开启线程池
-  enabled: false
+  enabled: true
   # 队列最大长度
   queueCapacity: 128
   # 线程池维护线程所允许的空闲时间

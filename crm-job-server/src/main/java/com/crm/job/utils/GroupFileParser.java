@@ -70,7 +70,7 @@ public class GroupFileParser {
      * @param <T>       泛型类型
      * @return 解析后的对象
      */
-    private <T> T parseLine(String line, Class<T> clazz, String delimiter) {
+    public <T> T parseLine(String line, Class<T> clazz, String delimiter) {
         try {
             // 创建目标对象实例
             T obj = clazz.getDeclaredConstructor().newInstance();

@@ -1,4 +1,4 @@
-package com.crm.adapter.admin.travel;
+package com.crm.adapter.admin.system.travel;
 
 import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.R;

@@ -46,6 +46,8 @@ public interface IPendingService {
      */
     List<PendingGroupTodo> getGroupTodoList();
 
+    List<PendingGroupTodo> getGroupTodoToDealList();
+
     /**
      * 更新集团待办同步状态
      */
