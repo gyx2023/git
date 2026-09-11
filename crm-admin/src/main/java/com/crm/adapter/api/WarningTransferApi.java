@@ -6,17 +6,15 @@ import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.TokenUtil;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.topp.IToppOrderService;
+import com.crm.workflow.domain.dto.WfCurrentTaskDto;
+import com.crm.workflow.service.WarningWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,9 +32,7 @@ public class WarningTransferApi {
     @Resource
     private final IToppOrderService orderService;
     @Resource
-    private final TaskService taskService;
-    @Resource
-    private final RuntimeService runtimeService;
+    private final WarningWorkflowService warningWorkflowService;
 
     /**
      * 批量转派（对应老框架 /order/transWxOrder）
@@ -68,10 +64,12 @@ public class WarningTransferApi {
             try {
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
-                Task task = taskService.createTaskQuery().processInstanceId(order.getPiId()).singleResult();
+                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(order.getPiId(),null);
                 if (task == null) { fail++; continue; }
-                if (comment != null) taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
-                orderService.transferOrder(task.getId(), orderId, targetUserId, comment, null);
+                if (comment != null) {
+                    warningWorkflowService.addComment(task.getTaskId(), task.getProcessInstanceId(), comment);
+                }
+                orderService.transferOrder(task.getTaskId(), orderId, targetUserId, comment, null);
                 success++;
             } catch (Exception e) {
                 log.error("批量转派失败: orderId={}", orderId, e);
@@ -111,8 +109,9 @@ public class WarningTransferApi {
             try {
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
-                List<Task> tasks = taskService.createTaskQuery().processInstanceId(order.getPiId()).listPage(0, 1);
-                if (tasks.isEmpty()) {
+                boolean completed = warningWorkflowService
+                        .completeFirstTaskByAction(order.getPiId(), "close", resultMemo);
+                if (!completed) {
                     // 无运行中任务：订单已结束视为已处理（幂等），否则完成失败
                     if (OrderStatusEnum.END.getCode().equals(order.getStatus())) {
                         success++;
@@ -121,15 +120,6 @@ public class WarningTransferApi {
                     }
                     continue;
                 }
-                Task task = tasks.get(0);
-                String piId = task.getProcessInstanceId();
-                if (resultMemo != null) {
-                    taskService.addComment(task.getId(), piId, resultMemo);
-                }
-                Map<String, Object> vars = new HashMap<>();
-                vars.put("action", "close");
-                taskService.setVariableLocal(task.getId(), "action", "close");
-                taskService.complete(task.getId(), vars);
                 // action=close 走网关默认线，流程直接结束，置订单完成
                 orderService.markOrderEnd(orderId, followUp, otherReason);
                 success++;

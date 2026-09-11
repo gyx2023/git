@@ -143,29 +143,6 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
-# security配置
-security:
-  # 排除路径
-  excludes:
-    # 静态资源
-    - /*.html
-    - /**/*.html
-    - /**/*.css
-    - /**/*.js
-    # 公共路径
-    - /favicon.ico
-    - /error
-    # SSO自动登录接口
-    - /sso/autoLogin
-    - /zqzt_backend/health/**
-    # 智能问数嵌入入口，Controller 内部仍会校验宿主 Authorization
-    - /askdata/chat/stream
-    # 推荐问题由 iframe 读取，Controller 内部仍会校验宿主 Authorization
-    - /askdata/widget/suggestions
-    # 数据处理工作流内网取数入口，使用短期随机 dataRef
-    - /api/askdata/tools/resultdata
-    - /sso/portalCheck
-    - /sso/uacLogin
 # Swagger配置
 swagger:
   info:

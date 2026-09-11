@@ -28,7 +28,7 @@ public class SysRegisterController extends BaseController {
     /**
      * 用户注册
      */
-    @SaIgnore
+//    @SaIgnore
     @PostMapping("/register")
     public R<Void> register(@Validated @RequestBody RegisterBody user) {
         if (!("true".equals(configService.selectConfigByKey("sys.account.registerUser")))) {

@@ -58,16 +58,6 @@ public class UacSsoService {
      */
     private static final String SSO_TODO_PATH = "/ssoTodo";
 
-    /**
-     * 本地/mock 测试开关：系统参数 {@code SsoMockMode=true} 时启用，不访问真实 UAC。
-     * 正式环境不要配置该参数（或配 false），行为完全不变。
-     */
-    private static final String MOCK_MODE_PARAM = "SsoMockMode";
-    /** mock 建会话使用的邮箱（须为新系统库中真实存在的用户邮箱，系统参数 {@code SsoMockMail}） */
-    private static final String MOCK_MAIL_PARAM = "SsoMockMail";
-    /** mock 模式下 UAC 取地址逻辑返回的本系统模拟回跳端点 */
-    public static final String MOCK_UAC_PATH = "/sso/mockUac";
-
     private final SysUserMapper userMapper;
     private final SysPermissionService permissionService;
     private final ISysParamService sysParamService;
@@ -88,14 +78,6 @@ public class UacSsoService {
         String redirectBase = sysParamService.findValueByCode("SsoRedirectUrlNew");
         if (StringUtils.isBlank(ssoUrl) || StringUtils.isBlank(redirectBase)) {
             throw new ServiceException("未配置SsoUrl或SsoRedirectUrl参数，无法完成门户登录检查");
-        }
-        // mock 模式：跳过真实 UAC 取地址，直接指向本系统模拟回跳端点，便于本地全链路测试
-        if (isMockMode()) {
-            String success = redirectBase + "/sso/uacLogin" + (StringUtils.isNotBlank(queryString) ? "?" + queryString : "");
-            String encodedSuccess = URLEncoder.encode(success, StandardCharsets.UTF_8.name());
-            String encodedError = URLEncoder.encode(redirectBase + "/login", StandardCharsets.UTF_8.name());
-            return redirectBase + MOCK_UAC_PATH + "?isMock=1&success=" + encodedSuccess
-                + "&error=" + encodedError + "&appid=" + APPID;
         }
         String cfgUrl = ssoUrl + "/uac-sso-config/get_url_config";
         try {
@@ -126,19 +108,6 @@ public class UacSsoService {
         String ssoUrl = sysParamService.findValueByCode("SsoUrl");
         if (StringUtils.isBlank(ssoUrl)) {
             throw new ServiceException("未配置SsoUrl参数");
-        }
-        // mock 模式：跳过真实 UAC 的 token 校验与 check_authentication 取数，
-        // 直接用 mockMail（请求参数或系统参数 SsoMockMail）按邮箱匹配用户建会话，便于本地全链路测试。
-        if (isMockMode()) {
-            String mockMail = ServletUtils.getParameter(MOCK_MAIL_PARAM);
-            if (StringUtils.isBlank(mockMail)) {
-                mockMail = sysParamService.findValueByCode(MOCK_MAIL_PARAM);
-            }
-            if (StringUtils.isBlank(mockMail)) {
-                throw new ServiceException("mock模式下未提供mockMail（请求参数或系统参数SsoMockMail）");
-            }
-            log.warn("[SsoMock] 使用 mock 邮箱建会话: {}", mockMail);
-            return completeLogin(mockMail, url);
         }
         String token;
         try {
@@ -184,7 +153,6 @@ public class UacSsoService {
 
     /**
      * 按邮箱匹配新系统用户，构建 LoginUser 建 Sa-Token 会话、写登录日志，返回 ssoTodo 回跳地址。
-     * 真实 UAC 与 mock 模式共用此段（mock 时 email 来自 mockMail）。
      */
     private String completeLogin(String email, String url) throws UnsupportedEncodingException {
         String SsoRedirectUrlNewFront = sysParamService.findValueByCode("SsoRedirectUrlNewFront");
@@ -217,14 +185,6 @@ public class UacSsoService {
         }
         // 类似 http://localhost/wideWarning/deal?orderType=new_wide_up&orderId=240517795&taskId=b8477330-9ae3-11f1-8e74-00001e00831e
         return ssoTodo;
-    }
-
-    /**
-     * 是否启用 mock 模式（系统参数 {@code SsoMockMode=true}）。正式环境不配置或配 false 即关闭。
-     */
-    private boolean isMockMode() {
-        String v = sysParamService.findValueByCode(MOCK_MODE_PARAM);
-        return "true".equalsIgnoreCase(v);
     }
 
     /**

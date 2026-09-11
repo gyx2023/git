@@ -46,6 +46,23 @@ public class CustSalesWarningStrategy extends AbstractWarningQueryStrategy {
         return "宽带专项营销";
     }
 
+    /**
+     * 双节点流程：客户经理(营销结果/营销成功) → 业务受理。
+     * 迁移自老框架 custSales.bpmn（khjlqr → ywsl）。
+     */
+    @Override
+    public String getProcessKey() {
+        return "double_approval";
+    }
+
+    /**
+     * 第二节点语义为"业务受理"（对应老框架 ywsl 业务受理节点），非稽核。
+     */
+    @Override
+    public String getSecondNodeName() {
+        return "业务受理";
+    }
+
     @Override
     protected List<WarningRecord> doQuery(String yyyyMM) {
         LambdaQueryWrapper<FtpBroadbandMarketCust> qw = new LambdaQueryWrapper<>();

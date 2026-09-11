@@ -1,4 +1,4 @@
-package com.crm.adapter.admin.workflow.oldProject;
+package com.crm.adapter.admin.workflow.warning;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.crm.common.core.controller.BaseController;
@@ -14,14 +14,11 @@ import com.crm.system.mapper.sys.SysFlowUserMapper;
 import com.crm.system.service.ISysAreaService;
 import com.crm.system.service.stats.IStatsService;
 import com.crm.system.service.topp.IToppOrderService;
+import com.crm.workflow.domain.dto.WfCurrentTaskDto;
 import com.crm.workflow.service.IWfProcessService;
+import com.crm.workflow.service.WarningWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
-import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,14 +39,12 @@ import java.util.*;
 @RequestMapping("/wideWarning")
 public class WideWarningController extends BaseController {
 
-    @Resource private final TaskService taskService;
     @Resource private final IToppOrderService orderService;
-    @Resource private final RuntimeService runtimeService;
-    @Resource private final HistoryService historyService;
     @Resource private final com.crm.system.mapper.SysUsersMapper sysUsersMapper;
     @Resource private final com.crm.system.mapper.oldsyssyn.OldSysOrgMapper oldSysOrgMapper;
     @Resource private final ISysAreaService sysAreaService;
     @Resource private final IWfProcessService wfProcessService;
+    @Resource private final WarningWorkflowService warningWorkflowService;
     @Resource private final SysFlowUserMapper sysFlowUserMapper;
     @Resource private final IStatsService statsService;
 
@@ -115,24 +110,24 @@ public class WideWarningController extends BaseController {
             return R.fail("工单不存在");
         }
         // 流程可能已结束（已办/历史任务查询预警客户列表），运行时 execution 已删除，
-        // runtimeService.getVariables 会抛 FlowableObjectNotFoundException，改用历史变量查询
+        // runtime 查询会抛 FlowableObjectNotFoundException，门面改用历史变量查询
         // （历史查询对进行中流程同样返回运行时变量，行为兼容）
-        List<HistoricVariableInstance> histVars = historyService
-                .createHistoricVariableInstanceQuery()
-                .processInstanceId(order.getPiId())
-                .list();
-        Map<String, Object> procVars = new HashMap<>();
-        for (HistoricVariableInstance v : histVars) {
-            procVars.put(v.getVariableName(), v.getValue());
-        }
+        Map<String, Object> procVars = warningWorkflowService.getHistoricProcessVariables(order.getPiId());
         String codeInfo = str(procVars, "wide_second_new_codeInfo");
         String period = str(procVars, "wide_second_new_period");
         String orderFlag = str(procVars, "wide_second_new_orderFlag");
         if (codeInfo == null || period == null || orderFlag == null) {
             return R.fail("缺少预警参数");
         }
-        String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
-        IPage<Map<String, Object>> page = statsService.queryWideCustInfoStats(sql, pageNum, pageSize);
+        // 红名单升级预警（new_hmd_up）走红名单客户明细（order_type='hmd_warn'），其余（宽带升级等）走宽带明细
+        IPage<Map<String, Object>> page;
+        if ("new_hmd_up".equals(order.getOrderType())) {
+            String sql = statsService.buildHmdWarnCustSql(codeInfo, period, orderFlag);
+            page = statsService.queryHmdWarnCust(sql, pageNum, pageSize);
+        } else {
+            String sql = statsService.buildWideCustInfoStatsSql(codeInfo, period, orderFlag);
+            page = statsService.queryWideCustInfoStats(sql, pageNum, pageSize);
+        }
         Map<String, Object> result = new HashMap<>();
         result.put("custList", page.getRecords());
         result.put("custTotal", page.getTotal());
@@ -155,27 +150,19 @@ public class WideWarningController extends BaseController {
                             @RequestParam(value = "followUp", required = false) String followUp,
                             @RequestParam(value = "otherReason", required = false) String otherReason,
                             @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
-        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(null, taskId);
         if (task == null) {
             return R.fail("任务不存在或已处理");
         }
         String piId = task.getProcessInstanceId();
-        if (comment != null) {
-            taskService.addComment(taskId, piId, comment);
-        }
 
-        Map<String, Object> vars = new HashMap<>();
-        vars.put("action", "agree");
+        Map<String, Object> completeVars = new HashMap<>();
+        // 经理节点可通过 auditUserId 指定稽核人：随 complete 写入流程变量 audit
         if ("manager_handle".equals(task.getTaskDefinitionKey()) && auditUserId != null) {
-            vars.put("audit", String.valueOf(auditUserId));
+            completeVars.put("audit", String.valueOf(auditUserId));
         }
-        // 同时设置任务本地变量，后续 historyProcNodeList 按 taskId 查询时才能找到
-        taskService.setVariableLocal(taskId, "action", "agree");
-        // 客户经理处理结果说明：写任务本地变量 {taskDefKey}_resultMemo（供导出读取）
-        if (comment != null) {
-            taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
-        }
-        taskService.complete(taskId, vars);
+        // 评注 + action 任务本地变量 + {taskDefKey}_resultMemo + complete 收口在预警门面（legacy 协议逐字保留）
+        warningWorkflowService.completeWithAction(taskId, "agree", comment, completeVars);
 
         // Listener 的 TASK_ASSIGNED 事件会自动调用 syncOrderToCurrentTask 更新订单信息
         String msg;
@@ -188,7 +175,8 @@ public class WideWarningController extends BaseController {
             // 维系情况/时间按本次提交覆盖（含清空旧值）
             ToppOrderVo endedOrder = orderService.queryById(orderId);
             if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
-                    || "wide_second".equals(endedOrder.getOrderType()))) {
+                    || "wide_second".equals(endedOrder.getOrderType())
+                    || "special_activity_warn".equals(endedOrder.getOrderType()))) {
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
             }
             msg = "该流程已完成";
@@ -211,16 +199,13 @@ public class WideWarningController extends BaseController {
     public R<Map<String, Object>> reject(@RequestParam("taskId") String taskId,
                             @RequestParam("orderId") Long orderId,
                             @RequestParam(value = "comment", required = false) String comment) {
-        Task task = wfProcessService.findCurrentTask(null, taskId);
-        String piId = task.getProcessInstanceId();
-        if (comment != null) {
-            taskService.addComment(taskId, piId, comment);
+        WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(null, taskId);
+        if (task == null) {
+            return R.fail("任务不存在或已处理");
         }
-
-        Map<String, Object> vars = new HashMap<>();
-        vars.put("action", "reject");
-        taskService.setVariableLocal(taskId, "action", "reject");
-        taskService.complete(taskId, vars);
+        String piId = task.getProcessInstanceId();
+        // 退回仅写评注 + action（reject 不沉淀 {taskDefKey}_resultMemo，逐字对齐原逻辑）
+        warningWorkflowService.completeWithAction(taskId, "reject", comment, null, false);
 
         String msg;
         if (wfProcessService.isProcessRunning(piId)) {
@@ -250,12 +235,13 @@ public class WideWarningController extends BaseController {
                             @RequestParam(value = "comment", required = false) String comment,
                             @RequestParam(value = "followUp", required = false) String followUp,
                             @RequestParam(value = "otherReason", required = false) String otherReason) {
-        Task task = wfProcessService.findCurrentTask(null, taskId);
-        String piId = task.getProcessInstanceId();
-        if (comment != null) {
-            taskService.addComment(taskId, piId, comment);
-            taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
+        WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(null, taskId);
+        if (task == null) {
+            return R.fail("任务不存在或已处理");
         }
+        String piId = task.getProcessInstanceId();
+        // 评注 + {taskDefKey}_resultMemo（不完成任务，供 transferOrder/改派前沉淀处理意见）
+        warningWorkflowService.addTaskComment(taskId, task.getTaskDefinitionKey(), piId, comment);
 
         LoginUser loginUser = getLoginUser();
         SysUsers nextUser = targetUserId != null ? sysUsersMapper.selectById(targetUserId) : null;
@@ -267,8 +253,7 @@ public class WideWarningController extends BaseController {
                 return R.fail("请选择转派人员");
             }
             // setAssignee 会触发 TASK_ASSIGNED 事件，Listener 自动 syncOrderToCurrentTask
-            taskService.setAssignee(taskId, String.valueOf(targetUserId));
-            runtimeService.setVariable(piId, "audit", String.valueOf(targetUserId));
+            warningWorkflowService.reassignAuditor(taskId, piId, targetUserId);
 
             Map<String, Object> result = new HashMap<>();
             result.put("result", "SUCCESS");
@@ -336,11 +321,12 @@ public class WideWarningController extends BaseController {
                                         @RequestParam(value = "followUp", required = false) String followUp,
                                         @RequestParam(value = "otherReason", required = false) String otherReason,
                                         @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr) {
-        Task task = wfProcessService.findCurrentTask(null, taskId);
-        if (comment != null) {
-            taskService.addComment(taskId, task.getProcessInstanceId(), comment);
-            taskService.setVariableLocal(taskId, task.getTaskDefinitionKey() + "_resultMemo", comment);
+        WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(null, taskId);
+        if (task == null) {
+            return R.fail("任务不存在或已处理");
         }
+        // 评注 + {taskDefKey}_resultMemo（跟踪中任务保留在待办，流程不动）
+        warningWorkflowService.addTaskComment(taskId, task.getTaskDefinitionKey(), task.getProcessInstanceId(), comment);
 
         ToppOrderBo bo = new ToppOrderBo();
         bo.setId(orderId);
@@ -378,18 +364,12 @@ public class WideWarningController extends BaseController {
                 Long orderId = Long.parseLong(trimmed);
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
-                Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
+                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(order.getPiId(), null);
                 if (task == null) { fail++; continue; }
-                if (comment != null) {
-                    taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
-                    taskService.setVariableLocal(task.getId(), task.getTaskDefinitionKey() + "_resultMemo", comment);
-                }
-                Map<String, Object> vars = new HashMap<>();
-                vars.put("action", "agree");
-                taskService.setVariableLocal(task.getId(), "action", "agree");
-                taskService.complete(task.getId(), vars);
+                // 评注 + action 本地变量 + {taskDefKey}_resultMemo + complete 收口在预警门面
+                warningWorkflowService.completeWithAction(task.getTaskId(), "agree", comment, null);
                 if (wfProcessService.isProcessRunning(task.getProcessInstanceId())) {
-                    Task nextTask = wfProcessService.findCurrentTask(task.getProcessInstanceId(), null);
+                    WfCurrentTaskDto nextTask = warningWorkflowService.getCurrentTask(task.getProcessInstanceId(), null);
                     Long nextAssignee = null;
                     if (nextTask != null && nextTask.getAssignee() != null && !nextTask.getAssignee().isEmpty()) {
                         nextAssignee = Long.parseLong(nextTask.getAssignee().replaceAll(",", ""));
@@ -401,7 +381,8 @@ public class WideWarningController extends BaseController {
                     orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
                     // 维系情况/时间按本次提交覆盖（含清空旧值）
                     if ("wotv_expire_warning".equals(order.getOrderType())
-                            || "wide_second".equals(order.getOrderType())) {
+                            || "wide_second".equals(order.getOrderType())
+                            || "special_activity_warn".equals(order.getOrderType())) {
                         orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
                     }
                 }
@@ -441,18 +422,15 @@ public class WideWarningController extends BaseController {
                 Long orderId = Long.parseLong(trimmed);
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
-                Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
+                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(order.getPiId(), null);
                 if (task == null) { fail++; continue; }
-                if (comment != null) {
-                    taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
-                    taskService.setVariableLocal(task.getId(), task.getTaskDefinitionKey() + "_resultMemo", comment);
-                }
+                // 评注 + {taskDefKey}_resultMemo（转派前沉淀处理意见）
+                warningWorkflowService.addTaskComment(task.getTaskId(), task.getTaskDefinitionKey(), task.getProcessInstanceId(), comment);
                 if ("audit_handle".equals(task.getTaskDefinitionKey())) {
                     orderService.syncOrderToCurrentTask(orderId, task.getProcessInstanceId(), targetUserId, loginUser.getUserId());
-                    taskService.setAssignee(task.getId(), String.valueOf(targetUserId));
-                    runtimeService.setVariable(task.getProcessInstanceId(), "audit", String.valueOf(targetUserId));
+                    warningWorkflowService.reassignAuditor(task.getTaskId(), task.getProcessInstanceId(), targetUserId);
                 } else {
-                    orderService.transferOrder(task.getId(), orderId, targetUserId, comment, loginUser.getUserId());
+                    orderService.transferOrder(task.getTaskId(), orderId, targetUserId, comment, loginUser.getUserId());
                 }
                 // 写入 wide_result，并清空计划续约日期
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), null);
@@ -490,10 +468,10 @@ public class WideWarningController extends BaseController {
                 Long orderId = Long.parseLong(trimmed);
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
-                Task task = wfProcessService.findCurrentTask(order.getPiId(), null);
-                if (task != null && comment != null) {
-                    taskService.addComment(task.getId(), task.getProcessInstanceId(), comment);
-                    taskService.setVariableLocal(task.getId(), task.getTaskDefinitionKey() + "_resultMemo", comment);
+                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(order.getPiId(), null);
+                if (task != null) {
+                    // 评注 + {taskDefKey}_resultMemo（任务不存在时跳过，仅做工单状态处理）
+                    warningWorkflowService.addTaskComment(task.getTaskId(), task.getTaskDefinitionKey(), task.getProcessInstanceId(), comment);
                 }
                 ToppOrderBo bo = new ToppOrderBo();
                 bo.setId(orderId);

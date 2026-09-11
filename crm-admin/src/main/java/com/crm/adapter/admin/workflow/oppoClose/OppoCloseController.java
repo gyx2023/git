@@ -1,4 +1,4 @@
-package com.crm.adapter.admin.workflow.oldProject;
+package com.crm.adapter.admin.workflow.oppoClose;
 
 import com.crm.common.core.domain.R;
 import com.crm.common.core.domain.entity.SysUser;
@@ -14,6 +14,7 @@ import com.crm.system.service.topp.IToppContractService;
 import com.crm.system.service.topp.IToppOpportunityService;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.service.impl.OldWorkflowQueryService;
+import com.crm.workflow.service.ToppWorkflowService;
 import com.crm.common.utils.DateUtils;
 import com.crm.system.domain.bo.topp.ToppContractBo;
 import com.crm.system.domain.bo.topp.ToppOpportunityBo;
@@ -23,24 +24,10 @@ import com.crm.system.service.topp.ToppContractIncludeTypeMoneyService;
 import com.crm.system.mapper.topp.ToppContractMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.IdentityService;
-import org.flowable.engine.RepositoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.engine.history.HistoricActivityInstance;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
-import org.flowable.engine.task.Comment;
-import org.flowable.task.api.Task;
 import org.springframework.web.bind.annotation.*;
-
-import cn.hutool.core.io.IoUtil;
-import com.crm.flowable.utils.ModelUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.io.InputStream;
 
 /**
  * 商机关闭处理 Controller
@@ -55,11 +42,7 @@ public class OppoCloseController {
     private final IToppOrderService orderService;
     private final IToppOpportunityService opportunityService;
     private final OldWorkflowQueryService oldWorkflowQueryService;
-    private final HistoryService historyService;
-    private final RepositoryService repositoryService;
-    private final TaskService taskService;
-    private final IdentityService identityService;
-    private final RuntimeService runtimeService;
+    private final ToppWorkflowService toppWorkflowService;
     private final IToppContractService contractService;
     private final ToppContractIncludeTypeMoneyService includeTypeMoneyService;
     private final ToppContractMapper toppContractMapper;
@@ -117,59 +100,31 @@ public class OppoCloseController {
             } else {
                 // 新系统流程：从 Flowable 表查询
                 try {
-                    HistoricProcessInstance hisProcIns = historyService.createHistoricProcessInstanceQuery()
-                        .processInstanceId(pi).singleResult();
-                    if (hisProcIns != null) {
-                        String bpmnXml = queryBpmnXmlById(hisProcIns.getProcessDefinitionId());
+                    Map<String, Object> procInfo = toppWorkflowService.getHistoricProcessInfo(pi);
+                    Object processDefId = procInfo.get("processDefinitionId");
+                    if (processDefId != null) {
+                        String bpmnXml = toppWorkflowService.queryProcessModelBpmnXml((String) processDefId);
                         result.put("bpmnXml", bpmnXml);
-                        // 流程是否已结束（已办页面不展示操作按钮）
-                        result.put("finished", hisProcIns.getEndTime() != null);
-                    } else {
-                        result.put("finished", true);
                     }
+                    result.put("finished", procInfo.get("finished"));
                 } catch (Exception e) {
                     log.warn("获取新系统BPMN XML失败", e);
                 }
 
-                // 查询历史活动节点
-                List<HistoricActivityInstance> actInsts = historyService.createHistoricActivityInstanceQuery()
-                    .processInstanceId(pi)
-                    .orderByHistoricActivityInstanceStartTime().asc()
-                    .list();
-
+                // 查询历史活动节点（引擎读取收口在商机门面）
+                List<Map<String, Object>> actInsts = toppWorkflowService.listHistoricActivityTrace(pi);
                 List<Map<String, Object>> nodeList = new ArrayList<>();
-                for (HistoricActivityInstance act : actInsts) {
+                for (Map<String, Object> act : actInsts) {
                     // 过滤掉sequenceFlow（老系统不展示连线节点）
-                    if ("sequenceFlow".equals(act.getActivityType())) {
+                    if ("sequenceFlow".equals(act.get("activityType"))) {
                         continue;
                     }
-                    Map<String, Object> node = new HashMap<>();
-                    node.put("activityId", act.getActivityId());
-                    node.put("activityName", act.getActivityName());
-                    node.put("activityType", act.getActivityType());
-                    node.put("startTime", act.getStartTime());
-                    node.put("endTime", act.getEndTime());
-                    node.put("assignee", act.getAssignee());
-                    node.put("taskId", act.getTaskId());
-                    node.put("duration", act.getDurationInMillis());
-                    nodeList.add(node);
+                    nodeList.add(act);
                 }
                 result.put("historyNodes", nodeList);
 
-                // 查询审批意见
-                List<Comment> flowableComments = taskService.getProcessInstanceComments(pi);
-                List<Map<String, Object>> commentList = new ArrayList<>();
-                if (flowableComments != null) {
-                    for (Comment c : flowableComments) {
-                        Map<String, Object> cm = new HashMap<>();
-                        cm.put("taskId", c.getTaskId());
-                        cm.put("message", c.getFullMessage());
-                        cm.put("time", c.getTime());
-                        cm.put("userId", c.getUserId());
-                        cm.put("type", c.getType());
-                        commentList.add(cm);
-                    }
-                }
+                // 查询审批意见（引擎读取收口在商机门面）
+                List<Map<String, Object>> commentList = toppWorkflowService.listProcessComments(pi);
                 result.put("comments", commentList);
                 result.put("historyTasks", nodeList);
             }
@@ -215,19 +170,6 @@ public class OppoCloseController {
     }
 
     /**
-     * 获取BPMN定义XML
-     */
-    private String queryBpmnXmlById(String processDefId) {
-        try {
-            InputStream inputStream = repositoryService.getProcessModel(processDefId);
-            return ModelUtils.ensureBpmnHasDiagram(IoUtil.readUtf8(inputStream));
-        } catch (Exception e) {
-            log.warn("加载BPMN XML异常", e);
-            return null;
-        }
-    }
-
-    /**
      * 校验合同编号唯一性（对照老系统 ContractAction.validbind line 878）
      */
     @PostMapping("/validbind")
@@ -247,14 +189,13 @@ public class OppoCloseController {
         if (order == null) {
             return R.fail("工单不存在");
         }
-        // 完成流程任务（先添加审批意见，再complete，否则task已结束会报错）
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
+        // 完成流程任务（先identity + 审批意见，再complete，否则task已结束会报错；引擎收口在商机门面）
         Map<String, Object> variables = new HashMap<>();
         variables.put("action", "close");
         variables.put("opinion", "关闭");
         variables.put("resultMemo", reason);
-        taskService.addComment(taskId, order.getPiId(), "关闭: " + reason);
-        taskService.complete(taskId, variables);
+        toppWorkflowService.completeTaskWithUser(taskId, order.getPiId(),
+                LoginHelper.getUserId(), "关闭: " + reason, variables);
 
         // 老系统逻辑：工单结束原因为"0"（客户经理已处理），batchFlag=0，status=end
         ToppOrderBo orderBo = new ToppOrderBo();
@@ -284,8 +225,11 @@ public class OppoCloseController {
             oppBo.setSignTime(DateUtils.parseDate(newSignTime));
             opportunityService.updateByBo(oppBo);
         }
-        // 完成流程任务
-        completeTask(taskId, order.getPiId(), "modify_sign_time", "修改签约时间至：" + newSignTime);
+        // 完成流程任务（引擎收口在商机门面）
+        Map<String, Object> signVars = new HashMap<>();
+        signVars.put("action", "modify_sign_time");
+        toppWorkflowService.completeTaskWithUser(taskId, order.getPiId(),
+                LoginHelper.getUserId(), "修改签约时间至：" + newSignTime, signVars);
 
         // 老系统逻辑：工单结束
         ToppOrderBo orderBo = new ToppOrderBo();
@@ -428,12 +372,11 @@ public class OppoCloseController {
             return R.fail("启动合同审核流程失败：" + e.getMessage());
         }
 
-        // 8. 完成原商机关闭流程任务
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
+        // 8. 完成原商机关闭流程任务（引擎收口在商机门面）
         Map<String, Object> variables = new HashMap<>();
         variables.put("action", "conversion");
-        taskService.addComment(taskId, order.getPiId(), "转化商机");
-        taskService.complete(taskId, variables);
+        toppWorkflowService.completeTaskWithUser(taskId, order.getPiId(),
+                LoginHelper.getUserId(), "转化商机", variables);
 
         // 9. 工单结束
         ToppOrderBo orderBo = new ToppOrderBo();
@@ -460,16 +403,9 @@ public class OppoCloseController {
         }
         Long projectManagerId = projectManagerIds.get(0);
 
-        // 2. 构建流程变量（纯数字字符串，不用老系统的 ,userId, 格式）
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("contract_user1", String.valueOf(currentUserId));
-        variables.put("contract_user2", String.valueOf(projectManagerId));
-        variables.put("contract_flag1", 0); // 0=送审
-        variables.put("contractId", contractId);
-        variables.put("oppoId", oppoId);
-
-        // 3. 启动 Flowable 流程
-        ProcessInstance pi = runtimeService.startProcessInstanceByKey("topp_contract_audit_process", variables);
+        // 2/3. 构建流程变量（纯数字字符串，不用老系统的 ,userId, 格式）并启动 Flowable 流程（引擎收口在商机门面）
+        String piId = toppWorkflowService.startContractAuditProcess("topp_contract_audit_process",
+                currentUserId, projectManagerId, contractId, oppoId);
 
         // 4. 创建合同审核工单
         ToppOrderBo auditOrderBo = new ToppOrderBo();
@@ -478,36 +414,21 @@ public class OppoCloseController {
         auditOrderBo.setOrderType("contract_audit");
         auditOrderBo.setOppoId(oppoId);
         auditOrderBo.setContractId(contractId);
-        auditOrderBo.setPiId(pi.getId());
+        auditOrderBo.setPiId(piId);
         auditOrderBo.setStatus(OrderStatusEnum.RUNNING.getCode());
         auditOrderBo.setProcessEngine(ProcessEngineEnum.FLOWABLE.name());
         orderService.insertByBo(auditOrderBo);
 
         // 5. 完成第一个任务（contract_add），自动路由到 xmgly_audit
-        Task firstTask = taskService.createTaskQuery().processInstanceId(pi.getId()).singleResult();
-        if (firstTask != null) {
-            Map<String, Object> completeVars = new HashMap<>();
-            completeVars.put("contract_flag1", 0); // 送审
-            taskService.complete(firstTask.getId(), completeVars);
-        }
+        Map<String, Object> completeVars = new HashMap<>();
+        completeVars.put("contract_flag1", 0); // 送审
+        toppWorkflowService.completeFirstTaskOfProcess(piId, completeVars);
 
-        return pi.getId();
+        return piId;
     }
 
     private Long parseLong(String val, Long defaultVal) {
         if (StringUtils.isBlank(val)) return defaultVal;
         try { return Long.valueOf(val); } catch (NumberFormatException e) { return defaultVal; }
-    }
-
-    /**
-     * 完成Flowable流程任务
-     */
-    private void completeTask(String taskId, String procInsId, String action, String comment) {
-        identityService.setAuthenticatedUserId(String.valueOf(LoginHelper.getUserId()));
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("action", action);
-        // 先添加审批意见，再complete（否则task已结束会报错）
-        taskService.addComment(taskId, procInsId, comment);
-        taskService.complete(taskId, variables);
     }
 }

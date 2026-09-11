@@ -64,10 +64,10 @@ public class WotvExpireWarningBusinessContextProvider extends AbstractWarningBus
             extraData.put("records", new ArrayList<>());
         }
 
-        // 跟踪情况选项（按 orderType 过滤 wide_follow_up）
+        // 跟踪情况选项：沃TV独立下拉（type=wotv_expire_warning），setting_str3 区分 1=完成 2=跟踪中 3=转派
         try {
-            extraData.put("followUpOptions", sysCodeService.getCodeMapByTypeAndSettingStr3(
-                    "wide_follow_up", "wotv_expire_warning"));
+            extraData.put("followUpOptions", sysCodeService.getCodeMapGroupBySettingStr3(
+                    "wotv_expire_warning"));
         } catch (Exception e) {
             log.warn("查询wotv_expire_warning跟踪情况选项失败", e);
             extraData.put("followUpOptions", new LinkedHashMap<>());

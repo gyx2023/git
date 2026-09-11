@@ -60,4 +60,22 @@ public interface ICustSalesService {
      * @return key 为产品编码，value 为产品名称
      */
     LinkedHashMap<String, String> getProductOptions();
+
+    /**
+     * 按目标用户主键集合查询"营销成功产品"可选列表（对齐老框架 getProductList(userIds)）。
+     * <p>
+     * 优先取所选用户的推荐产品 MKT_PRODUCT_ID_1/2，结果为空时回退 MKT_DISCNT_CODE_1/2，
+     * "其它"（code=1）恒置于最后。
+     * </p>
+     *
+     * @param userIds ftp_broadband_market_user.ID_ 集合（弹窗本次选中的用户）
+     */
+    java.util.List<java.util.Map<String, Object>> getProductListByUserIds(java.util.List<Integer> userIds);
+
+    /**
+     * 按工单查询"业务受理结果"明细（受理结果文件回传，对齐老框架 findCustSaleForResultPage）。
+     *
+     * @param orderId 工单ID
+     */
+    java.util.List<java.util.Map<String, Object>> getAcceptResultsByOrderId(Long orderId);
 }

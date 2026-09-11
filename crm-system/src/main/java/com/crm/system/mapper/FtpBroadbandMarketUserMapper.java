@@ -64,4 +64,20 @@ public interface FtpBroadbandMarketUserMapper extends BaseMapperPlus<FtpBroadban
                           @Param("result") Integer result,
                           @Param("orderProduct") String orderProduct,
                           @Param("otherProductName") String otherProductName);
+
+    /**
+     * 按用户主键集合查询可选的营销成功产品（推荐产品1/2，DISTINCT + UNION ALL，与老框架 getProductList 一致）
+     *
+     * @param userIds ftp_broadband_market_user.ID_ 集合
+     * @return code=产品编码 name=产品名称
+     */
+    List<Map<String, Object>> selectProductOptionsByUserIds(@Param("userIds") List<Integer> userIds);
+
+    /**
+     * 按用户主键集合查询可选营销产品（回退用：推荐产品为空时取资费/折扣产品1/2）
+     *
+     * @param userIds ftp_broadband_market_user.ID_ 集合
+     * @return code=产品编码 name=产品名称
+     */
+    List<Map<String, Object>> selectDiscntOptionsByUserIds(@Param("userIds") List<Integer> userIds);
 }

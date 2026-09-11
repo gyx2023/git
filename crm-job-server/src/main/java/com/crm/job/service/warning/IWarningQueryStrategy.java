@@ -46,6 +46,17 @@ public interface IWarningQueryStrategy {
     }
 
     /**
+     * 双节点流程（double_approval）第二节点显示名。
+     * <p>
+     * 默认"稽核人员处理"；
+     * 宽带专项营销(custSales) 的第二节点语义为"业务受理"，需覆盖为"业务受理"。
+     * </p>
+     */
+    default String getSecondNodeName() {
+        return "稽核人员处理";
+    }
+
+    /**
      * 构建前端跳转URL
      * <p>
      * 若不重写，使用默认 URL：/warning/toDeal?orderType=xxx&orderId=xxx

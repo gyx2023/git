@@ -108,7 +108,7 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
         String grpCode = getString(row.get("grp_code"));
         if (StringUtils.isNotBlank(grpCode)) {
             TcommCustomer customer = tcommCustomerMapper.selectOne(
-                    new LambdaQueryWrapper<TcommCustomer>().eq(TcommCustomer::getCustNo, grpCode));
+                    new LambdaQueryWrapper<TcommCustomer>().eq(TcommCustomer::getCustNo, grpCode).last("LIMIT 1"));
             if (customer != null) {
                 record.setCustId(customer.getId());
             }
