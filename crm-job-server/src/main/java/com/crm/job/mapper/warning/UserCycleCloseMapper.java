@@ -44,6 +44,7 @@ public interface UserCycleCloseMapper {
             "  AND DATE_FORMAT(f.CREATE_DATE, '%Y%m%d') = #{date}",
             "  AND o.status_ &lt;&gt; 'end'",
             "  AND o.process_engine = 'FLOWABLE'",
+            "  AND o.order_category = 'C'",
             "  AND o.order_type IN",
             "  <foreach collection='orderTypes' item='ot' open='(' separator=',' close=')'>#{ot}</foreach>",
             "</script>"})
@@ -69,6 +70,7 @@ public interface UserCycleCloseMapper {
             "  AND (f.CYCLE_FLAG = 0 OR o.status_ = 'end')",
             "  AND DATE_FORMAT(f.CREATE_DATE, '%Y%m%d') = #{date}",
             "  AND o.process_engine = 'FLOWABLE'",
+            "  AND o.order_category = 'C'",
             "  AND o.order_type IN",
             "  <foreach collection='orderTypes' item='ot' open='(' separator=',' close=')'>#{ot}</foreach>",
             "</script>"})
