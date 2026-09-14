@@ -4,8 +4,79 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.rpa.RpaKpiStatisticsResultMapper">
 
+    <resultMap id="RpaKpiStatisticsResultMap"
+               type="com.crm.system.domain.dao.rpa.RpaKpiStatisticsResultDo">
+        <result property="taskSource" column="TASK_SOURCE"/>
+        <result property="kpiType" column="KPI_TYPE"/>
+        <result property="busiTypeLevel" column="BUSI_TYPE_LEVEL"/>
+        <result property="busiTypeTypePar" column="BUSI_TYPE_TYPE_PAR"/>
+        <result property="kpiName" column="KPI_NAME"/>
+        <result property="busiOrder" column="BUSI_ORDER"/>
+        <result property="isDisplay" column="IS_DISPLAY"/>
+        <result property="busiDisplayDistrict" column="BUSI_DISPLAY_DISTRICT"/>
+        <result property="etlTime" column="ETL_TIME"/>
+        <result property="dataCycleD" column="DATA_CYCLED"/>
+        <result property="monthId" column="MONTH_ID"/>
+        <result property="YEAR" column="YEAR"/>
+        <result property="areaCode" column="AREA_CODE"/>
+        <result property="countyCode" column="COUNTY_CODE"/>
+        <result property="zoneCode" column="ZONE_CODE"/>
+        <result property="dataLevel" column="DATA_LEVEL"/>
+        <result property="dataRequency" column="DATA_REQUENCY"/>
+        <result property="kpiId" column="KPI_ID"/>
+        <result property="kpiValue" column="KPI_VALUE"/>
+        <result property="monthVal" column="MONTH_VAL"/>
+        <result property="monthRatio" column="MONTH_RATIO"/>
+        <result property="yearVal" column="YEAR_VAL"/>
+        <result property="yearRatio" column="YEAR_RATIO"/>
+        <result property="kpiValName1" column="KPI_VAL_NAME1"/>
+        <result property="kpiValAdd1" column="KPI_VAL_ADD1"/>
+        <result property="kpiValName2" column="KPI_VAL_NAME2"/>
+        <result property="kpiValAdd2" column="KPI_VAL_ADD2"/>
+        <result property="kpiDesc" column="KPI_DESC"/>
+        <result property="系统编码" column="系统编码"/>
+    </resultMap>
+
+    <sql id="selectRpaKpiStatisticsResultColumns">
+        SELECT TASK_SOURCE,
+               KPI_TYPE,
+               BUSI_TYPE_LEVEL,
+               BUSI_TYPE_TYPE_PAR,
+               KPI_NAME,
+               BUSI_ORDER,
+               IS_DISPLAY,
+               BUSI_DISPLAY_DISTRICT,
+               ETL_TIME,
+               DATA_CYCLED,
+               MONTH_ID,
+               YEAR,
+               AREA_CODE,
+               COUNTY_CODE,
+               ZONE_CODE,
+               DATA_LEVEL,
+               DATA_REQUENCY,
+               KPI_ID,
+               KPI_VALUE,
+               MONTH_VAL,
+               MONTH_RATIO,
+               YEAR_VAL,
+               YEAR_RATIO,
+               KPI_VAL_NAME1,
+               KPI_VAL_ADD1,
+               KPI_VAL_NAME2,
+               KPI_VAL_ADD2,
+               KPI_DESC,
+               系统编码
+        FROM rpa_kpi_statistics_result
+    </sql>
+
     <select id="callProcessData" statementType="CALLABLE">
         {CALL rpa_result()}
+    </select>
+
+    <select id="selectByDataCycle" resultMap="RpaKpiStatisticsResultMap">
+        <include refid="selectRpaKpiStatisticsResultColumns"/>
+        WHERE DATA_CYCLED = #{dataCycleD}
     </select>
 
 </mapper>

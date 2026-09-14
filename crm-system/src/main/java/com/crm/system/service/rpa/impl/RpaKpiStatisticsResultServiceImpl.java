@@ -1,11 +1,13 @@
-package com.crm.system.service.impl;
+package com.crm.system.service.rpa.impl;
 
+import com.crm.system.domain.dao.rpa.RpaKpiStatisticsResultDo;
 import com.crm.system.mapper.rpa.RpaKpiStatisticsResultMapper;
 import com.crm.system.service.rpa.IRpaKpiStatisticsResultService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * RPA KPI 统计结果服务实现。
@@ -23,5 +25,10 @@ public class RpaKpiStatisticsResultServiceImpl implements IRpaKpiStatisticsResul
     @Transactional(rollbackFor = Exception.class)
     public void callProcessData() {
         rpaKpiStatisticsResultMapper.callProcessData();
+    }
+
+    @Override
+    public List<RpaKpiStatisticsResultDo> selectByDataCycle(String dataCycleD) {
+        return rpaKpiStatisticsResultMapper.selectByDataCycle(dataCycleD);
     }
 }
