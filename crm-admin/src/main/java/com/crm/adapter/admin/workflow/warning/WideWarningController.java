@@ -177,7 +177,6 @@ public class WideWarningController extends BaseController {
             if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
                     || "wide_second".equals(endedOrder.getOrderType())
                     || "special_activity_warn".equals(endedOrder.getOrderType())
-                    || "wide_second".equals(endedOrder.getOrderType())
                     || "Wide".equals(endedOrder.getOrderType()))) {
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
             }
