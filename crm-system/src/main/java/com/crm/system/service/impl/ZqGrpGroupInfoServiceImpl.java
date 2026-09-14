@@ -185,10 +185,10 @@ public class ZqGrpGroupInfoServiceImpl implements IZqGrpGroupInfoService {
     public TableDataInfo<ZqGrpGroupInfoVo2> queryPageListWithoutSensitive(ZqGrpGroupInfoBo bo, PageQuery pageQuery, String grpCreateTimeBegin, String grpCreateTimeEnd) {
         LambdaQueryWrapper<ZqGrpGroupInfo> lqw = buildQueryWrapper(bo);
         LoginUser loginUser = LoginHelper.getLoginUser();
-//        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
-//        if(deptLevel>=1){
-//            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
-//        }
+        Integer deptLevel =  repSysPersonNewDMapper.getDeptLevel(loginUser.getUsername());
+        if(deptLevel>=1){
+            lqw.eq(ZqGrpGroupInfo::getGrpExpandType, GrpExpandTypeenum.PROVINCE_ZT.getCode());
+        }
 
         // 处理时间范围参数
         if (grpCreateTimeBegin != null && !grpCreateTimeBegin.isEmpty() && grpCreateTimeEnd != null && !grpCreateTimeEnd.isEmpty()) {
