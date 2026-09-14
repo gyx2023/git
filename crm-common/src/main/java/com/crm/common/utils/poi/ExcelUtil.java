@@ -38,6 +38,24 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExcelUtil {
 
+    private static final String EXCEL_XLSX_EXTENSION = ".xlsx";
+    private static final String EXCEL_XLS_EXTENSION = ".xls";
+
+    /**
+     * 校验文件名是否为 Excel 格式（xls/xlsx，忽略大小写）。
+     * 供上传入口在用 EasyExcel 解析前做后缀白名单校验，避免任意后缀文件进入解析器。
+     *
+     * @param filename 文件名（可为 null）
+     * @return 是否为 xls/xlsx
+     */
+    public static boolean isExcelFile(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return false;
+        }
+        String lower = filename.toLowerCase();
+        return lower.endsWith(EXCEL_XLSX_EXTENSION) || lower.endsWith(EXCEL_XLS_EXTENSION);
+    }
+
     /**
      * 同步导入(适用于小数据量)
      *
