@@ -6,12 +6,10 @@ import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.crm.common.config.AbilityProperties;
+import com.crm.job.utils.HttpClientUtil;
 import com.crm.system.domain.dao.rpa.RpaKpiStatisticsResultDo;
 import com.crm.system.service.rpa.IRpaKpiStatisticsResultService;
 import com.crm.system.service.sys.ISysParamService;
-import com.crm.system.utils.HttpClientUtil;
-import com.crm.system.utils.HttpRequestConfig;
-import com.crm.system.utils.HttpResponseResult;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -118,21 +116,9 @@ public class RpaKpiDataJob {
         }
     }
 
-    private void pushKpiData(String pushUrl, List<RpaKpiStatisticsResultDo> kpiDataList) {
+    private void pushKpiData(String pushUrl, List<RpaKpiStatisticsResultDo> kpiDataList) throws Exception {
         String requestJson = buildRequestJson(kpiDataList);
-        HttpRequestConfig requestConfig = HttpRequestConfig.builder()
-            .connectTimeout(10000)
-            .socketTimeout(10000)
-            .build();
-
-        HttpResponseResult<String> httpResult = HttpClientUtil.doPost(pushUrl, requestJson, requestConfig);
-        if (!httpResult.isSuccess()) {
-            throw new IllegalStateException(
-                "HTTP 请求失败，status=" + httpResult.getStatusCode() +
-                    "，message=" + httpResult.getErrorMessage());
-        }
-
-        String responseBody = httpResult.getRawResponse();
+        String responseBody = HttpClientUtil.doPost(pushUrl, requestJson, "UTF-8");
         if (StrUtil.isBlank(responseBody)) {
             throw new IllegalStateException("智慧大脑 KPI 推送接口返回为空");
         }
@@ -140,18 +126,21 @@ public class RpaKpiDataJob {
         JSONObject responseJson = JSON.parseObject(responseBody);
         JSONObject uniBssBody = responseJson.getJSONObject("UNI_BSS_BODY");
         if (uniBssBody == null) {
-            throw new IllegalStateException("接口响应缺少 UNI_BSS_BODY：" + responseBody);
+            throw new IllegalStateException("接口响应缺少 UNI_BSS_BODY");
         }
 
         JSONObject kpiResponse = uniBssBody.getJSONObject("INSERT_SYSTEM_KPI_DATA_RSP");
         if (kpiResponse == null) {
-            throw new IllegalStateException(
-                "接口响应缺少 INSERT_SYSTEM_KPI_DATA_RSP：" + responseBody);
+            throw new IllegalStateException("接口响应缺少 INSERT_SYSTEM_KPI_DATA_RSP");
         }
 
         Integer code = kpiResponse.getInteger("code");
         if (!Integer.valueOf(200).equals(code)) {
-            throw new IllegalStateException("智慧大脑 KPI 推送业务失败：" + kpiResponse.toJSONString());
+            String message = StrUtil.blankToDefault(kpiResponse.getString("msg"),
+                kpiResponse.getString("message"));
+            throw new IllegalStateException(
+                "智慧大脑 KPI 推送业务失败，code=" + code +
+                    "，message=" + StrUtil.maxLength(message, 500));
         }
         logBoth("智慧大脑 KPI 推送接口返回成功，code：{}", code);
     }
