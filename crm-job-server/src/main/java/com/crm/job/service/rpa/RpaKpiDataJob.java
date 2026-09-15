@@ -57,32 +57,29 @@ public class RpaKpiDataJob {
         logBoth("开始执行数据加工与推送任务，数据账期：{}", dataCycleD);
 
         try {
+            // 调用存储过程加工数据
             long processStartTime = System.currentTimeMillis();
             logBoth("开始调用存储过程 rpa_result()");
             rpaKpiStatisticsResultService.callProcessData();
-            logBoth("存储过程 rpa_result() 执行完成，耗时：{}ms",
-                System.currentTimeMillis() - processStartTime);
+            logBoth("存储过程 rpa_result() 执行完成，耗时：{}ms", System.currentTimeMillis() - processStartTime);
 
+            // 查询账期数据
             long queryStartTime = System.currentTimeMillis();
-            List<RpaKpiStatisticsResultDo> kpiDataList =
-                rpaKpiStatisticsResultService.selectByDataCycle(dataCycleD);
-            logBoth("待推送数据查询完成，数据账期：{}，数据量：{}，耗时：{}ms",
-                dataCycleD, kpiDataList.size(), System.currentTimeMillis() - queryStartTime);
+            List<RpaKpiStatisticsResultDo> kpiDataList = rpaKpiStatisticsResultService.selectByDataCycle(dataCycleD);
+            logBoth("待推送数据查询完成，数据账期：{}，数据量：{}，耗时：{}ms", dataCycleD, kpiDataList.size(), System.currentTimeMillis() - queryStartTime);
 
+            // 查询配置
             String pushUrl = getPushUrl();
             validateAbilityConfig();
 
+            // 调用大脑接口推数据
             long pushStartTime = System.currentTimeMillis();
-            logBoth("开始推送智慧大脑 KPI 数据，地址：{}，taskSource：{}，数据量：{}",
-                pushUrl, TASK_SOURCE, kpiDataList.size());
+            logBoth("开始推送智慧大脑 KPI 数据，地址：{}，taskSource：{}，数据量：{}", pushUrl, TASK_SOURCE, kpiDataList.size());
             pushKpiData(pushUrl, kpiDataList);
-            logBoth("智慧大脑 KPI 数据推送成功，数据账期：{}，数据量：{}，耗时：{}ms",
-                dataCycleD, kpiDataList.size(), System.currentTimeMillis() - pushStartTime);
+            logBoth("智慧大脑 KPI 数据推送成功，数据账期：{}，数据量：{}，耗时：{}ms", dataCycleD, kpiDataList.size(), System.currentTimeMillis() - pushStartTime);
 
             long costTime = System.currentTimeMillis() - taskStartTime;
-            String successMessage = String.format(
-                "RPA KPI 数据加工与推送完成，数据账期：%s，数据量：%d，总耗时：%dms",
-                dataCycleD, kpiDataList.size(), costTime);
+            String successMessage = String.format("RPA KPI 数据加工与推送完成，数据账期：%s，数据量：%d，总耗时：%dms",dataCycleD, kpiDataList.size(), costTime);
             logBoth(successMessage);
             XxlJobHelper.handleSuccess(successMessage);
         } catch (Exception e) {
@@ -100,9 +97,7 @@ public class RpaKpiDataJob {
         Map<String, String> params = sysParamService.findValueMapsByType(PARAM_TYPE);
         String pushUrl = params.get(URL_PARAM_CODE);
         if (StrUtil.isBlank(pushUrl)) {
-            throw new IllegalStateException(
-                "sys_param 未配置智慧大脑 KPI 推送地址：type=" + PARAM_TYPE +
-                    "，code=" + URL_PARAM_CODE);
+            throw new IllegalStateException("sys_param 未配置智慧大脑 KPI 推送地址：type=" + PARAM_TYPE + "，code=" + URL_PARAM_CODE);
         }
         return pushUrl;
     }
