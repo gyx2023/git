@@ -108,6 +108,8 @@ public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivity
         record.put("openDate", getString(row.get("open_date")));
         record.put("grpCode", getString(row.get("grp_code")));
         record.put("grpName", getString(row.get("grp_name")));
+        record.put("areaName", getString(row.get("area_name")));
+        record.put("countyName", getString(row.get("county_name")));
 
         // 解析 warning_info（|| 分隔，共4段）：专属活动ID|专属活动名称|生效时间|失效时间
         String warningInfo = getString(row.get("warning_info"));
@@ -124,6 +126,9 @@ public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivity
         record.put("renewalTime",   getString(row.get("ep_special_create_date")));
         record.put("newEffTime",    getString(row.get("ep_special_eff_date")));
         record.put("newExpTime",    getString(row.get("ep_special_exp_date")));
+        // 是否续约：根据是否有续约活动名称来判断
+        String newSchemeName = getString(row.get("ep_special_scheme_name"));
+        record.put("isXy", (newSchemeName != null && !newSchemeName.trim().isEmpty()) ? "是" : "否");
 
         // 闭环信息（cycle_warning_info：是否续约等）
         String cycleInfo = getString(row.get("cycle_warning_info"));
