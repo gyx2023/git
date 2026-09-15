@@ -323,7 +323,8 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         if (order != null && ("wide_second".equals(order.getOrderType())
                 || "double_wide_second".equals(order.getOrderType())
                 || "wotv_expire_warning".equals(order.getOrderType())
-                || "special_activity_warn".equals(order.getOrderType()))) {
+                || "special_activity_warn".equals(order.getOrderType())
+                || "hmd_warn".equals(order.getOrderType()))) {
             bo.setEndReason("0");
             if (followUp != null) {
                 if ("其他".equals(followUp) && otherReason != null) {
