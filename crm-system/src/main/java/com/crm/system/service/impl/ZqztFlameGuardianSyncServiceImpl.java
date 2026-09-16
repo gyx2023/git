@@ -162,7 +162,6 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         req.setStreet(areaName(areaNames, info.getStreetId()));
         req.setCloudId(info.getCloudAccount());
         req.setMerchantName(info.getCompanyName());
-        req.setMerchantNum(info.getCloudOrgId());
         req.setCreditCode(info.getCreditCode());
         req.setManageAddress(info.getActualAddress());
         req.setIndustry(info.getIndustryId());
@@ -171,7 +170,7 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         req.setSafetyPersonList(buildSafetyPersonList(info));
         req.setBroadbandServiceType(BROADBAND_SERVICE_TYPE);
         req.setBroadbandAccountList(buildBroadbandAccounts(info.getBroadbandAccount()));
-        req.setDeviceList(buildDeviceList(info.getId()));
+        req.setDeviceList(buildDeviceList(info));
         req.setComboList(buildComboList(info));
         return req;
     }
@@ -211,10 +210,10 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         return Collections.singletonList(account);
     }
 
-    /** 设备列表：取自台账云智眼配置子表 */
-    private List<FlameGuardianOrderReqDTO.Device> buildDeviceList(Long ledgerId) {
+    /** 设备列表：设备信息取自台账云智眼配置子表，带宽账号取主表 */
+    private List<FlameGuardianOrderReqDTO.Device> buildDeviceList(ZqztLedgerInfo info) {
         List<ZqztLedgerCloudConfig> configs = cloudConfigMapper.selectList(Wrappers.<ZqztLedgerCloudConfig>lambdaQuery()
-            .eq(ZqztLedgerCloudConfig::getLedgerId, ledgerId)
+            .eq(ZqztLedgerCloudConfig::getLedgerId, info.getId())
             .eq(ZqztLedgerCloudConfig::getIsValid, VALID)
             .orderByAsc(ZqztLedgerCloudConfig::getSortOrder));
         List<FlameGuardianOrderReqDTO.Device> list = new ArrayList<>();
@@ -227,6 +226,7 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
             device.setDeviceType(toApiDeviceType(config.getDeviceType()));
             device.setChannelCount(config.getCameraChannelCount() == null ? 1 : config.getCameraChannelCount());
             device.setPassword(config.getDevicePassword());
+            device.setBroadbandAccount(info.getBroadbandAccount());
             list.add(device);
         }
         return list;

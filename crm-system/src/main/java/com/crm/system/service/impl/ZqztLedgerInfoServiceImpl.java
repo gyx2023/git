@@ -152,10 +152,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setIsValid(VALID);
         // 全流程状态由完成时间推导：填了=已完成，没填=未完成
         entity.setStatus(entity.getFullProcessDate() != null ? VALID : INVALID);
-        // 录入了云智眼机构ID(模块7)才需要同步火焰卫士，否则保持库中默认值 0
-        if (StringUtils.isNotBlank(entity.getCloudOrgId())) {
-            entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
-        }
+        // 新增即进入火焰卫士同步队列
+        entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
         int rows = ledgerInfoMapper.insert(entity);
         saveCloudConfigs(entity.getId(), bo.getCloudVisionConfigs());
         return rows > 0;
@@ -184,14 +182,9 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setIsValid(VALID);
         // 全流程状态由完成时间推导：填了=已完成，没填=未完成
         entity.setStatus(entity.getFullProcessDate() != null ? VALID : INVALID);
-        // 火焰卫士同步：
-        //   机构ID(模块7)为空 → 退回默认 0，不再自动同步，避免拿着空 merchantNum 反复推送失败
-        //   库中仍是默认状态 0 且本次录入了机构ID → 置 1 待同步
-        //   已进入 1/2/3/4 的记录反复修改不再重新同步
-        if (StringUtils.isBlank(bo.getCloudOrgId())) {
-            entity.setFlameGuardianSyn(FLAME_SYN_DEFAULT);
-        } else if (exist.getFlameGuardianSyn() == null
-            || FLAME_SYN_DEFAULT.equals(exist.getFlameGuardianSyn())) {
+        // 火焰卫士同步：只把历史遗留的默认状态 0 推进到待同步 1；
+        // 已进入 1/2/3/4 的记录反复修改不再重新同步
+        if (exist.getFlameGuardianSyn() == null || FLAME_SYN_DEFAULT.equals(exist.getFlameGuardianSyn())) {
             entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
         }
         int rows = ledgerInfoMapper.updateById(entity);

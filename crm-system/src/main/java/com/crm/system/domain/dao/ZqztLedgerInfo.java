@@ -194,6 +194,20 @@ public class ZqztLedgerInfo implements Serializable {
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date fullProcessDate;
 
+    /**
+     * 火焰卫士受理结果回调回填
+     */
+    private String allSuccess;
+
+    /** 总结果描述；失败时返回原因 */
+    private String allDesc;
+
+    /** 总执行时长（秒） */
+    private Integer allTime;
+
+    /** 各步骤执行结果列表，json 格式整体存放，不按步骤拆分 */
+    private String stepList;
+
     /** 全流程状态(1已完成/0未完成) */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String status;

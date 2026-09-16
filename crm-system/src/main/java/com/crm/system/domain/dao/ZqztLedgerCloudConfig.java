@@ -1,6 +1,7 @@
 package com.crm.system.domain.dao;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -65,6 +66,27 @@ public class ZqztLedgerCloudConfig implements Serializable {
 
     /** 通道编码ID */
     private String channelCodeId;
+
+    /**
+     * 火焰卫士受理结果回调
+     */
+    private String deviceDesc;
+
+    /** 设备创建时间 */
+    private Date deviceCreateTime;
+
+    /** 用户名（国标编码） */
+    @TableField("device_gbCode")
+    private String deviceGbCode;
+
+    /** 资源包 ID */
+    private String comboId;
+
+    /** 资源包名称 */
+    private String comboName;
+
+    /** 服务节点 */
+    private String serviceNode;
 
     /** 排序号 */
     private Integer sortOrder;

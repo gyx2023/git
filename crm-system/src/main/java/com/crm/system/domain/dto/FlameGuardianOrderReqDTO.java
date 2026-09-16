@@ -35,9 +35,6 @@ public class FlameGuardianOrderReqDTO implements Serializable {
     /** 机构名称（企业名称） */
     private String merchantName;
 
-    /** 云智眼对应机构ID（企业ID） */
-    private String merchantNum;
-
     /** 统一社会信用代码 */
     private String creditCode;
 
@@ -102,6 +99,9 @@ public class FlameGuardianOrderReqDTO implements Serializable {
 
         /** 设备密码 */
         private String password;
+
+        /** 带宽账号（取台账主表带宽账号，同一订单下各设备相同） */
+        private String broadbandAccount;
     }
 
     /**
