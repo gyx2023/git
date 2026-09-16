@@ -145,6 +145,12 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
     }
 
     @Override
+    public boolean isDuplicateCheckEnabled() {
+        // 宽带二次预警不做建单去重：同一预警记录需随跑批多次建单（对齐旧系统 SecondWarningJob.wideSecondJob 不查重）
+        return false;
+    }
+
+    @Override
     public boolean isNotificationEnabled() {
         return true;
     }
