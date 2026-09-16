@@ -4,7 +4,9 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.IHmdExpireWarningDetailService;
 import com.crm.workflow.domain.vo.WfBusinessContext;
+import com.crm.workflow.domain.vo.WfBusinessSection;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -24,6 +26,9 @@ public class HmdExpireWarningBusinessContextProvider extends AbstractWarningBusi
 
     /** 处理页明细首屏页大小（与前端默认分页大小保持一致） */
     private static final int DEFAULT_PAGE_SIZE = 10;
+
+    /** 领导节点（audit_handle）的区块标题；经理节点沿用 {@link #getSectionTitle()} */
+    private static final String LEADER_SECTION_TITLE = "红名单到期审核";
 
     @Autowired
     private IHmdExpireWarningDetailService detailService;
@@ -57,6 +62,38 @@ public class HmdExpireWarningBusinessContextProvider extends AbstractWarningBusi
     @Override
     protected String getReminderText() {
         return "红名单即将到期，请及时联系客户续约";
+    }
+
+    /**
+     * 区块标题按当前任务节点区分：领导节点（audit_handle）→ 红名单到期审核，经理节点 → {@link #getSectionTitle()}。
+     * 基类先 add(sections) 再调 {@link #enrichExtraData}，扩展点无法改标题，故在此处（super 之后）改写。
+     */
+    @Override
+    public WfBusinessContext provide(String procInsId, String source, String procDefKey, ToppOrderVo order) {
+        WfBusinessContext ctx = super.provide(procInsId, source, procDefKey, order);
+        if (ctx != null && isLeaderNodeCurrentTask(procInsId)) {
+            List<WfBusinessSection> sections = ctx.getSections();
+            if (sections != null) {
+                for (WfBusinessSection section : sections) {
+                    if (getSectionKey().equals(section.getSectionKey())) {
+                        section.setTitle(LEADER_SECTION_TITLE);
+                        break;
+                    }
+                }
+            }
+        }
+        return ctx;
+    }
+
+    /** 当前任务是否在领导节点（taskDefinitionKey == audit_handle）；无当前任务（已结束）或查询异常返回 false */
+    private boolean isLeaderNodeCurrentTask(String procInsId) {
+        try {
+            Task currentTask = findCurrentTask(procInsId);
+            return currentTask != null && "audit_handle".equals(currentTask.getTaskDefinitionKey());
+        } catch (Exception e) {
+            log.warn("查询当前任务节点失败: procInsId={}", procInsId, e);
+            return false;
+        }
     }
 
     @Override
