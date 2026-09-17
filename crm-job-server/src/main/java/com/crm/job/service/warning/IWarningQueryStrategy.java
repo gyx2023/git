@@ -102,6 +102,18 @@ public interface IWarningQueryStrategy {
     }
 
     /**
+     * 是否启用建单重复校验（同一 infoId + orderType 已存在工单则跳过）。
+     * <p>
+     * 默认 true；部分预警不能查重，如宽带/双线二次预警（wide_second、double_wide_second）：
+     * 同一预警记录会随跑批多次生成工单（未续约 exte_flag 持续为 0 时持续提醒），
+     * 旧系统 SecondWarningJob 也不做重复校验，需重写返回 false 对齐旧行为。
+     * </p>
+     */
+    default boolean isDuplicateCheckEnabled() {
+        return true;
+    }
+
+    /**
      * 生成通知消息内容
      *
      * @param count 该客户经理待处理工单数
