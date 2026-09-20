@@ -54,6 +54,6 @@ public class ZqztLedgerInfoExportVo implements Serializable {
     private String status;
 
     @ExcelProperty("摄像头竣工时间")
-    @DateTimeFormat("yyyy-MM-dd")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private Date cameraFinishDate;
 }

@@ -63,6 +63,11 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     private static final String VALID = "1";
     private static final String INVALID = "0";
 
+    /** 火焰卫士同步状态：默认 */
+    private static final String FLAME_SYN_DEFAULT = "0";
+    /** 火焰卫士同步状态：待同步（其余状态 2/3/4 由同步任务维护） */
+    private static final String FLAME_SYN_PENDING = "1";
+
     /** 云智眼改密短信模板编码（能开 VERIFY_04，登录验证码模板） */
     private static final String SMS_VERIFY_TEMPLATE = "VERIFY_04";
     /** 能开短信发送成功码 */
@@ -147,6 +152,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setIsValid(VALID);
         // 全流程状态由完成时间推导：填了=已完成，没填=未完成
         entity.setStatus(entity.getFullProcessDate() != null ? VALID : INVALID);
+        // 新增即进入火焰卫士同步队列
+        entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
         int rows = ledgerInfoMapper.insert(entity);
         saveCloudConfigs(entity.getId(), bo.getCloudVisionConfigs());
         return rows > 0;
@@ -175,6 +182,11 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setIsValid(VALID);
         // 全流程状态由完成时间推导：填了=已完成，没填=未完成
         entity.setStatus(entity.getFullProcessDate() != null ? VALID : INVALID);
+        // 火焰卫士同步：只把历史遗留的默认状态 0 推进到待同步 1；
+        // 已进入 1/2/3/4 的记录反复修改不再重新同步
+        if (exist.getFlameGuardianSyn() == null || FLAME_SYN_DEFAULT.equals(exist.getFlameGuardianSyn())) {
+            entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
+        }
         int rows = ledgerInfoMapper.updateById(entity);
         saveCloudConfigs(bo.getId(), bo.getCloudVisionConfigs());
         return rows > 0;
