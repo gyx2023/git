@@ -62,8 +62,8 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date cameraInstallDate;
     private String cameraAccount;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date cameraFinishDate;
 
     /** 宽带信息 */
@@ -78,8 +78,8 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String broadbandConstructStatus;
     private String broadbandSporadicOrderNo;
     private String broadbandAccount;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date broadbandFinishDate;
 
     /** 云智眼账户 */

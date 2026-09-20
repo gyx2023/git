@@ -137,7 +137,7 @@ public class ZqztLedgerInfoController extends BaseController {
     @SaCheckPermission("system:ledger:list")
     @GetMapping("/userInDate/{serialNumber}")
     public R<String> userInDate(@PathVariable("serialNumber") String serialNumber) {
-        return R.ok(ledgerUserInfoService.queryUserInDate(serialNumber));
+        return R.ok("查询成功", ledgerUserInfoService.queryUserInDate(serialNumber));
     }
 
     /**
