@@ -147,6 +147,12 @@ public class DoubleWideSecondWarningStrategy extends AbstractWarningQueryStrateg
     }
 
     @Override
+    public boolean isDuplicateCheckEnabled() {
+        // 双线二次预警不做建单去重：同一预警记录需随跑批多次建单（对齐旧系统 SecondWarningJob.doubleWideSecondJob 不查重）
+        return false;
+    }
+
+    @Override
     public boolean isNotificationEnabled() {
         return true;
     }
