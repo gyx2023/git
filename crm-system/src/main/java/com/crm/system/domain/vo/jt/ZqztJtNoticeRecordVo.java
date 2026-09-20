@@ -127,5 +127,8 @@ public class ZqztJtNoticeRecordVo {
     @ExcelProperty(value = "返回报文体")
     private String resBody;
 
+    /** 无人工厂请求超时状态：null未判定，0未超时，1已超时。 */
+    private Integer requestTimeoutStatus;
+
 
 }
