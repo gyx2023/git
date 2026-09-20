@@ -61,6 +61,9 @@ public class FlameGuardianOrderResultBo implements Serializable {
         /** 设备描述 */
         private String desc;
 
+        /** 带宽账号 */
+        private String broadbandAccount;
+
         /** 设备创建时间（yyyy-MM-dd HH:mm:ss） */
         private String deviceCreateTime;
 
