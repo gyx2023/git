@@ -14,6 +14,7 @@ import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.BeanCopyUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.utils.file.FileUtils;
+import com.crm.common.utils.file.OssUploadValidator;
 import com.crm.common.utils.spring.SpringUtils;
 import com.crm.oss.core.OssClient;
 import com.crm.oss.entity.UploadResult;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -148,12 +150,27 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     @Override
     public SysOssVo upload(MultipartFile file) {
         String originalfileName = file.getOriginalFilename();
-        String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new ServiceException(e.getMessage());
+        }
+        // 【安全】白名单 + 高危内容/魔数校验，成功才返回服务端判定 Content-Type（不信任客户端声明）
+        String contentType;
+        try (InputStream in = new ByteArrayInputStream(bytes)) {
+            contentType = OssUploadValidator.validate(in, originalfileName, OssUploadValidator.SCAN_BYTES);
+        } catch (IllegalArgumentException e) {
+            throw new ServiceException(e.getMessage());
+        } catch (IOException e) {
+            throw new ServiceException(e.getMessage());
+        }
+        String suffix = OssUploadValidator.resolveExtension(originalfileName);
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult;
         try {
-            uploadResult = storage.uploadSuffix(file.getBytes(), suffix, file.getContentType());
-        } catch (IOException e) {
+            uploadResult = storage.uploadSuffix(bytes, suffix, contentType);
+        } catch (Exception e) {
             throw new ServiceException(e.getMessage());
         }
         // 保存文件信息
@@ -190,15 +207,27 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
      */
     @Override
     public SysOssVo upload(File file, String originalName) {
-        String suffix = StringUtils.substring(file.getName(), file.getName().lastIndexOf("."), file.getName().length());
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult;
+        byte[] fileBytes;
         try {
-            byte[] fileBytes = IoUtil.readBytes(new FileInputStream(file));
-            // 获取文件MIME类型
-            String contentType = FileUtils.getMimeType(file.getName());
-            uploadResult = storage.uploadSuffix(fileBytes, suffix, contentType);
+            fileBytes = IoUtil.readBytes(new FileInputStream(file));
         } catch (IOException e) {
+            throw new ServiceException(e.getMessage());
+        }
+        // 【安全】白名单 + 高危内容/魔数校验；Content-Type 服务端判定（不再据文件 GET 猜测 MIME）
+        String contentType;
+        try (InputStream in = new ByteArrayInputStream(fileBytes)) {
+            contentType = OssUploadValidator.validate(in, originalName, OssUploadValidator.SCAN_BYTES);
+        } catch (IllegalArgumentException e) {
+            throw new ServiceException(e.getMessage());
+        } catch (IOException e) {
+            throw new ServiceException(e.getMessage());
+        }
+        String suffix = OssUploadValidator.resolveExtension(originalName);
+        try {
+            uploadResult = storage.uploadSuffix(fileBytes, suffix, contentType);
+        } catch (Exception e) {
             throw new ServiceException(e.getMessage());
         }
         // 保存文件信息
@@ -244,18 +273,22 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     @Override
     public SysOssVo uploadFileByPath(File file, String path) {
         String originalfileName = file.getName();
-        String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult;
 
         try {
             byte[] bytes = IoUtil.readBytes(new FileInputStream(file));
-            String contentType = FileUtils.getMimeType(file.getName());
-
-            // 核心：自定义路径 + 文件名
+            // 【安全】同样统一校验（白名单 + 高危标记/魔数），type 服务端判定
+            String contentType;
+            try (InputStream in = new ByteArrayInputStream(bytes)) {
+                contentType = OssUploadValidator.validate(in, originalfileName, OssUploadValidator.SCAN_BYTES);
+            }
+            // 核心：自定义路径 + 文件名（文件名后缀已在校验层限定为白名单扩展，防脏后缀透传）
             String fileName = path + "/" + originalfileName;
 
             uploadResult = storage.upload(bytes, fileName, contentType);
+        } catch (IllegalArgumentException e) {
+            throw new ServiceException("文件上传失败：" + e.getMessage());
         } catch (IOException e) {
             throw new ServiceException("文件上传失败：" + e.getMessage());
         }
@@ -263,7 +296,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         // 保存记录
         SysOss oss = new SysOss();
         oss.setUrl(uploadResult.getUrl());
-        oss.setFileSuffix(suffix);
+        oss.setFileSuffix(OssUploadValidator.resolveExtension(originalfileName));
         oss.setFileName(uploadResult.getFilename());
         oss.setOriginalName(originalfileName);
         oss.setService(storage.getConfigKey());
