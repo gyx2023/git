@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;
+import com.crm.system.domain.dao.FtpTcUserCustWarningDo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.mapper.WotvExpireWarningAssignMapper;
 import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
 import com.crm.system.mapper.tcomm.TcommCustomerMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.warning.assign.IWarningAssignStrategy;
 import com.crm.system.service.warning.assign.WarningAssignContext;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WotvExpireWarningAssignStrategy implements IWarningAssignStrategy {
 
-    private final WotvExpireWarningAssignMapper assignMapper;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
     private final SysUsersMapper sysUsersMapper;
     private final TcommCustomerMapper tcommCustomerMapper;
     private final FtpCustBaseInfoMapper ftpCustBaseInfoMapper;
@@ -52,8 +53,9 @@ public class WotvExpireWarningAssignStrategy implements IWarningAssignStrategy {
         if (detailId == null || targetUserId == null) {
             return null;
         }
-        Map<String, Object> row = assignMapper.selectWotvById(detailId);
-        if (row == null || row.isEmpty()) {
+        // 按 detail_id 反查客户级预警行（限定期望的 warning_type）
+        FtpTcUserCustWarningDo row = ftpTcUserCustWarningService.getByIdAndWarningType(detailId, "C00024");
+        if (row == null) {
             log.warn("【沃TV指派】未找到原始预警行, detailId={}", detailId);
             return null;
         }
@@ -64,9 +66,9 @@ public class WotvExpireWarningAssignStrategy implements IWarningAssignStrategy {
             return null;
         }
 
-        String grpName = str(row.get("grp_name"));
-        String grpCode = str(row.get("grp_code"));
-        String custGrpId = str(row.get("cust_grp_id"));
+        String grpName = row.getGrpName();
+        String grpCode = row.getGrpCode();
+        String custGrpId = row.getCustGrpId() == null ? null : String.valueOf(row.getCustGrpId());
 
         WarningAssignContext ctx = new WarningAssignContext();
         ctx.setOrderType(getOrderType());
@@ -92,13 +94,13 @@ public class WotvExpireWarningAssignStrategy implements IWarningAssignStrategy {
         ctx.setExtraVariable("phone", targetUser.getRelationTel());
         ctx.setExtraVariable("_needOrderNumber", true);
         ctx.setExtraVariable("orderCategory", "C");
-        ctx.setExtraVariable("areaName", str(row.get("area_name")));
-        ctx.setExtraVariable("countyName", str(row.get("county_name")));
+        ctx.setExtraVariable("areaName", row.getAreaName());
+        ctx.setExtraVariable("countyName", row.getCountyName());
         ctx.setExtraVariable("grpCode", grpCode);
         ctx.setExtraVariable("custGrpId", custGrpId);
         // 被指派的处理人 OA 信息（供 assignSuccess 反查旧 sys_user 写 manager_id/name）
-        ctx.setExtraVariable("oaIdDev", str(row.get("oa_id_dev")));
-        ctx.setExtraVariable("oaNameDev", str(row.get("oa_name_dev")));
+        ctx.setExtraVariable("oaIdDev", row.getOaIdDev());
+        ctx.setExtraVariable("oaNameDev", row.getOaNameDev());
 
         // businessDep：对齐 job 策略用 custGrpId 查 ftp_cust_base_info.grp_busi_dept_type
         if (StringUtils.isNotBlank(custGrpId) && ftpCustBaseInfoMapper != null) {
@@ -124,7 +126,4 @@ public class WotvExpireWarningAssignStrategy implements IWarningAssignStrategy {
         return "/userCustWarning/dealByWotv?orderId=" + orderId;
     }
 
-    private String str(Object v) {
-        return v == null ? null : v.toString();
-    }
 }

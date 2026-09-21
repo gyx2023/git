@@ -49,14 +49,6 @@ public interface KdAddrWarningDetailMapper {
     Page<Map<String, Object>> selectPageByMainOrderFlowNo(Page<Map<String, Object>> page,
                                                           @Param("mainOrderFlowNo") String mainOrderFlowNo);
 
-    /**
-     * 按主订单流水号查询主记录获取 main_order_flow_no
-     *
-     * @param id ftp_tc_user_cust_warning 主键
-     * @return main_order_flow_no
-     */
-    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning WHERE id_ = #{id}"})
-    String selectMainOrderFlowNoById(@Param("id") Long id);
 
     /**
      * 更新单条明细的反馈状态

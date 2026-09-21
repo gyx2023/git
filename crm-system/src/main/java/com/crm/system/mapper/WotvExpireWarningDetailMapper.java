@@ -67,12 +67,4 @@ public interface WotvExpireWarningDetailMapper {
             + "ORDER BY w.id_"})
     IPage<Map<String, Object>> selectByMainOrderFlowNoPage(Page<?> page, @Param("mainOrderFlowNo") String mainOrderFlowNo);
 
-    /**
-     * 按主键查询 ftp_tc_user_cust_warning 获取 main_order_flow_no
-     *
-     * @param id ftp_tc_user_cust_warning 主键
-     * @return main_order_flow_no
-     */
-    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning WHERE id_ = #{id}"})
-    String selectMainOrderFlowNoById(@Param("id") Long id);
 }
