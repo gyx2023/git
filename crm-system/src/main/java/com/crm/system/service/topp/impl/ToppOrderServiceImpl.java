@@ -317,13 +317,16 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         bo.setStatus(OrderStatusEnum.END.getCode());
         bo.setBatchFlag(0);
 
-        // 宽带二次预警 / 双线二次预警 / 沃TV到期预警：完成时记录结束原因与跟踪情况
+        // 宽带二次预警 / 双线二次预警 / 沃TV到期预警 / 特殊活动到期预警 / 团购折扣到期预警：
+        // 完成时记录结束原因与跟踪情况
         // 2026-08-28 双线到期二次预警迁移补充：double_wide_second 同样记录 end_reason/wide_result
+        // 2026-09-21 团购折扣到期预警迁移补充：group_buy_warn 同样记录
         ToppOrderVo order = queryById(orderId);
         if (order != null && ("wide_second".equals(order.getOrderType())
                 || "double_wide_second".equals(order.getOrderType())
                 || "wotv_expire_warning".equals(order.getOrderType())
-                || "special_activity_warn".equals(order.getOrderType()))) {
+                || "special_activity_warn".equals(order.getOrderType())
+                || "group_buy_warn".equals(order.getOrderType()))) {
             bo.setEndReason("0");
             if (followUp != null) {
                 if ("其他".equals(followUp) && otherReason != null) {
