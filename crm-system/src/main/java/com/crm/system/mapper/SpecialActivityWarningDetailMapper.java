@@ -22,15 +22,6 @@ import java.util.Map;
 @Mapper
 public interface SpecialActivityWarningDetailMapper {
 
-    /**
-     * 新数据源：按主键回查客户级预警表 ftp_tc_user_cust_warning 的 main_order_flow_no。
-     *
-     * @param id 客户级预警行主键（工单 info_id）
-     * @return main_order_flow_no，无则 null
-     */
-    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning "
-            + "WHERE id_ = #{id}"})
-    String selectMainOrderFlowNoFromCust(@Param("id") Long id);
 
     /**
      * 历史数据兜底：按主键回查用户级预警表 ftp_tc_user_common_warning 的 main_order_flow_no。

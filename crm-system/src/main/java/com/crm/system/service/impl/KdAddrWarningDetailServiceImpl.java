@@ -3,6 +3,7 @@ package com.crm.system.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.KdAddrWarningDetailMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.IKdAddrWarningDetailService;
 import com.crm.system.service.topp.IToppOrderService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class KdAddrWarningDetailServiceImpl implements IKdAddrWarningDetailService {
 
     private final KdAddrWarningDetailMapper detailMapper;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
     private final IToppOrderService orderService;
 
     /** warning_info 字段分隔符 */
@@ -136,7 +138,7 @@ public class KdAddrWarningDetailServiceImpl implements IKdAddrWarningDetailServi
             log.warn("【kd_addr_warn】工单不存在或无关联记录, orderId={}", orderId);
             return null;
         }
-        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        String mainOrderFlowNo = ftpTcUserCustWarningService.getMainOrderFlowNoById(order.getInfoId());
         if (mainOrderFlowNo == null) {
             log.warn("【kd_addr_warn】未找到主订单流水号, infoId={}", order.getInfoId());
         }

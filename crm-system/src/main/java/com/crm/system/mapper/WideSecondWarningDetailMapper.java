@@ -68,14 +68,6 @@ public interface WideSecondWarningDetailMapper {
     List<Map<String, Object>> selectAllDetailByOrderFlowNo(@Param("mainOrderFlowNo") String mainOrderFlowNo,
                                                            @Param("targetDate") String targetDate);
 
-    /**
-     * 按 detailId（infoId）查询 ftp_tc_user_cust_warning 的 main_order_flow_no
-     *
-     * @param id ftp_tc_user_cust_warning 主键
-     * @return main_order_flow_no
-     */
-    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_cust_warning WHERE id_ = #{id}"})
-    String selectMainOrderFlowNoById(@Param("id") Long id);
 
     /**
      * 统计未续约用户明细数量（exte_flag = 0）

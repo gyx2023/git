@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.SpecialActivityWarningDetailMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.ISpecialActivityWarningDetailService;
 import com.crm.system.service.topp.IToppOrderService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ import java.util.Map;
 public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivityWarningDetailService {
 
     private final SpecialActivityWarningDetailMapper detailMapper;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
     private final IToppOrderService orderService;
 
     @Override
@@ -83,8 +85,9 @@ public class SpecialActivityWarningDetailServiceImpl implements ISpecialActivity
             log.warn("【special_activity_warn】工单不存在或无关联记录, orderId={}", orderId);
             return null;
         }
-        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoFromCust(order.getInfoId());
+        String mainOrderFlowNo = ftpTcUserCustWarningService.getMainOrderFlowNoById(order.getInfoId());
         if (mainOrderFlowNo == null || mainOrderFlowNo.isEmpty()) {
+            // 历史数据兜底：info_id 仍指向用户级表 ftp_tc_user_common_warning
             mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
         }
         if (mainOrderFlowNo == null || mainOrderFlowNo.isEmpty()) {

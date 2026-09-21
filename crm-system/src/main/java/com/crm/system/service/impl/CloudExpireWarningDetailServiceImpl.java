@@ -8,6 +8,7 @@ import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.CloudExpireWarningDetailMapper;
 import com.crm.system.service.ICloudExpireWarningDetailService;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.topp.IToppOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import java.util.Map;
 public class CloudExpireWarningDetailServiceImpl implements ICloudExpireWarningDetailService {
 
     private final CloudExpireWarningDetailMapper detailMapper;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
     private final IToppOrderService orderService;
 
     @Override
@@ -75,7 +77,7 @@ public class CloudExpireWarningDetailServiceImpl implements ICloudExpireWarningD
             log.warn("【cloud_expire_alarm】工单不存在或无关联记录, orderId={}", orderId);
             return null;
         }
-        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        String mainOrderFlowNo = ftpTcUserCustWarningService.getMainOrderFlowNoById(order.getInfoId());
         if (mainOrderFlowNo == null) {
             log.warn("【cloud_expire_alarm】未找到主订单流水号, infoId={}", order.getInfoId());
         }
