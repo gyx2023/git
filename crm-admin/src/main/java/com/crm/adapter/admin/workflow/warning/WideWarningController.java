@@ -177,7 +177,8 @@ public class WideWarningController extends BaseController {
             if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
                     || "wide_second".equals(endedOrder.getOrderType())
                     || "special_activity_warn".equals(endedOrder.getOrderType())
-                    || "group_buy_warn".equals(endedOrder.getOrderType()))) {
+                    || "group_buy_warn".equals(endedOrder.getOrderType())
+                    || "terminal_contract_warn".equals(endedOrder.getOrderType()))) {
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
             }
             msg = "该流程已完成";

@@ -53,6 +53,7 @@ public class GroupBuyWarningController extends BaseController {
         for (Map<String, Object> r : records) {
             GroupBuyWarningDetailExportVo vo = new GroupBuyWarningDetailExportVo();
             vo.setSvcNum(str(r, "svcNum"));
+            vo.setAreaName(str(r, "areaName"));
             vo.setCountyId(str(r, "countyId"));
             vo.setCustName(str(r, "custName"));
             vo.setDeveloperName(str(r, "developerName"));

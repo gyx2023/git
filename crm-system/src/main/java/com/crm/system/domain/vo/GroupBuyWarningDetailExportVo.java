@@ -20,6 +20,9 @@ public class GroupBuyWarningDetailExportVo {
     @ExcelProperty(value = "用户号码")
     private String svcNum;
 
+    @ExcelProperty(value = "地市")
+    private String areaName;
+
     @ExcelProperty(value = "县分")
     private String countyId;
 
