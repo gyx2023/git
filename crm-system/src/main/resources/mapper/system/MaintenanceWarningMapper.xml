@@ -326,7 +326,7 @@
         SELECT sc.name_ AS orderTypeName, area.name_ AS areaName, county.name_ AS countyName,
             a.cust_grp_id AS custGrpId, a.grp_code AS grpCode, a.grp_name AS grpName,
             sc1.name_ AS businessDepName, a.manager_id AS managerId, a.manager_name AS managerName,
-            a.svc_num AS svcNum, a.id_ AS id
+            a.svc_num AS svcNum, a.id_ AS id, a.order_type AS orderType
         FROM maintenance_detail a
         LEFT JOIN sys_code sc ON a.order_type = sc.code_ AND sc.setting_str3 = 'maintenance_order'
         LEFT JOIN sys_code sc1 ON a.business_dep = sc1.code_ AND sc1.type_ = 'expandDep'

@@ -2,11 +2,15 @@ package com.crm.adapter.admin.system.statistics;
 
 import com.crm.common.annotation.InterfaceMonitor;
 import com.crm.common.annotation.Log;
+import com.crm.common.core.domain.R;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
+import com.crm.common.utils.StringUtils;
+import com.crm.system.domain.dto.AssignUnallocatedReqDTO;
 import com.crm.system.domain.dto.MaintenanceWarningReqDTO;
 import com.crm.system.service.statistics.MaintenanceWarningService;
 import com.crm.system.service.statistics.impl.MaintenanceWarningExportService;
+import com.crm.system.service.warning.assign.WarningAssignService;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -38,6 +42,9 @@ public class MaintenanceWarningController {
 
     @Resource
     private MaintenanceWarningExportService exportService;
+
+    @Resource
+    private WarningAssignService warningAssignService;
 
     /**
      * 查询维系预警报表列表（Tab2 带分页，其他 Tab 不分页）
@@ -110,6 +117,29 @@ public class MaintenanceWarningController {
                 workbook.write(os);
             }
         }
+    }
+
+    /**
+     * 未派发工单批量转派（指定客户经理并启动流程）。
+     * <p>
+     * 新框架页面自用入口，直接走 {@link WarningAssignService} 按 orderType 分发策略；
+     * 老框架未派发清单页走带 SSO 校验的 /api/warning/assignUnallocated，两者共用同一 service。
+     * </p>
+     */
+    @Log(title = "未派发工单转派", businessType = BusinessType.UPDATE)
+    @PostMapping("/assignUnallocated")
+    public R<Map<String, Object>> assignUnallocated(@RequestBody AssignUnallocatedReqDTO reqDTO) {
+        if (reqDTO == null || StringUtils.isBlank(reqDTO.getOrderType())
+                || reqDTO.getDetailIds() == null || reqDTO.getDetailIds().isEmpty()
+                || reqDTO.getTargetUserId() == null) {
+            return R.fail("orderType、detailIds、targetUserId 不能为空");
+        }
+        Map<String, Object> result = warningAssignService.assign(
+                reqDTO.getOrderType(), reqDTO.getDetailIds(), reqDTO.getTargetUserId(), reqDTO.getComment());
+        if ("FAIL".equals(result.get("result"))) {
+            return R.fail(String.valueOf(result.get("msg")));
+        }
+        return R.ok(result);
     }
 
     /**

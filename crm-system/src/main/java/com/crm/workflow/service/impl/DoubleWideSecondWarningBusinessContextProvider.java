@@ -72,22 +72,10 @@ public class DoubleWideSecondWarningBusinessContextProvider implements BusinessC
         extraData.put("processVariables", procVars);
         extraData.put("warnInfo", buildWarnInfo(procVars));
 
-        // 双线信息
+        // 到期日期流程变量（下面的 countRecords / queryAllRecords 还要用）
         String targetDate = str(procVars, "double_wide_second-date");
-        Map<String, Object> broadbandInfo = new LinkedHashMap<>();
-        broadbandInfo.put("custName", order.getCustName());
-        if (targetDate != null) {
-            try {
-                java.time.LocalDate expDate = java.time.LocalDate.parse(targetDate,
-                    java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-                long remainingDays = java.time.temporal.ChronoUnit.DAYS.between(
-                    java.time.LocalDate.now(), expDate);
-                broadbandInfo.put("remainingDays", (int) remainingDays);
-            } catch (Exception ignored) {
-                log.warn("【double_wide_second】解析到期日期失败: targetDate={}", targetDate);
-            }
-        }
-        sections.add(new WfBusinessSection("broadband", "双线信息", 2, broadbandInfo));
+        // 原「双线信息」section 已移除（sectionKey "broadband"，data = custName + remainingDays）：
+        // 老系统没有这张卡，且内容与 H5 顶部提醒条重复，详见 WideSecondWarningBusinessContextProvider 同名注释。
 
         // 当前任务
         Task currentTask = findCurrentTask(procInsId);
