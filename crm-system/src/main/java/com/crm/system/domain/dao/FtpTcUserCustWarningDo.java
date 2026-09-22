@@ -55,7 +55,7 @@ public class FtpTcUserCustWarningDo implements Serializable {
     private String sendCol;
 
     /** 地市 */
-    @TableField(value = "area_name")
+    @TableField(value = "AREA_NAME")
     private String areaName;
 
     /** 客户归属县分 */
