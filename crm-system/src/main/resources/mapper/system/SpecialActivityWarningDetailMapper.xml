@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.SpecialActivityWarningDetailMapper">
+
+    <!-- 历史数据兜底：按主键回查用户级预警表 ftp_tc_user_common_warning 的 main_order_flow_no -->
+    <select id="selectMainOrderFlowNoById" resultType="java.lang.String">
+        SELECT main_order_flow_no FROM ftp_tc_user_common_warning
+        WHERE id_ = #{id}
+    </select>
+
+    <!-- 按主订单流水号查询特殊活动用户级明细（多条） -->
+    <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
+        SELECT
+        w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
+        w.prod_name, w.hq_svc_type, w.user_status,
+        w.area_name, w.county_id, w.open_date,
+        w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date,
+        w.ep_special_eff_date, w.ep_special_exp_date,
+        w.grp_code, w.grp_name, w.main_order_flow_no,
+        c.cycle_flag, c.warning_info AS cycle_warning_info
+        FROM ftp_tc_user_common_warning w
+        LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no
+        AND c.id_ = (SELECT MAX(c2.id_) FROM ftp_tc_user_cycle_warning c2 WHERE c2.order_flow_no = w.order_flow_no)
+        WHERE w.warning_type = '000032'
+        AND w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id_
+    </select>
+
+    <!-- 按主订单流水号分页查询特殊活动用户级明细 -->
+    <select id="selectByMainOrderFlowNoPage" resultType="java.util.Map">
+        SELECT
+        w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
+        w.prod_name, w.hq_svc_type, w.user_status,
+        w.area_name, w.county_id, w.open_date,
+        w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date,
+        w.ep_special_eff_date, w.ep_special_exp_date,
+        w.grp_code, w.grp_name, w.main_order_flow_no,
+        c.cycle_flag, c.warning_info AS cycle_warning_info
+        FROM ftp_tc_user_common_warning w
+        LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no
+        AND c.id_ = (SELECT MAX(c2.id_) FROM ftp_tc_user_cycle_warning c2 WHERE c2.order_flow_no = w.order_flow_no)
+        WHERE w.warning_type = '000032'
+        AND w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id_
+    </select>
+
+</mapper>

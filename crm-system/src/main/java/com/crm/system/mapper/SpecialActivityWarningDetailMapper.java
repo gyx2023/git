@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
@@ -29,8 +28,6 @@ public interface SpecialActivityWarningDetailMapper {
      * @param id 用户级预警行主键（历史工单 info_id）
      * @return main_order_flow_no，无则 null
      */
-    @Select({"SELECT main_order_flow_no FROM ftp_tc_user_common_warning "
-            + "WHERE id_ = #{id}"})
     String selectMainOrderFlowNoById(@Param("id") Long id);
 
     /**
