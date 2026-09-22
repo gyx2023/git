@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.KdAddrWarningDetailMapper">
+
+    <!-- 明细公共列：用户级通用预警表 ftp_tc_user_common_warning -->
+    <sql id="selectColumns">
+        SELECT id_, svc_num, cust_name, prod_id, prod_name, open_date, user_status,
+        warning_info, feedback_flag, feedback_remark
+        FROM ftp_tc_user_common_warning
+    </sql>
+
+    <!-- 按主订单流水号查询宽带装机地址预警明细列表 -->
+    <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
+        <include refid="selectColumns"/>
+        WHERE main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY id_
+    </select>
+
+    <!-- 按主订单流水号分页查询宽带装机地址预警明细列表 -->
+    <select id="selectPageByMainOrderFlowNo" resultType="java.util.Map">
+        <include refid="selectColumns"/>
+        WHERE main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY id_
+    </select>
+
+    <!-- 更新反馈是否正常/反馈原因 -->
+    <update id="updateFeedback">
+        UPDATE ftp_tc_user_common_warning
+        SET feedback_flag = #{feedbackFlag},
+        feedback_remark = #{feedbackRemark}
+        WHERE id_ = #{id}
+    </update>
+
+    <!-- 统计未反馈记录数 -->
+    <select id="countUnfeedbackRecords" resultType="int">
+        SELECT COUNT(1) FROM ftp_tc_user_common_warning
+        WHERE main_order_flow_no = #{mainOrderFlowNo}
+        AND (feedback_flag IS NULL OR feedback_flag = '')
+    </select>
+
+</mapper>

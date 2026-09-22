@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
@@ -27,21 +26,6 @@ public interface WotvExpireWarningDetailMapper {
      * @param mainOrderFlowNo 主订单流水号（来自 ftp_tc_user_cust_warning.main_order_flow_no）
      * @return 明细记录列表
      */
-    @Select({"SELECT "
-            + "w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id, "
-            + "w.prod_name, w.hq_svc_type, w.user_status, "
-            + "w.serv_manager_name, w.oa_name_dev, w.oa_id_dev, "
-            + "w.warning_info, w.new_scheme_name, w.new_create_date, w.new_exp_date, "
-            + "w.order_flow_no, w.open_date, w.area_name, w.county_id, "
-            + "dc.county_name AS county_name, "
-            + "c.user_status AS cycle_user_status, "
-            + "c.warning_info AS cycle_warning_info, "
-            + "c.cycle_flag "
-            + "FROM ftp_tc_user_common_warning w "
-            + "LEFT JOIN ftp_tc_user_cycle_warning c ON w.order_flow_no = c.order_flow_no "
-            + "LEFT JOIN dim_county_id dc ON dc.county_id = w.county_id "
-            + "WHERE w.main_order_flow_no = #{mainOrderFlowNo} "
-            + "ORDER BY w.id_"})
     List<Map<String, Object>> selectByMainOrderFlowNo(@Param("mainOrderFlowNo") String mainOrderFlowNo);
 
     /**
@@ -51,20 +35,6 @@ public interface WotvExpireWarningDetailMapper {
      * @param mainOrderFlowNo 主订单流水号（来自 ftp_tc_user_cust_warning.main_order_flow_no）
      * @return 分页明细记录
      */
-    @Select({"SELECT "
-            + "w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id, "
-            + "w.prod_name, w.hq_svc_type, w.user_status, "
-            + "w.serv_manager_name, w.oa_name_dev, w.oa_id_dev, "
-            + "w.warning_info, w.new_scheme_name, w.new_create_date, w.new_exp_date, "
-            + "w.order_flow_no, w.open_date, w.area_name, w.county_id, "
-            + "w.county_id AS county_name, "
-            + "c.user_status AS cycle_user_status, "
-            + "c.warning_info AS cycle_warning_info, "
-            + "c.cycle_flag "
-            + "FROM ftp_tc_user_common_warning w "
-            + "LEFT JOIN ftp_tc_user_cycle_warning c ON w.order_flow_no = c.order_flow_no "
-            + "WHERE w.main_order_flow_no = #{mainOrderFlowNo} "
-            + "ORDER BY w.id_"})
     IPage<Map<String, Object>> selectByMainOrderFlowNoPage(Page<?> page, @Param("mainOrderFlowNo") String mainOrderFlowNo);
 
 }
