@@ -28,6 +28,7 @@ import java.util.Map;
  * <p>
  * 只沉淀受理结果：主表回填 all_success / all_desc / all_time / step_list 与云智眼机构ID，
  * 子表按「订单号 + 摄像头名称」分设备回填 device_desc / device_create_time / device_gbCode
+ * / combo_id / combo_name / service_node / broadband_account。
  * </p>
  */
 @Slf4j
@@ -140,6 +141,7 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
             .set(ZqztLedgerCloudConfig::getComboId, device.getComboId())
             .set(ZqztLedgerCloudConfig::getComboName, device.getComboName())
             .set(ZqztLedgerCloudConfig::getServiceNode, device.getServiceNode())
+            .set(ZqztLedgerCloudConfig::getBroadbandAccount, device.getBroadbandAccount())
             .set(ZqztLedgerCloudConfig::getUpdateTime, new Date());
         cloudConfigMapper.update(null, update);
     }

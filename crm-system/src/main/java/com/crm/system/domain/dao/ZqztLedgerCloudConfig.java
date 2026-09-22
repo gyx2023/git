@@ -88,6 +88,9 @@ public class ZqztLedgerCloudConfig implements Serializable {
     /** 服务节点 */
     private String serviceNode;
 
+    /** 带宽账号（火焰卫士回调按设备回填）*/
+    private String broadbandAccount;
+
     /** 排序号 */
     private Integer sortOrder;
 
