@@ -115,6 +115,18 @@ public class ZqztJtNoticeRecordServiceImpl implements IZqztJtNoticeRecordService
         return baseMapper.updateById(update) > 0;
     }
 
+    @Override
+    public boolean updateRequestTimeoutStatus(Long id, Integer status) {
+        if (id == null || status == null || (status != 0 && status != 1)) {
+            throw new IllegalArgumentException("通知ID和超时状态不合法");
+        }
+        return baseMapper.update(null, Wrappers.<ZqztJtNoticeRecordDo>lambdaUpdate()
+            .eq(ZqztJtNoticeRecordDo::getId, id)
+            .set(ZqztJtNoticeRecordDo::getRequestTimeoutStatus, status)
+            // 保留业务重试计时起点，同时抑制数据库 ON UPDATE CURRENT_TIMESTAMP。
+            .setSql("update_time = update_time")) == 1;
+    }
+
     /**
      * 保存前的数据校验
      */

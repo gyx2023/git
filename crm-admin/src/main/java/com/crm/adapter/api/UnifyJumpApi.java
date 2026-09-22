@@ -1,6 +1,7 @@
 package com.crm.adapter.api;
 
 import cn.dev33.satoken.annotation.SaIgnore;
+import cn.dev33.satoken.stp.StpUtil;
 import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.client.unibss.UniBssApiClient;
@@ -58,22 +59,29 @@ public class UnifyJumpApi {
     public void loginCheck(@RequestParam("authSessionId") String authSessionId,
                            @RequestParam(value = "mode", required = false, defaultValue = "redirect") String mode,
                            HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // 1. 总部查询登录信息，取手机号
-        String phone = queryLoginPhone(authSessionId);
-        if (StringUtils.isBlank(phone)) {
-            writeError(response, "获取登录用户信息失败");
-            return;
-        }
+        // 0. 当前会话已登录（Sa-Token 有效）直接复用现有 token，不再调总部免登（对应老框架 session 已登录直接放行）
+        String token = null;
+        if (StpUtil.isLogin()) {
+            token = StpUtil.getTokenValue();
+            log.info("unifyJump loginCheck 复用已登录会话, authSessionId={}", authSessionId);
+        } else {
+            // 1. 总部查询登录信息，取手机号
+            String phone = queryLoginPhone(authSessionId);
+            if (StringUtils.isBlank(phone)) {
+                writeError(response, "获取登录用户信息失败");
+                return;
+            }
 
-        // 2. 按手机号查新框架用户（sys_user.phonenumber，主键 user_id 即老系统用户ID）
-        SysUser sysUser = sysUserService.selectUserByPhonenumber(phone);
-        if (sysUser == null) {
-            writeError(response, "无用户信息");
-            return;
-        }
+            // 2. 按手机号查新框架用户（sys_user.phonenumber，主键 user_id 即老系统用户ID）
+            SysUser sysUser = sysUserService.selectUserByPhonenumber(phone);
+            if (sysUser == null) {
+                writeError(response, "无用户信息");
+                return;
+            }
 
-        // 3. 免登（同步权限 + Sa-Token 登录）
-        String token = oldSysSynService.loginByOldUserId(sysUser.getUserId());
+            // 3. 免登（同步权限 + Sa-Token 登录）
+            token = oldSysSynService.loginByOldUserId(sysUser.getUserId());
+        }
 
         // 4. JSON 模式：前端 /sso/checkLogin 入口页调用（待办直达前端方案），token 由前端保存并自行跳转
         if ("json".equals(mode)) {
