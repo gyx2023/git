@@ -1,4 +1,4 @@
-FROM huailaikxq-registry.cucloud.cn/zj_zq2025/zj_zq2025/jdk8:last
+FROM huailaikxq-registry.cucloud.cn/zj_zq2025/jdk8:last
 
 MAINTAINER Lion Li
 
