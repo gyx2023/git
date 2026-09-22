@@ -312,10 +312,17 @@ public class ToppOrderServiceImpl implements IToppOrderService {
     @Override
     public void markOrderEnd(Long orderId, String followUp, String otherReason,
                              java.util.Date plannedRenewalDate) {
+        markOrderEnd(orderId, followUp, otherReason, plannedRenewalDate, false);
+    }
+
+    @Override
+    public void markOrderEnd(Long orderId, String followUp, String otherReason,
+                             java.util.Date plannedRenewalDate, boolean batch) {
         ToppOrderBo bo = new ToppOrderBo();
         bo.setId(orderId);
         bo.setStatus(OrderStatusEnum.END.getCode());
-        bo.setBatchFlag(0);
+        // batch_flag：0=否(手工处理 sdcl) 1=是(批量处理 plcl)，见维系预警报表口径
+        bo.setBatchFlag(batch ? 1 : 0);
 
         // 宽带二次预警 / 双线二次预警 / 沃TV到期预警：完成时记录结束原因与跟踪情况
         // 2026-08-28 双线到期二次预警迁移补充：double_wide_second 同样记录 end_reason/wide_result
