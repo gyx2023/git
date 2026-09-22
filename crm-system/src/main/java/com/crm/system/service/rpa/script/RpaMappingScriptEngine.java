@@ -9,7 +9,6 @@ import org.codehaus.groovy.runtime.InvokerHelper;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * mapping行级脚本执行引擎
@@ -25,14 +24,25 @@ public class RpaMappingScriptEngine {
 
     private final GroovyClassLoader groovyClassLoader = new GroovyClassLoader();
 
-    private final Map<String, Class<? extends Script>> scriptCache = new ConcurrentHashMap<>();
-
     public void execute(RpaScriptExecutionContext context) {
         if (context == null || context.getScriptContent() == null) {
             return;
         }
+        Class<? extends Script> scriptClass;
         try {
-            Class<? extends Script> scriptClass = loadScriptClass(context.getScriptCode(), context.getScriptVersion(), context.getScriptContent());
+            scriptClass = loadScriptClass(context.getScriptContent());
+        } catch (Exception ex) {
+            log.error("RPA脚本编译失败 bizCode={} scriptCode={} scriptVersion={} mappingId={} formKey={} scriptContentLength={}",
+                context.getBizCode(),
+                context.getScriptCode(),
+                context.getScriptVersion(),
+                context.getMapping() == null ? null : context.getMapping().getId(),
+                context.getMapping() == null ? null : context.getMapping().getFormKey(),
+                context.getScriptContent().length(),
+                ex);
+            return;
+        }
+        try {
             Binding binding = new Binding();
             binding.setVariable("messageMap", context.getMessageMap());
             binding.setVariable("targetMap", context.getTargetMap());
@@ -47,19 +57,20 @@ public class RpaMappingScriptEngine {
                 applyResult((Map<?, ?>) result, context);
             }
         } catch (Exception ex) {
-            log.error("RPA脚本执行失败 bizCode={} scriptCode={} mappingId={} formKey={}",
+            log.error("RPA脚本执行失败 bizCode={} scriptCode={} scriptVersion={} mappingId={} formKey={} scriptContentLength={}",
                 context.getBizCode(),
                 context.getScriptCode(),
+                context.getScriptVersion(),
                 context.getMapping() == null ? null : context.getMapping().getId(),
                 context.getMapping() == null ? null : context.getMapping().getFormKey(),
+                context.getScriptContent().length(),
                 ex);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private Class<? extends Script> loadScriptClass(String scriptCode, String scriptVersion, String scriptContent) {
-        String cacheKey = scriptCode + ":" + scriptVersion;
-        return scriptCache.computeIfAbsent(cacheKey, key -> (Class<? extends Script>) groovyClassLoader.parseClass(scriptContent));
+    private Class<? extends Script> loadScriptClass(String scriptContent) {
+        return (Class<? extends Script>) groovyClassLoader.parseClass(scriptContent);
     }
 
     private void applyResult(Map<?, ?> result, RpaScriptExecutionContext context) {
