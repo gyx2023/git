@@ -68,9 +68,14 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
         List<WarningRecord> records = new ArrayList<>();
 
         for (Map<String, Object> row : rows) {
-            WarningRecord record = toWarningRecord(row);
-            if (record != null) {
-                records.add(record);
+            // 单条源数据异常不能中断整批：跳过并记录，否则整次跑批 0 建单
+            try {
+                WarningRecord record = toWarningRecord(row);
+                if (record != null) {
+                    records.add(record);
+                }
+            } catch (Exception e) {
+                log.error("【{}】转换预警记录失败, 跳过该条: id_={}", getOrderTypeName(), row.get("id_"), e);
             }
         }
         return records;
@@ -127,12 +132,15 @@ public class WideSecondWarningStrategy extends AbstractWarningQueryStrategy {
 
         Long infoId = toLong(row.get("id_"));
         if (infoId != null) {
-            MaintenanceDetailDo detail = maintenanceDetailMapper.selectOne(
+            // 对齐旧系统 maintenanceDetailService.findByDetailId(id, ORDER_TYPE_WIDE)：重复取第一条。
+            // 不能改用 selectOne —— 源数据里同一 detailId + order_type='Wide' 存在 2 行，
+            // selectOne 会抛 TooManyResultsException 并中断整次跑批（与 DoubleWideSecondWarningStrategy 保持一致）。
+            List<MaintenanceDetailDo> details = maintenanceDetailMapper.selectList(
                     new LambdaQueryWrapper<MaintenanceDetailDo>()
                             .eq(MaintenanceDetailDo::getDetailId, infoId)
                             .eq(MaintenanceDetailDo::getOrderType, "Wide"));
-            if (detail != null && StringUtils.isNotBlank(detail.getBusinessDep())) {
-                record.setExtraVariable("businessDep", detail.getBusinessDep());
+            if (details != null && !details.isEmpty() && StringUtils.isNotBlank(details.get(0).getBusinessDep())) {
+                record.setExtraVariable("businessDep", details.get(0).getBusinessDep());
             }
         }
 

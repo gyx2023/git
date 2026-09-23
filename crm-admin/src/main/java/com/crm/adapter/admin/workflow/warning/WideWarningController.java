@@ -177,6 +177,8 @@ public class WideWarningController extends BaseController {
             if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
                     || "wide_second".equals(endedOrder.getOrderType())
                     || "special_activity_warn".equals(endedOrder.getOrderType())
+                    || "Wide".equals(endedOrder.getOrderType())
+                    || "special_activity_warn".equals(endedOrder.getOrderType())
                     || "group_buy_warn".equals(endedOrder.getOrderType())
                     || "terminal_contract_warn".equals(endedOrder.getOrderType()))) {
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
@@ -380,11 +382,14 @@ public class WideWarningController extends BaseController {
                     // 流程未结束也写入 wide_result
                     setWideResult(orderId, followUp, otherReason, plannedDate);
                 } else {
-                    orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
+                    // 批量入口（新框架 batchDeal 页、H5 批量处理页 → /wideWarning/batchComplete）：
+                    // batch_flag 置 1，报表口径为「批量处理」(plcl)
+                    orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate, true);
                     // 维系情况/时间按本次提交覆盖（含清空旧值）
                     if ("wotv_expire_warning".equals(order.getOrderType())
                             || "wide_second".equals(order.getOrderType())
-                            || "special_activity_warn".equals(order.getOrderType())) {
+                            || "special_activity_warn".equals(order.getOrderType())
+                            || "Wide".equals(order.getOrderType())) {
                         orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
                     }
                 }
