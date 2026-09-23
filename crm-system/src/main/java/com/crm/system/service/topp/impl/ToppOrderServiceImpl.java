@@ -324,10 +324,10 @@ public class ToppOrderServiceImpl implements IToppOrderService {
         // batch_flag：0=否(手工处理 sdcl) 1=是(批量处理 plcl)，见维系预警报表口径
         bo.setBatchFlag(batch ? 1 : 0);
 
-        // 宽带二次预警 / 双线二次预警 / 沃TV到期预警 / 宽带到期预警：完成时记录结束原因与跟踪情况
-        // 2026-08-28 双线到期二次预警迁移补充：double_wide_second 同样记录 end_reason/wide_result
-        // 2026-09-11 宽带到期预警迁移补充：Wide 同样记录 end_reason（老框架 dealWideTask 显式 setEndReason("0")）
-        // 2026-09-11 团购折扣到期预警 / 终端合约到期预警迁移补充：同样记录
+        // end_reason='0'（客户经理手工处理）仍按类型白名单写：它是维系预警报表
+        // sdcl/plcl（手工处理/批量处理）的统计口径，放开会改变既有类型的报表数字，
+        // 需要业务确认后才能动，故按类型闸门。
+        // 2026-08-28 双线二次预警 / 2026-09-11 宽带到期、团购折扣、终端合约 迁移补充
         ToppOrderVo order = queryById(orderId);
         if (order != null && ("wide_second".equals(order.getOrderType())
                 || "double_wide_second".equals(order.getOrderType())
@@ -337,16 +337,21 @@ public class ToppOrderServiceImpl implements IToppOrderService {
                 || "group_buy_warn".equals(order.getOrderType())
                 || "terminal_contract_warn".equals(order.getOrderType()))) {
             bo.setEndReason("0");
-            if (followUp != null) {
-                if ("其他".equals(followUp) && otherReason != null) {
-                    bo.setWideResult(otherReason);
-                } else {
-                    bo.setWideResult(followUp);
-                }
+        }
+
+        // 维系情况 / 计划续约日期：有值就存，与类型无关。
+        // updateByBo 走 updateById（MyBatis-Plus 默认 NOT_NULL 策略），未设置就不更新，
+        // 所以不传这两个值的调用方不受影响；以后新增「带维系情况」的预警类型自动生效，
+        // 不必再来这里登记白名单（白名单本质就是"哪个前端会传 followUp"的手工镜像）。
+        if (followUp != null) {
+            if ("其他".equals(followUp) && otherReason != null) {
+                bo.setWideResult(otherReason);
+            } else {
+                bo.setWideResult(followUp);
             }
-            if (plannedRenewalDate != null) {
-                bo.setPlannedRenewalDate(plannedRenewalDate);
-            }
+        }
+        if (plannedRenewalDate != null) {
+            bo.setPlannedRenewalDate(plannedRenewalDate);
         }
         updateByBo(bo);
     }
