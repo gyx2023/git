@@ -4,7 +4,7 @@ import com.crm.common.core.controller.BaseController;
 import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.utils.poi.ExcelUtil;
-import com.crm.system.domain.vo.WotvExpireWarningDetailExportVo;
+import com.crm.system.domain.vo.SpecialActivityWarningDetailExportVo;
 import com.crm.system.service.ISpecialActivityWarningDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,24 +49,28 @@ public class SpecialActivityWarningController extends BaseController {
     @PostMapping("/export")
     public void export(@RequestParam("orderId") Long orderId, HttpServletResponse response) {
         List<Map<String, Object>> records = detailService.queryRecords(orderId);
-        List<WotvExpireWarningDetailExportVo> list = new ArrayList<>();
+        List<SpecialActivityWarningDetailExportVo> list = new ArrayList<>();
         for (Map<String, Object> r : records) {
-            WotvExpireWarningDetailExportVo vo = new WotvExpireWarningDetailExportVo();
+            SpecialActivityWarningDetailExportVo vo = new SpecialActivityWarningDetailExportVo();
+            vo.setAreaName(str(r, "areaName"));
+            vo.setCountyName(str(r, "countyName"));
             vo.setSvcNum(str(r, "svcNum"));
             vo.setCustName(str(r, "custName"));
             vo.setDeveloperName(str(r, "developerName"));
+            vo.setSchemeId(str(r, "schemeId"));
             vo.setSchemeName(str(r, "schemeName"));
             vo.setServiceName(str(r, "serviceName"));
             vo.setProdType(str(r, "prodType"));
             vo.setEffTime(str(r, "effTime"));
             vo.setExpTime(str(r, "expTime"));
-            vo.setNewSchemeId(str(r, "newSchemeId"));
+            vo.setIsXy(str(r, "isXy"));
+            vo.setNewSchemeName(str(r, "newSchemeName"));
             vo.setRenewalTime(str(r, "renewalTime"));
             vo.setNewEffTime(str(r, "newEffTime"));
             vo.setNewExpTime(str(r, "newExpTime"));
             list.add(vo);
         }
-        ExcelUtil.exportExcel(list, "特殊活动到期预警明细", WotvExpireWarningDetailExportVo.class, response);
+        ExcelUtil.exportExcel(list, "特殊活动到期预警明细", SpecialActivityWarningDetailExportVo.class, response);
     }
 
     private String str(Map<String, Object> m, String k) {

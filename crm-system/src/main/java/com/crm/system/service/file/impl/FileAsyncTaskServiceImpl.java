@@ -7,6 +7,8 @@ import com.crm.common.core.domain.BaseEntity;
 import com.crm.common.core.domain.dto.RoleDTO;
 import com.crm.common.core.domain.model.LoginUser;
 import com.crm.common.utils.helper.LoginHelper;
+import com.crm.common.utils.file.OssUploadValidator;
+import com.crm.common.utils.poi.ExcelUtil;
 import com.crm.common.enums.DataScopeType;
 import com.crm.common.utils.StringUtils;
 import com.crm.common.core.page.TableDataInfo;
@@ -32,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -268,6 +271,19 @@ public class FileAsyncTaskServiceImpl implements IFileAsyncTaskService {
 
     @Override
     public Long applyImport(MultipartFile file, String businessType, String taskName, String requestParams) {
+        // 【安全】异步导入也是 Excel 导入链路，入口统一限定 xls/xlsx 并校验真实格式，
+        // 防止任意后缀/伪装文件进入 OSS 与下游 EasyExcel 解析器（与 /system/user/importData 同口径收口）
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || !ExcelUtil.isExcelFile(originalName)) {
+            throw new RuntimeException("请上传 xls/xlsx 格式的 Excel 文件");
+        }
+        try (InputStream in = file.getInputStream()) {
+            OssUploadValidator.validate(in, originalName, OssUploadValidator.SCAN_BYTES);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("导入文件校验失败: " + e.getMessage(), e);
+        }
         SysOssVo upload = iSysOssService.upload(file);
 
         try {

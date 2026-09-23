@@ -17,6 +17,7 @@ import com.crm.common.core.domain.entity.SysUser;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.common.enums.BusinessType;
 import com.crm.common.utils.excel.ExcelResult;
+import com.crm.common.utils.file.OssUploadValidator;
 import com.crm.common.utils.helper.LoginHelper;
 import com.crm.common.utils.StreamUtils;
 import com.crm.common.utils.StringUtils;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -105,8 +107,22 @@ public class SysUserController extends BaseController {
     @SaCheckPermission("system:user:import")
     @PostMapping(value = "/importData", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public R<Void> importData(@RequestPart("file") MultipartFile file, boolean updateSupport) throws Exception {
-        ExcelResult<SysUserImportVo> result = ExcelUtil.importExcel(file.getInputStream(), SysUserImportVo.class, new SysUserImportListener(updateSupport));
-        return R.ok(result.getAnalysis());
+        // 【安全】仅允许 xls/xlsx，并按文件头校验真实 Excel 格式，防止任意后缀/伪装文件进入解析器
+        String originalName = file.getOriginalFilename();
+        try (InputStream in = file.getInputStream()) {
+            // 复用上传统一校验：白名单 + 高危内容扫描 + 魔数（xlsx 校验 zip 容器）。
+            // 注意 OssUploadValidator 白名单大于 Excel，这里仍需额外限定 xls/xlsx。
+            if (originalName == null || !ExcelUtil.isExcelFile(originalName)) {
+                return R.fail("请上传 xls/xlsx 格式的 Excel 文件");
+            }
+            OssUploadValidator.validate(in, originalName, OssUploadValidator.SCAN_BYTES);
+        } catch (IllegalArgumentException e) {
+            return R.fail("导入失败: " + e.getMessage());
+        }
+        try (InputStream in = file.getInputStream()) {
+            ExcelResult<SysUserImportVo> result = ExcelUtil.importExcel(in, SysUserImportVo.class, new SysUserImportListener(updateSupport));
+            return R.ok(result.getAnalysis());
+        }
     }
 
     /**

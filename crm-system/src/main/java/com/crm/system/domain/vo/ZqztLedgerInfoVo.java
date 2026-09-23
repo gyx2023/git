@@ -48,7 +48,7 @@ public class ZqztLedgerInfoVo implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date cameraInstallDate;
     private String cameraAccount;
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date cameraFinishDate;
     private String broadbandIsReuse;
     private String broadbandIsSporadic;
@@ -59,7 +59,7 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String broadbandConstructStatus;
     private String broadbandSporadicOrderNo;
     private String broadbandAccount;
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date broadbandFinishDate;
     private String cloudAccount;
     private String cloudPassword;

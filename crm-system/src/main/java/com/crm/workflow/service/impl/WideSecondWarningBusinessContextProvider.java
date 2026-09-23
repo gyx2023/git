@@ -69,22 +69,12 @@ public class WideSecondWarningBusinessContextProvider implements BusinessContext
         extraData.put("processVariables", procVars);
         extraData.put("warnInfo", buildWarnInfo(procVars));
 
-        // 宽带信息
+        // 到期日期流程变量（下面的 countRecords / pageRecords 还要用）
         String targetDate = str(procVars, "wide_second-date");
-        Map<String, Object> broadbandInfo = new LinkedHashMap<>();
-        broadbandInfo.put("custName", order.getCustName());
-        if (targetDate != null) {
-            try {
-                java.time.LocalDate expDate = java.time.LocalDate.parse(targetDate,
-                    java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-                long remainingDays = java.time.temporal.ChronoUnit.DAYS.between(
-                    java.time.LocalDate.now(), expDate);
-                broadbandInfo.put("remainingDays", (int) remainingDays);
-            } catch (Exception ignored) {
-                log.warn("【wide_second】解析到期日期失败: targetDate={}", targetDate);
-            }
-        }
-        sections.add(new WfBusinessSection("broadband", "宽带信息", 2, broadbandInfo));
+        // 原「宽带信息」section 已移除（sectionKey "broadband"，data = custName + remainingDays）：
+        // 老系统 infoByWideSecond.jsp 本来就只有提醒条 + 用户明细，没有这张卡；
+        // 它是照抄 WideWarnContextProvider 的 sectionKey/标题自己加的，且内容与 H5 顶部提醒条重复，
+        // 唯一会把它渲出来的是 APP 待办处理页 fieldSections 的通用字段卡兜底逻辑。
 
         // 当前任务
         Task currentTask = findCurrentTask(procInsId);

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.rpa.RpaWarningSmsMapper">
+
+    <resultMap id="RpaSmsPendingPushMap"
+               type="com.crm.system.domain.dao.rpa.RpaSmsPendingPushDo">
+        <id property="id" column="id"/>
+        <result property="systemCode" column="system_code"/>
+        <result property="msgUnionid" column="msg_unionid"/>
+        <result property="businessType" column="business_type"/>
+        <result property="recipientMobile" column="recipient_mobile"/>
+        <result property="smsTemplateId" column="sms_template_id"/>
+        <result property="smsContent" column="sms_content"/>
+        <result property="pushStatus" column="push_status"/>
+        <result property="pushResultRemark" column="push_result_remark"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <resultMap id="RpaSmsPendingPushParamMap"
+               type="com.crm.system.domain.dao.rpa.RpaSmsPendingPushParamDo">
+        <id property="id" column="id"/>
+        <result property="msgUnionid" column="msg_unionid"/>
+        <result property="varName" column="var_name"/>
+        <result property="varValue" column="var_value"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="callPreSendRecord" statementType="CALLABLE">
+        {CALL pre_send_record()}
+    </select>
+
+    <select id="selectUnprocessedIdsForUpdate" resultType="java.lang.Long">
+        SELECT id
+        FROM sms_pending_push
+        WHERE push_status = '0'
+        ORDER BY create_time ASC
+        FOR UPDATE
+    </select>
+
+    <update id="updateToProcessing">
+        UPDATE sms_pending_push
+        SET push_status = '3',
+            update_time = NOW(),
+            process_timeout_time = DATE_ADD(NOW(), INTERVAL 30 MINUTE)
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectPendingPushById" resultMap="RpaSmsPendingPushMap">
+        SELECT id,
+               system_code,
+               msg_unionid,
+               business_type,
+               recipient_mobile,
+               sms_template_id,
+               sms_content,
+               push_status,
+               push_result_remark,
+               create_by,
+               create_time,
+               update_by,
+               update_time,
+               remark
+        FROM sms_pending_push
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectParamsByMsgUnionid" resultMap="RpaSmsPendingPushParamMap">
+        SELECT id,
+               msg_unionid,
+               var_name,
+               var_value,
+               create_by,
+               create_time,
+               remark
+        FROM sms_pending_push_params
+        WHERE msg_unionid = #{msgUnionid}
+    </select>
+
+    <update id="updatePushResult">
+        UPDATE sms_pending_push
+        SET push_status = #{pushStatus},
+            push_result_remark = #{pushResultRemark},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insertCommonNoticeLog"
+            parameterType="com.crm.system.domain.dao.rpa.RpaCommonNoticeLogDo"
+            useGeneratedKeys="true"
+            keyProperty="noticeId">
+        INSERT INTO common_notice_log (
+            notice_type,
+            notice_message,
+            notice_phone,
+            notice_caller,
+            notice_params,
+            notice_time,
+            return_code
+        ) VALUES (
+            #{noticeType},
+            #{noticeMessage},
+            #{noticePhone},
+            #{noticeCaller},
+            #{noticeParams},
+            #{noticeTime},
+            #{returnCode}
+        )
+    </insert>
+
+    <update id="resetTimeoutLockedSmsData">
+        UPDATE sms_pending_push
+        SET push_status = '0',
+            push_result_remark = CONCAT(
+                IFNULL(push_result_remark, ''),
+                '；锁定超时（超过30分钟），已自动重置为待执行状态'
+            ),
+            update_time = NOW()
+        WHERE push_status = '3'
+          AND process_timeout_time IS NOT NULL
+          AND process_timeout_time &lt; NOW()
+    </update>
+
+</mapper>

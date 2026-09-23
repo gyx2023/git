@@ -1,14 +1,8 @@
 package com.crm.system.domain.dao.servicehall;
-
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import java.io.Serializable;
 import java.util.Date;
-import java.math.BigDecimal;
-
-import com.crm.common.core.domain.BaseEntity;
-
 /**
  * 集团任务前置通知接口记录表对象 zqzt_jt_notice_record
  *
@@ -90,6 +84,9 @@ public class ZqztJtNoticeRecordDo implements Serializable {
      * 返回报文体
      */
     private String resBody;
+
+    /** 无人工厂请求超时状态：null未判定，0未超时，1已超时。 */
+    private Integer requestTimeoutStatus;
 
     /**
      * 重试次数
