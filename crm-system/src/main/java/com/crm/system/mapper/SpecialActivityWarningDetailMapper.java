@@ -33,38 +33,10 @@ public interface SpecialActivityWarningDetailMapper {
     /**
      * 按主订单流水号查询同一批用户级明细（多条）
      */
-    @Select({"SELECT "
-            + "w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id, "
-            + "w.prod_name, w.hq_svc_type, w.user_status, "
-            + "w.area_name, w.county_id, w.open_date, "
-            + "w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date, "
-            + "w.ep_special_eff_date, w.ep_special_exp_date, "
-            + "w.grp_code, w.grp_name, w.main_order_flow_no, "
-            + "w.county_id AS county_name, "
-            + "c.cycle_flag, c.warning_info AS cycle_warning_info "
-            + "FROM ftp_tc_user_common_warning w "
-            + "LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no AND c.id_ = (SELECT MAX(c2.id_) FROM ftp_tc_user_cycle_warning c2 WHERE c2.order_flow_no = w.order_flow_no) "
-            + "WHERE w.warning_type = '000032' "
-            + "AND w.main_order_flow_no = #{mainOrderFlowNo} "
-            + "ORDER BY w.id_"})
     List<Map<String, Object>> selectByMainOrderFlowNo(@Param("mainOrderFlowNo") String mainOrderFlowNo);
 
     /**
      * 按主订单流水号分页查询同一批用户级明细（多条）
      */
-    @Select({"SELECT "
-            + "w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id, "
-            + "w.prod_name, w.hq_svc_type, w.user_status, "
-            + "w.area_name, w.county_id, w.open_date, "
-            + "w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date, "
-            + "w.ep_special_eff_date, w.ep_special_exp_date, "
-            + "w.grp_code, w.grp_name, w.main_order_flow_no, "
-            + "w.county_id AS county_name, "
-            + "c.cycle_flag, c.warning_info AS cycle_warning_info "
-            + "FROM ftp_tc_user_common_warning w "
-            + "LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no AND c.id_ = (SELECT MAX(c2.id_) FROM ftp_tc_user_cycle_warning c2 WHERE c2.order_flow_no = w.order_flow_no) "
-            + "WHERE w.warning_type = '000032' "
-            + "AND w.main_order_flow_no = #{mainOrderFlowNo} "
-            + "ORDER BY w.id_"})
     IPage<Map<String, Object>> selectByMainOrderFlowNoPage(Page<?> page, @Param("mainOrderFlowNo") String mainOrderFlowNo);
 }

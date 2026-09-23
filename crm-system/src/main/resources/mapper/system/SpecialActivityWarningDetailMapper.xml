@@ -10,7 +10,7 @@
         WHERE id_ = #{id}
     </select>
 
-    <!-- 按主订单流水号查询特殊活动用户级明细（多条） -->
+    <!-- 按主订单流水号查询特殊活动用户级明细（多条，county_name 直接取 county_id，与原实现一致） -->
     <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
         SELECT
         w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
@@ -19,6 +19,7 @@
         w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date,
         w.ep_special_eff_date, w.ep_special_exp_date,
         w.grp_code, w.grp_name, w.main_order_flow_no,
+        w.county_id AS county_name,
         c.cycle_flag, c.warning_info AS cycle_warning_info
         FROM ftp_tc_user_common_warning w
         LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no
@@ -28,7 +29,7 @@
         ORDER BY w.id_
     </select>
 
-    <!-- 按主订单流水号分页查询特殊活动用户级明细 -->
+    <!-- 按主订单流水号分页查询特殊活动用户级明细（county_name 直接取 county_id，与原实现一致） -->
     <select id="selectByMainOrderFlowNoPage" resultType="java.util.Map">
         SELECT
         w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
@@ -37,6 +38,7 @@
         w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date,
         w.ep_special_eff_date, w.ep_special_exp_date,
         w.grp_code, w.grp_name, w.main_order_flow_no,
+        w.county_id AS county_name,
         c.cycle_flag, c.warning_info AS cycle_warning_info
         FROM ftp_tc_user_common_warning w
         LEFT JOIN ftp_tc_user_cycle_warning c ON c.order_flow_no = w.order_flow_no
