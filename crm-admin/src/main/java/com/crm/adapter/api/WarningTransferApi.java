@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import com.crm.common.core.domain.R;
 import com.crm.common.enums.OrderStatusEnum;
 import com.crm.common.utils.TokenUtil;
+import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.service.topp.IToppOrderService;
 import com.crm.workflow.domain.dto.WfCurrentTaskDto;
@@ -95,6 +96,7 @@ public class WarningTransferApi {
                                                  @RequestParam(value = "resultMemo", required = false) String resultMemo,
                                                  @RequestParam(value = "followUp", required = false) String followUp,
                                                  @RequestParam(value = "otherReason", required = false) String otherReason,
+                                                 @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr,
                                                  HttpServletRequest request) {
         if (!validateSsoToken(request)) {
             return R.fail(401, "缺少认证Token或Token无效");
@@ -121,7 +123,8 @@ public class WarningTransferApi {
                     continue;
                 }
                 // action=close 走网关默认线，流程直接结束，置订单完成
-                orderService.markOrderEnd(orderId, followUp, otherReason);
+                // 计划续约日期/下次联系时间由调用方（老框架批量处理）以 yyyy-MM-dd 传入
+                orderService.markOrderEnd(orderId, followUp, otherReason, parseDate(plannedRenewalDateStr));
                 success++;
             } catch (Exception e) {
                 log.error("批量完成失败: orderId={}", orderId, e);
@@ -132,6 +135,72 @@ public class WarningTransferApi {
         result.put("success", success);
         result.put("fail", fail);
         return R.ok(result);
+    }
+
+    /**
+     * 批量跟踪中（老框架「维系预警工单批量处理」选跟踪中时调用）。
+     * <p>
+     * 语义与 WideWarningController#track 一致：加任务评注 + 工单置 tracking +
+     * 写 wide_result / planned_renewal_date，<b>不推进流程</b>（任务保留在待办）。
+     * </p>
+     */
+    @SaIgnore
+    @PostMapping("/batchTrack")
+    public R<Map<String, Object>> batchTrack(@RequestParam("orderIds") String orderIds,
+                                              @RequestParam(value = "resultMemo", required = false) String resultMemo,
+                                              @RequestParam(value = "followUp", required = false) String followUp,
+                                              @RequestParam(value = "otherReason", required = false) String otherReason,
+                                              @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr,
+                                              HttpServletRequest request) {
+        if (!validateSsoToken(request)) {
+            return R.fail(401, "缺少认证Token或Token无效");
+        }
+
+        java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
+        String[] ids = orderIds.split(",");
+        int success = 0, fail = 0;
+        for (String idStr : ids) {
+            String trimmed = idStr.trim();
+            if (trimmed.isEmpty()) continue;
+            try {
+                Long orderId = Long.parseLong(trimmed);
+                ToppOrderVo order = orderService.queryById(orderId);
+                if (order == null) { fail++; continue; }
+                // 流程可能已结束：此时只同步工单状态，不再动流程
+                WfCurrentTaskDto task = warningWorkflowService.getCurrentTask(order.getPiId(), null);
+                if (task != null) {
+                    warningWorkflowService.addTaskComment(task.getTaskId(), task.getTaskDefinitionKey(),
+                            task.getProcessInstanceId(), resultMemo);
+                }
+                ToppOrderBo bo = new ToppOrderBo();
+                bo.setId(orderId);
+                bo.setStatus(OrderStatusEnum.TRACKING.getCode());
+                orderService.updateByBo(bo);
+                orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
+                success++;
+            } catch (Exception e) {
+                log.error("批量跟踪中失败: orderId={}", idStr, e);
+                fail++;
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", success);
+        result.put("fail", fail);
+        return R.ok(result);
+    }
+
+    /**
+     * 维系情况 → wide_result：选「其他」时存具体情况文本，否则存选项名称。
+     * 与 WideWarningController#resolveWideResult 同一口径。
+     */
+    private String resolveWideResult(String followUp, String otherReason) {
+        if (followUp == null) {
+            return null;
+        }
+        if ("其他".equals(followUp) && otherReason != null) {
+            return otherReason;
+        }
+        return followUp;
     }
 
     /**
@@ -191,5 +260,20 @@ public class WarningTransferApi {
             return R.fail(String.valueOf(result.get("msg")));
         }
         return R.ok(result);
+    }
+
+    /**
+     * 解析 yyyy-MM-dd 日期串（老框架批量处理传入，可能不传或传空），解析失败返回 null。
+     */
+    private java.util.Date parseDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return new java.text.SimpleDateFormat("yyyy-MM-dd").parse(dateStr.trim());
+        } catch (Exception e) {
+            log.warn("【批量完成】plannedRenewalDate 解析失败: {}", dateStr);
+            return null;
+        }
     }
 }

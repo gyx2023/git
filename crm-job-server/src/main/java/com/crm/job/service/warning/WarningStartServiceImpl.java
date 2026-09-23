@@ -173,12 +173,12 @@ public class WarningStartServiceImpl implements IWarningStartService {
     protected void createAndStartOrder(WarningRecord record) {
         try {
             Map<String, Object> extra = record.getExtraVariables();
+            IWarningQueryStrategy strategy = findStrategy(record.getOrderType());
 
-            // 1. 去重检查
-            if (isDuplicate(record, extra)) return;
+            // 1. 去重检查（策略可关闭：如二次预警同一记录需随跑批多次建单，对齐旧系统不查重）
+            if ((strategy == null || strategy.isDuplicateCheckEnabled()) && isDuplicate(record, extra)) return;
 
             // 1.5 策略前置处理（可选）
-            IWarningQueryStrategy strategy = findStrategy(record.getOrderType());
             if (strategy != null) {
                 strategy.beforeStart(record, String.valueOf(extra != null ? extra.get("_targetDate") : ""));
             }

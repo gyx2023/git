@@ -122,6 +122,28 @@ public interface IToppOrderService {
                       java.util.Date plannedRenewalDate);
 
     /**
+     * 将工单置为已结束（支持维系日期字段，并指定是否为批量处理）。
+     * <p>
+     * {@code batch=true} 时 batch_flag 置 1，对应维系预警报表的「批量处理」(plcl) 口径；
+     * false 置 0，对应「手工处理」(sdcl)。批量入口（新框架 batchDeal 页、H5 批量处理页
+     * → /wideWarning/batchComplete）必须传 true，否则批量提交的工单会被统计成手工处理。
+     * </p>
+     * <p>
+     * 注意：老框架 PC 待办 / 老 H5 的批量处理走 WxOrderAutoCloseJob，该类在关单后
+     * 自行写 batch_flag=1（Activiti 单直接写，Flowable 单在调完 /api/warning/batchComplete
+     * 后由 syncOldOrderAfterComplete 补写），不依赖本重载。
+     * </p>
+     *
+     * @param orderId            工单ID
+     * @param followUp           跟踪情况
+     * @param otherReason        其他原因
+     * @param plannedRenewalDate 计划续约日期（可选）
+     * @param batch              是否批量处理（true → batch_flag=1）
+     */
+    void markOrderEnd(Long orderId, String followUp, String otherReason,
+                      java.util.Date plannedRenewalDate, boolean batch);
+
+    /**
      * 更新工单的维系结果与计划续约日期（允许置空）。
      * <p>
      * 用于沃TV到期预警/宽带预警重复处理场景：当用户切换维系情况或清空日期时，
