@@ -7,6 +7,7 @@ import com.crm.common.core.domain.PageQuery;
 import com.crm.common.core.page.TableDataInfo;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.WotvExpireWarningDetailMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.IWotvExpireWarningDetailService;
 import com.crm.system.service.topp.IToppOrderService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class WotvExpireWarningDetailServiceImpl implements IWotvExpireWarningDet
 
     private final WotvExpireWarningDetailMapper detailMapper;
     private final IToppOrderService orderService;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
 
     @Override
     public List<Map<String, Object>> queryRecords(Long orderId) {
@@ -45,7 +47,7 @@ public class WotvExpireWarningDetailServiceImpl implements IWotvExpireWarningDet
         }
 
         // 2. 通过 infoId 获取 main_order_flow_no
-        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        String mainOrderFlowNo = ftpTcUserCustWarningService.getMainOrderFlowNoById(order.getInfoId());
         if (mainOrderFlowNo == null) {
             log.warn("【wotv_expire_warning】未找到主订单流水号, infoId={}", order.getInfoId());
             return new ArrayList<>();
@@ -73,7 +75,7 @@ public class WotvExpireWarningDetailServiceImpl implements IWotvExpireWarningDet
         }
 
         // 2. 通过 infoId 获取 main_order_flow_no
-        String mainOrderFlowNo = detailMapper.selectMainOrderFlowNoById(order.getInfoId());
+        String mainOrderFlowNo = ftpTcUserCustWarningService.getMainOrderFlowNoById(order.getInfoId());
         if (mainOrderFlowNo == null) {
             log.warn("【wotv_expire_warning】未找到主订单流水号, infoId={}", order.getInfoId());
             return TableDataInfo.build();

@@ -4,12 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;
+import com.crm.system.domain.dao.FtpTcUserCommonWarningDo;
+import com.crm.system.domain.dao.FtpTcUserCustWarningDo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.mapper.SysUsersMapper;
-import com.crm.system.mapper.SpecialActivityWarningAssignMapper;
 import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
 import com.crm.system.mapper.tcomm.TcommCustomerMapper;
+import com.crm.system.service.IFtpTcUserCommonWarningService;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.warning.assign.IWarningAssignStrategy;
 import com.crm.system.service.warning.assign.WarningAssignContext;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +24,8 @@ import java.util.Map;
 /**
  * 特殊活动到期预警未派发指派策略。
  * <p>
- * 手动指派时按 maintenance_detail.detail_id 反查 ftp_tc_user_common_warning（warning_type=000032），
+ * 手动指派时按 maintenance_detail.detail_id 反查原始预警行
+ * （新版客户级 ftp_tc_user_cust_warning，历史用户级 ftp_tc_user_common_warning 兜底），
  * 使用前端指定的客户经理覆盖原 oa_id_dev，并组装建单上下文。
  * </p>
  *
@@ -32,7 +36,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SpecialActivityWarningAssignStrategy implements IWarningAssignStrategy {
 
-    private final SpecialActivityWarningAssignMapper assignMapper;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
+    private final IFtpTcUserCommonWarningService ftpTcUserCommonWarningService;
     private final SysUsersMapper sysUsersMapper;
     private final TcommCustomerMapper tcommCustomerMapper;
     private final FtpCustBaseInfoMapper ftpCustBaseInfoMapper;
@@ -52,25 +57,36 @@ public class SpecialActivityWarningAssignStrategy implements IWarningAssignStrat
         if (detailId == null || targetUserId == null) {
             return null;
         }
-        Map<String, Object> row = assignMapper.selectByCustId(detailId);
-        if (row == null || row.isEmpty()) {
-            // 历史数据兜底：detail_id 仍指向用户级表 ftp_tc_user_common_warning
-            row = assignMapper.selectSpecialActivityById(detailId);
+        // 新版客户级预警行：detail_id 指向 ftp_tc_user_cust_warning.id_
+        FtpTcUserCustWarningDo custRow = ftpTcUserCustWarningService.getById(detailId.intValue());
+        // 历史数据兜底：detail_id 仍指向用户级表 ftp_tc_user_common_warning
+        FtpTcUserCommonWarningDo commonRow = null;
+        if (custRow == null) {
+            commonRow = ftpTcUserCommonWarningService.getById(detailId.intValue());
         }
-        if (row == null || row.isEmpty()) {
+        if (custRow == null && commonRow == null) {
             log.warn("【特殊活动指派】未找到原始预警行, detailId={}", detailId);
             return null;
         }
+
+        String grpName = custRow != null ? custRow.getGrpName() : commonRow.getGrpName();
+        String grpCode = custRow != null ? custRow.getGrpCode() : commonRow.getGrpCode();
+        Integer custGrpIdObj = custRow != null ? custRow.getCustGrpId() : commonRow.getCustGrpId();
+        String custGrpId = custGrpIdObj == null ? null : String.valueOf(custGrpIdObj);
+        String areaName = custRow != null ? custRow.getAreaName() : commonRow.getAreaName();
+        // 客户级表有 county_name；用户级表无 county_name，只有 county_id 编码
+        String countyName = custRow != null ? custRow.getCountyName() : null;
+        if (StringUtils.isBlank(countyName)) {
+            countyName = custRow != null ? null : commonRow.getCountyId();
+        }
+        String oaIdDev = custRow != null ? custRow.getOaIdDev() : commonRow.getOaIdDev();
+        String oaNameDev = custRow != null ? custRow.getOaNameDev() : commonRow.getOaNameDev();
 
         SysUsers targetUser = sysUsersMapper.selectById(targetUserId);
         if (targetUser == null) {
             log.warn("【特殊活动指派】目标客户经理不存在, userId={}", targetUserId);
             return null;
         }
-
-        String grpName = str(row.get("grp_name"));
-        String grpCode = str(row.get("grp_code"));
-        String custGrpId = str(row.get("cust_grp_id"));
 
         WarningAssignContext ctx = new WarningAssignContext();
         ctx.setOrderType(getOrderType());
@@ -96,18 +112,13 @@ public class SpecialActivityWarningAssignStrategy implements IWarningAssignStrat
         ctx.setExtraVariable("phone", targetUser.getRelationTel());
         ctx.setExtraVariable("_needOrderNumber", true);
         ctx.setExtraVariable("orderCategory", "C");
-        String countyName = str(row.get("county_name"));
-        if (StringUtils.isBlank(countyName)) {
-            // 用户级表无 county_name，只有 county_id 编码
-            countyName = str(row.get("county_id"));
-        }
-        ctx.setExtraVariable("areaName", str(row.get("area_name")));
+        ctx.setExtraVariable("areaName", areaName);
         ctx.setExtraVariable("countyName", countyName);
         ctx.setExtraVariable("grpCode", grpCode);
         ctx.setExtraVariable("custGrpId", custGrpId);
         // 被指派的处理人 OA 信息（供 assignSuccess 反查旧 sys_user 写 manager_id/name）
-        ctx.setExtraVariable("oaIdDev", str(row.get("oa_id_dev")));
-        ctx.setExtraVariable("oaNameDev", str(row.get("oa_name_dev")));
+        ctx.setExtraVariable("oaIdDev", oaIdDev);
+        ctx.setExtraVariable("oaNameDev", oaNameDev);
 
         // businessDep：对齐 job 策略用 custGrpId 查 ftp_cust_base_info.grp_busi_dept_type
         if (StringUtils.isNotBlank(custGrpId) && ftpCustBaseInfoMapper != null) {
@@ -131,9 +142,5 @@ public class SpecialActivityWarningAssignStrategy implements IWarningAssignStrat
     @Override
     public String buildDealUrl(Long orderId, Map<String, Object> extra) {
         return "/userCustWarning/dealBySpecialActivity?orderId=" + orderId;
-    }
-
-    private String str(Object v) {
-        return v == null ? null : v.toString();
     }
 }

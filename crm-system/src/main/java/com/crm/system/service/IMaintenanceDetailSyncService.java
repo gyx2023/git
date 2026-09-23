@@ -1,6 +1,7 @@
 package com.crm.system.service;
 
 import com.crm.system.domain.bo.topp.ToppOrderBo;
+import com.crm.system.domain.dao.FtpTcUserCustWarningDo;
 
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public interface IMaintenanceDetailSyncService {
      * 对应旧系统 TcUserCustWarningNewJob.java:325-339（manager 查询失败分支）。
      *
      * @param orderType 预警类型，如 kd_addr_warn
-     * @param row       原始查询行（ftp_tc_user_cust_warning，键为 SQL 列名 id_/grp_code/cust_grp_id/grp_name/area_name/county_name/oa_id_dev/oa_name_dev）
+     * @param row       原始预警行（ftp_tc_user_cust_warning）
      */
-    void writeNoManager(String orderType, Map<String, Object> row);
+    void writeNoManager(String orderType, FtpTcUserCustWarningDo row);
 }

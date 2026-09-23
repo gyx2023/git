@@ -3,16 +3,17 @@ package com.crm.job.service.warning.strategy;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.common.utils.DateUtils;
 import com.crm.common.utils.StringUtils;
-import com.crm.job.mapper.warning.SpecialActivityWarningMapper;
 import com.crm.job.service.warning.AbstractWarningQueryStrategy;
 import com.crm.system.service.warning.WarningRecord;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;
+import com.crm.system.domain.dao.FtpTcUserCustWarningDo;
 import com.crm.system.domain.dao.SysUsers;
 import com.crm.system.domain.dao.tcomm.TcommCustomer;
 import com.crm.system.mapper.SysUsersMapper;
 import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
 import com.crm.system.mapper.tcomm.TcommCustomerMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.IMaintenanceDetailSyncService;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +48,7 @@ import java.util.Map;
 public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy {
 
     @Resource
-    private SpecialActivityWarningMapper mapper;
+    private IFtpTcUserCustWarningService ftpTcUserCustWarningService;
 
     @Resource
     private SysUsersMapper sysUsersMapper;
@@ -73,10 +74,10 @@ public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy
 
     @Override
     protected List<WarningRecord> doQuery(String targetDate) {
-        List<Map<String, Object>> rows = mapper.selectSpecialActivityList(targetDate);
+        List<FtpTcUserCustWarningDo> rows = ftpTcUserCustWarningService.listByWarningTypeAndCreateDate("000032", targetDate);
         List<WarningRecord> records = new ArrayList<>();
 
-        for (Map<String, Object> row : rows) {
+        for (FtpTcUserCustWarningDo row : rows) {
             WarningRecord record = toWarningRecord(row);
             if (record != null) {
                 records.add(record);
@@ -85,8 +86,8 @@ public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy
         return records;
     }
 
-    private WarningRecord toWarningRecord(Map<String, Object> row) {
-        String oaIdDev = getString(row.get("oa_id_dev"));
+    private WarningRecord toWarningRecord(FtpTcUserCustWarningDo row) {
+        String oaIdDev = getString(row.getOaIdDev());
         if (oaIdDev == null || oaIdDev.isEmpty()) {
             log.warn("【{}】oa_id_dev 为空, 写 status=0 维系明细并跳过建单", getOrderTypeName());
             writeNoManagerSafe(row);
@@ -110,12 +111,12 @@ public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy
 
         WarningRecord record = new WarningRecord();
         record.setOrderType(getOrderType());
-        record.setOrderName(DateUtils.dateTime() + "_" + (StringUtils.isNotBlank(getString(row.get("grp_name"))) ? getString(row.get("grp_name")) + "_" : "") + getOrderTypeName());
-        record.setCustName(getString(row.get("grp_name")));
+        record.setOrderName(DateUtils.dateTime() + "_" + (StringUtils.isNotBlank(getString(row.getGrpName())) ? getString(row.getGrpName()) + "_" : "") + getOrderTypeName());
+        record.setCustName(getString(row.getGrpName()));
         record.setCustManagerId(userId);
 
         // 根据 grp_code 查客户，设置 custId（对齐旧系统 customerService.getByCustNo）
-        String grpCode = getString(row.get("grp_code"));
+        String grpCode = getString(row.getGrpCode());
         if (StringUtils.isNotBlank(grpCode)) {
             TcommCustomer customer = tcommCustomerMapper.selectOne(
                     new LambdaQueryWrapper<TcommCustomer>().eq(TcommCustomer::getCustNo, grpCode).last("LIMIT 1"));
@@ -132,27 +133,27 @@ public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy
         record.setSysUser(sysUser);
 
         // 扩展字段
-        record.setExtraVariable("infoId", toLong(row.get("id_")));
+        record.setExtraVariable("infoId", toLong(row.getId()));
         record.setExtraVariable("orgId", toLong(userRow.get("dept_id")));
         record.setExtraVariable("nickName", getString(userRow.get("nick_name")));
         record.setExtraVariable("phone", getString(userRow.get("phonenumber")));
         record.setExtraVariable("_needOrderNumber", true);
         record.setExtraVariable("orderCategory", "C");
         // 地市/区县信息（客户级表有 county_name，历史用户级表仅有 county_id 编码）
-        String countyName = getString(row.get("county_name"));
+        String countyName = getString(row.getCountyName());
         if (StringUtils.isBlank(countyName)) {
-            countyName = getString(row.get("county_id"));
+            countyName = getString(row.getCountyName());
         }
-        record.setExtraVariable("areaName", getString(row.get("area_name")));
+        record.setExtraVariable("areaName", getString(row.getAreaName()));
         record.setExtraVariable("countyName", countyName);
         // 维系明细写入所需字段（afterStart → writeSuccess）
         record.setExtraVariable("grpCode", grpCode);
-        record.setExtraVariable("custGrpId", getString(row.get("cust_grp_id")));
+        record.setExtraVariable("custGrpId", getString(row.getCustGrpId()));
         record.setExtraVariable("oaIdDev", oaIdDev);
-        record.setExtraVariable("oaNameDev", getString(row.get("oa_name_dev")));
+        record.setExtraVariable("oaNameDev", getString(row.getOaNameDev()));
 
         // businessDep：对齐旧系统 setAreaAndOrgNew，用 custGrpId 查 ftp_cust_base_info.grp_busi_dept_type
-        String custGrpId = getString(row.get("cust_grp_id"));
+        String custGrpId = getString(row.getCustGrpId());
         if (StringUtils.isNotBlank(custGrpId) && ftpCustBaseInfoMapper != null) {
             try {
                 FtpCustBaseInfoDo custInfo = ftpCustBaseInfoMapper.selectOne(
@@ -187,7 +188,7 @@ public class SpecialActivityWarningStrategy extends AbstractWarningQueryStrategy
     }
 
     /** 无有效客户经理时写 status=0 维系明细，失败不影响查询主流程 */
-    private void writeNoManagerSafe(Map<String, Object> row) {
+    private void writeNoManagerSafe(FtpTcUserCustWarningDo row) {
         try {
             maintenanceDetailSyncService.writeNoManager(getOrderType(), row);
         } catch (Exception e) {
