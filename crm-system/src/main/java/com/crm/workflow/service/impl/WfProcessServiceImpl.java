@@ -1502,6 +1502,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     private List<WfProcNodeVo> historyProcNodeList(HistoricProcessInstance historicProcIns,
                                                      List<HistoricActivityInstance> allActivityInstances) {
         String procInsId = historicProcIns.getId();
+        // 红名单到期预警流程定义 key：只对 hmd_warn_approval 启用专属动作文案，其它预警类型（沃TV 等）沿用全局映射
+        boolean isHmd = "hmd_warn_approval".equals(historicProcIns.getProcessDefinitionKey());
         // 从预查询的列表中过滤出 startEvent/endEvent/userTask，按时间排序
         Set<String> targetTypes = CollUtil.newHashSet(
             BpmnXMLConstants.ELEMENT_EVENT_START, BpmnXMLConstants.ELEMENT_EVENT_END, BpmnXMLConstants.ELEMENT_TASK_USER);
@@ -1602,18 +1604,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 if (activityInstance.getEndTime() != null) {
                     String action = actionByTaskId.get(activityInstance.getTaskId());
                     if (action != null) {
-                        if ("transfer".equals(action)) {
-                            elementVo.setOperation("转派");
-                        } else if ("agree".equals(action)) {
-                            elementVo.setOperation("通过");
-                        } else if ("close".equals(action)) {
-                            // 老框架批量完成桥接（WarningTransferApi.batchComplete）置 action=close
-                            elementVo.setOperation("完成");
-                        } else if ("reject".equals(action)) {
-                            elementVo.setOperation("退回");
-                        } else {
-                            elementVo.setOperation(action);
-                        }
+                        // 红名单走专属文案（contract §5），其它流程定义保持原有全局映射
+                        elementVo.setOperation(isHmd
+                            ? resolveHmdOperation(action, activityInstance.getActivityId())
+                            : resolveGlobalOperation(action));
                     }
                 }
                 // 获取意见评论内容（过滤掉引擎自动产生的系统事件，仅保留有审批文字的）
@@ -1647,6 +1641,59 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             elementVoList.add(elementVo);
         }
         return elementVoList;
+    }
+
+    /**
+     * 全局处理动作文案（所有预警流程定义共用，保持既有行为不变）
+     *
+     * @param action 流程变量 action
+     * @return 对应文案；未命中时回落原始值
+     */
+    private String resolveGlobalOperation(String action) {
+        if ("transfer".equals(action)) {
+            return "转派";
+        } else if ("agree".equals(action)) {
+            return "通过";
+        } else if ("close".equals(action)) {
+            // 老框架批量完成桥接（WarningTransferApi.batchComplete）置 action=close
+            return "完成";
+        } else if ("reject".equals(action)) {
+            return "退回";
+        } else {
+            return action;
+        }
+    }
+
+    /**
+     * 红名单到期预警（hmd_warn_approval）专属处理动作文案。
+     * 文案取自老框架 FtpTcUserCustWarningService 的 opinion，逐字一致。
+     * 未命中的动作回落到全局映射（agree→通过 等），再回落原始值，不抛异常。
+     *
+     * @param action     流程变量 action（delay / notRenewToLeader / notRenewClose / transfer / agree / reject）
+     * @param activityId BPMN 活动ID；userTask 的 activityId 即 taskDefinitionKey（manager_handle / audit_handle），
+     *                   由 UserTaskActivityBehavior 以 UserTask 元素 id 赋值，故可用于区分经理/领导节点的 transfer
+     */
+    private String resolveHmdOperation(String action, String activityId) {
+        if ("delay".equals(action)) {
+            return "延期红名单";
+        } else if ("notRenewToLeader".equals(action)) {
+            return "不延期红名单";
+        } else if ("notRenewClose".equals(action)) {
+            return "不延期红名单,手动关单";
+        } else if ("transfer".equals(action)) {
+            // 经理节点与领导节点均为 transfer，按节点区分文案
+            if ("audit_handle".equals(activityId)) {
+                return "转派其他领导审核";
+            } else if ("manager_handle".equals(activityId)) {
+                return "转派客户经理";
+            }
+            return resolveGlobalOperation(action);
+        } else if ("reject".equals(action)) {
+            return "回退";
+        } else if ("agree".equals(action)) {
+            return "领导审核完成";
+        }
+        return resolveGlobalOperation(action);
     }
 
     /** 带缓存的用户昵称查询，避免 N+1 DB 调用 */

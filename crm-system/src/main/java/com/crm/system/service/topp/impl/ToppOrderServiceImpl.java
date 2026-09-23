@@ -334,6 +334,7 @@ public class ToppOrderServiceImpl implements IToppOrderService {
                 || "wotv_expire_warning".equals(order.getOrderType())
                 || "special_activity_warn".equals(order.getOrderType())
                 || "Wide".equals(order.getOrderType())
+                || "hmd_warn".equals(order.getOrderType())
                 || "group_buy_warn".equals(order.getOrderType())
                 || "terminal_contract_warn".equals(order.getOrderType()))) {
             bo.setEndReason("0");

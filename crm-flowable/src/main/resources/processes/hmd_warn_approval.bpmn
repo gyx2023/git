@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/process">
+    <process id="hmd_warn_approval" name="红名单到期预警处理流程(双节点)" isExecutable="true">
+        <documentation>红名单到期预警(000030/hmd_warn)双节点流程：客户经理处理 → 领导审核。通过 BUSINESS_KEY_ 区分预警类型。
+参数：manager/audit 为两节点处理人；manager_handle_name/audit_handle_name 为节点显示名；action 为决策变量
+(delay=延期 / notRenewToLeader=不延期送领导 / notRenewClose=二次不延期关单 / transfer=转派 / agree=完成 / reject=回退)。
+复刻旧系统 hmd_warn.bpmn（manager_deal → leader_deal）：经理"延期红名单"(delay) → 自环回同一客户经理(manager 不变)；
+"不延期"(notRenewToLeader) 首次送领导审核(带 audit=所选领导)；领导回退后再"不延期"(notRenewClose) → 直接关单；
+转派(transfer) → 回客户经理(换人，manager 由 transferOrder 更新)。audit 节点：完成(agree) → 关单、
+回退(reject) → 回客户经理、转派其他领导(transfer) → 自环(audit 更新为目标领导)。
+两个排他网关的出线全部带 conditionExpression、不再保留无条件默认线：条件均不命中时由引擎直接报错，
+避免"任何未匹配动作都静默关单"；网关条件也不再引用 audit 变量（首/二次不延期由动作值区分）。</documentation>
+        <!-- 开始事件 -->
+        <startEvent id="startevent" name="开始"></startEvent>
+        <!-- 客户经理处理任务（对应旧 manager_deal） -->
+        <userTask id="manager_handle" name="${manager_handle_name}" flowable:assignee="${manager}">
+            <documentation>客户经理处理</documentation>
+        </userTask>
+        <!-- 客户经理审批网关 -->
+        <exclusiveGateway id="managerGateway" name="客户经理审批网关"></exclusiveGateway>
+        <!-- 领导审核任务（对应旧 leader_deal，保留 audit_handle 节点 id 供通用动作分支） -->
+        <userTask id="audit_handle" name="${audit_handle_name}" flowable:assignee="${audit}">
+            <documentation>领导审核</documentation>
+        </userTask>
+        <!-- 领导审核网关 -->
+        <exclusiveGateway id="auditGateway" name="领导审核网关"></exclusiveGateway>
+        <!-- 结束事件 -->
+        <endEvent id="endevent" name="结束"></endEvent>
+        <!-- 流程连接线 -->
+        <sequenceFlow id="flow1" sourceRef="startevent" targetRef="manager_handle"></sequenceFlow>
+        <sequenceFlow id="flow2" sourceRef="manager_handle" targetRef="managerGateway"></sequenceFlow>
+        <!-- 客户经理网关：4 条出线全部带条件，无无条件默认线
+             延期(delay)→自环回本人 / 不延期首次送领导(notRenewToLeader, 带 audit)→领导审核 /
+             二次不延期关单(notRenewClose)→结束 / 转派(transfer)→回客户经理(换人) -->
+        <sequenceFlow id="flowManagerDelay" name="延期" sourceRef="managerGateway" targetRef="manager_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'delay'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowToAudit" name="不延期" sourceRef="managerGateway" targetRef="audit_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'notRenewToLeader'}]]></conditionExpression>
+        </sequenceFlow>
+        <!-- 二次不延期关单（领导已审过后再次不延期）：不再引用 audit 变量，
+             避免二次不延期先 removeVariable("audit") 后网关表达式 Unknown property used in expression -->
+        <sequenceFlow id="flowManagerClose" name="不延期关单" sourceRef="managerGateway" targetRef="endevent">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'notRenewClose'}]]></conditionExpression>
+        </sequenceFlow>
+        <!-- 转派回客户经理（对齐旧系统 flag1==2，manager 由 transferOrder 更新为目标人） -->
+        <sequenceFlow id="flowManagerTransfer" name="转派" sourceRef="managerGateway" targetRef="manager_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'transfer'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow3" sourceRef="audit_handle" targetRef="auditGateway"></sequenceFlow>
+        <!-- 领导网关：3 条出线全部带条件，无无条件默认线 -->
+        <sequenceFlow id="flowAuditReject" name="回退" sourceRef="auditGateway" targetRef="manager_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'reject'}]]></conditionExpression>
+        </sequenceFlow>
+        <!-- 转派其他领导：自环回 audit_handle（对齐旧系统 flag2==2，audit 由 leaderDeal 更新为目标领导） -->
+        <sequenceFlow id="flowAuditTransfer" name="转派其他领导审核" sourceRef="auditGateway" targetRef="audit_handle">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'transfer'}]]></conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowAuditPass" name="完成" sourceRef="auditGateway" targetRef="endevent">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'agree'}]]></conditionExpression>
+        </sequenceFlow>
+    </process>
+    <!-- 流程图可视化定义 -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_hmd_warn_approval">
+        <bpmndi:BPMNPlane bpmnElement="hmd_warn_approval" id="BPMNPlane_hmd_warn_approval">
+            <bpmndi:BPMNShape bpmnElement="startevent" id="BPMNShape_startevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="60.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="manager_handle" id="BPMNShape_manager_handle">
+                <omgdc:Bounds height="55.0" width="105.0" x="150.0" y="210.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="managerGateway" id="BPMNShape_managerGateway">
+                <omgdc:Bounds height="40.0" width="40.0" x="310.0" y="217.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="audit_handle" id="BPMNShape_audit_handle">
+                <omgdc:Bounds height="55.0" width="105.0" x="420.0" y="210.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="auditGateway" id="BPMNShape_auditGateway">
+                <omgdc:Bounds height="40.0" width="40.0" x="590.0" y="217.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="endevent" id="BPMNShape_endevent">
+                <omgdc:Bounds height="35.0" width="35.0" x="700.0" y="220.0"></omgdc:Bounds>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+                <omgdi:waypoint x="95.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="150.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+                <omgdi:waypoint x="255.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="310.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <!-- 延期自环：自 managerGateway 顶部绕行回 manager_handle 顶部 -->
+            <bpmndi:BPMNEdge bpmnElement="flowManagerDelay" id="BPMNEdge_flowManagerDelay">
+                <omgdi:waypoint x="330.0" y="217.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="175.0"></omgdi:waypoint>
+                <omgdi:waypoint x="190.0" y="175.0"></omgdi:waypoint>
+                <omgdi:waypoint x="190.0" y="210.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowToAudit" id="BPMNEdge_flowToAudit">
+                <omgdi:waypoint x="350.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="420.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowManagerClose" id="BPMNEdge_flowManagerClose">
+                <omgdi:waypoint x="340.0" y="227.0"></omgdi:waypoint>
+                <omgdi:waypoint x="340.0" y="130.0"></omgdi:waypoint>
+                <omgdi:waypoint x="717.0" y="130.0"></omgdi:waypoint>
+                <omgdi:waypoint x="717.0" y="220.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowManagerTransfer" id="BPMNEdge_flowManagerTransfer">
+                <omgdi:waypoint x="330.0" y="257.0"></omgdi:waypoint>
+                <omgdi:waypoint x="330.0" y="320.0"></omgdi:waypoint>
+                <omgdi:waypoint x="202.0" y="320.0"></omgdi:waypoint>
+                <omgdi:waypoint x="202.0" y="265.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+                <omgdi:waypoint x="525.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="590.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAuditReject" id="BPMNEdge_flowAuditReject">
+                <omgdi:waypoint x="610.0" y="257.0"></omgdi:waypoint>
+                <omgdi:waypoint x="610.0" y="380.0"></omgdi:waypoint>
+                <omgdi:waypoint x="175.0" y="380.0"></omgdi:waypoint>
+                <omgdi:waypoint x="175.0" y="265.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <!-- 领导转派自环：自 auditGateway 顶部绕行回 audit_handle 顶部 -->
+            <bpmndi:BPMNEdge bpmnElement="flowAuditTransfer" id="BPMNEdge_flowAuditTransfer">
+                <omgdi:waypoint x="610.0" y="217.0"></omgdi:waypoint>
+                <omgdi:waypoint x="610.0" y="160.0"></omgdi:waypoint>
+                <omgdi:waypoint x="472.0" y="160.0"></omgdi:waypoint>
+                <omgdi:waypoint x="472.0" y="210.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAuditPass" id="BPMNEdge_flowAuditPass">
+                <omgdi:waypoint x="630.0" y="237.0"></omgdi:waypoint>
+                <omgdi:waypoint x="700.0" y="237.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>
