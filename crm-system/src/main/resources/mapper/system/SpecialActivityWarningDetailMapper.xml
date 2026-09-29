@@ -14,7 +14,19 @@
     <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
         SELECT
         w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
-        w.prod_name, w.hq_svc_type, w.user_status,
+        -- 前端「预警明细」表格列别名（对齐 PC 页 specialActivityWarning/deal 的 prop 命名）
+        w.hq_svc_type AS serviceName,
+        w.prod_name AS prodType,
+        -- 活动ID/活动名称/活动生效时间/活动失效时间 取自 WARNING_INFO 的 || 分段
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 1), '||', -1) AS newSchemeId,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 2), '||', -1) AS schemeName,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 3), '||', -1) AS effTime,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 4), '||', -1) AS expTime,
+        w.ep_special_scheme_name AS newSchemeName,
+        w.ep_special_create_date AS renewalTime,
+        w.ep_special_eff_date AS newEffTime,
+        w.ep_special_exp_date AS newExpTime,
+        w.user_status,
         w.area_name, w.county_id, w.open_date,
         w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date,
         w.ep_special_eff_date, w.ep_special_exp_date,
@@ -33,7 +45,19 @@
     <select id="selectByMainOrderFlowNoPage" resultType="java.util.Map">
         SELECT
         w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
-        w.prod_name, w.hq_svc_type, w.user_status,
+        -- 前端「预警明细」表格列别名（对齐 PC 页 specialActivityWarning/deal 的 prop 命名）
+        w.hq_svc_type AS serviceName,
+        w.prod_name AS prodType,
+        -- 活动ID/活动名称/活动生效时间/活动失效时间 取自 WARNING_INFO 的 || 分段
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 1), '||', -1) AS newSchemeId,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 2), '||', -1) AS schemeName,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 3), '||', -1) AS effTime,
+        SUBSTRING_INDEX(SUBSTRING_INDEX(w.warning_info, '||', 4), '||', -1) AS expTime,
+        w.ep_special_scheme_name AS newSchemeName,
+        w.ep_special_create_date AS renewalTime,
+        w.ep_special_eff_date AS newEffTime,
+        w.ep_special_exp_date AS newExpTime,
+        w.user_status,
         w.area_name, w.county_id, w.open_date,
         w.warning_info, w.ep_special_scheme_name, w.ep_special_create_date,
         w.ep_special_eff_date, w.ep_special_exp_date,

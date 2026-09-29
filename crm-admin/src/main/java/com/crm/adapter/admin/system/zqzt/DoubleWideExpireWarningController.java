@@ -66,18 +66,22 @@ public class DoubleWideExpireWarningController extends BaseController {
             vo.setAmountPerYear(str(r, "amountPerYear"));
             vo.setRate(str(r, "rate"));
             vo.setUserAddr(str(r, "userAddr"));
-            vo.setExteFlag(str(r, "exteFlag"));
+            vo.setExteFlag(flagText(str(r, "exteFlag")));
             vo.setNewSchemeName(str(r, "newSchemeName"));
             vo.setNewCreateTime(str(r, "newCreateTime"));
             vo.setNewEffTime(str(r, "newEffTime"));
             vo.setNewExpTime(str(r, "newExpTime"));
             vo.setNewSchemePeriod(str(r, "newSchemePeriod"));
             vo.setNewSchemeFee(str(r, "newSchemeFee"));
-            vo.setRelationTypeName(str(r, "relationTypeName"));
             vo.setUserStatus(str(r, "userStatus"));
             list.add(vo);
         }
         ExcelUtil.exportExcel(list, "双线到期预警明细", DoubleWideExpireWarningDetailExportVo.class, response);
+    }
+
+    /** 是否续约：沿用旧框架 C00007 导出口径（1→是，其余→否） */
+    private String flagText(String v) {
+        return "1".equals(v) ? "是" : "否";
     }
 
     private String str(Map<String, Object> m, String k) {
