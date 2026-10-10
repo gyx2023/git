@@ -27,4 +27,7 @@ public class ZqztCloudConfigItemDTO implements Serializable {
     private String sipServerPort;
     private String sipServerIp;
     private String channelCodeId;
+
+    /** 宽带账号（火焰卫士按设备回填，对应 zqzt_ledger_cloud_config.broadband_account） */
+    private String broadbandAccount;
 }

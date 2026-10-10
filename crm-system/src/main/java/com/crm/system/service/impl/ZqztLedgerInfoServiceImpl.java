@@ -277,6 +277,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
                 item.setSipServerPort(c.getSipServerPort());
                 item.setSipServerIp(c.getSipServerIp());
                 item.setChannelCodeId(c.getChannelCodeId());
+                item.setBroadbandAccount(c.getBroadbandAccount());
                 items.add(item);
             }
         }
