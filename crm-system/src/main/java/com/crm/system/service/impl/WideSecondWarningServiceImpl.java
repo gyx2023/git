@@ -6,6 +6,7 @@ import com.crm.system.domain.dao.sys.SysCode;
 import com.crm.system.domain.vo.topp.ToppOrderVo;
 import com.crm.system.mapper.WideSecondWarningDetailMapper;
 import com.crm.system.mapper.sys.SysCodeMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
 import com.crm.system.service.IWideSecondWarningService;
 import com.crm.system.service.sys.ISysCodeService;
 import com.crm.system.service.topp.IToppOrderService;
@@ -26,6 +27,7 @@ import java.util.*;
 public class WideSecondWarningServiceImpl implements IWideSecondWarningService {
 
     private final WideSecondWarningDetailMapper mapper;
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
     private final IToppOrderService orderService;
     private final ISysCodeService sysCodeService;
     private final SysCodeMapper sysCodeMapper;
@@ -173,7 +175,7 @@ public class WideSecondWarningServiceImpl implements IWideSecondWarningService {
             log.warn("【wide_second】工单不存在或无关联记录, orderId={}", orderId);
             return null;
         }
-        String mainOrderFlowNo = mapper.selectMainOrderFlowNoById(order.getInfoId());
+        String mainOrderFlowNo = ftpTcUserCustWarningService.getMainOrderFlowNoById(order.getInfoId());
         if (mainOrderFlowNo == null) {
             log.warn("【wide_second】未找到主订单流水号, infoId={}", order.getInfoId());
         }
