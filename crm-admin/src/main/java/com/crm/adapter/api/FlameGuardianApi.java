@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 火焰卫士受理订单执行结果通知（外部系统调用，appid + sign + timestamp 验签）
@@ -60,13 +61,27 @@ public class FlameGuardianApi {
     private final ISysOperLogService sysOperLogService;
 
     /**
-     * 接收受理订单执行结果，回填台账主表与云智眼配置子表
+     * 接收受理订单执行结果，支持RPA执行结果回填和设备信息修改；
      */
     @SaIgnore
     @PostMapping("/orderResult")
     public R<Void> orderResult(@RequestBody FlameGuardianOrderResultBo bo) {
         SysOperLog operLog = buildOperLog(bo);
         long startTime = System.currentTimeMillis();
+
+        if (bo != null && StringUtils.isNotBlank(bo.getOrderId())) {
+            try {
+                validateOperType(bo);
+            } catch (ServiceException se) {
+                R<Void> bad = R.fail(400, se.getMessage());
+                operLog.setStatus(1);
+                operLog.setErrorMsg(StringUtils.substring(se.getMessage(), 0, OPER_LOG_MAX_LENGTH));
+                operLog.setJsonResult(StringUtils.substring(JSON.toJSONString(bad), 0, OPER_LOG_MAX_LENGTH));
+                operLog.setRequestTime(System.currentTimeMillis() - startTime);
+                writeOperLog(operLog);
+                return bad;
+            }
+        }
 
         R<Void> resp;
         try {
@@ -90,6 +105,47 @@ public class FlameGuardianApi {
         operLog.setRequestTime(System.currentTimeMillis() - startTime);
         writeOperLog(operLog);
         return resp;
+    }
+
+    /**
+     * 操作类型校验：必填且仅 T1/T2；
+     * T1: RPA执行结果回填，必填 allSuccess/stepList 与 deviceName
+     * T2: 设备信息修改，必填 deviceId
+     * */
+    private void validateOperType(FlameGuardianOrderResultBo bo) {
+        String operType = bo.getOperType();
+        if (StringUtils.isBlank(operType)) {
+            throw new ServiceException("参数校验失败：operType不能为空");
+        }
+        boolean rpa;
+        if ("T1".equals(operType)) {
+            rpa = true;
+        } else if ("T2".equals(operType)) {
+            rpa = false;
+        } else {
+            throw new ServiceException("参数校验失败：operType仅支持T1/T2");
+        }
+        if (rpa) {
+            if (bo.getAllSuccess() == null) {
+                throw new ServiceException("参数校验失败：操作类型T1时allSuccess不能为空");
+            }
+            if (bo.getStepList() == null || bo.getStepList().isEmpty()) {
+                throw new ServiceException("参数校验失败：操作类型T1时stepList不能为空");
+            }
+        }
+        List<FlameGuardianOrderResultBo.Device> devices = bo.getDeviceList();
+        if (devices == null) {
+            return;
+        }
+        for (FlameGuardianOrderResultBo.Device device : devices) {
+            if (rpa) {
+                if (StringUtils.isBlank(device.getDeviceName())) {
+                    throw new ServiceException("参数校验失败：操作类型T1时deviceList.deviceName不能为空");
+                }
+            } else if (StringUtils.isBlank(device.getDeviceId())) {
+                throw new ServiceException("参数校验失败：操作类型T2时deviceList.deviceId不能为空");
+            }
+        }
     }
 
     /**

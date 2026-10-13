@@ -91,6 +91,21 @@ public class ZqztLedgerCloudConfig implements Serializable {
     /** 带宽账号（火焰卫士回调按设备回填）*/
     private String broadbandAccount;
 
+    /** 通道竣工状态，多个用 | 分隔存储 */
+    private String channelCodeStatus;
+
+    /** 宽带竣工时间 */
+    private Date broadbandFinishDate;
+
+    /** 宽带是否利旧 OLD-利旧/NEW-新装 */
+    private String broadbandIsReuse;
+
+    /** 摄像头（组网）账号 */
+    private String cameraAccount;
+
+    /** 摄像头账号竣工时间 */
+    private Date cameraFinishDate;
+
     /** 排序号 */
     private Integer sortOrder;
 

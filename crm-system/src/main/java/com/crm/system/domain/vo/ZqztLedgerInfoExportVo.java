@@ -19,7 +19,7 @@ public class ZqztLedgerInfoExportVo implements Serializable {
     private String orderNo;
 
     @ExcelProperty("签约时间")
-    @DateTimeFormat("yyyy-MM-dd")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private Date signDate;
 
     @ExcelProperty("服务大厅创建时间")

@@ -26,6 +26,10 @@ public class ZqztLedgerInfo implements Serializable {
     /** 服务大厅工单号 */
     private String orderNo;
 
+    /** 订单号，topp_order.order_number */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String orderId;
+
     /** 签约日期 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date signDate;
@@ -53,6 +57,10 @@ public class ZqztLedgerInfo implements Serializable {
     /** 企业名称 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String companyName;
+
+    /** 企业简称 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String companySimpleName;
 
     /** 社会统一信用代码 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
@@ -114,6 +122,10 @@ public class ZqztLedgerInfo implements Serializable {
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String unicomManagerPhone;
 
+    /** 联通客户经理归属县分名称 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String unicomManagerCounty;
+
     /** 摄像头是否新装(1是/0否) */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String cameraIsNewInstall;
@@ -165,6 +177,10 @@ public class ZqztLedgerInfo implements Serializable {
     /** 宽带竣工时间 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date broadbandFinishDate;
+
+    /** 新增宽带条数 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private Integer broadbandAddNum;
 
     /** 云智眼账号 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)

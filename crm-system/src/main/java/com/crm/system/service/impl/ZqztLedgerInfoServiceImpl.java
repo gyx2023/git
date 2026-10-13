@@ -3,6 +3,7 @@ package com.crm.system.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.crm.common.constant.CacheConstants;
@@ -62,10 +63,14 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
 
     private static final String VALID = "1";
     private static final String INVALID = "0";
+    /**
+     * 台账全流程状态：1-已完成 / 0-未完成 / -1-作废 / 2-派单失败。
+     * <p>全部由系统维护（竣工回填 job / 作废 job / 建单 job），修改表单不得改写。</p>
+     */
+    private static final String STATUS_FINISHED = "1";
+    private static final String STATUS_CANCELED = "-1";
 
-    /** 火焰卫士同步状态：默认 */
-    private static final String FLAME_SYN_DEFAULT = "0";
-    /** 火焰卫士同步状态：待同步（其余状态 2/3/4 由同步任务维护） */
+    /** 火焰卫士同步状态：待同步（2-同步中 / 3-同步成功 / 4-同步失败 由同步任务维护） */
     private static final String FLAME_SYN_PENDING = "1";
 
     /** 云智眼改密短信模板编码（能开 VERIFY_04，登录验证码模板） */
@@ -105,6 +110,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         lqw.orderByDesc(ZqztLedgerInfo::getCreateTime);
         Page<ZqztLedgerInfoVo> page = ledgerInfoMapper.selectPageList(pageQuery.build(), lqw);
         fillNames(page.getRecords());
+        fillCameraFinishDate(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -141,6 +147,12 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(ZqztLedgerInfoBo bo) {
+        return insertByBo(bo, null, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean insertByBo(ZqztLedgerInfoBo bo, String status, String remark) {
         checkRegionAllowedForSave(bo.getCityId(), bo.getDistrictId());
         ZqztLedgerInfo entity = BeanUtil.toBean(bo, ZqztLedgerInfo.class);
         String username = currentUsername();
@@ -150,8 +162,14 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setCreatedBy(username);
         entity.setUpdatedBy(username);
         entity.setIsValid(VALID);
-        // 全流程状态由完成时间推导：填了=已完成，没填=未完成
-        entity.setStatus(entity.getFullProcessDate() != null ? VALID : INVALID);
+        // 全流程状态默认按完成时间推导（填了=已完成，没填=未完成）；
+        // 系统内部写入场景（如派单失败=2）由调用方显式指定
+        entity.setStatus(StringUtils.isNotBlank(status)
+            ? status
+            : (entity.getFullProcessDate() != null ? STATUS_FINISHED : INVALID));
+        if (StringUtils.isNotBlank(remark)) {
+            entity.setRemark(remark);
+        }
         // 新增即进入火焰卫士同步队列
         entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
         int rows = ledgerInfoMapper.insert(entity);
@@ -175,18 +193,34 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setOrderNo(exist.getOrderNo());
         // 云智眼密码不通过修改表单更新（只能走短信校验的改密接口），以库中原值为准
         entity.setCloudPassword(exist.getCloudPassword());
+        // 云智眼机构ID / 接入秘钥：模块7 已下线、不再由表单维护，以库中原值为准
+        // （cloud_org_id 同时还是火焰卫士回调 merchantNum 的写入列）
+        entity.setCloudOrgId(exist.getCloudOrgId());
+        entity.setCloudAccessKey(exist.getCloudAccessKey());
+        // 安全负责人2：字段已下线、不再由表单维护，以库中原值为准（列保留待删）
+        entity.setSafetyOfficer2(exist.getSafetyOfficer2());
+        entity.setSafetyOfficer2Phone(exist.getSafetyOfficer2Phone());
+        // 主表「保留待删」列：修改表单不再维护，以库中原值为准
+        // （这些字段的 updateStrategy 是 IGNORED，null 会被写库，故必须回填）
+        entity.setBroadbandAccount(exist.getBroadbandAccount());
+        entity.setCameraAccount(exist.getCameraAccount());
+        entity.setBroadbandFinishDate(exist.getBroadbandFinishDate());
+        entity.setCameraFinishDate(exist.getCameraFinishDate());
+        entity.setBroadbandIsReuse(exist.getBroadbandIsReuse());
+        // 企业信息录入状态：不再由表单维护，以库中原值为准（列仍被导出任务读取）
+        entity.setInfoEntryStatus(exist.getInfoEntryStatus());
+        // 全流程状态 / 全流程完成时间：模块8 已下线，均由系统维护（竣工回填 job / 作废 job），
+        // 修改表单不得改写，否则会把「已完成 / 已作废 / 派单失败」刷回未完成
+        entity.setStatus(exist.getStatus());
+        entity.setFullProcessDate(exist.getFullProcessDate());
         entity.setCreateTime(exist.getCreateTime());
         entity.setCreatedBy(exist.getCreatedBy());
         entity.setUpdateTime(new Date());
         entity.setUpdatedBy(currentUsername());
         entity.setIsValid(VALID);
-        // 全流程状态由完成时间推导：填了=已完成，没填=未完成
-        entity.setStatus(entity.getFullProcessDate() != null ? VALID : INVALID);
-        // 火焰卫士同步：只把历史遗留的默认状态 0 推进到待同步 1；
-        // 已进入 1/2/3/4 的记录反复修改不再重新同步
-        if (exist.getFlameGuardianSyn() == null || FLAME_SYN_DEFAULT.equals(exist.getFlameGuardianSyn())) {
-            entity.setFlameGuardianSyn(FLAME_SYN_PENDING);
-        }
+        // 火焰卫士同步：状态由同步任务维护，修改表单不得改写（0-默认 已废弃）
+        entity.setFlameGuardianSyn(exist.getFlameGuardianSyn() != null
+            ? exist.getFlameGuardianSyn() : FLAME_SYN_PENDING);
         int rows = ledgerInfoMapper.updateById(entity);
         saveCloudConfigs(bo.getId(), bo.getCloudVisionConfigs());
         return rows > 0;
@@ -222,6 +256,37 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         return true;
     }
 
+    /** 回调结果字段：RPA 重发时整体置空，等待平台重新回填 */
+    private static final String RPA_FAIL = "false";
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean syncFlameGuardian(Long id, Boolean syncToFlameGuardian) {
+        ZqztLedgerInfo exist = getValidEntity(id);
+        // 已作废 / 已完成的台账不再同步火焰卫士平台（与 flameGuardianSyncJob 的选取口径一致）
+        if (STATUS_CANCELED.equals(exist.getStatus())) {
+            throw new ServiceException("该台账已作废，不允许同步火焰卫士平台");
+        }
+        if (STATUS_FINISHED.equals(exist.getStatus())) {
+            throw new ServiceException("该台账全流程已完成，不允许同步火焰卫士平台");
+        }
+        if (!RPA_FAIL.equals(exist.getAllSuccess())) {
+            // 需求：只允许 all_success 有值且等于失败时才允许发起
+            throw new ServiceException("仅允许对 RPA 执行失败的台账发起同步");
+        }
+        LambdaUpdateWrapper<ZqztLedgerInfo> update = Wrappers.<ZqztLedgerInfo>lambdaUpdate()
+                .eq(ZqztLedgerInfo::getId, id)
+                .set(ZqztLedgerInfo::getAllSuccess, null)
+                .set(ZqztLedgerInfo::getAllDesc, null)
+                .set(ZqztLedgerInfo::getAllTime, null)
+                .set(ZqztLedgerInfo::getStepList, null)
+                .set(ZqztLedgerInfo::getUpdateTime, new Date());
+        if (Boolean.TRUE.equals(syncToFlameGuardian)) {
+            update.set(ZqztLedgerInfo::getFlameGuardianSyn, FLAME_SYN_PENDING);
+        }
+        return ledgerInfoMapper.update(null, update) > 0;
+    }
+
     @Override
     public List<ZqztLedgerInfoExportVo> exportPageList(ZqztLedgerInfoBo bo, Page<ZqztLedgerInfoExportVo> page,
                                                        String areaCode, String custManagerOauser) {
@@ -235,10 +300,11 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
             return new ArrayList<>();
         }
         fillNames(records);
+        fillCameraFinishDate(records);
         List<ZqztLedgerInfoExportVo> exportList = new ArrayList<>(records.size());
         for (ZqztLedgerInfoVo vo : records) {
             ZqztLedgerInfoExportVo ev = BeanUtil.toBean(vo, ZqztLedgerInfoExportVo.class);
-            ev.setStatus("1".equals(vo.getStatus()) ? "已完成" : "未完成");
+            ev.setStatus(statusText(vo.getStatus()));
             exportList.add(ev);
         }
         return exportList;
@@ -408,31 +474,13 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), ZqztLedgerInfo::getStatus, bo.getStatus());
         // 零星工程（1是/0否）
         lqw.eq(StringUtils.isNotBlank(bo.getBroadbandIsSporadic()), ZqztLedgerInfo::getBroadbandIsSporadic, bo.getBroadbandIsSporadic());
-        // 企业信息录入状态（1是/0否）
-        lqw.eq(StringUtils.isNotBlank(bo.getInfoEntryStatus()), ZqztLedgerInfo::getInfoEntryStatus, bo.getInfoEntryStatus());
-        // 机构ID（云智眼监管信息机构ID，模糊匹配 + 含空值）
-        applyOrgIdFilter(lqw, bo);
+        // RPA执行成功（接口返回的 allSuccess 字段，字符串 true/false）
+        if (StringUtils.isNotBlank(bo.getAllSuccess())) {
+            lqw.eq(ZqztLedgerInfo::getAllSuccess, bo.getAllSuccess().trim());
+        }
         // 宽带实际完成时间（范围 + 未完成含空值）
         applyBroadbandActualDateFilter(lqw, bo);
-        // 设备ID（子表，模糊匹配 + 含空值）
-        applyDeviceIdFilter(lqw, bo);
         return lqw;
-    }
-
-    /** 机构ID筛选：模糊匹配 + 「含空值」 */
-    private void applyOrgIdFilter(LambdaQueryWrapper<ZqztLedgerInfo> lqw, ZqztLedgerInfoBo bo) {
-        boolean hasValue = StringUtils.isNotBlank(bo.getCloudOrgId());
-        boolean includeEmpty = Boolean.TRUE.equals(bo.getCloudOrgIdEmpty());
-        if (hasValue && includeEmpty) {
-            lqw.and(w -> w.like(ZqztLedgerInfo::getCloudOrgId, bo.getCloudOrgId())
-                .or().isNull(ZqztLedgerInfo::getCloudOrgId)
-                .or().eq(ZqztLedgerInfo::getCloudOrgId, ""));
-        } else if (hasValue) {
-            lqw.like(ZqztLedgerInfo::getCloudOrgId, bo.getCloudOrgId());
-        } else if (includeEmpty) {
-            lqw.and(w -> w.isNull(ZqztLedgerInfo::getCloudOrgId)
-                .or().eq(ZqztLedgerInfo::getCloudOrgId, ""));
-        }
     }
 
     /** 宽带实际完成时间筛选：范围 + 「未完成」（含空值） */
@@ -454,23 +502,6 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
             }
         } else if (includeEmpty) {
             lqw.isNull(ZqztLedgerInfo::getBroadbandSporadicActualDate);
-        }
-    }
-
-    /** 设备ID筛选（子表 zqzt_ledger_cloud_config，模糊匹配）+ 「含空值」 */
-    private void applyDeviceIdFilter(LambdaQueryWrapper<ZqztLedgerInfo> lqw, ZqztLedgerInfoBo bo) {
-        boolean hasValue = StringUtils.isNotBlank(bo.getDeviceId());
-        boolean includeEmpty = Boolean.TRUE.equals(bo.getDeviceIdEmpty());
-        String likeSql = "EXISTS (SELECT 1 FROM zqzt_ledger_cloud_config c WHERE c.ledger_id = zqzt_ledger_info.id "
-            + "AND c.device_id LIKE {0} AND c.is_valid = '1')";
-        String emptySql = "EXISTS (SELECT 1 FROM zqzt_ledger_cloud_config c WHERE c.ledger_id = zqzt_ledger_info.id "
-            + "AND (c.device_id IS NULL OR c.device_id = '') AND c.is_valid = '1')";
-        if (hasValue && includeEmpty) {
-            lqw.and(w -> w.apply(likeSql, "%" + bo.getDeviceId() + "%").or().apply(emptySql));
-        } else if (hasValue) {
-            lqw.apply(likeSql, "%" + bo.getDeviceId() + "%");
-        } else if (includeEmpty) {
-            lqw.apply(emptySql);
         }
     }
 
@@ -596,6 +627,64 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     private void addCode(Set<String> set, String code) {
         if (StringUtils.isNotBlank(code)) {
             set.add(code);
+        }
+    }
+
+    /** 全流程状态 → 导出文案 */
+    private String statusText(String status) {
+        if (STATUS_FINISHED.equals(status)) {
+            return "已完成";
+        }
+        if (STATUS_CANCELED.equals(status)) {
+            return "已作废";
+        }
+        if ("2".equals(status)) {
+            return "派单失败";
+        }
+        return "未完成";
+    }
+
+    /**
+     * 摄像头竣工时间：取该台账**子表**（zqzt_ledger_cloud_config）各设备组竣工时间的最大值。
+     * <p>
+     * 该字段已从主表迁到子表（一个台账可能有多组设备，故取 max 展示）；主表
+     * {@code camera_finish_date} 是待删列，不再参与取数。列表页与导出共用本方法，
+     * 两处口径自动一致。子表无有效行或竣工时间为空时保持 null，由前端展示「—」。
+     * </p>
+     */
+    private void fillCameraFinishDate(List<ZqztLedgerInfoVo> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        Set<Long> ledgerIds = new HashSet<>();
+        for (ZqztLedgerInfoVo vo : records) {
+            if (vo.getId() != null) {
+                ledgerIds.add(vo.getId());
+            }
+        }
+        if (ledgerIds.isEmpty()) {
+            return;
+        }
+        List<ZqztLedgerCloudConfig> configs = cloudConfigMapper.selectList(
+            Wrappers.<ZqztLedgerCloudConfig>lambdaQuery()
+                .select(ZqztLedgerCloudConfig::getLedgerId, ZqztLedgerCloudConfig::getCameraFinishDate)
+                .in(ZqztLedgerCloudConfig::getLedgerId, ledgerIds)
+                .eq(ZqztLedgerCloudConfig::getIsValid, VALID));
+        Map<Long, Date> maxByLedger = new HashMap<>();
+        if (configs != null) {
+            for (ZqztLedgerCloudConfig cfg : configs) {
+                Date finishDate = cfg.getCameraFinishDate();
+                if (cfg.getLedgerId() == null || finishDate == null) {
+                    continue;
+                }
+                Date current = maxByLedger.get(cfg.getLedgerId());
+                if (current == null || finishDate.after(current)) {
+                    maxByLedger.put(cfg.getLedgerId(), finishDate);
+                }
+            }
+        }
+        for (ZqztLedgerInfoVo vo : records) {
+            vo.setCameraFinishDate(maxByLedger.get(vo.getId()));
         }
     }
 

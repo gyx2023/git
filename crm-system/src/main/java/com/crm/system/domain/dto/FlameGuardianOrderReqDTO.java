@@ -7,7 +7,6 @@ import java.util.List;
 
 /**
  * 写入受理单信息 请求参数
- * <p>对应火焰卫士网关 POST /gateway/merchant/rpa/order/apply，以覆盖方式写入本机。</p>
  */
 @Data
 public class FlameGuardianOrderReqDTO implements Serializable {

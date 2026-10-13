@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +36,10 @@ import java.util.Set;
 public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncService {
 
     private static final String VALID = "1";
+
+    /** 台账全流程状态：0-未完成 / 2-派单失败（只有这两种才推送火焰卫士平台） */
+    private static final String STATUS_UNFINISHED = "0";
+    private static final String STATUS_DISPATCH_FAILED = "2";
 
     /** 同步状态：待同步 / 同步中 / 同步成功 / 同步失败 */
     private static final String SYN_PENDING = "1";
@@ -54,6 +59,9 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
     /** 宽带服务商默认联通 */
     private static final String BROADBAND_SERVICE_TYPE = "unicom";
 
+    /** 接口 broadbandAccountList 最多 10 个 */
+    private static final int BROADBAND_ACCOUNT_MAX = 10;
+
     /** 台账设备类型对应关系（1 IPC摄像头、4 NVR摄像头） */
     private static final String DEVICE_TYPE_NVR_TEXT = "NVR设备";
     private static final int API_DEVICE_TYPE_IPC = 1;
@@ -71,6 +79,10 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
 
         List<ZqztLedgerInfo> list = ledgerInfoMapper.selectList(Wrappers.<ZqztLedgerInfo>lambdaQuery()
             .eq(ZqztLedgerInfo::getIsValid, VALID)
+            // 只有「未完成 / 派单失败」才推送：已作废(-1) 与 已完成(1) 都不再同步。
+            // 本轮已抢占(syn=2)的行随后 markFinished 会无条件写回 3/4（其中 4 会重新入队），
+            // 所以必须把不推的单挡在选取之外，而不能只靠 syn 状态。
+            .in(ZqztLedgerInfo::getStatus, STATUS_UNFINISHED, STATUS_DISPATCH_FAILED)
             .in(ZqztLedgerInfo::getFlameGuardianSyn, SYN_PENDING, SYN_FAIL)
             .orderByAsc(ZqztLedgerInfo::getId)
             .last("limit " + BATCH_SIZE));
@@ -107,6 +119,8 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
     private boolean markRunning(Long id) {
         return ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
             .eq(ZqztLedgerInfo::getId, id)
+            // 与扫描同一套选取条件：扫描后、抢锁前被作废或标记完成的单不再抢锁，也就不发起推送
+            .in(ZqztLedgerInfo::getStatus, STATUS_UNFINISHED, STATUS_DISPATCH_FAILED)
             .in(ZqztLedgerInfo::getFlameGuardianSyn, SYN_PENDING, SYN_FAIL)
             .set(ZqztLedgerInfo::getFlameGuardianSyn, SYN_RUNNING)
             .set(ZqztLedgerInfo::getUpdateTime, new Date())) > 0;
@@ -169,8 +183,10 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         req.setContactPersonList(buildPersonList(info.getCompanyPrincipal(), info.getPrincipalPhone()));
         req.setSafetyPersonList(buildSafetyPersonList(info));
         req.setBroadbandServiceType(BROADBAND_SERVICE_TYPE);
-        req.setBroadbandAccountList(buildBroadbandAccounts(info.getBroadbandAccount()));
-        req.setDeviceList(buildDeviceList(info));
+        // 宽带账号与设备信息同源，子表只查一次，避免两次相同查询
+        List<ZqztLedgerCloudConfig> configs = loadValidConfigs(info.getId());
+        req.setBroadbandAccountList(buildBroadbandAccounts(configs));
+        req.setDeviceList(buildDeviceList(configs));
         req.setComboList(buildComboList(info));
         return req;
     }
@@ -183,16 +199,40 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         return Collections.singletonList(buildPerson(name, phone));
     }
 
-    /** 企业安全责任人列表：台账最多登记 2 位，按登记顺序返回 */
+    /**
+     * 企业安全责任人列表：安全负责人1 支持多组登记（姓名与联系方式在同一字段内用「|」分隔，序号一一对应），
+     * 按「|」拆分后逐组展开为独立的人。
+     * <p>安全负责人2 已下线、不再由表单维护（数据库列保留待删），故不再进入同步报文。</p>
+     */
     private List<FlameGuardianOrderReqDTO.Person> buildSafetyPersonList(ZqztLedgerInfo info) {
-        List<FlameGuardianOrderReqDTO.Person> list = new ArrayList<>(2);
-        if (StringUtils.isNotBlank(info.getSafetyOfficer1())) {
-            list.add(buildPerson(info.getSafetyOfficer1(), info.getSafetyOfficer1Phone()));
+        List<FlameGuardianOrderReqDTO.Person> list = new ArrayList<>();
+        // 姓名与联系方式按下标配对，只遍历两者中较短的长度，避免多组错位时产生半空的人
+        String[] names = splitMultiGroup(info.getSafetyOfficer1());
+        String[] phones = splitMultiGroup(info.getSafetyOfficer1Phone());
+        if (phones.length == 0 && names.length > 0) {
+            // 未填联系方式时按「每组都是空联系方式」处理，补齐到姓名组数，
+            // 既保持单组登记（有姓名无电话）原有行为，也避免多组姓名被截断丢失
+            phones = new String[names.length];
         }
-        if (StringUtils.isNotBlank(info.getSafetyOfficer2())) {
-            list.add(buildPerson(info.getSafetyOfficer2(), info.getSafetyOfficer2Phone()));
+        int size = Math.min(names.length, phones.length);
+        for (int i = 0; i < size; i++) {
+            // 姓名缺失的组直接跳过，与原「姓名为空不传该条」的行为一致
+            if (StringUtils.isNotBlank(names[i])) {
+                list.add(buildPerson(names[i], phones[i]));
+            }
         }
         return list;
+    }
+
+    /**
+     * 按「|」拆分多组登记值；空白输入返回空数组。
+     * <p>limit 取 -1：末尾分隔符保留为空串而非被静默丢弃，交由调用方按需跳过。</p>
+     */
+    private String[] splitMultiGroup(String value) {
+        if (StringUtils.isBlank(value)) {
+            return new String[0];
+        }
+        return value.split("\\|", -1);
     }
 
     private FlameGuardianOrderReqDTO.Person buildPerson(String name, String phone) {
@@ -202,20 +242,43 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         return person;
     }
 
-    /** 带宽账号：台账为单个字段，按接口要求转成数组 */
-    private List<String> buildBroadbandAccounts(String account) {
-        if (StringUtils.isBlank(account)) {
+    /**
+     * 宽带账号列表：从配置子表拼接（需求 §5.4(3) 取数口径变更）
+     * <p>主表 broadband_account 列保留但不再参与取数（待删列，勿新增引用）。</p>
+     */
+    private List<String> buildBroadbandAccounts(List<ZqztLedgerCloudConfig> configs) {
+        if (configs == null || configs.isEmpty()) {
             return Collections.emptyList();
         }
-        return Collections.singletonList(account);
+        Set<String> ordered = new LinkedHashSet<>();
+        for (ZqztLedgerCloudConfig config : configs) {
+            if (StringUtils.isNotBlank(config.getBroadbandAccount())) {
+                ordered.add(config.getBroadbandAccount().trim());
+            }
+        }
+        if (ordered.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> list = new ArrayList<>(ordered);
+        if (list.size() > BROADBAND_ACCOUNT_MAX) {
+            log.warn("【火焰卫士同步】宽带账号去重后 {} 个，超过接口上限 {}，只取前 {} 个",
+                    list.size(), BROADBAND_ACCOUNT_MAX, BROADBAND_ACCOUNT_MAX);
+            list = list.subList(0, BROADBAND_ACCOUNT_MAX);
+        }
+        return list;
     }
 
-    /** 设备列表：设备信息取自台账云智眼配置子表，带宽账号取主表 */
-    private List<FlameGuardianOrderReqDTO.Device> buildDeviceList(ZqztLedgerInfo info) {
+    /** 取该台账下有效的配置子表行（按 sort_order 升序） */
+    private List<ZqztLedgerCloudConfig> loadValidConfigs(Long ledgerId) {
         List<ZqztLedgerCloudConfig> configs = cloudConfigMapper.selectList(Wrappers.<ZqztLedgerCloudConfig>lambdaQuery()
-            .eq(ZqztLedgerCloudConfig::getLedgerId, info.getId())
+            .eq(ZqztLedgerCloudConfig::getLedgerId, ledgerId)
             .eq(ZqztLedgerCloudConfig::getIsValid, VALID)
             .orderByAsc(ZqztLedgerCloudConfig::getSortOrder));
+        return configs == null ? Collections.emptyList() : configs;
+    }
+
+    /** 设备列表：设备信息和带宽账号均取自台账云智眼配置子表 */
+    private List<FlameGuardianOrderReqDTO.Device> buildDeviceList(List<ZqztLedgerCloudConfig> configs) {
         List<FlameGuardianOrderReqDTO.Device> list = new ArrayList<>();
         if (configs == null) {
             return list;
@@ -226,7 +289,7 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
             device.setDeviceType(toApiDeviceType(config.getDeviceType()));
             device.setChannelCount(config.getCameraChannelCount() == null ? 1 : config.getCameraChannelCount());
             device.setPassword(config.getDevicePassword());
-            device.setBroadbandAccount(info.getBroadbandAccount());
+            device.setBroadbandAccount(config.getBroadbandAccount());
             list.add(device);
         }
         return list;
