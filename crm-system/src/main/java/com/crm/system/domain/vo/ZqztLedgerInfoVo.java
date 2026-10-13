@@ -18,7 +18,11 @@ public class ZqztLedgerInfoVo implements Serializable {
 
     private Long id;
     private String orderNo;
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+
+    /** 订单号，topp_order.order_number */
+    private String orderId;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date signDate;
     /** 服务大厅工单创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -28,6 +32,10 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String streetId;
     private String industryId;
     private String companyName;
+
+    /** 企业简称 */
+    private String companySimpleName;
+
     private String creditCode;
     private String regAddress;
     private String actualAddress;
@@ -43,6 +51,9 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String constructContactPhone;
     private String unicomManager;
     private String unicomManagerPhone;
+
+    /** 联通客户经理归属县分名称 */
+    private String unicomManagerCounty;
     private String cameraIsNewInstall;
     private String cameraPurchaseType;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
@@ -61,6 +72,10 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String broadbandAccount;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date broadbandFinishDate;
+
+    /** 新增宽带条数 */
+    private Integer broadbandAddNum;
+
     private String cloudAccount;
     private String cloudPassword;
     private String cloudOrgId;
@@ -69,6 +84,19 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String infoEntryStatus;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date fullProcessDate;
+
+    /** RPA总执行是否成功（字符串 true/false） */
+    private String allSuccess;
+
+    /** RPA总结果描述 */
+    private String allDesc;
+
+    /** RPA总执行时长（秒） */
+    private Integer allTime;
+
+    /** 各步骤执行结果列表（JSON 字符串） */
+    private String stepList;
+
     private String status;
     private String remark;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

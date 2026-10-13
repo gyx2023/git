@@ -942,6 +942,10 @@ public class Constants {
     public static final String ORDER_TYPE_YEBZ_MANAGER = "manager";
     public static final String ORDER_TYPE_YEBZ_MANAGER_NAME = "客户经理处理";
 
+    //火焰卫士一体化交付
+    public static final String ORDER_TYPE_FLAME_GUARDIAN = "flame_guardian";
+    public static final String ORDER_TYPE_FLAME_GUARDIAN_NAME = "火焰卫士一体化交付";
+
     //红名单到期预警
     public static final String ORDER_TYPE_HMDWARN = "hmd_warn";
     public static final String ORDER_TYPE_HMD_WARNING_NAME = "红名单到期预警";

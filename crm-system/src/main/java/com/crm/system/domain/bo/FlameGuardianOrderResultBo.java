@@ -14,6 +14,9 @@ public class FlameGuardianOrderResultBo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** 操作类型：T1-RPA执行结果回填 / T2-设备信息修改 */
+    private String operType;
+
     /** 受理单订单号，与写入接口的 orderId 一致 */
     private String orderId;
 
@@ -78,5 +81,51 @@ public class FlameGuardianOrderResultBo implements Serializable {
 
         /** 服务节点 */
         private String serviceNode;
+
+        /** 设备 ID（T2 匹配键，T2 时必填） */
+        private String deviceId;
+
+        /** 设备类型：1 IPC / 4 NVR */
+        private Integer deviceType;
+
+        /** 通道数 */
+        private Integer channelCount;
+
+        /** 设备密码 */
+        private String password;
+
+        /** 接入协议；默认 GB28181 */
+        private String accessProtocol;
+
+        /** SIP IP */
+        private String sipIp;
+
+        /** SIP 端口 */
+        private String sipPort;
+
+        /** SIP ID */
+        private String sipId;
+
+        /** SIP 服务域 */
+        private String sipDomain;
+
+        /** 通道列表（V1.2 口径：对象数组） */
+        private List<ChannelCode> channelCodeList;
+    }
+
+    /** 通道信息（V1.2 接口 channelCodeList 元素） */
+    @Data
+    public static class ChannelCode implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        /** 通道编码 ID */
+        private String channelCodeId;
+
+        /** 通道名称 */
+        private String channelCodeName;
+
+        /** 竣工状态 */
+        private String channelCodeStatus;
     }
 }

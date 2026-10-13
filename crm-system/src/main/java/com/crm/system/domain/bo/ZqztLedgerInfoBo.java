@@ -24,9 +24,12 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     /** 服务大厅工单号 */
     private String orderNo;
 
-    /** 签约日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    /** 订单号，topp_order.order_number（待办通过时由后端回填，非表单字段） */
+    private String orderId;
+
+    /** 签约日期（datetime：待办页自动取数的 max(deal_time) 本身带时分秒） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date signDate;
 
     /** 服务大厅工单创建时间 */
@@ -39,6 +42,10 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String streetId;
     private String industryId;
     private String companyName;
+
+    /** 企业简称 */
+    private String companySimpleName;
+
     private String creditCode;
     private String regAddress;
     private String actualAddress;
@@ -54,6 +61,9 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String constructContactPhone;
     private String unicomManager;
     private String unicomManagerPhone;
+
+    /** 联通客户经理归属县分名称 */
+    private String unicomManagerCounty;
 
     /** 摄像头信息 */
     private String cameraIsNewInstall;
@@ -82,6 +92,9 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date broadbandFinishDate;
 
+    /** 新增宽带条数 */
+    private Integer broadbandAddNum;
+
     /** 云智眼账户 */
     private String cloudAccount;
     private String cloudPassword;
@@ -90,10 +103,13 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String cloudVisionPackageId;
 
     /** 火焰卫士 */
-    private String infoEntryStatus;
     @JsonFormat(pattern = "yyyy-MM-dd")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date fullProcessDate;
+
+    /** RPA执行是否成功（筛选：true/false） */
+    private String allSuccess;
+
     private String status;
     private String remark;
     private String isValid;
@@ -107,12 +123,6 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String broadbandActualDateEnd;
     /** 宽带实际完成时间为空（"未完成"复选框） */
     private Boolean broadbandActualDateEmpty;
-    /** 设备ID（子表模糊匹配） */
-    private String deviceId;
-    /** 设备ID含空值 */
-    private Boolean deviceIdEmpty;
-    /** 机构ID含空值 */
-    private Boolean cloudOrgIdEmpty;
 
     /** 导出上下文：登录人区域代码(sys_area.id)，由 applyExport 注入 */
     private String areaCode;
@@ -128,4 +138,11 @@ public class ZqztLedgerInfoBo extends BaseEntity {
 
     /** 云智眼配置信息（多组） */
     private List<ZqztLedgerCloudConfigBo> cloudVisionConfigs;
+
+    /**
+     * 待办页提交时附带的前端表单快照（页面形态 JSON 字符串）。
+     * <p>仅由 {@code POST /flameGuardian/complete} 使用：写回流程变量 {@code fg_submittedForm}，
+     * 供待办页再次打开（我的已办 / 我的订单 / 订单查询）时原样渲染。**不落库**。</p>
+     */
+    private String formSnapshot;
 }

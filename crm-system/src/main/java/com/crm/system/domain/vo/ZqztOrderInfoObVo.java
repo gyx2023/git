@@ -66,4 +66,30 @@ public class ZqztOrderInfoObVo implements Serializable {
     private String safetyOfficerName2;
     /** t2(04049f) 安全负责人1联系方式 textField_IrBYU7dG */
     private String safetyOfficerPhone2;
+
+    /** 服务大厅工单号（orderId） */
+    private String orderNo;
+    /** 地市编码（city，如 470） */
+    private String city;
+    /** 地市名称（city_comment，如 温州） */
+    private String cityName;
+    /** 待办接收人 OA 账号（operator） */
+    private String operator;
+    /** 待办接收人姓名（operator_comment） */
+    private String operatorName;
+    /** 发展人/客户经理工号（develop_staffId），归属县分 join 键 */
+    private String developStaffId;
+    /** 申请单状态（status_comment），作废 job 判定用 */
+    private String statusComment;
+
+    /**
+     * 零星工程（OB 侧存「是/否」，建单时归一为 1-是/0-否）
+     * <p>sl08md.radioField_b4dhNj1T / 04049f.radioField_fALWv20N，随
+     * scanSl08md / scan04049f 一起取出。</p>
+     */
+    private String broadbandIsSporadic;
+    /** 零星工程单号（sl08md.textField_bYmaFFkF / 04049f.textField_KXNDPNtB） */
+    private String broadbandSporadicOrderNo;
+    /** 新增宽带条数（sl08md.textField_n3v7jaE4 / 04049f.textField_Bx6rN7Z9），文本列，转 Integer 由调用方解析 */
+    private String broadbandAddNum;
 }
