@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS book (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL,
+    author VARCHAR(50),
+    price DOUBLE,
+    stock INT
+) DEFAULT CHARSET=utf8mb4;
