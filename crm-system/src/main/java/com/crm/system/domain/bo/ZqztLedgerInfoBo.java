@@ -27,7 +27,7 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     /** 订单号，topp_order.order_number（待办通过时由后端回填，非表单字段） */
     private String orderId;
 
-    /** 签约日期（datetime：待办页自动取数的 max(deal_time) 本身带时分秒） */
+    /** 签约日期（datetime：待办页自动取数的 max(deal_time)） */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date signDate;
@@ -141,8 +141,7 @@ public class ZqztLedgerInfoBo extends BaseEntity {
 
     /**
      * 待办页提交时附带的前端表单快照（页面形态 JSON 字符串）。
-     * <p>仅由 {@code POST /flameGuardian/complete} 使用：写回流程变量 {@code fg_submittedForm}，
-     * 供待办页再次打开（我的已办 / 我的订单 / 订单查询）时原样渲染。**不落库**。</p>
+     * 供待办页再次打开（我的已办 / 我的订单 / 订单查询）时原样渲染。
      */
     private String formSnapshot;
 }

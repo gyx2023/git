@@ -2,7 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.crm.system.mapper.ZqztOrderInfoObMapper">
 
-    <!-- 增量扫描：按创建时间窗口 + 地市白名单取工单（未加 limit，由调用方按窗口大小控制） -->
     <sql id="ScanColumns">
         orderId                          AS orderNo,
         createTime                       AS orderCreateTime,
@@ -115,9 +114,7 @@
     </select>
 
     <!--
-      签约日期：取该工单「中台稽核」已完成 Worksheet 的最大完成时间。
-      需求原文的子查询没有带上工单号条件（会返回全局最大时间），此处补上工单号过滤。
-      承载工单号的列已确认：ddzx_report_info_worksheet_report.order_id
+      签约日期：取该工单「中台稽核」已完成 Worksheet 的最大完成时间
     -->
     <select id="selectAuditDealTime" resultType="java.util.Date">
         SELECT MAX(deal_time)
@@ -140,12 +137,5 @@
         SELECT orderId FROM ZQ_USER_36.fwdt_orderformat_uc_sc_04049f
         WHERE status_comment IN ('已撤单', '已终止') AND createTime &gt;= #{since}
     </select>
-
-    <!--
-      零星工程 / 零星工程单号 / 新增宽带条数 三列已上线，直接并入上面的
-      scanSl08md / scan04049f 一起取（字段码：sl08md = radioField_b4dhNj1T +
-      textField_bYmaFFkF + textField_n3v7jaE4；04049f = radioField_fALWv20N +
-      textField_KXNDPNtB + textField_Bx6rN7Z9），取空由客户经理在表单里手填。
-    -->
 
 </mapper>

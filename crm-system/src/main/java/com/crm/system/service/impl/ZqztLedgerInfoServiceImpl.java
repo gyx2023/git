@@ -65,7 +65,6 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     private static final String INVALID = "0";
     /**
      * 台账全流程状态：1-已完成 / 0-未完成 / -1-作废 / 2-派单失败。
-     * <p>全部由系统维护（竣工回填 job / 作废 job / 建单 job），修改表单不得改写。</p>
      */
     private static final String STATUS_FINISHED = "1";
     private static final String STATUS_CANCELED = "-1";
@@ -162,8 +161,6 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setCreatedBy(username);
         entity.setUpdatedBy(username);
         entity.setIsValid(VALID);
-        // 全流程状态默认按完成时间推导（填了=已完成，没填=未完成）；
-        // 系统内部写入场景（如派单失败=2）由调用方显式指定
         entity.setStatus(StringUtils.isNotBlank(status)
             ? status
             : (entity.getFullProcessDate() != null ? STATUS_FINISHED : INVALID));
@@ -191,26 +188,18 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         ZqztLedgerInfo entity = BeanUtil.toBean(bo, ZqztLedgerInfo.class);
         entity.setId(bo.getId());
         entity.setOrderNo(exist.getOrderNo());
-        // 云智眼密码不通过修改表单更新（只能走短信校验的改密接口），以库中原值为准
+        // 云智眼密码不通过修改表单更新（走短信校验的改密接口）
         entity.setCloudPassword(exist.getCloudPassword());
-        // 云智眼机构ID / 接入秘钥：模块7 已下线、不再由表单维护，以库中原值为准
-        // （cloud_org_id 同时还是火焰卫士回调 merchantNum 的写入列）
         entity.setCloudOrgId(exist.getCloudOrgId());
         entity.setCloudAccessKey(exist.getCloudAccessKey());
-        // 安全负责人2：字段已下线、不再由表单维护，以库中原值为准（列保留待删）
         entity.setSafetyOfficer2(exist.getSafetyOfficer2());
         entity.setSafetyOfficer2Phone(exist.getSafetyOfficer2Phone());
-        // 主表「保留待删」列：修改表单不再维护，以库中原值为准
-        // （这些字段的 updateStrategy 是 IGNORED，null 会被写库，故必须回填）
         entity.setBroadbandAccount(exist.getBroadbandAccount());
         entity.setCameraAccount(exist.getCameraAccount());
         entity.setBroadbandFinishDate(exist.getBroadbandFinishDate());
         entity.setCameraFinishDate(exist.getCameraFinishDate());
         entity.setBroadbandIsReuse(exist.getBroadbandIsReuse());
-        // 企业信息录入状态：不再由表单维护，以库中原值为准（列仍被导出任务读取）
         entity.setInfoEntryStatus(exist.getInfoEntryStatus());
-        // 全流程状态 / 全流程完成时间：模块8 已下线，均由系统维护（竣工回填 job / 作废 job），
-        // 修改表单不得改写，否则会把「已完成 / 已作废 / 派单失败」刷回未完成
         entity.setStatus(exist.getStatus());
         entity.setFullProcessDate(exist.getFullProcessDate());
         entity.setCreateTime(exist.getCreateTime());
@@ -218,7 +207,6 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         entity.setUpdateTime(new Date());
         entity.setUpdatedBy(currentUsername());
         entity.setIsValid(VALID);
-        // 火焰卫士同步：状态由同步任务维护，修改表单不得改写（0-默认 已废弃）
         entity.setFlameGuardianSyn(exist.getFlameGuardianSyn() != null
             ? exist.getFlameGuardianSyn() : FLAME_SYN_PENDING);
         int rows = ledgerInfoMapper.updateById(entity);
@@ -263,7 +251,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean syncFlameGuardian(Long id, Boolean syncToFlameGuardian) {
         ZqztLedgerInfo exist = getValidEntity(id);
-        // 已作废 / 已完成的台账不再同步火焰卫士平台（与 flameGuardianSyncJob 的选取口径一致）
+        // 已作废 / 已完成的台账不再同步火焰卫士平台
         if (STATUS_CANCELED.equals(exist.getStatus())) {
             throw new ServiceException("该台账已作废，不允许同步火焰卫士平台");
         }
@@ -312,12 +300,17 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
 
     @Override
     public ZqztCloudConfigRespDTO queryCameraConfig(String cameraAccount) {
-        ZqztLedgerInfo info = ledgerInfoMapper.selectOne(Wrappers.<ZqztLedgerInfo>lambdaQuery()
-            .eq(ZqztLedgerInfo::getCameraAccount, cameraAccount)
-            .eq(ZqztLedgerInfo::getIsValid, VALID)
-            .orderByAsc(ZqztLedgerInfo::getCreateTime)
+        // 组网号码（原摄像头账号）已迁到子表：按子表 camera_account 定位所属台账
+        ZqztLedgerCloudConfig matched = cloudConfigMapper.selectOne(Wrappers.<ZqztLedgerCloudConfig>lambdaQuery()
+            .eq(ZqztLedgerCloudConfig::getCameraAccount, cameraAccount)
+            .eq(ZqztLedgerCloudConfig::getIsValid, VALID)
+            .orderByAsc(ZqztLedgerCloudConfig::getId)
             .last("limit 1"));
-        if (info == null) {
+        if (matched == null || matched.getLedgerId() == null) {
+            return null;
+        }
+        ZqztLedgerInfo info = ledgerInfoMapper.selectById(matched.getLedgerId());
+        if (info == null || !VALID.equals(info.getIsValid())) {
             return null;
         }
         List<ZqztLedgerCloudConfig> configs = cloudConfigMapper.selectList(Wrappers.<ZqztLedgerCloudConfig>lambdaQuery()
@@ -325,7 +318,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
             .eq(ZqztLedgerCloudConfig::getIsValid, VALID)
             .orderByAsc(ZqztLedgerCloudConfig::getSortOrder));
         ZqztCloudConfigRespDTO dto = new ZqztCloudConfigRespDTO();
-        dto.setCameraAccount(info.getCameraAccount());
+        dto.setCameraAccount(cameraAccount);
         dto.setOrderNo(info.getOrderNo());
         List<ZqztCloudConfigItemDTO> items = new ArrayList<>();
         if (configs != null) {
@@ -474,7 +467,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), ZqztLedgerInfo::getStatus, bo.getStatus());
         // 零星工程（1是/0否）
         lqw.eq(StringUtils.isNotBlank(bo.getBroadbandIsSporadic()), ZqztLedgerInfo::getBroadbandIsSporadic, bo.getBroadbandIsSporadic());
-        // RPA执行成功（接口返回的 allSuccess 字段，字符串 true/false）
+        // RPA执行成功
         if (StringUtils.isNotBlank(bo.getAllSuccess())) {
             lqw.eq(ZqztLedgerInfo::getAllSuccess, bo.getAllSuccess().trim());
         }
@@ -630,7 +623,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
         }
     }
 
-    /** 全流程状态 → 导出文案 */
+    /** 全流程状态 → 导出 */
     private String statusText(String status) {
         if (STATUS_FINISHED.equals(status)) {
             return "已完成";
@@ -645,12 +638,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     }
 
     /**
-     * 摄像头竣工时间：取该台账**子表**（zqzt_ledger_cloud_config）各设备组竣工时间的最大值。
-     * <p>
-     * 该字段已从主表迁到子表（一个台账可能有多组设备，故取 max 展示）；主表
-     * {@code camera_finish_date} 是待删列，不再参与取数。列表页与导出共用本方法，
-     * 两处口径自动一致。子表无有效行或竣工时间为空时保持 null，由前端展示「—」。
-     * </p>
+     * 摄像头竣工时间：取各设备组竣工时间的最大值
+     * 列表页与导出共用本方法
      */
     private void fillCameraFinishDate(List<ZqztLedgerInfoVo> records) {
         if (records == null || records.isEmpty()) {

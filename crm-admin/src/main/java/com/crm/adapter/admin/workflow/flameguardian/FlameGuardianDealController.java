@@ -27,8 +27,8 @@ import java.util.Map;
 /**
  * 火焰卫士一体化交付 待办处理
  * <p>
- * 只有「通过」一个动作需要专属接口（结束订单 + 落台账）；
- * 「转派」复用既有 POST /wideWarning/transfer（走 single_approval 的 transfer 自环）。
+ * 「通过」专属接口（结束订单 + 落台账）；
+ * 「转派」复用 /wideWarning/transfer
  * </p>
  */
 @Slf4j
@@ -43,7 +43,6 @@ public class FlameGuardianDealController extends BaseController {
 
     /**
      * 通过时写回的表单快照流程变量名（前端页面形态 JSON）。
-     * <p>客户经理不一定有火焰卫士权限，不能走 /system/ledger/*；后续打开待办页
      * （我的已办 / 我的订单 / 订单查询）时由业务上下文下发该快照，前端原样渲染。</p>
      */
     private static final String VAR_SUBMITTED_FORM = "fg_submittedForm";
@@ -73,22 +72,19 @@ public class FlameGuardianDealController extends BaseController {
         if (StringUtils.isBlank(orderNo)) {
             return R.fail("缺少服务大厅工单号，无法落台账");
         }
-        // 安全负责人1 多组：人员与联系方式按 | 拼接，个数必须一致（服务端也校验）
+        // 安全负责人1 多组：人员与联系方式按 | 拼接
         String pairMsg = checkSafetyOfficer1Pairing(bo);
         if (pairMsg != null) {
             return R.fail(pairMsg);
         }
 
         // 把前端表单快照写回流程变量（页面形态 JSON，原样存放）：
-        // 「我的已办 / 我的订单 / 订单查询」再次打开待办页时靠它渲染出提交后的完整数据，
-        // 无需新增接口，也不依赖客户经理的台账菜单权限。
         Map<String, Object> vars = new HashMap<>();
         if (StringUtils.isNotBlank(bo.getFormSnapshot())) {
             vars.put(VAR_SUBMITTED_FORM, bo.getFormSnapshot());
         }
         warningWorkflowService.completeWithAction(taskId, "agree", comment, vars);
         if (wfProcessService.isProcessRunning(task.getProcessInstanceId())) {
-            // single_approval 的 agree 直达结束事件，正常不会走到这里；真出现了说明流程定义被改过
             log.warn("【火焰卫士待办】通过后流程仍在运行: piId={}", task.getProcessInstanceId());
         }
         orderService.markOrderEnd(orderId);
@@ -115,12 +111,6 @@ public class FlameGuardianDealController extends BaseController {
 
     /**
      * 安全负责人1 多组一致性校验：人员与联系方式均用 {@code |} 拼接，两组都填时个数必须一致
-     * （交付设计 §6.4 步骤5「后端仅做人员与手机个数一致校验」/ §7.3「服务端也校验」）。
-     * <p>
-     * 任一侧为空（null 或空白）视为「未填多组信息」，不校验：字段本身非必填，
-     * 且待办页与修改表单均按组成对写入（人员与手机要么都填要么都不填），
-     * 合法客户端不会产生单侧为空的数据。
-     * </p>
      *
      * @param bo 待办页提交的台账表单
      * @return 校验失败时的提示信息；校验通过时返回 {@code null}

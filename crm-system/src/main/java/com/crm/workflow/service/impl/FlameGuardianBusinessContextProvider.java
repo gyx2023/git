@@ -22,7 +22,6 @@ import java.util.Set;
  * 火焰卫士一体化交付 待办业务上下文
  * <p>
  * 待办表单初值取建单时写入的流程变量快照（fg_*），不回查 OB。
- * 快照不随 OB 后续变更而变（评审结论）。
  * </p>
  */
 @Slf4j
@@ -74,7 +73,6 @@ public class FlameGuardianBusinessContextProvider extends AbstractWarningBusines
 
     static {
         Map<String, String> dateFormats = new HashMap<>(2);
-        // 签约日期已是 datetime（待办页自动取数的 max(deal_time) 带时分秒），必须与前端 value-format 精确匹配
         dateFormats.put("signDate", "yyyy-MM-dd HH:mm:ss");
         dateFormats.put("orderCreateTime", "yyyy-MM-dd HH:mm:ss");
         DATE_FORMATS = Collections.unmodifiableMap(dateFormats);
@@ -118,8 +116,6 @@ public class FlameGuardianBusinessContextProvider extends AbstractWarningBusines
         }
         extraData.put("formInitial", formInitial);
 
-        // 通过时写回的表单快照（页面形态 JSON）：再次打开待办页时优先用它，
-        // 这样「填过什么就看到什么」；解析失败只记 warn，前端自动回退到 formInitial
         Object submitted = procVars == null ? null : procVars.get(VAR_SUBMITTED_FORM);
         if (submitted instanceof String && StringUtils.isNotBlank((String) submitted)) {
             try {

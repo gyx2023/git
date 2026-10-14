@@ -26,22 +26,11 @@ import java.util.Map;
 /**
  * 火焰卫士受理订单执行结果 服务实现
  * <p>
- * 按报文 operType 分两个分支，差别只在<b>匹配键</b>与<b>主表执行结果</b>。
- * </p>
- * <p>
  * T1（RPA 执行结果回填）：主表 all_success / all_desc / all_time / step_list <b>整体覆盖</b>
- * （同一订单可能回调多次，以最后一次为准；未传即置空，不保留上一轮的值，否则会被误读成本轮结果）；
  * 子表按设备名称（deviceName）匹配。
  * </p>
  * <p>
  * T2（设备信息修改）：主表四个结果列保持原值；子表按设备ID（deviceId）匹配。
- * </p>
- * <p>
- * 设备字段（device_desc / device_create_time / device_gbCode / combo_id / combo_name / service_node /
- * broadband_account / device_type / camera_channel_count / device_password / access_protocol /
- * sip_server_*）两个分支口径一致：<b>有值才写，无值保持原值</b>——非必填字段未传即视为本次不更新，
- * 不会把库中已有数据清空。通道三列按 channelCodeList 下标对齐、列表非空才写；
- * 云智眼机构ID 仅在回调带了 merchantNum 时覆盖。
  * </p>
  */
 @Slf4j
@@ -85,7 +74,7 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
             // T1：RPA 执行结果回填 —— 主表结果字段整体覆盖
             updateLedgerResult(info.getId(), bo);
         } else {
-            // T2：设备信息修改 —— all_success / all_desc / all_time / step_list 保持原值，只在带机构ID时更新
+            // T2（设备信息修改）：主表 4 个执行结果列保持原值，仅更新主表云智眼机构ID（不为空）
             if (StringUtils.isNotBlank(bo.getMerchantNum())) {
                 ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
                     .eq(ZqztLedgerInfo::getId, info.getId())
@@ -100,7 +89,6 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
 
     /**
      * 主表受理结果整体覆盖（同一订单可能回调多次，以最后一次为准）
-     * <p>云智眼机构ID 是人工录入字段，只在回调带了值时才覆盖。</p>
      */
     private void updateLedgerResult(Long ledgerId, FlameGuardianOrderResultBo bo) {
         ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
@@ -115,8 +103,7 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
 
     /**
      * 步骤结果列表整体序列化存放。
-     * <p>超出列长上限时按「step 粒度」丢弃尾部步骤，保证仍是合法 JSON
-     * （旧实现直接 substring 会截出非法 JSON，导致详情页 RPA 进度解析失败）。</p>
+     * <p>超出列长上限时按「step 粒度」丢弃尾部步骤，保证仍是合法 JSON</p>
      */
     private String toStepListJson(List<Map<String, Object>> stepList) {
         if (stepList == null || stepList.isEmpty()) {
@@ -187,7 +174,7 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
 
     /**
      * 单条设备结果写入：设备字段一律「有值才写，无值不动」，T1 / T2 口径一致。
-     * <p>未传的字段视为本次不更新，保留库中原值——调用方按接口文档省略非必填字段不会清空已有数据。
+     * <p>未传的字段视为本次不更新，保留库中原值
      * 唯一整体覆盖的是主表执行结果四列，见 {@link #updateLedgerResult}。</p>
      */
     private void updateDeviceResult(Long configId, FlameGuardianOrderResultBo.Device device) {
@@ -235,7 +222,6 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
                   .set(ZqztLedgerCloudConfig::getChannelName, String.join(CHANNEL_SEPARATOR, names))
                   .set(ZqztLedgerCloudConfig::getChannelCodeStatus, String.join(CHANNEL_SEPARATOR, statuses));
         }
-        // 报文只带了匹配键、没有任何需要更新的字段：不落库，也不刷新 update_time
         if (StringUtils.isBlank(update.getSqlSet())) {
             return;
         }
