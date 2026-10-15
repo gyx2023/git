@@ -655,6 +655,52 @@ public class PendingServiceImpl implements IPendingService {
         return list.stream().map(PendingGroupTodo::getTaskId).collect(Collectors.toSet());
     }
 
+    @Override
+    public int deleteByProcInstId(String procInstId) {
+        if (StringUtils.isBlank(procInstId)) {
+            return 0;
+        }
+        // pending 表没有流程实例列：它的 pending_code 存的是 Flowable 任务ID（savePending / updatePending
+        // 都取 task.getId()），所以要删某个流程实例的待办，必须先拿到该实例的全部任务ID。
+        // 两个来源归并：
+        //  1) pending_group_todo.task_id —— 每个任务创建时都会写入（task_id 与 pending_code 同一值域），
+        //     且不受流程实例删除影响；
+        //  2) Flowable 历史任务 —— 兜底覆盖 1) 缺失的场景（维系预警流程不写集团待办表）与
+        //     pending 已落库但集团待办未落库的中间态。历史任务在流程实例删除后仍保留，
+        //     但调用方仍在删除流程实例之前调用本方法，保证历史数据完整可查。
+        Set<String> taskIds = new HashSet<>();
+        List<PendingGroupTodo> groupTodos = pendingGroupTodoMapper.selectList(
+                new LambdaQueryWrapper<PendingGroupTodo>()
+                        .eq(PendingGroupTodo::getProcInstId, procInstId));
+        if (groupTodos != null) {
+            for (PendingGroupTodo todo : groupTodos) {
+                if (StringUtils.isNotBlank(todo.getTaskId())) {
+                    taskIds.add(todo.getTaskId());
+                }
+            }
+        }
+        List<HistoricTaskInstance> historicTasks = flowableHistoryService.createHistoricTaskInstanceQuery()
+                .processInstanceId(procInstId)
+                .list();
+        if (historicTasks != null) {
+            for (HistoricTaskInstance historicTask : historicTasks) {
+                if (StringUtils.isNotBlank(historicTask.getId())) {
+                    taskIds.add(historicTask.getId());
+                }
+            }
+        }
+        int pending = 0;
+        if (!taskIds.isEmpty()) {
+            pending = pendingMapper.delete(new LambdaQueryWrapper<Pending>()
+                    .in(Pending::getPendingCode, taskIds));
+        }
+        int groupTodo = pendingGroupTodoMapper.delete(new LambdaQueryWrapper<PendingGroupTodo>()
+                .eq(PendingGroupTodo::getProcInstId, procInstId));
+        log.info("【待办清理】按流程实例删除: procInstId={}, taskIds={}, pending={}, groupTodo={}",
+                procInstId, taskIds.size(), pending, groupTodo);
+        return pending + groupTodo;
+    }
+
     /**
      * 取 assignee OA 账号（assignee 格式为 ",userId," 或 "userId"）
      */

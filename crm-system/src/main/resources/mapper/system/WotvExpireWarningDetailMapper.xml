@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.WotvExpireWarningDetailMapper">
+
+    <!-- 按主订单流水号查询沃TV到期预警明细列表（county_name 走 dim_county_id 关联） -->
+    <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
+        SELECT
+        w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
+        w.prod_name, w.hq_svc_type, w.user_status,
+        w.serv_manager_name, w.oa_name_dev, w.oa_id_dev,
+        w.warning_info, w.new_scheme_name, w.new_create_date, w.new_exp_date,
+        w.order_flow_no, w.open_date, w.area_name, w.county_id,
+        dc.county_name AS county_name,
+        c.user_status AS cycle_user_status,
+        c.warning_info AS cycle_warning_info,
+        c.cycle_flag
+        FROM ftp_tc_user_common_warning w
+        LEFT JOIN ftp_tc_user_cycle_warning c ON w.order_flow_no = c.order_flow_no
+        LEFT JOIN dim_county_id dc ON dc.county_id = w.county_id
+        WHERE w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id_
+    </select>
+
+    <!-- 按主订单流水号分页查询沃TV到期预警明细列表（county_name 直接取 county_id，与原实现一致） -->
+    <select id="selectByMainOrderFlowNoPage" resultType="java.util.Map">
+        SELECT
+        w.id_, w.svc_num, w.cust_name, w.developer_name, w.developer_id,
+        w.prod_name, w.hq_svc_type, w.user_status,
+        w.serv_manager_name, w.oa_name_dev, w.oa_id_dev,
+        w.warning_info, w.new_scheme_name, w.new_create_date, w.new_exp_date,
+        w.order_flow_no, w.open_date, w.area_name, w.county_id,
+        w.county_id AS county_name,
+        c.user_status AS cycle_user_status,
+        c.warning_info AS cycle_warning_info,
+        c.cycle_flag
+        FROM ftp_tc_user_common_warning w
+        LEFT JOIN ftp_tc_user_cycle_warning c ON w.order_flow_no = c.order_flow_no
+        WHERE w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id_
+    </select>
+
+</mapper>

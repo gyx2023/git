@@ -26,6 +26,10 @@ public class ZqztLedgerInfo implements Serializable {
     /** 服务大厅工单号 */
     private String orderNo;
 
+    /** 订单号，topp_order.order_number */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String orderId;
+
     /** 签约日期 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date signDate;
@@ -53,6 +57,10 @@ public class ZqztLedgerInfo implements Serializable {
     /** 企业名称 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String companyName;
+
+    /** 企业简称 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String companySimpleName;
 
     /** 社会统一信用代码 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
@@ -114,6 +122,10 @@ public class ZqztLedgerInfo implements Serializable {
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String unicomManagerPhone;
 
+    /** 联通客户经理归属县分名称 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String unicomManagerCounty;
+
     /** 摄像头是否新装(1是/0否) */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String cameraIsNewInstall;
@@ -166,6 +178,10 @@ public class ZqztLedgerInfo implements Serializable {
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date broadbandFinishDate;
 
+    /** 新增宽带条数 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private Integer broadbandAddNum;
+
     /** 云智眼账号 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String cloudAccount;
@@ -208,7 +224,13 @@ public class ZqztLedgerInfo implements Serializable {
     /** 各步骤执行结果列表，json 格式整体存放，不按步骤拆分 */
     private String stepList;
 
-    /** 全流程状态(1已完成/0未完成) */
+    /** 火焰卫士处理开始时间（RPA 回填：stepList 中 seq=1 的 timeStart） */
+    private Date flameGuardianStartTime;
+
+    /** 火焰卫士处理结束时间（RPA 回填：stepList 中 seq=4 的 timeEnd） */
+    private Date flameGuardianEndTime;
+
+    /** 全流程状态（1-已完成 / 0-未完成 / -1-作废 / 2-派单失败），由系统维护 */
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String status;
 
@@ -229,7 +251,7 @@ public class ZqztLedgerInfo implements Serializable {
     private String updatedBy;
 
     /**
-     * 同步火焰卫士状态(0默认/1待同步/2同步中/3同步成功/4同步失败)
+     * 同步火焰卫士状态(1待同步/2同步中/3同步成功/4同步失败)，默认 1
      * <p>由系统维护，不通过表单录入。此处不能加 {@code FieldStrategy.IGNORED}：
      * 该策略会把 null 也写进 UPDATE，而修改表单不携带本字段，会把状态刷成 null。</p>
      */

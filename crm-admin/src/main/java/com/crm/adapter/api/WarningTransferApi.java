@@ -97,10 +97,20 @@ public class WarningTransferApi {
                                                  @RequestParam(value = "followUp", required = false) String followUp,
                                                  @RequestParam(value = "otherReason", required = false) String otherReason,
                                                  @RequestParam(value = "plannedRenewalDate", required = false) String plannedRenewalDateStr,
+                                                 @RequestParam(value = "action", required = false) String action,
+                                                 @RequestParam(value = "auditUserId", required = false) Long auditUserId,
                                                  HttpServletRequest request) {
         if (!validateSsoToken(request)) {
             return R.fail(401, "缺少认证Token或Token无效");
         }
+
+        // 未传 action 时沿用历史语义：close —— 走 BPMN 网关默认线直接结束流程。
+        // 红名单到期预警(hmd_warn)是双节点流程、网关无默认线，可用动作为
+        // delay / notRenewToLeader / notRenewClose / transfer / reject / agree，
+        // 老框架需显式传入；见 WxOrderAutoCloseJob#startTaskForHmdDelay 与 TaskAction#resolveHmdAction。
+        String taskAction = (action == null || action.trim().isEmpty()) ? "close" : action.trim();
+        // delay 是红名单的"延期"：流程自环回客户经理，工单保持进行中，绝不能置 END
+        boolean keepRunning = "delay".equals(taskAction);
 
         String[] ids = orderIds.split(",");
         int success = 0, fail = 0;
@@ -111,8 +121,14 @@ public class WarningTransferApi {
             try {
                 ToppOrderVo order = orderService.queryById(orderId);
                 if (order == null) { fail++; continue; }
+                // 红名单「不延期」送领导：把所选领导作为 audit 流程变量写入，供 audit_handle 节点解析 assignee
+                Map<String, Object> extraVars = null;
+                if (auditUserId != null && "notRenewToLeader".equals(taskAction)) {
+                    extraVars = new HashMap<>();
+                    extraVars.put("audit", String.valueOf(auditUserId));
+                }
                 boolean completed = warningWorkflowService
-                        .completeFirstTaskByAction(order.getPiId(), "close", resultMemo);
+                        .completeFirstTaskByAction(order.getPiId(), taskAction, resultMemo, extraVars);
                 if (!completed) {
                     // 无运行中任务：订单已结束视为已处理（幂等），否则完成失败
                     if (OrderStatusEnum.END.getCode().equals(order.getStatus())) {
@@ -122,7 +138,14 @@ public class WarningTransferApi {
                     }
                     continue;
                 }
-                // action=close 走网关默认线，流程直接结束，置订单完成
+                if (keepRunning) {
+                    // 延期：流程仍在运行，工单保持进行中；仅落维系情况/计划日期
+                    orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason),
+                            parseDate(plannedRenewalDateStr));
+                    success++;
+                    continue;
+                }
+                // 其余动作走网关直奔结束线，置订单完成
                 // 计划续约日期/下次联系时间由调用方（老框架批量处理）以 yyyy-MM-dd 传入
                 orderService.markOrderEnd(orderId, followUp, otherReason, parseDate(plannedRenewalDateStr));
                 success++;

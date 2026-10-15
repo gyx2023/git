@@ -2,6 +2,7 @@ package com.crm.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
+import com.alibaba.excel.annotation.write.style.ColumnWidth;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,7 +20,8 @@ public class ZqztLedgerInfoExportVo implements Serializable {
     private String orderNo;
 
     @ExcelProperty("签约时间")
-    @DateTimeFormat("yyyy-MM-dd")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
+    @ColumnWidth(32)
     private Date signDate;
 
     @ExcelProperty("服务大厅创建时间")
@@ -53,7 +55,7 @@ public class ZqztLedgerInfoExportVo implements Serializable {
     @ExcelProperty("全流程状态")
     private String status;
 
-    @ExcelProperty("摄像头竣工时间")
+    @ExcelProperty("组网竣工时间")
     @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private Date cameraFinishDate;
 }

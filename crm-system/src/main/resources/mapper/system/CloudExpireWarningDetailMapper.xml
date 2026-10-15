@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.CloudExpireWarningDetailMapper">
+
+    <!-- 明细查询公共列（列名与 ftp_tc_grp_cloud_expire_alarm 一致，别名对齐前端 prop） -->
+    <sql id="selectColumns">
+        SELECT
+        a.id_ AS id,
+        a.area_name AS areaName,
+        a.county_name AS countyName,
+        a.serial_number AS serialNumber,
+        a.grp_name AS grpName,
+        DATE_FORMAT(a.open_date, '%Y-%m-%d %H:%i:%s') AS openDate,
+        a.developer_name AS developerName,
+        a.cloud_tag AS cloudTag,
+        a.consume_type AS consumeType,
+        DATE_FORMAT(a.consume_time, '%Y-%m-%d %H:%i:%s') AS consumeTime,
+        DATE_FORMAT(a.end_time, '%Y-%m-%d %H:%i:%s') AS endTime,
+        a.server_duration AS serverDuration,
+        a.amount_per_year AS amountPerYear,
+        CASE WHEN a.new_consume_time IS NULL THEN '否' ELSE '是' END AS isRenew,
+        a.new_cloud_tag AS newCloudTag,
+        a.new_consume_type AS newConsumeType,
+        DATE_FORMAT(a.new_consume_time, '%Y-%m-%d %H:%i:%s') AS renewalTime,
+        DATE_FORMAT(a.new_end_time, '%Y-%m-%d %H:%i:%s') AS newEndTime,
+        a.new_server_duration AS newServerDuration,
+        a.new_amount_per_year AS newAmountPerYear
+        FROM ftp_tc_grp_cloud_expire_alarm a
+    </sql>
+
+    <!-- 按主订单流水号查询云业务到期预警明细列表 -->
+    <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
+        <include refid="selectColumns"/>
+        WHERE a.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY a.id_
+    </select>
+
+    <!-- 按主订单流水号分页查询云业务到期预警明细列表（分页由 MyBatis-Plus 拦截器处理） -->
+    <select id="selectByMainOrderFlowNoPage" resultType="java.util.Map">
+        <include refid="selectColumns"/>
+        WHERE a.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY a.id_
+    </select>
+
+</mapper>

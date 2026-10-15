@@ -172,12 +172,14 @@ public class WideWarningController extends BaseController {
             // 流程已结束：置为完成
             java.util.Date plannedDate = parseDate(plannedRenewalDateStr);
             orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate);
-            // 维系情况/时间按本次提交覆盖（含清空旧值）
-            ToppOrderVo endedOrder = orderService.queryById(orderId);
-            if (endedOrder != null && ("wotv_expire_warning".equals(endedOrder.getOrderType())
-                    || "wide_second".equals(endedOrder.getOrderType())
-                    || "special_activity_warn".equals(endedOrder.getOrderType())
-                    || "Wide".equals(endedOrder.getOrderType()))) {
+            // 维系情况/时间按本次提交覆盖（含清空旧值）。
+            // 判据 = 本次请求有没有带维系情况，不再维护 orderType 白名单：
+            // 各预警处理页只在有维系情况下拉时才提交 followUp，不带的（宽带装机地址反馈页、
+            // 宽带专项营销等）自然不会走到这里；以后新增类型自动生效，不必再登记。
+            // 注意 updateWideFollowUp 是 set() 强制写（连 null 一起写），所以判据必须是
+            // 「本次是否带了维系情况」而不是「两个字段都非空」—— 否则改选成不带日期的
+            // 选项时旧日期清不掉。
+            if (followUp != null || plannedDate != null) {
                 orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
             }
             msg = "该流程已完成";
@@ -382,11 +384,9 @@ public class WideWarningController extends BaseController {
                     // 批量入口（新框架 batchDeal 页、H5 批量处理页 → /wideWarning/batchComplete）：
                     // batch_flag 置 1，报表口径为「批量处理」(plcl)
                     orderService.markOrderEnd(orderId, followUp, otherReason, plannedDate, true);
-                    // 维系情况/时间按本次提交覆盖（含清空旧值）
-                    if ("wotv_expire_warning".equals(order.getOrderType())
-                            || "wide_second".equals(order.getOrderType())
-                            || "special_activity_warn".equals(order.getOrderType())
-                            || "Wide".equals(order.getOrderType())) {
+                    // 维系情况/时间按本次提交覆盖（含清空旧值）。
+                    // 与 complete 一样改为值驱动，不再维护 orderType 白名单（见上面的说明）。
+                    if (followUp != null || plannedDate != null) {
                         orderService.updateWideFollowUp(orderId, resolveWideResult(followUp, otherReason), plannedDate);
                     }
                 }
