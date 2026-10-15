@@ -128,13 +128,17 @@ public class ZqztFlameGuardianFinishDateServiceImpl implements IZqztFlameGuardia
         if (maxFinish == null) {
             return false;
         }
-        ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
+        int rows = ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
                 .eq(ZqztLedgerInfo::getId, ledger.getId())
                 // 条件更新兜住并发：只把仍是「未完成 / 派单失败」的记录推进为已完成
                 .in(ZqztLedgerInfo::getStatus, STATUS_UNFINISHED, STATUS_DISPATCH_FAILED)
                 .set(ZqztLedgerInfo::getFullProcessDate, maxFinish)
                 .set(ZqztLedgerInfo::getStatus, STATUS_FINISHED)
                 .set(ZqztLedgerInfo::getUpdateTime, new Date()));
+        if (rows == 0) {
+            log.info("【火焰卫士竣工回填】状态已变更，本轮跳过置完成: ledgerId={}", ledger.getId());
+            return false;
+        }
         log.info("【火焰卫士竣工回填】置全流程完成: ledgerId={}, fullProcessDate={}", ledger.getId(), maxFinish);
         return true;
     }

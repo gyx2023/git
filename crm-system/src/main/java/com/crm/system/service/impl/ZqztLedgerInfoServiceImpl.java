@@ -641,7 +641,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     }
 
     /**
-     * 摄像头竣工时间：取各设备组竣工时间的最大值
+     * 组网竣工时间：取各设备组竣工时间的最大值
      * 列表页与导出共用本方法
      */
     private void fillCameraFinishDate(List<ZqztLedgerInfoVo> records) {
