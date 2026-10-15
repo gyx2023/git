@@ -102,9 +102,9 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String cloudAccessKey;
     private String cloudVisionPackageId;
 
-    /** 火焰卫士 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    /** 火焰卫士完成时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date fullProcessDate;
 
     /** RPA执行是否成功（筛选：true/false） */
@@ -114,7 +114,7 @@ public class ZqztLedgerInfoBo extends BaseEntity {
     private String remark;
     private String isValid;
 
-    /** 查询：签约日期范围(起止 yyyy-MM-dd) */
+    /** 查询：签约日期范围(起止 yyyy-MM-dd HH:mm:ss) */
     private String signDateStart;
     private String signDateEnd;
 

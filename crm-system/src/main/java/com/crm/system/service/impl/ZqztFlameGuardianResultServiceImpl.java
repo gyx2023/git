@@ -55,6 +55,16 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
     /** 设备创建时间格式 */
     private static final String DEVICE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    /** stepList 元素字段名 */
+    private static final String KEY_SEQ = "seq";
+    private static final String KEY_TIME_START = "timeStart";
+    private static final String KEY_TIME_END = "timeEnd";
+
+    /** 火焰卫士处理开始时间取第 1 步的开始时间 */
+    private static final int RPA_FIRST_STEP_SEQ = 1;
+    /** 火焰卫士处理结束时间取第 4 步的结束时间 */
+    private static final int RPA_LAST_STEP_SEQ = 4;
+
     private final ZqztLedgerInfoMapper ledgerInfoMapper;
     private final ZqztLedgerCloudConfigMapper cloudConfigMapper;
 
@@ -97,8 +107,50 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
             .set(ZqztLedgerInfo::getAllDesc, bo.getAllDesc())
             .set(ZqztLedgerInfo::getAllTime, bo.getAllTime() == null ? null : bo.getAllTime().intValue())
             .set(ZqztLedgerInfo::getStepList, toStepListJson(bo.getStepList()))
+            .set(ZqztLedgerInfo::getFlameGuardianStartTime,
+                findStepTime(bo.getStepList(), RPA_FIRST_STEP_SEQ, KEY_TIME_START))
+            .set(ZqztLedgerInfo::getFlameGuardianEndTime,
+                findStepTime(bo.getStepList(), RPA_LAST_STEP_SEQ, KEY_TIME_END))
             .set(StringUtils.isNotBlank(bo.getMerchantNum()), ZqztLedgerInfo::getCloudOrgId, bo.getMerchantNum())
             .set(ZqztLedgerInfo::getUpdateTime, new Date()));
+    }
+
+    /**
+     * 取指定 seq 步骤的指定时间字段
+     *
+     * @param stepList 报文各步骤执行结果列表
+     * @param seq      步骤执行顺序（从 1 起）
+     * @param key      {@code timeStart} 或 {@code timeEnd}
+     * @return 解析后的时间；无该步骤、字段缺失或格式非法均返回 null
+     */
+    private Date findStepTime(List<Map<String, Object>> stepList, int seq, String key) {
+        if (stepList == null || stepList.isEmpty()) {
+            return null;
+        }
+        for (Map<String, Object> step : stepList) {
+            if (step == null || !String.valueOf(seq).equals(String.valueOf(step.get(KEY_SEQ)))) {
+                continue;
+            }
+            return parseStepTime(step.get(key));
+        }
+        return null;
+    }
+
+    /** 步骤时间字符串 → Date；空值或无法解析返回 null */
+    private Date parseStepTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        try {
+            return DateUtil.parse(text.replace('T', ' '));
+        } catch (Exception e) {
+            log.warn("【火焰卫士回调】步骤时间无法解析：[{}]，按空值处理", text);
+            return null;
+        }
     }
 
     /**

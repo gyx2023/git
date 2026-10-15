@@ -152,7 +152,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(ZqztLedgerInfoBo bo, String status, String remark) {
-        checkRegionAllowedForSave(bo.getCityId(), bo.getDistrictId());
+        // 新增 / 落台账不做辖区写入校验：辖区由 OB 工单自动带出（与操作人辖区无关），
+        // 硬拦会让跨区派单的客户经理在待办页「通过」时直接失败
         ZqztLedgerInfo entity = BeanUtil.toBean(bo, ZqztLedgerInfo.class);
         String username = currentUsername();
         Date now = new Date();
@@ -268,6 +269,8 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
                 .set(ZqztLedgerInfo::getAllDesc, null)
                 .set(ZqztLedgerInfo::getAllTime, null)
                 .set(ZqztLedgerInfo::getStepList, null)
+                .set(ZqztLedgerInfo::getFlameGuardianStartTime, null)
+                .set(ZqztLedgerInfo::getFlameGuardianEndTime, null)
                 .set(ZqztLedgerInfo::getUpdateTime, new Date());
         if (Boolean.TRUE.equals(syncToFlameGuardian)) {
             update.set(ZqztLedgerInfo::getFlameGuardianSyn, FLAME_SYN_PENDING);
@@ -424,7 +427,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
 
     /** 当前登录用户手机号（未绑定则抛业务异常） */
     private String currentUserPhone() {
-        LoginUser loginUser = LoginHelper.getLoginUser();
+        LoginUser loginUser = currentLoginUser();
         SysUser user = loginUser == null ? null : sysUserService.selectUserById(loginUser.getUserId());
         String phone = user == null ? null : user.getPhonenumber();
         if (StringUtils.isBlank(phone)) {
@@ -500,7 +503,7 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
 
     /** 登录用户区域范围：返回 台账区域 org_code 与层级；省级/管理员/无法解析返回 null */
     private RegionScope resolveRegionScope() {
-        LoginUser loginUser = LoginHelper.getLoginUser();
+        LoginUser loginUser = currentLoginUser();
         if (loginUser == null || LoginHelper.isAdmin()) {
             return null;
         }
@@ -743,8 +746,19 @@ public class ZqztLedgerInfoServiceImpl implements IZqztLedgerInfoService {
     }
 
     private String currentUsername() {
-        LoginUser loginUser = LoginHelper.getLoginUser();
+        LoginUser loginUser = currentLoginUser();
         return loginUser != null ? loginUser.getUsername() : null;
+    }
+
+    /**
+     * 当前登录用户；无登录上下文（xxl-job 等非 HTTP 线程 / 未登录）返回 null
+     */
+    private LoginUser currentLoginUser() {
+        try {
+            return LoginHelper.getLoginUser();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** 登录用户区域范围（内部辅助类） */
