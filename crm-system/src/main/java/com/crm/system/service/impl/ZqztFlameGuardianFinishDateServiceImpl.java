@@ -54,7 +54,6 @@ public class ZqztFlameGuardianFinishDateServiceImpl implements IZqztFlameGuardia
                 // 已完成 / 已作废不参与
                 .in(ZqztLedgerInfo::getStatus, STATUS_UNFINISHED, STATUS_DISPATCH_FAILED)
                 // 按最后修改时间倒序取批：卡住的台账（账号为空/始终解析不出竣工时间）
-                // 不会永久占据队首把新台账饿死；任何编辑或子表回填都会 bump update_time，自愈重排
                 .orderByDesc(ZqztLedgerInfo::getUpdateTime)
                 .orderByDesc(ZqztLedgerInfo::getId)
                 .last("limit " + BATCH_SIZE));
@@ -129,13 +128,17 @@ public class ZqztFlameGuardianFinishDateServiceImpl implements IZqztFlameGuardia
         if (maxFinish == null) {
             return false;
         }
-        ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
+        int rows = ledgerInfoMapper.update(null, Wrappers.<ZqztLedgerInfo>lambdaUpdate()
                 .eq(ZqztLedgerInfo::getId, ledger.getId())
                 // 条件更新兜住并发：只把仍是「未完成 / 派单失败」的记录推进为已完成
                 .in(ZqztLedgerInfo::getStatus, STATUS_UNFINISHED, STATUS_DISPATCH_FAILED)
                 .set(ZqztLedgerInfo::getFullProcessDate, maxFinish)
                 .set(ZqztLedgerInfo::getStatus, STATUS_FINISHED)
                 .set(ZqztLedgerInfo::getUpdateTime, new Date()));
+        if (rows == 0) {
+            log.info("【火焰卫士竣工回填】状态已变更，本轮跳过置完成: ledgerId={}", ledger.getId());
+            return false;
+        }
         log.info("【火焰卫士竣工回填】置全流程完成: ledgerId={}, fullProcessDate={}", ledger.getId(), maxFinish);
         return true;
     }

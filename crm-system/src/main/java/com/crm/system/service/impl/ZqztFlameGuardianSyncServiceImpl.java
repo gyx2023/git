@@ -79,9 +79,7 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
 
         List<ZqztLedgerInfo> list = ledgerInfoMapper.selectList(Wrappers.<ZqztLedgerInfo>lambdaQuery()
             .eq(ZqztLedgerInfo::getIsValid, VALID)
-            // 只有「未完成 / 派单失败」才推送：已作废(-1) 与 已完成(1) 都不再同步。
-            // 本轮已抢占(syn=2)的行随后 markFinished 会无条件写回 3/4（其中 4 会重新入队），
-            // 所以必须把不推的单挡在选取之外，而不能只靠 syn 状态。
+            // 只有「未完成 / 派单失败」才推送：已作废(-1) 与 已完成(1) 都不再同步
             .in(ZqztLedgerInfo::getStatus, STATUS_UNFINISHED, STATUS_DISPATCH_FAILED)
             .in(ZqztLedgerInfo::getFlameGuardianSyn, SYN_PENDING, SYN_FAIL)
             .orderByAsc(ZqztLedgerInfo::getId)
@@ -183,7 +181,6 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
         req.setContactPersonList(buildPersonList(info.getCompanyPrincipal(), info.getPrincipalPhone()));
         req.setSafetyPersonList(buildSafetyPersonList(info));
         req.setBroadbandServiceType(BROADBAND_SERVICE_TYPE);
-        // 宽带账号与设备信息同源，子表只查一次，避免两次相同查询
         List<ZqztLedgerCloudConfig> configs = loadValidConfigs(info.getId());
         req.setBroadbandAccountList(buildBroadbandAccounts(configs));
         req.setDeviceList(buildDeviceList(configs));
@@ -200,23 +197,19 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
     }
 
     /**
-     * 企业安全责任人列表：安全负责人1 支持多组登记（姓名与联系方式在同一字段内用「|」分隔，序号一一对应），
-     * 按「|」拆分后逐组展开为独立的人。
-     * <p>安全负责人2 已下线、不再由表单维护（数据库列保留待删），故不再进入同步报文。</p>
+     * 企业安全责任人列表：安全负责人1 支持多组登记（用「|」分隔）
      */
     private List<FlameGuardianOrderReqDTO.Person> buildSafetyPersonList(ZqztLedgerInfo info) {
         List<FlameGuardianOrderReqDTO.Person> list = new ArrayList<>();
-        // 姓名与联系方式按下标配对，只遍历两者中较短的长度，避免多组错位时产生半空的人
         String[] names = splitMultiGroup(info.getSafetyOfficer1());
         String[] phones = splitMultiGroup(info.getSafetyOfficer1Phone());
         if (phones.length == 0 && names.length > 0) {
             // 未填联系方式时按「每组都是空联系方式」处理，补齐到姓名组数，
-            // 既保持单组登记（有姓名无电话）原有行为，也避免多组姓名被截断丢失
             phones = new String[names.length];
         }
         int size = Math.min(names.length, phones.length);
         for (int i = 0; i < size; i++) {
-            // 姓名缺失的组直接跳过，与原「姓名为空不传该条」的行为一致
+            // 姓名缺失的组直接跳过
             if (StringUtils.isNotBlank(names[i])) {
                 list.add(buildPerson(names[i], phones[i]));
             }
@@ -225,8 +218,7 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
     }
 
     /**
-     * 按「|」拆分多组登记值；空白输入返回空数组。
-     * <p>limit 取 -1：末尾分隔符保留为空串而非被静默丢弃，交由调用方按需跳过。</p>
+     * 按「|」拆分多组登记值；空白输入返回空数组
      */
     private String[] splitMultiGroup(String value) {
         if (StringUtils.isBlank(value)) {
@@ -243,8 +235,7 @@ public class ZqztFlameGuardianSyncServiceImpl implements IZqztFlameGuardianSyncS
     }
 
     /**
-     * 宽带账号列表：从配置子表拼接（需求 §5.4(3) 取数口径变更）
-     * <p>主表 broadband_account 列保留但不再参与取数（待删列，勿新增引用）。</p>
+     * 宽带账号列表：从配置子表拼接
      */
     private List<String> buildBroadbandAccounts(List<ZqztLedgerCloudConfig> configs) {
         if (configs == null || configs.isEmpty()) {

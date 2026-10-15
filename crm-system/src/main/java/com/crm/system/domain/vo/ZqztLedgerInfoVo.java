@@ -82,7 +82,7 @@ public class ZqztLedgerInfoVo implements Serializable {
     private String cloudAccessKey;
     private String cloudVisionPackageId;
     private String infoEntryStatus;
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date fullProcessDate;
 
     /** RPA总执行是否成功（字符串 true/false） */
@@ -96,6 +96,14 @@ public class ZqztLedgerInfoVo implements Serializable {
 
     /** 各步骤执行结果列表（JSON 字符串） */
     private String stepList;
+
+    /** 火焰卫士处理开始时间（stepList 中 seq=1 的 timeStart） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date flameGuardianStartTime;
+
+    /** 火焰卫士处理结束时间（stepList 中 seq=4 的 timeEnd） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date flameGuardianEndTime;
 
     private String status;
     private String remark;

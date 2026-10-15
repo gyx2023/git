@@ -1,14 +1,17 @@
 package com.crm.system.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.crm.common.exception.ServiceException;
 import com.crm.common.utils.StringUtils;
 import com.crm.system.domain.bo.ZqztLedgerCloudConfigBo;
 import com.crm.system.domain.bo.ZqztLedgerInfoBo;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.SysParamDo;
+import com.crm.system.domain.dao.ZqztLedgerArea;
 import com.crm.system.domain.vo.ZqztOrderInfoObVo;
 import com.crm.system.mapper.DwdRepFzPersonDMapper;
 import com.crm.system.mapper.SysUsersMapper;
+import com.crm.system.mapper.ZqztLedgerAreaMapper;
 import com.crm.system.mapper.ZqztOrderInfoObMapper;
 import com.crm.system.service.IZqztFlameGuardianOrderService;
 import com.crm.system.service.IZqztLedgerInfoService;
@@ -84,6 +87,30 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
     private static final String REUSE_OLD = "OLD";
     private static final String REUSE_NEW = "NEW";
 
+    /** 台账字典有效标记 */
+    private static final String VALID = "1";
+
+    /**
+     * 总部地市编码 → 根据行政区划码（{@code zqzt_ledger_area.zq_id}）定位映射为本系统台账的 org_code再沉淀
+     */
+    private static final Map<String, String> HQ_CITY_TO_ZQ_ID;
+
+    static {
+        Map<String, String> cityMap = new HashMap<>(16);
+        cityMap.put("360", "330100");  // 杭州市
+        cityMap.put("362", "330500");  // 湖州市
+        cityMap.put("363", "330400");  // 嘉兴市
+        cityMap.put("364", "330900");  // 舟山市
+        cityMap.put("365", "330600");  // 绍兴市
+        cityMap.put("367", "330700");  // 金华市
+        cityMap.put("370", "330200");  // 宁波市
+        cityMap.put("468", "330800");  // 衢州市
+        cityMap.put("469", "331100");  // 丽水市
+        cityMap.put("470", "330300");  // 温州市
+        cityMap.put("476", "331000");  // 台州市
+        HQ_CITY_TO_ZQ_ID = Collections.unmodifiableMap(cityMap);
+    }
+
     private final ZqztOrderInfoObMapper orderInfoObMapper;
     private final DwdRepFzPersonDMapper personDMapper;
     private final WarningOrderCreateService warningOrderCreateService;
@@ -91,6 +118,7 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
     private final ISysParamService sysParamService;
     private final ISendDMessageService sendDMessageService;
     private final IZqztLedgerInfoService ledgerInfoService;
+    private final ZqztLedgerAreaMapper ledgerAreaMapper;
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -124,7 +152,6 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
                     continue;
                 }
                 // 地市白名单逐行兜底校验：city 为空或不在白名单 → 跳过
-                // （SQL 的 IN 条件只是收窄，故此处必须再判一次；白名单缺失时已在解析处 fail-closed）
                 String city = trim(row.getCity());
                 if (city == null || !cities.contains(city)) {
                     log.warn("【火焰卫士建单】city 为空或不在白名单，跳过: orderNo={}, city={}", orderNo, city);
@@ -217,7 +244,7 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
 
     /**
      * 处理一条 OB 单：定位得到客户经理就建待办；定位不到（operator 为空 / 在本系统用户表查不到）
-     * 就交由调用方把自动取数结果直接落成台账（全流程状态=2 派单失败），数据不丢。
+     * 就交由调用方把自动取数结果直接落成台账（全流程状态=2 派单失败）
      */
     private CreateResult createOrder(ZqztOrderInfoObVo row, String orderNo) {
         if (orderNo.length() > ORDER_NO_MAX_LENGTH) {
@@ -228,7 +255,7 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
         Map<String, Object> userRow = operator == null ? null : sysUsersMapper.selectUserByOaId(operator);
         Long managerId = userRow == null ? null : toLong(userRow.get("user_id"));
         if (managerId == null) {
-            // 派单失败：没有待办可派，但 OB 取到的台账信息不能丢，直接落库并标注原因
+            // 派单失败，直接落库并标注原因
             String remark = operator == null
                     ? "派单失败：OB工单未指定客户经理（operator为空）"
                     : "派单失败：OB客户经理[" + operator + "]在系统中不存在";
@@ -253,12 +280,12 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
         record.setExtraVariable("phone", getString(userRow.get("phonenumber")));
 
         // ---- 待办表单快照（写流程变量，供待办页 /workflow/process/detail 回显）----
-        // 取值为空（null 或空串）时干脆不写该变量：WarningOrderCreateService 会把这些键原样
-        // 透传给 Flowable，写 null 与不写对消费方（Task 8 表单初值、Task 19 前端回填）等价
+        // 取值为空（null 或空串）时不写该变量
         record.setExtraVariable(VAR_ORDER_NO, orderNo);
         putVar(record, "fg_orderNo", orderNo);
         putVar(record, "fg_orderCreateTime", row.getOrderCreateTime());
-        putVar(record, "fg_cityId", trim(row.getCity()));
+        // 地市：总部编码 → 本地 org_code
+        putVar(record, "fg_cityId", resolveCityId(row.getCity()));
         putVar(record, "fg_cityName", trim(row.getCityName()));
         putVar(record, "fg_companyName", companyName);
         putVar(record, "fg_creditCode", trim(row.getCreditCode()));
@@ -293,7 +320,7 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
         putVar(record, "fg_broadbandSporadicOrderNo", trim(row.getBroadbandSporadicOrderNo()));
         putVar(record, "fg_broadbandAddNum", toIntOrNull(row.getBroadbandAddNum()));
 
-        // 签约日期（工作表关联列确认不了时把这段与 queryAuditDealTime 一起注释掉，允许为空）
+        // 签约日期
         Date dealTime = queryAuditDealTime(orderNo);
         if (dealTime != null) {
             record.setExtraVariable("fg_signDate", dealTime);
@@ -332,7 +359,7 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
             ZqztLedgerInfoBo bo = new ZqztLedgerInfoBo();
             bo.setOrderNo(orderNo);
             bo.setOrderCreateTime(row.getOrderCreateTime());
-            bo.setCityId(trim(row.getCity()));
+            bo.setCityId(resolveCityId(row.getCity()));
             bo.setCompanyName(trim(row.getCompanyName()));
             bo.setCreditCode(trim(row.getCreditCode()));
             bo.setRegAddress(trim(row.getRegAddress()));
@@ -408,19 +435,17 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
     // ==================== 零星工程三项 ====================
 
     /**
-     * 「零星工程」取值归一：OB 侧 radioField_* 存的是「是/否」，本系统台账存 1/0。
-     * <p>不做归一会让待办页/修改页的「1=是 / 0=否」下拉框选不中。无法识别的取值按空处理
-     * （不写快照），由客户经理在表单里手选，避免把脏值带进表单。</p>
+     * 「零星工程」取值归一：OB 侧 radioField_* 存的是「1-是 / 2-否」，本系统台账存 1/0
      */
     private String normalizeYesNo(String value) {
         String v = trim(value);
         if (v == null) {
             return null;
         }
-        if ("是".equals(v) || "1".equals(v)) {
+        if ("1".equals(v) || "是".equals(v)) {
             return "1";
         }
-        if ("否".equals(v) || "0".equals(v)) {
+        if ("2".equals(v) || "否".equals(v)) {
             return "0";
         }
         log.warn("【火焰卫士建单】零星工程取值无法识别，按空处理: {}", v);
@@ -441,8 +466,36 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
     }
 
     /**
-     * 归属县分：把 OB 的 develop_staffId 当 CHANNEL_HQ_CODE 查达梦 dwd_rep_fz_person_d
-     * （需求 §5.3.1④ 原文口径），取不到留空
+     * 总部地市编码 → 本系统地市 org_code。
+     * <p>台账 city_id、前端地市下拉、数据权限过滤都按 {@code zqzt_ledger_area.org_code} 匹配，
+     * 因此 OB 的总部编码必须先换成本地编码再落库，否则列表/详情查不到市名、下拉也选不中。</p>
+     *
+     * @param hqCityCode OB 工单 city 列的值（如 470）
+     * @return 本地 org_code；总部编码未配置或字典查不到时返回 null（记 warn，调用方按空处理）
+     */
+    private String resolveCityId(String hqCityCode) {
+        String hqCode = trim(hqCityCode);
+        if (hqCode == null) {
+            return null;
+        }
+        String zqId = HQ_CITY_TO_ZQ_ID.get(hqCode);
+        if (zqId == null) {
+            log.warn("【火焰卫士建单】未配置的总部地市编码，地市留空: hqCode={}", hqCode);
+            return null;
+        }
+        ZqztLedgerArea area = ledgerAreaMapper.selectOne(Wrappers.<ZqztLedgerArea>lambdaQuery()
+                .eq(ZqztLedgerArea::getZqId, zqId)
+                .eq(ZqztLedgerArea::getIsValid, VALID)
+                .last("limit 1"));
+        if (area == null || StringUtils.isBlank(area.getOrgCode())) {
+            log.warn("【火焰卫士建单】台账地市字典未匹配到，地市留空: hqCode={}, zqId={}", hqCode, zqId);
+            return null;
+        }
+        return area.getOrgCode();
+    }
+
+    /**
+     * 归属县分：把 OB 的 develop_staffId 当 CHANNEL_HQ_CODE 查达梦 dwd_rep_fz_person_d，取不到留空
      */
     private String resolveCountyName(String developStaffId) {
         String hqCode = trim(developStaffId);
@@ -538,10 +591,6 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
 
     /**
      * 地市白名单；未配置（或配置里没有有效地市值）时 fail-closed：直接抛业务异常。
-     * <p>空集合会让 SQL 的 IN 条件与 runOnce 的逐行兜底校验同时失效，等于全省扫描，
-     * 会把待办派给错误的客户经理；白名单缺失属部署遗漏而非「不过滤」意图。
-     * 本方法在 runOnce 的轮次级 try 之前调用，异常由此向外抛出 → 本轮不扫、断点不推进，
-     * 配置补齐后下一轮自愈。要放开地市过滤请显式列出地市。</p>
      */
     private List<String> resolveAllowCities() {
         SysParamDo param = sysParamService.findValueByTypeCode(PARAM_TYPE, PARAM_CITY);
@@ -562,10 +611,6 @@ public class ZqztFlameGuardianOrderServiceImpl implements IZqztFlameGuardianOrde
 
     /**
      * 写一条流程变量快照；值为 null 或空白串时直接不写该键
-     * <p>
-     * 这些键会被 WarningOrderCreateService 原样透传进 Flowable 运行时变量表，
-     * 不写与写 null 对读取方等价，故不依赖引擎的 null 语义。
-     * </p>
      */
     private void putVar(WarningRecord record, String key, Object value) {
         if (value == null) {

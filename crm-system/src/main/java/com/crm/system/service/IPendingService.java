@@ -89,12 +89,7 @@ public interface IPendingService {
     java.util.Set<String> listPushedDeleteTaskIds(String procInstId);
 
     /**
-     * 按流程实例ID清理待办（删流程实例不会触发 TASK_COMPLETED 事件，作废场景需显式清理）
-     * <p>
-     * pending 表没有流程实例列（pending_code 存的是 Flowable 任务ID），任务ID从
-     * pending_group_todo.task_id 与 Flowable 历史任务两处归并；pending_group_todo 直接按
-     * proc_inst_id 删除。调用方须在删除流程实例之前调用，历史任务才是完整的。
-     * </p>
+     * 按流程实例ID清理待办
      *
      * @param procInstId 流程实例ID
      * @return 删除的待办条数（pending + pending_group_todo 合计）

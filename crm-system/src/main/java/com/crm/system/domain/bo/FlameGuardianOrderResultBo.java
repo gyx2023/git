@@ -109,11 +109,11 @@ public class FlameGuardianOrderResultBo implements Serializable {
         /** SIP 服务域 */
         private String sipDomain;
 
-        /** 通道列表（V1.2 口径：对象数组） */
+        /** 通道列表 */
         private List<ChannelCode> channelCodeList;
     }
 
-    /** 通道信息（V1.2 接口 channelCodeList 元素） */
+    /** 通道信息 */
     @Data
     public static class ChannelCode implements Serializable {
 

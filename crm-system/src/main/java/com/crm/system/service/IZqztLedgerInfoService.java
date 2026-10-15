@@ -32,9 +32,7 @@ public interface IZqztLedgerInfoService {
     Boolean insertByBo(ZqztLedgerInfoBo bo);
 
     /**
-     * 新增并指定全流程状态与备注（系统内部写入场景，如火焰卫士派单失败）。
-     * <p>HTTP 入口 {@code POST /system/ledger} 只走 {@link #insertByBo(ZqztLedgerInfoBo)}，
-     * 不接受客户端指定 status。</p>
+     * 新增并指定全流程状态与备注
      *
      * @param status 指定全流程状态；为 null 时仍按完成时间推导
      * @param remark 指定备注；为非空白时覆盖表单备注
