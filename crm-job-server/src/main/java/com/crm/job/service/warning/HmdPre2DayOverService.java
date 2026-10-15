@@ -1,5 +1,6 @@
 package com.crm.job.service.warning;
 
+import com.crm.common.utils.DateUtils;
 import com.crm.job.mapper.warning.HmdPre2DayOverMapper;
 import com.crm.system.service.IHmdExpireLeaderService;
 import com.crm.workflow.service.WarningWorkflowService;
@@ -32,6 +33,9 @@ public class HmdPre2DayOverService {
     /** 处理意见，逐字沿用老框架 dealHMDTask 的 taskFlag="3" 分支 */
     private static final String OPINION = "红名单到期前2天,系统自动升级领导审核";
 
+    /** 无入参调用时的默认回退天数：比较日期 = 当前日期 - 2 天 */
+    private static final int DEFAULT_BEFORE_DAYS = 2;
+
     private final HmdPre2DayOverMapper pre2DayOverMapper;
     private final IHmdExpireLeaderService hmdExpireLeaderService;
     private final WarningWorkflowService warningWorkflowService;
@@ -39,14 +43,26 @@ public class HmdPre2DayOverService {
     /**
      * 执行一次红名单到期前两天自动升级。
      * <p>
-     * 日期基准由 SQL 取 {@code CURDATE()}
+     * 比较日期取默认值：当前日期 - 2 天
      * </p>
      *
      * @return 成功送领导审核的工单数
      */
     public int doOver() {
-        List<Map<String, Object>> orders = pre2DayOverMapper.selectPre2DayOrders();
-        log.info("【红名单到期前2天升级】待处理工单数={}", orders.size());
+        return doOver(DateUtils.getBeforeNDays(DateUtils.YYYY_MM_DD, DEFAULT_BEFORE_DAYS));
+    }
+
+    /**
+     * 执行一次红名单到期前两天自动升级，支持指定比较日期。
+     *
+     * @param compareDate 比较日期（{@code yyyy-MM-dd}），即 SQL 中 {@code 到期日 <= 该日期} 的右值；
+     *                    日常调度由 Job 传入执行器参数换算结果，未传参时 Job 取 {@code 当前日期 - 2 天}，
+     *                    等价老框架 {@code DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '%Y-%m-%d')}
+     * @return 成功送领导审核的工单数
+     */
+    public int doOver(String compareDate) {
+        List<Map<String, Object>> orders = pre2DayOverMapper.selectPre2DayOrders(compareDate);
+        log.info("【红名单到期前2天升级】比较日期={}, 待处理工单数={}", compareDate, orders.size());
         if (orders.isEmpty()) {
             return 0;
         }

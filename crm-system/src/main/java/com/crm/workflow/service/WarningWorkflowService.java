@@ -151,6 +151,24 @@ public class WarningWorkflowService {
      * @return 是否存在并完成了待办任务
      */
     public boolean completeFirstTaskByAction(String piId, String action, String comment) {
+        return completeFirstTaskByAction(piId, action, comment, null);
+    }
+
+    /**
+     * 以指定 action 完成当前待办任务，并附加额外流程变量。
+     * <p>
+     * 供双节点流程使用：红名单「不延期」送领导时，除 action=notRenewToLeader 外还需带
+     * {@code audit}=所选领导用户ID，供 bpmn 的 {@code audit_handle} 节点解析 assignee。
+     * </p>
+     *
+     * @param piId      流程实例 ID
+     * @param action    action 变量值
+     * @param comment   处理意见，可为 null
+     * @param extraVars 需一并写入的流程变量（可为 null/空）
+     * @return 是否存在并完成了待办任务
+     */
+    public boolean completeFirstTaskByAction(String piId, String action, String comment,
+                                             Map<String, Object> extraVars) {
         List<Task> tasks = taskService.createTaskQuery().processInstanceId(piId).listPage(0, 1);
         if (tasks.isEmpty()) {
             return false;
@@ -164,6 +182,9 @@ public class WarningWorkflowService {
         taskService.setVariableLocal(tId, "action", action);
         Map<String, Object> vars = new HashMap<>();
         vars.put("action", action);
+        if (extraVars != null && !extraVars.isEmpty()) {
+            vars.putAll(extraVars);
+        }
         taskService.complete(tId, vars);
         return true;
     }
