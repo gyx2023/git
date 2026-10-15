@@ -236,6 +236,8 @@ public class ZqztFlameGuardianResultServiceImpl implements IZqztFlameGuardianRes
             .eq(ZqztLedgerCloudConfig::getId, configId)
             .set(StringUtils.isNotBlank(device.getDesc()), ZqztLedgerCloudConfig::getDeviceDesc, device.getDesc())
             .set(deviceCreateTime != null, ZqztLedgerCloudConfig::getDeviceCreateTime, deviceCreateTime)
+            .set(StringUtils.isNotBlank(device.getDeviceId()), ZqztLedgerCloudConfig::getDeviceId, device.getDeviceId())
+            .set(StringUtils.isNotBlank(device.getDeviceGbId()), ZqztLedgerCloudConfig::getGbId, device.getDeviceGbId())
             .set(StringUtils.isNotBlank(device.getDeviceGbCode()), ZqztLedgerCloudConfig::getDeviceGbCode, device.getDeviceGbCode())
             .set(StringUtils.isNotBlank(device.getComboId()), ZqztLedgerCloudConfig::getComboId, device.getComboId())
             .set(StringUtils.isNotBlank(device.getComboName()), ZqztLedgerCloudConfig::getComboName, device.getComboName())
