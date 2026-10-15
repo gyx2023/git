@@ -73,6 +73,9 @@ public class FlameGuardianOrderResultBo implements Serializable {
         /** 用户名（国标编码） */
         private String deviceGbCode;
 
+        /** 设备国标 ID */
+        private String deviceGbId;
+
         /** 资源包 ID */
         private String comboId;
 
