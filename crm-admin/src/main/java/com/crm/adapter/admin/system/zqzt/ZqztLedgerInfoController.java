@@ -134,7 +134,6 @@ public class ZqztLedgerInfoController extends BaseController {
     /**
      * 按账号查询入网时间（总部用户信息查询接口，用于回填竣工时间）
      */
-    @SaCheckPermission("system:ledger:list")
     @GetMapping("/userInDate/{serialNumber}")
     public R<String> userInDate(@PathVariable("serialNumber") String serialNumber) {
         return R.ok("查询成功", ledgerUserInfoService.queryUserInDate(serialNumber));
@@ -143,7 +142,6 @@ public class ZqztLedgerInfoController extends BaseController {
     /**
      * 省市区县街道三级联动（parentCode 为空默认返回地市）
      */
-    @SaCheckPermission("system:ledger:list")
     @GetMapping("/areaChildren")
     public R<List<ZqztLedgerAreaVo>> areaChildren(@RequestParam(value = "parentCode", required = false) String parentCode) {
         return R.ok(ledgerAreaService.queryChildren(parentCode));
@@ -187,5 +185,17 @@ public class ZqztLedgerInfoController extends BaseController {
     @PostMapping("/cloudAccount/updatePassword")
     public R<Void> updateCloudAccountPassword(@Validated @RequestBody ZqztCloudPasswordBo bo) {
         return toAjax(ledgerInfoService.updateCloudAccountPassword(bo.getLedgerId(), bo.getNewPassword(), bo.getSmsCode()));
+    }
+
+    /**
+     * 同步火焰卫士（RPA 失败重处理）
+     */
+    @SaCheckPermission("system:ledger:edit")
+    @Log(title = "台账信息管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PostMapping("/syncFlameGuardian")
+    public R<Void> syncFlameGuardian(@RequestParam("id") Long id,
+                                     @RequestParam(value = "syncToFlameGuardian", required = false) Boolean syncToFlameGuardian) {
+        return toAjax(ledgerInfoService.syncFlameGuardian(id, syncToFlameGuardian));
     }
 }

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crm.system.mapper.DoubleWideExpireWarningDetailMapper">
+
+    <!-- 明细公共列（列名与 wide_sys_auto_warning 一致，别名对齐前端 prop） -->
+    <sql id="selectColumns">
+        SELECT
+        w.id AS id,
+        w.svc_num AS svcNum,
+        w.cust_name AS custName,
+        w.contact_man AS contactMan,
+        w.contact_phone AS contactPhone,
+        w.developer_name AS developerName,
+        w.scheme_name AS schemeName,
+        w.lvl_name AS lvlName,
+        w.service_name AS serviceName,
+        w.conn_type AS connType,
+        DATE_FORMAT(w.eff_time, '%Y-%m-%d %H:%i:%s') AS effTime,
+        DATE_FORMAT(w.exp_time, '%Y-%m-%d %H:%i:%s') AS expTime,
+        w.amount_per_year AS amountPerYear,
+        w.rate_ AS rate,
+        w.user_addr AS userAddr,
+        w.exte_flag AS exteFlag,
+        w.IS_NINEDISCOUNT AS isNinediscount,
+        w.LAST_BALANCE AS lastBalance,
+        w.LAST_BILL_FEE AS lastBillFee,
+        w.IS_RED_LIST AS isRedList,
+        w.NEW_SCHEME_ID AS newSchemeId,
+        w.NEW_SCHEME_NAME AS newSchemeName,
+        DATE_FORMAT(w.NEW_CREATE_TIME, '%Y-%m-%d %H:%i:%s') AS newCreateTime,
+        DATE_FORMAT(w.NEW_EFF_TIME, '%Y-%m-%d %H:%i:%s') AS newEffTime,
+        DATE_FORMAT(w.NEW_EXP_TIME, '%Y-%m-%d %H:%i:%s') AS newExpTime,
+        w.NEW_SCHEME_PERIOD AS newSchemePeriod,
+        w.NEW_SCHEME_FEE AS newSchemeFee,
+        w.RELATION_TYPE_NAME AS relationTypeName,
+        fw.user_status AS userStatus
+        FROM wide_sys_auto_warning w
+        LEFT JOIN ftp_tc_user_cycle_warning fw ON w.ORDER_FLOW_NO = fw.ORDER_FLOW_NO
+    </sql>
+
+    <!-- 按主订单流水号查询双线到期预警明细列表 -->
+    <select id="selectByMainOrderFlowNo" resultType="java.util.Map">
+        <include refid="selectColumns"/>
+        WHERE w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id ASC
+    </select>
+
+    <!-- 按主订单流水号分页查询双线到期预警明细列表（分页由 MyBatis-Plus 拦截器处理） -->
+    <select id="selectByMainOrderFlowNoPage" resultType="java.util.Map">
+        <include refid="selectColumns"/>
+        WHERE w.main_order_flow_no = #{mainOrderFlowNo}
+        ORDER BY w.id ASC
+    </select>
+
+</mapper>

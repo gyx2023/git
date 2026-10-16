@@ -4,6 +4,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.crm.system.domain.bo.topp.ToppOrderBo;
 import com.crm.system.domain.dao.FtpCustBaseInfoDo;
+import com.crm.system.domain.dao.FtpTcUserCustWarningDo;
 import com.crm.system.domain.dao.MaintenanceDetailDo;
 import com.crm.system.domain.dao.MaintenanceDetailNewDo;
 import com.crm.system.domain.dao.SysUsers;
@@ -216,27 +217,27 @@ public class MaintenanceDetailSyncServiceImpl implements IMaintenanceDetailSyncS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void writeNoManager(String orderType, Map<String, Object> row) {
+    public void writeNoManager(String orderType, FtpTcUserCustWarningDo row) {
         if (row == null) {
             return;
         }
-        String grpCode = str(row.get("grp_code"));
-        String custGrpId = str(row.get("cust_grp_id"));
-        String areaName = str(row.get("area_name"));
-        String countyName = str(row.get("county_name"));
+        String grpCode = row.getGrpCode();
+        String custGrpId = row.getCustGrpId() == null ? null : String.valueOf(row.getCustGrpId());
+        String areaName = row.getAreaName();
+        String countyName = row.getCountyName();
 
         AreaResult area = resolveAreaForDetail(custGrpId, areaName, countyName);
         FtpCustBaseInfoDo cust = ftpByGrpCode(grpCode);
 
         MaintenanceDetailDo d = new MaintenanceDetailDo();
         d.setOrderType(orderType);
-        d.setDetailId(toLong(row.get("id_")));
+        d.setDetailId(row.getId() == null ? null : row.getId().longValue());
         d.setGrpCode(grpCode);
         d.setCustGrpId(custGrpId);
-        d.setGrpName(str(row.get("grp_name")));
+        d.setGrpName(row.getGrpName());
         // status=0：manager_id/name 用 OA 原值（对齐旧系统 line 309/310 未被覆盖），无 order_id/user_id
-        d.setManagerId(str(row.get("oa_id_dev")));
-        d.setManagerName(str(row.get("oa_name_dev")));
+        d.setManagerId(row.getOaIdDev());
+        d.setManagerName(row.getOaNameDev());
         d.setUserId(null);
         d.setOrderId(null);
         d.setStatus(0);

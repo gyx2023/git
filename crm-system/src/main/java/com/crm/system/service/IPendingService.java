@@ -87,4 +87,12 @@ public interface IPendingService {
      * @param procInstId 流程实例ID
      */
     java.util.Set<String> listPushedDeleteTaskIds(String procInstId);
+
+    /**
+     * 按流程实例ID清理待办
+     *
+     * @param procInstId 流程实例ID
+     * @return 删除的待办条数（pending + pending_group_todo 合计）
+     */
+    int deleteByProcInstId(String procInstId);
 }

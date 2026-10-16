@@ -1,0 +1,133 @@
+package com.crm.system.service.warning.assign.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.crm.common.utils.DateUtils;
+import com.crm.common.utils.StringUtils;
+import com.crm.system.domain.dao.FtpCustBaseInfoDo;
+import com.crm.system.domain.dao.FtpTcUserCustWarningDo;
+import com.crm.system.domain.dao.SysUsers;
+import com.crm.system.domain.dao.tcomm.TcommCustomer;
+import com.crm.system.mapper.SysUsersMapper;
+import com.crm.system.mapper.cust.FtpCustBaseInfoMapper;
+import com.crm.system.mapper.tcomm.TcommCustomerMapper;
+import com.crm.system.service.IFtpTcUserCustWarningService;
+import com.crm.system.service.warning.assign.IWarningAssignStrategy;
+import com.crm.system.service.warning.assign.WarningAssignContext;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+
+/**
+ * 双线到期预警未派发指派策略。
+ * <p>
+ * 手动指派时按 maintenance_detail.detail_id 反查客户级预警表
+ * ftp_tc_user_cust_warning（warning_type=C00007），
+ * 使用前端指定的客户经理覆盖原 oa_id_dev，并组装建单上下文。
+ * </p>
+ *
+ * @author crm
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class DoubleWideExpireWarningAssignStrategy implements IWarningAssignStrategy {
+
+    /** 双线到期预警类型编码（C00008 已无数据，不处理） */
+    private static final String WARNING_TYPE = "C00007";
+
+    private final IFtpTcUserCustWarningService ftpTcUserCustWarningService;
+    private final SysUsersMapper sysUsersMapper;
+    private final TcommCustomerMapper tcommCustomerMapper;
+    private final FtpCustBaseInfoMapper ftpCustBaseInfoMapper;
+
+    @Override
+    public String getOrderType() {
+        return "double_wide";
+    }
+
+    @Override
+    public String getOrderTypeName() {
+        return "双线到期预警";
+    }
+
+    @Override
+    public WarningAssignContext buildContext(Long detailId, Long targetUserId) {
+        if (detailId == null || targetUserId == null) {
+            return null;
+        }
+        // 按 detail_id 反查客户级预警行（限定期望的 warning_type）
+        FtpTcUserCustWarningDo row = ftpTcUserCustWarningService.getByIdAndWarningType(detailId, WARNING_TYPE);
+        if (row == null) {
+            log.warn("【双线到期指派】未找到原始预警行, detailId={}", detailId);
+            return null;
+        }
+
+        SysUsers targetUser = sysUsersMapper.selectById(targetUserId);
+        if (targetUser == null) {
+            log.warn("【双线到期指派】目标客户经理不存在, userId={}", targetUserId);
+            return null;
+        }
+
+        String grpName = row.getGrpName();
+        String grpCode = row.getGrpCode();
+        String custGrpId = row.getCustGrpId() == null ? null : String.valueOf(row.getCustGrpId());
+
+        WarningAssignContext ctx = new WarningAssignContext();
+        ctx.setOrderType(getOrderType());
+        ctx.setOrderName(DateUtils.dateTime() + "_" + (StringUtils.isNotBlank(grpName) ? grpName + "_" : "") + "双线到期预警");
+        ctx.setCustName(grpName);
+        ctx.setCustManagerId(targetUserId);
+        ctx.setSysUser(targetUser);
+
+        // 客户ID：按 grp_code 查 tcomm_customer
+        if (StringUtils.isNotBlank(grpCode) && tcommCustomerMapper != null) {
+            TcommCustomer customer = tcommCustomerMapper.selectOne(
+                    new LambdaQueryWrapper<TcommCustomer>().eq(TcommCustomer::getCustNo, grpCode).last("LIMIT 1"));
+            if (customer != null) {
+                ctx.setCustId(customer.getId());
+            }
+        }
+
+        // 扩展字段：与 job 策略对齐，供 writeSuccess / 流程变量使用
+        ctx.setExtraVariable("infoId", detailId);
+        ctx.setExtraVariable("_detailId", detailId);
+        ctx.setExtraVariable("orgId", targetUser.getOrgId());
+        ctx.setExtraVariable("nickName", targetUser.getNameCh());
+        ctx.setExtraVariable("phone", targetUser.getRelationTel());
+        ctx.setExtraVariable("_needOrderNumber", true);
+        ctx.setExtraVariable("orderCategory", "C");
+        ctx.setExtraVariable("areaName", row.getAreaName());
+        ctx.setExtraVariable("countyName", row.getCountyName());
+        ctx.setExtraVariable("grpCode", grpCode);
+        ctx.setExtraVariable("custGrpId", custGrpId);
+        // 被指派的处理人 OA 信息（供 assignSuccess 反查旧 sys_user 写 manager_id/name）
+        ctx.setExtraVariable("oaIdDev", row.getOaIdDev());
+        ctx.setExtraVariable("oaNameDev", row.getOaNameDev());
+
+        // businessDep：对齐 job 策略用 custGrpId 查 ftp_cust_base_info.grp_busi_dept_type
+        if (StringUtils.isNotBlank(custGrpId) && ftpCustBaseInfoMapper != null) {
+            try {
+                FtpCustBaseInfoDo custInfo = ftpCustBaseInfoMapper.selectOne(
+                        new LambdaQueryWrapper<FtpCustBaseInfoDo>()
+                                .eq(FtpCustBaseInfoDo::getCustGrpId, Integer.parseInt(custGrpId))
+                                .last("LIMIT 1"));
+                if (custInfo != null) {
+                    String deptType = custInfo.getGrpBusiDeptType();
+                    ctx.setExtraVariable("businessDep",
+                            (StringUtils.isBlank(deptType) || "99".equals(deptType)) ? "22" : deptType);
+                }
+            } catch (Exception e) {
+                log.debug("【双线到期指派】查 ftp_cust_base_info businessDep 失败: custGrpId={}", custGrpId);
+            }
+        }
+        return ctx;
+    }
+
+    @Override
+    public String buildDealUrl(Long orderId, Map<String, Object> extra) {
+        return "/userCustWarning/dealByDoubleWide?orderId=" + orderId;
+    }
+
+}
