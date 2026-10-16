@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    营销线索预警 SQL
+    迁移自旧系统 com.hollycrm.service.business.GroupClueService 的 7 段查询，
+    SQL 主体与旧系统逐字一致（仅补 <if> 动态条件与结果列别名），查询表在迁移期新旧框架共用：
+      dispatch_order / dispatch_task / dispatch_order_business_data /
+      view_user / view_clue_order / industry_area_user / dispatch_visit
+    注意：areaParam 走 ${} 拼接（旧系统如此，值为 330100,330200 形式的地市编码），
+         调用方 CluesEarlyWarningService 已做「仅数字/逗号/空白」白名单校验，禁止直接透传外部输入。
+-->
+<mapper namespace="com.crm.job.mapper.warning.CluesEarlyWarningMapper">
+
+    <!-- 1、专家评审超时：线索下发 24 小时内未完成评审 -->
+    <select id="professorTimeout" resultType="java.util.LinkedHashMap">
+        select vu.userId as userId,
+               CONCAT(vu.name_ch, '您好！您的营销线索【', bd.name_, o.number_, '】已经接单超时了,请尽快完成评审。') as content,
+               o.number_ as clueNum
+        FROM dispatch_order o
+        join dispatch_task t on o.id = t.order_id
+        join view_user vu on vu.relation_tel = t.assignee_phone
+        join dispatch_order_business_data bd on bd.order_id = o.id
+        WHERE o.state = 160 and o.type_ = 'ProfessorTask'
+          and (TIMESTAMPDIFF(hour, t.create_time, NOW())) > 24
+          and t.complete_time is null
+        <if test="areaParam != null and areaParam != ''">
+            and vu.pareaId in (${areaParam})
+        </if>
+        <if test="dateParam1 != null and dateParam1 != ''">
+            and bd.create_time &gt;= #{dateParam1}
+        </if>
+        <if test="dateParam2 != null and dateParam2 != ''">
+            and bd.create_time &lt;= #{dateParam2}
+        </if>
+    </select>
+
+    <!-- 2、领导审核超时：专家评审通过后 24 小时内未完成审核 -->
+    <select id="leaderTimeout" resultType="java.util.LinkedHashMap">
+        select vu.userId as userId,
+               concat(vu.name_ch, '您好！您的创新头条有营销线索【', bd.name_, o.number_, '】未审核，请及时审核！') as content,
+               o.number_ as clueNum
+        FROM dispatch_order o
+        join dispatch_task t on o.id = t.order_id
+        join dispatch_order_business_data bd on bd.order_id = t.order_id
+        join view_user vu on vu.relation_tel = t.assignee_phone
+        WHERE o.parent_order_id in (
+            select id FROM dispatch_order WHERE state = 160 and type_ = 'ProfessorTask'
+        )
+          and (TIMESTAMPDIFF(hour, t.create_time, NOW())) > 24
+          and t.complete_time is null
+          and o.state not in (-10, -11, -12)
+        <if test="areaParam != null and areaParam != ''">
+            and vu.pareaId in (${areaParam})
+        </if>
+        <if test="dateParam1 != null and dateParam1 != ''">
+            and bd.create_time &gt;= #{dateParam1}
+        </if>
+        <if test="dateParam2 != null and dateParam2 != ''">
+            and bd.create_time &lt;= #{dateParam2}
+        </if>
+    </select>
+
+    <!-- 3、未细化分配：领导审核通过 3 天内未完成分配 -->
+    <select id="noRefine" resultType="java.util.LinkedHashMap">
+        select vu.userId as userId,
+               CONCAT(vu.name_ch, '您好！您的创新头条有营销线索【', t.data_name, o.number_, '】未分配，请及时分配！') as content,
+               o.number_ as clueNum,
+               vu.area_id as areaId,
+               obd.industry as industryId
+        from dispatch_order o
+        join dispatch_task t on t.order_id = o.id
+        join dispatch_order_business_data obd on obd.id = o.data_id
+        join view_user vu on vu.relation_tel = t.assignee_phone
+        join dispatch_order po on po.id = o.parent_order_id
+        join dispatch_order po1 on po1.id = po.parent_order_id
+        where (select count(1) from dispatch_order where parent_order_id = o.id) = 0
+          and o.type_ != 'SupporterTask'
+          and t.complete_time is null and t.status != 6 and o.status != 4
+          and (o.state = 50 or o.state = 80 or o.state = 100)
+          and TO_DAYS(po.create_time) &lt; TO_DAYS(current_timestamp()) - 3
+        <if test="areaParam != null and areaParam != ''">
+            and vu.pareaId in (${areaParam})
+        </if>
+        <if test="dateParam1 != null and dateParam1 != ''">
+            and obd.create_time &gt;= #{dateParam1}
+        </if>
+        <if test="dateParam2 != null and dateParam2 != ''">
+            and obd.create_time &lt;= #{dateParam2}
+        </if>
+    </select>
+
+    <!-- 4、走访不合格：客户经理接单后 7 天内目标客户走访率低于 100%（仅消息提醒） -->
+    <select id="visitUnQualified" resultType="java.util.LinkedHashMap">
+        select t1.userId as userId,
+               CONCAT(t1.name_ch, '您好！您的创新头条有【', t1.name_, '】的', t1.unvisit, '个营销线索客户未走访,请及时走访!') as content
+        from (
+            select t.id, t.userId, t.name_ch, (t.clientSum - t.visitSum) as 'unvisit', t.name_
+            from (
+                select o.id,
+                       (select count(1) from dispatch_order where parent_order_id = o.id) as 'clientSum',
+                       (select count(DISTINCT(order_id)) from dispatch_visit
+                        where order_id in (select id from dispatch_order where parent_order_id = o.id)) as 'visitSum',
+                       vu.userId, vu.name_ch, bd.NAME_
+                from dispatch_order o
+                join dispatch_task t on t.order_id = o.id
+                join view_user vu on vu.relation_tel = t.assignee_phone
+                join dispatch_order_business_data bd on bd.id = o.data_id
+                where o.type_ = 'CustMgrTask' and o.state != 220
+                  and TO_DAYS(o.create_time) &lt; TO_DAYS(current_timestamp()) - 7
+                <if test="areaParam != null and areaParam != ''">
+                    and vu.pareaId in (${areaParam})
+                </if>
+                <if test="dateParam1 != null and dateParam1 != ''">
+                    and bd.create_time &gt;= #{dateParam1}
+                </if>
+                <if test="dateParam2 != null and dateParam2 != ''">
+                    and bd.create_time &lt;= #{dateParam2}
+                </if>
+            ) t
+        ) t1
+        WHERE t1.unvisit != 0
+    </select>
+
+    <!-- 5、线索未关单：客户名单分配完成 60 天内线索关单率低于 100%（仅消息提醒） -->
+    <select id="custUnShutdown" resultType="java.util.LinkedHashMap">
+        select vu.userId as userId,
+               CONCAT(vu.name_ch, '您好!你的创新头条有', COUNT(o.root_order_id), '个营销线索未关单,请及时关单!') as content
+        FROM dispatch_order o
+        join dispatch_task t on o.id = t.order_id
+        join view_user vu on vu.relation_tel = t.assignee_phone
+        join dispatch_order_business_data bd on bd.id = (select data_id from dispatch_order where id = o.root_order_id)
+        WHERE t.status = 0 and o.state != 220
+          and o.type_ = 'CustMgrTask'
+          and t.complete_time is null and t.flow_condition is null
+          and TO_DAYS(o.create_time) &lt; TO_DAYS(current_timestamp()) - 60
+        <if test="areaParam != null and areaParam != ''">
+            and vu.pareaId in (${areaParam})
+        </if>
+        <if test="dateParam1 != null and dateParam1 != ''">
+            and bd.create_time &gt;= #{dateParam1}
+        </if>
+        <if test="dateParam2 != null and dateParam2 != ''">
+            and bd.create_time &lt;= #{dateParam2}
+        </if>
+        group by o.cust_mgr_id
+    </select>
+
+    <!-- 6、走访不合格（行业部领导/县分分管领导）：客户名单分配完成 10 天内走访率低于 100% —— 生成待办 -->
+    <select id="clientVisitRate" resultType="java.util.LinkedHashMap">
+        SELECT t.user_id as userId,
+               CONCAT(t.area_name, t.industry_name, '创新头条【', t.name_, '】营销线索走访率为',
+                      (round(t.isExsit / t.clients * 100, 2)), '%,不符合要求,请回复原因及整改措施!') AS content,
+               t.area_id as areaId,
+               t.industry_id as industryId,
+               t.clueOrderId as clueId
+        FROM (
+            SELECT user_id, clue.clueName AS 'name_', clue.clueNum AS 'number_', iau.area_id,
+                   iau.industry_id, iau.user_name AS 'name_ch', iau.industry_name, iau.area_name,
+                   clueOrderId, count(DISTINCT(o.client_id)) AS 'clients',
+                   SUM(IF((SELECT count(*) FROM dispatch_visit v JOIN dispatch_order o1 ON v.order_id = o1.id
+                       WHERE o1.root_order_id = o.root_order_id AND o1.cust_mgr_id = o.cust_mgr_id) > 0, 1, 0)) AS isExsit
+            FROM dispatch_order o
+            JOIN (SELECT * FROM dispatch_order
+                  WHERE TO_DAYS(CURRENT_TIMESTAMP()) - TO_DAYS(create_time) > 10 AND state != 220) po
+                ON po.id = o.parent_order_id
+            JOIN dispatch_task t ON t.order_id = po.id
+            JOIN dispatch_order_business_data bd ON bd.id = po.data_id
+            JOIN view_user vu ON vu.relation_tel = t.assignee_phone
+            JOIN view_clue_order clue ON clue.rootOrderId = o.root_order_id
+            JOIN industry_area_user iau ON iau.area_id = vu.area_id
+                AND iau.industry_id = bd.industry
+            <if test="areaParam != null and areaParam != ''">
+                and vu.pareaId in (${areaParam})
+            </if>
+            <if test="dateParam1 != null and dateParam1 != ''">
+                and bd.create_time &gt;= #{dateParam1}
+            </if>
+            <if test="dateParam2 != null and dateParam2 != ''">
+                and bd.create_time &lt;= #{dateParam2}
+            </if>
+            WHERE o.type_ = 'ClientTask'
+            GROUP BY iau.area_id, iau.industry_id, clueOrderId
+        ) t
+        WHERE t.clients > t.isExsit
+    </select>
+
+    <!-- 7、线索未关单（行业部领导/县分分管领导）：客户名单分配完成 70 天内关单率低于 100% —— 生成待办 -->
+    <select id="custUnShutdown1" resultType="java.util.LinkedHashMap">
+        select t.user_id as userId,
+               CONCAT(t.area_name, t.industry_name, '创新头条【', t.name_, t.number_, '】营销线索关单率为',
+                      (round(t.shutdown / t.all1 * 100, 2)), '%,不符合要求,请回复原因及整改措施!') as content,
+               t.area_id as areaId,
+               t.industry_id as industryId,
+               t.root_order_id as clueId
+        from (
+            select iau.user_id, iau.industry_id, iau.area_name, iau.industry_name,
+                   (SUM(if(o.state = 220, 1, 0))) as 'shutdown',
+                   (SUM(if(o.state != 220, 1, 0))) as 'unshutdown',
+                   count(o.id) as 'all1',
+                   bd.name_, bd.industry, vu.area_id, vu.pareaId, o.number_, o.root_order_id
+            FROM dispatch_order o
+            join dispatch_order co on co.parent_order_id = o.id
+            join dispatch_task t on o.id = t.order_id
+            join view_user vu on vu.relation_tel = t.assignee_phone
+            join dispatch_order_business_data bd
+                on bd.id = (select data_id from dispatch_order where id = o.root_order_id)
+            join industry_area_user iau on iau.area_id = vu.area_id and iau.industry_id = bd.industry
+            WHERE o.type_ = 'CustMgrTask' and bd.industry is not null
+              and TO_DAYS(o.create_time) &lt; TO_DAYS(current_timestamp()) - 70
+            <if test="areaParam != null and areaParam != ''">
+                and vu.pareaId in (${areaParam})
+            </if>
+            <if test="dateParam1 != null and dateParam1 != ''">
+                and bd.create_time &gt;= #{dateParam1}
+            </if>
+            <if test="dateParam2 != null and dateParam2 != ''">
+                and bd.create_time &lt;= #{dateParam2}
+            </if>
+            group by o.root_order_id
+        ) t
+        where t.shutdown != t.all1
+    </select>
+
+</mapper>
